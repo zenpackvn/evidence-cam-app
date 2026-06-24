@@ -17,7 +17,8 @@ import 'package:dio/dio.dart';
 /// (look up the key, replay the stored response on a repeat). Header name and
 /// method set match the common convention.
 class IdempotencyInterceptor extends Interceptor {
-  IdempotencyInterceptor({Random? random}) : _random = random ?? Random.secure();
+  IdempotencyInterceptor({Random? random})
+    : _random = random ?? Random.secure();
 
   static const headerName = 'Idempotency-Key';
   static const _keyExtra = '__idempotency_key__';

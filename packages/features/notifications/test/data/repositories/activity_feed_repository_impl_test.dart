@@ -73,7 +73,9 @@ void main() {
 
     test('maps a DioException to a Failure instead of throwing', () async {
       when(() => remote.activityFeed(cursor: null, limit: 20)).thenThrow(
-        DioException(requestOptions: RequestOptions(path: '/api/activity/feed')),
+        DioException(
+          requestOptions: RequestOptions(path: '/api/activity/feed'),
+        ),
       );
 
       final result = await repository.page(limit: 20);

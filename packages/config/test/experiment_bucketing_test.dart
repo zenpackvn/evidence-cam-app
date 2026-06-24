@@ -5,7 +5,10 @@ void main() {
   group('bucketFor', () {
     test('is deterministic for the same id and salt', () {
       expect(bucketFor('user-1'), bucketFor('user-1'));
-      expect(bucketFor('user-1', salt: 'exp'), bucketFor('user-1', salt: 'exp'));
+      expect(
+        bucketFor('user-1', salt: 'exp'),
+        bucketFor('user-1', salt: 'exp'),
+      );
     });
 
     test('always lands in [0, 100)', () {

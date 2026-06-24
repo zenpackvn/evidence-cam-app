@@ -84,8 +84,7 @@ class _ForceUpdateGateState extends State<ForceUpdateGate> {
     return Stack(
       children: [
         widget.child,
-        if (_updateRequired)
-          const _UpdateRequiredBarrier(),
+        if (_updateRequired) const _UpdateRequiredBarrier(),
       ],
     );
   }

@@ -24,7 +24,11 @@ class _FakeRemoteConfig implements RemoteConfigService {
   bool isEnabled(FeatureFlag flag) => flag.defaultValue;
 }
 
-Future<void> _pump(WidgetTester tester, {required String min, required String current}) {
+Future<void> _pump(
+  WidgetTester tester, {
+  required String min,
+  required String current,
+}) {
   return tester.pumpWidget(
     MaterialApp(
       home: ForceUpdateGate(
@@ -56,7 +60,9 @@ void main() {
   });
 
   group('ForceUpdateGate', () {
-    testWidgets('blocks when current version is below the minimum', (tester) async {
+    testWidgets('blocks when current version is below the minimum', (
+      tester,
+    ) async {
       await _pump(tester, min: '2.0.0', current: '1.7.0');
       await tester.pumpAndSettle();
 
