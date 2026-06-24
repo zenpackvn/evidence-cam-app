@@ -43,7 +43,6 @@ android {
     productFlavors {
         create("dev") {
             dimension = "environment"
-            applicationIdSuffix = ".dev"
             resValue("string", "app_name", "Flutter Starter (Dev)")
         }
         create("staging") {
@@ -58,7 +57,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.lucistudio.flutter_starter_template"
+        applicationId = "com.aktechvn.quangsat"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
