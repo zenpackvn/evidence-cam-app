@@ -7,6 +7,9 @@ import 'package:injectable/injectable.dart';
 import 'package:storage/storage.dart';
 
 import 'auth_interceptor.dart';
+import 'cache_interceptor.dart';
+import 'certificate_pinning.dart';
+import 'idempotency_interceptor.dart';
 import 'performance_interceptor.dart';
 import 'retry_interceptor.dart';
 import 'token_refresher.dart';
@@ -45,9 +48,11 @@ abstract class NetworkModule {
   ///
   /// Interceptor order matters. [PerformanceInterceptor] runs first (outside
   /// dev) so it times the full request including retries; [AuthInterceptor]
-  /// owns the 401 → refresh path; [RetryInterceptor] handles transient failures
-  /// with backoff. In dev a [devLogInterceptor] is appended last so it observes
-  /// the final, token-bearing requests.
+  /// owns the 401 → refresh path; the cache interceptor sits after auth so it
+  /// only ever stores authenticated responses and can short-circuit a repeat
+  /// GET before [RetryInterceptor], which handles transient failures with
+  /// backoff. In dev a [devLogInterceptor] is appended last so it observes the
+  /// final, token-bearing requests.
   @lazySingleton
   Dio provideDio(
     AuthTokenStore tokens,
@@ -56,10 +61,15 @@ abstract class NetworkModule {
     FirebasePerformance performance,
   ) {
     final dio = Dio(apiBaseOptions(env.apiBaseUrl, timeout: env.apiTimeout));
+    // Pin the server cert when fingerprints are configured (prod); a no-op in
+    // dev where the pin list is empty.
+    applyCertificatePinning(dio, env.certSha256Pins);
     if (!env.isDev) {
       dio.interceptors.add(PerformanceInterceptor(performance));
     }
     dio.interceptors.add(AuthInterceptor(tokens, refresher, dio));
+    dio.interceptors.add(IdempotencyInterceptor());
+    dio.interceptors.add(cacheInterceptor());
     dio.interceptors.add(RetryInterceptor(dio));
     if (env.isDev) {
       dio.interceptors.add(devLogInterceptor());

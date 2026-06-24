@@ -46,9 +46,12 @@ class AppButton extends StatelessWidget {
         ? SizedBox(
             width: _spinnerSize,
             height: _spinnerSize,
+            // A loading button drops its text label, so name the spinner for
+            // screen readers — otherwise the control is announced as unlabelled.
             child: CircularProgressIndicator(
               strokeWidth: 2,
               color: _spinnerColor(context),
+              semanticsLabel: label,
             ),
           )
         : Text(label);

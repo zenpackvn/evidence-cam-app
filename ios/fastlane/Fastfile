@@ -92,10 +92,16 @@ platform :ios do
     # the match-provisioned profile selected below. The dart-define file carries
     # the flavor's runtime config (API URL, FLAVOR, etc.) read via
     # String.fromEnvironment — without it the build ships default/empty config.
+    # --obfuscate renames Dart symbols in the release binary; --split-debug-info
+    # writes the symbol map so obfuscated crash stacks can be reversed later
+    # (keep build/symbols/ as a CI artifact and feed it to
+    # `flutter symbolize`). Without the symbols, obfuscated crashes are
+    # unreadable.
     flutter(
       "build", "ios", "--release", "--no-codesign",
       "--flavor", flavor, "--build-number", build_number,
-      "--dart-define-from-file", "env/#{flavor}.json"
+      "--dart-define-from-file", "env/#{flavor}.json",
+      "--obfuscate", "--split-debug-info=build/symbols/#{flavor}"
     )
 
     build_app(

@@ -6,6 +6,7 @@ import 'package:feature_home/feature_home.dart';
 // fst:feature:notifications:start
 import 'package:feature_notifications/feature_notifications.dart';
 // fst:feature:notifications:end
+import 'package:feature_onboarding/feature_onboarding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_starter_template/app/app.dart';
 import 'package:flutter_starter_template/app/di/injection.dart';
@@ -86,6 +87,9 @@ void main() {
     when(() => notificationsBloc.state).thenReturn(const NotificationsState());
     getIt.registerFactory<NotificationsBloc>(() => notificationsBloc);
     // fst:feature:notifications:end
+
+    final prefs = await SharedPreferences.getInstance();
+    getIt.registerLazySingleton<OnboardingStore>(() => OnboardingStore(prefs));
   });
 
   tearDown(() async {

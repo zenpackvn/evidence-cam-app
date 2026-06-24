@@ -70,10 +70,16 @@ platform :android do
     # it the bundle is debug-signed and Play will reject it. The dart-define
     # file carries the flavor's runtime config (API URL, FLAVOR, etc.) read via
     # String.fromEnvironment — without it the build ships default/empty config.
+    # --obfuscate renames Dart symbols in the release binary; --split-debug-info
+    # writes the symbol map so obfuscated crash stacks can be reversed later
+    # (keep build/symbols/ as a CI artifact and feed it to
+    # `flutter symbolize`). Without the symbols, obfuscated crashes are
+    # unreadable.
     flutter(
       "build", "appbundle", "--release",
       "--flavor", flavor, "--build-number", build_number,
-      "--dart-define-from-file", "env/#{flavor}.json"
+      "--dart-define-from-file", "env/#{flavor}.json",
+      "--obfuscate", "--split-debug-info=build/symbols/#{flavor}"
     )
 
     # Output path is relative to android/ (fastlane's working directory).

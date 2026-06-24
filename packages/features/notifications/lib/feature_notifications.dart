@@ -16,4 +16,5 @@ export 'src/domain/services/notifications_sync_controller.dart';
 export 'src/presentation/bloc/notifications_bloc.dart';
 export 'src/presentation/bloc/notifications_state.dart';
 export 'src/presentation/notifications_routes.dart';
+export 'src/presentation/screens/activity_feed_screen.dart';
 export 'src/presentation/screens/notifications_screen.dart';

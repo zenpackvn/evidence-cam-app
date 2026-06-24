@@ -57,6 +57,7 @@ const _layers = <String, int>{
   // fst:feature:notifications:start
   'feature_notifications': 4,
   // fst:feature:notifications:end
+  'feature_onboarding': 4,
   'feature_splash': 4,
   // 5 — feature packages that surface a single sibling's capability; each
   //     depends on exactly one lower feature (the capability provider). The

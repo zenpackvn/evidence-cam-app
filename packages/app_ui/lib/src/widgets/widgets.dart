@@ -5,6 +5,7 @@ export 'app_card.dart';
 export 'app_carousel.dart';
 export 'app_confirm_dialog.dart';
 export 'app_empty_view.dart';
+export 'app_error_boundary.dart';
 export 'app_error_view.dart';
 export 'app_link_preview.dart';
 export 'app_link_preview_thumbnail.dart';

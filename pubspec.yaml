@@ -46,6 +46,7 @@ workspace:
   # fst:feature:bookmarks:start
   - packages/features/bookmarks
   # fst:feature:bookmarks:end
+  - packages/features/onboarding
   - packages/features/splash
   - packages/features/home
   - packages/features/profile
@@ -83,6 +84,7 @@ dependencies:
   # fst:feature:bookmarks:start
   feature_bookmarks: ^0.1.0
   # fst:feature:bookmarks:end
+  feature_onboarding: ^0.1.0
   feature_splash: ^0.1.0
   feature_home: ^0.1.0
   feature_profile: ^0.1.0

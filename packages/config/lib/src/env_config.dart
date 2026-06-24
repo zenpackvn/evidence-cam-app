@@ -18,6 +18,24 @@ class EnvConfig {
     seconds: int.fromEnvironment('API_TIMEOUT_SECONDS', defaultValue: 10),
   );
 
+  /// Comma-separated SHA-256 fingerprints (lowercase hex, no colons) of the
+  /// server certificates to pin, supplied via the `CERT_SHA256_PINS`
+  /// dart-define. Empty (the default) disables pinning — convenient for dev
+  /// against a local/tunnel server with a rotating cert. Set it for prod.
+  ///
+  /// Compute a pin for a host with:
+  /// `openssl s_client -connect host:443 </dev/null 2>/dev/null \`
+  /// `  | openssl x509 -outform der | openssl dgst -sha256`.
+  List<String> get certSha256Pins {
+    const raw = String.fromEnvironment('CERT_SHA256_PINS');
+    if (raw.isEmpty) return const [];
+    return raw
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .where((s) => s.isNotEmpty)
+        .toList(growable: false);
+  }
+
   bool get isDev => flavor == 'dev';
   bool get isStaging => flavor == 'staging';
   bool get isProd => flavor == 'prod';

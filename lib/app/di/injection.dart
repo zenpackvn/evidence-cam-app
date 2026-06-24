@@ -12,6 +12,7 @@ import 'package:feature_home/feature_home.dart';
 // fst:feature:notifications:start
 import 'package:feature_notifications/feature_notifications.dart';
 // fst:feature:notifications:end
+import 'package:feature_onboarding/feature_onboarding.dart';
 import 'package:feature_profile/feature_profile.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
@@ -55,6 +56,7 @@ final GetIt getIt = GetIt.instance;
     // fst:feature:bookmarks:start
     ExternalModule(FeatureBookmarksPackageModule),
     // fst:feature:bookmarks:end
+    ExternalModule(FeatureOnboardingPackageModule),
     ExternalModule(FeatureHomePackageModule),
     ExternalModule(FeatureProfilePackageModule),
     // fst:feature-modules — `fst add-feature` inserts new feature modules above

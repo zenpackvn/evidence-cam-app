@@ -12,10 +12,14 @@ import 'package:feature_notifications/src/data/datasources/notifications_remote_
     as _i189;
 import 'package:feature_notifications/src/data/local/notifications_local_data_source.dart'
     as _i1001;
+import 'package:feature_notifications/src/data/repositories/activity_feed_repository_impl.dart'
+    as _i402;
 import 'package:feature_notifications/src/data/repositories/notifications_repository_impl.dart'
     as _i899;
 import 'package:feature_notifications/src/data/sync/notifications_sync_service.dart'
     as _i33;
+import 'package:feature_notifications/src/domain/repositories/activity_feed_repository.dart'
+    as _i436;
 import 'package:feature_notifications/src/domain/repositories/notifications_repository.dart'
     as _i705;
 import 'package:feature_notifications/src/domain/services/notifications_sync_controller.dart'
@@ -34,55 +38,43 @@ import 'package:rev_sync/rev_sync.dart' as _i520;
 import 'package:shared_contracts/shared_contracts.dart' as _i856;
 
 class FeatureNotificationsPackageModule extends _i526.MicroPackageModule {
-  // initializes the registration of main-scope dependencies inside of GetIt
+// initializes the registration of main-scope dependencies inside of GetIt
   @override
   _i687.FutureOr<void> init(_i526.GetItHelper gh) {
     final notificationsRemoteModule = _$NotificationsRemoteModule();
     gh.lazySingleton<_i1001.NotificationsLocalDataSource>(
-      () => _i1001.ObjectBoxNotificationsDataSource(gh<_i252.Store>()),
-    );
-    gh.lazySingleton<_i929.NotificationsRemoteDataSource>(
-      () => notificationsRemoteModule.provideNotificationsRemoteDataSource(
-        gh<_i372.Dio>(),
-      ),
-    );
+        () => _i1001.ObjectBoxNotificationsDataSource(gh<_i252.Store>()));
+    gh.lazySingleton<_i929.NotificationsRemoteDataSource>(() =>
+        notificationsRemoteModule
+            .provideNotificationsRemoteDataSource(gh<_i372.Dio>()));
+    gh.lazySingleton<_i436.ActivityFeedRepository>(() =>
+        _i402.ActivityFeedRepositoryImpl(
+            gh<_i929.NotificationsRemoteDataSource>()));
     gh.lazySingleton<_i309.NotificationsSyncController>(
-      () => _i33.NotificationsSyncService(
-        gh<_i1001.NotificationsLocalDataSource>(),
-        gh<_i929.NotificationsRemoteDataSource>(),
-        gh<_i520.ConnectivitySource>(),
-      ),
-    );
+        () => _i33.NotificationsSyncService(
+              gh<_i1001.NotificationsLocalDataSource>(),
+              gh<_i929.NotificationsRemoteDataSource>(),
+              gh<_i520.ConnectivitySource>(),
+            ));
     gh.lazySingleton<_i705.NotificationsRepository>(
-      () => _i899.NotificationsRepositoryImpl(
-        gh<_i1001.NotificationsLocalDataSource>(),
-        gh<_i309.NotificationsSyncController>(),
-      ),
-    );
-    gh.factory<_i618.GetNotificationsFeedUseCase>(
-      () => _i618.GetNotificationsFeedUseCase(
-        gh<_i705.NotificationsRepository>(),
-      ),
-    );
-    gh.factory<_i590.GetNotificationsFeedLocalUseCase>(
-      () => _i590.GetNotificationsFeedLocalUseCase(
-        gh<_i705.NotificationsRepository>(),
-      ),
-    );
-    gh.factory<_i122.MarkNotificationReadUseCase>(
-      () => _i122.MarkNotificationReadUseCase(
-        gh<_i705.NotificationsRepository>(),
-      ),
-    );
-    gh.lazySingleton<_i503.NotificationsBloc>(
-      () => _i503.NotificationsBloc(
-        gh<_i618.GetNotificationsFeedUseCase>(),
-        gh<_i590.GetNotificationsFeedLocalUseCase>(),
-        gh<_i122.MarkNotificationReadUseCase>(),
-        gh<_i856.ActivityNotifier>(),
-        gh<_i309.NotificationsSyncController>(),
-      ),
-    );
+        () => _i899.NotificationsRepositoryImpl(
+              gh<_i1001.NotificationsLocalDataSource>(),
+              gh<_i309.NotificationsSyncController>(),
+            ));
+    gh.factory<_i618.GetNotificationsFeedUseCase>(() =>
+        _i618.GetNotificationsFeedUseCase(gh<_i705.NotificationsRepository>()));
+    gh.factory<_i590.GetNotificationsFeedLocalUseCase>(() =>
+        _i590.GetNotificationsFeedLocalUseCase(
+            gh<_i705.NotificationsRepository>()));
+    gh.factory<_i122.MarkNotificationReadUseCase>(() =>
+        _i122.MarkNotificationReadUseCase(gh<_i705.NotificationsRepository>()));
+    gh.lazySingleton<_i503.NotificationsBloc>(() => _i503.NotificationsBloc(
+          gh<_i618.GetNotificationsFeedUseCase>(),
+          gh<_i590.GetNotificationsFeedLocalUseCase>(),
+          gh<_i122.MarkNotificationReadUseCase>(),
+          gh<_i856.ActivityNotifier>(),
+          gh<_i309.NotificationsSyncController>(),
+        ));
   }
 }
 

@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:analytics/analytics.dart';
 import 'package:app_platform/app_platform.dart';
 import 'package:app_ui/app_ui.dart';
+import 'package:config/config.dart';
 import 'package:feature_auth/feature_auth.dart';
 // fst:feature:notifications:start
 import 'package:feature_notifications/feature_notifications.dart';
@@ -20,6 +21,7 @@ import 'di/injection.dart';
 import 'feature_module.dart';
 import 'features.dart';
 import 'router.dart';
+import 'widgets/force_update_gate.dart';
 
 class App extends StatefulWidget {
   const App({
@@ -121,30 +123,43 @@ class _AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
-    return DeepLinkScope(
-      deepLink: _deepLink,
-      child: SessionScope(
-        session: _session,
-        child: RepositoryProvider<VideoPlayerService>.value(
-          value: _videoPlayerService,
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider.value(value: _authBloc),
-              BlocProvider.value(value: _themeBloc),
-              // fst:feature:notifications:start
-              BlocProvider.value(value: getIt<NotificationsBloc>()),
-              // fst:feature:notifications:end
-            ],
-            child: BlocBuilder<ThemeBloc, ThemeState>(
-              builder: (context, themeState) => MaterialApp.router(
-                debugShowCheckedModeBanner: false,
-                onGenerateTitle: (context) => context.l10n.appTitle,
-                theme: AppTheme.light(scheme: themeState.scheme),
-                darkTheme: AppTheme.dark(scheme: themeState.scheme),
-                themeMode: themeState.mode,
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                routerConfig: _router,
+    // App-wide UI fallback: a widget that throws during build degrades to a
+    // friendly screen instead of Flutter's red error widget. Crash *reporting*
+    // is already installed globally by CrashReporter.install() in main, so the
+    // boundary stays UI-only and does not double-report.
+    return AppErrorBoundary(
+      child: DeepLinkScope(
+        deepLink: _deepLink,
+        child: SessionScope(
+          session: _session,
+          child: RepositoryProvider<VideoPlayerService>.value(
+            value: _videoPlayerService,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: _authBloc),
+                BlocProvider.value(value: _themeBloc),
+                // fst:feature:notifications:start
+                BlocProvider.value(value: getIt<NotificationsBloc>()),
+                // fst:feature:notifications:end
+              ],
+              child: BlocBuilder<ThemeBloc, ThemeState>(
+                builder: (context, themeState) => MaterialApp.router(
+                  debugShowCheckedModeBanner: false,
+                  onGenerateTitle: (context) => context.l10n.appTitle,
+                  theme: AppTheme.light(scheme: themeState.scheme),
+                  darkTheme: AppTheme.dark(scheme: themeState.scheme),
+                  themeMode: themeState.mode,
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  routerConfig: _router,
+                  builder: (context, child) => ForceUpdateGate(
+                    remoteConfig: getIt.isRegistered<RemoteConfigService>()
+                        ? getIt<RemoteConfigService>()
+                        : null,
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                ),
               ),
             ),
           ),

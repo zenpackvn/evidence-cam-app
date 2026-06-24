@@ -6,4 +6,7 @@
 abstract final class NotificationsRoutes {
   /// The notifications feed (a shell tab).
   static const feed = '/notifications';
+
+  /// The cursor-paginated activity feed (reference pagination screen).
+  static const activityFeed = '/notifications/activity';
 }

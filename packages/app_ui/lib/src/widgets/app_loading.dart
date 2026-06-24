@@ -18,7 +18,12 @@ class AppLoading extends StatelessWidget {
           SizedBox(
             width: size,
             height: size,
-            child: const CircularProgressIndicator(strokeWidth: 3),
+            // Announce progress to screen readers; an unlabelled spinner is
+            // silent to assistive tech.
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              semanticsLabel: label ?? 'Loading',
+            ),
           ),
           if (label != null) ...[
             const SizedBox(height: AppSpacing.md),

@@ -8,9 +8,11 @@ import 'package:feature_home/feature_home.dart';
 // fst:feature:notifications:start
 import 'package:feature_notifications/feature_notifications.dart';
 // fst:feature:notifications:end
+import 'package:feature_onboarding/feature_onboarding.dart';
 import 'package:feature_profile/feature_profile.dart';
 import 'package:feature_splash/feature_splash.dart';
 import 'package:flutter/widgets.dart';
+import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
 import 'widgets/app_shell.dart';
@@ -40,6 +42,12 @@ part 'router.g.dart';
         TypedGoRoute<NotificationsRoute>(
           path: '/notifications',
           name: 'notifications',
+          routes: <TypedRoute<RouteData>>[
+            TypedGoRoute<ActivityFeedRoute>(
+              path: 'activity',
+              name: 'activity-feed',
+            ),
+          ],
         ),
       ],
     ),
@@ -91,6 +99,20 @@ class ProfileBranchData extends StatefulShellBranchData {
   const ProfileBranchData();
 }
 
+@TypedGoRoute<OnboardingRoute>(path: '/onboarding', name: 'onboarding')
+class OnboardingRoute extends GoRouteData with $OnboardingRoute {
+  const OnboardingRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => OnboardingScreen(
+    onDone: () {
+      GetIt.instance<OnboardingStore>().markSeen().then((_) {
+        if (context.mounted) const HomeRoute().go(context);
+      });
+    },
+  );
+}
+
 @TypedGoRoute<SplashRoute>(path: '/splash', name: 'splash')
 class SplashRoute extends GoRouteData with $SplashRoute {
   const SplashRoute();
@@ -99,7 +121,12 @@ class SplashRoute extends GoRouteData with $SplashRoute {
   Widget build(BuildContext context, GoRouterState state) => SplashScreen(
     onRestored: (context) {
       DeepLinkScope.of(context).splashCompleted = true;
-      const HomeRoute().go(context);
+      final store = GetIt.instance<OnboardingStore>();
+      if (!store.hasSeenOnboarding) {
+        const OnboardingRoute().go(context);
+      } else {
+        const HomeRoute().go(context);
+      }
     },
   );
 }
@@ -118,6 +145,14 @@ class NotificationsRoute extends GoRouteData with $NotificationsRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       const NotificationsScreen();
+}
+
+class ActivityFeedRoute extends GoRouteData with $ActivityFeedRoute {
+  const ActivityFeedRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ActivityFeedScreen();
 }
 // fst:feature:notifications:end
 

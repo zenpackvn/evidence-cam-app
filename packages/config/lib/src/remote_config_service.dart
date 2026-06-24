@@ -19,6 +19,12 @@ enum FeatureFlag {
   final bool defaultValue;
 }
 
+/// Remote Config key holding the lowest app version the backend still
+/// supports, as a dotted string (e.g. `"1.7.0"`). Empty (the default) means
+/// "no forced update". Bump it in the Firebase console to force clients below
+/// it to upgrade; consumed by the app shell's force-update gate.
+const minSupportedVersionKey = 'min_supported_version';
+
 /// Reads remote configuration and feature flags. Implementations must apply
 /// [FeatureFlag] defaults so reads never block on the network.
 abstract class RemoteConfigService {
@@ -56,6 +62,7 @@ class FirebaseRemoteConfigService implements RemoteConfigService {
       );
       await _remoteConfig.setDefaults(<String, Object>{
         for (final flag in FeatureFlag.values) flag.key: flag.defaultValue,
+        minSupportedVersionKey: '',
       });
       unawaited(_fetchAndActivate());
     } on Object catch (error) {
