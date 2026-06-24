@@ -1,0 +1,42 @@
+appId: com.aktechvn.quangsat
+name: "01b - Onboarding skip button"
+---
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Đăng nhập"
+    timeout: 30000
+
+- tapOn:
+    text: "Tạo tài khoản"
+
+- assertVisible:
+    text: "Tham gia Flutter Starter"
+
+- tapOn:
+    text: "Địa chỉ email"
+- inputText: "onboarding_skip@example.com"
+
+- tapOn:
+    text: "Mật khẩu"
+    index: 0
+- inputText: "TestPass123"
+
+- tapOn:
+    text: "Tham gia Flutter Starter"
+
+- extendedWaitUntil:
+    visible:
+      text: "Welcome"
+    timeout: 15000
+
+# Skip immediately from step 1
+- tapOn:
+    text: "Skip"
+
+- extendedWaitUntil:
+    visible:
+      text: "Trang chủ"
+    timeout: 5000

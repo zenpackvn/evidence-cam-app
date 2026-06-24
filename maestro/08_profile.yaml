@@ -1,0 +1,84 @@
+appId: com.aktechvn.quangsat
+name: "08 - Profile screen"
+---
+- launchApp:
+    clearState: false
+
+- runFlow: _login_helper.yaml
+
+# ── Navigate to Profile tab ───────────────────────────────────────────────
+- tapOn:
+    text: "Hồ sơ"
+
+- assertVisible:
+    text: "Hồ sơ"
+
+# ── Profile header: username and user ID ──────────────────────────────────
+- assertVisible:
+    text: "onboarding_test@example.com"
+
+# ── Account section ───────────────────────────────────────────────────────
+- assertVisible:
+    text: "Tài khoản"
+
+- assertVisible:
+    text: "Đổi mật khẩu"
+
+- assertVisible:
+    text: "Xóa tài khoản"
+
+# ── Appearance section ────────────────────────────────────────────────────
+- assertVisible:
+    text: "Giao diện"
+
+- assertVisible:
+    text: "Chủ đề"
+
+- assertVisible:
+    text: "Mặc định hệ thống"
+- assertVisible:
+    text: "Sáng"
+- assertVisible:
+    text: "Tối"
+
+# Switch theme to Dark
+- tapOn:
+    text: "Tối"
+
+# Switch back to System default
+- tapOn:
+    text: "Mặc định hệ thống"
+
+- assertVisible:
+    text: "Màu nhấn"
+
+# Tap a color swatch (Blue)
+- tapOn:
+    label: "Blue"
+
+# ── About section ─────────────────────────────────────────────────────────
+- assertVisible:
+    text: "Giới thiệu"
+
+- assertVisible:
+    text: "Flutter Starter"
+
+# ── Copy user ID ──────────────────────────────────────────────────────────
+# The user ID row is in the profile header — tap it
+- scroll:
+    direction: UP
+
+- tapOn:
+    label: "Copy user ID"
+
+- extendedWaitUntil:
+    visible:
+      text: "Đã sao chép ID người dùng"
+    timeout: 3000
+
+# ── Sign Out button visible ───────────────────────────────────────────────
+- scroll:
+    direction: DOWN
+
+- assertVisible:
+    text: "Đăng xuất"

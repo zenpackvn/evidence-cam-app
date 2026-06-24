@@ -1,0 +1,73 @@
+appId: com.aktechvn.quangsat
+name: "07 - Notifications screen"
+---
+- launchApp:
+    clearState: false
+
+- runFlow: _login_helper.yaml
+
+# ── Navigate to Notifications tab ─────────────────────────────────────────
+- tapOn:
+    text: "Thông báo"
+
+- assertVisible:
+    text: "Thông báo"
+
+# ── Two tabs visible: Notifications and Your activity ─────────────────────
+- assertVisible:
+    text: "Thông báo"
+
+- assertVisible:
+    text: "Hoạt động của bạn"
+
+# ── Notifications tab (first tab) ─────────────────────────────────────────
+# Empty state or list
+- extendedWaitUntil:
+    visible:
+      text: "Chưa có thông báo nào."
+    timeout: 5000
+
+# ── Pull to refresh ────────────────────────────────────────────────────────
+- scroll:
+    direction: DOWN
+    speed: SLOW
+
+- swipe:
+    direction: DOWN
+    startPoint:
+      x: 50%
+      y: 40%
+
+- extendedWaitUntil:
+    visible:
+      text: "Thông báo"
+    timeout: 5000
+
+# ── Activity tab (second tab) ─────────────────────────────────────────────
+- tapOn:
+    text: "Hoạt động của bạn"
+
+# Empty state or activity list
+- extendedWaitUntil:
+    visible:
+      text: "Chưa có gì ở đây"
+    timeout: 5000
+
+# Pull to refresh on activity tab
+- swipe:
+    direction: DOWN
+    startPoint:
+      x: 50%
+      y: 40%
+
+- extendedWaitUntil:
+    visible:
+      text: "Thông báo"
+    timeout: 5000
+
+# ── Switch back to Notifications tab ──────────────────────────────────────
+- tapOn:
+    text: "Thông báo"
+
+- assertVisible:
+    text: "Thông báo"

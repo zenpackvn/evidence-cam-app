@@ -1,0 +1,97 @@
+appId: com.aktechvn.quangsat
+name: "11 - Delete account (destructive)"
+---
+# NOTE: Run this last — it permanently deletes the test account.
+# Creates a fresh account specifically for deletion testing.
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Đăng nhập"
+    timeout: 30000
+
+# Register a throwaway account
+- tapOn:
+    text: "Tạo tài khoản"
+
+- tapOn:
+    text: "Địa chỉ email"
+- inputText: "delete_me@example.com"
+
+- tapOn:
+    text: "Mật khẩu"
+    index: 0
+- inputText: "DeleteMe123"
+
+- tapOn:
+    text: "Tham gia Flutter Starter"
+
+# Skip onboarding if shown (conditionalFlow not supported; tap Skip then wait for Home)
+- tapOn:
+    text: "Skip"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Trang chủ"
+    timeout: 15000
+
+# ── Navigate to Profile ───────────────────────────────────────────────────
+- tapOn:
+    text: "Hồ sơ"
+
+- assertVisible:
+    text: "Hồ sơ"
+
+- assertVisible:
+    text: "Xóa tài khoản"
+
+# ── Tap Delete Account ────────────────────────────────────────────────────
+- tapOn:
+    text: "Xóa tài khoản"
+
+- assertVisible:
+    text: "Xóa tài khoản?"
+- assertVisible:
+    text: "Thao tác này sẽ xóa vĩnh viễn tài khoản và tất cả dữ liệu của bạn."
+
+# Confirm button should be disabled until username is typed
+- assertNotVisible:
+    enabled:
+      text: "Xóa"
+
+# ── Cancel ────────────────────────────────────────────────────────────────
+- tapOn:
+    text: "Hủy"
+
+- assertVisible:
+    text: "Hồ sơ"
+
+# ── Confirm deletion ──────────────────────────────────────────────────────
+- tapOn:
+    text: "Xóa tài khoản"
+
+- assertVisible:
+    text: "Xóa tài khoản?"
+
+# Type username to enable Delete button
+- tapOn:
+    text: "Nhập"
+
+- inputText: "delete_me@example.com"
+
+- tapOn:
+    text: "Xóa"
+
+# Should redirect to login with success snackbar
+- extendedWaitUntil:
+    visible:
+      text: "Tài khoản của bạn đã được xóa."
+    timeout: 15000
+
+- extendedWaitUntil:
+    visible:
+      text: "Đăng nhập"
+    timeout: 5000

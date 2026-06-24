@@ -1,0 +1,76 @@
+appId: com.aktechvn.quangsat
+name: "02 - Register flow"
+---
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Đăng nhập"
+    timeout: 30000
+
+# ── Navigate to register ───────────────────────────────────────────────────
+- tapOn:
+    text: "Tạo tài khoản"
+
+- assertVisible:
+    text: "Tham gia Flutter Starter"
+- assertVisible:
+    text: "Địa chỉ email"
+- assertVisible:
+    text: "Mật khẩu"
+
+# ── Validation: empty submit ───────────────────────────────────────────────
+- tapOn:
+    text: "Tham gia Flutter Starter"
+
+- assertVisible:
+    text: "Bắt buộc"
+
+# ── Validation: invalid email ──────────────────────────────────────────────
+- tapOn:
+    text: "Địa chỉ email"
+- inputText: "notanemail"
+
+- tapOn:
+    text: "Tham gia Flutter Starter"
+
+- assertVisible:
+    text: "Nhập địa chỉ email hợp lệ."
+
+# Clear and enter valid email
+- tapOn:
+    text: "Địa chỉ email"
+- eraseText: 50
+- inputText: "register_test@example.com"
+
+# ── Validation: password too short ────────────────────────────────────────
+- tapOn:
+    text: "Mật khẩu"
+    index: 0
+- inputText: "short"
+
+- tapOn:
+    text: "Tham gia Flutter Starter"
+
+- assertVisible:
+    text: "Mật khẩu cần có ít nhất 8 ký tự."
+
+- tapOn:
+    text: "Mật khẩu"
+    index: 0
+- eraseText: 50
+- inputText: "ValidPass1"
+
+# ── Successful registration ────────────────────────────────────────────────
+- tapOn:
+    text: "Tham gia Flutter Starter"
+
+# Either onboarding (first run) or home
+- extendedWaitUntil:
+    visible:
+      text: "Trang chủ"
+    timeout: 15000
+
+# ── Navigate back to login via prompt ─────────────────────────────────────
+# (only if we somehow end up on register again — this tests the back link)

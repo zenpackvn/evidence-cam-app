@@ -1,0 +1,14 @@
+appId: com.aktechvn.quangsat
+---
+# Run all flows in order
+flows:
+  - 01_onboarding.yaml
+  - 02_register.yaml
+  - 03_login_validation.yaml
+  - 04_home.yaml
+  - 05_bookmarks_crud.yaml
+  - 06_collections_crud.yaml
+  - 07_notifications.yaml
+  - 08_profile.yaml
+  - 09_change_password.yaml
+  - 10_signout.yaml

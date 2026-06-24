@@ -1,0 +1,71 @@
+appId: com.aktechvn.quangsat
+name: "04 - Home screen"
+---
+- launchApp:
+    clearState: false
+
+- runFlow: _login_helper.yaml
+
+# ── Home screen assertions ─────────────────────────────────────────────────
+- assertVisible:
+    text: "Trang chủ"
+
+# Bottom nav tabs
+- assertVisible:
+    text: "Trang chủ"
+- assertVisible:
+    text: "Bookmark"
+- assertVisible:
+    text: "Thông báo"
+- assertVisible:
+    text: "Hồ sơ"
+
+# Home content sections
+- assertVisible:
+    text: "Bookmark gần đây"
+
+# Quick actions area visible
+- assertVisible:
+    text: "Thêm liên kết"
+
+# Search interaction
+- tapOn:
+    text: "Tìm bookmark..."
+
+- inputText: "flutter"
+- pressKey: Enter
+
+# Back / clear search
+- tapOn:
+    label: "Clear"
+
+# ── Navigate through bottom nav tabs and back ─────────────────────────────
+- tapOn:
+    text: "Bookmark"
+
+- assertVisible:
+    text: "Bookmarks"
+
+- tapOn:
+    text: "Trang chủ"
+
+- assertVisible:
+    text: "Bookmark gần đây"
+
+- tapOn:
+    text: "Thông báo"
+
+- assertVisible:
+    text: "Thông báo"
+
+- tapOn:
+    text: "Hồ sơ"
+
+- assertVisible:
+    text: "Hồ sơ"
+
+- tapOn:
+    text: "Trang chủ"
+
+- assertVisible:
+    text: "Trang chủ"

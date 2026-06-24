@@ -1,0 +1,170 @@
+appId: com.aktechvn.quangsat
+name: "05 - Bookmarks CRUD"
+---
+- launchApp:
+    clearState: false
+
+- runFlow: _login_helper.yaml
+
+# ── Navigate to Bookmarks tab ──────────────────────────────────────────────
+- tapOn:
+    text: "Bookmark"
+
+- assertVisible:
+    text: "Bookmarks"
+
+# ── CREATE: open form via FAB ──────────────────────────────────────────────
+- tapOn:
+    label: "Thêm bookmark"
+
+- assertVisible:
+    text: "Bookmark mới"
+
+# Validation: empty submit
+- tapOn:
+    text: "Tạo"
+
+- assertVisible:
+    text: "Bắt buộc nhập URL"
+
+# Fill URL with invalid value
+- tapOn:
+    text: "URL"
+- inputText: "not-a-url"
+
+- tapOn:
+    text: "Tạo"
+
+- assertVisible:
+    text: "Nhập URL hợp lệ (https://…)"
+
+# Fix URL
+- tapOn:
+    text: "URL"
+- eraseText: 50
+- inputText: "https://flutter.dev"
+
+# Fill title
+- tapOn:
+    text: "Tiêu đề"
+- inputText: "Flutter Dev Portal"
+
+# Fill optional description
+- tapOn:
+    text: "Mô tả (tùy chọn)"
+- inputText: "Official Flutter documentation"
+
+# Fill optional tags
+- tapOn:
+    text: "Thẻ"
+- inputText: "flutter, dart, dev"
+
+# Submit
+- tapOn:
+    text: "Tạo"
+
+# Back to list with new bookmark visible
+- extendedWaitUntil:
+    visible:
+      text: "Flutter Dev Portal"
+    timeout: 5000
+
+# ── READ: open bookmark detail ────────────────────────────────────────────
+- tapOn:
+    text: "Flutter Dev Portal"
+
+- assertVisible:
+    text: "Flutter Dev Portal"
+- assertVisible:
+    text: "https://flutter.dev"
+
+# ── UPDATE: edit the bookmark ─────────────────────────────────────────────
+- tapOn:
+    text: "Chỉnh sửa"
+
+- assertVisible:
+    text: "Chỉnh sửa bookmark"
+
+- tapOn:
+    text: "Tiêu đề"
+- eraseText: 50
+- inputText: "Flutter Official Site"
+
+- tapOn:
+    text: "Lưu"
+
+- extendedWaitUntil:
+    visible:
+      text: "Flutter Official Site"
+    timeout: 5000
+
+# ── DELETE: from detail screen ────────────────────────────────────────────
+- tapOn:
+    text: "Flutter Official Site"
+
+- tapOn:
+    label: "Xóa"
+
+- assertVisible:
+    text: "Xóa bookmark?"
+
+- tapOn:
+    text: "Xóa"
+
+# Should return to list; deleted item gone
+- extendedWaitUntil:
+    notVisible:
+      text: "Flutter Official Site"
+    timeout: 5000
+
+# ── SEARCH: create then search ────────────────────────────────────────────
+# Create a second bookmark for search testing
+- tapOn:
+    label: "Thêm bookmark"
+
+- tapOn:
+    text: "URL"
+- inputText: "https://dart.dev"
+
+- tapOn:
+    text: "Tiêu đề"
+- inputText: "Dart Language"
+
+- tapOn:
+    text: "Tạo"
+
+- extendedWaitUntil:
+    visible:
+      text: "Dart Language"
+    timeout: 5000
+
+# Search for it
+- tapOn:
+    text: "Tìm bookmark..."
+
+- inputText: "Dart"
+
+- assertVisible:
+    text: "Dart Language"
+
+# Clear search
+- tapOn:
+    text: "Tìm bookmark..."
+- eraseText: 50
+
+# ── SORT: change sort order ───────────────────────────────────────────────
+- tapOn:
+    label: "Sắp xếp bookmark"
+
+- assertVisible:
+    text: "Mới nhất trước"
+- assertVisible:
+    text: "Cũ nhất trước"
+- assertVisible:
+    text: "Tiêu đề (A–Z)"
+
+- tapOn:
+    text: "Tiêu đề (A–Z)"
+
+# Dismiss menu by pressing back
+- pressKey: Back

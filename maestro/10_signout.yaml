@@ -1,0 +1,66 @@
+appId: com.aktechvn.quangsat
+name: "10 - Sign out flow"
+---
+- launchApp:
+    clearState: false
+
+- runFlow: _login_helper.yaml
+
+# ── Navigate to Profile ───────────────────────────────────────────────────
+- tapOn:
+    text: "Hồ sơ"
+
+- assertVisible:
+    text: "Hồ sơ"
+
+- scroll:
+    direction: DOWN
+
+- assertVisible:
+    text: "Đăng xuất"
+
+# ── Cancel sign out ───────────────────────────────────────────────────────
+- tapOn:
+    text: "Đăng xuất"
+
+- assertVisible:
+    text: "Bạn có chắc muốn đăng xuất không?"
+- assertVisible:
+    text: "Hủy"
+- assertVisible:
+    text: "Đăng xuất"
+
+- tapOn:
+    text: "Hủy"
+
+# Should still be on Profile
+- assertVisible:
+    text: "Hồ sơ"
+
+# ── Confirm sign out ──────────────────────────────────────────────────────
+- tapOn:
+    text: "Đăng xuất"
+
+- assertVisible:
+    text: "Bạn có chắc muốn đăng xuất không?"
+
+- tapOn:
+    text: "Đăng xuất"
+
+# Should redirect to login screen
+- extendedWaitUntil:
+    visible:
+      text: "Đăng nhập"
+    timeout: 15000
+
+- assertVisible:
+    text: "Chào mừng trở lại"
+
+# ── Verify session cleared: re-launch should go to login ─────────────────
+- launchApp:
+    clearState: false
+
+- extendedWaitUntil:
+    visible:
+      text: "Đăng nhập"
+    timeout: 15000

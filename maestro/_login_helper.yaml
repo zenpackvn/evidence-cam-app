@@ -1,0 +1,25 @@
+appId: com.aktechvn.quangsat
+name: "_helper - Đăng nhập với tài khoản test"
+---
+- extendedWaitUntil:
+    visible:
+      text: "Đăng nhập"
+    timeout: 30000
+
+- tapOn:
+    text: "hello@example.com"
+- eraseText: 50
+- inputText: "onboarding_test@example.com"
+
+- tapOn:
+    text: "••••••••"
+- eraseText: 50
+- inputText: "TestPass123"
+
+- tapOn:
+    text: "Đăng nhập"
+
+- extendedWaitUntil:
+    visible:
+      text: "Trang chủ"
+    timeout: 15000

@@ -1,0 +1,95 @@
+appId: com.aktechvn.quangsat
+name: "03 - Login validation & auth"
+---
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Đăng nhập"
+    timeout: 30000
+
+# ── Validation: submit trống ───────────────────────────────────────────────
+- tapOn:
+    text: "Đăng nhập"
+
+- assertVisible:
+    text: "Bắt buộc"
+
+# ── Validation: sai thông tin đăng nhập ───────────────────────────────────
+- tapOn:
+    text: "hello@example.com"
+- eraseText: 50
+- inputText: "wrong@example.com"
+
+- tapOn:
+    text: "••••••••"
+- eraseText: 50
+- inputText: "WrongPass99"
+
+- tapOn:
+    text: "Đăng nhập"
+
+- extendedWaitUntil:
+    visible:
+      text: "Vui lòng nhập tên đăng nhập và mật khẩu."
+    timeout: 15000
+
+# ── Toggle hiện/ẩn mật khẩu ──────────────────────────────────────────────
+- tapOn:
+    text: "Hiện mật khẩu"
+
+- tapOn:
+    text: "Ẩn mật khẩu"
+
+# ── Snackbar quên mật khẩu ───────────────────────────────────────────────
+- tapOn:
+    text: "Quên?"
+
+- assertVisible:
+    text: "Khôi phục mật khẩu chưa được cấu hình."
+
+# ── Snackbar social chưa cấu hình ────────────────────────────────────────
+- tapOn:
+    text: "Google"
+
+- assertVisible:
+    text: "Đăng nhập mạng xã hội chưa được cấu hình."
+
+- tapOn:
+    text: "Apple"
+
+- assertVisible:
+    text: "Đăng nhập mạng xã hội chưa được cấu hình."
+
+# ── Điều hướng sang Register rồi quay lại ────────────────────────────────
+- tapOn:
+    text: "Tạo tài khoản"
+
+- assertVisible:
+    text: "Tham gia Flutter Starter"
+
+- tapOn:
+    label: "Back"
+
+- assertVisible:
+    text: "Đăng nhập"
+
+# ── Đăng nhập thành công ──────────────────────────────────────────────────
+- tapOn:
+    text: "wrong@example.com"
+- eraseText: 50
+- inputText: "onboarding_test@example.com"
+
+- tapOn:
+    text: "••••••••"
+- eraseText: 50
+- inputText: "TestPass123"
+
+- tapOn:
+    text: "Đăng nhập"
+
+- extendedWaitUntil:
+    visible:
+      text: "Trang chủ"
+    timeout: 15000

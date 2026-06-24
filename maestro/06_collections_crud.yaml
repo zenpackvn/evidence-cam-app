@@ -1,0 +1,166 @@
+appId: com.aktechvn.quangsat
+name: "06 - Collections CRUD"
+---
+- launchApp:
+    clearState: false
+
+- runFlow: _login_helper.yaml
+
+# Collections are accessed from bookmarks detail or directly via route.
+# Navigate to Home > tap Bookmarks > access Collections via bookmark detail.
+# For simplicity, navigate directly (if accessible from Home) or via Bookmarks.
+
+# ── Navigate to Bookmarks (needed to set up context) ──────────────────────
+- tapOn:
+    text: "Bookmark"
+
+- assertVisible:
+    text: "Bookmarks"
+
+# First ensure we have a bookmark to work with
+# (created in flow 05 — "Dart Language" should exist)
+
+# ── CREATE collection from collections route ───────────────────────────────
+# The collections route is accessible via bookmark detail "Add to collection"
+# or by direct URL. Let's access via bookmark detail.
+- tapOn:
+    text: "Dart Language"
+
+- assertVisible:
+    text: "Dart Language"
+
+# "Add to collection" or "Collections" button in detail
+- tapOn:
+    text: "Thêm vào bộ sưu tập"
+
+# Collections list/picker appears
+- assertVisible:
+    text: "Thêm vào bộ sưu tập"
+
+# If no collections: "Bạn chưa tạo bộ sưu tập nào."
+# Tap to create new one
+- tapOn:
+    text: "Bộ sưu tập mới"
+
+# ── Collection form ────────────────────────────────────────────────────────
+- assertVisible:
+    text: "Bộ sưu tập mới"
+
+# Validation: empty name
+- tapOn:
+    text: "Lưu"
+
+- assertVisible:
+    text: "Vui lòng nhập tên"
+
+# Enter name
+- tapOn:
+    text: "Tên"
+- inputText: "Flutter Resources"
+
+# Select a color/icon (tap second palette option)
+- tapOn:
+    label: "Biểu tượng & màu sắc 2"
+
+# Save
+- tapOn:
+    text: "Lưu"
+
+# ── Back to bookmark detail ────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      text: "Dart Language"
+    timeout: 5000
+
+# ── Add bookmark to collection ─────────────────────────────────────────────
+- tapOn:
+    text: "Thêm vào bộ sưu tập"
+
+- assertVisible:
+    text: "Flutter Resources"
+
+- tapOn:
+    text: "Flutter Resources"
+
+# Confirm add
+- tapOn:
+    text: "Thêm 1"
+
+# ── Navigate to collections list ───────────────────────────────────────────
+- pressKey: Back
+
+- pressKey: Back
+
+# Access collections via Home > navigate
+- tapOn:
+    text: "Bookmark"
+
+# Create another bookmark to test collections navigation
+# (collections list accessible from home "Library" quick action if wired,
+# or via /collections route)
+
+# ── READ: verify collection exists ────────────────────────────────────────
+- pressKey: Back
+
+- tapOn:
+    text: "Trang chủ"
+
+- tapOn:
+    text: "Thư viện"
+
+- assertVisible:
+    text: "Bộ sưu tập"
+
+- assertVisible:
+    text: "Flutter Resources"
+
+# ── Open collection detail ─────────────────────────────────────────────────
+- tapOn:
+    text: "Flutter Resources"
+
+- assertVisible:
+    text: "Flutter Resources"
+- assertVisible:
+    text: "1 dấu trang"
+
+# ── UPDATE: edit collection ────────────────────────────────────────────────
+- tapOn:
+    label: "Sửa bộ sưu tập"
+
+- assertVisible:
+    text: "Sửa bộ sưu tập"
+
+- tapOn:
+    text: "Tên"
+- eraseText: 50
+- inputText: "Dart & Flutter"
+
+- tapOn:
+    text: "Lưu"
+
+- extendedWaitUntil:
+    visible:
+      text: "Dart & Flutter"
+    timeout: 5000
+
+# ── Remove bookmark from collection ───────────────────────────────────────
+- tapOn:
+    label: "Xóa khỏi bộ sưu tập"
+
+- assertVisible:
+    text: "Bộ sưu tập này chưa có dấu trang nào."
+
+# ── DELETE collection ──────────────────────────────────────────────────────
+- tapOn:
+    label: "Xóa bộ sưu tập"
+
+- assertVisible:
+    text: "Xóa bộ sưu tập?"
+
+- tapOn:
+    text: "Xóa bộ sưu tập"
+
+- extendedWaitUntil:
+    notVisible:
+      text: "Dart & Flutter"
+    timeout: 5000

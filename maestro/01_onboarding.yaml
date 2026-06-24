@@ -1,0 +1,67 @@
+appId: com.aktechvn.quangsat
+name: "01 - Onboarding (first-launch)"
+---
+# Fresh install: splash → onboarding → login
+- launchApp:
+    clearState: true
+
+# Splash runs for ~2s then redirects to onboarding (first launch, authenticated
+# but hasn't seen onboarding) OR login (unauthenticated). Since state is cleared
+# we land on login first. Skip onboarding test only makes sense after register.
+# This flow registers, triggers onboarding, and walks through it.
+
+# ── Wait for login screen ──────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      text: "Đăng nhập"
+    timeout: 30000
+
+# ── Navigate to register ───────────────────────────────────────────────────
+- tapOn:
+    text: "Tạo tài khoản"
+
+- assertVisible:
+    text: "Tham gia Flutter Starter"
+
+# ── Register a fresh test account ─────────────────────────────────────────
+- tapOn:
+    text: "Địa chỉ email"
+- inputText: "onboarding_test@example.com"
+
+- tapOn:
+    text: "Mật khẩu"
+    index: 0
+- inputText: "TestPass123"
+
+- tapOn:
+    text: "Tham gia Flutter Starter"
+
+# ── Onboarding should appear after first login ─────────────────────────────
+- extendedWaitUntil:
+    visible:
+      text: "Welcome"
+    timeout: 15000
+
+# Step 1: Welcome
+- assertVisible:
+    text: "Welcome"
+- tapOn:
+    text: "Next"
+
+# Step 2: Works offline
+- assertVisible:
+    text: "Works offline"
+- tapOn:
+    text: "Next"
+
+# Step 3: Ready to build → "Get started"
+- assertVisible:
+    text: "Ready to build"
+- tapOn:
+    text: "Get started"
+
+# Should land on Home
+- extendedWaitUntil:
+    visible:
+      text: "Trang chủ"
+    timeout: 5000
