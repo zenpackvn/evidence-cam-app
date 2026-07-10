@@ -4,6 +4,14 @@
 **Căn cứ**: 29 spec trong [specs/](specs/), [tech-stack.md](tech-stack.md), kiến trúc template hiện có
 **Chiến lược**: Vertical slice theo ưu tiên P0 → P1 → P2. Mỗi slice đi hết stack (UI → domain → data → Firebase), mỏng nhưng chạy được end-to-end.
 
+> ⚠️ **LỖI THỜI Ở PHẦN BACKEND (2026-07-07).** Tài liệu này viết theo hướng
+> **Firestore + Cloud Functions**. Hướng đó đã bị **đảo sang Go server (Cloud Run) +
+> Cloudflare R2** — xem `tech-stack.md` TD-001 và `data-model.md`. Backend thực tế
+> (`simple_backend_server`) đã build theo hướng mới (~85%, tests pass).
+> **Plan thực thi end-to-end hiện hành: [e2e-execution-plan.md](e2e-execution-plan.md)** (đã duyệt 2026-07-07).
+> Phần map SM-NNN → feature package + thứ tự phase dưới đây vẫn còn giá trị; chỉ đọc phần
+> "Firestore/Cloud Functions/data model Firestore" như tham khảo lịch sử.
+
 > Plan này map từng SM-NNN vào feature package cụ thể, chia phase có thứ tự phụ thuộc, và ghi rõ việc backend đi kèm từng phase. Khi bắt đầu một phase, tạo branch theo tên spec (`001-auth`, `005-chup-chon-anh`...) như spec đã ghi sẵn `Feature Branch`.
 
 ---

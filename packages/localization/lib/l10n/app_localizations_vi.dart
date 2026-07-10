@@ -9,7 +9,7 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
-  String get appTitle => 'Flutter Starter';
+  String get appTitle => 'StampMail';
 
   @override
   String get loginAppBarTitle => 'Đăng nhập';
@@ -683,4 +683,262 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get homeCreateCollection => 'Tạo bộ sưu tập';
+
+  @override
+  String get smLoginTitle => 'Chào mừng trở lại! 👋';
+
+  @override
+  String get smLoginSubtitle =>
+      'Đăng nhập để tiếp tục hành trình viết thư và sưu tầm tem.';
+
+  @override
+  String get smLoginIdentifierHint => 'Email hoặc tên người dùng';
+
+  @override
+  String get smLoginPasswordHint => 'Mật khẩu';
+
+  @override
+  String get smLoginForgot => 'Quên mật khẩu?';
+
+  @override
+  String get smLoginSubmit => 'Đăng nhập';
+
+  @override
+  String get smLoginDivider => 'hoặc đăng nhập với';
+
+  @override
+  String get smLoginNoAccount => 'Chưa có tài khoản? ';
+
+  @override
+  String get smLoginRegisterCta => 'Đăng ký';
+
+  @override
+  String get smLoginLockedMessage =>
+      'Tài khoản đang bị khóa tạm thời do nhập sai mật khẩu quá nhiều lần.';
+
+  @override
+  String smLoginRetryIn(String time) {
+    return 'Thử lại sau $time';
+  }
+
+  @override
+  String smLoginAttemptsLeft(int count) {
+    return 'Sai mật khẩu. Còn $count lần thử.';
+  }
+
+  @override
+  String get smContinueApple => 'Tiếp tục với Apple';
+
+  @override
+  String get smContinueGoogle => 'Tiếp tục với Google';
+
+  @override
+  String get smContinueFacebook => 'Tiếp tục với Facebook';
+
+  @override
+  String get smRegisterTitle => 'Tạo tài khoản mới ✨';
+
+  @override
+  String get smRegisterSubtitle => 'Tham gia StampMail ngay!';
+
+  @override
+  String get smRegisterEmailHint => 'Email';
+
+  @override
+  String get smRegisterConfirmHint => 'Xác nhận mật khẩu';
+
+  @override
+  String get smRegisterSubmit => 'Tạo tài khoản';
+
+  @override
+  String get smRegisterDivider => 'hoặc đăng ký với';
+
+  @override
+  String get smRegisterHaveAccount => 'Đã có tài khoản? ';
+
+  @override
+  String get smRegisterLoginCta => 'Đăng nhập';
+
+  @override
+  String get smRegisterAgePrefix =>
+      'Tôi xác nhận mình từ 13 tuổi trở lên và đồng ý với ';
+
+  @override
+  String get smRegisterTerms => 'Điều khoản sử dụng';
+
+  @override
+  String get smRegisterAnd => ' và ';
+
+  @override
+  String get smRegisterPrivacy => 'Chính sách bảo mật';
+
+  @override
+  String get smRegisterAgeRequired =>
+      'Bạn phải xác nhận đủ 13 tuổi để tiếp tục.';
+
+  @override
+  String get smRegisterEmailExists => 'Email này đã có tài khoản';
+
+  @override
+  String get smValEmailRequired => 'Vui lòng nhập email';
+
+  @override
+  String get smValEmailInvalid => 'Email không hợp lệ';
+
+  @override
+  String get smValPasswordRequired => 'Vui lòng nhập mật khẩu';
+
+  @override
+  String get smValPasswordMin => 'Mật khẩu phải có ít nhất 6 ký tự';
+
+  @override
+  String get smValConfirmRequired => 'Vui lòng xác nhận mật khẩu';
+
+  @override
+  String get smValConfirmMismatch => 'Mật khẩu không khớp';
+
+  @override
+  String get smErrWrongCredentials =>
+      'Đăng nhập không thành công. Sai email hoặc mật khẩu.';
+
+  @override
+  String get smErrGeneric => 'Đăng nhập không thành công. Vui lòng thử lại.';
+
+  @override
+  String get smErrOffline => 'Không có kết nối. Vui lòng thử lại khi có mạng.';
+
+  @override
+  String smErrWrongMethod(String provider) {
+    return 'Tài khoản này không liên kết với $provider';
+  }
+
+  @override
+  String get smForgotTitle => 'Quên mật khẩu';
+
+  @override
+  String get smForgotSubtitle =>
+      'Nhập email của bạn và chúng tôi sẽ gửi mã xác minh 6 chữ số để đặt lại mật khẩu.';
+
+  @override
+  String get smForgotEmailHint => 'Email';
+
+  @override
+  String get smForgotSubmit => 'Gửi mã xác minh';
+
+  @override
+  String get smForgotBackToLogin => 'Quay lại đăng nhập';
+
+  @override
+  String get smVerifyTitle => 'Xác thực email ✉️';
+
+  @override
+  String smVerifySubtitle(String email) {
+    return 'Chúng tôi đã gửi mã xác minh 6 chữ số đến địa chỉ $email';
+  }
+
+  @override
+  String smVerifyExpiresIn(String time) {
+    return 'Mã sẽ hết hạn sau $time';
+  }
+
+  @override
+  String get smVerifyResend => 'Gửi lại mã';
+
+  @override
+  String smVerifyResendIn(String time) {
+    return 'Gửi lại mã ($time)';
+  }
+
+  @override
+  String get smVerifyInvalidCode => 'Mã không đúng hoặc đã hết hạn.';
+
+  @override
+  String get smUsernameTitle => 'Chọn tên người dùng ✨';
+
+  @override
+  String get smUsernameSubtitle =>
+      'Đây là tên hiển thị của bạn trên StampMail.';
+
+  @override
+  String get smUsernameLabel => 'Tên người dùng';
+
+  @override
+  String get smUsernameHint => 'ten.cua.ban';
+
+  @override
+  String get smUsernameTaken => 'Tên người dùng này đã được sử dụng';
+
+  @override
+  String get smUsernameTooShort => 'Tên người dùng phải có ít nhất 3 ký tự';
+
+  @override
+  String get smUsernameTooLong => 'Tên người dùng không quá 30 ký tự';
+
+  @override
+  String get smUsernameSuggestions => 'Gợi ý cho bạn';
+
+  @override
+  String get smUsernameContinue => 'Tiếp tục';
+
+  @override
+  String get splashTagline => 'Gửi cảm xúc,\nnhận yêu thương.';
+
+  @override
+  String get smOnboardingSkip => 'Bỏ qua';
+
+  @override
+  String get smOnboardingNext => 'Tiếp theo';
+
+  @override
+  String get smOnboardingStart => 'Bắt đầu';
+
+  @override
+  String get smOnboard1Title => 'Biến ảnh thành con tem đáng yêu';
+
+  @override
+  String get smOnboard1Body =>
+      'Chọn ảnh bạn thích, thêm bộ lọc và trang trí để tạo tem thư mang dấu ấn riêng.';
+
+  @override
+  String get smOnboard2Title => 'Viết những lá thư đẹp';
+
+  @override
+  String get smOnboard2Body =>
+      'Chọn mẫu thư, đính tem của bạn và gửi những lá thư đầy cảm xúc đến người thân yêu.';
+
+  @override
+  String get smOnboard3Title => 'Sưu tầm và chia sẻ kỷ niệm';
+
+  @override
+  String get smOnboard3Body =>
+      'Xây dựng album tem của riêng bạn và chia sẻ tác phẩm với bạn bè trên mạng xã hội.';
+
+  @override
+  String get smAvatarTitle => 'Thêm ảnh đại diện';
+
+  @override
+  String get smAvatarSubtitle =>
+      'Giúp bạn bè dễ nhận ra bạn hơn trên StampMail.';
+
+  @override
+  String get smAvatarFromLibrary => 'Chọn từ thư viện';
+
+  @override
+  String get smAvatarTakePhoto => 'Chụp ảnh';
+
+  @override
+  String get smAvatarContinue => 'Tiếp tục';
+
+  @override
+  String get smAvatarSkip => 'Bỏ qua';
+
+  @override
+  String get smHomeEmptyTitle => 'Chưa có tem nào';
+
+  @override
+  String get smHomeEmptyBody =>
+      'Tạo con tem đầu tiên từ tấm ảnh yêu thích và bắt đầu bộ sưu tập của bạn.';
+
+  @override
+  String get smHomeCreateStamp => 'Tạo tem';
 }

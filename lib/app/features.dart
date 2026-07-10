@@ -1,3 +1,4 @@
+import 'package:feature_album/feature_album.dart';
 // fst:feature:bookmarks:start
 import 'package:feature_bookmarks/feature_bookmarks.dart';
 // fst:feature:bookmarks:end
@@ -29,8 +30,35 @@ const List<FeatureModule> enabledFeatures = [
   // fst:feature:notifications:start
   _NotificationsModule(),
   // fst:feature:notifications:end
+  _AlbumModule(),
   // fst:enabled-features — `fst add-feature` inserts new modules above this line
 ];
+
+/// StampMail album: offline-first stamp collection + custom albums. No
+/// app-level routes yet (presentation added separately); drives both the stamp
+/// and album background sync.
+final class _AlbumModule extends FeatureModule {
+  const _AlbumModule();
+
+  @override
+  FeatureSyncController get syncController {
+    final stamps = getIt<StampsSyncController>();
+    final albums = getIt<AlbumsSyncController>();
+    return _FeatureSync(
+      onStart: () async {
+        await stamps.start();
+        await albums.start();
+      },
+      onStop: () async {
+        await stamps.stop();
+        await albums.stop();
+      },
+    );
+  }
+
+  @override
+  Iterable<RouteBase> get routes => const <RouteBase>[];
+}
 
 // fst:feature:bookmarks:start
 final class _BookmarksModule extends FeatureModule {

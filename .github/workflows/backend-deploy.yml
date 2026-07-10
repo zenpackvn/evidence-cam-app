@@ -1,0 +1,90 @@
+name: Backend Deploy (Cloud Run)
+
+# Builds the StampMail Go backend and deploys it to Cloud Run on pushes to main
+# that touch the backend. Requires the GCP secrets below to be configured;
+# without them the job is skipped (see the `if:` gate) so it never blocks CI.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'simple_backend_server/**'
+      - '.github/workflows/backend-deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: backend-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write # for Workload Identity Federation
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: simple_backend_server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache-dependency-path: simple_backend_server/go.sum
+      - run: go build ./...
+      - run: go test ./...
+
+  deploy:
+    name: Deploy to Cloud Run
+    needs: test
+    runs-on: ubuntu-latest
+    # Only run when GCP is configured, so the job is skipped (not failed) on
+    # forks or before infra secrets are set.
+    if: ${{ vars.GCP_PROJECT_ID != '' }}
+    env:
+      SERVICE: stampmail-backend
+      REGION: ${{ vars.GCP_REGION }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push image
+        run: |
+          IMAGE="${REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/stampmail/${SERVICE}:${GITHUB_SHA}"
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker build -t "$IMAGE" simple_backend_server
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}
+          # Staging runs a single instance on a mounted volume for SQLite (see
+          # tech-stack.md: Postgres is deferred to prod/multi-instance).
+          flags: >-
+            --min-instances=1
+            --max-instances=1
+            --port=8080
+          secrets: |
+            JWT_SECRET=JWT_SECRET:latest
+            FIREBASE_PROJECT_ID=FIREBASE_PROJECT_ID:latest
+            R2_ACCOUNT_ID=R2_ACCOUNT_ID:latest
+            R2_BUCKET=R2_BUCKET:latest
+            R2_ACCESS_KEY_ID=R2_ACCESS_KEY_ID:latest
+            R2_SECRET_ACCESS_KEY=R2_SECRET_ACCESS_KEY:latest
+            R2_PUBLIC_BASE_URL=R2_PUBLIC_BASE_URL:latest
+            REVENUECAT_WEBHOOK_AUTH=REVENUECAT_WEBHOOK_AUTH:latest
+            APPSFLYER_WEBHOOK_SECRET=APPSFLYER_WEBHOOK_SECRET:latest

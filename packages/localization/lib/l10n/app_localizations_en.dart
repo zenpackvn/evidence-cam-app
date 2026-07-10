@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Flutter Starter';
+  String get appTitle => 'StampMail';
 
   @override
   String get loginAppBarTitle => 'Sign in';
@@ -682,4 +682,262 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeCreateCollection => 'Create collection';
+
+  @override
+  String get smLoginTitle => 'Welcome back! 👋';
+
+  @override
+  String get smLoginSubtitle =>
+      'Sign in to continue your journey of writing letters and collecting stamps.';
+
+  @override
+  String get smLoginIdentifierHint => 'Email or username';
+
+  @override
+  String get smLoginPasswordHint => 'Password';
+
+  @override
+  String get smLoginForgot => 'Forgot password?';
+
+  @override
+  String get smLoginSubmit => 'Sign in';
+
+  @override
+  String get smLoginDivider => 'or sign in with';
+
+  @override
+  String get smLoginNoAccount => 'Don\'t have an account? ';
+
+  @override
+  String get smLoginRegisterCta => 'Register';
+
+  @override
+  String get smLoginLockedMessage =>
+      'Your account is temporarily locked after too many failed sign-in attempts.';
+
+  @override
+  String smLoginRetryIn(String time) {
+    return 'Try again in $time';
+  }
+
+  @override
+  String smLoginAttemptsLeft(int count) {
+    return 'Wrong password. $count attempts left.';
+  }
+
+  @override
+  String get smContinueApple => 'Continue with Apple';
+
+  @override
+  String get smContinueGoogle => 'Continue with Google';
+
+  @override
+  String get smContinueFacebook => 'Continue with Facebook';
+
+  @override
+  String get smRegisterTitle => 'Create a new account ✨';
+
+  @override
+  String get smRegisterSubtitle => 'Join StampMail now!';
+
+  @override
+  String get smRegisterEmailHint => 'Email';
+
+  @override
+  String get smRegisterConfirmHint => 'Confirm password';
+
+  @override
+  String get smRegisterSubmit => 'Create account';
+
+  @override
+  String get smRegisterDivider => 'or sign up with';
+
+  @override
+  String get smRegisterHaveAccount => 'Already have an account? ';
+
+  @override
+  String get smRegisterLoginCta => 'Sign in';
+
+  @override
+  String get smRegisterAgePrefix =>
+      'I confirm I am 13 years or older and agree to the ';
+
+  @override
+  String get smRegisterTerms => 'Terms of Service';
+
+  @override
+  String get smRegisterAnd => ' and ';
+
+  @override
+  String get smRegisterPrivacy => 'Privacy Policy';
+
+  @override
+  String get smRegisterAgeRequired =>
+      'You must confirm you are 13 or older to continue.';
+
+  @override
+  String get smRegisterEmailExists => 'This email already has an account';
+
+  @override
+  String get smValEmailRequired => 'Please enter your email';
+
+  @override
+  String get smValEmailInvalid => 'Invalid email';
+
+  @override
+  String get smValPasswordRequired => 'Please enter your password';
+
+  @override
+  String get smValPasswordMin => 'Password must be at least 6 characters';
+
+  @override
+  String get smValConfirmRequired => 'Please confirm your password';
+
+  @override
+  String get smValConfirmMismatch => 'Passwords don\'t match';
+
+  @override
+  String get smErrWrongCredentials =>
+      'Sign-in failed. Wrong email or password.';
+
+  @override
+  String get smErrGeneric => 'Sign-in failed. Please try again.';
+
+  @override
+  String get smErrOffline =>
+      'No connection. Please try again when you\'re online.';
+
+  @override
+  String smErrWrongMethod(String provider) {
+    return 'This account isn\'t linked with $provider';
+  }
+
+  @override
+  String get smForgotTitle => 'Forgot password';
+
+  @override
+  String get smForgotSubtitle =>
+      'Enter your email and we\'ll send a 6-digit code to reset your password.';
+
+  @override
+  String get smForgotEmailHint => 'Email';
+
+  @override
+  String get smForgotSubmit => 'Send verification code';
+
+  @override
+  String get smForgotBackToLogin => 'Back to sign in';
+
+  @override
+  String get smVerifyTitle => 'Verify email ✉️';
+
+  @override
+  String smVerifySubtitle(String email) {
+    return 'We sent a 6-digit verification code to $email';
+  }
+
+  @override
+  String smVerifyExpiresIn(String time) {
+    return 'Code expires in $time';
+  }
+
+  @override
+  String get smVerifyResend => 'Resend code';
+
+  @override
+  String smVerifyResendIn(String time) {
+    return 'Resend code ($time)';
+  }
+
+  @override
+  String get smVerifyInvalidCode => 'The code is incorrect or has expired.';
+
+  @override
+  String get smUsernameTitle => 'Choose a username ✨';
+
+  @override
+  String get smUsernameSubtitle => 'This is your display name on StampMail.';
+
+  @override
+  String get smUsernameLabel => 'Username';
+
+  @override
+  String get smUsernameHint => 'your.name';
+
+  @override
+  String get smUsernameTaken => 'This username is already taken';
+
+  @override
+  String get smUsernameTooShort => 'Username must be at least 3 characters';
+
+  @override
+  String get smUsernameTooLong => 'Username must be 30 characters or fewer';
+
+  @override
+  String get smUsernameSuggestions => 'Suggestions for you';
+
+  @override
+  String get smUsernameContinue => 'Continue';
+
+  @override
+  String get splashTagline => 'Send emotions,\nreceive love.';
+
+  @override
+  String get smOnboardingSkip => 'Skip';
+
+  @override
+  String get smOnboardingNext => 'Next';
+
+  @override
+  String get smOnboardingStart => 'Get started';
+
+  @override
+  String get smOnboard1Title => 'Turn photos into lovely stamps';
+
+  @override
+  String get smOnboard1Body =>
+      'Pick a photo you love, add filters and decorations to craft stamps with your own signature.';
+
+  @override
+  String get smOnboard2Title => 'Write beautiful digital letters';
+
+  @override
+  String get smOnboard2Body =>
+      'Choose a template, attach your stamps, and send heartfelt letters to the people you care about.';
+
+  @override
+  String get smOnboard3Title => 'Collect and share memories';
+
+  @override
+  String get smOnboard3Body =>
+      'Build your own stamp album and share your creations with friends across social media.';
+
+  @override
+  String get smAvatarTitle => 'Add a profile photo';
+
+  @override
+  String get smAvatarSubtitle =>
+      'Help friends recognize you more easily on StampMail.';
+
+  @override
+  String get smAvatarFromLibrary => 'Choose from library';
+
+  @override
+  String get smAvatarTakePhoto => 'Take a photo';
+
+  @override
+  String get smAvatarContinue => 'Continue';
+
+  @override
+  String get smAvatarSkip => 'Skip';
+
+  @override
+  String get smHomeEmptyTitle => 'No stamps yet';
+
+  @override
+  String get smHomeEmptyBody =>
+      'Create your first stamp from a favorite photo and start your collection.';
+
+  @override
+  String get smHomeCreateStamp => 'Create a stamp';
 }

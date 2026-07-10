@@ -2,49 +2,74 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
 
+/// The StampMail splash: a full-bleed coral ground with soft decorative blobs,
+/// the white stamp logo, the wordmark, and an emotional tagline.
+///
+/// Pinned to the brand coral regardless of system brightness — the splash is a
+/// branded moment, not a themed surface.
 class SplashContent extends StatelessWidget {
   const SplashContent({super.key});
 
+  /// Matches the opaque coral baked into `splash-stamp-white.png` so the logo
+  /// asset blends seamlessly into the background instead of showing a seam.
+  static const _coral = Color(0xFFF74E33);
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      backgroundColor: _coral,
+      body: DecoratedBox(
+        decoration: const BoxDecoration(color: _coral),
+        child: Stack(
           children: [
-            Container(
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.shadow.withValues(alpha: 0.15),
-                    blurRadius: 30,
-                    offset: const Offset(0, 12),
-                  ),
+            Positioned(
+              top: -60,
+              right: -50,
+              child: _Blob(
+                size: 220,
+                color: Colors.white.withValues(alpha: 0.10),
+              ),
+            ),
+            Positioned(
+              bottom: -70,
+              left: -60,
+              child: _Blob(
+                size: 260,
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/illustrations/splash-stamp-white.png',
+                    package: 'feature_splash',
+                    width: 168,
+                    height: 168,
+                    excludeFromSemantics: true,
+                  ).animateScale(),
+                  const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    context.l10n.appTitle,
+                    style: context.textTheme.displayLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ).animateSlideUp(delay: AppDurations.medium),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    context.l10n.splashTagline,
+                    textAlign: TextAlign.center,
+                    style: context.textTheme.titleLarge?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.95),
+                      fontWeight: FontWeight.w500,
+                      height: 1.4,
+                    ),
+                  ).animateFadeIn(delay: AppDurations.slow),
                 ],
               ),
-              child: Image.asset(
-                'assets/icons/logo.png',
-                package: 'feature_splash',
-                width: 72,
-                height: 72,
-                fit: BoxFit.cover,
-              ),
-            ).animateScale(),
-            const SizedBox(height: AppSpacing.xxl),
-            Text(
-              context.l10n.appTitle,
-              style: context.textTheme.headlineSmall?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
-            ).animateSlideUp(delay: AppDurations.medium),
-            const SizedBox(height: AppSpacing.xxxl),
-            const _LoadingDots().animateFadeIn(delay: AppDurations.slow),
+            ),
           ],
         ),
       ),
@@ -52,51 +77,18 @@ class SplashContent extends StatelessWidget {
   }
 }
 
-/// Three dots that pulse in sequence, a softer loading cue than a spinner.
-class _LoadingDots extends StatelessWidget {
-  const _LoadingDots();
+class _Blob extends StatelessWidget {
+  const _Blob({required this.size, required this.color});
 
-  static const int _count = 3;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = context.colorScheme.primary;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < _count; i++) ...[
-          if (i > 0) const SizedBox(width: AppSpacing.sm),
-          _Dot(
-            color: color,
-            delay: Duration(milliseconds: i * 160),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _Dot extends StatelessWidget {
-  const _Dot({required this.color, required this.delay});
-
+  final double size;
   final Color color;
-  final Duration delay;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        )
-        .animate(onPlay: (controller) => controller.repeat(reverse: true))
-        .scaleXY(
-          begin: 0.6,
-          end: 1,
-          duration: AppDurations.xslow,
-          delay: delay,
-          curve: Curves.easeInOut,
-        )
-        .fadeIn(begin: 0.4, duration: AppDurations.xslow);
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
   }
 }

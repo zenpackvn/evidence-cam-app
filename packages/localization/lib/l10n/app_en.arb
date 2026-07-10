@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "Flutter Starter",
+  "appTitle": "StampMail",
   "loginAppBarTitle": "Sign in",
   "loginHeadline": "Welcome Back",
   "loginSubtitle": "Sign in to organize your digital space.",
@@ -366,5 +366,134 @@
   },
   "addToCollectionTitle": "Add to collection",
   "addToCollectionEmpty": "You haven't created any collections yet.",
-  "homeCreateCollection": "Create collection"
+  "homeCreateCollection": "Create collection",
+  "smLoginTitle": "Welcome back! 👋",
+  "@smLoginTitle": {
+    "description": "Login screen title"
+  },
+  "smLoginSubtitle": "Sign in to continue your journey of writing letters and collecting stamps.",
+  "smLoginIdentifierHint": "Email or username",
+  "smLoginPasswordHint": "Password",
+  "smLoginForgot": "Forgot password?",
+  "smLoginSubmit": "Sign in",
+  "smLoginDivider": "or sign in with",
+  "smLoginNoAccount": "Don't have an account? ",
+  "smLoginRegisterCta": "Register",
+  "smLoginLockedMessage": "Your account is temporarily locked after too many failed sign-in attempts.",
+  "smLoginRetryIn": "Try again in {time}",
+  "@smLoginRetryIn": {
+    "description": "{time} is a countdown like 14:32",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "smLoginAttemptsLeft": "Wrong password. {count} attempts left.",
+  "@smLoginAttemptsLeft": {
+    "description": "remaining attempts",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "smContinueApple": "Continue with Apple",
+  "smContinueGoogle": "Continue with Google",
+  "smContinueFacebook": "Continue with Facebook",
+  "smRegisterTitle": "Create a new account ✨",
+  "smRegisterSubtitle": "Join StampMail now!",
+  "smRegisterEmailHint": "Email",
+  "smRegisterConfirmHint": "Confirm password",
+  "smRegisterSubmit": "Create account",
+  "smRegisterDivider": "or sign up with",
+  "smRegisterHaveAccount": "Already have an account? ",
+  "smRegisterLoginCta": "Sign in",
+  "smRegisterAgePrefix": "I confirm I am 13 years or older and agree to the ",
+  "smRegisterTerms": "Terms of Service",
+  "smRegisterAnd": " and ",
+  "smRegisterPrivacy": "Privacy Policy",
+  "smRegisterAgeRequired": "You must confirm you are 13 or older to continue.",
+  "smRegisterEmailExists": "This email already has an account",
+  "smValEmailRequired": "Please enter your email",
+  "smValEmailInvalid": "Invalid email",
+  "smValPasswordRequired": "Please enter your password",
+  "smValPasswordMin": "Password must be at least 6 characters",
+  "smValConfirmRequired": "Please confirm your password",
+  "smValConfirmMismatch": "Passwords don't match",
+  "smErrWrongCredentials": "Sign-in failed. Wrong email or password.",
+  "smErrGeneric": "Sign-in failed. Please try again.",
+  "smErrOffline": "No connection. Please try again when you're online.",
+  "smErrWrongMethod": "This account isn't linked with {provider}",
+  "@smErrWrongMethod": {
+    "description": "{provider} name",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "smForgotTitle": "Forgot password",
+  "smForgotSubtitle": "Enter your email and we'll send a 6-digit code to reset your password.",
+  "smForgotEmailHint": "Email",
+  "smForgotSubmit": "Send verification code",
+  "smForgotBackToLogin": "Back to sign in",
+  "smVerifyTitle": "Verify email ✉️",
+  "smVerifySubtitle": "We sent a 6-digit verification code to {email}",
+  "@smVerifySubtitle": {
+    "description": "{email} address",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "smVerifyExpiresIn": "Code expires in {time}",
+  "@smVerifyExpiresIn": {
+    "description": "{time} countdown",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "smVerifyResend": "Resend code",
+  "smVerifyResendIn": "Resend code ({time})",
+  "@smVerifyResendIn": {
+    "description": "{time} countdown until resend allowed",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "smVerifyInvalidCode": "The code is incorrect or has expired.",
+  "smUsernameTitle": "Choose a username ✨",
+  "smUsernameSubtitle": "This is your display name on StampMail.",
+  "smUsernameLabel": "Username",
+  "smUsernameHint": "your.name",
+  "smUsernameTaken": "This username is already taken",
+  "smUsernameTooShort": "Username must be at least 3 characters",
+  "smUsernameTooLong": "Username must be 30 characters or fewer",
+  "smUsernameSuggestions": "Suggestions for you",
+  "smUsernameContinue": "Continue",
+  "splashTagline": "Send emotions,\nreceive love.",
+  "smOnboardingSkip": "Skip",
+  "smOnboardingNext": "Next",
+  "smOnboardingStart": "Get started",
+  "smOnboard1Title": "Turn photos into lovely stamps",
+  "smOnboard1Body": "Pick a photo you love, add filters and decorations to craft stamps with your own signature.",
+  "smOnboard2Title": "Write beautiful digital letters",
+  "smOnboard2Body": "Choose a template, attach your stamps, and send heartfelt letters to the people you care about.",
+  "smOnboard3Title": "Collect and share memories",
+  "smOnboard3Body": "Build your own stamp album and share your creations with friends across social media.",
+  "smAvatarTitle": "Add a profile photo",
+  "smAvatarSubtitle": "Help friends recognize you more easily on StampMail.",
+  "smAvatarFromLibrary": "Choose from library",
+  "smAvatarTakePhoto": "Take a photo",
+  "smAvatarContinue": "Continue",
+  "smAvatarSkip": "Skip",
+  "smHomeEmptyTitle": "No stamps yet",
+  "smHomeEmptyBody": "Create your first stamp from a favorite photo and start your collection.",
+  "smHomeCreateStamp": "Create a stamp"
 }

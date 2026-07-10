@@ -23,7 +23,7 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.lucistudio.flutter_starter_template"
+    namespace = "com.aktechvn.stampmail"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -43,21 +43,21 @@ android {
     productFlavors {
         create("dev") {
             dimension = "environment"
-            resValue("string", "app_name", "Flutter Starter (Dev)")
+            resValue("string", "app_name", "StampMail (Dev)")
         }
         create("staging") {
             dimension = "environment"
             applicationIdSuffix = ".staging"
-            resValue("string", "app_name", "Flutter Starter (Staging)")
+            resValue("string", "app_name", "StampMail (Staging)")
         }
         create("prod") {
             dimension = "environment"
-            resValue("string", "app_name", "Flutter Starter")
+            resValue("string", "app_name", "StampMail")
         }
     }
 
     defaultConfig {
-        applicationId = "com.aktechvn.quangsat"
+        applicationId = "com.aktechvn.stampmail"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#F6BFA6" />
+  <title>StampMail — Bạn có một lá thư</title>
+  <style>
+    /* Self-contained: no external fonts/scripts (TD-011 — light, fast page). */
+    :root {
+      --coral: #EC6A52;
+      --coral-soft: #F6BFA6;
+      --cream: #FFF7F0;
+      --ink: #2A2320;
+      --ink-soft: #6B5D54;
+      --paper: #FFFDFA;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at 50% 20%, var(--cream), var(--coral-soft));
+      color: var(--ink);
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .stage { width: 100%; max-width: 460px; text-align: center; }
+
+    /* ── Envelope open animation ─────────────────────────────────────── */
+    .envelope {
+      position: relative;
+      width: 220px; height: 150px;
+      margin: 0 auto 28px;
+      cursor: pointer;
+      perspective: 1000px;
+    }
+    .envelope .body {
+      position: absolute; inset: 0;
+      background: var(--coral);
+      border-radius: 12px;
+      box-shadow: 0 18px 40px rgba(236, 106, 82, 0.35);
+    }
+    .envelope .flap {
+      position: absolute; top: 0; left: 0; right: 0; height: 75px;
+      background: var(--coral-soft);
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+      transform-origin: top;
+      transition: transform 0.7s ease;
+      z-index: 3;
+    }
+    .envelope.open .flap { transform: rotateX(180deg); z-index: 1; }
+    .envelope .letter {
+      position: absolute; left: 12px; right: 12px; bottom: 10px;
+      height: 120px; background: var(--paper);
+      border-radius: 8px;
+      transform: translateY(0);
+      transition: transform 0.7s ease 0.25s;
+      z-index: 2;
+    }
+    .envelope.open .letter { transform: translateY(-90px); z-index: 4; }
+    .hint { color: var(--ink-soft); font-size: 14px; margin-top: 8px; }
+
+    /* ── Revealed content ────────────────────────────────────────────── */
+    .card {
+      background: var(--paper);
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 20px 50px rgba(42, 35, 32, 0.12);
+      text-align: left;
+      opacity: 0; transform: translateY(12px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .card.show { opacity: 1; transform: translateY(0); }
+    .letter-text { white-space: pre-wrap; line-height: 1.6; font-size: 17px; }
+    .stamps { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+    .stamps img {
+      width: 84px; height: 84px; object-fit: cover;
+      border-radius: 10px; border: 3px solid #fff;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+    h1 { font-size: 22px; margin-bottom: 6px; }
+    .muted { color: var(--ink-soft); font-size: 15px; line-height: 1.5; }
+    .cta {
+      display: inline-block; margin-top: 22px;
+      background: var(--coral); color: #fff; text-decoration: none;
+      font-weight: 600; padding: 14px 22px; border-radius: 999px;
+      box-shadow: 0 10px 24px rgba(236,106,82,0.4);
+    }
+    .spinner {
+      width: 34px; height: 34px; margin: 40px auto;
+      border: 4px solid var(--coral-soft); border-top-color: var(--coral);
+      border-radius: 50%; animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+    @media (prefers-reduced-motion: reduce) {
+      .flap, .letter, .card { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <div id="loading"><div class="spinner"></div><p class="muted">Đang mở thư…</p></div>
+
+    <div id="sealed" class="hidden">
+      <div class="envelope" id="envelope" role="button" tabindex="0" aria-label="Chạm để mở thư">
+        <div class="body"></div>
+        <div class="letter"></div>
+        <div class="flap"></div>
+      </div>
+      <p class="hint">Chạm vào phong bì để mở thư 💌</p>
+    </div>
+
+    <section id="content" class="card hidden">
+      <p class="letter-text" id="letterText"></p>
+      <div class="stamps" id="stamps"></div>
+      <a class="cta" id="installCta" href="#">Tải StampMail để lưu tem 📮</a>
+    </section>
+
+    <section id="error" class="card hidden">
+      <h1 id="errorTitle"></h1>
+      <p class="muted" id="errorBody"></p>
+      <a class="cta" id="errorCta" href="#">Tải StampMail 📮</a>
+    </section>
+  </main>
+
+  <script>
+    // Config injected at deploy time; falls back to same-origin API + store URLs.
+    var CONFIG = window.STAMPMAIL_CONFIG || {};
+    var API_BASE = CONFIG.apiBase || '';
+    var STORE_URL = CONFIG.storeUrl || 'https://stampmail.app/get';
+
+    function show(id) { document.getElementById(id).classList.remove('hidden'); }
+    function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function linkId() {
+      // URL form: /letter/<id> or ?id=<id>
+      var m = location.pathname.match(/([A-Za-z0-9_-]{6,})\/?$/);
+      if (m) return m[1];
+      return new URLSearchParams(location.search).get('id') || '';
+    }
+
+    function renderLetter(data) {
+      hide('loading');
+      show('sealed');
+      var env = document.getElementById('envelope');
+      var opened = false;
+      function open() {
+        if (opened) return; opened = true;
+        env.classList.add('open');
+        setTimeout(function () {
+          hide('sealed');
+          fillContent(data);
+          show('content');
+          requestAnimationFrame(function () {
+            document.getElementById('content').classList.add('show');
+          });
+        }, 900);
+      }
+      env.addEventListener('click', open);
+      env.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+      });
+    }
+
+    function fillContent(data) {
+      var text = '';
+      try { text = (JSON.parse(data.content_json || '{}').text) || ''; }
+      catch (_) { text = ''; }
+      document.getElementById('letterText').textContent = text;
+      var wrap = document.getElementById('stamps');
+      (data.stamps || []).forEach(function (s) {
+        var img = document.createElement('img');
+        img.src = s.thumb_url || s.image_url;
+        img.alt = 'Tem';
+        img.loading = 'lazy';
+        wrap.appendChild(img);
+      });
+      document.getElementById('installCta').href = STORE_URL;
+    }
+
+    function renderError(title, body) {
+      hide('loading'); hide('sealed');
+      document.getElementById('errorTitle').textContent = title;
+      document.getElementById('errorBody').textContent = body;
+      document.getElementById('errorCta').href = STORE_URL;
+      show('error');
+      requestAnimationFrame(function () {
+        document.getElementById('error').classList.add('show');
+      });
+    }
+
+    function load() {
+      var id = linkId();
+      if (!id) { renderError('Link không hợp lệ', 'Không tìm thấy mã thư trong đường dẫn.'); return; }
+      fetch(API_BASE + '/public/letter/' + encodeURIComponent(id))
+        .then(function (res) {
+          return res.json().then(function (body) { return { status: res.status, body: body }; });
+        })
+        .then(function (r) {
+          if (r.status === 200) { renderLetter(r.body); return; }
+          var msg = (r.body && r.body.message) || 'Đã có lỗi xảy ra.';
+          if (r.status === 410) renderError('Thư không còn khả dụng', msg);
+          else if (r.status === 404) renderError('Link không hợp lệ', msg);
+          else renderError('Không mở được thư', msg);
+        })
+        .catch(function () {
+          renderError('Mất kết nối', 'Vui lòng kiểm tra mạng và thử lại.');
+        });
+    }
+
+    load();
+  </script>
+</body>
+</html>

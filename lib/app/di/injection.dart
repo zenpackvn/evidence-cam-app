@@ -1,6 +1,7 @@
 import 'package:analytics/analytics.dart';
 import 'package:app_platform/app_platform.dart';
 import 'package:config/config.dart';
+import 'package:feature_album/feature_album.dart';
 import 'package:feature_auth/feature_auth.dart';
 // fst:feature:bookmarks:start
 import 'package:feature_bookmarks/feature_bookmarks.dart';
@@ -9,11 +10,15 @@ import 'package:feature_bookmarks/feature_bookmarks.dart';
 import 'package:feature_collections/feature_collections.dart';
 // fst:feature:collections:end
 import 'package:feature_home/feature_home.dart';
+import 'package:feature_letter_inbox/feature_letter_inbox.dart';
+import 'package:feature_letters/feature_letters.dart';
 // fst:feature:notifications:start
 import 'package:feature_notifications/feature_notifications.dart';
 // fst:feature:notifications:end
 import 'package:feature_onboarding/feature_onboarding.dart';
+import 'package:feature_premium/feature_premium.dart';
 import 'package:feature_profile/feature_profile.dart';
+import 'package:feature_rewards/feature_rewards.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:network/network.dart';
@@ -59,6 +64,11 @@ final GetIt getIt = GetIt.instance;
     ExternalModule(FeatureOnboardingPackageModule),
     ExternalModule(FeatureHomePackageModule),
     ExternalModule(FeatureProfilePackageModule),
+    ExternalModule(FeatureAlbumPackageModule),
+    ExternalModule(FeatureLettersPackageModule),
+    ExternalModule(FeatureRewardsPackageModule),
+    ExternalModule(FeaturePremiumPackageModule),
+    ExternalModule(FeatureLetterInboxPackageModule),
     // fst:feature-modules — `fst add-feature` inserts new feature modules above
   ],
 )

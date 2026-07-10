@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Flutter Starter'**
+  /// **'StampMail'**
   String get appTitle;
 
   /// No description provided for @loginAppBarTitle.
@@ -1327,6 +1327,474 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create collection'**
   String get homeCreateCollection;
+
+  /// Login screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back! 👋'**
+  String get smLoginTitle;
+
+  /// No description provided for @smLoginSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to continue your journey of writing letters and collecting stamps.'**
+  String get smLoginSubtitle;
+
+  /// No description provided for @smLoginIdentifierHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or username'**
+  String get smLoginIdentifierHint;
+
+  /// No description provided for @smLoginPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get smLoginPasswordHint;
+
+  /// No description provided for @smLoginForgot.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get smLoginForgot;
+
+  /// No description provided for @smLoginSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get smLoginSubmit;
+
+  /// No description provided for @smLoginDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'or sign in with'**
+  String get smLoginDivider;
+
+  /// No description provided for @smLoginNoAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t have an account? '**
+  String get smLoginNoAccount;
+
+  /// No description provided for @smLoginRegisterCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Register'**
+  String get smLoginRegisterCta;
+
+  /// No description provided for @smLoginLockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is temporarily locked after too many failed sign-in attempts.'**
+  String get smLoginLockedMessage;
+
+  /// {time} is a countdown like 14:32
+  ///
+  /// In en, this message translates to:
+  /// **'Try again in {time}'**
+  String smLoginRetryIn(String time);
+
+  /// remaining attempts
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong password. {count} attempts left.'**
+  String smLoginAttemptsLeft(int count);
+
+  /// No description provided for @smContinueApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Apple'**
+  String get smContinueApple;
+
+  /// No description provided for @smContinueGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get smContinueGoogle;
+
+  /// No description provided for @smContinueFacebook.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Facebook'**
+  String get smContinueFacebook;
+
+  /// No description provided for @smRegisterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new account ✨'**
+  String get smRegisterTitle;
+
+  /// No description provided for @smRegisterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Join StampMail now!'**
+  String get smRegisterSubtitle;
+
+  /// No description provided for @smRegisterEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get smRegisterEmailHint;
+
+  /// No description provided for @smRegisterConfirmHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get smRegisterConfirmHint;
+
+  /// No description provided for @smRegisterSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get smRegisterSubmit;
+
+  /// No description provided for @smRegisterDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'or sign up with'**
+  String get smRegisterDivider;
+
+  /// No description provided for @smRegisterHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? '**
+  String get smRegisterHaveAccount;
+
+  /// No description provided for @smRegisterLoginCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get smRegisterLoginCta;
+
+  /// No description provided for @smRegisterAgePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'I confirm I am 13 years or older and agree to the '**
+  String get smRegisterAgePrefix;
+
+  /// No description provided for @smRegisterTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get smRegisterTerms;
+
+  /// No description provided for @smRegisterAnd.
+  ///
+  /// In en, this message translates to:
+  /// **' and '**
+  String get smRegisterAnd;
+
+  /// No description provided for @smRegisterPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get smRegisterPrivacy;
+
+  /// No description provided for @smRegisterAgeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'You must confirm you are 13 or older to continue.'**
+  String get smRegisterAgeRequired;
+
+  /// No description provided for @smRegisterEmailExists.
+  ///
+  /// In en, this message translates to:
+  /// **'This email already has an account'**
+  String get smRegisterEmailExists;
+
+  /// No description provided for @smValEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your email'**
+  String get smValEmailRequired;
+
+  /// No description provided for @smValEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid email'**
+  String get smValEmailInvalid;
+
+  /// No description provided for @smValPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your password'**
+  String get smValPasswordRequired;
+
+  /// No description provided for @smValPasswordMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters'**
+  String get smValPasswordMin;
+
+  /// No description provided for @smValConfirmRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password'**
+  String get smValConfirmRequired;
+
+  /// No description provided for @smValConfirmMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords don\'t match'**
+  String get smValConfirmMismatch;
+
+  /// No description provided for @smErrWrongCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed. Wrong email or password.'**
+  String get smErrWrongCredentials;
+
+  /// No description provided for @smErrGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed. Please try again.'**
+  String get smErrGeneric;
+
+  /// No description provided for @smErrOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection. Please try again when you\'re online.'**
+  String get smErrOffline;
+
+  /// {provider} name
+  ///
+  /// In en, this message translates to:
+  /// **'This account isn\'t linked with {provider}'**
+  String smErrWrongMethod(String provider);
+
+  /// No description provided for @smForgotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password'**
+  String get smForgotTitle;
+
+  /// No description provided for @smForgotSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email and we\'ll send a 6-digit code to reset your password.'**
+  String get smForgotSubtitle;
+
+  /// No description provided for @smForgotEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get smForgotEmailHint;
+
+  /// No description provided for @smForgotSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Send verification code'**
+  String get smForgotSubmit;
+
+  /// No description provided for @smForgotBackToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to sign in'**
+  String get smForgotBackToLogin;
+
+  /// No description provided for @smVerifyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify email ✉️'**
+  String get smVerifyTitle;
+
+  /// {email} address
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit verification code to {email}'**
+  String smVerifySubtitle(String email);
+
+  /// {time} countdown
+  ///
+  /// In en, this message translates to:
+  /// **'Code expires in {time}'**
+  String smVerifyExpiresIn(String time);
+
+  /// No description provided for @smVerifyResend.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code'**
+  String get smVerifyResend;
+
+  /// {time} countdown until resend allowed
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code ({time})'**
+  String smVerifyResendIn(String time);
+
+  /// No description provided for @smVerifyInvalidCode.
+  ///
+  /// In en, this message translates to:
+  /// **'The code is incorrect or has expired.'**
+  String get smVerifyInvalidCode;
+
+  /// No description provided for @smUsernameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a username ✨'**
+  String get smUsernameTitle;
+
+  /// No description provided for @smUsernameSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This is your display name on StampMail.'**
+  String get smUsernameSubtitle;
+
+  /// No description provided for @smUsernameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get smUsernameLabel;
+
+  /// No description provided for @smUsernameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'your.name'**
+  String get smUsernameHint;
+
+  /// No description provided for @smUsernameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'This username is already taken'**
+  String get smUsernameTaken;
+
+  /// No description provided for @smUsernameTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Username must be at least 3 characters'**
+  String get smUsernameTooShort;
+
+  /// No description provided for @smUsernameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Username must be 30 characters or fewer'**
+  String get smUsernameTooLong;
+
+  /// No description provided for @smUsernameSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions for you'**
+  String get smUsernameSuggestions;
+
+  /// No description provided for @smUsernameContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get smUsernameContinue;
+
+  /// No description provided for @splashTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Send emotions,\nreceive love.'**
+  String get splashTagline;
+
+  /// No description provided for @smOnboardingSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get smOnboardingSkip;
+
+  /// No description provided for @smOnboardingNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get smOnboardingNext;
+
+  /// No description provided for @smOnboardingStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get smOnboardingStart;
+
+  /// No description provided for @smOnboard1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn photos into lovely stamps'**
+  String get smOnboard1Title;
+
+  /// No description provided for @smOnboard1Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a photo you love, add filters and decorations to craft stamps with your own signature.'**
+  String get smOnboard1Body;
+
+  /// No description provided for @smOnboard2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Write beautiful digital letters'**
+  String get smOnboard2Title;
+
+  /// No description provided for @smOnboard2Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a template, attach your stamps, and send heartfelt letters to the people you care about.'**
+  String get smOnboard2Body;
+
+  /// No description provided for @smOnboard3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect and share memories'**
+  String get smOnboard3Title;
+
+  /// No description provided for @smOnboard3Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Build your own stamp album and share your creations with friends across social media.'**
+  String get smOnboard3Body;
+
+  /// No description provided for @smAvatarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a profile photo'**
+  String get smAvatarTitle;
+
+  /// No description provided for @smAvatarSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help friends recognize you more easily on StampMail.'**
+  String get smAvatarSubtitle;
+
+  /// No description provided for @smAvatarFromLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from library'**
+  String get smAvatarFromLibrary;
+
+  /// No description provided for @smAvatarTakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo'**
+  String get smAvatarTakePhoto;
+
+  /// No description provided for @smAvatarContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get smAvatarContinue;
+
+  /// No description provided for @smAvatarSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get smAvatarSkip;
+
+  /// No description provided for @smHomeEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No stamps yet'**
+  String get smHomeEmptyTitle;
+
+  /// No description provided for @smHomeEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first stamp from a favorite photo and start your collection.'**
+  String get smHomeEmptyBody;
+
+  /// No description provided for @smHomeCreateStamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a stamp'**
+  String get smHomeCreateStamp;
 }
 
 class _AppLocalizationsDelegate

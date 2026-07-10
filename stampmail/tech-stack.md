@@ -1,7 +1,7 @@
 # StampMail — Quyết định công nghệ (Tech Decisions)
 
-**Cập nhật lần cuối**: 2026-07-06
-**Trạng thái**: Chốt sơ bộ cho MVP (P0/P1)
+**Cập nhật lần cuối**: 2026-07-07
+**Trạng thái**: Chốt sơ bộ cho MVP (P0/P1). **2026-07-07: đảo hướng backend từ Firebase/Firestore sang Go server (Cloud Run) — xem TD-001.**
 
 > Tài liệu này ghi lại **các quyết định về công nghệ/thư viện** cho StampMail và **lý do** đằng sau. Mỗi mục nêu: quyết định, vì sao, phương án đã loại. Khi làm từng feature, tra ở đây trước khi thêm dependency mới. Cập nhật khi có quyết định mới hoặc đảo ngược quyết định cũ (ghi rõ ngày + lý do đảo).
 >
@@ -13,10 +13,12 @@
 
 | Lĩnh vực | Quyết định | Loại |
 |----------|-----------|------|
-| Backend | Firebase toàn phần | SaaS |
-| Auth | Firebase Auth + 4 provider SDK | SaaS + client |
-| DB server | Firestore | có sẵn (Firebase) |
-| Server logic (link thư, cấp Dấu, referral) | Cloud Functions | có sẵn (Firebase) |
+| Backend | **Go server** (mở rộng `simple_backend_server`) → **Cloud Run** | tự host, có sẵn |
+| DB server | **SQLite (dev) → Postgres/Cloud SQL (prod)**, cùng interface repository | tự host |
+| Server logic (link thư, cấp Dấu, referral, IAP) | Go service layer (không phải Cloud Functions) | tự viết |
+| Auth | **Firebase Auth (4 provider) + Go verify ID token** | SaaS + tự host |
+| Kho ảnh (tem/avatar) | **Cloudflare R2** (S3-compat, presigned URL) — KHÔNG Firebase Storage | SaaS |
+| Client ↔ server | REST/Dio (data layer template đã có) | có sẵn |
 | Web xem thư | Trang riêng (KHÔNG Flutter Web) — cách render chốt sau (TD-011) | quyết |
 | Push | FCM (`firebase_messaging`) | SaaS + client |
 | Local DB | ObjectBox | template có sẵn |
@@ -33,19 +35,28 @@
 
 ---
 
-## TD-001 — Backend: Firebase toàn phần
+## TD-001 — Backend: Go server (Cloud Run), KHÔNG Firestore
 
-**Quyết định**: Dùng Firebase làm backend cho toàn bộ server-side: Auth, Firestore, Cloud Functions, Hosting, Cloud Storage, FCM.
+> **2026-07-07 — ĐẢO HƯỚNG.** Bản đầu chốt Firebase toàn phần (Firestore + Cloud Functions). Sau khi khảo sát repo phát hiện `simple_backend_server` là **Go backend hoàn chỉnh** (auth JWT, kiến trúc domain/service/transport/storage sạch, có tests, **sync protocol offline-first sẵn** với `rev`+`deleted_at`). Vứt đi để viết lại Firestore đi ngược "dùng lại cái đã có". Quyết định mới bên dưới.
+
+**Quyết định**: Backend là **Go server**, mở rộng `simple_backend_server`, deploy lên **Cloud Run**.
+- **Runtime**: Cloud Run (container Docker). Cloud Run chạy nguyên server đa-endpoint (chi router) — hợp hơn Cloud Functions Gen2 (hợp app 1-vài function). Cả hai đều chạy Go; Firebase Functions "cổ điển" (`firebase deploy`) thì KHÔNG có Go, chỉ Node/Python.
+- **DB**: SQLite (`modernc.org/sqlite`, pure-Go) cho **dev/local**; **Postgres/Cloud SQL** cho **prod**. Tầng `storage/` đã tách theo repository interface → đổi driver = thêm `storage/postgres`, không đụng domain/service.
+- **Client ↔ server**: REST/Dio — data layer template hiện có (`auth_remote_data_source`, `network` package) dùng lại, không viết lại sang Firebase SDK.
 
 **Vì sao**:
-- Template đã wire sẵn Firebase (bootstrap, iOS deployment target 15.0, CocoaPods) → chi phí khởi động gần bằng 0.
-- Nhu cầu server của StampMail (auth đa provider, lưu thư/tem/dấu, tạo link, push) đều nằm trong bộ Firebase tiêu chuẩn.
-- Không cần vận hành server riêng cho MVP.
+- Tận dụng Go backend sạch đã có (auth, sync delta, repository pattern) — tiết kiệm phần lớn Phase 0–1.
+- Cloud Run: serverless (autoscale, trả theo request), giữ nguyên Go, cùng hệ GCP với Firebase Auth/FCM/Storage.
+- Postgres prod: SQLite là file cục bộ → không share giữa nhiều Cloud Run instance; logic tiền (Dấu) + link-1-lần cần transaction row-level (`SELECT FOR UPDATE`) mà SQLite khoá cả file.
+
+**Firebase VẪN dùng cho** (không phải toàn phần): **Auth** (TD-002), **FCM** push (TD-008), **Cloud Storage** ảnh tem. KHÔNG dùng Firestore, KHÔNG dùng Cloud Functions.
 
 **Đã loại**:
-- **Backend riêng** (thư mục `simple_backend_server` trong repo): thêm việc vận hành/deploy mà chưa có nhu cầu Firebase không đáp ứng. YAGNI cho tới khi lộ ra giới hạn thật.
+- **Firestore + Cloud Functions**: viết lại từ đầu trong khi đã có Go backend tương đương — YAGNI ngược.
+- **SQLite ở prod**: không share qua nhiều instance Cloud Run.
+- **Cloud Functions Gen2 (Go)**: chạy Go được nhưng hợp app ít-function; server đa-route này hợp Cloud Run hơn.
 
-**Ràng buộc phát sinh**: logic "link 1 lần / hết hạn 7 ngày" **không phải tính năng có sẵn** — phải tự viết bằng Firestore transaction + trường TTL trên Cloud Functions (xem TD-006).
+**Ràng buộc phát sinh**: logic "link 1 lần / hết hạn 7 ngày", sổ cái Dấu, quota — tự viết trong Go service layer + transaction Postgres (xem TD-006).
 
 ---
 
@@ -61,26 +72,47 @@
 - SM-000 BR-01 yêu cầu 4 phương thức: email/mật khẩu, Google, Apple, Facebook — Firebase Auth hỗ trợ cả 4 trực tiếp.
 - Session 90 ngày (BR-09), xác nhận email (BR-02), đặt lại mật khẩu qua link 24h (BR-12), đăng xuất mọi thiết bị sau đổi mật khẩu (BR-14): đều là hành vi Firebase Auth có sẵn hoặc cấu hình được.
 
-**Tự viết thêm (không có sẵn trong Firebase Auth)**:
-- **Khoá tạm 15 phút sau 5 lần sai** (BR-11, AC-12): Firebase không có rate-lock built-in kiểu này → đếm lần thất bại + khoá phía Cloud Functions/Firestore.
-- **Username duy nhất 3–30 ký tự** (BR-04): Firebase Auth không có "username" → collection `usernames` trên Firestore + kiểm tra trùng qua transaction.
-- **Liên kết/huỷ liên kết provider, giữ ≥1 phương thức** (BR-15/16): dùng `linkWithCredential` + kiểm tra số provider còn lại.
+**Kiến trúc**: Firebase Auth lo **đăng nhập** phía client (4 provider), phát **ID token**. **Go server verify ID token** mỗi request (Firebase Admin SDK for Go) → lấy `uid`, tạo/đọc bản ghi user trong Postgres. Danh tính nguồn ở Firebase; hồ sơ nghiệp vụ (username, plan, seals) ở Go DB, khoá theo `uid`.
 
-**Đã loại**: giải pháp auth tự host (thừa — Firebase Auth đã đủ và template đã sẵn).
+**Vì sao Firebase Auth thay vì JWT-Go tự quản**:
+- Social login (Google/Apple/Facebook) do Firebase lo — tự verify token 3 nhà cung cấp phía Go là nhiều việc dễ sai.
+- UI auth đã dựng sẵn hợp Firebase (`login_screen` v.v.).
+- Go server chỉ cần verify ID token (1 lib), nhẹ hơn tự quản vòng đời token + reset + social.
+
+**Tự viết thêm (không có sẵn trong Firebase Auth) — nay ở Go server, không phải Functions**:
+- **Khoá tạm 15 phút sau 5 lần sai** (BR-11, AC-12): đếm lần thất bại + khoá trong Go/Postgres.
+- **Username duy nhất 3–30 ký tự** (BR-04): bảng `usernames` + unique constraint Postgres.
+- **Liên kết/huỷ liên kết provider, giữ ≥1 phương thức** (BR-15/16): `linkWithCredential` phía client + kiểm tra ở server.
+
+**Phương án B (giữ lại)**: JWT-Go tự quản (server đã có sẵn password hash + JWT). Quay lại nếu muốn bỏ hẳn phụ thuộc Firebase Auth — nhưng phải tự làm social verify.
+
+**Đã loại**: Firestore-based auth logic (không dùng Firestore nữa — TD-001).
 
 ---
 
 ## TD-003 — Cơ sở dữ liệu
 
 **Quyết định**:
-- **Server**: Firestore (nguồn sự thật cho thư, link, dấu, referral, entitlement).
-- **Local**: ObjectBox (album tem, cache thư đã tải — offline-first).
+- **Server**: Postgres/Cloud SQL (prod), SQLite (dev) — nguồn sự thật cho user, thư, tem, link, dấu, referral, entitlement. Truy cập qua repository interface Go (tầng `storage/` đã tách).
+- **Local (client)**: ObjectBox (album tem, cache thư đã tải — offline-first), đồng bộ delta với server qua `rev`+`deleted_at` (sync protocol server đã có sẵn).
 
 **Vì sao**:
-- ObjectBox đã có trong template, offline-first khớp với hàng loạt yêu cầu offline trong spec (xem thư đã tải khi mất mạng, album xem offline...).
-- Firestore đồng bộ realtime hợp với "thông báo khi thư được đọc" (BR-07 SM-016).
+- Go backend đã có tầng storage + sync protocol → dùng lại, chỉ thêm bảng/driver.
+- ObjectBox đã có trong template, offline-first khớp yêu cầu offline trong spec (xem thư đã tải khi mất mạng, album xem offline...).
+- "Thông báo khi thư được đọc" (BR-07 SM-016): không cần realtime DB — dùng **FCM push** từ Go server khi `openLetter` chạy.
 
-**Đã loại**: SQLite/drift (ObjectBox đã sẵn, không thêm ORM thứ hai).
+**Đã loại**:
+- **Firestore**: TD-001 đã bỏ.
+- **SQLite ở prod**: không share qua nhiều Cloud Run instance.
+
+> **2026-07-07 — Postgres driver HOÃN tới trước prod (Phase 5).** Port `storage/postgres`
+> là việc **cơ học** (~2500 LOC: đổi `?`→`$N`, `INSERT OR REPLACE`/`ON CONFLICT`, `SELECT
+> FOR UPDATE` cho seal/link transaction) nhưng **chỉ prod đa-instance mới cần**. Toàn bộ
+> luồng E2E (dev + staging 1 instance) chạy đủ trên SQLite. Đã kiểm: transaction tiền
+> (`SealRepository.Append` dùng `UPDATE balance = balance + ?`) **race-safe cả trên Postgres**
+> (row-lock ở UPDATE), không phụ thuộc single-writer của SQLite → port sau không đổi logic.
+> Làm khi vào Phase 5 (Premium/tiền thật) hoặc khi cần scale >1 instance. Cho tới đó Cloud Run
+> chạy SQLite trên volume (staging, 1 instance, `min-instances=max-instances=1`).
 
 ---
 
@@ -226,6 +258,28 @@ Nhu cầu tách làm hai bài toán khác nhau — giải bằng hai công cụ:
 **Quyết định**: `share_plus` để mở native share sheet khi chia sẻ tem nhận Dấu (SM-011 BR-10) và mở DM nền tảng khi gửi thư (SM-016 BR-05).
 
 **Vì sao**: BR-10 nói rõ dùng **native share sheet của hệ điều hành**; `share_plus` là chuẩn. Với SM-016, mở DM từng nền tảng cụ thể có thể cần URL scheme riêng (Zalo, Messenger...) — fallback copy-to-clipboard khi app chưa cài (mục 5 SM-016).
+
+---
+
+## TD-013 — Kho ảnh: Cloudflare R2 (KHÔNG Firebase Storage)
+
+**Quyết định**: Ảnh tem đã render, ảnh trong thư, avatar lưu trên **Cloudflare R2** (S3-compatible). Upload bằng **presigned URL**: app xin backend URL tạm → upload thẳng lên R2 → không đi qua server. DB (Postgres) chỉ giữ URL công khai. Setup: [r2-setup.md](r2-setup.md).
+
+**Vì sao R2 thay Firebase Storage**:
+- **Egress miễn phí** — R2 không tính tiền băng thông tải ảnh ra; StampMail nhiều ảnh (tem xem đi xem lại, người nhận tải qua web) → tiết kiệm lớn so với Firebase Storage/S3.
+- S3-compatible → dùng AWS SDK for Go chuẩn để ký presigned URL, không khoá vào Firebase.
+- Presigned URL: không tốn băng thông Cloud Run (ảnh không qua server).
+
+**Backend cần**:
+- R2 adapter (AWS SDK for Go, endpoint `https://<account>.r2.cloudflarestorage.com`) ký presigned PUT URL.
+- Endpoint `POST /api/sm/uploads/presign` → `{upload_url, public_url, key}`.
+- **Dev fallback**: khi thiếu R2 env → dùng `/api/upload` local sẵn có (lưu file + serve `/uploads/`), server vẫn chạy không cần R2.
+
+**Đã loại**:
+- **Firebase Storage**: egress tính tiền, khoá vào Firebase. Firebase giờ chỉ còn Auth + FCM.
+- **Upload qua backend**: ảnh qua Cloud Run tốn băng thông; presigned URL tốt hơn cho ảnh nhiều.
+
+**Env cần** (xem r2-setup.md): `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PUBLIC_BASE_URL`.
 
 ---
 

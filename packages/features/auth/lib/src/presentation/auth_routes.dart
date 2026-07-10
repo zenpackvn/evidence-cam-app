@@ -1,7 +1,10 @@
 import 'package:go_router/go_router.dart';
 
+import 'screens/choose_username_screen.dart';
+import 'screens/forgot_password_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/verify_email_screen.dart';
 
 /// Canonical navigation paths owned by the auth feature.
 ///
@@ -13,6 +16,15 @@ abstract final class AuthRoutes {
 
   /// The registration screen.
   static const register = '/register';
+
+  /// The forgot-password screen (enter email → receive reset code).
+  static const forgotPassword = '/forgot-password';
+
+  /// The email-verification screen (6-digit code after email sign-up).
+  static const verifyEmail = '/verify-email';
+
+  /// The username-selection screen (shown after first authentication).
+  static const chooseUsername = '/choose-username';
 
   /// The change-password screen (nested under the profile tab, mounted by the
   /// app shell because it lives inside the profile branch).
@@ -31,5 +43,18 @@ List<RouteBase> get authRoutes => [
   GoRoute(
     path: AuthRoutes.register,
     builder: (context, state) => const RegisterScreen(),
+  ),
+  GoRoute(
+    path: AuthRoutes.forgotPassword,
+    builder: (context, state) => const ForgotPasswordScreen(),
+  ),
+  GoRoute(
+    path: AuthRoutes.verifyEmail,
+    builder: (context, state) =>
+        VerifyEmailScreen(email: state.uri.queryParameters['email'] ?? ''),
+  ),
+  GoRoute(
+    path: AuthRoutes.chooseUsername,
+    builder: (context, state) => const ChooseUsernameScreen(),
   ),
 ];

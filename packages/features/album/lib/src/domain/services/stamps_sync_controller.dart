@@ -1,0 +1,23 @@
+import 'package:rev_sync/rev_sync.dart';
+
+export 'package:rev_sync/rev_sync.dart' show SyncStatus;
+
+/// Controls the stamps offline-first sync lifecycle. The app starts it on
+/// sign-in and stops it on sign-out; the repository triggers [sync] after each
+/// local mutation.
+abstract interface class StampsSyncController {
+  /// Surfaced status for the UI.
+  Stream<SyncStatus> get statusStream;
+
+  /// The latest [statusStream] value.
+  SyncStatus get statusNow;
+
+  /// Begin reacting to connectivity and run an initial sync. Idempotent.
+  Future<void> start();
+
+  /// Stop syncing and reset. Called on sign-out.
+  Future<void> stop();
+
+  /// Trigger a sync now. Concurrent callers share one in-flight run.
+  Future<void> sync();
+}

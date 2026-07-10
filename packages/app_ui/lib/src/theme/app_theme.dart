@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'app_elevation.dart';
 import 'app_radius.dart';
+import 'brand_colors.dart';
 import 'semantic_colors.dart';
+import 'stampmail_colors.dart';
 
 /// Shared component theming applied to both [AppTheme.light] and
 /// [AppTheme.dark].
@@ -63,16 +65,20 @@ class AppTheme {
   const AppTheme._();
 
   /// The light theme variant.
+  ///
+  /// The [scheme] parameter is retained for `ThemeBloc` API compatibility but
+  /// no longer selects the palette: StampMail ships a hand-authored coral/cream
+  /// [ColorScheme] (see `StampMailColors`) rather than a seeded `FlexScheme`.
   static ThemeData light({FlexScheme scheme = FlexScheme.blue}) {
     return FlexThemeData.light(
-      scheme: scheme,
-      textTheme: GoogleFonts.interTextTheme(),
+      colorScheme: StampMailColors.light,
+      textTheme: _textTheme(StampMailColors.light),
       useMaterial3: true,
       subThemesData: _componentThemes,
       appBarElevation: AppElevation.none,
       appBarStyle: FlexAppBarStyle.surface,
     ).copyWith(
-      extensions: const [SemanticColors.light],
+      extensions: const [SemanticColors.light, BrandColors.light],
       bottomSheetTheme: const BottomSheetThemeData(showDragHandle: true),
     );
   }
@@ -80,15 +86,92 @@ class AppTheme {
   /// The dark theme variant.
   static ThemeData dark({FlexScheme scheme = FlexScheme.blue}) {
     return FlexThemeData.dark(
-      scheme: scheme,
-      textTheme: GoogleFonts.interTextTheme(),
+      colorScheme: StampMailColors.dark,
+      textTheme: _textTheme(StampMailColors.dark),
       useMaterial3: true,
       subThemesData: _componentThemes,
       appBarElevation: AppElevation.none,
       appBarStyle: FlexAppBarStyle.surface,
     ).copyWith(
-      extensions: const [SemanticColors.dark],
+      extensions: const [SemanticColors.dark, BrandColors.dark],
       bottomSheetTheme: const BottomSheetThemeData(showDragHandle: true),
+    );
+  }
+
+  /// StampMail typography: Baloo 2 (rounded) for large display/headline text,
+  /// Be Vietnam Pro for titles, body, and labels — the latter reads cleanly
+  /// with Vietnamese diacritics. Sizes follow the design's type scale.
+  static TextTheme _textTheme(ColorScheme scheme) {
+    final display = GoogleFonts.baloo2(color: scheme.onSurface);
+    final body = GoogleFonts.beVietnamPro(color: scheme.onSurface);
+    return TextTheme(
+      displayLarge: display.copyWith(
+        fontSize: 34,
+        height: 41 / 34,
+        fontWeight: FontWeight.w700,
+      ),
+      displayMedium: display.copyWith(
+        fontSize: 28,
+        height: 34 / 28,
+        fontWeight: FontWeight.w700,
+      ),
+      displaySmall: display.copyWith(
+        fontSize: 24,
+        height: 30 / 24,
+        fontWeight: FontWeight.w700,
+      ),
+      headlineLarge: display.copyWith(
+        fontSize: 28,
+        height: 34 / 28,
+        fontWeight: FontWeight.w700,
+      ),
+      headlineMedium: display.copyWith(
+        fontSize: 24,
+        height: 30 / 24,
+        fontWeight: FontWeight.w700,
+      ),
+      headlineSmall: display.copyWith(
+        fontSize: 22,
+        height: 28 / 22,
+        fontWeight: FontWeight.w600,
+      ),
+      titleLarge: body.copyWith(
+        fontSize: 20,
+        height: 25 / 20,
+        fontWeight: FontWeight.w600,
+      ),
+      titleMedium: body.copyWith(
+        fontSize: 17,
+        height: 22 / 17,
+        fontWeight: FontWeight.w600,
+      ),
+      titleSmall: body.copyWith(
+        fontSize: 15,
+        height: 20 / 15,
+        fontWeight: FontWeight.w600,
+      ),
+      bodyLarge: body.copyWith(fontSize: 16, height: 24 / 16),
+      bodyMedium: body.copyWith(fontSize: 14, height: 20 / 14),
+      bodySmall: body.copyWith(
+        fontSize: 13,
+        height: 18 / 13,
+        color: scheme.onSurfaceVariant,
+      ),
+      labelLarge: body.copyWith(
+        fontSize: 14,
+        height: 20 / 14,
+        fontWeight: FontWeight.w600,
+      ),
+      labelMedium: body.copyWith(
+        fontSize: 13,
+        height: 16 / 13,
+        fontWeight: FontWeight.w500,
+      ),
+      labelSmall: body.copyWith(
+        fontSize: 11,
+        height: 14 / 11,
+        fontWeight: FontWeight.w500,
+      ),
     );
   }
 }
@@ -100,6 +183,10 @@ extension BuildContextTheme on BuildContext {
 
   SemanticColors get semanticColors =>
       theme.extension<SemanticColors>() ?? SemanticColors.light;
+
+  /// StampMail brand tokens (soft surfaces + accent hues) for the active theme.
+  BrandColors get brand =>
+      theme.extension<BrandColors>() ?? BrandColors.light;
   Brightness get brightness => theme.brightness;
   bool get isDark => brightness == Brightness.dark;
   bool get isLight => brightness == Brightness.light;

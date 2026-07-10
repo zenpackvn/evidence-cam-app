@@ -38,6 +38,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   build_runner: ^2.15.0
   freezed: ^3.2.5
@@ -51,3 +53,4 @@ dev_dependencies:
 flutter:
   assets:
     - assets/icons/
+    - assets/illustrations/

@@ -16,5 +16,8 @@ export 'src/presentation/bloc/auth_state.dart';
 export 'src/presentation/bloc/delete_account_cubit.dart';
 export 'src/presentation/bloc/delete_account_state.dart';
 export 'src/presentation/screens/change_password_screen.dart';
+export 'src/presentation/screens/choose_username_screen.dart';
+export 'src/presentation/screens/forgot_password_screen.dart';
 export 'src/presentation/screens/login_screen.dart';
 export 'src/presentation/screens/register_screen.dart';
+export 'src/presentation/screens/verify_email_screen.dart';

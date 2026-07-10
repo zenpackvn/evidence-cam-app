@@ -15,9 +15,11 @@ import 'package:objectbox/objectbox.dart' as obx;
 import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 
 import 'src/entities/activity_entity.dart';
+import 'src/entities/album_entity.dart';
 import 'src/entities/bookmark_entity.dart';
 import 'src/entities/collection_entity.dart';
 import 'src/entities/notification_entity.dart';
+import 'src/entities/stamp_entity.dart';
 import 'src/entities/sync_cursor_entity.dart';
 
 export 'package:objectbox/objectbox.dart'; // so that callers only have to import this file
@@ -318,6 +320,154 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(6, 6919779428344454717),
+    name: 'StampEntity',
+    lastPropertyId: const obx_int.IdUid(12, 7206826295526741995),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 8085531643706873980),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 5369682964178316465),
+        name: 'uuid',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(6, 1203500127072910915),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 334856326808239582),
+        name: 'imageUrl',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 6582250498873926471),
+        name: 'thumbUrl',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 604670693323994020),
+        name: 'source',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 3873223479571429346),
+        name: 'senderName',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 2092231914044981036),
+        name: 'senderUid',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 7382742318123572585),
+        name: 'createdAt',
+        type: 12,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 4412547308219125252),
+        name: 'updatedAt',
+        type: 12,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 5568958887392771053),
+        name: 'serverUpdatedAt',
+        type: 12,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 1543143546339871098),
+        name: 'rev',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 7206826295526741995),
+        name: 'syncStateCode',
+        type: 6,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(7, 5555805298547655909),
+    name: 'AlbumEntity',
+    lastPropertyId: const obx_int.IdUid(9, 3764697360961617719),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 549669247920079080),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 5867496795023308880),
+        name: 'uuid',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(7, 781447376822765003),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 6195226182942863175),
+        name: 'name',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 2083489659222744365),
+        name: 'stampIds',
+        type: 30,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 1762743871611324665),
+        name: 'createdAt',
+        type: 12,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 2415538513091857058),
+        name: 'updatedAt',
+        type: 12,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 7231603703227535000),
+        name: 'serverUpdatedAt',
+        type: 12,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 3824462675815121548),
+        name: 'rev',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 3764697360961617719),
+        name: 'syncStateCode',
+        type: 6,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -363,8 +513,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(5, 7251944359262926434),
-    lastIndexId: const obx_int.IdUid(5, 3983229944700575413),
+    lastEntityId: const obx_int.IdUid(7, 5555805298547655909),
+    lastIndexId: const obx_int.IdUid(7, 781447376822765003),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -794,6 +944,225 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    StampEntity: obx_int.EntityDefinition<StampEntity>(
+      model: _entities[5],
+      toOneRelations: (StampEntity object) => [],
+      toManyRelations: (StampEntity object) => {},
+      getId: (StampEntity object) => object.id,
+      setId: (StampEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (StampEntity object, fb.Builder fbb) {
+        final uuidOffset = fbb.writeString(object.uuid);
+        final imageUrlOffset = fbb.writeString(object.imageUrl);
+        final thumbUrlOffset = object.thumbUrl == null
+            ? null
+            : fbb.writeString(object.thumbUrl!);
+        final sourceOffset = fbb.writeString(object.source);
+        final senderNameOffset = object.senderName == null
+            ? null
+            : fbb.writeString(object.senderName!);
+        final senderUidOffset = object.senderUid == null
+            ? null
+            : fbb.writeString(object.senderUid!);
+        fbb.startTable(13);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, uuidOffset);
+        fbb.addOffset(2, imageUrlOffset);
+        fbb.addOffset(3, thumbUrlOffset);
+        fbb.addOffset(4, sourceOffset);
+        fbb.addOffset(5, senderNameOffset);
+        fbb.addOffset(6, senderUidOffset);
+        fbb.addInt64(7, object.createdAt.microsecondsSinceEpoch * 1000);
+        fbb.addInt64(8, object.updatedAt.microsecondsSinceEpoch * 1000);
+        fbb.addInt64(
+          9,
+          object.serverUpdatedAt == null
+              ? null
+              : object.serverUpdatedAt!.microsecondsSinceEpoch * 1000,
+        );
+        fbb.addInt64(10, object.rev);
+        fbb.addInt64(11, object.syncStateCode);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final serverUpdatedAtValue = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          22,
+        );
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final uuidParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final imageUrlParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final thumbUrlParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 10);
+        final sourceParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final senderNameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 14);
+        final senderUidParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 16);
+        final createdAtParam = DateTime.fromMicrosecondsSinceEpoch(
+          (const fb.Int64Reader().vTableGet(buffer, rootOffset, 18, 0) / 1000)
+              .round(),
+          isUtc: true,
+        );
+        final updatedAtParam = DateTime.fromMicrosecondsSinceEpoch(
+          (const fb.Int64Reader().vTableGet(buffer, rootOffset, 20, 0) / 1000)
+              .round(),
+          isUtc: true,
+        );
+        final serverUpdatedAtParam = serverUpdatedAtValue == null
+            ? null
+            : DateTime.fromMicrosecondsSinceEpoch(
+                (serverUpdatedAtValue / 1000).round(),
+                isUtc: true,
+              );
+        final syncStateCodeParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          26,
+          0,
+        );
+        final revParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          24,
+          0,
+        );
+        final object = StampEntity(
+          id: idParam,
+          uuid: uuidParam,
+          imageUrl: imageUrlParam,
+          thumbUrl: thumbUrlParam,
+          source: sourceParam,
+          senderName: senderNameParam,
+          senderUid: senderUidParam,
+          createdAt: createdAtParam,
+          updatedAt: updatedAtParam,
+          serverUpdatedAt: serverUpdatedAtParam,
+          syncStateCode: syncStateCodeParam,
+          rev: revParam,
+        );
+
+        return object;
+      },
+    ),
+    AlbumEntity: obx_int.EntityDefinition<AlbumEntity>(
+      model: _entities[6],
+      toOneRelations: (AlbumEntity object) => [],
+      toManyRelations: (AlbumEntity object) => {},
+      getId: (AlbumEntity object) => object.id,
+      setId: (AlbumEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (AlbumEntity object, fb.Builder fbb) {
+        final uuidOffset = fbb.writeString(object.uuid);
+        final nameOffset = fbb.writeString(object.name);
+        final stampIdsOffset = fbb.writeList(
+          object.stampIds.map(fbb.writeString).toList(growable: false),
+        );
+        fbb.startTable(10);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, uuidOffset);
+        fbb.addOffset(2, nameOffset);
+        fbb.addOffset(3, stampIdsOffset);
+        fbb.addInt64(4, object.createdAt.microsecondsSinceEpoch * 1000);
+        fbb.addInt64(5, object.updatedAt.microsecondsSinceEpoch * 1000);
+        fbb.addInt64(
+          6,
+          object.serverUpdatedAt == null
+              ? null
+              : object.serverUpdatedAt!.microsecondsSinceEpoch * 1000,
+        );
+        fbb.addInt64(7, object.rev);
+        fbb.addInt64(8, object.syncStateCode);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final serverUpdatedAtValue = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          16,
+        );
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final uuidParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final nameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final stampIdsParam = const fb.ListReader<String>(
+          fb.StringReader(asciiOptimization: true),
+          lazy: false,
+        ).vTableGet(buffer, rootOffset, 10, []);
+        final createdAtParam = DateTime.fromMicrosecondsSinceEpoch(
+          (const fb.Int64Reader().vTableGet(buffer, rootOffset, 12, 0) / 1000)
+              .round(),
+          isUtc: true,
+        );
+        final updatedAtParam = DateTime.fromMicrosecondsSinceEpoch(
+          (const fb.Int64Reader().vTableGet(buffer, rootOffset, 14, 0) / 1000)
+              .round(),
+          isUtc: true,
+        );
+        final serverUpdatedAtParam = serverUpdatedAtValue == null
+            ? null
+            : DateTime.fromMicrosecondsSinceEpoch(
+                (serverUpdatedAtValue / 1000).round(),
+                isUtc: true,
+              );
+        final syncStateCodeParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          20,
+          0,
+        );
+        final revParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          18,
+          0,
+        );
+        final object = AlbumEntity(
+          id: idParam,
+          uuid: uuidParam,
+          name: nameParam,
+          stampIds: stampIdsParam,
+          createdAt: createdAtParam,
+          updatedAt: updatedAtParam,
+          serverUpdatedAt: serverUpdatedAtParam,
+          syncStateCode: syncStateCodeParam,
+          rev: revParam,
+        );
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -1011,5 +1380,116 @@ class SyncCursorEntity_ {
   /// See [SyncCursorEntity.rev].
   static final rev = obx.QueryIntegerProperty<SyncCursorEntity>(
     _entities[4].properties[2],
+  );
+}
+
+/// [StampEntity] entity fields to define ObjectBox queries.
+class StampEntity_ {
+  /// See [StampEntity.id].
+  static final id = obx.QueryIntegerProperty<StampEntity>(
+    _entities[5].properties[0],
+  );
+
+  /// See [StampEntity.uuid].
+  static final uuid = obx.QueryStringProperty<StampEntity>(
+    _entities[5].properties[1],
+  );
+
+  /// See [StampEntity.imageUrl].
+  static final imageUrl = obx.QueryStringProperty<StampEntity>(
+    _entities[5].properties[2],
+  );
+
+  /// See [StampEntity.thumbUrl].
+  static final thumbUrl = obx.QueryStringProperty<StampEntity>(
+    _entities[5].properties[3],
+  );
+
+  /// See [StampEntity.source].
+  static final source = obx.QueryStringProperty<StampEntity>(
+    _entities[5].properties[4],
+  );
+
+  /// See [StampEntity.senderName].
+  static final senderName = obx.QueryStringProperty<StampEntity>(
+    _entities[5].properties[5],
+  );
+
+  /// See [StampEntity.senderUid].
+  static final senderUid = obx.QueryStringProperty<StampEntity>(
+    _entities[5].properties[6],
+  );
+
+  /// See [StampEntity.createdAt].
+  static final createdAt = obx.QueryDateNanoProperty<StampEntity>(
+    _entities[5].properties[7],
+  );
+
+  /// See [StampEntity.updatedAt].
+  static final updatedAt = obx.QueryDateNanoProperty<StampEntity>(
+    _entities[5].properties[8],
+  );
+
+  /// See [StampEntity.serverUpdatedAt].
+  static final serverUpdatedAt = obx.QueryDateNanoProperty<StampEntity>(
+    _entities[5].properties[9],
+  );
+
+  /// See [StampEntity.rev].
+  static final rev = obx.QueryIntegerProperty<StampEntity>(
+    _entities[5].properties[10],
+  );
+
+  /// See [StampEntity.syncStateCode].
+  static final syncStateCode = obx.QueryIntegerProperty<StampEntity>(
+    _entities[5].properties[11],
+  );
+}
+
+/// [AlbumEntity] entity fields to define ObjectBox queries.
+class AlbumEntity_ {
+  /// See [AlbumEntity.id].
+  static final id = obx.QueryIntegerProperty<AlbumEntity>(
+    _entities[6].properties[0],
+  );
+
+  /// See [AlbumEntity.uuid].
+  static final uuid = obx.QueryStringProperty<AlbumEntity>(
+    _entities[6].properties[1],
+  );
+
+  /// See [AlbumEntity.name].
+  static final name = obx.QueryStringProperty<AlbumEntity>(
+    _entities[6].properties[2],
+  );
+
+  /// See [AlbumEntity.stampIds].
+  static final stampIds = obx.QueryStringVectorProperty<AlbumEntity>(
+    _entities[6].properties[3],
+  );
+
+  /// See [AlbumEntity.createdAt].
+  static final createdAt = obx.QueryDateNanoProperty<AlbumEntity>(
+    _entities[6].properties[4],
+  );
+
+  /// See [AlbumEntity.updatedAt].
+  static final updatedAt = obx.QueryDateNanoProperty<AlbumEntity>(
+    _entities[6].properties[5],
+  );
+
+  /// See [AlbumEntity.serverUpdatedAt].
+  static final serverUpdatedAt = obx.QueryDateNanoProperty<AlbumEntity>(
+    _entities[6].properties[6],
+  );
+
+  /// See [AlbumEntity.rev].
+  static final rev = obx.QueryIntegerProperty<AlbumEntity>(
+    _entities[6].properties[7],
+  );
+
+  /// See [AlbumEntity.syncStateCode].
+  static final syncStateCode = obx.QueryIntegerProperty<AlbumEntity>(
+    _entities[6].properties[8],
   );
 }

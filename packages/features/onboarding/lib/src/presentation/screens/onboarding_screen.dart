@@ -1,14 +1,15 @@
+import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:localization/localization.dart';
 
 import '../widgets/onboarding_step.dart';
 
 /// First-launch intro: a swipeable set of pages with progress dots and
-/// Skip / Next / Get started controls.
+/// Skip / Next / Get started controls, on the warm StampMail cream ground.
 ///
 /// The screen is navigation-agnostic: it calls [onDone] when the user finishes
 /// or skips, and the app shell decides where to go next (and persists the
-/// "seen" flag via `OnboardingStore`). This keeps the feature free of router or
-/// DI coupling, matching how `SplashScreen` takes an `onRestored` callback.
+/// "seen" flag via `OnboardingStore`).
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({required this.onDone, this.steps, super.key});
 
@@ -23,39 +24,34 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  static const _defaultSteps = [
-    OnboardingStepData(
-      title: 'Welcome',
-      description:
-          'A production-ready Flutter base with offline-first sync, '
-          'auth, and a modular package architecture.',
-      icon: Icons.rocket_launch_outlined,
-    ),
-    OnboardingStepData(
-      title: 'Works offline',
-      description:
-          'Your data is cached locally and syncs in the background, so the '
-          'app stays usable on a flaky connection.',
-      icon: Icons.cloud_off_outlined,
-    ),
-    OnboardingStepData(
-      title: 'Ready to build',
-      description:
-          'Copy this template, swap in your features, and ship. The hard '
-          'infrastructure is already done.',
-      icon: Icons.check_circle_outline,
-    ),
-  ];
-
   final _controller = PageController();
   int _page = 0;
 
-  List<OnboardingStepData> get _steps => widget.steps ?? _defaultSteps;
+  List<OnboardingStepData> _steps(AppLocalizations l10n) =>
+      widget.steps ??
+      [
+        OnboardingStepData(
+          title: l10n.smOnboard1Title,
+          description: l10n.smOnboard1Body,
+          heroAsset: 'onb-hero.png',
+          showFilters: true,
+        ),
+        OnboardingStepData(
+          title: l10n.smOnboard2Title,
+          description: l10n.smOnboard2Body,
+          heroAsset: 'onb-hero.png',
+        ),
+        OnboardingStepData(
+          title: l10n.smOnboard3Title,
+          description: l10n.smOnboard3Body,
+          heroAsset: 'onb-hero.png',
+        ),
+      ];
 
-  bool get _isLast => _page == _steps.length - 1;
+  bool _isLast(int count) => _page == count - 1;
 
-  void _next() {
-    if (_isLast) {
+  void _next(int count) {
+    if (_isLast(count)) {
       widget.onDone();
       return;
     }
@@ -73,38 +69,142 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Onboarding, like auth, is pinned to the light StampMail theme.
+    return Theme(data: AppTheme.light(), child: Builder(builder: _build));
+  }
+
+  Widget _build(BuildContext context) {
+    final l10n = context.l10n;
+    final colorScheme = context.colorScheme;
+    final steps = _steps(l10n);
+
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: widget.onDone,
-                child: const Text('Skip'),
+      backgroundColor: colorScheme.surface,
+      body: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            child: Image.asset(
+              'assets/illustrations/corner-left-flowers.png',
+              package: 'feature_onboarding',
+              width: 120,
+              excludeFromSemantics: true,
+            ),
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: Image.asset(
+              'assets/illustrations/corner-right-stamp.png',
+              package: 'feature_onboarding',
+              width: 116,
+              excludeFromSemantics: true,
+            ),
+          ),
+          Positioned(
+            bottom: 88,
+            left: 0,
+            child: IgnorePointer(
+              child: Image.asset(
+                'assets/illustrations/onb-bottom-left.png',
+                package: 'feature_onboarding',
+                width: 130,
+                excludeFromSemantics: true,
               ),
             ),
-            Expanded(
-              child: PageView.builder(
-                controller: _controller,
-                onPageChanged: (i) => setState(() => _page = i),
-                itemCount: _steps.length,
-                itemBuilder: (_, i) => OnboardingStep(data: _steps[i]),
+          ),
+          Positioned(
+            bottom: 88,
+            right: 0,
+            child: IgnorePointer(
+              child: Image.asset(
+                'assets/illustrations/onb-bottom-right.png',
+                package: 'feature_onboarding',
+                width: 130,
+                excludeFromSemantics: true,
               ),
             ),
-            _Dots(count: _steps.length, current: _page),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _next,
-                  child: Text(_isLast ? 'Get started' : 'Next'),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      top: AppSpacing.sm,
+                      right: AppSpacing.lg,
+                    ),
+                    child: TextButton(
+                      onPressed: widget.onDone,
+                      style: TextButton.styleFrom(
+                        foregroundColor: colorScheme.onSurfaceVariant,
+                        textStyle: context.textTheme.titleSmall,
+                      ),
+                      child: Text(l10n.smOnboardingSkip),
+                    ),
+                  ),
                 ),
-              ),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _controller,
+                    onPageChanged: (i) => setState(() => _page = i),
+                    itemCount: steps.length,
+                    itemBuilder: (_, i) => OnboardingStep(data: steps[i]),
+                  ),
+                ),
+                _Dots(count: steps.length, current: _page),
+                const SizedBox(height: AppSpacing.xl),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xl,
+                    0,
+                    AppSpacing.xl,
+                    AppSpacing.xxl,
+                  ),
+                  child: _OnboardingCta(
+                    label: _isLast(steps.length)
+                        ? l10n.smOnboardingStart
+                        : l10n.smOnboardingNext,
+                    onPressed: () => _next(steps.length),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The full-width coral CTA with a right-aligned sparkle (matches the auth CTA).
+class _OnboardingCta extends StatelessWidget {
+  const _OnboardingCta({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    return SizedBox(
+      height: 56,
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          textStyle: context.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
+        child: Text(label),
       ),
     );
   }
@@ -119,7 +219,7 @@ class _Dots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final scheme = context.colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(count, (i) {
@@ -132,7 +232,7 @@ class _Dots extends StatelessWidget {
           decoration: BoxDecoration(
             color: active
                 ? scheme.primary
-                : scheme.onSurface.withValues(alpha: 0.3),
+                : scheme.primary.withValues(alpha: 0.25),
             borderRadius: BorderRadius.circular(4),
           ),
         );
