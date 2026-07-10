@@ -15,7 +15,7 @@
 |----------|-----------|------|
 | Backend | **Go server** (mở rộng `simple_backend_server`) → **Cloud Run** | tự host, có sẵn |
 | DB server | **SQLite (dev) → Postgres/Cloud SQL (prod)**, cùng interface repository | tự host |
-| Server logic (link thư, cấp Dấu, referral, IAP) | Go service layer (không phải Cloud Functions) | tự viết |
+| Server logic (link thư, attribution, IAP) | Go service layer (không phải Cloud Functions) | tự viết |
 | Auth | **Firebase Auth (4 provider) + Go verify ID token** | SaaS + tự host |
 | Kho ảnh (tem/avatar) | **Cloudflare R2** (S3-compat, presigned URL) — KHÔNG Firebase Storage | SaaS |
 | Client ↔ server | REST/Dio (data layer template đã có) | có sẵn |
@@ -23,12 +23,12 @@
 | Push | FCM (`firebase_messaging`) | SaaS + client |
 | Local DB | ObjectBox | template có sẵn |
 | Deep link (đã cài app) | `app_links` | client, miễn phí |
-| Deferred deep link + referral | **AppsFlyer OneLink** | SaaS |
+| Deferred deep link + attribution (ghi nhận nguồn giới thiệu) | **AppsFlyer OneLink** | SaaS |
 | IAP Premium + restore | **RevenueCat** (`purchases_flutter`) | SaaS |
 | Chụp/chọn ảnh | `image_picker` | client |
 | Quyền hệ thống | `permission_handler` | template có sẵn |
 | Filter màu (SM-006) | `color_filter_extension` (MIT, free) | client |
-| Editor sticker/chữ (SM-007) | `pro_image_editor` (BSD-3, free) — thử trước, fallback native | client ⚠️ spike |
+| Editor sticker/chữ (SM-008) | `pro_image_editor` (BSD-3, free) — thử trước, fallback native | client ⚠️ spike |
 | Xuất tem PNG + watermark | Native `RepaintBoundary` (tự làm, package không lo) | không dependency |
 | Animation mở thư | Rive/Lottie (nghiêng mạnh) — chốt khi làm slice (TD-010) | ⚠️ gần chốt |
 | Native share sheet | `share_plus` | client |
@@ -47,7 +47,7 @@
 **Vì sao**:
 - Tận dụng Go backend sạch đã có (auth, sync delta, repository pattern) — tiết kiệm phần lớn Phase 0–1.
 - Cloud Run: serverless (autoscale, trả theo request), giữ nguyên Go, cùng hệ GCP với Firebase Auth/FCM/Storage.
-- Postgres prod: SQLite là file cục bộ → không share giữa nhiều Cloud Run instance; logic tiền (Dấu) + link-1-lần cần transaction row-level (`SELECT FOR UPDATE`) mà SQLite khoá cả file.
+- Postgres prod: SQLite là file cục bộ → không share giữa nhiều Cloud Run instance; logic link-1-lần cần transaction row-level (`SELECT FOR UPDATE`) mà SQLite khoá cả file.
 
 **Firebase VẪN dùng cho** (không phải toàn phần): **Auth** (TD-002), **FCM** push (TD-008), **Cloud Storage** ảnh tem. KHÔNG dùng Firestore, KHÔNG dùng Cloud Functions.
 
@@ -56,7 +56,7 @@
 - **SQLite ở prod**: không share qua nhiều instance Cloud Run.
 - **Cloud Functions Gen2 (Go)**: chạy Go được nhưng hợp app ít-function; server đa-route này hợp Cloud Run hơn.
 
-**Ràng buộc phát sinh**: logic "link 1 lần / hết hạn 7 ngày", sổ cái Dấu, quota — tự viết trong Go service layer + transaction Postgres (xem TD-006).
+**Ràng buộc phát sinh**: logic "link 1 lần / hết hạn 7 ngày", quota tháng — tự viết trong Go service layer + transaction Postgres (xem TD-006).
 
 ---
 
@@ -70,16 +70,18 @@
 
 **Vì sao**:
 - SM-000 BR-01 yêu cầu 4 phương thức: email/mật khẩu, Google, Apple, Facebook — Firebase Auth hỗ trợ cả 4 trực tiếp.
-- Session 90 ngày (BR-09), xác nhận email (BR-02), đặt lại mật khẩu qua link 24h (BR-12), đăng xuất mọi thiết bị sau đổi mật khẩu (BR-14): đều là hành vi Firebase Auth có sẵn hoặc cấu hình được.
+- Session 90 ngày (BR-09) và đăng xuất mọi thiết bị sau đổi mật khẩu (BR-14): đều là hành vi Firebase Auth có sẵn hoặc cấu hình được.
+- **Xác nhận email (BR-02) và đặt lại mật khẩu (BR-12) dùng mã OTP 6 số** (hiệu lực 5 phút, gửi lại sau 120s) — **Go backend tự phát/verify mã**, KHÔNG dùng email link / reset link của Firebase. Firebase Auth chỉ bật provider Email/Password để giữ mật khẩu; luồng OTP nằm hoàn toàn ở Go server.
 
-**Kiến trúc**: Firebase Auth lo **đăng nhập** phía client (4 provider), phát **ID token**. **Go server verify ID token** mỗi request (Firebase Admin SDK for Go) → lấy `uid`, tạo/đọc bản ghi user trong Postgres. Danh tính nguồn ở Firebase; hồ sơ nghiệp vụ (username, plan, seals) ở Go DB, khoá theo `uid`.
+**Kiến trúc**: Firebase Auth lo **đăng nhập** phía client (4 provider), phát **ID token**. **Go server verify ID token** mỗi request (Firebase Admin SDK for Go) → lấy `uid`, tạo/đọc bản ghi user trong Postgres. Danh tính nguồn ở Firebase; hồ sơ nghiệp vụ (username, plan) ở Go DB, khoá theo `uid`.
 
 **Vì sao Firebase Auth thay vì JWT-Go tự quản**:
 - Social login (Google/Apple/Facebook) do Firebase lo — tự verify token 3 nhà cung cấp phía Go là nhiều việc dễ sai.
 - UI auth đã dựng sẵn hợp Firebase (`login_screen` v.v.).
-- Go server chỉ cần verify ID token (1 lib), nhẹ hơn tự quản vòng đời token + reset + social.
+- Go server chỉ cần verify ID token (1 lib) cho phần đăng nhập/social, nhẹ hơn tự quản toàn bộ vòng đời token + social.
 
 **Tự viết thêm (không có sẵn trong Firebase Auth) — nay ở Go server, không phải Functions**:
+- **Mã OTP 6 số xác nhận email (BR-02) + đặt lại mật khẩu (BR-12)**: Go server tự phát mã, lưu + verify (hiệu lực 5 phút, gửi lại sau 120s, mỗi lần gửi lại vô hiệu mã cũ). KHÔNG dùng email link / reset link / magic link của Firebase.
 - **Khoá tạm 15 phút sau 5 lần sai** (BR-11, AC-12): đếm lần thất bại + khoá trong Go/Postgres.
 - **Username duy nhất 3–30 ký tự** (BR-04): bảng `usernames` + unique constraint Postgres.
 - **Liên kết/huỷ liên kết provider, giữ ≥1 phương thức** (BR-15/16): `linkWithCredential` phía client + kiểm tra ở server.
@@ -93,7 +95,7 @@
 ## TD-003 — Cơ sở dữ liệu
 
 **Quyết định**:
-- **Server**: Postgres/Cloud SQL (prod), SQLite (dev) — nguồn sự thật cho user, thư, tem, link, dấu, referral, entitlement. Truy cập qua repository interface Go (tầng `storage/` đã tách).
+- **Server**: Postgres/Cloud SQL (prod), SQLite (dev) — nguồn sự thật cho user, thư, tem, link, attribution (nguồn giới thiệu), entitlement. Truy cập qua repository interface Go (tầng `storage/` đã tách).
 - **Local (client)**: ObjectBox (album tem, cache thư đã tải — offline-first), đồng bộ delta với server qua `rev`+`deleted_at` (sync protocol server đã có sẵn).
 
 **Vì sao**:
@@ -107,10 +109,10 @@
 
 > **2026-07-07 — Postgres driver HOÃN tới trước prod (Phase 5).** Port `storage/postgres`
 > là việc **cơ học** (~2500 LOC: đổi `?`→`$N`, `INSERT OR REPLACE`/`ON CONFLICT`, `SELECT
-> FOR UPDATE` cho seal/link transaction) nhưng **chỉ prod đa-instance mới cần**. Toàn bộ
-> luồng E2E (dev + staging 1 instance) chạy đủ trên SQLite. Đã kiểm: transaction tiền
-> (`SealRepository.Append` dùng `UPDATE balance = balance + ?`) **race-safe cả trên Postgres**
-> (row-lock ở UPDATE), không phụ thuộc single-writer của SQLite → port sau không đổi logic.
+> FOR UPDATE` cho link-1-lần transaction) nhưng **chỉ prod đa-instance mới cần**. Toàn bộ
+> luồng E2E (dev + staging 1 instance) chạy đủ trên SQLite. Đã kiểm: transaction mở link
+> (`SELECT FOR UPDATE` trên bản ghi link để đảm bảo "chỉ người đầu tiên nhận") **race-safe
+> cả trên Postgres** (row-lock ở UPDATE), không phụ thuộc single-writer của SQLite → port sau không đổi logic.
 > Làm khi vào Phase 5 (Premium/tiền thật) hoặc khi cần scale >1 instance. Cho tới đó Cloud Run
 > chạy SQLite trên volume (staging, 1 instance, `min-instances=max-instances=1`).
 
@@ -121,13 +123,13 @@
 **Quyết định**: Thử hai package **miễn phí (license thương mại)** trước; nếu vướng ràng buộc riêng của StampMail thì rơi về native Flutter. Quyết cuối bằng **spike 1 buổi** (xem dưới).
 
 - **Filter màu (SM-006)** → **`color_filter_extension`** (MIT, 30+ filter + 90+ preset): nguồn ma trận cho 16 bộ lọc, khỏi tự tính ColorMatrix từ đầu. Ba thanh sáng/ấm/đậm vẫn tự dựng bằng `ColorFilter.matrix` nhân thêm.
-- **Engine sticker/chữ kéo–xoay–phóng (SM-007)** → cân nhắc **`pro_image_editor`** (BSD-3, ~583 likes): làm sẵn phần cơ khí tốn công nhất (gesture transform, layer, text, crop). Nếu UI mặc định không khớp thẩm mỹ StampMail và phải custom nhiều → tự dựng `Stack` + `Matrix4` + `GestureDetector` (giới hạn min/max BR-10 kẹp trong handler).
+- **Engine sticker/chữ kéo–xoay–phóng (SM-008)** → cân nhắc **`pro_image_editor`** (BSD-3, ~583 likes): làm sẵn phần cơ khí tốn công nhất (gesture transform, layer, text, crop). Nếu UI mặc định không khớp thẩm mỹ StampMail và phải custom nhiều → tự dựng `Stack` + `Matrix4` + `GestureDetector` (giới hạn min/max BR-10 kẹp trong handler).
 - **Xuất tem PNG + watermark (SM-011 BR-11)** → luôn tự làm: bọc vùng tem trong `RepaintBoundary`, `toImage()` → PNG; watermark vẽ lớp trên cùng trước khi capture → không thể tắt. (Package editor **không** lo phần này.)
 
 **Vì sao dùng package cho phần cơ khí**:
 - `color_filter_extension` (MIT) và `pro_image_editor` (BSD-3) đều **miễn phí kể cả app thương mại** — không như vài editor SaaS-Flutter tính phí license.
 - Gesture transform + layer sticker là phần tốn công nhất, dễ có bug — tái dùng code đã được nhiều app kiểm chứng đúng tinh thần "đừng viết lại thứ đã có".
-- Xử lý cục bộ → thoả offline (BR-07 SM-006, BR-08 SM-007) miễn phí.
+- Xử lý cục bộ → thoả offline (BR-07 SM-006, BR-08 SM-008) miễn phí.
 
 **Package KHÔNG lo được — 3 ràng buộc riêng vẫn phải tự code lên trên**:
 
@@ -135,12 +137,12 @@
 |---|---|
 | **Watermark cưỡng bức** khi xuất (SM-011 BR-11, không tắt được) | ❌ tự chèn lớp watermark trước khi capture |
 | **16 filter chia nhóm Free/Premium + khoá/gợi ý nâng cấp** (SM-006 BR-02/03) | ❌ filter phẳng, không có gating |
-| **Mở sticker đặc biệt bằng 50📮 Dấu** (SM-007 BR-07) | ❌ logic nghiệp vụ riêng |
-| Khung/viền tem (SM-008) | ❌ không phải editor ảnh chung |
+| **Mở sticker đặc biệt bằng Premium (Entitlement)** (SM-008) | ❌ logic nghiệp vụ riêng |
+| Khung/viền tem (SM-009) — mở khoá viền bằng Premium | ❌ không phải editor ảnh chung |
 
-→ Package cho **engine kéo–thả–xoay + preview filter**; gating Free/Premium, watermark, Dấu, viền tem là lớp StampMail tự bọc.
+→ Package cho **engine kéo–thả–xoay + preview filter**; gating Free/Premium, watermark, viền tem là lớp StampMail tự bọc.
 
-**Kế hoạch spike (chốt rẻ nhất)**: dựng thử màn SM-007 bằng `pro_image_editor` trong ~1 buổi, kiểm tra có nhét được watermark + gating Free/Premium + viền tem vào không. Khớp → giữ package. Vướng → rơi về native `Stack`+`Matrix4` (vẫn giữ `color_filter_extension` cho phần filter). Ghi kết quả spike ngược lại vào mục này.
+**Kế hoạch spike (chốt rẻ nhất)**: dựng thử màn SM-008 bằng `pro_image_editor` trong ~1 buổi, kiểm tra có nhét được watermark + gating Free/Premium + viền tem vào không. Khớp → giữ package. Vướng → rơi về native `Stack`+`Matrix4` (vẫn giữ `color_filter_extension` cho phần filter). Ghi kết quả spike ngược lại vào mục này.
 
 **Đã loại**: `image_editor` / chỉnh pixel bằng `image` package — ColorMatrix trên GPU nhẹ hơn chỉnh pixel CPU cho preview real-time.
 
@@ -157,12 +159,12 @@ Nhu cầu tách làm hai bài toán khác nhau — giải bằng hai công cụ:
 
 **Vì sao**: SM-017 BR-02 "đã cài app → mở thẳng trong app" là năng lực OS gốc, miễn phí, không cần SDK bên thứ ba.
 
-### TD-005b — Deferred deep link + referral attribution: AppsFlyer OneLink
-**Quyết định**: Dùng **AppsFlyer OneLink** cho phần link thư đi qua bước cài đặt từ store + gán nguồn giới thiệu.
+### TD-005b — Deferred deep link + attribution (ghi nhận nguồn giới thiệu): AppsFlyer OneLink
+**Quyết định**: Dùng **AppsFlyer OneLink** cho phần link thư đi qua bước cài đặt từ store + ghi nhận nguồn giới thiệu (attribution).
 
 **Vì sao**:
-- SM-016 BR-09/BR-11 + SM-017 AC-09: người nhận **chưa cài app** → mở web → cài từ store → app phải biết "thư nào + ai giới thiệu" để trao **50📮**. Đây là *deferred deep link* survive qua store — cực khó tự làm tin cậy (iOS chặn fingerprint ngày càng gắt).
-- AppsFlyer OneLink lo **cả** deferred deep link **lẫn** attribution referral — đúng hai thứ spec cần trong một SDK.
+- SM-016 BR-09/BR-11 + SM-017 AC-09: người nhận **chưa cài app** → mở web → cài từ store → app phải biết "thư nào + nguồn giới thiệu nào" để **mở đúng thư** (SM-017) và **ghi nhận nguồn giới thiệu** (SM-014 BR-09). Đây là *deferred deep link* survive qua store — cực khó tự làm tin cậy (iOS chặn fingerprint ngày càng gắt).
+- AppsFlyer OneLink lo **cả** deferred deep link **lẫn** attribution (ghi nhận nguồn giới thiệu) — đúng hai thứ spec cần trong một SDK.
 - Đây là thay thế hợp lý sau khi **Firebase Dynamic Links bị khai tử (shutdown 2025-08)**.
 
 **Đã loại**:
@@ -170,22 +172,26 @@ Nhu cầu tách làm hai bài toán khác nhau — giải bằng hai công cụ:
 - **Tự host + fingerprint/clipboard** cho deferred: mong manh, iOS siết dần → rủi ro cho một tính năng P0.
 - **Branch.io / Adjust**: tương đương AppsFlyer; chọn AppsFlyer theo yêu cầu người dùng. (Nếu đổi sau, điểm thay thế khu trú ở lớp adapter deep-link.)
 
-**Ranh giới cố ý**: AppsFlyer **chỉ** gánh link thư + referral. Universal link thường để `app_links` lo (miễn phí) — không bắt AppsFlyer làm thay để giảm phụ thuộc + chi phí.
+**Ranh giới cố ý**: AppsFlyer **chỉ** gánh link thư + attribution (ghi nhận nguồn giới thiệu). Universal link thường để `app_links` lo (miễn phí) — không bắt AppsFlyer làm thay để giảm phụ thuộc + chi phí.
 
 **Gói**: bản **trả phí** (đã có), nên không vướng giới hạn conversions của free tier — dùng thoải mái cho link thư + attribution.
 
 ---
 
-## TD-006 — Link thư 1-lần / hết hạn 7 ngày: tự viết trên Firestore + Functions
+## TD-006 — Link thư 1-lần / hết hạn 7 ngày: Go service layer + transaction (Postgres)
 
-**Quyết định**: Logic nghiệp vụ tự cài, **không** phải tính năng có sẵn.
-- Mỗi người nhận → 1 document link riêng (SM-016 BR-01), có `createdAt`, `expiresAt = +7 ngày`, `openedBy` (null khi chưa mở).
-- Mở link = **Firestore transaction**: nếu `openedBy == null` và chưa hết hạn → set `openedBy` + trả nội dung; ngược lại trả "đã đọc" / "hết hạn" (BR-02/BR-03, AC-03/AC-05).
-- Dọn link hết hạn: TTL policy của Firestore hoặc Cloud Function theo lịch.
+> **Đồng bộ TD-001**: logic này nằm trong **Go service layer + DB transaction**, KHÔNG dùng Firestore/Cloud Functions (đã đảo hướng ở TD-001).
 
-**Vì sao**: đây là ràng buộc nghiệp vụ cốt lõi (một-lần, 7 ngày) — không có dịch vụ nào làm sẵn; transaction đảm bảo "chỉ người đầu tiên nhận".
+**Quyết định**: Logic nghiệp vụ tự cài trong Go backend, **không** phải tính năng có sẵn.
+- Mỗi người nhận → 1 bản ghi link riêng trong bảng `letter_links` (SM-016 BR-01): `created_at`, `expires_at = +7 ngày`, `opened_by` (null khi chưa mở), `opened_at`.
+- Mở link = **transaction row-level** (SQLite ở dev; Postgres prod dùng `SELECT … FOR UPDATE` khoá hàng): nếu `opened_by IS NULL` và chưa hết hạn → set `opened_by`/`opened_at` + trả nội dung; ngược lại trả "đã đọc" / "hết hạn" (BR-02/BR-03, AC-03/AC-05).
+- Dọn link hết hạn: job theo lịch (Cloud Run scheduled job / cron) hoặc kiểm lười khi truy cập.
 
-**Ghi chú**: URL link công khai trỏ về Hosting; Hosting/Function đọc document này để render (xem TD-011).
+**Vì sao**: đây là ràng buộc nghiệp vụ cốt lõi (một-lần, 7 ngày) — không có dịch vụ nào làm sẵn; transaction row-level đảm bảo "chỉ người đầu tiên nhận". Dùng lại tầng repository/transaction đã có của Go backend (TD-001), không thêm Firestore.
+
+**Ghi chú**: URL link công khai trỏ về **trang web xem thư** (TD-011 — trang riêng, KHÔNG Flutter Web); backend đọc bản ghi `letter_links` để render nội dung.
+
+**Đã loại**: Firestore transaction / TTL policy / Cloud Function theo lịch — thay bằng Go + Postgres (theo TD-001).
 
 ---
 
@@ -199,7 +205,7 @@ Nhu cầu tách làm hai bài toán khác nhau — giải bằng hai công cụ:
 - Free tier tới ~$2.5k doanh thu/tháng — dư cho MVP.
 
 **Đã loại**:
-- **`in_app_purchase` thuần + Cloud Function verify**: chính chủ, không phụ thuộc bên thứ ba, nhưng phải tự code restore + grace period + cross-device + verify hai store → nhiều việc dễ sai cho một luồng tiền. Chỉ quay lại nếu chi phí RevenueCat thành vấn đề khi scale.
+- **`in_app_purchase` thuần + tự verify receipt ở Go server**: chính chủ, không phụ thuộc bên thứ ba, nhưng phải tự code restore + grace period + cross-device + verify hai store → nhiều việc dễ sai cho một luồng tiền. Chỉ quay lại nếu chi phí RevenueCat thành vấn đề khi scale.
 
 **Ranh giới**: entitlement Premium là nguồn sự thật ở RevenueCat, nhưng app vẫn cache trạng thái gói để **BR-08 SM-006** hoạt động offline ("đã xác nhận Premium trước đó thì lọc Premium vẫn dùng khi mất mạng").
 
@@ -209,7 +215,7 @@ Nhu cầu tách làm hai bài toán khác nhau — giải bằng hai công cụ:
 
 **Quyết định**: Firebase Cloud Messaging (`firebase_messaging`) cho 5 loại thông báo (SM-026).
 
-**Vì sao**: đã trong hệ Firebase; xếp hàng chờ khi offline + giao lại khi có mạng (BR-06/07 SM-026) là hành vi FCM có sẵn. Bật/tắt từng loại (BR-02) là logic phía app + preference trên Firestore.
+**Vì sao**: đã trong hệ Firebase; xếp hàng chờ khi offline + giao lại khi có mạng (BR-06/07 SM-026) là hành vi FCM có sẵn. Bật/tắt từng loại (BR-02) là logic phía app + preference lưu ở Go backend (Postgres, theo TD-001).
 
 **Đã loại**: OneSignal và tương tự (thừa khi đã dùng Firebase).
 
@@ -255,7 +261,7 @@ Nhu cầu tách làm hai bài toán khác nhau — giải bằng hai công cụ:
 
 ## TD-012 — Native share sheet: `share_plus`
 
-**Quyết định**: `share_plus` để mở native share sheet khi chia sẻ tem nhận Dấu (SM-011 BR-10) và mở DM nền tảng khi gửi thư (SM-016 BR-05).
+**Quyết định**: `share_plus` để mở native share sheet khi chia sẻ tem (SM-011 BR-10) và mở DM nền tảng khi gửi thư (SM-016 BR-05).
 
 **Vì sao**: BR-10 nói rõ dùng **native share sheet của hệ điều hành**; `share_plus` là chuẩn. Với SM-016, mở DM từng nền tảng cụ thể có thể cần URL scheme riêng (Zalo, Messenger...) — fallback copy-to-clipboard khi app chưa cài (mục 5 SM-016).
 

@@ -5,8 +5,8 @@
 bên thứ ba, quyết định business, hoặc native config) để bạn xử lý một lượt. Sau
 khi có các mục này, phần lớn code đã sẵn sàng chạy end-to-end thật.
 
-> Trạng thái code: backend Go + 5 feature package client (album, letters,
-> rewards, premium, letter_inbox) + web viewer **đã build/analyze/test xanh**.
+> Trạng thái code: backend Go + 4 feature package client (album, letters,
+> premium, letter_inbox) + web viewer **đã build/analyze/test xanh**.
 > Các mục dưới đây là cái chặn "chạy thật trên cloud", không phải chặn code.
 
 ---
@@ -21,8 +21,8 @@ khi có các mục này, phần lớn code đã sẵn sàng chạy end-to-end th
 | A4 | **Secret Manager** cho Cloud Run runtime | Backend prod | `JWT_SECRET`, `REVENUECAT_WEBHOOK_AUTH`, `APPSFLYER_WEBHOOK_SECRET` + toàn bộ R2_* / FIREBASE (workflow map sẵn từ Secret Manager) |
 | A5 | **Meta app** (Facebook Login) | Auth | Facebook App ID + config native (Info.plist / strings.xml) |
 | A6 | **Apple Developer** account | Sign in with Apple (bắt buộc khi có social login) + universal link | Service ID, key, entitlements |
-| A7 | **RevenueCat** account + products (gói tháng/năm + gói Dấu) | Premium + mua Dấu | RevenueCat API key (client), webhook auth secret (A4) |
-| A8 | **AppsFlyer** account (bản trả phí đã có) + OneLink | Deferred deep link + referral | AppsFlyer dev key, OneLink template, postback secret (A4) |
+| A7 | **RevenueCat** account + products (gói tháng/năm) | Premium | RevenueCat API key (client), webhook auth secret (A4) |
+| A8 | **AppsFlyer** account (bản trả phí đã có) + OneLink | Deferred deep link + attribution (ghi nhận nguồn giới thiệu) | AppsFlyer dev key, OneLink template, postback secret (A4) |
 | A9 | **Domain** cho link thư + trang web xem thư | Web viewer + universal link | Ví dụ `stampmail.app`; trỏ `/letter/*` → `web_letter/index.html` |
 
 ---
@@ -31,7 +31,7 @@ khi có các mục này, phần lớn code đã sẵn sàng chạy end-to-end th
 
 | # | Quyết định | Chặn |
 |---|-----------|------|
-| B1 | **Giá gói Premium** (tháng/năm) + **giá gói Dấu** (số Dấu / gói) | Paywall (Phase 5) — cấu hình RevenueCat |
+| B1 | **Giá gói Premium** (tháng/năm) | Paywall (Phase 5) — cấu hình RevenueCat |
 | B2 | **Animation mở thư**: giữ CSS thuần (đã làm, nhẹ) hay đầu tư 1 asset **Rive/Lottie** (đẹp hơn, dùng lại cả app + web)? | Trải nghiệm cốt lõi SM-017. Web viewer hiện dùng CSS placeholder (`web_letter/`) — chạy được ngay; nâng cấp Rive cần asset designer |
 | B3 | **Stack host web viewer**: Firebase Hosting hay Cloudflare Pages? | Deploy `web_letter/` (A9) |
 
@@ -57,11 +57,10 @@ hợp lý / tránh làm thừa:
 |---|------|-------------|
 | D1 | **Auth client → Firebase Auth SDK** (4 provider) + nối `/api/sm/*` | Cần A1 config files để chạy/test thật; UI auth đã có sẵn. Data layer swap làm khi có A1 |
 | D2 | **Postgres driver** (`storage/postgres`) | Chỉ prod đa-instance cần; E2E chạy trên SQLite. Làm ở Phase 5 (xem `tech-stack.md` TD-003) |
-| D3 | **group_card** (SM-032, thiệp nhóm — P1) | **Chưa có backend** (cần bảng + endpoint multi-signer). Cần thiết kế backend trước; là P1 cuối cùng |
-| D4 | **RevenueCat purchase flow** (`purchases_flutter`) | Cần A7 keys; `EntitlementReader` (đọc trạng thái) đã xong, chỉ thiếu luồng mua |
-| D5 | **AppsFlyer SDK** client init + deferred deep link | Cần A8; webhook backend đã xong |
-| D6 | **Toàn bộ UI** các feature (stamp editor, album grid, letter composer, rewards, paywall...) | Bạn dặn "bỏ lại UI". Data/domain/wiring đã sẵn cho UI cắm vào |
-| D7 | **stamp_creator** editor (image_picker, filter, sticker, viền, xuất PNG + watermark) | Chủ yếu là UI + `pro_image_editor` spike (TD-004). Backend save-stamp + presign + album đã sẵn |
+| D3 | **RevenueCat purchase flow** (`purchases_flutter`) | Cần A7 keys; `EntitlementReader` (đọc trạng thái) đã xong, chỉ thiếu luồng mua |
+| D4 | **AppsFlyer SDK** client init + deferred deep link | Cần A8; webhook backend đã xong |
+| D5 | **Toàn bộ UI** các feature (stamp editor, album grid, letter composer, paywall...) | Bạn dặn "bỏ lại UI". Data/domain/wiring đã sẵn cho UI cắm vào |
+| D6 | **stamp_creator** editor (image_picker, filter, sticker, viền, xuất PNG + watermark) | Chủ yếu là UI + `pro_image_editor` spike (TD-004). Backend save-stamp + presign + album đã sẵn |
 
 ---
 
@@ -78,5 +77,5 @@ hợp lý / tránh làm thừa:
 1. **A1 (Firebase)** → D1 auth client → chạy thật đăng nhập.
 2. **A2 (R2) + A3/A4 (Cloud Run)** → deploy backend staging → presign upload thật.
 3. **A9 + B3** → deploy `web_letter/` → mở thư thật trên web.
-4. **A7/A8 + B1** → D4/D5 → Premium + Dấu + referral thật.
-5. (Khi cần) D2 Postgres, D3 group_card, D6/D7 UI.
+4. **A7/A8 + B1** → D3/D4 → Premium + attribution (ghi nhận nguồn giới thiệu) thật.
+5. (Khi cần) D2 Postgres, D5/D6 UI.

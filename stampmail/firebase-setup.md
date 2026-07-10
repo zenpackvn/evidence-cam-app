@@ -39,7 +39,7 @@ Trong Firebase Console của project:
 
 ### 2.1 Authentication (Build → Authentication → Get started)
 Bật 4 sign-in provider (SM-000 BR-01):
-- [ ] **Email/Password** — bật. (Bật cả "Email link" nếu muốn, không bắt buộc.)
+- [ ] **Email/Password** — bật. KHÔNG bật "Email link (passwordless sign-in)". Xác nhận email (BR-02) và đặt lại mật khẩu (BR-12) dùng **mã OTP 6 số** do **backend Go tự phát + verify** (hiệu lực 5 phút, gửi lại sau 120s) — không dùng email link / reset link của Firebase.
 - [ ] **Google** — bật. Chọn support email.
 - [ ] **Apple** — bật. *(Cần Apple Developer account — xem bước 5.)*
 - [ ] **Facebook** — bật. Cần **App ID + App Secret** từ Meta (xem bước 6).

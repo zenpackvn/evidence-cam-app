@@ -2,9 +2,9 @@
 
 **Cập nhật lần cuối**: 2026-07-07
 **Backend**: Go server (mở rộng `simple_backend_server`), SQLite (dev) / Postgres (prod)
-**Căn cứ**: 29 spec, [tech-stack.md](tech-stack.md) TD-001→012
+**Căn cứ**: 27 spec, [tech-stack.md](tech-stack.md) TD-001→012
 
-> Nguồn sự thật cho toàn bộ bảng, quan hệ, và logic nghiệp vụ server-side. Mọi cộng/trừ Dấu, quota, link-1-lần đều **server-side** (client chỉ đọc). Bám pattern Go hiện có: mỗi entity có `domain` struct + repository interface, các bảng sync dùng `rev` (per-owner, tăng dần) + `deleted_at` (tombstone) như bookmark/collection.
+> Nguồn sự thật cho toàn bộ bảng, quan hệ, và logic nghiệp vụ server-side. Mọi quota và link-1-lần đều **server-side** (client chỉ đọc). Bám pattern Go hiện có: mỗi entity có `domain` struct + repository interface, các bảng sync dùng `rev` (per-owner, tăng dần) + `deleted_at` (tombstone) như bookmark/collection.
 
 ---
 
@@ -12,9 +12,8 @@
 
 - **ID**: TEXT, random opaque (IDGenerator hiện có).
 - **Thời gian**: DATETIME UTC.
-- **Sync (offline-first)**: bảng client cần đồng bộ (stamps, albums, letters_received, seals_balance cache) mang `rev INTEGER` + `deleted_at DATETIME NULL`. Client kéo delta bằng `rev > cursor`.
+- **Sync (offline-first)**: bảng client cần đồng bộ (stamps, albums, letters_received) mang `rev INTEGER` + `deleted_at DATETIME NULL`. Client kéo delta bằng `rev > cursor`.
 - **owner_id**: `uid` từ Firebase ID token (TD-002). Bảng `users.id` = Firebase `uid` (không tự sinh id user nữa — dùng uid).
-- **Tiền/thưởng**: mọi thay đổi Dấu ghi vào `seal_ledger` (append-only); số dư = tổng ledger (hoặc cache có kiểm chứng). Không update trực tiếp balance từ client.
 
 ---
 
@@ -52,6 +51,21 @@ Khoá 5-lần/15-phút (BR-11 SM-000).
 | failed_count | INTEGER | |
 | locked_until | DATETIME NULL | |
 | updated_at | DATETIME | |
+
+### verification_codes
+Mã OTP 6 số do **backend tự phát & verify** (không dùng link/email của Firebase). Dùng cho xác nhận email (BR-02 SM-000) và đặt lại mật khẩu (BR-12 SM-000).
+
+| Cột | Kiểu | Ghi chú |
+|---|---|---|
+| id | TEXT PK | |
+| email | TEXT | địa chỉ nhận mã |
+| purpose | TEXT | `email_verify` \| `password_reset` |
+| code_hash | TEXT | hash của mã 6 số (không lưu plaintext) |
+| expires_at | DATETIME | = created_at + 5 phút (BR-02/12) |
+| consumed_at | DATETIME NULL | đã dùng chưa (một lần) |
+| created_at | DATETIME | dùng cho throttle gửi lại 120s |
+
+> Gửi lại tạo mã mới → mã cũ hết hiệu lực (đánh dấu consumed/xoá). Không tiết lộ email có tồn tại hay không (BR-12).
 
 ### stamps (sync)
 Tem — tự tạo hoặc nhận. Ảnh trên Firebase Storage, DB giữ URL.
@@ -107,48 +121,13 @@ Mỗi người nhận = 1 link (BR-01 SM-016). Link 1-lần / 7-ngày.
 | expires_at | DATETIME | = created_at + 7 ngày (BR-03) |
 | opened_by | TEXT NULL | uid \| `"anonymous"` \| NULL (chưa mở) |
 | opened_at | DATETIME NULL | |
-| read_seal_awarded | BOOLEAN | đã trao 15📮 cho người gửi chưa (idempotent BR-06 SM-019) |
 
 **Trạng thái khi mở** (transaction):
 - `opened_by IS NULL` && `now < expires_at` → cho mở, set `opened_by`+`opened_at`, trả nội dung.
 - `opened_by IS NOT NULL` → "đã đọc" (AC-03 SM-016).
 - `now >= expires_at` → "hết hạn" (AC-05).
 
-### seal_ledger ⭐ (append-only — nguồn sự thật số Dấu)
-Mọi cộng/trừ Dấu (SM-033).
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| id | TEXT PK | |
-| user_id | TEXT | người nhận Dấu |
-| amount | INTEGER | +/- (âm khi tiêu) |
-| reason | TEXT | `share`\|`send`\|`opened`\|`install`\|`unlock_sticker`\|`unlock_border`\|`unlock_template_stamp`\|`purchase` |
-| ref_id | TEXT NULL | id liên quan (letter_link, stamp pack...) — chống trùng |
-| created_at | DATETIME | |
-
-**Số dư** = `SUM(amount) WHERE user_id`. Cache ở `users.seals_balance` (cập nhật cùng transaction) để đọc nhanh + offline (BR-16).
-
-### seal_limits
-Đếm hạn mức Dấu theo chu kỳ.
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| user_id | TEXT | |
-| kind | TEXT | `share_weekly` (cap 3/tuần BR-06) \| `install_monthly` (cap 5/tháng BR-10) |
-| period | TEXT | mốc chu kỳ, vd `2026-W28` \| `2026-07` |
-| count | INTEGER | |
-| PK | (user_id, kind, period) | |
-
-### unlocks (sync)
-Item đã mở vĩnh viễn bằng Dấu (BR-11/12/13 SM-033).
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| user_id | TEXT | |
-| item_type | TEXT | `sticker_pack`\|`border`\|`template_stamp` |
-| item_id | TEXT | id bộ sticker / kiểu viền / tem mẫu |
-| unlocked_at | DATETIME | |
-| PK | (user_id, item_type, item_id) | |
+> **Mở khóa nội dung cao cấp**: sticker đặc biệt (SM-008) và viền/khung khóa (SM-009) chỉ mở bằng **Premium** — kiểm qua `entitlements.is_premium`, không có bảng "mở khóa từng item". Toàn bộ tem mẫu (SM-035) **miễn phí**, không có phần khóa. (Tem là ảnh render phẳng nên không lưu metadata sticker/viền server-side — xem ghi chú bảng `stamps`.)
 
 ### quota_monthly
 Hạn mức tháng Free (SM-030): 30 tem, 10 thư.
@@ -163,16 +142,15 @@ Hạn mức tháng Free (SM-030): 30 tem, 10 thư.
 
 > Premium bỏ qua check. Reset = period mới (không cần job xoá; period khác = count 0).
 
-### referrals
-Ghi nhận cài app từ link (BR-09/11 SM-016) — AppsFlyer postback → server.
+### attribution
+Ghi nhận **nguồn giới thiệu** khi người nhận cài app từ link (BR-09 SM-016) — AppsFlyer postback → server. Chỉ để attribution/thống kê; **không** trao thưởng.
 
 | Cột | Kiểu | Ghi chú |
 |---|---|---|
 | new_user_uid | TEXT PK | tài khoản mới |
-| referrer_uid | TEXT | người giới thiệu |
+| referrer_uid | TEXT | nguồn giới thiệu (người gửi link) |
 | link_id | TEXT NULL | letter_link nguồn |
 | created_at | DATETIME | |
-| seal_awarded | BOOLEAN | đã trao 50📮 chưa (cap 5/tháng) |
 
 ### entitlements
 Trạng thái Premium (RevenueCat webhook → server, TD-007).
@@ -193,20 +171,15 @@ Push 5 loại (SM-026). Giữ nguyên schema, thêm `type` values mới.
 ## 2. Logic nghiệp vụ server-side (service layer)
 
 ### Link thư (LetterLinkService)
-- **CreateLink(letterID, senderUID, platform)** → kiểm quota `letters_sent < 10` (Free); tạo `letter_links` (expires +7d); **+5📮** ghi ledger (`send`); tăng quota. (BR-08/10 SM-016)
+- **CreateLink(letterID, senderUID, platform)** → kiểm quota `letters_sent < 10` (Free); tạo `letter_links` (expires +7d); tăng quota. (BR-08/10 SM-016)
 - **OpenLink(linkID, viewerUID?)** → transaction:
   1. Lock row; nếu `opened_by != NULL` → trả `already_read`; nếu hết hạn → `expired`.
   2. Set `opened_by`, `opened_at`.
-  3. Nếu chưa `read_seal_awarded`: **+15📮** cho `sender_uid` (`opened`), set flag. (BR-06 SM-019)
-  4. Push FCM cho người gửi "đã mở thư". (BR-07 SM-016)
-  5. Trả nội dung thư (letter + stamps).
+  3. Push FCM cho người gửi "đã mở thư". (BR-07 SM-016)
+  4. Trả nội dung thư (letter + stamps).
 
-### Dấu (SealService)
-- **AwardShare(uid)** → cap `share_weekly < 3` tuần này; nếu còn: **+10📮** (`share`), tăng limit; nếu hết: no-op + trả "đã đạt giới hạn". (BR-05/06 SM-033)
-- **AwardInstall(referrerUID, newUID, linkID)** → chỉ khi new user thật + `install_monthly < 5`: **+50📮** (`install`), set `referrals.seal_awarded`, push. (BR-10)
-- **Spend(uid, itemType, itemId, cost)** → transaction: kiểm balance ≥ cost; nếu đủ: ghi `unlocks` + **−cost📮** (`unlock_*`); nếu thiếu: trả `insufficient` + số thiếu. (BR-11/12/13/14)
-- **Purchase(uid, pack)** → sau IAP consumable verify: **+N📮** (`purchase`). (BR-15)
-- **Balance(uid)** = users.seals_balance (đồng bộ với ledger).
+### Attribution (AttributionService)
+- **RecordInstall(referrerUID, newUID, linkID)** → khi AppsFlyer báo cài app từ link: ghi 1 row `attribution` (idempotent theo `new_user_uid`). Chỉ ghi nhận nguồn giới thiệu, không trao thưởng. (BR-09 SM-016)
 
 ### Quota (QuotaService)
 - **CheckAndIncStamp(uid)** / **CheckAndIncLetter(uid)** → Premium: luôn OK; Free: kiểm `< cap` period hiện tại, tăng nếu OK, else `quota_exceeded`. (SM-030)
@@ -220,6 +193,8 @@ Push 5 loại (SM-026). Giữ nguyên schema, thêm `type` values mới.
 - **EnsureUser(uid, email)** → tạo users row nếu chưa có (lần đầu đăng nhập).
 - **ClaimUsername(uid, username)** → insert `usernames` (unique) + set users.username. Trùng → `username_taken`. (BR-04, SM Choose Username)
 - **RecordFailedLogin / CheckLockout(email)** → auth_lockout. (BR-11)
+- **IssueEmailOtp(email, purpose)** → phát mã 6 số, lưu hash vào `verification_codes` (hiệu lực 5 phút), gửi email; throttle gửi lại 120s, mã cũ hết hiệu lực. Dùng cho `email_verify` (BR-02) và `password_reset` (BR-12). Với reset không tiết lộ email có tồn tại.
+- **VerifyEmailOtp(email, purpose, code)** → so hash + kiểm hạn/consumed; đúng thì đánh dấu consumed. Với `email_verify` set `users.email_verified = true`; với `password_reset` cho phép đặt mật khẩu mới. Mã hết hạn/đã dùng → `code_invalid`. (BR-02/12 SM-000)
 
 ---
 
@@ -231,26 +206,25 @@ Tất cả (trừ open-link công khai) qua `authMiddleware` (verify Firebase ID
 POST   /api/auth/ensure-user           # sau đăng nhập Firebase lần đầu
 POST   /api/auth/claim-username
 GET    /api/auth/me
+POST   /api/auth/email-otp             # phát mã 6 số (email_verify | password_reset); throttle 120s
+POST   /api/auth/verify-email-otp      # xác nhận email bằng mã (BR-02)
+POST   /api/auth/reset-password        # verify mã + đặt mật khẩu mới (BR-12)
 
 GET    /api/stamps        /api/stamps/{id}   POST /api/stamps   DELETE ...   # +sync ?since=rev
 GET    /api/albums ...    (CRUD + sync)
 POST   /api/stamps/{id}/save            # lưu tem (check quota 30/tháng)
 
 POST   /api/letters                     # tạo thư
-POST   /api/letters/{id}/links          # tạo link + +5📮  (body: platform)
+POST   /api/letters/{id}/links          # tạo link (body: platform)
 GET    /api/sent                        # hộp thư đã gửi (SM-021)
 
 GET    /public/letter/{linkId}          # CÔNG KHAI — trang web xem thư gọi (OpenLink)
                                         # không auth; trả nội dung hoặc already_read/expired
 
 GET    /api/inbox                        # thư đã nhận (SM-018)
-GET    /api/seals                        # số dư + lịch sử
-POST   /api/seals/share                  # +10📮 (cap tuần)
-POST   /api/seals/spend                  # tiêu Dấu mở item
-POST   /api/seals/purchase               # sau IAP
 
 POST   /api/webhooks/revenuecat          # entitlement (verify signature)
-POST   /api/webhooks/appsflyer           # referral install → +50📮
+POST   /api/webhooks/appsflyer           # attribution install (ghi nhận nguồn giới thiệu; deferred deep link SM-017)
 POST   /api/webhooks/... (internal)
 
 GET    /api/entitlement                  # trạng thái Premium
@@ -260,18 +234,17 @@ GET    /api/entitlement                  # trạng thái Premium
 
 ## 4. Thứ tự hiện thực (khớp todo)
 
-1. **domain**: struct + repository interface cho stamp, album, letter, letter_link, seal_ledger, seal_limit, unlock, quota, referral, entitlement, + mở rộng user.
+1. **domain**: struct + repository interface cho stamp, album, letter, letter_link, quota, attribution, entitlement, verification_code, + mở rộng user.
 2. **storage/sqlite**: schema migration + repository impl (theo pattern bookmark.go).
-3. **service**: LetterLink, Seal, Quota, Entitlement, Auth mở rộng — nơi logic nghiệp vụ + transaction.
+3. **service**: LetterLink, Quota, Entitlement, Attribution, Auth mở rộng — nơi logic nghiệp vụ + transaction.
 4. **transport**: endpoints + Firebase verify middleware.
-5. **tests**: service (link 1-lần race, Dấu cap tuần/tháng, quota reset, spend thiếu Dấu).
+5. **tests**: service (link 1-lần race, quota reset, OTP hết hạn/gửi-lại, attribution idempotent).
 
 ---
 
 ## 5. Điểm cần lưu ý khi hiện thực
 
-- **Transaction cho tiền**: OpenLink, Spend, AwardShare/Install phải trong 1 transaction (đọc-kiểm-ghi) để tránh race. SQLite serialize sẵn (single writer); Postgres cần `SELECT FOR UPDATE`.
-- **Idempotent**: OpenLink trao 15📮 đúng 1 lần (`read_seal_awarded`); referral 50📮 đúng 1 lần (`seal_awarded`). Chống double-award khi retry/webhook lặp.
-- **balance cache**: cập nhật `users.seals_balance` **cùng transaction** với ledger insert, không tách rời.
-- **period string**: tính theo múi giờ thiết bị cho tuần (BR reset thứ Hai), theo lịch cho tháng — chốt 1 chuẩn (đề xuất UTC + tuần ISO) để test ổn định.
+- **Transaction cho mở link**: OpenLink phải trong 1 transaction (đọc-kiểm-ghi `opened_by`) để tránh race 2 người mở cùng lúc. SQLite serialize sẵn (single writer); Postgres cần `SELECT FOR UPDATE`.
+- **Idempotent**: OpenLink set `opened_by` đúng 1 lần; attribution ghi đúng 1 lần theo `new_user_uid`. Chống double-xử-lý khi retry/webhook lặp.
+- **period string**: quota tính theo lịch cho tháng — chốt 1 chuẩn (đề xuất UTC) để test ổn định.
 - **Firebase Storage**: server không giữ ảnh; client upload thẳng lên Storage (signed URL) hoặc qua `/api/upload` hiện có → chốt khi làm slice tem.

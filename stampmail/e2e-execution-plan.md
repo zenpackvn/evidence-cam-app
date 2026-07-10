@@ -15,12 +15,12 @@ Phần **code-được-ngay** (không cần credentials) đã xong; blocker gom 
 | **1 — Auth client** | ⏸️ D1 — chờ Firebase config (A1) | UI có sẵn; data-layer swap khi có config |
 | **2 — Tem + Album** | ✅ `feature_album` (stamps + custom albums, offline-first, sync, wired vào app) | UI editor (D7) + `pro_image_editor` spike còn lại |
 | **3 — Gửi/Nhận thư + Web** | ✅ `feature_letters` + `feature_letter_send` (share helper) + `feature_letter_inbox` + **web viewer** (`web_letter/`) + backend public-letter DTO (embed stamp images) | Animation CSS placeholder (B2); AppsFlyer SDK = D5 |
-| **4 — Dấu + Push** | ✅ `feature_rewards` (balance/history/share/spend, 402 handling) | FCM client + IAP mua Dấu (D4) còn lại |
+| **4 — Push** | ⏸️ D4 — FCM client (`feature_notifications` + noti preference) | Backend `NotificationService` đã có |
 | **5 — Premium** | ✅ `feature_premium` (`EntitlementReader` impl, offline cache) | RevenueCat purchase flow = D4 |
-| **6 — P1/P2** | ⏸️ group_card chưa có backend (D3); UI (D6) | |
+| **6 — P1/P2** | ⏸️ UI hoàn thiện (D6) | sau P4 |
 | **7 — Ra mắt** | ⏸️ sau khi deploy thật | |
 
-**Đã build/analyze/test xanh**: backend Go (build+vet+test), 5 feature package client + database + shared_contracts + app (analyze sạch). Docker image build OK.
+**Đã build/analyze/test xanh**: backend Go (build+vet+test), 4 feature package client + database + shared_contracts + app (analyze sạch). Docker image build OK.
 
 ---
 
@@ -37,9 +37,9 @@ Khác hẳn ước lượng ban đầu — backend đã đi rất xa:
 
 | Tầng | % | Chi tiết |
 |---|---|---|
-| **Go backend** business logic | **~85%** | domain + storage/sqlite + service (LetterLink OpenLink transaction 1-lần/7-ngày, Seal caps tuần/tháng + ledger, Quota 30/10, Referral idempotent, Entitlement, ProfileService lockout 5-lần/15-phút, ClaimUsername unique). **Build OK, tests pass.** 17 SM handlers + routes đủ. |
+| **Go backend** business logic | **~85%** | domain + storage/sqlite + service (LetterLink OpenLink transaction 1-lần/7-ngày, Quota 30/10, Attribution idempotent (ghi nhận nguồn giới thiệu), Entitlement, ProfileService lockout 5-lần/15-phút, ClaimUsername unique). **Build OK, tests pass.** 14 SM handlers + routes đủ. |
 | **Backend gap** | — | ❌ R2 presign (chưa có, đang dùng `/api/upload` local) · ❌ webhook signature verify (đánh dấu `ponytail:` chưa wire) · ❌ Postgres driver (mới SQLite) · ⚠️ auth REST cũ `/api/auth/*` còn song song `/api/sm/*` |
-| **Flutter client** | **~5%** | Chỉ UI auth/onboarding (preview mode). Auth data layer vẫn nối `/api/auth/*` REST cũ. 8 feature package (stamp_creator/album/letters/letter_send/letter_inbox/rewards/premium/group_card) **chưa tồn tại**. `shared_contracts` chưa có Entitlement/StampRef/QuotaReader. `firebase_options.dart` = placeholder `your-firebase-project`. |
+| **Flutter client** | **~5%** | Chỉ UI auth/onboarding (preview mode). Auth data layer vẫn nối `/api/auth/*` REST cũ. 6 feature package (stamp_creator/album/letters/letter_send/letter_inbox/premium) **chưa tồn tại**. `shared_contracts` chưa có Entitlement/StampRef/QuotaReader. `firebase_options.dart` = placeholder `your-firebase-project`. |
 | **Web viewer thư** | **0%** | `web/` chỉ là Flutter web shell mặc định — chưa có trang riêng (TD-011). |
 | **Animation mở thư** | **0%** | Chưa chốt Rive/Lottie, chưa asset (TD-010). |
 
@@ -68,7 +68,7 @@ Mục tiêu: mọi credential thật sẵn sàng; auth client chuyển sang `/ap
 - [x] **Backend — bịt gap hạ tầng**:
   - [x] R2 adapter (`internal/uploads`, AWS SDK v2) + `POST /api/sm/uploads/presign` → `{upload_url, public_url, key}`; `Local` fallback trỏ `/api/upload` khi thiếu R2 env.
   - [x] Webhook signature verify (RevenueCat `Authorization` + AppsFlyer secret header/query) — `secretMatches` constant-time, skip khi secret rỗng (dev). Có test.
-  - [~] **Postgres driver — HOÃN tới Phase 5** (chỉ prod đa-instance cần; E2E chạy đủ trên SQLite; transaction tiền đã race-safe trên PG). Ghi decision ở `tech-stack.md` TD-003.
+  - [~] **Postgres driver — HOÃN tới Phase 5** (chỉ prod đa-instance cần; E2E chạy đủ trên SQLite; transaction OpenLink đã race-safe trên PG). Ghi decision ở `tech-stack.md` TD-003.
   - [x] Dockerfile (distroless, CGO_ENABLED=0, **image build OK**) + `.dockerignore` + `.github/workflows/backend-deploy.yml` (Cloud Run + WIF, skip khi chưa có GCP vars). Server đọc `PORT`/`DB_PATH` cho Cloud Run.
 - [ ] **Gỡ auth REST cũ khỏi luồng**: đánh dấu `/api/auth/*` deprecated — làm ở Phase 1 khi client chuyển sang Firebase.
 
@@ -83,7 +83,7 @@ Slice: mở app → đăng ký/đăng nhập 4 phương thức → ensure-user �
 - [ ] `feature_auth` **thay data layer**: thêm `firebase_auth`, `google_sign_in`, `sign_in_with_apple`, `flutter_facebook_auth`. Datasource mới `AuthFirebaseDataSource` (đăng nhập → ID token) thay `auth_remote_data_source` REST. Giữ nguyên `AuthBloc`/`Session` contract (chỉ thay ruột repository).
 - [ ] Nối `/api/sm/*`: sau đăng nhập Firebase → gọi `POST /api/sm/...ensure-user` (backend `ProfileService.EnsureUser`), `POST /api/sm/claim-username`, `GET /api/sm/me`.
 - [ ] Middleware client: mọi request `/api/sm/*` gắn `Authorization: Bearer <firebase_id_token>` (interceptor trong `network` package).
-- [ ] Wire các màn đã có UI vào logic thật: `choose_username_screen` (nối claim-username + username_taken), `forgot_password_screen` (Firebase reset link), `verify_email_screen` (Firebase email verify), `change_password_screen`.
+- [ ] Wire các màn đã có UI vào logic thật: `choose_username_screen` (nối claim-username + username_taken), `verify_email_screen` (xác nhận email bằng mã OTP 6 số — BR-02; hiệu lực 5 phút, gửi lại sau 120s; backend tự phát/verify), `forgot_password_screen` (đặt lại mật khẩu bằng mã OTP 6 số — BR-12; nhập mã → đặt mật khẩu mới), `change_password_screen`. (Firebase chỉ bật Email/Password; OTP do backend gửi, KHÔNG dùng email link của Firebase.)
 - [ ] Khoá 5-lần/15-phút: client hiển thị đếm ngược từ `CheckLock`/`RecordFailure` (backend đã có).
 - [ ] Link/unlink provider (giữ ≥1) — `linkWithCredential` client + check server.
 - [ ] Offline guard: chặn thao tác auth khi mất mạng, giữ form.
@@ -93,7 +93,7 @@ Slice: mở app → đăng ký/đăng nhập 4 phương thức → ensure-user �
 
 ---
 
-## PHASE 2 — Tạo tem end-to-end + Album (SM-005→011, SM-022) 🔴 lõi MVP
+## PHASE 2 — Tạo tem end-to-end + Album (SM-005, 006, 008, 009, 010, 011, SM-022) 🔴 lõi MVP
 
 Slice: Home → chụp/chọn ảnh → lọc màu → trang trí → viền → xem trước → lưu vào Album → thấy trong Album (offline).
 
@@ -101,11 +101,11 @@ Slice: Home → chụp/chọn ảnh → lọc màu → trang trí → viền →
 - [ ] **`feature_stamp_creator`** (clone khuôn collections, phần presentation nặng):
   - SM-005: `image_picker` + zoom (InteractiveViewer), giới hạn size (TD-009), permission flow (`permission_handler` có sẵn).
   - SM-006: 16 filter (`color_filter_extension`) + 3 thanh ColorMatrix; gate 8 filter Premium (đọc `Entitlement` từ `/api/sm/entitlement`).
-  - SM-007: sticker/chữ/icon kéo-xoay-phóng (kết quả spike); gate sticker đặc biệt (Premium hoặc 50📮 → gọi `/api/sm/seals/spend`).
-  - SM-009: viền/khung (đọc spec 008 khi làm); gate viền Premium/80📮.
+  - SM-008: sticker/chữ/icon kéo-xoay-phóng (kết quả spike); gate sticker đặc biệt CHỈ bằng Premium (đọc `Entitlement`).
+  - SM-009: viền/khung (đọc spec `008-vien-khung-tem` khi làm); gate viền khóa CHỈ bằng Premium (đọc `Entitlement`).
   - SM-010/011: xem trước đa nền → `RepaintBoundary`→PNG + **watermark cưỡng bức** → presign R2 upload → `POST /api/sm/stamps` (backend check quota 30/tháng qua `QuotaService`).
 - [ ] **`feature_album`** (SM-022, clone collections offline-first): lưới "Tất cả/Tự tạo/Nhận được" (suy từ `stamps.source`), chi tiết tem, sync ObjectBox ↔ `/api/sm/stamps` (rev cursor). Album tùy chỉnh CRUD `/api/sm/albums`.
-- [ ] Nút "Chia sẻ & nhận 10📮": `share_plus` + watermark → `POST /api/sm/seals/share` (backend cap 3/tuần đã có). UI Dấu để Phase 4.
+- [ ] Nút "Chia sẻ tem" (SM-025): `share_plus` + watermark cưỡng bức.
 
 **Nghiệm thu**: người dùng thật tạo tem từ ảnh → thấy trong Album; offline vẫn trang trí + xem album.
 
@@ -116,27 +116,23 @@ Slice: Home → chụp/chọn ảnh → lọc màu → trang trí → viền →
 Slice: chọn tem từ Album → soạn thư tối giản → tạo link → gửi DM → người nhận mở **web** → animation → (cài app → tem vào Album) → người gửi nhận noti "đã mở".
 
 - [ ] **`feature_letters`** (bản tối thiểu P0): 1–2 template, soạn text (SM-013 rút gọn), đính ≤3 tem (SM-014), xem trước (SM-015 rút gọn). `POST /api/sm/letters`.
-- [ ] **`feature_letter_send`** (SM-016): chọn nền tảng (8 MXH), `POST /api/sm/letters/{id}/links` (backend `CreateLink` +5📮, quota 10/tháng), URL scheme mở DM + fallback copy link (`share_plus`). AppsFlyer OneLink làm URL.
+- [ ] **`feature_letter_send`** (SM-016): chọn nền tảng (8 MXH), `POST /api/sm/letters/{id}/links` (backend `CreateLink`, quota 10/tháng), URL scheme mở DM + fallback copy link (`share_plus`). AppsFlyer OneLink làm URL.
 - [ ] **Web xem thư** (TD-011 — **chốt stack tại đây**): đề xuất **HTML+JS thuần** host Firebase Hosting/Cloudflare Pages, gọi `GET /public/letter/{id}` (backend `OpenLink` transaction 1-lần/7-ngày đã có). Trạng thái đã-đọc/hết-hạn/không-hợp-lệ.
 - [ ] **Animation mở thư** (TD-010 — **chốt Rive/Lottie tại đây**): 1 asset chạy app + web. Âm thanh nhẹ. Nghiêng Rive (1 asset 2 runtime).
 - [ ] **`feature_letter_inbox`** (P0): mở thư trong app qua `app_links` (universal link); tem từ thư → Album sau đăng nhập (SM-017 BR-05).
-- [ ] **AppsFlyer SDK** + deferred deep link: cài từ link → app mở đúng thư + referral (`POST /api/webhooks/appsflyer` → `RecordInstall` +50📮 đã có).
+- [ ] **AppsFlyer SDK** + deferred deep link: cài từ link → app mở đúng thư (SM-017) + attribution (ghi nhận nguồn giới thiệu, 014 BR-09).
 
 **Nghiệm thu**: 2 máy thật — A gửi qua Zalo/Messenger, B (chưa cài) mở web thấy animation, cài app, tem về Album, A nhận noti "đã mở thư".
 
 ---
 
-## PHASE 4 — Hệ thống Dấu + Push (SM-033, SM-026) 🔴 khép vòng tăng trưởng
+## PHASE 4 — Thông báo push (SM-026)
 
-Slice: sự kiện Phase 2–3 trả Dấu thật; tiêu Dấu mở sticker/viền.
+Slice: sự kiện gửi/mở thư → noti FCM đúng loại → deep-link mở đúng màn.
 
-- [ ] **`feature_rewards`**: số dư Dấu (`GET /api/sm/seals` — realtime qua sync/poll), progressive disclosure (BR-04), màn giới thiệu lần đầu, lịch sử.
-- [ ] Bật 4 nguồn kiếm (backend đã có, giờ nối UI + verify caps): share 10📮 (3/tuần), gửi 5📮, mở thư 15📮, install 50📮 (5/tháng).
-- [ ] Tiêu Dấu: `POST /api/sm/seals/spend` + UI mở sticker (50)/viền (80)/tem mẫu (30, SM-035 phần khoá); màn "thiếu X📮".
-- [ ] Mua Dấu IAP (BR-15) qua RevenueCat consumable → `POST /api/sm/seals/purchase`.
 - [ ] **`feature_notifications` → FCM**: 5 loại noti + preference bật/tắt + deep-link đúng màn (SM-026). Backend `NotificationService` đã có.
 
-**Nghiệm thu**: AC-01→15 SM-033; vòng gửi→mở→Dấu trên 2 máy thật.
+**Nghiệm thu**: noti "đã mở thư" tới máy người gửi; bật/tắt preference + deep-link đúng màn trên 2 máy thật.
 
 ---
 
@@ -153,8 +149,7 @@ Slice: sự kiện Phase 2–3 trả Dấu thật; tiêu Dấu mở sticker/vi�
 ## PHASE 6 — Hoàn thiện P1/P2 (song song hoá được)
 
 - [ ] SM-020 Trả lời thư (nối inbox → soạn thư).
-- [ ] SM-025 Chia sẻ tem đầy đủ · SM-035 Bộ tem mẫu đầy đủ.
-- [ ] **SM-032 Thiệp nhóm** (`feature_group_card`) — nhiều người ký chung; cần bảng + endpoint riêng ở backend (mục lớn nhất phase).
+- [ ] SM-025 Chia sẻ tem đầy đủ · SM-035 Bộ tem mẫu đầy đủ (TOÀN BỘ FREE, không có phần khóa).
 - [ ] SM-003 Onboarding + SM-004 Home hoàn chỉnh (thay scaffold).
 - [ ] SM-012/013/014/015 đầy đủ (template, font, màu giấy, kẻ dòng, sticker trên thư).
 - [ ] SM-018 Inbox + SM-021 Hộp đã gửi đầy đủ.
@@ -176,15 +171,15 @@ Slice: sự kiện Phase 2–3 trả Dấu thật; tiêu Dấu mở sticker/vi�
 ## Thứ tự phụ thuộc
 
 ```
-P0 (nền+auth-infra) → P1 (auth client) → P2 (tem+album) ─┬→ P3 (thư+web+anim) → P4 (Dấu+push) → P5 (Premium)
+P0 (nền+auth-infra) → P1 (auth client) → P2 (tem+album) ─┬→ P3 (thư+web+anim) → P4 (push) → P5 (Premium)
                                                           └→ (Album cùng P2)
 P6 (P1/P2 đầy đủ) song song sau P4 · P7 ra mắt cuối
 ```
 
 - Auth trước tất cả (mọi spec "đã đăng nhập" là tiên quyết).
 - Tạo tem trước thư (thư bắt buộc đính tem).
-- Dấu sau thư (3/4 nguồn kiếm từ luồng thư; backend đã ghi sẵn, P4 bật UI).
-- Premium sau Dấu (paywall cần gate đã tồn tại).
+- Push sau thư (noti "đã mở" từ luồng thư; backend `NotificationService` đã ghi sẵn, P4 bật UI).
+- Premium sau tạo tem (paywall cần gate sticker/viền đã tồn tại).
 
 ---
 
@@ -195,8 +190,8 @@ P6 (P1/P2 đầy đủ) song song sau P4 · P7 ra mắt cuối
 | 1 | Stack render web xem thư | Phase 3 tuần 1 (TD-011) | Đề xuất HTML+JS thuần |
 | 2 | Rive vs Lottie | Phase 3 (TD-010) | Nghiêng Rive |
 | 3 | Kết quả spike `pro_image_editor` | Phase 2 buổi đầu (TD-004) | Fallback native Stack+Matrix4 |
-| 4 | Chi tiết viền/khung tem | Phase 2 (đọc spec 008) | |
-| 5 | Giá gói Premium + gói Dấu | Trước Phase 5 | **Business bạn quyết** |
+| 4 | Chi tiết viền/khung tem | Phase 2 (đọc spec `008-vien-khung-tem`) | |
+| 5 | Giá gói Premium | Trước Phase 5 | **Business bạn quyết** |
 
 ---
 

@@ -24,16 +24,15 @@
 |------|----------|---------|
 | A — Tài khoản | Đăng ký, đăng nhập, bảo mật, hồ sơ | 4 |
 | B — Lần đầu | Onboarding, màn hình chính | 2 |
-| C — Tạo tem | Chụp ảnh đến lưu tem hoàn chỉnh | 7 |
+| C — Tạo tem | Chụp ảnh đến lưu tem hoàn chỉnh | 5 |
 | D — Soạn & Gửi thư | Chọn template đến gửi link | 5 |
 | E — Nhận & Đọc thư | Nhận link đến trả lời | 5 |
-| F — Sưu tầm | Album, series, tem giới hạn | 3 |
+| F — Sưu tầm | Album, bộ tem mẫu | 2 |
 | G — Chia sẻ MXH | Chia sẻ tem lên mạng xã hội | 1 |
 | H — Hệ thống | Thông báo, cài đặt, Premium, giới hạn | 5 |
-| I — Dịp & Phối hợp | Thư hẹn-giờ-mở, thiệp nhóm | 2 |
 
 ## Ưu tiên MVP
 
-- **P0 (MVP bắt buộc)**: SM-005→011 (Tạo tem), SM-016 (Gửi thư), SM-017 (Nhận thư), SM-019 (Mở thư), SM-022/023 (Album + Series)
-- **P1 (thêm ngay sau MVP)**: SM-020, SM-024→026, SM-031, SM-032
+- **P0 (MVP bắt buộc)**: SM-005→011 (Tạo tem), SM-016 (Gửi thư), SM-017 (Nhận thư), SM-019 (Mở thư), SM-022 (Album)
+- **P1 (thêm ngay sau MVP)**: SM-020, SM-024→026
 - **P2 (vận hành)**: Còn lại

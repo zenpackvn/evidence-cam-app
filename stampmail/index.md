@@ -1,7 +1,7 @@
 # StampMail — Catalog tính năng
 
-**Cập nhật lần cuối**: 2026-06-26
-**Tổng số spec**: 29
+**Cập nhật lần cuối**: 2026-07-10
+**Tổng số spec**: 27
 
 > Catalog này liệt kê toàn bộ tính năng và liên kết đến `spec.md` tương ứng. Cập nhật khi thêm/bỏ/đổi tên spec.
 
@@ -90,22 +90,6 @@
 
 ---
 
-## NHÓM I — Dịp & Phối hợp
-
-| Mã | Tính năng | Ưu tiên | Spec |
-|----|-----------|---------|------|
-| SM-032 | Thiệp nhóm (Group Card) | 🟡 P1 | [spec](specs/027-thiep-nhom/spec.md) |
-
----
-
-## NHÓM J — Rewards & Tăng trưởng
-
-| Mã | Tính năng | Ưu tiên | Spec |
-|----|-----------|---------|------|
-| SM-033 | Hệ thống Dấu (Share to Unlock + Chain Unlock) | 🔴 P0 | [spec](specs/028-he-thong-dau/spec.md) |
-
----
-
 ## Tạm thời xoá bỏ — sẽ xem xét lại sau MVP
 
 > Các tính năng dưới đây bị loại khỏi phạm vi MVP để đơn giản hóa sản phẩm. Spec đã xoá, có thể viết lại khi đưa trở lại.
@@ -113,8 +97,10 @@
 | Mã | Tính năng | Ghi chú |
 |----|-----------|---------|
 | SM-007 | Xóa nền AI | Luồng tạo tem đi thẳng từ SM-006 (Bộ lọc màu) → SM-008 (Trang trí) |
+| SM-033 | Hệ thống Dấu (Rewards) | Đã bỏ. Sticker đặc biệt & viền khóa nay chỉ mở bằng Premium; toàn bộ tem mẫu (SM-035) miễn phí. Không còn cơ chế thưởng/tiêu điểm |
 | SM-023 | Bộ sưu tập theo series | Tab "Theo series" đã xoá khỏi Album và màn hình đính tem |
 | SM-031 | Thư hẹn-giờ-mở (Time Capsule) | Gửi thư với thời gian mở trong tương lai |
+| SM-032 | Thiệp nhóm (Group Card) | Đã bỏ khỏi phạm vi. Nhiều người cùng ký một thiệp rồi gửi cho người nhận — có thể xem lại sau MVP |
 | SM-034 | Tem giới hạn thời gian | Tab "Giới hạn" đã xoá khỏi Album và màn hình đính tem |
 | SM-036 | Quản lý nháp thư | Thư chưa gửi sẽ bị mất khi thoát; không lưu nháp tự động |
 
