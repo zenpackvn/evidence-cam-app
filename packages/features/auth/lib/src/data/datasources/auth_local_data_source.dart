@@ -20,6 +20,11 @@ abstract interface class AuthLocalDataSource {
   String? get refreshToken;
 
   Future<void> load();
+
+  /// Caches the resolved user for a synchronous [currentUser]. Firebase owns the
+  /// token, so no tokens are stored — this is the Firebase-auth path.
+  Future<void> cacheUser(AuthUser user);
+
   Future<void> setSession({
     required AuthUser user,
     required String accessToken,
@@ -73,6 +78,16 @@ class SecureStorageAuthDataSource implements AuthLocalDataSource {
       }
     }
     _loaded = true;
+  }
+
+  @override
+  Future<void> cacheUser(AuthUser user) async {
+    _user = user;
+    _loaded = true;
+    await _storage.write(
+      key: _kUserKey,
+      value: jsonEncode({'id': user.id, 'username': user.username}),
+    );
   }
 
   @override

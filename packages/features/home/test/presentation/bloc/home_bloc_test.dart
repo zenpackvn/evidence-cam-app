@@ -1,90 +1,71 @@
-import 'package:architecture/architecture.dart';
 import 'package:feature_home/feature_home.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_contracts/shared_contracts.dart';
-import '../../support.dart';
 
 void main() {
   group('HomeBloc', () {
-    test('initial state is default', () async {
-      final bloc = HomeBloc(MockBookmarkStatsReader(), _emptyCollections());
+    test('initial state is loading with empty data', () async {
+      final bloc = HomeBloc(_StubLoader(HomeData.empty));
 
-      expect(bloc.state.totalBookmarks, 0);
-      expect(bloc.state.recentBookmarks, 0);
-      expect(bloc.state.uniqueTags, 0);
-      expect(bloc.state.recentItems, isEmpty);
-      expect(bloc.state.isLoading, false);
+      expect(bloc.state.isLoading, true);
+      expect(bloc.state.data.isEmpty, true);
 
       await bloc.close();
     });
 
-    test('maps stats into state on load', () async {
-      const stats = BookmarkStats(
-        total: 5,
-        recent: 2,
-        uniqueTags: 3,
-        recentItems: [
-          BookmarkSummary(
-            id: '1',
-            title: 'Flutter',
-            url: 'https://flutter.dev',
-            description: '',
-            tags: ['dev'],
+    test('maps loaded data into state', () async {
+      final data = HomeData(
+        unreadLetters: 2,
+        recentStamps: [
+          StampRef(
+            id: 's1',
+            imageUrl: 'https://cdn/s1.png',
+            createdAt: DateTime.utc(2026, 5, 20),
+          ),
+        ],
+        recentLetters: const [
+          HomeLetterItem(
+            id: 'l1',
+            title: 'Thư gửi qua Zalo',
+            meta: 'Đã mở · 20/05/2026',
+            opened: true,
           ),
         ],
       );
-      final bloc = HomeBloc(_reader(const Ok(stats)), _emptyCollections());
-
-      bloc.add(const HomeLoadRequested());
+      final bloc = HomeBloc(_StubLoader(data))..add(const HomeLoadRequested());
       await bloc.stream.firstWhere((state) => !state.isLoading);
 
-      expect(bloc.state.totalBookmarks, 5);
-      expect(bloc.state.recentBookmarks, 2);
-      expect(bloc.state.uniqueTags, 3);
-      expect(bloc.state.recentItems.single.title, 'Flutter');
+      expect(bloc.state.data.unreadLetters, 2);
+      expect(bloc.state.data.recentStamps.single.id, 's1');
+      expect(bloc.state.data.recentLetters.single.opened, true);
+      expect(bloc.state.data.isEmpty, false);
+      expect(bloc.state.error, isNull);
 
       await bloc.close();
     });
 
-    test('handles empty stats', () async {
-      final bloc = HomeBloc(
-        _reader(const Ok(BookmarkStats())),
-        _emptyCollections(),
-      );
-      bloc.add(const HomeLoadRequested());
+    test('failure keeps previous data and sets error (BR-06)', () async {
+      final bloc = HomeBloc(_ThrowingLoader())..add(const HomeLoadRequested());
       await bloc.stream.firstWhere((state) => !state.isLoading);
 
-      expect(bloc.state.totalBookmarks, 0);
-      expect(bloc.state.recentItems, isEmpty);
-
-      await bloc.close();
-    });
-
-    test('stores failure when stats load fails', () async {
-      const failure = UnknownFailure('Failed');
-      final bloc = HomeBloc(_reader(const Err(failure)), _emptyCollections());
-
-      bloc.add(const HomeLoadRequested());
-      await bloc.stream.firstWhere((state) => !state.isLoading);
-
-      expect(bloc.state.isLoading, false);
-      expect(bloc.state.failure, failure);
+      expect(bloc.state.error, isNotNull);
+      expect(bloc.state.data.isEmpty, true);
 
       await bloc.close();
     });
   });
 }
 
-MockBookmarkStatsReader _reader(Result<BookmarkStats> result) {
-  final reader = MockBookmarkStatsReader();
-  when(reader.call).thenAnswer((_) async => result);
-  return reader;
+class _StubLoader implements HomeDataLoader {
+  _StubLoader(this.data);
+
+  final HomeData data;
+
+  @override
+  Future<HomeData> load() async => data;
 }
 
-MockCollectionsReader _emptyCollections() {
-  final reader = MockCollectionsReader();
-  when(reader.call).thenAnswer(
-    (_) async => const Ok<List<CollectionSummary>>([]),
-  );
-  return reader;
+class _ThrowingLoader implements HomeDataLoader {
+  @override
+  Future<HomeData> load() async => throw Exception('offline');
 }

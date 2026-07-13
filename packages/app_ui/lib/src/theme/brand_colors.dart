@@ -29,6 +29,8 @@ class BrandColors extends ThemeExtension<BrandColors> {
     required this.softSage,
     required this.softSky,
     required this.link,
+    required this.borderSubtle,
+    required this.surfaceElevated,
   });
 
   /// Light-theme brand tokens.
@@ -46,6 +48,8 @@ class BrandColors extends ThemeExtension<BrandColors> {
     softSage: Color(0xFFF0F6EF),
     softSky: Color(0xFFF1F8FC),
     link: Color(0xFF3399F3),
+    borderSubtle: Color(0xFFEFE9E3),
+    surfaceElevated: Color(0xFFFFFFFF),
   );
 
   /// Dark-theme brand tokens.
@@ -63,6 +67,8 @@ class BrandColors extends ThemeExtension<BrandColors> {
     softSage: Color(0xFF2A322A),
     softSky: Color(0xFF263038),
     link: Color(0xFF7AB8FF),
+    borderSubtle: Color(0xFF3A332C),
+    surfaceElevated: Color(0xFF322B25),
   );
 
   /// Primary brand hue — warm coral.
@@ -104,6 +110,13 @@ class BrandColors extends ThemeExtension<BrandColors> {
   /// Hyperlink / inline-action text color (distinct from [coral]).
   final Color link;
 
+  /// Hairline border on white cards and inputs (.pen `border-subtle`).
+  final Color borderSubtle;
+
+  /// Raised card/input fill (.pen `surface-elevated`) — differs from
+  /// [ColorScheme.surfaceContainerLowest] in dark mode.
+  final Color surfaceElevated;
+
   @override
   BrandColors copyWith({
     Color? coral,
@@ -119,6 +132,8 @@ class BrandColors extends ThemeExtension<BrandColors> {
     Color? softSage,
     Color? softSky,
     Color? link,
+    Color? borderSubtle,
+    Color? surfaceElevated,
   }) {
     return BrandColors(
       coral: coral ?? this.coral,
@@ -134,6 +149,8 @@ class BrandColors extends ThemeExtension<BrandColors> {
       softSage: softSage ?? this.softSage,
       softSky: softSky ?? this.softSky,
       link: link ?? this.link,
+      borderSubtle: borderSubtle ?? this.borderSubtle,
+      surfaceElevated: surfaceElevated ?? this.surfaceElevated,
     );
   }
 
@@ -154,6 +171,8 @@ class BrandColors extends ThemeExtension<BrandColors> {
       softSage: Color.lerp(softSage, other.softSage, t)!,
       softSky: Color.lerp(softSky, other.softSky, t)!,
       link: Color.lerp(link, other.link, t)!,
+      borderSubtle: Color.lerp(borderSubtle, other.borderSubtle, t)!,
+      surfaceElevated: Color.lerp(surfaceElevated, other.surfaceElevated, t)!,
     );
   }
 }

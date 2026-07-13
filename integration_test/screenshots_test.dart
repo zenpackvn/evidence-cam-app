@@ -192,7 +192,7 @@ void main() {
     expect(homeTitle, findsOneWidget);
     final homeBloc = tester.element(homeTitle).read<HomeBloc>();
     homeBloc.add(const HomeLoadRequested());
-    await _pumpUntilTrue(tester, () => homeBloc.state.totalBookmarks > 0);
+    await _pumpUntilTrue(tester, () => !homeBloc.state.isLoading);
     await shot('home');
 
     // ---- Profile (light mode) -----------------------------------------------

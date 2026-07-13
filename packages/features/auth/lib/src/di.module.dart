@@ -10,6 +10,10 @@ import 'package:feature_auth/src/data/datasources/auth_local_data_source.dart'
     as _i887;
 import 'package:feature_auth/src/data/datasources/auth_remote_data_source.dart'
     as _i371;
+import 'package:feature_auth/src/data/datasources/firebase_auth_data_source.dart'
+    as _i466;
+import 'package:feature_auth/src/data/datasources/sm_user_data_source.dart'
+    as _i291;
 import 'package:feature_auth/src/data/network/auth_network_module.dart'
     as _i692;
 import 'package:feature_auth/src/data/repositories/auth_repository_impl.dart'
@@ -21,6 +25,8 @@ import 'package:feature_auth/src/domain/usecases/delete_account.dart' as _i884;
 import 'package:feature_auth/src/domain/usecases/register.dart' as _i821;
 import 'package:feature_auth/src/domain/usecases/restore_session.dart' as _i63;
 import 'package:feature_auth/src/domain/usecases/sign_in.dart' as _i147;
+import 'package:feature_auth/src/domain/usecases/sign_in_with_google.dart'
+    as _i25;
 import 'package:feature_auth/src/domain/usecases/sign_out.dart' as _i1002;
 import 'package:feature_auth/src/presentation/bloc/auth_bloc.dart' as _i1014;
 import 'package:feature_auth/src/presentation/bloc/change_password_cubit.dart'
@@ -36,6 +42,12 @@ class FeatureAuthPackageModule extends _i526.MicroPackageModule {
   @override
   _i687.FutureOr<void> init(_i526.GetItHelper gh) {
     final authNetworkModule = _$AuthNetworkModule();
+    gh.lazySingleton<_i466.FirebaseAuthDataSource>(
+      () => _i466.FirebaseAuthDataSource(),
+    );
+    gh.lazySingleton<_i291.SmUserDataSource>(
+      () => _i291.SmUserDataSource(gh<_i372.Dio>()),
+    );
     gh.lazySingleton<_i887.AuthLocalDataSource>(
       () => _i887.SecureStorageAuthDataSource(
         gh<_i431.FlutterSecureStorage>(),
@@ -47,9 +59,10 @@ class FeatureAuthPackageModule extends _i526.MicroPackageModule {
     );
     gh.lazySingleton<_i1063.AuthRepository>(
       () => _i953.AuthRepositoryImpl(
-        gh<_i371.AuthRemoteDataSource>(),
+        gh<_i466.FirebaseAuthDataSource>(),
+        gh<_i291.SmUserDataSource>(),
         gh<_i887.AuthLocalDataSource>(),
-        gh<_i372.TokenRefresher>(),
+        gh<_i372.AuthTokenProvider>(),
       ),
     );
     gh.factory<_i359.ChangePasswordUseCase>(
@@ -67,6 +80,9 @@ class FeatureAuthPackageModule extends _i526.MicroPackageModule {
     gh.factory<_i147.SignInUseCase>(
       () => _i147.SignInUseCase(gh<_i1063.AuthRepository>()),
     );
+    gh.factory<_i25.SignInWithGoogleUseCase>(
+      () => _i25.SignInWithGoogleUseCase(gh<_i1063.AuthRepository>()),
+    );
     gh.factory<_i1002.SignOutUseCase>(
       () => _i1002.SignOutUseCase(gh<_i1063.AuthRepository>()),
     );
@@ -76,9 +92,6 @@ class FeatureAuthPackageModule extends _i526.MicroPackageModule {
         gh<_i548.AnalyticsService>(),
       ),
     );
-    gh.factory<_i1062.ChangePasswordCubit>(
-      () => _i1062.ChangePasswordCubit(gh<_i359.ChangePasswordUseCase>()),
-    );
     gh.lazySingleton<_i1014.AuthBloc>(
       () => _i1014.AuthBloc(
         signIn: gh<_i147.SignInUseCase>(),
@@ -86,7 +99,11 @@ class FeatureAuthPackageModule extends _i526.MicroPackageModule {
         signOut: gh<_i1002.SignOutUseCase>(),
         restoreSession: gh<_i63.RestoreSessionUseCase>(),
         analytics: gh<_i548.AnalyticsService>(),
+        signInWithGoogle: gh<_i25.SignInWithGoogleUseCase>(),
       ),
+    );
+    gh.factory<_i1062.ChangePasswordCubit>(
+      () => _i1062.ChangePasswordCubit(gh<_i359.ChangePasswordUseCase>()),
     );
   }
 }

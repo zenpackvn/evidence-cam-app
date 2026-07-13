@@ -12,7 +12,6 @@ import 'package:flutter_starter_template/app/app.dart';
 import 'package:flutter_starter_template/app/di/injection.dart';
 import 'package:flutter_starter_template/app/feature_module.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_contracts/shared_contracts.dart';
 import 'package:storage/storage.dart';
 import 'package:theme/theme.dart';
 
@@ -57,27 +56,18 @@ void main() {
     final signOut = MockSignOut();
     when(signOut.call).thenAnswer((_) async => const Ok(null));
 
-    final bookmarkStats = MockBookmarkStatsReader();
-    when(
-      bookmarkStats.call,
-    ).thenAnswer((_) async => const Ok(BookmarkStats()));
-
-    final collectionsReader = MockCollectionsReader();
-    when(
-      collectionsReader.call,
-    ).thenAnswer((_) async => const Ok<List<CollectionSummary>>([]));
-
     authBloc = AuthBloc(
       signIn: signIn,
       register: MockRegister(),
       signOut: signOut,
       restoreSession: restoreSession,
       analytics: analytics,
+      signInWithGoogle: MockSignInWithGoogle(),
     );
     themeBloc = ThemeBloc(await SharedPreferences.getInstance(), analytics);
 
     getIt.registerFactory<HomeBloc>(() {
-      final bloc = HomeBloc(bookmarkStats, collectionsReader);
+      final bloc = HomeBloc(_EmptyHomeLoader());
       homeBloc = bloc;
       return bloc;
     });
@@ -123,28 +113,34 @@ void main() {
       await Future<void>.delayed(Duration.zero);
     });
     await tester.pump();
-    for (var i = 0; i < 40 && find.text('Log In').evaluate().isEmpty; i++) {
+    for (var i = 0; i < 40 && find.text('Sign in').evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    check(find.text('Log In').evaluate()).isNotEmpty();
+    check(find.text('Sign in').evaluate()).isNotEmpty();
 
     await tester.enterText(find.byType(TextFormField).at(0), 'alice');
     await tester.enterText(find.byType(TextFormField).at(1), 'hunter2');
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Log In'));
+    // The CTA can sit just below the 600px test viewport; bring it on-screen
+    // before tapping (real devices are taller).
+    await tester.ensureVisible(find.text('Sign in'));
+    await tester.pump();
+    await tester.tap(find.text('Sign in'));
     await tester.runAsync(() async {
       await Future<void>.delayed(Duration.zero);
     });
     await tester.pumpAndSettle();
-    for (var i = 0; i < 20 && find.text('Home').evaluate().isEmpty; i++) {
+    for (
+      var i = 0;
+      i < 20 && find.text('Chào alice 👋').evaluate().isEmpty;
+      i++
+    ) {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    expect(
-      find.descendant(of: find.byType(AppBar), matching: find.text('Home')),
-      findsOneWidget,
-    );
+    // The StampMail home dashboard greets the signed-in user (F01-S15).
+    expect(find.text('Chào alice 👋'), findsOneWidget);
     expect(homeBloc, isNotNull);
     expect(authBloc.state, isA<AuthAuthenticated>());
     expect(
@@ -152,4 +148,9 @@ void main() {
       'alice',
     );
   });
+}
+
+class _EmptyHomeLoader implements HomeDataLoader {
+  @override
+  Future<HomeData> load() async => HomeData.empty;
 }

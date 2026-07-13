@@ -513,6 +513,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navBookmarks => 'Bookmarks';
 
   @override
+  String get navLetters => 'Inbox';
+
+  @override
+  String get navAlbum => 'Album';
+
+  @override
   String get navProfile => 'Profile';
 
   @override
@@ -712,6 +718,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get smLoginRegisterCta => 'Register';
 
   @override
+  String get smRegisterChoiceTitle => 'Choose how to sign up';
+
+  @override
+  String get smRegisterChoiceSubtitle => 'Continue quickly with your account';
+
+  @override
   String get smLoginLockedMessage =>
       'Your account is temporarily locked after too many failed sign-in attempts.';
 
@@ -813,7 +825,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get smForgotTitle => 'Forgot password';
+  String get smForgotTitle => 'Forgot password ✨';
 
   @override
   String get smForgotSubtitle =>
@@ -827,6 +839,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get smForgotBackToLogin => 'Back to sign in';
+
+  @override
+  String get smForgotCodeTitle => 'Enter the code ✨';
+
+  @override
+  String get smForgotCodeSubtitle => 'We sent a 6-digit code to';
+
+  @override
+  String get smForgotCodeContinue => 'Continue';
+
+  @override
+  String get smResetTitle => 'Reset password ✨';
+
+  @override
+  String get smResetSubtitle =>
+      'Your code is confirmed.\nPlease create a new password for your account.';
+
+  @override
+  String get smResetNewHint => 'New password';
+
+  @override
+  String get smResetConfirmHint => 'Confirm password';
+
+  @override
+  String get smResetHintMin => 'At least 6 characters';
+
+  @override
+  String get smResetSubmit => 'Save new password';
+
+  @override
+  String get smResetSuccessTitle => 'Password reset ✨';
+
+  @override
+  String get smResetSuccessSubtitle =>
+      'Your password has been updated.\nYou can now sign in with your new password.';
+
+  @override
+  String get smResetSuccessCta => 'Sign in now';
+
+  @override
+  String get smResetSuccessBack => 'Back to sign in';
 
   @override
   String get smVerifyTitle => 'Verify email ✉️';

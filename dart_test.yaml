@@ -1,9 +1,11 @@
 # Declares custom test tags so `flutter test` doesn't warn about them.
 #
-# `golden`: pixel-comparison tests (see test/ui/widgets/golden/). Flutter
-# goldens are not guaranteed to match across operating systems, and CI runs on
-# Ubuntu while developers are on macOS — so these are excluded from CI via
-# `--exclude-tags golden` and instead serve as a local regression check.
+# `golden`: pixel-comparison tests (see packages/app_ui/test/widgets/golden/).
+# Flutter goldens are not guaranteed to match across operating systems, and the
+# main test job runs on Ubuntu while baselines are generated on macOS — so they
+# are excluded there via `--exclude-tags golden` and run in the dedicated
+# `golden-tests` CI job on macOS instead (see ci.yml and
+# docs/decisions/0001-golden-tests-on-macos-ci.md).
 # Regenerate baselines with:
 #   fvm flutter test --update-goldens --tags golden
 tags:

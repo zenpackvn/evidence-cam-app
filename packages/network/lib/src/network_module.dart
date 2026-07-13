@@ -12,6 +12,7 @@ import 'certificate_pinning.dart';
 import 'idempotency_interceptor.dart';
 import 'performance_interceptor.dart';
 import 'retry_interceptor.dart';
+import 'token_provider.dart';
 import 'token_refresher.dart';
 
 BaseOptions apiBaseOptions(
@@ -43,6 +44,11 @@ abstract class NetworkModule {
   Dio providePlainDio(EnvConfig env) =>
       Dio(apiBaseOptions(env.apiBaseUrl, timeout: env.apiTimeout));
 
+  /// The bearer-token holder, bound to Firebase by the auth feature at startup.
+  /// Network-owned so the `Dio` doesn't depend on the auth package.
+  @lazySingleton
+  AuthTokenProvider provideTokenProvider() => AuthTokenProvider();
+
   /// Authenticated Dio used by the app: attaches the Bearer token and, on 401,
   /// transparently refreshes once and retries the request.
   ///
@@ -59,6 +65,7 @@ abstract class NetworkModule {
     TokenRefresher refresher,
     EnvConfig env,
     FirebasePerformance performance,
+    AuthTokenProvider tokenProvider,
   ) {
     final dio = Dio(apiBaseOptions(env.apiBaseUrl, timeout: env.apiTimeout));
     // Pin the server cert when fingerprints are configured (prod); a no-op in
@@ -67,7 +74,14 @@ abstract class NetworkModule {
     if (!env.isDev) {
       dio.interceptors.add(PerformanceInterceptor(performance));
     }
-    dio.interceptors.add(AuthInterceptor(tokens, refresher, dio));
+    dio.interceptors.add(
+      AuthInterceptor(
+        tokens,
+        refresher,
+        dio,
+        tokenProvider: tokenProvider,
+      ),
+    );
     dio.interceptors.add(IdempotencyInterceptor());
     dio.interceptors.add(cacheInterceptor());
     dio.interceptors.add(RetryInterceptor(dio));

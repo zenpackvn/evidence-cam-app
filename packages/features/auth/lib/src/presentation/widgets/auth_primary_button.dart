@@ -6,36 +6,44 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 ///
 /// Matches the design: the label is centered, with a small decorative sparkle
 /// tucked against the right edge (unlike [AppButton], which leads with its
-/// icon). Shows a centered spinner while [isLoading].
+/// icon). Shows a centered spinner while [isLoading]. With [locked] the
+/// button renders the design's disabled state (`Button/Primary/Disabled`):
+/// `state-disabled` fill with a lock glyph before the label (F01-S05).
 class AuthPrimaryButton extends StatelessWidget {
   const AuthPrimaryButton({
     required this.label,
     required this.onPressed,
     this.isLoading = false,
+    this.locked = false,
     super.key,
   });
 
   final String label;
   final VoidCallback onPressed;
   final bool isLoading;
+  final bool locked;
+
+  /// .pen `state-disabled` (light); auth is pinned to the light theme.
+  static const _disabledFill = Color(0xFFD8D2CC);
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
+    // .pen Button/Primary: h52, radius-16, label 17/22 w600, sparkle 20px in
+    // warm gold (#FFE1A8) inset 20px from the right edge.
     return SizedBox(
-      height: 56,
+      height: 52,
       child: FilledButton(
-        onPressed: isLoading ? null : onPressed,
+        onPressed: isLoading || locked ? null : onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
-          disabledBackgroundColor: colorScheme.primary,
+          disabledBackgroundColor: locked ? _disabledFill : colorScheme.primary,
+          disabledForegroundColor: colorScheme.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
-          textStyle: context.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          textStyle: context.textTheme.titleMedium,
         ),
         child: isLoading
             ? SizedBox(
@@ -46,18 +54,27 @@ class AuthPrimaryButton extends StatelessWidget {
                   color: colorScheme.onPrimary,
                 ),
               )
+            : locked
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const FaIcon(FontAwesomeIcons.lock, size: 18),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(label),
+                ],
+              )
             : Stack(
                 alignment: Alignment.center,
                 children: [
                   Text(label),
-                  Align(
+                  const Align(
                     alignment: Alignment.centerRight,
                     child: Padding(
-                      padding: const EdgeInsets.only(right: AppSpacing.lg),
+                      padding: EdgeInsets.only(right: AppSpacing.xl),
                       child: FaIcon(
                         FontAwesomeIcons.wandMagicSparkles,
-                        size: 18,
-                        color: colorScheme.onPrimary.withValues(alpha: 0.9),
+                        size: 20,
+                        color: Color(0xFFFFE1A8),
                       ),
                     ),
                   ),

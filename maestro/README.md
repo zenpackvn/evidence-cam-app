@@ -50,3 +50,23 @@ Flow 11 dùng account riêng `delete_me@example.com` để tránh ảnh hưởng
 - Các flows từ 03 trở đi giả sử account `onboarding_test@example.com` đã tồn tại (tạo bởi flow 01 hoặc 02).
 - Flow 09 thay đổi password → các flows chạy sau cần dùng `NewPass456` nếu không reset state.
 - Chạy `clearState: true` chỉ khi cần test fresh install.
+
+## StampMail flows ([stampmail/](stampmail/))
+
+Các flow production của StampMail (login → tạo tem → gửi thư → nhận thư) nằm
+trong `stampmail/` với runner riêng `stampmail/run.sh` (iOS Simulator, cần
+backend dev `https://stampmails.sabeel.app` sống — xem header của script).
+
+## Chạy smoke trên CI
+
+Workflow [.github/workflows/maestro-smoke.yml](../.github/workflows/maestro-smoke.yml)
+build APK dev-debug, boot Android emulator và chạy `stampmail/01_login.yaml`
+against backend dev hosted. Trigger thủ công:
+
+```bash
+gh workflow run maestro-smoke.yml
+```
+
+(hoặc tab Actions → "Maestro smoke" → Run workflow). Chủ đích **không** gắn vào
+PR/nightly — repo private tính phí từng phút và flow phụ thuộc hạ tầng ngoài;
+lý do đầy đủ ở [docs/decisions/0002](../docs/decisions/0002-maestro-smoke-manual-dispatch.md).

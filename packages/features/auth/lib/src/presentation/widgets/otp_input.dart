@@ -94,12 +94,14 @@ class _OtpInputState extends State<OtpInput> {
           Flexible(
             child: Padding(
               padding: EdgeInsets.only(
-                right: i == widget.length - 1 ? 0 : AppSpacing.sm,
+                right: i == widget.length - 1 ? 0 : 10,
               ),
               child: Focus(
                 onKeyEvent: (node, event) => _onKey(i, node, event),
+                // .pen Input/OTP: 44×56 box, radius-12, surface-elevated fill
+                // with the hairline border-subtle, digit 24 w600 (body font).
                 child: AspectRatio(
-                  aspectRatio: 0.82,
+                  aspectRatio: 44 / 56,
                   child: TextField(
                     controller: _controllers[i],
                     focusNode: _nodes[i],
@@ -109,21 +111,25 @@ class _OtpInputState extends State<OtpInput> {
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
                     ],
-                    style: context.textTheme.displaySmall?.copyWith(
+                    style: context.textTheme.bodyLarge?.copyWith(
                       color: colorScheme.onSurface,
+                      fontSize: 24,
+                      height: 1.25,
+                      fontWeight: FontWeight.w600,
                     ),
                     decoration: InputDecoration(
                       counterText: '',
                       filled: true,
-                      fillColor: colorScheme.surfaceContainer,
+                      fillColor: context.brand.surfaceElevated,
                       contentPadding: EdgeInsets.zero,
-                      border: _border(colorScheme.outlineVariant),
+                      border: _border(context.brand.borderSubtle),
                       enabledBorder: _border(
                         widget.hasError
                             ? colorScheme.error
-                            : colorScheme.outlineVariant,
+                            : context.brand.borderSubtle,
+                        width: widget.hasError ? 1.5 : 1,
                       ),
-                      focusedBorder: _border(colorScheme.primary, width: 2),
+                      focusedBorder: _border(colorScheme.primary, width: 1.5),
                     ),
                     onChanged: (value) => _onChanged(i, value),
                   ),
@@ -137,7 +143,7 @@ class _OtpInputState extends State<OtpInput> {
 
   OutlineInputBorder _border(Color color, {double width = 1}) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.lg),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       borderSide: BorderSide(color: color, width: width),
     );
   }

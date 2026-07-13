@@ -18,7 +18,7 @@ import 'package:feature_notifications/feature_notifications.dart';
 import 'package:feature_onboarding/feature_onboarding.dart';
 import 'package:feature_premium/feature_premium.dart';
 import 'package:feature_profile/feature_profile.dart';
-import 'package:feature_rewards/feature_rewards.dart';
+import 'package:feature_stamp_creator/feature_stamp_creator.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:network/network.dart';
@@ -66,7 +66,7 @@ final GetIt getIt = GetIt.instance;
     ExternalModule(FeatureProfilePackageModule),
     ExternalModule(FeatureAlbumPackageModule),
     ExternalModule(FeatureLettersPackageModule),
-    ExternalModule(FeatureRewardsPackageModule),
+    ExternalModule(FeatureStampCreatorPackageModule),
     ExternalModule(FeaturePremiumPackageModule),
     ExternalModule(FeatureLetterInboxPackageModule),
     // fst:feature-modules — `fst add-feature` inserts new feature modules above

@@ -27,6 +27,7 @@ void main() {
       signOut: mockSignOut,
       restoreSession: mockRestoreSession,
       analytics: mockAnalytics,
+      signInWithGoogle: MockSignInWithGoogle(),
     );
   });
 

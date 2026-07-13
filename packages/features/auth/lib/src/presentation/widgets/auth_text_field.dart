@@ -23,6 +23,7 @@ class AuthTextField extends StatelessWidget {
     this.textInputAction,
     this.autofillHints,
     this.validator,
+    this.onChanged,
     this.onSubmitted,
     super.key,
   });
@@ -39,12 +40,12 @@ class AuthTextField extends StatelessWidget {
   final TextInputAction? textInputAction;
   final Iterable<String>? autofillHints;
   final FormFieldValidator<String>? validator;
+  final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final iconColor = colorScheme.outline;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -77,40 +78,28 @@ class AuthTextField extends StatelessWidget {
           textInputAction: textInputAction,
           autofillHints: autofillHints,
           validator: validator,
+          onChanged: onChanged,
           onFieldSubmitted: onSubmitted,
           style: context.textTheme.bodyLarge?.copyWith(
             color: colorScheme.onSurface,
           ),
+          // Fill, borders, radius, and padding come from the theme's
+          // `inputDecorationTheme`, which mirrors the .pen `Input/*` specs.
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: context.textTheme.bodyLarge?.copyWith(color: iconColor),
             prefixIcon: Center(
               widthFactor: 1,
-              child: FaIcon(icon, color: iconColor, size: 20),
+              child: FaIcon(
+                icon,
+                color: colorScheme.onSurfaceVariant,
+                size: 22,
+              ),
             ),
             suffixIcon: suffix,
-            filled: true,
-            fillColor: colorScheme.surfaceContainerLowest,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.md,
-            ),
             constraints: const BoxConstraints(minHeight: 56),
-            border: _border(colorScheme.outlineVariant),
-            enabledBorder: _border(colorScheme.outlineVariant),
-            focusedBorder: _border(colorScheme.primary, width: 2),
-            errorBorder: _border(colorScheme.error),
-            focusedErrorBorder: _border(colorScheme.error, width: 2),
           ),
         ),
       ],
-    );
-  }
-
-  OutlineInputBorder _border(Color color, {double width = 1}) {
-    return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      borderSide: BorderSide(color: color, width: width),
     );
   }
 }

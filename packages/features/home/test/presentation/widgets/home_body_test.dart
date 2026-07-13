@@ -1,97 +1,93 @@
-// Widget tests for the home dashboard body. home_bloc_test covers the
-// stats-to-state mapping; these assert that HomeBody renders that state for the
-// branches that don't pull network thumbnails — the empty dashboard and the
-// featured-collections row.
-//
-// Populated bookmark cards are intentionally not exercised here: each renders
-// an AppLinkPreviewThumbnail whose link-preview fetch schedules a real 5s
-// timeout timer, which would leak past the test and fail it. The bloc test
-// already verifies the bookmark-stats mapping.
+// Widget tests for the StampMail home dashboard (SM-004, F01-S15/S16): the
+// empty-state hero invite and the loaded header/sections. Stamp cards render
+// AppNetworkImage; the empty and letters-only branches avoid network fetches.
 
-import 'package:app_ui/app_ui.dart';
-import 'package:architecture/architecture.dart';
+import 'dart:async';
+
 import 'package:feature_home/feature_home.dart';
-import 'package:feature_home/src/presentation/widgets/home_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:localization/localization.dart';
 import 'package:shared_contracts/shared_contracts.dart';
+import 'package:shared_ui/shared_ui.dart';
 
 import '../../support.dart';
 
 void main() {
-  Future<HomeBloc> loadedBloc({
-    BookmarkStats stats = const BookmarkStats(),
-    List<CollectionSummary> collections = const [],
+  Future<void> pumpHome(
+    WidgetTester tester, {
+    required HomeData data,
+    VoidCallback? onCreateStamp,
   }) async {
-    final statsReader = MockBookmarkStatsReader();
-    when(statsReader.call).thenAnswer((_) async => Ok(stats));
-    final collectionsReader = MockCollectionsReader();
-    when(collectionsReader.call).thenAnswer((_) async => Ok(collections));
-
-    final bloc = HomeBloc(statsReader, collectionsReader)
-      ..add(const HomeLoadRequested());
-    // Wait for the load to settle. When collections are expected, also wait for
-    // the (separate) collections emit that follows the stats emit.
-    await bloc.stream.firstWhere(
-      (s) => !s.isLoading && (collections.isEmpty || s.collections.isNotEmpty),
-    );
-    return bloc;
-  }
-
-  Future<void> pumpHome(WidgetTester tester, HomeBloc bloc) async {
-    // A tall, wide surface so the whole scrolling dashboard lays out and is
-    // hit-testable without scrolling.
-    tester.view.physicalSize = const Size(1200, 2400);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
+    final bloc = HomeBloc(_StubLoader(data))..add(const HomeLoadRequested());
+    // Closed via unawaited fire-and-forget: awaiting Bloc.close() inside the
+    // fake-async test zone (addTearDown) deadlocks — nothing pumps the
+    // microtasks its stream-close futures need.
+    addTearDown(() => unawaited(bloc.close()));
 
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: BlocProvider<HomeBloc>.value(
-          value: bloc,
-          child: const HomeBody(),
+        home: SessionScope(
+          session: FakeSession(
+            currentUser: const AuthUser(id: 'u1', username: 'sunny'),
+          ),
+          child: BlocProvider.value(
+            value: bloc,
+            child: HomeBody(onCreateStamp: onCreateStamp),
+          ),
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    // Two pumps: one for the load to complete (microtask), one to rebuild.
+    await tester.pump();
+    await tester.pump();
   }
 
-  testWidgets('renders the empty dashboard with no bookmark thumbnails', (
+  testWidgets('empty state shows greeting and first-stamp invite (BR-02)', (
     tester,
   ) async {
-    final bloc = await loadedBloc();
-    await pumpHome(tester, bloc);
+    var created = false;
+    await pumpHome(
+      tester,
+      data: HomeData.empty,
+      onCreateStamp: () => created = true,
+    );
 
-    expect(find.text('Home'), findsWidgets); // app bar title
-    expect(find.byType(FloatingActionButton), findsOneWidget);
-    expect(find.text('No bookmarks yet. Tap + to add one.'), findsOneWidget);
-    expect(find.byType(AppLinkPreviewThumbnail), findsNothing);
+    expect(find.text('Chào sunny 👋'), findsOneWidget);
+    expect(find.text('Tạo tem đầu tiên'), findsOneWidget);
 
-    await bloc.close();
+    await tester.tap(find.text('Tạo tem đầu tiên'));
+    expect(created, isTrue);
   });
 
-  testWidgets('renders featured collections from state', (tester) async {
-    final bloc = await loadedBloc(
-      collections: const [
-        CollectionSummary(
-          id: 'c1',
-          name: 'Reading list',
-          icon: 'book',
-          color: 0xFF2196F3,
-          itemCount: 4,
+  testWidgets('loaded state shows unread badge and letter cards (BR-01)', (
+    tester,
+  ) async {
+    const data = HomeData(
+      unreadLetters: 3,
+      recentLetters: [
+        HomeLetterItem(
+          id: 'l1',
+          title: 'Thư gửi qua Zalo',
+          meta: 'Đã mở · 20/05/2026',
+          opened: true,
         ),
       ],
     );
-    await pumpHome(tester, bloc);
+    await pumpHome(tester, data: data);
 
-    expect(find.text('Reading list'), findsOneWidget);
-    // Collection cards are gradient tiles, not link-preview thumbnails.
-    expect(find.byType(AppLinkPreviewThumbnail), findsNothing);
-
-    await bloc.close();
+    expect(find.text('3'), findsOneWidget);
+    expect(find.text('Thư gửi qua Zalo'), findsOneWidget);
+    expect(find.text('Tạo tem mới ✨'), findsOneWidget);
+    expect(find.text('Tem gần đây'), findsOneWidget);
   });
+}
+
+class _StubLoader implements HomeDataLoader {
+  const _StubLoader(this.data);
+
+  final HomeData data;
+
+  @override
+  Future<HomeData> load() async => data;
 }

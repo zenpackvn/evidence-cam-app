@@ -13,9 +13,13 @@ import '../widgets/widgets.dart';
 /// uses an OTP code, which on Firebase requires a Cloud Function issuing codes
 /// (the SDK's native path is a verification *link*) — see the data-layer plan.
 class VerifyEmailScreen extends StatefulWidget {
-  const VerifyEmailScreen({required this.email, super.key});
+  const VerifyEmailScreen({required this.email, this.onVerified, super.key});
 
   final String email;
+
+  /// Called once the 6-digit code is accepted (flow continues to
+  /// choose-username, F01-S08 → S09).
+  final VoidCallback? onVerified;
 
   @override
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
@@ -48,8 +52,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   }
 
   void _onCompleted(String code) {
-    // ponytail: verify via AuthBloc; here just demo an error state.
-    setState(() => _hasError = code != '123456');
+    // ponytail: verified against the backend OTP endpoint when it lands;
+    // any 6 digits pass for now ('000000' demos the error state).
+    if (code == '000000') {
+      setState(() => _hasError = true);
+      return;
+    }
+    setState(() => _hasError = false);
+    widget.onVerified?.call();
   }
 
   void _resend() {
@@ -67,7 +77,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     final canResend = _resendIn == 0;
     final email = widget.email.isEmpty ? 'hello@stampmail.com' : widget.email;
     return AuthScaffold(
+      topLeftAsset: 'verify-top-left-letter.png',
+      topLeftWidth: 90,
+      topRightAsset: 'reg-top-right-plane.png',
+      topRightWidth: 117,
       bottomAsset: 'verify-envelope-check.png',
+      bottomWidth: 338,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

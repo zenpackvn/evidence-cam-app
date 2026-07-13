@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'app_elevation.dart';
 import 'app_radius.dart';
+import 'app_spacing.dart';
 import 'brand_colors.dart';
 import 'semantic_colors.dart';
 import 'stampmail_colors.dart';
@@ -30,13 +31,14 @@ const _componentThemes = FlexSubThemesData(
   inputDecoratorUnfocusedBorderIsColored: false,
   inputDecoratorFocusedBorderWidth: 1.5,
 
-  // Buttons / FAB / chips: radius scale consistent with `AppButton._style()`
-  // (10/14/16 across small/medium/large) and elevation 2 for primary actions.
-  filledButtonRadius: 14,
-  elevatedButtonRadius: 14,
+  // Buttons / FAB / chips: the .pen components use radius-16 for the primary
+  // CTA (Button/Primary, h52) and radius-12 for the outlined secondary
+  // (Button/Secondary, h44); `AppButton._style()` mirrors the same scale.
+  filledButtonRadius: AppRadius.lg,
+  elevatedButtonRadius: AppRadius.lg,
   elevatedButtonElevation: AppElevation.md - 1,
-  outlinedButtonRadius: 14,
-  textButtonRadius: 14,
+  outlinedButtonRadius: AppRadius.md,
+  textButtonRadius: AppRadius.md,
   fabRadius: AppRadius.lg,
   chipRadius: AppRadius.sm,
 
@@ -80,6 +82,10 @@ class AppTheme {
     ).copyWith(
       extensions: const [SemanticColors.light, BrandColors.light],
       bottomSheetTheme: const BottomSheetThemeData(showDragHandle: true),
+      inputDecorationTheme: _inputDecorationTheme(
+        StampMailColors.light,
+        BrandColors.light,
+      ),
     );
   }
 
@@ -95,6 +101,43 @@ class AppTheme {
     ).copyWith(
       extensions: const [SemanticColors.dark, BrandColors.dark],
       bottomSheetTheme: const BottomSheetThemeData(showDragHandle: true),
+      inputDecorationTheme: _inputDecorationTheme(
+        StampMailColors.dark,
+        BrandColors.dark,
+      ),
+    );
+  }
+
+  /// Text-field chrome matching the .pen `Input/*` components exactly:
+  /// `surface-elevated` fill, hairline `border-subtle`, radius-16, 56px tall
+  /// (17px text + 16px vertical padding), coral 1.5 focus and error borders.
+  static InputDecorationTheme _inputDecorationTheme(
+    ColorScheme scheme,
+    BrandColors brand,
+  ) {
+    OutlineInputBorder border(Color color, {double width = 1}) {
+      return OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: color, width: width),
+      );
+    }
+
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: brand.surfaceElevated,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.lg,
+      ),
+      hintStyle: TextStyle(color: scheme.outline),
+      prefixIconColor: scheme.onSurfaceVariant,
+      suffixIconColor: scheme.onSurfaceVariant,
+      border: border(brand.borderSubtle),
+      enabledBorder: border(brand.borderSubtle),
+      focusedBorder: border(scheme.primary, width: 1.5),
+      errorBorder: border(scheme.error, width: 1.5),
+      focusedErrorBorder: border(scheme.error, width: 1.5),
+      disabledBorder: border(brand.borderSubtle),
     );
   }
 
@@ -150,16 +193,16 @@ class AppTheme {
         height: 20 / 15,
         fontWeight: FontWeight.w600,
       ),
-      bodyLarge: body.copyWith(fontSize: 16, height: 24 / 16),
-      bodyMedium: body.copyWith(fontSize: 14, height: 20 / 14),
+      bodyLarge: body.copyWith(fontSize: 17, height: 24 / 17),
+      bodyMedium: body.copyWith(fontSize: 15, height: 22 / 15),
       bodySmall: body.copyWith(
         fontSize: 13,
         height: 18 / 13,
         color: scheme.onSurfaceVariant,
       ),
       labelLarge: body.copyWith(
-        fontSize: 14,
-        height: 20 / 14,
+        fontSize: 15,
+        height: 22 / 15,
         fontWeight: FontWeight.w600,
       ),
       labelMedium: body.copyWith(
@@ -168,8 +211,8 @@ class AppTheme {
         fontWeight: FontWeight.w500,
       ),
       labelSmall: body.copyWith(
-        fontSize: 11,
-        height: 14 / 11,
+        fontSize: 12,
+        height: 16 / 12,
         fontWeight: FontWeight.w500,
       ),
     );

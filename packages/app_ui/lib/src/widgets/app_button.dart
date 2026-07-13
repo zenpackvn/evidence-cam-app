@@ -128,25 +128,33 @@ class AppButton extends StatelessWidget {
   };
 
   ButtonStyle _style() {
+    // Vertical padding stays 0 so `minimumSize` alone fixes the exact design
+    // heights (content centers within it).
     final padding = switch (size) {
       AppButtonSize.small => const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
       ),
       AppButtonSize.medium => const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xxl,
-        vertical: 14,
+        horizontal: AppSpacing.xl,
       ),
       AppButtonSize.large => const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xxxl,
-        vertical: 18,
+        horizontal: AppSpacing.xxl,
       ),
     };
 
+    // .pen button specimens: Button/Primary = h52 / radius-16 / 17 w600,
+    // Button/Secondary = h44 / radius-12 / 15 w600. `small` is an app-only
+    // dense size kept on the same scale.
     final radius = switch (size) {
       AppButtonSize.small => 10.0,
-      AppButtonSize.medium => 14.0,
-      AppButtonSize.large => 16.0,
+      AppButtonSize.medium => AppRadius.md,
+      AppButtonSize.large => AppRadius.lg,
+    };
+
+    final fontSize = switch (size) {
+      AppButtonSize.small => 13.0,
+      AppButtonSize.medium => 15.0,
+      AppButtonSize.large => 17.0,
     };
 
     return ButtonStyle(
@@ -154,8 +162,8 @@ class AppButton extends StatelessWidget {
       minimumSize: WidgetStatePropertyAll(
         Size(0, switch (size) {
           AppButtonSize.small => 36,
-          AppButtonSize.medium => 48,
-          AppButtonSize.large => 56,
+          AppButtonSize.medium => 44,
+          AppButtonSize.large => 52,
         }),
       ),
       shape: WidgetStatePropertyAll(
@@ -166,10 +174,11 @@ class AppButton extends StatelessWidget {
       elevation: WidgetStatePropertyAll(
         variant == AppButtonVariant.primary ? 2 : 0,
       ),
-      textStyle: const WidgetStatePropertyAll(
+      textStyle: WidgetStatePropertyAll(
         TextStyle(
+          fontSize: fontSize,
+          height: 22 / fontSize,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
         ),
       ),
     );

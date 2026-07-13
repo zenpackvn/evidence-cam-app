@@ -45,6 +45,18 @@ class LetterContent {
   /// Font family token, if the user picked one.
   final String? fontFamily;
 
+  LetterContent copyWith({
+    String? templateId,
+    String? text,
+    int? paperColor,
+    String? fontFamily,
+  }) => LetterContent(
+    templateId: templateId ?? this.templateId,
+    text: text ?? this.text,
+    paperColor: paperColor ?? this.paperColor,
+    fontFamily: fontFamily ?? this.fontFamily,
+  );
+
   Map<String, dynamic> toJson() => {
     'template_id': templateId,
     'text': text,

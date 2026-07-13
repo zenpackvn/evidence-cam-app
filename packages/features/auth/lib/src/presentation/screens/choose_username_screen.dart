@@ -12,7 +12,10 @@ import '../widgets/widgets.dart';
 /// `UsernameDataSource` (Firestore transaction — see the data-layer plan,
 /// BR-04).
 class ChooseUsernameScreen extends StatefulWidget {
-  const ChooseUsernameScreen({super.key});
+  const ChooseUsernameScreen({this.onDone, super.key});
+
+  /// Called with the accepted username (flow continues to avatar upload).
+  final ValueChanged<String>? onDone;
 
   @override
   State<ChooseUsernameScreen> createState() => _ChooseUsernameScreenState();
@@ -51,11 +54,12 @@ class _ChooseUsernameScreenState extends State<ChooseUsernameScreen> {
       setState(() => _error = error);
       return;
     }
-    // ponytail: reserve username via AuthBloc; here just demo submitting.
+    // ponytail: reserved via the username API when it lands; accepted locally.
     setState(() {
       _error = null;
       _submitting = true;
     });
+    widget.onDone?.call(_controller.text.trim());
   }
 
   void _pickSuggestion(String value) {
@@ -67,7 +71,12 @@ class _ChooseUsernameScreenState extends State<ChooseUsernameScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AuthScaffold(
+      topLeftAsset: 'verify-top-left-letter.png',
+      topLeftWidth: 90,
+      topRightAsset: 'user-top-right-leaves.png',
+      topRightWidth: 86,
       bottomAsset: 'user-envelope.png',
+      bottomWidth: 205,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

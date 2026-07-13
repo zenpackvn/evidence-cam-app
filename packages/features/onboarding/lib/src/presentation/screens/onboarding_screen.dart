@@ -88,7 +88,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Image.asset(
               'assets/illustrations/corner-left-flowers.png',
               package: 'feature_onboarding',
-              width: 120,
+              width: 88,
               excludeFromSemantics: true,
             ),
           ),
@@ -98,7 +98,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Image.asset(
               'assets/illustrations/corner-right-stamp.png',
               package: 'feature_onboarding',
-              width: 116,
+              width: 105,
               excludeFromSemantics: true,
             ),
           ),
@@ -109,7 +109,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Image.asset(
                 'assets/illustrations/onb-bottom-left.png',
                 package: 'feature_onboarding',
-                width: 130,
+                width: 132,
                 excludeFromSemantics: true,
               ),
             ),
@@ -121,7 +121,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Image.asset(
                 'assets/illustrations/onb-bottom-right.png',
                 package: 'feature_onboarding',
-                width: 130,
+                width: 124,
                 excludeFromSemantics: true,
               ),
             ),

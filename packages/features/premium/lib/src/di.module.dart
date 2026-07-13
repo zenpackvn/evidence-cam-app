@@ -15,15 +15,18 @@ import 'package:network/network.dart' as _i372;
 import 'package:shared_contracts/shared_contracts.dart' as _i856;
 
 class FeaturePremiumPackageModule extends _i526.MicroPackageModule {
-// initializes the registration of main-scope dependencies inside of GetIt
+  // initializes the registration of main-scope dependencies inside of GetIt
   @override
   _i687.FutureOr<void> init(_i526.GetItHelper gh) {
     final entitlementRemoteModule = _$EntitlementRemoteModule();
-    gh.lazySingleton<_i222.EntitlementRemoteDataSource>(() =>
-        entitlementRemoteModule
-            .provideEntitlementRemoteDataSource(gh<_i372.Dio>()));
-    gh.lazySingleton<_i856.EntitlementReader>(() =>
-        _i23.EntitlementReaderImpl(gh<_i222.EntitlementRemoteDataSource>()));
+    gh.lazySingleton<_i222.EntitlementRemoteDataSource>(
+      () => entitlementRemoteModule.provideEntitlementRemoteDataSource(
+        gh<_i372.Dio>(),
+      ),
+    );
+    gh.lazySingleton<_i856.EntitlementReader>(
+      () => _i23.EntitlementReaderImpl(gh<_i222.EntitlementRemoteDataSource>()),
+    );
   }
 }
 

@@ -1,11 +1,14 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localization/localization.dart';
 
 import '../auth_routes.dart';
+import '../bloc/auth_bloc.dart';
+import '../bloc/auth_state.dart';
 import '../widgets/widgets.dart';
 
 /// StampMail account-creation screen.
@@ -29,7 +32,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _ageConfirmed = false;
   bool _ageError = false;
 
-  bool _submitting = false;
   AuthProvider? _socialLoading;
 
   @override
@@ -41,19 +43,71 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _submit() {
+    final bloc = context.read<AuthBloc>();
+    if (bloc.state is AuthSubmitting) return;
     final formValid = _formKey.currentState!.validate();
     setState(() => _ageError = !_ageConfirmed);
     if (!formValid || !_ageConfirmed) return;
-    // ponytail: wired to AuthBloc.register in the data-layer pass.
-    setState(() => _submitting = true);
+    bloc.add(
+      AuthRegisterRequested(
+        username: _emailController.text.trim(),
+        password: _passwordController.text,
+      ),
+    );
   }
+
+  /// Opens the social-choice sheet (F01-S07); the picked provider then runs
+  /// the same local-only social path as the inline buttons.
+  Future<void> _chooseSocial() async {
+    final l10n = context.l10n;
+    final provider = await showSocialChoiceSheet(
+      context,
+      title: l10n.smRegisterChoiceTitle,
+      subtitle: l10n.smRegisterChoiceSubtitle,
+      cancelLabel: l10n.commonCancel,
+      labelFor: _socialLabel,
+    );
+    if (provider != null && mounted) {
+      setState(() => _socialLoading = provider);
+    }
+  }
+
+  String _socialLabel(AuthProvider p) => switch (p) {
+    AuthProvider.apple => context.l10n.smContinueApple,
+    AuthProvider.google => context.l10n.smContinueGoogle,
+    AuthProvider.facebook => context.l10n.smContinueFacebook,
+  };
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final submitting = context.watch<AuthBloc>().state is AuthSubmitting;
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        // Registration flow (F01-S06 → S08): a fresh account continues into
+        // email verification. The router's authenticated redirect may bounce
+        // through home first; this go() lands the verify step on top.
+        if (state is AuthAuthenticated) {
+          context.go(
+            '${AuthRoutes.verifyEmail}'
+            '?email=${Uri.encodeComponent(_emailController.text.trim())}',
+          );
+        }
+      },
+      child: _buildScaffold(context, l10n, submitting),
+    );
+  }
+
+  Widget _buildScaffold(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool submitting,
+  ) {
     return AuthScaffold(
-      showBottomArt: false,
       topRightAsset: 'reg-top-right-plane.png',
+      topRightWidth: 117,
+      bottomLeftAsset: 'reg-bottom-left.png',
+      bottomRightAsset: 'reg-bottom-right.png',
       child: Form(
         key: _formKey,
         child: Column(
@@ -61,29 +115,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const AuthBrandHeader().animateSlideDown(),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.md),
             AuthHeading(
               title: l10n.smRegisterTitle,
               subtitle: l10n.smRegisterSubtitle,
+              subtitleGap: 6,
             ).animateSlideDown(delay: 50.ms),
-            const SizedBox(height: AppSpacing.xxxl),
+            const SizedBox(height: AppSpacing.lg),
             AuthTextField(
               controller: _emailController,
               hint: l10n.smRegisterEmailHint,
               icon: FontAwesomeIcons.envelope,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
-              enabled: !_submitting,
+              enabled: !submitting,
               autofillHints: const [AutofillHints.email],
               validator: _validateEmail,
             ).animateSlideLeft(delay: 100.ms),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.md),
             AuthTextField(
               controller: _passwordController,
               hint: l10n.smLoginPasswordHint,
               icon: FontAwesomeIcons.lock,
               obscureText: _obscurePassword,
-              enabled: !_submitting,
+              enabled: !submitting,
               autofillHints: const [AutofillHints.newPassword],
               validator: _validatePassword,
               suffix: _Toggle(
@@ -92,13 +147,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     setState(() => _obscurePassword = !_obscurePassword),
               ),
             ).animateSlideLeft(delay: 150.ms),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.md),
             AuthTextField(
               controller: _confirmController,
               hint: l10n.smRegisterConfirmHint,
               icon: FontAwesomeIcons.lock,
               obscureText: _obscureConfirm,
-              enabled: !_submitting,
+              enabled: !submitting,
               validator: _validateConfirm,
               suffix: _Toggle(
                 obscured: _obscureConfirm,
@@ -106,7 +161,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     setState(() => _obscureConfirm = !_obscureConfirm),
               ),
             ).animateSlideLeft(delay: 200.ms),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: 14),
             _AgeConfirmation(
               value: _ageConfirmed,
               hasError: _ageError,
@@ -115,25 +170,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 if (v) _ageError = false;
               }),
             ).animateSlideLeft(delay: 250.ms),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: 14),
             AuthPrimaryButton(
               label: l10n.smRegisterSubmit,
               onPressed: _submit,
-              isLoading: _submitting,
+              isLoading: submitting,
             ).animateSlideUp(delay: 300.ms),
-            const SizedBox(height: AppSpacing.xxxl),
+            const SizedBox(height: 14),
             AuthSocialButtons(
               dividerLabel: l10n.smRegisterDivider,
               loading: _socialLoading,
-              labelFor: (p) => switch (p) {
-                AuthProvider.apple => l10n.smContinueApple,
-                AuthProvider.google => l10n.smContinueGoogle,
-                AuthProvider.facebook => l10n.smContinueFacebook,
-              },
-              onPressed: (p) => setState(() => _socialLoading = p),
+              topGap: AppSpacing.md,
+              itemGap: 10,
+              labelFor: _socialLabel,
+              // .pen F01-S07: picking a provider goes through the
+              // social-choice sheet rather than firing immediately.
+              onPressed: (_) => _chooseSocial(),
             ),
-            const SizedBox(height: AppSpacing.xl),
-            _LoginPrompt(disabled: _submitting).animateSlideUp(delay: 500.ms),
+            const SizedBox(height: AppSpacing.md),
+            _LoginPrompt(disabled: submitting).animateSlideUp(delay: 500.ms),
           ],
         ),
       ),

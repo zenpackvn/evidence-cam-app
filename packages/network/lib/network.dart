@@ -10,4 +10,5 @@ export 'src/idempotency_interceptor.dart';
 export 'src/network_module.dart';
 export 'src/performance_interceptor.dart';
 export 'src/retry_interceptor.dart';
+export 'src/token_provider.dart';
 export 'src/token_refresher.dart';

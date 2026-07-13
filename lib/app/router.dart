@@ -1,19 +1,20 @@
 import 'dart:async';
 
+import 'package:app_platform/app_platform.dart';
+import 'package:feature_album/feature_album.dart';
 import 'package:feature_auth/feature_auth.dart';
-// fst:feature:bookmarks:start
-import 'package:feature_bookmarks/feature_bookmarks.dart';
-// fst:feature:bookmarks:end
 import 'package:feature_home/feature_home.dart';
-// fst:feature:notifications:start
-import 'package:feature_notifications/feature_notifications.dart';
-// fst:feature:notifications:end
+import 'package:feature_letter_inbox/feature_letter_inbox.dart';
+import 'package:feature_letters/feature_letters.dart';
 import 'package:feature_onboarding/feature_onboarding.dart';
 import 'package:feature_profile/feature_profile.dart';
 import 'package:feature_splash/feature_splash.dart';
-import 'package:flutter/widgets.dart';
+import 'package:feature_stamp_creator/feature_stamp_creator.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_ui/shared_ui.dart';
 
 import 'widgets/app_shell.dart';
 
@@ -26,38 +27,23 @@ part 'router.g.dart';
         TypedGoRoute<HomeRoute>(path: '/', name: 'home'),
       ],
     ),
-    // fst:feature:bookmarks:start
-    TypedStatefulShellBranch<BookmarksBranchData>(
+    TypedStatefulShellBranch<InboxBranchData>(
       routes: <TypedRoute<RouteData>>[
-        TypedGoRoute<BookmarksListRoute>(
-          path: '/bookmarks',
-          name: 'bookmarks',
-        ),
+        TypedGoRoute<InboxRoute>(path: '/inbox', name: 'inbox'),
       ],
     ),
-    // fst:feature:bookmarks:end
-    // fst:feature:notifications:start
-    TypedStatefulShellBranch<NotificationsBranchData>(
+    TypedStatefulShellBranch<AlbumBranchData>(
       routes: <TypedRoute<RouteData>>[
-        TypedGoRoute<NotificationsRoute>(
-          path: '/notifications',
-          name: 'notifications',
-          routes: <TypedRoute<RouteData>>[
-            TypedGoRoute<ActivityFeedRoute>(
-              path: 'activity',
-              name: 'activity-feed',
-            ),
-          ],
-        ),
+        TypedGoRoute<AlbumRoute>(path: '/album', name: 'album'),
       ],
     ),
-    // fst:feature:notifications:end
     TypedStatefulShellBranch<ProfileBranchData>(
       routes: <TypedRoute<RouteData>>[
-        TypedGoRoute<ProfileRoute>(
-          path: '/profile',
-          name: 'profile',
+        TypedGoRoute<StampMailProfileRoute>(
+          path: '/me',
+          name: 'me',
           routes: <TypedRoute<RouteData>>[
+            TypedGoRoute<ProfileRoute>(path: 'edit', name: 'profile'),
             TypedGoRoute<ChangePasswordRoute>(
               path: 'change-password',
               name: 'change-password',
@@ -83,17 +69,13 @@ class HomeBranchData extends StatefulShellBranchData {
   const HomeBranchData();
 }
 
-// fst:feature:bookmarks:start
-class BookmarksBranchData extends StatefulShellBranchData {
-  const BookmarksBranchData();
+class InboxBranchData extends StatefulShellBranchData {
+  const InboxBranchData();
 }
-// fst:feature:bookmarks:end
 
-// fst:feature:notifications:start
-class NotificationsBranchData extends StatefulShellBranchData {
-  const NotificationsBranchData();
+class AlbumBranchData extends StatefulShellBranchData {
+  const AlbumBranchData();
 }
-// fst:feature:notifications:end
 
 class ProfileBranchData extends StatefulShellBranchData {
   const ProfileBranchData();
@@ -110,6 +92,162 @@ class OnboardingRoute extends GoRouteData with $OnboardingRoute {
         if (context.mounted) const HomeRoute().go(context);
       });
     },
+  );
+}
+
+@TypedGoRoute<CreateStampRoute>(path: '/create', name: 'create')
+class CreateStampRoute extends GoRouteData with $CreateStampRoute {
+  const CreateStampRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => StampSourceScreen(
+    picker: GetIt.instance<ImagePickerService>(),
+    // On pick, enter the wizard (SM-006→SM-011) with the chosen photo. The
+    // wizard is pushed (not a typed route) because it needs the runtime path.
+    onPicked: (path) => _openWizard(context, path),
+  );
+}
+
+void _openWizard(BuildContext context, String imagePath) {
+  Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => StampWizardScreen(
+        imagePath: imagePath,
+        // ponytail: isPremium is false until the entitlement reader is wired
+        // (C6). Locked filters/borders gate on this.
+        onExit: () => Navigator.of(context).maybePop(),
+        onViewAlbum: () => const HomeRoute().go(context),
+        onCreateAnother: () => const CreateStampRoute().go(context),
+      ),
+    ),
+  );
+}
+
+class AlbumRoute extends GoRouteData with $AlbumRoute {
+  const AlbumRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => AlbumScreen(
+    onCreate: () => const CreateStampRoute().go(context),
+    onOpenStamp: (stamp) => Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => StampDetailScreen(
+          stamp: stamp,
+          onBack: () => Navigator.of(context).maybePop(),
+        ),
+      ),
+    ),
+  );
+}
+
+@TypedGoRoute<LetterComposeRoute>(path: '/compose', name: 'compose')
+class LetterComposeRoute extends GoRouteData with $LetterComposeRoute {
+  const LetterComposeRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => TemplateListScreen(
+    onPick: (template) => _openComposer(context, template.id),
+  );
+}
+
+void _openComposer(BuildContext context, String templateId) {
+  final rootContext = context;
+  Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => ComposerFlow(
+        templateId: templateId,
+        letters: GetIt.instance<LettersRepository>(),
+        stamps: GetIt.instance<StampsRepository>(),
+        // ponytail: link base is a placeholder until the web viewer is deployed
+        // (D3) and its base lands in config; the URL shape is already correct.
+        linkBaseUrl: 'https://stampmail.app/letter',
+        onClose: () => const AlbumRoute().go(rootContext),
+        onOpenShare: (platform, letterUrl) => switch (platform) {
+          SharePlatform.copyLink => Clipboard.setData(
+            ClipboardData(text: letterUrl),
+          ),
+          _ => SharePlus.instance.share(ShareParams(text: letterUrl)),
+        },
+      ),
+    ),
+  );
+}
+
+class InboxRoute extends GoRouteData with $InboxRoute {
+  const InboxRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => InboxListPage(
+    createCubit: () => GetIt.instance<InboxListCubit>(),
+    onOpen: (item) => LetterRevealRoute(item.linkId).go(context),
+    onCompose: () => const LetterComposeRoute().go(context),
+  );
+}
+
+/// SM-017: opening a received letter link. Guest-allowed (B3.3) — a signed-out
+/// web reader can open it; reply then prompts auth.
+@TypedGoRoute<LetterRevealRoute>(path: '/letter/:linkId', name: 'letter')
+class LetterRevealRoute extends GoRouteData with $LetterRevealRoute {
+  const LetterRevealRoute(this.linkId);
+
+  final String linkId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => LetterRevealScreen(
+    linkId: linkId,
+    // Người nhận đã đăng nhập phải mở link dưới uid của mình: server mới ghi
+    // inbox (A17) và cho phép chính chủ mở lại (link 1 lần với người khác).
+    viewerUid: SessionScope.of(context).currentUser?.id,
+    // ponytail: reply routes to compose for now; deferred deep-link + claim
+    // (D16) refine who the reply is addressed to once that lands.
+    onReply: () => const LetterComposeRoute().go(context),
+  );
+}
+
+class StampMailProfileRoute extends GoRouteData with $StampMailProfileRoute {
+  const StampMailProfileRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      StampMailProfileScreen(
+        // ponytail: isPremium is false until the entitlement reader is wired
+        // (C6); the Premium card / badge gate on it.
+        onEditProfile: () => const ProfileRoute().go(context),
+        onOpenSettings: () => const SettingsRoute().go(context),
+        onUpgrade: () {},
+      );
+}
+
+@TypedGoRoute<SettingsRoute>(path: '/settings', name: 'settings')
+class SettingsRoute extends GoRouteData with $SettingsRoute {
+  const SettingsRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => SettingsScreen(
+    onChangePassword: () => const ChangePasswordRoute().go(context),
+    onSignOut: () => SessionScope.of(context).signOut(),
+    onSignOutAll: () => SessionScope.of(context).signOut(),
+    // ponytail: locale switching persists once the locale store lands; the
+    // picker UI (F07-S08) is design-complete.
+    onLanguage: () => Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => LanguageScreen(selected: 'vi', onSelect: (_) {}),
+      ),
+    ),
+    onNotifications: () => Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => const NotificationSettingsScreen(),
+      ),
+    ),
+    onDeleteAccount: () => Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        // ponytail: confirm routes into the existing DeleteAccountCubit flow
+        // (profile edit) until the pending-delete endpoint lands.
+        builder: (_) => DeleteAccountScreen(
+          onConfirm: () => Navigator.of(context).maybePop(),
+        ),
+      ),
+    ),
   );
 }
 
@@ -135,26 +273,12 @@ class HomeRoute extends GoRouteData with $HomeRoute {
   const HomeRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) => const HomeScreen();
+  Widget build(BuildContext context, GoRouterState state) => HomeScreen(
+    onCreateStamp: () => const CreateStampRoute().go(context),
+    onOpenAlbum: () => const AlbumRoute().go(context),
+    onOpenInbox: () => const InboxRoute().go(context),
+  );
 }
-
-// fst:feature:notifications:start
-class NotificationsRoute extends GoRouteData with $NotificationsRoute {
-  const NotificationsRoute();
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const NotificationsScreen();
-}
-
-class ActivityFeedRoute extends GoRouteData with $ActivityFeedRoute {
-  const ActivityFeedRoute();
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const ActivityFeedScreen();
-}
-// fst:feature:notifications:end
 
 class ProfileRoute extends GoRouteData with $ProfileRoute {
   const ProfileRoute();
@@ -171,16 +295,6 @@ class ChangePasswordRoute extends GoRouteData with $ChangePasswordRoute {
   Widget build(BuildContext context, GoRouterState state) =>
       const ChangePasswordScreen();
 }
-
-// fst:feature:bookmarks:start
-class BookmarksListRoute extends GoRouteData with $BookmarksListRoute {
-  const BookmarksListRoute();
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const BookmarksListScreen();
-}
-// fst:feature:bookmarks:end
 
 /// Tracks deep-link targets and splash-screen completion so the redirect can
 /// capture cold-start URIs and replay them after auth resolves.

@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import 'screens/avatar_upload_screen.dart';
 import 'screens/choose_username_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/login_screen.dart';
@@ -26,6 +27,9 @@ abstract final class AuthRoutes {
   /// The username-selection screen (shown after first authentication).
   static const chooseUsername = '/choose-username';
 
+  /// The avatar-upload step after choosing a username (F01-S10).
+  static const avatarUpload = '/avatar-upload';
+
   /// The change-password screen (nested under the profile tab, mounted by the
   /// app shell because it lives inside the profile branch).
   static const changePassword = '/profile/change-password';
@@ -50,11 +54,23 @@ List<RouteBase> get authRoutes => [
   ),
   GoRoute(
     path: AuthRoutes.verifyEmail,
-    builder: (context, state) =>
-        VerifyEmailScreen(email: state.uri.queryParameters['email'] ?? ''),
+    builder: (context, state) => VerifyEmailScreen(
+      email: state.uri.queryParameters['email'] ?? '',
+      onVerified: () => context.go(AuthRoutes.chooseUsername),
+    ),
   ),
   GoRoute(
     path: AuthRoutes.chooseUsername,
-    builder: (context, state) => const ChooseUsernameScreen(),
+    builder: (context, state) => ChooseUsernameScreen(
+      onDone: (_) => context.go(AuthRoutes.avatarUpload),
+    ),
+  ),
+  GoRoute(
+    path: AuthRoutes.avatarUpload,
+    // The host app wires the image picker; the route keeps the flow moving
+    // (avatar upload itself lands with the profile API).
+    builder: (context, state) => AvatarUploadScreen(
+      onDone: () => context.go('/'),
+    ),
   ),
 ];

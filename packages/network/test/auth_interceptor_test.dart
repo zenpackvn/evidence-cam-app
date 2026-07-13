@@ -54,25 +54,25 @@ void main() {
   );
 
   group('onRequest', () {
-    test('attaches Bearer header when access token exists', () {
+    test('attaches Bearer header when access token exists', () async {
       when(() => tokens.accessToken).thenReturn('tok123');
       final handler = _MockRequestHandler();
       final o = opts();
       when(() => handler.next(any())).thenReturn(null);
 
-      interceptor.onRequest(o, handler);
+      await interceptor.onRequest(o, handler);
 
       expect(o.headers['Authorization'], 'Bearer tok123');
       verify(() => handler.next(o)).called(1);
     });
 
-    test('omits Authorization header when access token is null', () {
+    test('omits Authorization header when access token is null', () async {
       when(() => tokens.accessToken).thenReturn(null);
       final handler = _MockRequestHandler();
       final o = opts();
       when(() => handler.next(any())).thenReturn(null);
 
-      interceptor.onRequest(o, handler);
+      await interceptor.onRequest(o, handler);
 
       expect(o.headers.containsKey('Authorization'), isFalse);
       verify(() => handler.next(o)).called(1);

@@ -2,6 +2,8 @@ import 'package:architecture/architecture.dart';
 import 'package:shared_contracts/shared_contracts.dart';
 
 abstract interface class AuthRepository {
+  /// Signs in with email + password (Firebase), then loads the StampMail
+  /// profile. [username] carries the email for the email/password provider.
   Future<Result<AuthUser>> signIn({
     required String username,
     required String password,
@@ -11,6 +13,9 @@ abstract interface class AuthRepository {
     required String username,
     required String password,
   });
+
+  /// Interactive Google sign-in, then loads the StampMail profile.
+  Future<Result<AuthUser>> signInWithGoogle();
 
   Future<Result<void>> changePassword({
     required String currentPassword,

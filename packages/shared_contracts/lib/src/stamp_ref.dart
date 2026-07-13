@@ -10,9 +10,13 @@ class StampRef {
     required this.imageUrl,
     required this.createdAt,
     this.thumbUrl,
+    this.name,
   });
 
   final String id;
+
+  /// Display name shown on stamp cards (F01-S16), when the stamp has one.
+  final String? name;
 
   /// URL of the finished stamp PNG (Cloudflare R2, TD-013).
   final String imageUrl;

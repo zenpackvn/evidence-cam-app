@@ -53,9 +53,9 @@ workspace:
   # StampMail feature packages.
   - packages/features/album
   - packages/features/letters
-  - packages/features/rewards
   - packages/features/premium
   - packages/features/letter_inbox
+  - packages/features/stamp_creator
   # fst:features — `fst add-feature` inserts new feature packages above this line
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -98,8 +98,8 @@ dependencies:
   feature_album: ^0.1.0
   feature_letters: ^0.1.0
   feature_premium: ^0.1.0
-  feature_rewards: ^0.1.0
   feature_letter_inbox: ^0.1.0
+  feature_stamp_creator: ^0.1.0
   # fst:feature-deps — `fst add-feature` inserts new feature deps above this line
 
   flutter:
@@ -218,12 +218,12 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true
   min_sdk_android: 21
-  adaptive_icon_background: "#095D9E"
+  adaptive_icon_background: "#F5EFE0"
   adaptive_icon_foreground: "tool/launcher_icons/app_icon_foreground.png"
   web:
     generate: true
-    background_color: "#095D9E"
-    theme_color: "#095D9E"
+    background_color: "#F5EFE0"
+    theme_color: "#E8503A"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -242,6 +242,8 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    # Design sample/content images (preview harness + bundled catalogs).
+    - assets/design/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

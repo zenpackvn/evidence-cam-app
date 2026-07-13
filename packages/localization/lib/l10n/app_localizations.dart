@@ -1046,6 +1046,18 @@ abstract class AppLocalizations {
   /// **'Bookmarks'**
   String get navBookmarks;
 
+  /// No description provided for @navLetters.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox'**
+  String get navLetters;
+
+  /// No description provided for @navAlbum.
+  ///
+  /// In en, this message translates to:
+  /// **'Album'**
+  String get navAlbum;
+
   /// No description provided for @navProfile.
   ///
   /// In en, this message translates to:
@@ -1382,6 +1394,18 @@ abstract class AppLocalizations {
   /// **'Register'**
   String get smLoginRegisterCta;
 
+  /// No description provided for @smRegisterChoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how to sign up'**
+  String get smRegisterChoiceTitle;
+
+  /// No description provided for @smRegisterChoiceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue quickly with your account'**
+  String get smRegisterChoiceSubtitle;
+
   /// No description provided for @smLoginLockedMessage.
   ///
   /// In en, this message translates to:
@@ -1565,7 +1589,7 @@ abstract class AppLocalizations {
   /// No description provided for @smForgotTitle.
   ///
   /// In en, this message translates to:
-  /// **'Forgot password'**
+  /// **'Forgot password ✨'**
   String get smForgotTitle;
 
   /// No description provided for @smForgotSubtitle.
@@ -1591,6 +1615,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to sign in'**
   String get smForgotBackToLogin;
+
+  /// No description provided for @smForgotCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code ✨'**
+  String get smForgotCodeTitle;
+
+  /// No description provided for @smForgotCodeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit code to'**
+  String get smForgotCodeSubtitle;
+
+  /// No description provided for @smForgotCodeContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get smForgotCodeContinue;
+
+  /// No description provided for @smResetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset password ✨'**
+  String get smResetTitle;
+
+  /// No description provided for @smResetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your code is confirmed.\nPlease create a new password for your account.'**
+  String get smResetSubtitle;
+
+  /// No description provided for @smResetNewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get smResetNewHint;
+
+  /// No description provided for @smResetConfirmHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get smResetConfirmHint;
+
+  /// No description provided for @smResetHintMin.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 6 characters'**
+  String get smResetHintMin;
+
+  /// No description provided for @smResetSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Save new password'**
+  String get smResetSubmit;
+
+  /// No description provided for @smResetSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset ✨'**
+  String get smResetSuccessTitle;
+
+  /// No description provided for @smResetSuccessSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password has been updated.\nYou can now sign in with your new password.'**
+  String get smResetSuccessSubtitle;
+
+  /// No description provided for @smResetSuccessCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in now'**
+  String get smResetSuccessCta;
+
+  /// No description provided for @smResetSuccessBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to sign in'**
+  String get smResetSuccessBack;
 
   /// No description provided for @smVerifyTitle.
   ///

@@ -24,8 +24,10 @@ dependencies:
   database: ^0.1.0
   shared_contracts: ^0.1.0
   localization: ^0.1.0
+  app_ui: ^0.1.0
 
   # Third-party.
+  flutter_bloc: ^9.1.1
   injectable: ^3.0.0
   get_it: ^9.2.1
   uuid: ^4.5.3

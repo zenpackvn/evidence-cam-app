@@ -1,18 +1,14 @@
-import 'package:architecture/architecture.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:shared_contracts/shared_contracts.dart';
+import '../../domain/home_data.dart';
 
-part 'home_state.freezed.dart';
+/// State of the Home dashboard (SM-004).
+class HomeState {
+  const HomeState({
+    this.data = HomeData.empty,
+    this.isLoading = false,
+    this.error,
+  });
 
-@freezed
-abstract class HomeState with _$HomeState {
-  const factory HomeState({
-    @Default(0) int totalBookmarks,
-    @Default(0) int recentBookmarks,
-    @Default(0) int uniqueTags,
-    @Default([]) List<BookmarkSummary> recentItems,
-    @Default([]) List<CollectionSummary> collections,
-    @Default(false) bool isLoading,
-    Failure? failure,
-  }) = _HomeState;
+  final HomeData data;
+  final bool isLoading;
+  final String? error;
 }

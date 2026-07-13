@@ -1,0 +1,36 @@
+appId: com.aktechvn.stampmail
+name: "SM-01 · Đăng nhập email (TC-01-011/013) — sim locale EN"
+---
+- launchApp:
+    clearState: false
+
+# Splash → (chưa đăng nhập) → màn login
+- extendedWaitUntil:
+    visible:
+      text: "Sign in"
+    timeout: 30000
+
+- tapOn:
+    text: "Email or username"
+- inputText: "test1783783163@stampmail.dev"
+
+- tapOn:
+    text: "Password"
+- inputText: "test123456"
+
+# hideKeyboard lỗi trên iOS sim — Enter submit qua onSubmitted của ô mật khẩu
+- pressKey: Enter
+
+# Firebase → /api/sm/me → Home (chào theo tên, hardcode VN)
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*Tem gần đây.*"
+    timeout: 30000
+- assertVisible:
+    text: "(?s).*Home.*"
+- assertVisible:
+    text: "(?s).*Inbox.*"
+- assertVisible:
+    text: "(?s).*Album.*"
+- assertVisible:
+    text: "(?s).*Profile.*"

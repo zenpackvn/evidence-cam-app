@@ -1,35 +1,50 @@
 import 'package:feature_onboarding/feature_onboarding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:localization/localization.dart';
 
 final _steps = [
   const OnboardingStepData(
     title: 'Step 1',
     description: 'Desc 1',
-    icon: Icons.star,
+    heroAsset: 'onb-hero.png',
   ),
   const OnboardingStepData(
     title: 'Step 2',
     description: 'Desc 2',
-    icon: Icons.favorite,
+    heroAsset: 'onb-hero.png',
   ),
 ];
 
-Widget _wrap(Widget child) => MaterialApp(home: child);
+// The screen reads Skip/Next/Get started from l10n; pin the locale to English so
+// the assertions match those literals. The screen supplies its own theme.
+Widget _wrap(Widget child) => MaterialApp(
+  locale: const Locale('en'),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: child,
+);
+
+// Pump the screen on a tall phone-sized surface so the vertically-centered
+// hero + copy column lays out without overflowing the default 800px test view.
+Future<void> _pump(WidgetTester tester, Widget child) async {
+  tester.view.physicalSize = const Size(1080, 2400);
+  tester.view.devicePixelRatio = 3;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  await tester.pumpWidget(_wrap(child));
+  await tester.pumpAndSettle();
+}
 
 void main() {
   testWidgets('shows first step on launch', (tester) async {
-    await tester.pumpWidget(
-      _wrap(OnboardingScreen(onDone: () {}, steps: _steps)),
-    );
+    await _pump(tester, OnboardingScreen(onDone: () {}, steps: _steps));
     expect(find.text('Step 1'), findsOneWidget);
     expect(find.text('Next'), findsOneWidget);
   });
 
   testWidgets('Next button advances to next step', (tester) async {
-    await tester.pumpWidget(
-      _wrap(OnboardingScreen(onDone: () {}, steps: _steps)),
-    );
+    await _pump(tester, OnboardingScreen(onDone: () {}, steps: _steps));
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
     expect(find.text('Step 2'), findsOneWidget);
@@ -38,8 +53,9 @@ void main() {
 
   testWidgets('Skip calls onDone', (tester) async {
     var called = false;
-    await tester.pumpWidget(
-      _wrap(OnboardingScreen(onDone: () => called = true, steps: _steps)),
+    await _pump(
+      tester,
+      OnboardingScreen(onDone: () => called = true, steps: _steps),
     );
     await tester.tap(find.text('Skip'));
     expect(called, isTrue);
@@ -47,8 +63,9 @@ void main() {
 
   testWidgets('Get started on last step calls onDone', (tester) async {
     var called = false;
-    await tester.pumpWidget(
-      _wrap(OnboardingScreen(onDone: () => called = true, steps: _steps)),
+    await _pump(
+      tester,
+      OnboardingScreen(onDone: () => called = true, steps: _steps),
     );
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();

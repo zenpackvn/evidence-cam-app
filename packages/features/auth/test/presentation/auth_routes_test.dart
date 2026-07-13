@@ -10,7 +10,10 @@ void main() {
         .toList();
 
     test('contributes the unauthenticated entry paths', () {
-      expect(paths, [AuthRoutes.login, AuthRoutes.register]);
+      expect(
+        paths,
+        containsAll([AuthRoutes.login, AuthRoutes.register]),
+      );
     });
 
     test('does not include change-password (mounted under the profile tab)', () {

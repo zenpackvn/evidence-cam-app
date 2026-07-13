@@ -1,101 +1,158 @@
-import 'package:app_ui/app_ui.dart';
-// fst:feature:notifications:start
-import 'package:feature_notifications/feature_notifications.dart';
-// fst:feature:notifications:end
 import 'package:flutter/material.dart';
-// fst:feature:notifications:start
-import 'package:flutter_bloc/flutter_bloc.dart';
-// fst:feature:notifications:end
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localization/localization.dart';
 
-// fst:feature:notifications:start
-import '../di/injection.dart';
+import '../router.dart';
 
-/// Index of the notifications destination in the [AppShell] destinations list.
-///
-/// Named so that reordering the list produces a compile-visible update point
-/// rather than a silent behavioural break.
-const int _kNotificationsTabIndex = 2;
-// fst:feature:notifications:end
-
-/// Hosts the persistent adaptive navigation around the authenticated branches.
-///
-/// Renders an [AppAdaptiveScaffold] whose body is the [navigationShell] (the
-/// indexed stack of branch navigators), so each destination keeps its own
-/// navigation stack.
-class AppShell extends StatefulWidget {
+/// Hosts the StampMail bottom bar around the four authenticated branches —
+/// Home · Inbox · Album · Profile — with the coral create FAB docked in the
+/// middle, per `pencil-new.pen` Navigation/TabBar (SM-004 BR-04/BR-05).
+class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: navigationShell,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: StampMailCreateFab(
+        onPressed: () => const CreateStampRoute().go(context),
+      ),
+      bottomNavigationBar: StampMailTabBar(
+        currentIndex: navigationShell.currentIndex,
+        onSelect: (index) => navigationShell.goBranch(
+          index,
+          initialLocation: index == navigationShell.currentIndex,
+        ),
+      ),
+    );
+  }
 }
 
-class _AppShellState extends State<AppShell> {
-  // fst:feature:notifications:start
+/// The docked coral create button (design: `fabWrap` 56px circle).
+class StampMailCreateFab extends StatelessWidget {
+  const StampMailCreateFab({super.key, required this.onPressed});
+
+  final VoidCallback onPressed;
+
   @override
-  void initState() {
-    super.initState();
-    // Fetch notifications on app start so the badge can be shown immediately
-    // if there are unread notifications.
-    getIt<NotificationsBloc>().add(const NotificationsLoadRequested());
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return FloatingActionButton(
+      onPressed: onPressed,
+      backgroundColor: scheme.primary,
+      foregroundColor: scheme.onPrimary,
+      shape: const CircleBorder(),
+      child: const FaIcon(FontAwesomeIcons.plus, size: 24),
+    );
   }
-  // fst:feature:notifications:end
+}
+
+/// The four-tab bottom bar with the center slot left open for the docked FAB.
+///
+/// Extracted from [AppShell] so the design-preview harness can wrap arbitrary
+/// screens in the same chrome without a [StatefulNavigationShell].
+class StampMailTabBar extends StatelessWidget {
+  const StampMailTabBar({
+    super.key,
+    required this.currentIndex,
+    required this.onSelect,
+  });
+
+  final int currentIndex;
+  final ValueChanged<int> onSelect;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    // fst:feature:notifications:start
-    final unreadCount = context.watch<NotificationsBloc>().state.unreadCount;
-    // fst:feature:notifications:end
+    final scheme = Theme.of(context).colorScheme;
+    return BottomAppBar(
+      color: scheme.surfaceContainerLowest,
+      elevation: 8,
+      padding: EdgeInsets.zero,
+      child: Row(
+        children: [
+          _Tab(
+            icon: FontAwesomeIcons.house,
+            selectedIcon: FontAwesomeIcons.house,
+            label: l10n.navHome,
+            selected: currentIndex == 0,
+            onTap: () => onSelect(0),
+          ),
+          _Tab(
+            icon: FontAwesomeIcons.envelope,
+            selectedIcon: FontAwesomeIcons.solidEnvelope,
+            label: l10n.navLetters,
+            selected: currentIndex == 1,
+            onTap: () => onSelect(1),
+          ),
+          // Slot for the docked create FAB (design: fabWrap).
+          const Spacer(),
+          _Tab(
+            icon: FontAwesomeIcons.images,
+            selectedIcon: FontAwesomeIcons.solidImages,
+            label: l10n.navAlbum,
+            selected: currentIndex == 2,
+            onTap: () => onSelect(2),
+          ),
+          _Tab(
+            icon: FontAwesomeIcons.user,
+            selectedIcon: FontAwesomeIcons.solidUser,
+            label: l10n.navProfile,
+            selected: currentIndex == 3,
+            onTap: () => onSelect(3),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-    final destinations = [
-      AppDestination(
-        icon: FontAwesomeIcons.house,
-        selectedIcon: FontAwesomeIcons.house,
-        label: l10n.navHome,
-      ),
-      // fst:feature:bookmarks:start
-      AppDestination(
-        icon: FontAwesomeIcons.bookmark,
-        selectedIcon: FontAwesomeIcons.solidBookmark,
-        label: l10n.navBookmarks,
-      ),
-      // fst:feature:bookmarks:end
-      // fst:feature:notifications:start
-      AppDestination(
-        icon: FontAwesomeIcons.bell,
-        selectedIcon: FontAwesomeIcons.solidBell,
-        label: l10n.navNotifications,
-        hasBadge: unreadCount > 0,
-      ),
-      // fst:feature:notifications:end
-      AppDestination(
-        icon: FontAwesomeIcons.user,
-        selectedIcon: FontAwesomeIcons.solidUser,
-        label: l10n.navProfile,
-      ),
-    ];
+class _Tab extends StatelessWidget {
+  const _Tab({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
-    return AppAdaptiveScaffold(
-      destinations: destinations,
-      selectedIndex: widget.navigationShell.currentIndex,
-      onDestinationSelected: (index) {
-        // fst:feature:notifications:start
-        if (index == _kNotificationsTabIndex) {
-          // Refresh when tapping the tab to ensure it's up to date.
-          getIt<NotificationsBloc>().add(const NotificationsLoadRequested());
-        }
-        // fst:feature:notifications:end
-        widget.navigationShell.goBranch(
-          index,
-          initialLocation: index == widget.navigationShell.currentIndex,
-        );
-      },
-      body: widget.navigationShell,
+  final FaIconData icon;
+  final FaIconData selectedIcon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final color = selected ? scheme.primary : scheme.onSurfaceVariant;
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        child: Semantics(
+          selected: selected,
+          button: true,
+          label: label,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              FaIcon(selected ? selectedIcon : icon, size: 22, color: color),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

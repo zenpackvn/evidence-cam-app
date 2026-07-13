@@ -15,8 +15,8 @@ class _OnboardingBrand extends StatelessWidget {
         Image.asset(
           'assets/illustrations/logo-stamp.png',
           package: 'feature_onboarding',
-          width: 60,
-          height: 60,
+          width: 65,
+          height: 71,
           excludeFromSemantics: true,
         ),
         const SizedBox(height: AppSpacing.xs),

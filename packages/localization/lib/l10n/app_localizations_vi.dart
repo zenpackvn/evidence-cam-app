@@ -515,7 +515,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get navBookmarks => 'Bookmark';
 
   @override
-  String get navProfile => 'Hồ sơ';
+  String get navLetters => 'Hộp thư';
+
+  @override
+  String get navAlbum => 'Album';
+
+  @override
+  String get navProfile => 'Cá nhân';
 
   @override
   String get navSettings => 'Cài đặt';
@@ -713,6 +719,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get smLoginRegisterCta => 'Đăng ký';
 
   @override
+  String get smRegisterChoiceTitle => 'Chọn cách đăng ký';
+
+  @override
+  String get smRegisterChoiceSubtitle => 'Tiếp tục nhanh với tài khoản của bạn';
+
+  @override
   String get smLoginLockedMessage =>
       'Tài khoản đang bị khóa tạm thời do nhập sai mật khẩu quá nhiều lần.';
 
@@ -813,7 +825,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get smForgotTitle => 'Quên mật khẩu';
+  String get smForgotTitle => 'Quên mật khẩu ✨';
 
   @override
   String get smForgotSubtitle =>
@@ -827,6 +839,47 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get smForgotBackToLogin => 'Quay lại đăng nhập';
+
+  @override
+  String get smForgotCodeTitle => 'Nhập mã xác minh ✨';
+
+  @override
+  String get smForgotCodeSubtitle => 'Chúng tôi đã gửi mã 6 chữ số đến địa chỉ';
+
+  @override
+  String get smForgotCodeContinue => 'Tiếp tục';
+
+  @override
+  String get smResetTitle => 'Đặt lại mật khẩu ✨';
+
+  @override
+  String get smResetSubtitle =>
+      'OTP đã được xác nhận.\nVui lòng tạo mật khẩu mới cho tài khoản của bạn.';
+
+  @override
+  String get smResetNewHint => 'Mật khẩu mới';
+
+  @override
+  String get smResetConfirmHint => 'Xác nhận mật khẩu';
+
+  @override
+  String get smResetHintMin => 'Tối thiểu 6 ký tự';
+
+  @override
+  String get smResetSubmit => 'Lưu mật khẩu mới';
+
+  @override
+  String get smResetSuccessTitle => 'Đặt lại thành công ✨';
+
+  @override
+  String get smResetSuccessSubtitle =>
+      'Mật khẩu của bạn đã được cập nhật.\nGiờ đây, bạn có thể đăng nhập bằng\nmật khẩu mới để tiếp tục gửi yêu thương.';
+
+  @override
+  String get smResetSuccessCta => 'Đăng nhập ngay';
+
+  @override
+  String get smResetSuccessBack => 'Về trang đăng nhập';
 
   @override
   String get smVerifyTitle => 'Xác thực email ✉️';

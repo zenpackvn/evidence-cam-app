@@ -1,0 +1,65 @@
+appId: com.aktechvn.stampmail
+name: "SM-02 · Tạo tem từ thư viện ảnh (TC-05/06/08/09) — cần ảnh trong Photos"
+---
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*Tem gần đây.*"
+    timeout: 30000
+
+# FAB tạo tem (icon-only, docked giữa tab bar)
+- tapOn:
+    point: "50%,87%"
+
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*Chọn từ thư viện.*"
+    timeout: 10000
+- tapOn:
+    text: "(?s).*Chọn từ thư viện.*"
+
+# PHPicker hệ thống: chọn ảnh đầu tiên (cell 1, lưới 3 cột)
+- extendedWaitUntil:
+    visible:
+      text: "Photos|Ảnh|Recents"
+    timeout: 15000
+    optional: true
+- tapOn:
+    point: "16%,24%"
+
+# Bước 1 — bộ lọc (SM-006)
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*Bộ lọc.*"
+    timeout: 15000
+- tapOn:
+    text: "Tiếp theo"
+
+# Bước 2 — trang trí sticker/viền (SM-007/008)
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*Viền tem.*"
+    timeout: 10000
+- tapOn:
+    text: "Tiếp theo"
+
+# Bước 3 — xem trước rồi lưu (SM-009: capture → upload R2 → save)
+- extendedWaitUntil:
+    visible:
+      text: "Lưu tem"
+    timeout: 10000
+- tapOn:
+    text: "Lưu tem"
+
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*Đã lưu vào Album!.*"
+    timeout: 45000
+
+- tapOn:
+    text: "Xem Album"
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*Album.*"
+    timeout: 10000
