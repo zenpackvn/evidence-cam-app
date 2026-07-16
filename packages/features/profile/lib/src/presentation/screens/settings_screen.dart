@@ -97,7 +97,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             _Group(
-              title: 'Quyền riêng tư',
+              title: 'Thông báo',
               children: [
                 _Row(
                   icon: Icons.notifications_outlined,

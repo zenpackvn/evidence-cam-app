@@ -438,15 +438,15 @@
     }
   },
   "smForgotTitle": "Forgot password ✨",
-  "smForgotSubtitle": "Enter your email and we'll send a 6-digit code to reset your password.",
+  "smForgotSubtitle": "Enter your email and we'll send a password-reset link.",
   "smForgotEmailHint": "Email",
-  "smForgotSubmit": "Send verification code",
+  "smForgotSubmit": "Send reset link",
   "smForgotBackToLogin": "Back to sign in",
-  "smForgotCodeTitle": "Enter the code ✨",
-  "smForgotCodeSubtitle": "We sent a 6-digit code to",
+  "smForgotCodeTitle": "Check your email ✨",
+  "smForgotCodeSubtitle": "We sent a password-reset link to",
   "smForgotCodeContinue": "Continue",
   "smResetTitle": "Reset password ✨",
-  "smResetSubtitle": "Your code is confirmed.\nPlease create a new password for your account.",
+  "smResetSubtitle": "Please create a new password for your account.",
   "smResetNewHint": "New password",
   "smResetConfirmHint": "Confirm password",
   "smResetHintMin": "At least 6 characters",
@@ -456,7 +456,7 @@
   "smResetSuccessCta": "Sign in now",
   "smResetSuccessBack": "Back to sign in",
   "smVerifyTitle": "Verify email ✉️",
-  "smVerifySubtitle": "We sent a 6-digit verification code to {email}",
+  "smVerifySubtitle": "We sent a confirmation link to {email}. Open the email and tap the link to verify.",
   "@smVerifySubtitle": {
     "description": "{email} address",
     "placeholders": {
@@ -465,7 +465,7 @@
       }
     }
   },
-  "smVerifyExpiresIn": "Code expires in {time}",
+  "smVerifyExpiresIn": "Link expires in {time}",
   "@smVerifyExpiresIn": {
     "description": "{time} countdown",
     "placeholders": {
@@ -474,8 +474,8 @@
       }
     }
   },
-  "smVerifyResend": "Resend code",
-  "smVerifyResendIn": "Resend code ({time})",
+  "smVerifyResend": "Resend email",
+  "smVerifyResendIn": "Resend email ({time})",
   "@smVerifyResendIn": {
     "description": "{time} countdown until resend allowed",
     "placeholders": {
@@ -484,7 +484,8 @@
       }
     }
   },
-  "smVerifyInvalidCode": "The code is incorrect or has expired.",
+  "smVerifyInvalidCode": "Email not verified yet. Tap the link in the email first.",
+  "smVerifyCheckCta": "I've confirmed",
   "smUsernameTitle": "Choose a username ✨",
   "smUsernameSubtitle": "This is your display name on StampMail.",
   "smUsernameLabel": "Username",

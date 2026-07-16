@@ -829,22 +829,23 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get smForgotSubtitle =>
-      'Nhập email của bạn và chúng tôi sẽ gửi mã xác minh 6 chữ số để đặt lại mật khẩu.';
+      'Nhập email của bạn và chúng tôi sẽ gửi link đặt lại mật khẩu.';
 
   @override
   String get smForgotEmailHint => 'Email';
 
   @override
-  String get smForgotSubmit => 'Gửi mã xác minh';
+  String get smForgotSubmit => 'Gửi link đặt lại';
 
   @override
   String get smForgotBackToLogin => 'Quay lại đăng nhập';
 
   @override
-  String get smForgotCodeTitle => 'Nhập mã xác minh ✨';
+  String get smForgotCodeTitle => 'Kiểm tra email của bạn ✨';
 
   @override
-  String get smForgotCodeSubtitle => 'Chúng tôi đã gửi mã 6 chữ số đến địa chỉ';
+  String get smForgotCodeSubtitle =>
+      'Chúng tôi đã gửi link đặt lại mật khẩu đến địa chỉ';
 
   @override
   String get smForgotCodeContinue => 'Tiếp tục';
@@ -854,7 +855,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get smResetSubtitle =>
-      'OTP đã được xác nhận.\nVui lòng tạo mật khẩu mới cho tài khoản của bạn.';
+      'Vui lòng tạo mật khẩu mới cho tài khoản của bạn.';
 
   @override
   String get smResetNewHint => 'Mật khẩu mới';
@@ -886,24 +887,28 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String smVerifySubtitle(String email) {
-    return 'Chúng tôi đã gửi mã xác minh 6 chữ số đến địa chỉ $email';
+    return 'Chúng tôi đã gửi link xác nhận đến địa chỉ $email. Hãy mở email và bấm vào link để xác nhận.';
   }
 
   @override
   String smVerifyExpiresIn(String time) {
-    return 'Mã sẽ hết hạn sau $time';
+    return 'Link sẽ hết hạn sau $time';
   }
 
   @override
-  String get smVerifyResend => 'Gửi lại mã';
+  String get smVerifyResend => 'Gửi lại email';
 
   @override
   String smVerifyResendIn(String time) {
-    return 'Gửi lại mã ($time)';
+    return 'Gửi lại email ($time)';
   }
 
   @override
-  String get smVerifyInvalidCode => 'Mã không đúng hoặc đã hết hạn.';
+  String get smVerifyInvalidCode =>
+      'Email chưa được xác nhận. Hãy bấm vào link trong email trước.';
+
+  @override
+  String get smVerifyCheckCta => 'Tôi đã xác nhận';
 
   @override
   String get smUsernameTitle => 'Chọn tên người dùng ✨';

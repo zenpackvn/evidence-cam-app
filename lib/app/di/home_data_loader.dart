@@ -1,22 +1,20 @@
 import 'package:architecture/architecture.dart';
 import 'package:feature_album/feature_album.dart';
 import 'package:feature_home/feature_home.dart';
-import 'package:feature_letter_inbox/feature_letter_inbox.dart';
 import 'package:feature_letters/feature_letters.dart';
 import 'package:injectable/injectable.dart';
 import 'package:shared_contracts/shared_contracts.dart';
 
 /// Composition-root implementation of the home dashboard's [HomeDataLoader]:
-/// reads the album (recent stamps), letters (recent sent letters), and inbox
-/// (unread count) features. Lives in the app shell so `feature_home` stays
-/// free of cross-feature imports (SM-004).
+/// reads the album (recent stamps) and letters (recent sent letters) features.
+/// Lives in the app shell so `feature_home` stays free of cross-feature
+/// imports (SM-004).
 @LazySingleton(as: HomeDataLoader)
 class StampMailHomeDataLoader implements HomeDataLoader {
-  StampMailHomeDataLoader(this._stamps, this._letters, this._inbox);
+  StampMailHomeDataLoader(this._stamps, this._letters);
 
   final StampsRepository _stamps;
   final LettersRepository _letters;
-  final InboxRepository _inbox;
 
   static const _maxStamps = 6;
   static const _maxLetters = 5;
@@ -44,16 +42,7 @@ class StampMailHomeDataLoader implements HomeDataLoader {
       Err() => const <HomeLetterItem>[],
     };
 
-    final unread = switch (await _inbox.unreadCount()) {
-      Ok(value: final count) => count,
-      Err() => 0,
-    };
-
-    return HomeData(
-      unreadLetters: unread,
-      recentStamps: stamps,
-      recentLetters: letters,
-    );
+    return HomeData(recentStamps: stamps, recentLetters: letters);
   }
 
   HomeLetterItem _toLetterItem(SentLetter sent) {

@@ -111,7 +111,7 @@ List<GallerySection> buildGallerySections() => [
     ),
     GalleryEntry(
       'F01-S08',
-      'Verify email — OTP',
+      'Verify email — Waiting (chờ bấm link)',
       build: (_) => const VerifyEmailScreen(email: 'sunny@stampmail.vn'),
     ),
     GalleryEntry(
@@ -138,17 +138,24 @@ List<GallerySection> buildGallerySections() => [
       build: (_) => const ForgotPasswordScreen(),
     ),
     GalleryEntry(
-      'F01-S12…S14',
-      'Forgot: Code (OTP) → Reset → Success',
-      note: 'Đi từng bước trong màn Forgot (nhập email → mã 6 số → mật khẩu '
-          'mới → thành công).',
+      'F01-S12',
+      'Forgot — Link sent (chờ bấm link)',
+      note: 'Nhập email rồi gửi — sang màn "Kiểm tra email của bạn".',
       build: (_) => const ForgotPasswordScreen(),
+    ),
+    GalleryEntry(
+      'F01-S13…S14',
+      'Reset → Success (mở từ link đặt lại)',
+      note: 'Đường vào thật là universal link trong email; preview mở '
+          'thẳng bước reset.',
+      build: (_) =>
+          const ForgotPasswordScreen(initialStep: ForgotStep.reset),
     ),
     GalleryEntry(
       'F01-S15',
       'Home — Empty',
       build: (_) => _shell(
-        const HomeScreen(onCreateStamp: _noop, onOpenAlbum: _noop, onOpenInbox: _noop),
+        const HomeScreen(onCreateStamp: _noop, onOpenAlbum: _noop, onOpenLetters: _noop),
       ),
       prepare: (s) => s
         ..emptyStamps = true
@@ -158,7 +165,7 @@ List<GallerySection> buildGallerySections() => [
       'F01-S16',
       'Home — Loaded',
       build: (_) => _shell(
-        const HomeScreen(onCreateStamp: _noop, onOpenAlbum: _noop, onOpenInbox: _noop),
+        const HomeScreen(onCreateStamp: _noop, onOpenAlbum: _noop, onOpenLetters: _noop),
       ),
       prepare: (s) => s
         ..emptyStamps = false
@@ -348,44 +355,41 @@ List<GallerySection> buildGallerySections() => [
       build: (_) => const LetterRevealScreen(linkId: 'opened', onReply: _noop),
     ),
     GalleryEntry(
-      'F04-S07',
-      'Hộp thư đến — Default',
+      'F04-S07d',
+      'Thư đã gửi — Loaded',
+      note: 'Tab "Thư" chỉ còn thư đã gửi (SM-021) — không có hộp thư đến.',
       build: (context) => _shell(
-        InboxListScreen(
-          items: const [
-            InboxItem(
-              linkId: 'opened',
-              senderName: 'Mai Anh',
-              preview:
-                  'Chúc bạn một ngày thật nhiều\nniềm vui và năng lượng nhé! 🌸',
-              time: '10:30',
-              unread: true,
-              avatarUrl: 'asset:assets/design/f4-inbox-1.png',
+        SentLettersScreen(
+          letters: [
+            SentLetter.fromLink(
+              LetterLink(
+                id: 'lk1',
+                letterId: 'l1',
+                platform: 'messenger',
+                createdAt: DateTime(2026, 7, 10, 20, 15),
+                expiresAt: DateTime(2026, 7, 17, 20, 15),
+                openedBy: 'u9',
+                openedAt: DateTime(2026, 7, 11, 8),
+              ),
             ),
-            InboxItem(
-              linkId: 'opened',
-              senderName: 'Hoàng Nam',
-              preview: 'Cảm ơn bạn đã luôn ở đây\nlắng nghe và đồng hành.',
-              time: 'Hôm qua',
-              unread: true,
-              unreadCount: 2,
-              avatarUrl: 'asset:assets/design/f4-inbox-2.png',
+            SentLetter.fromLink(
+              LetterLink(
+                id: 'lk2',
+                letterId: 'l2',
+                platform: 'zalo',
+                createdAt: DateTime(2026, 7, 8, 9, 30),
+                expiresAt: DateTime(2026, 7, 15, 9, 30),
+              ),
             ),
-            InboxItem(
-              linkId: 'opened',
-              senderName: 'Linh Chi',
-              preview:
-                  'Gửi bạn chút bình yên từ những\nngày rong ruổi khắp nơi.',
-              time: 'Thứ 2',
-              avatarUrl: 'asset:assets/design/f4-inbox-3.png',
+            SentLetter.fromLink(
+              LetterLink(
+                id: 'lk3',
+                letterId: 'l3',
+                createdAt: DateTime(2026, 6, 20, 14, 2),
+                expiresAt: DateTime(2026, 6, 27, 14, 2),
+              ),
             ),
           ],
-          onOpen: (item) => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) =>
-                  LetterRevealScreen(linkId: item.linkId, onReply: _noop),
-            ),
-          ),
         ),
         tab: 1,
       ),
@@ -393,9 +397,8 @@ List<GallerySection> buildGallerySections() => [
     GalleryEntry(
       'F04-S07d',
       'Thư đã gửi — Empty',
-      note: 'Trong Hộp thư, chuyển sang tab "Thư đã gửi".',
       build: (context) => _shell(
-        InboxListScreen(items: const [], onCompose: () {}),
+        SentLettersScreen(onCompose: () {}),
         tab: 1,
       ),
     ),
@@ -652,7 +655,6 @@ class _EntryTile extends StatelessWidget {
               previewSwitches
                 ..emptyStamps = false
                 ..emptyLetters = false
-                ..emptyInbox = false
                 ..quotaReached = false
                 ..loginFails = false;
               entry.prepare?.call(previewSwitches);

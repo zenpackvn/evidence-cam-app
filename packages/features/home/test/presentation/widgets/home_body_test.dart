@@ -60,11 +60,10 @@ void main() {
     expect(created, isTrue);
   });
 
-  testWidgets('loaded state shows unread badge and letter cards (BR-01)', (
+  testWidgets('loaded state shows letter cards without any unread badge', (
     tester,
   ) async {
     const data = HomeData(
-      unreadLetters: 3,
       recentLetters: [
         HomeLetterItem(
           id: 'l1',
@@ -76,7 +75,8 @@ void main() {
     );
     await pumpHome(tester, data: data);
 
-    expect(find.text('3'), findsOneWidget);
+    // SM-017 BR-10: no unread concept — the header has no badge.
+    expect(find.byType(Badge), findsNothing);
     expect(find.text('Thư gửi qua Zalo'), findsOneWidget);
     expect(find.text('Tạo tem mới ✨'), findsOneWidget);
     expect(find.text('Tem gần đây'), findsOneWidget);

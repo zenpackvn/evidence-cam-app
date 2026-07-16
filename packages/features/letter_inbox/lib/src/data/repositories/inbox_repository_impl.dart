@@ -6,7 +6,6 @@ import 'package:injectable/injectable.dart';
 import 'package:network/network.dart';
 import 'package:shared_contracts/shared_contracts.dart';
 
-import '../../domain/entities/inbox_entry.dart';
 import '../../domain/entities/received_letter.dart';
 import '../../domain/repositories/inbox_repository.dart';
 import '../datasources/inbox_remote_data_source.dart';
@@ -36,36 +35,6 @@ class InboxRepositoryImpl implements InboxRepository {
       }
       if (code == 404) return const LetterInvalid();
       rethrow;
-    }
-  }
-
-  @override
-  Future<Result<List<InboxEntry>>> list() async {
-    try {
-      final dtos = await _remote.list();
-      return Ok([
-        for (final dto in dtos)
-          InboxEntry(
-            id: dto.id,
-            letterId: dto.letterId,
-            linkId: dto.linkId,
-            senderUid: dto.senderUid,
-            openedAt: dto.openedAt,
-            read: dto.read,
-          ),
-      ]);
-    } on DioException catch (e) {
-      return Err(UnknownFailure(e.message ?? 'Không tải được hộp thư.'));
-    }
-  }
-
-  @override
-  Future<Result<int>> unreadCount() async {
-    try {
-      final dto = await _remote.count();
-      return Ok(dto.unread);
-    } on DioException catch (e) {
-      return Err(UnknownFailure(e.message ?? 'Không tải được hộp thư.'));
     }
   }
 

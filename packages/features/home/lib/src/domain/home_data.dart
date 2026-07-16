@@ -28,18 +28,17 @@ class HomeLetterItem {
   final String? stampImageUrl;
 }
 
-/// Everything the Home dashboard shows (SM-004): unread count for the bell
-/// badge (BR-01), the most recent stamps (BR-02), and recent letters.
+/// Everything the Home dashboard shows (SM-004): the most recent stamps
+/// (BR-02) and recent sent letters. No unread count — received letters are
+/// never stored (SM-017 BR-10).
 class HomeData {
   const HomeData({
-    this.unreadLetters = 0,
     this.recentStamps = const [],
     this.recentLetters = const [],
   });
 
   static const empty = HomeData();
 
-  final int unreadLetters;
   final List<StampRef> recentStamps;
   final List<HomeLetterItem> recentLetters;
 

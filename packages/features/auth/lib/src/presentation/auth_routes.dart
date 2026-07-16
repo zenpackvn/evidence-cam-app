@@ -1,5 +1,8 @@
+import 'package:architecture/architecture.dart';
 import 'package:go_router/go_router.dart';
 
+import '../domain/repositories/auth_repository.dart';
+import '../locator.dart';
 import 'screens/avatar_upload_screen.dart';
 import 'screens/choose_username_screen.dart';
 import 'screens/forgot_password_screen.dart';
@@ -50,13 +53,26 @@ List<RouteBase> get authRoutes => [
   ),
   GoRoute(
     path: AuthRoutes.forgotPassword,
-    builder: (context, state) => const ForgotPasswordScreen(),
+    builder: (context, state) => ForgotPasswordScreen(
+      onSendReset: (email) async {
+        // BR-12: result ignored on purpose — never reveal email existence.
+        await getIt<AuthRepository>().sendPasswordReset(email);
+      },
+    ),
   ),
   GoRoute(
     path: AuthRoutes.verifyEmail,
     builder: (context, state) => VerifyEmailScreen(
       email: state.uri.queryParameters['email'] ?? '',
       onVerified: () => context.go(AuthRoutes.chooseUsername),
+      onResend: () async {
+        await getIt<AuthRepository>().sendEmailVerification();
+      },
+      onCheckVerified: () async =>
+          switch (await getIt<AuthRepository>().checkEmailVerified()) {
+            Ok(value: final verified) => verified,
+            Err() => false,
+          },
     ),
   ),
   GoRoute(

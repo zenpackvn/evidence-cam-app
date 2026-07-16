@@ -69,6 +69,8 @@ class SecureStorageAuthDataSource implements AuthLocalDataSource {
         _user = AuthUser(
           id: map['id'] as String,
           username: map['username'] as String,
+          stampsCreated: (map['stamps_created'] as int?) ?? 0,
+          lettersSent: (map['letters_sent'] as int?) ?? 0,
         );
       } on Object {
         // Corrupt persisted user — treat as no session rather than throwing on
@@ -86,7 +88,12 @@ class SecureStorageAuthDataSource implements AuthLocalDataSource {
     _loaded = true;
     await _storage.write(
       key: _kUserKey,
-      value: jsonEncode({'id': user.id, 'username': user.username}),
+      value: jsonEncode({
+        'id': user.id,
+        'username': user.username,
+        'stamps_created': user.stampsCreated,
+        'letters_sent': user.lettersSent,
+      }),
     );
   }
 

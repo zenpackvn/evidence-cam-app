@@ -11,8 +11,7 @@ import 'package:feature_auth/src/presentation/bloc/change_password_state.dart';
 import 'package:feature_auth/src/presentation/screens/forgot_password_screen.dart';
 import 'package:feature_auth/src/presentation/screens/login_screen.dart';
 import 'package:feature_auth/src/presentation/screens/register_screen.dart';
-import 'package:feature_auth/src/presentation/widgets/otp_input.dart';
-import 'package:feature_auth/src/presentation/widgets/widgets.dart';
+import 'package:feature_auth/src/presentation/screens/verify_email_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -281,37 +280,44 @@ void main() {
     });
   });
 
-  // ── TC-01-020/023/031 + BR reset · forgot 4 bước ─────────────────────────
+  // ── TC-01-020/023/031 + BR-12 reset qua link email ───────────────────────
   group('ForgotPasswordScreen flow (TC-01-020, TC-01-031)', () {
     testWidgets('TC-01-031: email trống báo lỗi tại ô', (tester) async {
       await tester.pumpWidget(_wrap(const ForgotPasswordScreen()));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Gửi mã xác minh').first);
-      await tester.tap(find.text('Gửi mã xác minh').first, warnIfMissed: false);
+      await tester.ensureVisible(find.text('Gửi link đặt lại').first);
+      await tester.tap(find.text('Gửi link đặt lại').first, warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(find.text('Vui lòng nhập email'), findsOneWidget);
     });
 
     testWidgets(
-      'TC-01-020: email hợp lệ → sang bước nhập mã 6 số (đếm ngược hiển thị)',
+      'TC-01-020: email hợp lệ → bước "Kiểm tra email" (link + đếm ngược 30 '
+      'phút, gửi lại sau 60s)',
       (tester) async {
-        await tester.pumpWidget(_wrap(const ForgotPasswordScreen()));
+        String? sentTo;
+        await tester.pumpWidget(
+          _wrap(ForgotPasswordScreen(onSendReset: (email) async => sentTo = email)),
+        );
         await tester.pumpAndSettle();
         await tester.enterText(
           find.byType(TextFormField).first,
           'sunny@stampmail.dev',
         );
-        await tester.ensureVisible(find.text('Gửi mã xác minh').first);
+        await tester.ensureVisible(find.text('Gửi link đặt lại').first);
         await tester.tap(
-          find.text('Gửi mã xác minh').first,
+          find.text('Gửi link đặt lại').first,
           warnIfMissed: false,
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(find.text('Nhập mã xác minh ✨'), findsOneWidget);
+        expect(sentTo, 'sunny@stampmail.dev');
+        expect(find.text('Kiểm tra email của bạn ✨'), findsOneWidget);
         expect(find.text('sunny@stampmail.dev'), findsOneWidget);
-        expect(find.textContaining('Mã sẽ hết hạn sau'), findsOneWidget);
+        expect(find.textContaining('Link sẽ hết hạn sau'), findsOneWidget);
+        // Không còn bước nhập mã — không có ô OTP nào.
+        expect(find.text('Tiếp tục'), findsNothing);
         // Dừng ticker để test thoát sạch.
         await tester.pumpWidget(const SizedBox());
       },
@@ -352,23 +358,43 @@ void main() {
     );
   });
 
-  // ── OTP input (TC-01-020, verify email) ──────────────────────────────────
-  group('OtpInput (TC-01-020 nhập mã 6 số)', () {
-    testWidgets('gộp đủ 6 số thì báo onCompleted', (tester) async {
-      String? completed;
+  // ── Verify email — màn chờ bấm link (SM-001 BR-02) ───────────────────────
+  group('VerifyEmailScreen waiting (TC-01-00x xác nhận email)', () {
+    testWidgets('hiển thị chờ-bấm-link; "Tôi đã xác nhận" khi chưa verify '
+        'thì báo lỗi, khi đã verify thì đi tiếp', (tester) async {
+      var verified = false;
+      var advanced = false;
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: OtpInput(onCompleted: (code) => completed = code),
+        _wrap(
+          VerifyEmailScreen(
+            email: 'sunny@stampmail.dev',
+            onCheckVerified: () async => verified,
+            onVerified: () => advanced = true,
           ),
         ),
       );
-      final fields = find.byType(TextField);
-      expect(fields, findsNWidgets(6));
-      for (var i = 0; i < 6; i++) {
-        await tester.enterText(fields.at(i), '${i + 1}');
-      }
-      expect(completed, '123456');
+      await tester.pump();
+
+      // Màn chờ: không có ô nhập mã, có countdown link + nút xác nhận.
+      expect(find.byType(TextField), findsNothing);
+      expect(find.textContaining('Link sẽ hết hạn sau'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Tôi đã xác nhận'));
+      await tester.tap(find.text('Tôi đã xác nhận'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(advanced, isFalse);
+      expect(
+        find.text('Email chưa được xác nhận. Hãy bấm vào link trong email trước.'),
+        findsOneWidget,
+      );
+
+      verified = true;
+      await tester.tap(find.text('Tôi đã xác nhận'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(advanced, isTrue);
+
+      // Dừng ticker để test thoát sạch.
+      await tester.pumpWidget(const SizedBox());
     });
   });
 

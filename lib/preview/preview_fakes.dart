@@ -45,9 +45,6 @@ class PreviewSwitches {
   /// Home returns no letters either (F01-S15).
   bool emptyLetters = false;
 
-  /// Inbox returns no entries.
-  bool emptyInbox = false;
-
   /// Stamp save fails with the quota message (F02-S13).
   bool quotaReached = false;
 
@@ -86,6 +83,16 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   AuthUser? get currentUser => _user;
+
+  @override
+  Future<Result<void>> sendEmailVerification() async => const Ok(null);
+
+  @override
+  Future<Result<bool>> checkEmailVerified() async => const Ok(true);
+
+  @override
+  Future<Result<void>> sendPasswordReset(String email) async =>
+      const Ok(null);
 
   @override
   Future<Result<AuthUser>> signIn({
@@ -275,44 +282,9 @@ class FakeLettersRepository implements LettersRepository {
   Future<Result<List<SentLetter>>> sent() async => const Ok([]);
 }
 
-// ───────────────────────────────────────────────────────────────── inbox ──
+// ─────────────────────────────────────────────────────── letter reveal ──
 
 class FakeInboxRepository implements InboxRepository {
-  @override
-  Future<Result<List<InboxEntry>>> list() async {
-    await Future<void>.delayed(_lag);
-    if (previewSwitches.emptyInbox) return const Ok([]);
-    return Ok([
-      InboxEntry(
-        id: 'i1',
-        letterId: 'l1',
-        linkId: 'opened',
-        senderUid: 'u9',
-        openedAt: DateTime(2026, 7, 10, 20, 15),
-        read: false,
-      ),
-      InboxEntry(
-        id: 'i2',
-        letterId: 'l2',
-        linkId: 'opened',
-        senderUid: 'u7',
-        openedAt: DateTime(2026, 7, 8, 9, 30),
-        read: false,
-      ),
-      InboxEntry(
-        id: 'i3',
-        letterId: 'l3',
-        linkId: 'opened',
-        senderUid: 'u5',
-        openedAt: DateTime(2026, 6, 30, 14, 2),
-        read: true,
-      ),
-    ]);
-  }
-
-  @override
-  Future<Result<int>> unreadCount() async => const Ok(2);
-
   /// The preview picks the outcome by linkId, so the gallery can show every
   /// terminal state of F04: `already` / `expired` / `invalid` / anything else
   /// opens normally.
@@ -365,7 +337,6 @@ class FakeHomeDataLoader implements HomeDataLoader {
       return HomeData.empty;
     }
     return HomeData(
-      unreadLetters: 3,
       recentStamps: previewSwitches.emptyStamps
           ? const []
           : [
@@ -425,8 +396,8 @@ void registerPreviewFakes() {
     ..registerLazySingleton<StampUploader>(FakeStampUploader.new)
     ..registerFactory<HomeBloc>(() => HomeBloc(FakeHomeDataLoader()))
     ..registerFactory<AlbumCubit>(() => AlbumCubit(getIt<StampsRepository>()))
-    ..registerFactory<InboxListCubit>(
-      () => InboxListCubit(getIt<InboxRepository>()),
+    ..registerFactory<SentLettersCubit>(
+      () => SentLettersCubit(getIt<LettersRepository>()),
     )
     ..registerFactory<ProfileBloc>(() => ProfileBloc(analytics))
     ..registerFactory<DeleteAccountCubit>(

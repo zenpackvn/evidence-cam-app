@@ -1595,7 +1595,7 @@ abstract class AppLocalizations {
   /// No description provided for @smForgotSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter your email and we\'ll send a 6-digit code to reset your password.'**
+  /// **'Enter your email and we\'ll send a password-reset link.'**
   String get smForgotSubtitle;
 
   /// No description provided for @smForgotEmailHint.
@@ -1607,7 +1607,7 @@ abstract class AppLocalizations {
   /// No description provided for @smForgotSubmit.
   ///
   /// In en, this message translates to:
-  /// **'Send verification code'**
+  /// **'Send reset link'**
   String get smForgotSubmit;
 
   /// No description provided for @smForgotBackToLogin.
@@ -1619,13 +1619,13 @@ abstract class AppLocalizations {
   /// No description provided for @smForgotCodeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter the code ✨'**
+  /// **'Check your email ✨'**
   String get smForgotCodeTitle;
 
   /// No description provided for @smForgotCodeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'We sent a 6-digit code to'**
+  /// **'We sent a password-reset link to'**
   String get smForgotCodeSubtitle;
 
   /// No description provided for @smForgotCodeContinue.
@@ -1643,7 +1643,7 @@ abstract class AppLocalizations {
   /// No description provided for @smResetSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Your code is confirmed.\nPlease create a new password for your account.'**
+  /// **'Please create a new password for your account.'**
   String get smResetSubtitle;
 
   /// No description provided for @smResetNewHint.
@@ -1703,32 +1703,38 @@ abstract class AppLocalizations {
   /// {email} address
   ///
   /// In en, this message translates to:
-  /// **'We sent a 6-digit verification code to {email}'**
+  /// **'We sent a confirmation link to {email}. Open the email and tap the link to verify.'**
   String smVerifySubtitle(String email);
 
   /// {time} countdown
   ///
   /// In en, this message translates to:
-  /// **'Code expires in {time}'**
+  /// **'Link expires in {time}'**
   String smVerifyExpiresIn(String time);
 
   /// No description provided for @smVerifyResend.
   ///
   /// In en, this message translates to:
-  /// **'Resend code'**
+  /// **'Resend email'**
   String get smVerifyResend;
 
   /// {time} countdown until resend allowed
   ///
   /// In en, this message translates to:
-  /// **'Resend code ({time})'**
+  /// **'Resend email ({time})'**
   String smVerifyResendIn(String time);
 
   /// No description provided for @smVerifyInvalidCode.
   ///
   /// In en, this message translates to:
-  /// **'The code is incorrect or has expired.'**
+  /// **'Email not verified yet. Tap the link in the email first.'**
   String get smVerifyInvalidCode;
+
+  /// No description provided for @smVerifyCheckCta.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ve confirmed'**
+  String get smVerifyCheckCta;
 
   /// No description provided for @smUsernameTitle.
   ///

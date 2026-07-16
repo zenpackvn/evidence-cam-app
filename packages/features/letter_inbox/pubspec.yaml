@@ -41,5 +41,3 @@ dev_dependencies:
   test_utils: ^0.1.0
 
 flutter:
-  assets:
-    - assets/illustrations/

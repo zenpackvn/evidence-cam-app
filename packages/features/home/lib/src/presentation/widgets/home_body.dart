@@ -15,13 +15,15 @@ class HomeBody extends StatelessWidget {
   const HomeBody({
     this.onCreateStamp,
     this.onOpenAlbum,
-    this.onOpenInbox,
+    this.onOpenLetters,
     super.key,
   });
 
   final VoidCallback? onCreateStamp;
   final VoidCallback? onOpenAlbum;
-  final VoidCallback? onOpenInbox;
+
+  /// "Thư gần đây" see-all → the sent-letters tab (SM-021).
+  final VoidCallback? onOpenLetters;
 
   /// .pen Home ground (slightly warmer than `surface-primary`).
   static const ground = Color(0xFFFCF6EF);
@@ -45,7 +47,7 @@ class HomeBody extends StatelessWidget {
                     data: state.data,
                     onCreateStamp: onCreateStamp,
                     onOpenAlbum: onOpenAlbum,
-                    onOpenInbox: onOpenInbox,
+                    onOpenLetters: onOpenLetters,
                   ),
           );
           return RefreshIndicator(
@@ -100,21 +102,21 @@ class _LoadedHome extends StatelessWidget {
     required this.data,
     this.onCreateStamp,
     this.onOpenAlbum,
-    this.onOpenInbox,
+    this.onOpenLetters,
   });
 
   final String name;
   final HomeData data;
   final VoidCallback? onCreateStamp;
   final VoidCallback? onOpenAlbum;
-  final VoidCallback? onOpenInbox;
+  final VoidCallback? onOpenLetters;
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(AppSpacing.xxl, 18, AppSpacing.xxl, 120),
       children: [
-        _Header(name: name, unread: data.unreadLetters, onBell: onOpenInbox),
+        _Header(name: name),
         const SizedBox(height: 14),
         _CreateCard(onCreate: onCreateStamp),
         const SizedBox(height: AppSpacing.lg),
@@ -122,7 +124,7 @@ class _LoadedHome extends StatelessWidget {
         const SizedBox(height: 10),
         _StampRow(stamps: data.recentStamps, onCreate: onCreateStamp),
         const SizedBox(height: 14),
-        _SectionHeader(title: 'Thư gần đây', onSeeAll: onOpenInbox),
+        _SectionHeader(title: 'Thư gần đây', onSeeAll: onOpenLetters),
         const SizedBox(height: 10),
         if (data.recentLetters.isEmpty)
           const _EmptyStateRow(
@@ -141,13 +143,12 @@ class _LoadedHome extends StatelessWidget {
 }
 
 /// Header (F01-S16): 48px avatar, Baloo-26 greeting + body-sm subline, then
-/// the bell (26px, coral 16px badge) and mail glyphs.
+/// the bell glyph. No unread badge — received letters aren't stored, so there
+/// is no unread count (SM-004, SM-017 BR-10).
 class _Header extends StatelessWidget {
-  const _Header({required this.name, required this.unread, this.onBell});
+  const _Header({required this.name});
 
   final String name;
-  final int unread;
-  final VoidCallback? onBell;
 
   @override
   Widget build(BuildContext context) {
@@ -187,25 +188,7 @@ class _Header extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.md),
-        InkWell(
-          onTap: onBell,
-          customBorder: const CircleBorder(),
-          child: Badge(
-            isLabelVisible: unread > 0,
-            backgroundColor: scheme.primary,
-            label: Text(
-              '$unread',
-              style: context.textTheme.labelSmall?.copyWith(
-                color: scheme.onPrimary,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            child: const FaIcon(FontAwesomeIcons.bell, size: 26),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        FaIcon(FontAwesomeIcons.envelope, size: 26, color: scheme.onSurface),
+        FaIcon(FontAwesomeIcons.bell, size: 26, color: scheme.onSurface),
       ],
     );
   }

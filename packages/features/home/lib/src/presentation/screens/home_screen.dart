@@ -11,13 +11,15 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({
     this.onCreateStamp,
     this.onOpenAlbum,
-    this.onOpenInbox,
+    this.onOpenLetters,
     super.key,
   });
 
   final VoidCallback? onCreateStamp;
   final VoidCallback? onOpenAlbum;
-  final VoidCallback? onOpenInbox;
+
+  /// "Thư gần đây" see-all → the sent-letters tab (SM-021).
+  final VoidCallback? onOpenLetters;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +28,7 @@ class HomeScreen extends StatelessWidget {
       child: HomeBody(
         onCreateStamp: onCreateStamp,
         onOpenAlbum: onOpenAlbum,
-        onOpenInbox: onOpenInbox,
+        onOpenLetters: onOpenLetters,
       ),
     );
   }

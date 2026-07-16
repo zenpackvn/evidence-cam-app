@@ -13,24 +13,25 @@ import 'package:feature_letters/src/data/repositories/letters_repository_impl.da
     as _i98;
 import 'package:feature_letters/src/domain/repositories/letters_repository.dart'
     as _i384;
+import 'package:feature_letters/src/presentation/bloc/sent_letters_cubit.dart'
+    as _i164;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:network/network.dart' as _i372;
 import 'package:uuid/uuid.dart' as _i706;
 
 class FeatureLettersPackageModule extends _i526.MicroPackageModule {
-  // initializes the registration of main-scope dependencies inside of GetIt
+// initializes the registration of main-scope dependencies inside of GetIt
   @override
   _i687.FutureOr<void> init(_i526.GetItHelper gh) {
     final lettersRemoteModule = _$LettersRemoteModule();
-    gh.lazySingleton<_i711.LettersRemoteDataSource>(
-      () => lettersRemoteModule.provideLettersRemoteDataSource(gh<_i372.Dio>()),
-    );
-    gh.lazySingleton<_i384.LettersRepository>(
-      () => _i98.LettersRepositoryImpl(
-        gh<_i711.LettersRemoteDataSource>(),
-        gh<_i706.Uuid>(),
-      ),
-    );
+    gh.lazySingleton<_i711.LettersRemoteDataSource>(() =>
+        lettersRemoteModule.provideLettersRemoteDataSource(gh<_i372.Dio>()));
+    gh.lazySingleton<_i384.LettersRepository>(() => _i98.LettersRepositoryImpl(
+          gh<_i711.LettersRemoteDataSource>(),
+          gh<_i706.Uuid>(),
+        ));
+    gh.factory<_i164.SentLettersCubit>(
+        () => _i164.SentLettersCubit(gh<_i384.LettersRepository>()));
   }
 }
 

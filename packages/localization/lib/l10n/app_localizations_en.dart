@@ -829,22 +829,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get smForgotSubtitle =>
-      'Enter your email and we\'ll send a 6-digit code to reset your password.';
+      'Enter your email and we\'ll send a password-reset link.';
 
   @override
   String get smForgotEmailHint => 'Email';
 
   @override
-  String get smForgotSubmit => 'Send verification code';
+  String get smForgotSubmit => 'Send reset link';
 
   @override
   String get smForgotBackToLogin => 'Back to sign in';
 
   @override
-  String get smForgotCodeTitle => 'Enter the code ✨';
+  String get smForgotCodeTitle => 'Check your email ✨';
 
   @override
-  String get smForgotCodeSubtitle => 'We sent a 6-digit code to';
+  String get smForgotCodeSubtitle => 'We sent a password-reset link to';
 
   @override
   String get smForgotCodeContinue => 'Continue';
@@ -854,7 +854,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get smResetSubtitle =>
-      'Your code is confirmed.\nPlease create a new password for your account.';
+      'Please create a new password for your account.';
 
   @override
   String get smResetNewHint => 'New password';
@@ -886,24 +886,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String smVerifySubtitle(String email) {
-    return 'We sent a 6-digit verification code to $email';
+    return 'We sent a confirmation link to $email. Open the email and tap the link to verify.';
   }
 
   @override
   String smVerifyExpiresIn(String time) {
-    return 'Code expires in $time';
+    return 'Link expires in $time';
   }
 
   @override
-  String get smVerifyResend => 'Resend code';
+  String get smVerifyResend => 'Resend email';
 
   @override
   String smVerifyResendIn(String time) {
-    return 'Resend code ($time)';
+    return 'Resend email ($time)';
   }
 
   @override
-  String get smVerifyInvalidCode => 'The code is incorrect or has expired.';
+  String get smVerifyInvalidCode =>
+      'Email not verified yet. Tap the link in the email first.';
+
+  @override
+  String get smVerifyCheckCta => 'I\'ve confirmed';
 
   @override
   String get smUsernameTitle => 'Choose a username ✨';

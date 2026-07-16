@@ -33,5 +33,16 @@ abstract interface class AuthRepository {
   /// Returns `Ok(user)` if a valid session can be restored, otherwise `Err`.
   Future<Result<AuthUser>> restoreSession();
 
+  /// Emails the signed-in user a verification link (SM-001 BR-02). Each send
+  /// invalidates the previous link.
+  Future<Result<void>> sendEmailVerification();
+
+  /// Whether the signed-in user's email is verified (fresh from the server).
+  Future<Result<bool>> checkEmailVerified();
+
+  /// Emails a password-reset link (SM-001 BR-12). Never reveals whether the
+  /// email exists — an unknown address still resolves `Ok`.
+  Future<Result<void>> sendPasswordReset(String email);
+
   AuthUser? get currentUser;
 }

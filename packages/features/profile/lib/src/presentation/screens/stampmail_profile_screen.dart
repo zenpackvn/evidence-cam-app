@@ -43,6 +43,11 @@ class StampMailProfileScreen extends StatelessWidget {
               isPremium: isPremium,
             ),
             const SizedBox(height: AppSpacing.lg),
+            _StatsRow(
+              stampsCreated: user?.stampsCreated ?? 0,
+              lettersSent: user?.lettersSent ?? 0,
+            ),
+            const SizedBox(height: AppSpacing.lg),
             _EditButton(onTap: onEditProfile),
             const SizedBox(height: AppSpacing.lg),
             Text(
@@ -59,6 +64,69 @@ class StampMailProfileScreen extends StatelessWidget {
             _SettingsButton(onTap: onOpenSettings),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// SM-024 BR-04: the two owner-only activity stats — stamps created and
+/// letters sent. Profiles are fully private, so this is never shown to anyone
+/// but the account owner.
+class _StatsRow extends StatelessWidget {
+  const _StatsRow({required this.stampsCreated, required this.lettersSent});
+
+  final int stampsCreated;
+  final int lettersSent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _StatCard(value: stampsCreated, label: 'Tem đã tạo'),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: _StatCard(value: lettersSent, label: 'Thư đã gửi'),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({required this.value, required this.label});
+
+  final int value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: context.brand.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: context.brand.borderSubtle),
+      ),
+      child: Column(
+        children: [
+          Text(
+            '$value',
+            style: context.textTheme.headlineMedium?.copyWith(
+              color: scheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: context.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

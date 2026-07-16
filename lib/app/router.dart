@@ -27,9 +27,9 @@ part 'router.g.dart';
         TypedGoRoute<HomeRoute>(path: '/', name: 'home'),
       ],
     ),
-    TypedStatefulShellBranch<InboxBranchData>(
+    TypedStatefulShellBranch<LettersBranchData>(
       routes: <TypedRoute<RouteData>>[
-        TypedGoRoute<InboxRoute>(path: '/inbox', name: 'inbox'),
+        TypedGoRoute<SentLettersRoute>(path: '/letters', name: 'letters'),
       ],
     ),
     TypedStatefulShellBranch<AlbumBranchData>(
@@ -69,8 +69,8 @@ class HomeBranchData extends StatefulShellBranchData {
   const HomeBranchData();
 }
 
-class InboxBranchData extends StatefulShellBranchData {
-  const InboxBranchData();
+class LettersBranchData extends StatefulShellBranchData {
+  const LettersBranchData();
 }
 
 class AlbumBranchData extends StatefulShellBranchData {
@@ -173,13 +173,14 @@ void _openComposer(BuildContext context, String templateId) {
   );
 }
 
-class InboxRoute extends GoRouteData with $InboxRoute {
-  const InboxRoute();
+/// SM-021 — the whole "Thư" tab: sent letters + link status. There is no
+/// received-letters list (SM-017 BR-10).
+class SentLettersRoute extends GoRouteData with $SentLettersRoute {
+  const SentLettersRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) => InboxListPage(
-    createCubit: () => GetIt.instance<InboxListCubit>(),
-    onOpen: (item) => LetterRevealRoute(item.linkId).go(context),
+  Widget build(BuildContext context, GoRouterState state) => SentLettersPage(
+    createCubit: () => GetIt.instance<SentLettersCubit>(),
     onCompose: () => const LetterComposeRoute().go(context),
   );
 }
@@ -195,8 +196,8 @@ class LetterRevealRoute extends GoRouteData with $LetterRevealRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) => LetterRevealScreen(
     linkId: linkId,
-    // Người nhận đã đăng nhập phải mở link dưới uid của mình: server mới ghi
-    // inbox (A17) và cho phép chính chủ mở lại (link 1 lần với người khác).
+    // Người nhận đã đăng nhập mở link dưới uid của mình để server cho phép
+    // chính chủ mở lại (link 1 lần với người khác — SM-017 BR-03/BR-10).
     viewerUid: SessionScope.of(context).currentUser?.id,
     // ponytail: reply routes to compose for now; deferred deep-link + claim
     // (D16) refine who the reply is addressed to once that lands.
@@ -276,7 +277,7 @@ class HomeRoute extends GoRouteData with $HomeRoute {
   Widget build(BuildContext context, GoRouterState state) => HomeScreen(
     onCreateStamp: () => const CreateStampRoute().go(context),
     onOpenAlbum: () => const AlbumRoute().go(context),
-    onOpenInbox: () => const InboxRoute().go(context),
+    onOpenLetters: () => const SentLettersRoute().go(context),
   );
 }
 

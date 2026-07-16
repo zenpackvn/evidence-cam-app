@@ -55,7 +55,7 @@ Flow 11 dùng account riêng `delete_me@example.com` để tránh ảnh hưởng
 
 Các flow production của StampMail (login → tạo tem → gửi thư → nhận thư) nằm
 trong `stampmail/` với runner riêng `stampmail/run.sh` (iOS Simulator, cần
-backend dev `https://stampmails.sabeel.app` sống — xem header của script).
+backend dev `https://stampmail-backend-dev.sabeel.app` sống — xem header của script).
 
 ## Chạy smoke trên CI
 

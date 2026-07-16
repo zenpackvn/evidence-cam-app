@@ -3,7 +3,7 @@
 #
 # Yêu cầu: sim iPhone 17 đã boot, app build với env/dev.json đã cài
 # (fvm flutter build ios --simulator --dart-define-from-file=env/dev.json),
-# backend dev https://stampmails.sabeel.app sống, jq + maestro có sẵn.
+# backend dev https://stampmail-backend-dev.sabeel.app sống, jq + maestro có sẵn.
 #
 # CLEAN=1 ./run.sh  → uninstall + reset keychain trước (login từ trạng thái sạch).
 set -euo pipefail
@@ -11,7 +11,7 @@ cd "$(dirname "$0")"
 
 UDID="${UDID:-1C4F8048-FE1D-4A90-95D0-83AD3F0A201A}"
 APP_ID=com.aktechvn.stampmail
-API="${API:-https://stampmails.sabeel.app}"
+API="${API:-https://stampmail-backend-dev.sabeel.app}"
 FIREBASE_KEY=AIzaSyCmj-Sq_ICf7svfxPZ0W4ShqiVXhXRpLXM
 EMAIL=test1783783163@stampmail.dev
 PASS=test123456
@@ -30,7 +30,7 @@ run 01_login.yaml
 run 02_create_stamp.yaml
 run 03_send_letter.yaml
 
-echo "== Claim link mới nhất cho chính tài khoản test (BR-02/A17: mở khi đã đăng nhập → vào inbox)"
+echo "== Mở link mới nhất dưới uid tài khoản test (giả lập người nhận mở thư — SM-017; thư KHÔNG được lưu lại, chỉ đổi trạng thái link)"
 AUTH_JSON=$(curl -sf "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$FIREBASE_KEY" \
   -H 'Content-Type: application/json' \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\",\"returnSecureToken\":true}")
@@ -43,5 +43,5 @@ LINK_ID=$(curl -sf "$API/api/sm/sent" -H "Authorization: Bearer $ID_TOKEN" |
 echo "   link=$LINK_ID viewer=$SM_UID"
 curl -sf "$API/public/letter/$LINK_ID?viewer=$SM_UID" >/dev/null
 
-run 04_receive_letter.yaml
-echo "== E2E PASS: login → tạo tem → gửi thư → nhận thư"
+run 04_sent_status.yaml
+echo "== E2E PASS: login → tạo tem → gửi thư → link được mở → trạng thái Đã mở"

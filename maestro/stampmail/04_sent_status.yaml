@@ -1,0 +1,28 @@
+appId: com.aktechvn.stampmail
+name: "SM-04 · Thư đã gửi + trạng thái link (SM-021, TC-19) — chạy sau bước mở link (run.sh)"
+---
+# Relaunch để tab Thư refetch GET /api/sm/sent
+- launchApp:
+    clearState: false
+    stopApp: true
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*Tem gần đây.*"
+    timeout: 30000
+
+# Tab "Thư" giờ là hộp thư đã gửi (SM-021) — không còn hộp thư đến (SM-018 đã bỏ).
+- tapOn:
+    text: "(?s).*Thư.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*Thư đã gửi 💌.*"
+    timeout: 10000
+
+# Link vừa được mở (curl trong run.sh) phải hiện trạng thái "Đã mở" (BR/AC SM-021).
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*Đã mở.*"
+    timeout: 15000
+- assertVisible:
+    text: "(?s).*Thư gửi qua.*"

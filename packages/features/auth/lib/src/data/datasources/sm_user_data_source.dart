@@ -26,6 +26,17 @@ class SmUserDataSource {
     if (id is! String || username is! String) {
       throw const FormatException('missing id/username in /api/sm/me');
     }
-    return AuthUser(id: id, username: username);
+    return AuthUser(
+      id: id,
+      username: username,
+      stampsCreated: switch (body['stamps_created']) {
+        final int n => n,
+        _ => 0,
+      },
+      lettersSent: switch (body['letters_sent']) {
+        final int n => n,
+        _ => 0,
+      },
+    );
   }
 }

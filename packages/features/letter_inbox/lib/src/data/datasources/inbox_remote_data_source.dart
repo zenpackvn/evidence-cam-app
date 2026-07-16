@@ -1,15 +1,14 @@
 import 'package:network/network.dart';
 
-import '../models/inbox_entry_dto.dart';
 import '../models/public_letter_dto.dart';
 
 part 'inbox_remote_data_source.g.dart';
 
-/// Inbox endpoints: the public open-link endpoint plus the authenticated
-/// received-letters list/count (A17). When a signed-in viewer opens a link,
-/// the viewer uid is passed so the server can record the inbox row and
-/// credit the sender.
+/// The public open-link endpoint (SM-017). When a signed-in viewer opens a
+/// link, the viewer uid is passed so the server allows the same viewer to
+/// re-open it. Received letters are never listed or stored (SM-017 BR-10).
 @RestApi()
+// ignore: one_member_abstracts — retrofit requires an abstract class.
 abstract class InboxRemoteDataSource {
   factory InboxRemoteDataSource(Dio dio, {String baseUrl}) =
       _InboxRemoteDataSource;
@@ -19,10 +18,4 @@ abstract class InboxRemoteDataSource {
     @Path('id') String linkId,
     @Query('viewer') String? viewer,
   );
-
-  @GET('/api/sm/inbox')
-  Future<List<InboxEntryDto>> list();
-
-  @GET('/api/sm/inbox/count')
-  Future<InboxCountDto> count();
 }

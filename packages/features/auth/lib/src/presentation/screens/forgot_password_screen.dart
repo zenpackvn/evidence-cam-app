@@ -8,24 +8,40 @@ import 'package:localization/localization.dart';
 
 import '../widgets/widgets.dart';
 
-/// The four-step reset-password flow (F01-S11 → S14): collect an email, enter
-/// the 6-digit code, choose a new password, then the success confirmation.
+/// The reset-password flow (F01-S11 → S14, SM-001 BR-12): collect an email,
+/// send a reset LINK, then show the "check your email" waiting step. The link
+/// opens in the app when installed (universal link) or on Firebase's hosted
+/// web page otherwise; the in-app [ForgotStep.reset]/[ForgotStep.success]
+/// steps are reached from that deep link.
 ///
-/// UI-only. The submit paths will later dispatch to `AuthBloc`; per BR-12 the
-/// email step never reveals whether the address exists, and the OTP accepts
-/// any 6 digits until the backend endpoint lands.
+/// Per BR-12 the email step never reveals whether the address exists.
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+  const ForgotPasswordScreen({
+    this.onSendReset,
+    this.initialStep = ForgotStep.email,
+    super.key,
+  });
+
+  /// Sends the reset email (each send invalidates the old link).
+  final Future<void> Function(String email)? onSendReset;
+
+  /// Entry step — the reset deep link (and the design preview) opens straight
+  /// at [ForgotStep.reset].
+  final ForgotStep initialStep;
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-enum _ForgotStep { email, code, reset, success }
+/// Steps of the reset flow (public so a deep link can open mid-flow).
+enum ForgotStep { email, linkSent, reset, success }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  static const _codeTtl = Duration(minutes: 10);
-  static const _resendCooldown = Duration(seconds: 90);
+  /// SM-001 BR-12: the link stays valid for thirty minutes.
+  static const _linkTtl = Duration(minutes: 30);
+
+  /// SM-001 BR-12: resend unlocks after sixty seconds.
+  static const _resendCooldown = Duration(seconds: 60);
 
   final _emailFormKey = GlobalKey<FormState>();
   final _resetFormKey = GlobalKey<FormState>();
@@ -33,12 +49,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmController = TextEditingController();
 
-  _ForgotStep _step = _ForgotStep.email;
+  late ForgotStep _step = widget.initialStep;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
-  String _code = '';
 
-  Duration _expiresIn = _codeTtl;
+  Duration _expiresIn = _linkTtl;
   Duration _resendIn = _resendCooldown;
   Timer? _ticker;
 
@@ -51,12 +66,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  void _sendCode() {
+  Future<void> _sendLink() async {
     if (!_emailFormKey.currentState!.validate()) return;
-    // ponytail: dispatches AuthBloc.sendPasswordReset once the endpoint lands.
+    // BR-12: the confirmation below never reveals whether the email exists.
+    await widget.onSendReset?.call(_emailController.text.trim());
+    if (!mounted) return;
     setState(() {
-      _step = _ForgotStep.code;
-      _expiresIn = _codeTtl;
+      _step = ForgotStep.linkSent;
+      _expiresIn = _linkTtl;
       _resendIn = _resendCooldown;
     });
     _startTicker();
@@ -76,22 +93,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
   }
 
-  void _resend() {
+  Future<void> _resend() async {
     setState(() {
-      _expiresIn = _codeTtl;
+      _expiresIn = _linkTtl;
       _resendIn = _resendCooldown;
     });
-  }
-
-  void _confirmCode() {
-    if (_code.length != 6) return;
-    _ticker?.cancel();
-    setState(() => _step = _ForgotStep.reset);
+    await widget.onSendReset?.call(_emailController.text.trim());
   }
 
   void _savePassword() {
     if (!_resetFormKey.currentState!.validate()) return;
-    setState(() => _step = _ForgotStep.success);
+    // ponytail: the deep-link path confirms via Firebase's oobCode once
+    // universal links land; until then this step is design-complete UI.
+    setState(() => _step = ForgotStep.success);
   }
 
   static String _clock(Duration d) {
@@ -105,23 +119,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return AnimatedSwitcher(
       duration: AppDurations.fast,
       child: switch (_step) {
-        _ForgotStep.email => _EmailStep(
+        ForgotStep.email => _EmailStep(
           key: const ValueKey('email'),
           formKey: _emailFormKey,
           controller: _emailController,
-          onSubmit: _sendCode,
+          onSubmit: _sendLink,
         ),
-        _ForgotStep.code => _CodeStep(
-          key: const ValueKey('code'),
+        ForgotStep.linkSent => _LinkSentStep(
+          key: const ValueKey('linkSent'),
           email: _emailController.text.trim(),
           expiresIn: _clock(_expiresIn),
           resendIn: _resendIn == Duration.zero ? null : _clock(_resendIn),
-          canContinue: _code.length == 6,
-          onChanged: (code) => setState(() => _code = code),
           onResend: _resend,
-          onContinue: _confirmCode,
         ),
-        _ForgotStep.reset => _ResetStep(
+        ForgotStep.reset => _ResetStep(
           key: const ValueKey('reset'),
           formKey: _resetFormKey,
           newController: _newPasswordController,
@@ -135,7 +146,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           onEdited: () => setState(() {}),
           onSubmit: _savePassword,
         ),
-        _ForgotStep.success => const _SuccessStep(key: ValueKey('success')),
+        ForgotStep.success => const _SuccessStep(key: ValueKey('success')),
       },
     );
   }
@@ -215,17 +226,16 @@ class _EmailStep extends StatelessWidget {
   }
 }
 
-// ──────────────────────────────────────────────────────── step 2 · code ──
+// ─────────────────────────────────────────────────── step 2 · link sent ──
 
-class _CodeStep extends StatelessWidget {
-  const _CodeStep({
+/// F01-S12 — "Kiểm tra email của bạn": the reset link was emailed; no code to
+/// type, no continue button — the user finishes in the email.
+class _LinkSentStep extends StatelessWidget {
+  const _LinkSentStep({
     required this.email,
     required this.expiresIn,
     required this.resendIn,
-    required this.canContinue,
-    required this.onChanged,
     required this.onResend,
-    required this.onContinue,
     super.key,
   });
 
@@ -234,10 +244,7 @@ class _CodeStep extends StatelessWidget {
 
   /// Remaining cooldown, or `null` once resend unlocks.
   final String? resendIn;
-  final bool canContinue;
-  final ValueChanged<String> onChanged;
   final VoidCallback onResend;
-  final VoidCallback onContinue;
 
   @override
   Widget build(BuildContext context) {
@@ -271,11 +278,6 @@ class _CodeStep extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          OtpInput(
-            onChanged: onChanged,
-            onCompleted: (_) {},
-          ).animateSlideLeft(delay: 100.ms),
-          const SizedBox(height: 18),
           Center(
             child: _TwoTone(
               template: l10n.smVerifyExpiresIn(expiresIn),
@@ -304,10 +306,7 @@ class _CodeStep extends StatelessWidget {
                   ),
           ),
           const SizedBox(height: 18),
-          AuthPrimaryButton(
-            label: l10n.smForgotCodeContinue,
-            onPressed: canContinue ? onContinue : () {},
-          ).animateSlideUp(delay: 200.ms),
+          _BackToLoginDivider(label: l10n.smForgotBackToLogin),
         ],
       ),
     );

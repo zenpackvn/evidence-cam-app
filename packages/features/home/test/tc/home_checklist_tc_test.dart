@@ -1,5 +1,5 @@
 // Unit/widget coverage for `product-spec/004-man-hinh-chinh` test-cases
-// (SM-004: greeting, unread badge, recent stamps/letters, empty invite).
+// (SM-004: greeting, recent stamps/letters, empty invite).
 import 'package:feature_home/feature_home.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,7 +34,6 @@ class _Session extends ChangeNotifier implements Session {
 }
 
 HomeData _loaded() => HomeData(
-  unreadLetters: 3,
   recentStamps: [
     StampRef(
       id: 's1',
@@ -72,7 +71,7 @@ void main() {
         ..add(const HomeLoadRequested());
       await Future<void>.delayed(Duration.zero);
       expect(bloc.state.isLoading, isFalse);
-      expect(bloc.state.data.unreadLetters, 3);
+      expect(bloc.state.data.recentStamps, hasLength(1));
       await bloc.close();
     });
 
@@ -86,14 +85,15 @@ void main() {
   });
 
   group('HomeBody (TC-04-xxx · F01-S15/S16)', () {
-    testWidgets('TC-04: loaded — chào đúng tên + badge số thư chưa đọc',
+    testWidgets('TC-04: loaded — chào đúng tên, không có badge thư chưa đọc',
         (tester) async {
       await tester.pumpWidget(_wrap(_Loader(_loaded())));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Chào sunny 👋'), findsOneWidget);
-      expect(find.text('3'), findsOneWidget);
+      // SM-017 BR-10: thư nhận không lưu lại → không còn khái niệm chưa đọc.
+      expect(find.byType(Badge), findsNothing);
       expect(find.text('Tem gần đây'), findsOneWidget);
       expect(find.text('Tulip nở hồng'), findsOneWidget);
       expect(find.text('Cảm ơn mẹ yêu ❤️'), findsOneWidget);

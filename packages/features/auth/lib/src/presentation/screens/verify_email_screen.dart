@@ -6,33 +6,49 @@ import 'package:localization/localization.dart';
 
 import '../widgets/widgets.dart';
 
-/// StampMail email-verification screen: a 6-digit code with an expiry countdown
-/// and a resend action that unlocks after a short cooldown.
+/// StampMail email-verification WAITING screen (F01-S08, SM-001 BR-02): the
+/// user was emailed a confirmation LINK; this screen shows where it went, lets
+/// them resend after a cooldown, and checks verification when they return.
 ///
-/// UI-only. `onCompleted` will later verify the code via `AuthBloc`; the design
-/// uses an OTP code, which on Firebase requires a Cloud Function issuing codes
-/// (the SDK's native path is a verification *link*) — see the data-layer plan.
+/// The link opens Firebase's hosted confirm page on the web; after confirming
+/// the user comes back and taps "Tôi đã xác nhận".
 class VerifyEmailScreen extends StatefulWidget {
-  const VerifyEmailScreen({required this.email, this.onVerified, super.key});
+  const VerifyEmailScreen({
+    required this.email,
+    this.onVerified,
+    this.onResend,
+    this.onCheckVerified,
+    super.key,
+  });
 
   final String email;
 
-  /// Called once the 6-digit code is accepted (flow continues to
+  /// Called once verification is confirmed (flow continues to
   /// choose-username, F01-S08 → S09).
   final VoidCallback? onVerified;
+
+  /// Re-sends the verification email (each send invalidates the old link).
+  final Future<void> Function()? onResend;
+
+  /// Returns whether the email is verified (fresh from the server).
+  final Future<bool> Function()? onCheckVerified;
 
   @override
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
 
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
-  static const int _expirySeconds = 10 * 60;
-  static const int _resendCooldownSeconds = 45;
+  /// SM-001 BR-02: the link stays valid for thirty minutes.
+  static const int _expirySeconds = 30 * 60;
+
+  /// SM-001 BR-02: resend unlocks after sixty seconds.
+  static const int _resendCooldownSeconds = 60;
 
   Timer? _timer;
   int _expiresIn = _expirySeconds;
   int _resendIn = _resendCooldownSeconds;
-  bool _hasError = false;
+  bool _notVerifiedYet = false;
+  bool _checking = false;
 
   @override
   void initState() {
@@ -51,24 +67,25 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     super.dispose();
   }
 
-  void _onCompleted(String code) {
-    // ponytail: verified against the backend OTP endpoint when it lands;
-    // any 6 digits pass for now ('000000' demos the error state).
-    if (code == '000000') {
-      setState(() => _hasError = true);
-      return;
-    }
-    setState(() => _hasError = false);
-    widget.onVerified?.call();
+  Future<void> _check() async {
+    if (_checking) return;
+    setState(() => _checking = true);
+    final verified = await widget.onCheckVerified?.call() ?? true;
+    if (!mounted) return;
+    setState(() {
+      _checking = false;
+      _notVerifiedYet = !verified;
+    });
+    if (verified) widget.onVerified?.call();
   }
 
-  void _resend() {
-    // ponytail: re-request the code via AuthBloc.
+  Future<void> _resend() async {
     setState(() {
       _resendIn = _resendCooldownSeconds;
       _expiresIn = _expirySeconds;
-      _hasError = false;
+      _notVerifiedYet = false;
     });
+    await widget.onResend?.call();
   }
 
   @override
@@ -93,14 +110,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
           const SizedBox(height: AppSpacing.md),
           _VerifySubtitle(email: email).animateSlideDown(delay: 80.ms),
           const SizedBox(height: AppSpacing.xxxl),
-          OtpInput(
-            hasError: _hasError,
-            onChanged: (_) {
-              if (_hasError) setState(() => _hasError = false);
-            },
-            onCompleted: _onCompleted,
+          AuthPrimaryButton(
+            label: l10n.smVerifyCheckCta,
+            onPressed: _checking ? () {} : _check,
           ).animateSlideUp(delay: 150.ms),
-          if (_hasError) ...[
+          if (_notVerifiedYet) ...[
             const SizedBox(height: AppSpacing.md),
             Text(
               l10n.smVerifyInvalidCode,
@@ -141,8 +155,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   }
 }
 
-/// The verify subtitle with the email address emphasized on its own line, by
-/// splitting the localized string around the interpolated address.
+/// The verify subtitle with the email address emphasized, by splitting the
+/// localized string around the interpolated address.
 class _VerifySubtitle extends StatelessWidget {
   const _VerifySubtitle({required this.email});
 

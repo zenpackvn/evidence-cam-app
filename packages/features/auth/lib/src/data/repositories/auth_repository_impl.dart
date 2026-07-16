@@ -42,7 +42,17 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Result<AuthUser>> register({
     required String username,
     required String password,
-  }) => _afterSignIn(() => _firebase.registerWithEmail(username, password));
+  }) => _afterSignIn(() async {
+    final cred = await _firebase.registerWithEmail(username, password);
+    // SM-001 BR-02: email sign-ups get a verification link right away. Best
+    // effort — the waiting screen offers resend if this send fails.
+    try {
+      await _firebase.sendEmailVerification();
+    } on FirebaseAuthException {
+      // ignore: resend is available on the waiting screen.
+    }
+    return cred;
+  });
 
   @override
   Future<Result<AuthUser>> signInWithGoogle() =>
@@ -112,6 +122,37 @@ class AuthRepositoryImpl implements AuthRepository {
     } on Object {
       final cached = _local.currentUser;
       return cached != null ? Ok(cached) : const Err(NoSessionFailure());
+    }
+  }
+
+  @override
+  Future<Result<void>> sendEmailVerification() async {
+    try {
+      await _firebase.sendEmailVerification();
+      return const Ok(null);
+    } on FirebaseAuthException catch (e) {
+      return Err(_mapFirebaseError(e));
+    }
+  }
+
+  @override
+  Future<Result<bool>> checkEmailVerified() async {
+    try {
+      return Ok(await _firebase.reloadEmailVerified());
+    } on FirebaseAuthException catch (e) {
+      return Err(_mapFirebaseError(e));
+    }
+  }
+
+  @override
+  Future<Result<void>> sendPasswordReset(String email) async {
+    try {
+      await _firebase.sendPasswordResetEmail(email);
+      return const Ok(null);
+    } on FirebaseAuthException catch (e) {
+      // BR-12: never reveal whether the email exists.
+      if (e.code == 'user-not-found') return const Ok(null);
+      return Err(_mapFirebaseError(e));
     }
   }
 

@@ -1,10 +1,8 @@
-import 'package:architecture/architecture.dart';
-
-import '../entities/inbox_entry.dart';
 import '../entities/received_letter.dart';
 
-/// Opens a received letter from its share link, lists received letters, and
-/// saves their stamps.
+/// Opens a received letter from its share link and saves its stamps. Received
+/// letters are never listed or stored for the recipient (SM-017 BR-10) — a
+/// re-view goes through the original link.
 abstract interface class InboxRepository {
   /// Opens the link [linkId] as the given viewer (a uid, or null for
   /// anonymous). Returns the terminal outcome: opened / already-opened /
@@ -14,10 +12,4 @@ abstract interface class InboxRepository {
   /// Saves the letter's stamps into the signed-in user's album as `received`
   /// stamps (SM-017 BR-05). Returns the number saved.
   Future<int> saveStamps(ReceivedLetter letter);
-
-  /// Lists the signed-in user's received letters, newest first (SM-018, A17).
-  Future<Result<List<InboxEntry>>> list();
-
-  /// How many received letters are still unread (SM-004 BR-01).
-  Future<Result<int>> unreadCount();
 }

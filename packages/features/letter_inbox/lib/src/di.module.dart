@@ -14,28 +14,20 @@ import 'package:feature_letter_inbox/src/data/repositories/inbox_repository_impl
     as _i917;
 import 'package:feature_letter_inbox/src/domain/repositories/inbox_repository.dart'
     as _i972;
-import 'package:feature_letter_inbox/src/presentation/bloc/inbox_list_cubit.dart'
-    as _i2;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:network/network.dart' as _i372;
 
 class FeatureLetterInboxPackageModule extends _i526.MicroPackageModule {
-  // initializes the registration of main-scope dependencies inside of GetIt
+// initializes the registration of main-scope dependencies inside of GetIt
   @override
   _i687.FutureOr<void> init(_i526.GetItHelper gh) {
     final inboxRemoteModule = _$InboxRemoteModule();
     gh.lazySingleton<_i432.InboxRemoteDataSource>(
-      () => inboxRemoteModule.provideInboxRemoteDataSource(gh<_i372.Dio>()),
-    );
-    gh.lazySingleton<_i972.InboxRepository>(
-      () => _i917.InboxRepositoryImpl(
-        gh<_i432.InboxRemoteDataSource>(),
-        gh<_i237.StampsRepository>(),
-      ),
-    );
-    gh.factory<_i2.InboxListCubit>(
-      () => _i2.InboxListCubit(gh<_i972.InboxRepository>()),
-    );
+        () => inboxRemoteModule.provideInboxRemoteDataSource(gh<_i372.Dio>()));
+    gh.lazySingleton<_i972.InboxRepository>(() => _i917.InboxRepositoryImpl(
+          gh<_i432.InboxRemoteDataSource>(),
+          gh<_i237.StampsRepository>(),
+        ));
   }
 }
 

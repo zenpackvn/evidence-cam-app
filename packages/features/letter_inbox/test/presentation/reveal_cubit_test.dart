@@ -1,4 +1,3 @@
-import 'package:architecture/architecture.dart';
 import 'package:feature_letter_inbox/feature_letter_inbox.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_contracts/shared_contracts.dart';
@@ -16,12 +15,6 @@ class _FakeInboxRepository implements InboxRepository {
   @override
   Future<int> saveStamps(ReceivedLetter letter) async =>
       saved = letter.stamps.length;
-
-  @override
-  Future<Result<List<InboxEntry>>> list() async => const Ok([]);
-
-  @override
-  Future<Result<int>> unreadCount() async => const Ok(0);
 }
 
 ReceivedLetter _letter() => ReceivedLetter(

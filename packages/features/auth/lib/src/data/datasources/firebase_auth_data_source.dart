@@ -60,6 +60,26 @@ class FirebaseAuthDataSource {
     await user.updatePassword(next);
   }
 
+  /// Emails the signed-in user a verification LINK (SM-001 BR-02). Firebase
+  /// hosts the confirm page; the user taps the link on the web and returns to
+  /// the app manually.
+  Future<void> sendEmailVerification() =>
+      _auth.currentUser?.sendEmailVerification() ?? Future.value();
+
+  /// Re-reads the user from Firebase and reports whether the email has been
+  /// verified (the "Tôi đã xác nhận" check on the waiting screen).
+  Future<bool> reloadEmailVerified() async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    await user.reload();
+    return _auth.currentUser?.emailVerified ?? false;
+  }
+
+  /// Emails a password-reset LINK (SM-001 BR-12). Firebase hosts the reset
+  /// page when the app isn't installed.
+  Future<void> sendPasswordResetEmail(String email) =>
+      _auth.sendPasswordResetEmail(email: email);
+
   Future<void> signOut() async {
     await _google.signOut();
     await _auth.signOut();

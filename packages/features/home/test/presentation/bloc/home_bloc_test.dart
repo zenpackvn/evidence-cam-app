@@ -15,7 +15,6 @@ void main() {
 
     test('maps loaded data into state', () async {
       final data = HomeData(
-        unreadLetters: 2,
         recentStamps: [
           StampRef(
             id: 's1',
@@ -35,7 +34,6 @@ void main() {
       final bloc = HomeBloc(_StubLoader(data))..add(const HomeLoadRequested());
       await bloc.stream.firstWhere((state) => !state.isLoading);
 
-      expect(bloc.state.data.unreadLetters, 2);
       expect(bloc.state.data.recentStamps.single.id, 's1');
       expect(bloc.state.data.recentLetters.single.opened, true);
       expect(bloc.state.data.isEmpty, false);
