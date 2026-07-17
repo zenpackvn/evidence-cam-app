@@ -1,9 +1,9 @@
 name: feature_letter_inbox
 description: >-
   StampMail Letter Inbox feature: open a received letter from its share link
-  (in-app via app_links), read it, and save its stamps to the album (SM-017,
-  019). Data and domain layers as a self-contained workspace package;
-  presentation and animation are added separately.
+  (in-app via app_links) and read it (SM-017, 019). Received stamps are never
+  saved to the recipient's album (SM-017 BR-05). Self-contained workspace
+  package across data / domain / presentation.
 version: 0.1.0
 publish_to: none
 
@@ -19,7 +19,6 @@ dependencies:
   architecture: ^0.1.0
   network: ^0.1.0
   shared_contracts: ^0.1.0
-  feature_album: ^0.1.0
   localization: ^0.1.0
   app_ui: ^0.1.0
 

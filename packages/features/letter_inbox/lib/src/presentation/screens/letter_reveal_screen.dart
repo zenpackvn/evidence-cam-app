@@ -57,9 +57,6 @@ class LetterRevealScreen extends StatelessWidget {
                 RevealPhase.opened => OpenedLetterView(
                   letter: state.letter!,
                   senderName: state.senderName,
-                  stampsSaved: state.stampsSaved,
-                  savingStamps: state.savingStamps,
-                  onSaveStamps: context.read<RevealCubit>().saveStamps,
                   onReply: onReply,
                 ),
                 RevealPhase.alreadyOpened => const _Terminal(

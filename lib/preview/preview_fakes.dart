@@ -319,12 +319,6 @@ class FakeInboxRepository implements InboxRepository {
       ),
     };
   }
-
-  @override
-  Future<int> saveStamps(ReceivedLetter letter) async {
-    await Future<void>.delayed(_lag);
-    return letter.stamps.length;
-  }
 }
 
 // ────────────────────────────────────────────────────────────────── home ──

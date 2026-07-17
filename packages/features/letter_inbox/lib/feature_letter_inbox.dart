@@ -3,8 +3,9 @@
 /// stored for the recipient (SM-017 BR-10) — there is no inbox.
 ///
 /// The host app wires `FeatureLetterInboxPackageModule` and routes incoming
-/// `app_links` deep links to `InboxRepository.open`. Depends on `feature_album`
-/// to save received stamps (single-consumer capability import).
+/// `app_links` deep links to `InboxRepository.open`. Received stamps are never
+/// saved to the recipient's album (SM-017 BR-05), so this feature has no
+/// dependency on `feature_album`.
 library;
 
 export 'src/di.module.dart' show FeatureLetterInboxPackageModule;

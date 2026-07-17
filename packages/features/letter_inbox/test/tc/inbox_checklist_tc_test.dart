@@ -1,7 +1,8 @@
-// Unit coverage for `product-spec/015..018` test-cases (open a letter link,
-// save its stamps). Web-viewer journeys (F04-S01/S02 web) stay outside the
-// app; the in-app equivalents are asserted here. There is no inbox — received
-// letters are never stored (SM-017 BR-10).
+// Unit coverage for `product-spec/015..017` test-cases (open a letter link).
+// Web-viewer journeys (F04-S01/S02 web) stay outside the app; the in-app
+// equivalents are asserted here. There is no inbox — received letters are never
+// stored, and their stamps are never saved to the recipient's album
+// (SM-017 BR-05/BR-10).
 import 'package:feature_letter_inbox/feature_letter_inbox.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_contracts/shared_contracts.dart';
@@ -10,17 +11,10 @@ class _FakeInbox implements InboxRepository {
   _FakeInbox({this.outcome});
 
   OpenLetterOutcome? outcome;
-  ReceivedLetter? savedFrom;
 
   @override
   Future<OpenLetterOutcome> open(String linkId, {String? viewerUid}) async =>
       outcome ?? const LetterInvalid();
-
-  @override
-  Future<int> saveStamps(ReceivedLetter letter) async {
-    savedFrom = letter;
-    return letter.stamps.length;
-  }
 }
 
 ReceivedLetter _letter({int stamps = 2}) => ReceivedLetter(
@@ -72,17 +66,15 @@ void main() {
     });
   });
 
-  // ── 018 · lưu tem từ thư nhận được ─────────────────────────────────────
-  group('RevealCubit saveStamps (TC-18-xxx)', () {
-    test('TC-18: lưu tem của thư vào album — đánh dấu stampsSaved', () async {
-      final repo = _FakeInbox(outcome: LetterOpened(_letter()));
-      final cubit = RevealCubit(repo, linkId: 'abc', viewerUid: 'u1');
-      await cubit.open();
+  // ── SM-017 BR-05 · tem nhận KHÔNG được lưu vào Album ───────────────────
+  test('opened letter carries its stamps for display only (no save path)',
+      () async {
+    // The reveal state exposes the letter's stamps to render inside the letter,
+    // but there is no action to persist them (SM-017 BR-05 / SM-019 BR-03).
+    final repo = _FakeInbox(outcome: LetterOpened(_letter()));
+    final cubit = RevealCubit(repo, linkId: 'abc', viewerUid: 'u1');
+    await cubit.open();
 
-      await cubit.saveStamps();
-
-      expect(cubit.state.stampsSaved, isTrue);
-      expect(repo.savedFrom?.stamps, hasLength(2));
-    });
+    expect(cubit.state.letter?.stamps, hasLength(2));
   });
 }

@@ -13,8 +13,6 @@ class RevealState {
     this.phase = RevealPhase.intro,
     this.letter,
     this.senderName,
-    this.savingStamps = false,
-    this.stampsSaved = false,
   });
 
   final RevealPhase phase;
@@ -25,22 +23,15 @@ class RevealState {
   /// Sender display name for the header, if known from the link/deferred link.
   final String? senderName;
 
-  final bool savingStamps;
-  final bool stampsSaved;
-
   bool get isOpen => phase == RevealPhase.opened && letter != null;
 
   RevealState copyWith({
     RevealPhase? phase,
     ReceivedLetter? letter,
     String? senderName,
-    bool? savingStamps,
-    bool? stampsSaved,
   }) => RevealState(
     phase: phase ?? this.phase,
     letter: letter ?? this.letter,
     senderName: senderName ?? this.senderName,
-    savingStamps: savingStamps ?? this.savingStamps,
-    stampsSaved: stampsSaved ?? this.stampsSaved,
   );
 }

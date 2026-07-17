@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:architecture/architecture.dart';
-import 'package:feature_album/feature_album.dart';
 import 'package:injectable/injectable.dart';
 import 'package:network/network.dart';
 import 'package:shared_contracts/shared_contracts.dart';
@@ -13,10 +11,9 @@ import '../models/public_letter_dto.dart';
 
 @LazySingleton(as: InboxRepository)
 class InboxRepositoryImpl implements InboxRepository {
-  InboxRepositoryImpl(this._remote, this._stamps);
+  InboxRepositoryImpl(this._remote);
 
   final InboxRemoteDataSource _remote;
-  final StampsRepository _stamps;
 
   @override
   Future<OpenLetterOutcome> open(String linkId, {String? viewerUid}) async {
@@ -36,22 +33,6 @@ class InboxRepositoryImpl implements InboxRepository {
       if (code == 404) return const LetterInvalid();
       rethrow;
     }
-  }
-
-  @override
-  Future<int> saveStamps(ReceivedLetter letter) async {
-    var saved = 0;
-    for (final stamp in letter.stamps) {
-      final result = await _stamps.save(
-        StampInput(
-          imageUrl: stamp.imageUrl,
-          thumbUrl: stamp.thumbUrl,
-          source: StampSource.received,
-        ),
-      );
-      if (result is Ok) saved++;
-    }
-    return saved;
   }
 
   ReceivedLetter _toReceived(PublicLetterDto dto) {

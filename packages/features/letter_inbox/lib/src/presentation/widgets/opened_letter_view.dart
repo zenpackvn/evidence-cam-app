@@ -4,24 +4,20 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/received_letter.dart';
 
 /// The readable opened letter (F04-S05): the sender header, the letter body on
-/// tinted paper, the attached stamps, and Save-to-Album / Reply actions.
+/// tinted paper, the attached stamps, and the Reply action. There is no
+/// save-stamp action — received stamps are never added to the recipient's album
+/// (SM-017 BR-05 / SM-019 BR-03).
 class OpenedLetterView extends StatelessWidget {
   const OpenedLetterView({
     required this.letter,
     required this.senderName,
-    required this.onSaveStamps,
     required this.onReply,
-    this.stampsSaved = false,
-    this.savingStamps = false,
     super.key,
   });
 
   final ReceivedLetter letter;
   final String? senderName;
-  final VoidCallback onSaveStamps;
   final VoidCallback onReply;
-  final bool stampsSaved;
-  final bool savingStamps;
 
   @override
   Widget build(BuildContext context) {
@@ -82,12 +78,7 @@ class OpenedLetterView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        _Actions(
-          onSaveStamps: onSaveStamps,
-          onReply: onReply,
-          stampsSaved: stampsSaved,
-          savingStamps: savingStamps,
-        ),
+        _Actions(onReply: onReply),
       ],
     );
   }
@@ -149,48 +140,21 @@ class _AttachedStamps extends StatelessWidget {
 }
 
 class _Actions extends StatelessWidget {
-  const _Actions({
-    required this.onSaveStamps,
-    required this.onReply,
-    required this.stampsSaved,
-    required this.savingStamps,
-  });
+  const _Actions({required this.onReply});
 
-  final VoidCallback onSaveStamps;
   final VoidCallback onReply;
-  final bool stampsSaved;
-  final bool savingStamps;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: FilledButton.icon(
-            onPressed: (stampsSaved || savingStamps) ? null : onSaveStamps,
-            icon: savingStamps
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Icon(stampsSaved ? Icons.check : Icons.download_outlined),
-            label: Text(stampsSaved ? 'Đã lưu vào Album' : 'Lưu vào Album'),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: OutlinedButton.icon(
-            onPressed: onReply,
-            icon: const Icon(Icons.reply_outlined),
-            label: const Text('Trả lời'),
-          ),
-        ),
-      ],
+    // SM-019 BR-03: Reply only (login-gated). No "save stamp" action.
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: onReply,
+        icon: const Icon(Icons.reply_outlined),
+        label: const Text('Trả lời'),
+      ),
     );
   }
 }

@@ -6,15 +6,10 @@ class _FakeInboxRepository implements InboxRepository {
   _FakeInboxRepository(this.outcome);
 
   final OpenLetterOutcome outcome;
-  int saved = 0;
 
   @override
   Future<OpenLetterOutcome> open(String linkId, {String? viewerUid}) async =>
       outcome;
-
-  @override
-  Future<int> saveStamps(ReceivedLetter letter) async =>
-      saved = letter.stamps.length;
 }
 
 ReceivedLetter _letter() => ReceivedLetter(
@@ -79,15 +74,15 @@ void main() {
     addTearDown(cubit.close);
   });
 
-  test('saveStamps saves once and flips the flag', () async {
-    final repo = _FakeInboxRepository(LetterOpened(_letter()));
-    final cubit = RevealCubit(repo, linkId: 'tok');
-    await cubit.open();
-    await cubit.saveStamps();
-    expect(cubit.state.stampsSaved, isTrue);
-    expect(repo.saved, 1);
-    await cubit.saveStamps(); // no double-save
-    expect(repo.saved, 1);
+  test('InboxRepository exposes no save-stamp capability (SM-017 BR-05)', () {
+    // The interface must not carry a way to persist received stamps; the reveal
+    // flow only opens and reads. This is a compile-time guard: RevealCubit's
+    // surface is just open(), and InboxRepository is open()-only.
+    final cubit = RevealCubit(
+      _FakeInboxRepository(LetterOpened(_letter())),
+      linkId: 'tok',
+    );
+    expect(cubit.open, isA<Function>());
     addTearDown(cubit.close);
   });
 }

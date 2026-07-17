@@ -5,8 +5,9 @@ import '../../domain/repositories/inbox_repository.dart';
 import 'reveal_state.dart';
 
 /// Drives opening + reading a received letter (SM-017/019): consumes the
-/// one-time link, classifies the outcome, and saves the letter's stamps to the
-/// album on request. Constructed with the link id at open time (not injectable).
+/// one-time link and classifies the outcome. Received stamps are NOT saved to
+/// the viewer's album (SM-017 BR-05 / SM-019 BR-03 — no "save stamp" action).
+/// Constructed with the link id at open time (not injectable).
 class RevealCubit extends Cubit<RevealState> {
   RevealCubit(this._inbox, {required this.linkId, this.viewerUid, String? senderName})
     : super(RevealState(senderName: senderName));
@@ -32,14 +33,5 @@ class RevealCubit extends Cubit<RevealState> {
       case LetterInvalid():
         emit(state.copyWith(phase: RevealPhase.invalid));
     }
-  }
-
-  /// Saves the opened letter's stamps into the viewer's album (SM-017 BR-05).
-  Future<void> saveStamps() async {
-    final letter = state.letter;
-    if (letter == null || state.savingStamps || state.stampsSaved) return;
-    emit(state.copyWith(savingStamps: true));
-    await _inbox.saveStamps(letter);
-    emit(state.copyWith(savingStamps: false, stampsSaved: true));
   }
 }
