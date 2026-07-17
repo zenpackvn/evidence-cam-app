@@ -49,11 +49,20 @@ class StampsRepositoryImpl implements StampsRepository {
 
   @override
   Future<Result<Stamp>> save(StampInput input) async {
+    // A stable id (saving a sample, SM-035 BR-03) is deduped locally: if it's
+    // already in the album, saving again is a no-op, not a duplicate (AC-05).
+    if (input.id != null) {
+      final existing = await _local.getByUuid(input.id!);
+      if (existing != null && existing.syncState != SyncState.pendingDelete) {
+        return Ok(existing.toDomain());
+      }
+    }
     final now = clock.now().toUtc();
     final entity = StampEntity(
-      uuid: _uuid.v4(),
+      uuid: input.id ?? _uuid.v4(),
       imageUrl: input.imageUrl.trim(),
       thumbUrl: input.thumbUrl?.trim(),
+      name: input.name.trim(),
       source: input.source.wire,
       senderName: input.senderName?.trim(),
       senderUid: input.senderUid?.trim(),

@@ -63,6 +63,8 @@ class StampInput {
     this.source = StampSource.created,
     this.senderName,
     this.senderUid,
+    this.id,
+    this.name = '',
   });
 
   final String imageUrl;
@@ -70,4 +72,12 @@ class StampInput {
   final StampSource source;
   final String? senderName;
   final String? senderUid;
+
+  /// Optional stable id. When set (e.g. saving a sample stamp, SM-035 BR-03),
+  /// it is reused so saving the same item twice is a no-op instead of a
+  /// duplicate; when null the repository mints a fresh UUID.
+  final String? id;
+
+  /// Optional preset name (SM-022 BR-08 / SM-035 keeps samples unnamed).
+  final String name;
 }

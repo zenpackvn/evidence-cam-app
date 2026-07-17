@@ -132,7 +132,20 @@ class AlbumRoute extends GoRouteData with $AlbumRoute {
     // navigation to the template list; passing the preselected stamp through
     // the composer is wired when the composer accepts an initial stamp.
     onAttachStamp: (_) => const LetterComposeRoute().go(context),
+    // SM-035: the sample-stamp catalog is a separate browse area reached from
+    // the Album.
+    onBrowseSamples: () => const SampleStampsRoute().go(context),
   );
+}
+
+/// SM-035 — the curated sample-stamp catalog (a separate browse area, BR-01).
+@TypedGoRoute<SampleStampsRoute>(path: '/samples', name: 'samples')
+class SampleStampsRoute extends GoRouteData with $SampleStampsRoute {
+  const SampleStampsRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const SampleStampsScreen();
 }
 
 @TypedGoRoute<LetterComposeRoute>(path: '/compose', name: 'compose')

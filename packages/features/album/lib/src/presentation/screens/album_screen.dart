@@ -17,13 +17,21 @@ import 'stamp_detail_screen.dart';
 /// inside the Album's BlocProvider); the empty state (F02-S19) invites creating
 /// one.
 class AlbumScreen extends StatelessWidget {
-  const AlbumScreen({this.onCreate, this.onAttachStamp, super.key});
+  const AlbumScreen({
+    this.onCreate,
+    this.onAttachStamp,
+    this.onBrowseSamples,
+    super.key,
+  });
 
   final VoidCallback? onCreate;
 
   /// Navigates to the letter composer with the given stamp preselected
   /// (SM-022 BR-07).
   final ValueChanged<Stamp>? onAttachStamp;
+
+  /// Opens the sample-stamp catalog (SM-035), a separate browse area.
+  final VoidCallback? onBrowseSamples;
 
   static const _ground = Color(0xFFFCF6EF);
 
@@ -47,6 +55,7 @@ class AlbumScreen extends StatelessWidget {
                 state: state,
                 onOpenStamp: (stamp) => _openDetail(context, stamp),
                 onCreate: onCreate,
+                onBrowseSamples: onBrowseSamples,
               );
             },
           ),
@@ -79,11 +88,13 @@ class _AlbumBody extends StatelessWidget {
     required this.state,
     required this.onOpenStamp,
     this.onCreate,
+    this.onBrowseSamples,
   });
 
   final AlbumState state;
   final ValueChanged<Stamp> onOpenStamp;
   final VoidCallback? onCreate;
+  final VoidCallback? onBrowseSamples;
 
   @override
   Widget build(BuildContext context) {
@@ -100,11 +111,23 @@ class _AlbumBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Tất cả những con tem xinh xắn bạn đã tạo.',
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Tất cả những con tem xinh xắn bạn đã tạo.',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    if (onBrowseSamples != null)
+                      TextButton.icon(
+                        onPressed: onBrowseSamples,
+                        icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                        label: const Text('Tem mẫu'),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.md),
                 const AlbumSearchBar(),
