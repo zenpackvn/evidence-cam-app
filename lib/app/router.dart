@@ -141,7 +141,20 @@ class AlbumRoute extends GoRouteData with $AlbumRoute {
     // SM-025 BR-07: write the captured post to a temp file and open the native
     // share sheet. The watermark is already baked into the PNG (BR-06).
     onShareImage: _shareStampImage,
+    // SM-025 BR-05: save the post to the device gallery.
+    onSaveImageToGallery: _saveStampToGallery,
   );
+}
+
+/// Saves [png] to the device gallery (SM-025 BR-05); returns whether it worked.
+Future<bool> _saveStampToGallery(Uint8List png) async {
+  if (!GetIt.instance.isRegistered<GallerySaveService>()) return false;
+  try {
+    await GetIt.instance<GallerySaveService>().savePng(png);
+    return true;
+  } on Object {
+    return false;
+  }
 }
 
 /// Writes [png] to a temp file and opens the native share sheet (SM-025 BR-07).
@@ -283,6 +296,19 @@ class LetterRevealRoute extends GoRouteData with $LetterRevealRoute {
       replyTo: senderName.isEmpty ? null : senderName,
       replyToUid: senderUid.isEmpty ? null : senderUid,
     ).go(context),
+    // SM-025: share the opened letter to social (Mức 1/2/3) with its stamp and
+    // text; the same capture → share sheet / gallery plumbing as the Album.
+    onShare: ({required stampImageUrl, required letterText}) =>
+        Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (_) => ShareStampScreen(
+              stampImageUrl: stampImageUrl,
+              letterText: letterText,
+              onShareImage: _shareStampImage,
+              onSaveToGallery: _saveStampToGallery,
+            ),
+          ),
+        ),
   );
 }
 

@@ -12,12 +12,17 @@ class OpenedLetterView extends StatelessWidget {
     required this.letter,
     required this.senderName,
     required this.onReply,
+    this.onShare,
     super.key,
   });
 
   final ReceivedLetter letter;
   final String? senderName;
   final VoidCallback onReply;
+
+  /// Opens the share-to-social flow for this letter (SM-025 Mức 1/2/3). Null
+  /// when there is no attached stamp to lay out.
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +83,7 @@ class OpenedLetterView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        _Actions(onReply: onReply),
+        _Actions(onReply: onReply, onShare: onShare),
       ],
     );
   }
@@ -140,21 +145,39 @@ class _AttachedStamps extends StatelessWidget {
 }
 
 class _Actions extends StatelessWidget {
-  const _Actions({required this.onReply});
+  const _Actions({required this.onReply, this.onShare});
 
   final VoidCallback onReply;
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
-    // SM-019 BR-03: Reply only (login-gated). No "save stamp" action.
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: OutlinedButton.icon(
-        onPressed: onReply,
-        icon: const Icon(Icons.reply_outlined),
-        label: const Text('Trả lời'),
-      ),
+    // SM-019 BR-03: Reply (login-gated). No "save stamp" action. SM-025: an
+    // optional Share when the letter has a stamp to lay out.
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: OutlinedButton.icon(
+            onPressed: onReply,
+            icon: const Icon(Icons.reply_outlined),
+            label: const Text('Trả lời'),
+          ),
+        ),
+        if (onShare != null) ...[
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: OutlinedButton.icon(
+              onPressed: onShare,
+              icon: const Icon(Icons.ios_share),
+              label: const Text('Chia sẻ'),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

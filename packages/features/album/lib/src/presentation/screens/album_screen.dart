@@ -25,6 +25,7 @@ class AlbumScreen extends StatelessWidget {
     this.onAttachStamp,
     this.onBrowseSamples,
     this.onShareImage,
+    this.onSaveImageToGallery,
     super.key,
   });
 
@@ -41,6 +42,10 @@ class AlbumScreen extends StatelessWidget {
   /// host owns share_plus / temp-file writing so this feature stays
   /// platform-agnostic.
   final Future<void> Function(Uint8List png)? onShareImage;
+
+  /// Saves a captured post PNG to the device gallery (SM-025 BR-05); returns
+  /// whether it succeeded. The host owns the gallery plugin.
+  final Future<bool> Function(Uint8List png)? onSaveImageToGallery;
 
   static const _ground = Color(0xFFFCF6EF);
 
@@ -91,8 +96,9 @@ class AlbumScreen extends StatelessWidget {
               : () => Navigator.of(context).push<void>(
                   MaterialPageRoute(
                     builder: (_) => ShareStampScreen(
-                      stamp: stamp,
+                      stampImageUrl: stamp.imageUrl,
                       onShareImage: onShareImage!,
+                      onSaveToGallery: onSaveImageToGallery,
                     ),
                   ),
                 ),

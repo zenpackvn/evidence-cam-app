@@ -15,4 +15,5 @@ export 'src/media/video_player_service.dart';
 export 'src/notifications/firebase_messaging_service.dart';
 export 'src/notifications/notifications_service.dart';
 export 'src/permissions/permission_service.dart';
+export 'src/share/gallery_save_service.dart';
 export 'src/share/share_service.dart';

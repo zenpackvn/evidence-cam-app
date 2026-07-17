@@ -19,6 +19,7 @@ class LetterRevealScreen extends StatelessWidget {
   const LetterRevealScreen({
     required this.linkId,
     required this.onReply,
+    this.onShare,
     this.viewerUid,
     this.senderName,
     super.key,
@@ -33,6 +34,11 @@ class LetterRevealScreen extends StatelessWidget {
   /// SM-026 D12).
   final void Function({required String senderName, required String senderUid})
   onReply;
+
+  /// Opens the share-to-social flow for the opened letter (SM-025 Mức 1/2/3),
+  /// with the first stamp's image and the letter text. Null hides the action.
+  final void Function({required String stampImageUrl, required String letterText})?
+  onShare;
 
   static const _ground = Color(0xFFFBF4EC);
 
@@ -72,6 +78,14 @@ class LetterRevealScreen extends StatelessWidget {
                         : (state.senderName ?? ''),
                     senderUid: state.letter!.senderUid,
                   ),
+                  // SM-025: share the letter (Mức 1/2/3) — only when it has a
+                  // stamp to lay out.
+                  onShare: (onShare == null || state.letter!.stamps.isEmpty)
+                      ? null
+                      : () => onShare!(
+                          stampImageUrl: state.letter!.stamps.first.imageUrl,
+                          letterText: state.letter!.text,
+                        ),
                 ),
                 RevealPhase.alreadyOpened => const _Terminal(
                   icon: Icons.drafts_outlined,
