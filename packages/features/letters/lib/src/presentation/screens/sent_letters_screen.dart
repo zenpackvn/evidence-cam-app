@@ -10,6 +10,8 @@ class SentLettersScreen extends StatelessWidget {
   const SentLettersScreen({
     this.letters = const [],
     this.onCompose,
+    this.onRecreate,
+    this.recreatingLetterId,
     super.key,
   });
 
@@ -17,6 +19,13 @@ class SentLettersScreen extends StatelessWidget {
 
   /// Called by the "Tạo thư đầu tiên" CTA in the empty state (F04-S07d).
   final VoidCallback? onCompose;
+
+  /// Recreates a share link for an expired letter (SM-021 BR-04). Null hides
+  /// the action.
+  final ValueChanged<SentLetter>? onRecreate;
+
+  /// The letterId whose link is currently being recreated (shows a spinner).
+  final String? recreatingLetterId;
 
   static const _ground = Color(0xFFFBF4EC);
 
@@ -66,7 +75,11 @@ class SentLettersScreen extends StatelessWidget {
                         AppSpacing.xxl,
                         AppSpacing.xxl,
                       ),
-                      child: _ListCard(letters: letters),
+                      child: _ListCard(
+                        letters: letters,
+                        onRecreate: onRecreate,
+                        recreatingLetterId: recreatingLetterId,
+                      ),
                     ),
             ),
           ],
@@ -78,9 +91,15 @@ class SentLettersScreen extends StatelessWidget {
 
 /// The white list card (radius-20) with hairline-divided rows.
 class _ListCard extends StatelessWidget {
-  const _ListCard({required this.letters});
+  const _ListCard({
+    required this.letters,
+    this.onRecreate,
+    this.recreatingLetterId,
+  });
 
   final List<SentLetter> letters;
+  final ValueChanged<SentLetter>? onRecreate;
+  final String? recreatingLetterId;
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +116,11 @@ class _ListCard extends StatelessWidget {
         children: [
           for (final (i, letter) in letters.indexed) ...[
             if (i > 0) Divider(height: 1, color: context.brand.borderSubtle),
-            _SentRow(letter: letter),
+            _SentRow(
+              letter: letter,
+              onRecreate: onRecreate,
+              recreating: recreatingLetterId == letter.link.letterId,
+            ),
           ],
         ],
       ),
@@ -106,9 +129,15 @@ class _ListCard extends StatelessWidget {
 }
 
 class _SentRow extends StatelessWidget {
-  const _SentRow({required this.letter});
+  const _SentRow({
+    required this.letter,
+    this.onRecreate,
+    this.recreating = false,
+  });
 
   final SentLetter letter;
+  final ValueChanged<SentLetter>? onRecreate;
+  final bool recreating;
 
   @override
   Widget build(BuildContext context) {
@@ -117,42 +146,70 @@ class _SentRow extends StatelessWidget {
     final platform = (link.platform?.isNotEmpty ?? false)
         ? link.platform!
         : 'Link chia sẻ';
+    // SM-021 BR-04/BR-05: recreate only offered for an expired link, never an
+    // opened one (already reached its recipient).
+    final canRecreate =
+        onRecreate != null && letter.status == SentStatus.expired;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: scheme.primaryContainer,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Icon(Icons.mail_outline, color: scheme.onPrimaryContainer),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Thư gửi qua $platform',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+          Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  _formatDate(link.createdAt.toLocal()),
-                  style: context.textTheme.bodySmall,
+                child: Icon(
+                  Icons.mail_outline,
+                  color: scheme.onPrimaryContainer,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Thư gửi qua $platform',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _formatDate(link.createdAt.toLocal()),
+                      style: context.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              _StatusChip(status: letter.status),
+            ],
           ),
-          const SizedBox(width: AppSpacing.sm),
-          _StatusChip(status: letter.status),
+          if (canRecreate) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: recreating ? null : () => onRecreate!(letter),
+                icon: recreating
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh, size: 18),
+                label: const Text('Tạo link mới'),
+              ),
+            ),
+          ],
         ],
       ),
     );

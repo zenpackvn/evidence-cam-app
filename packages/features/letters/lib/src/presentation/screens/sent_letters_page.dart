@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../domain/entities/letter_link.dart';
 import '../bloc/sent_letters_cubit.dart';
 import 'sent_letters_screen.dart';
 
@@ -27,6 +28,15 @@ class SentLettersPage extends StatelessWidget {
         builder: (context, state) => SentLettersScreen(
           letters: state.letters,
           onCompose: onCompose,
+          recreatingLetterId: state.recreatingLetterId,
+          onRecreate: (sent) async {
+            final ok = await context.read<SentLettersCubit>().recreateLink(sent);
+            if (context.mounted && !ok && sent.status != SentStatus.opened) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Không tạo được link mới. Thử lại.')),
+              );
+            }
+          },
         ),
       ),
     );
