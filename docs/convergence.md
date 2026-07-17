@@ -28,7 +28,7 @@ Legend status: ⬜ pending · 🔍 verifying · 🔨 building · ✅ done (gate 
 | SM-021 | 019-hop-thu-da-gui | letters | P2 | ↑ | ⬜ | Recreate link cho thư tồn tại = miễn quota (D11) |
 | SM-022 | 020-album-suu-tap | album | P0 | 7/28/6/2 | ✅ | BR-01/02/03/05/09 OK. **ĐÃ BỔ SUNG full-stack**: BR-08 tên tem + đổi tên ≤30 (field `name` xuyên backend domain/SQLite/PATCH + client entity/DTO/sync-adapter/repo/dialog), BR-06 hiển thị tên, BR-04 toggle lưới/danh sách, BR-07 attach-to-letter. Gate: backend+analyze+test+build OK. Còn lại chỉ BR-07 điều hướng preselect stamp vào composer (khi composer nhận initial stamp — thuộc C3/letters) |
 | SM-035 | 029-bo-tem-mau | album (sample_stamps) | P1 | — | ✅ | BUILD TỪ ĐẦU (chưa có gì). Backend: domain SampleStamp + themes, SampleCatalog in-memory, GET /api/sm/sample-stamps[?theme]. Client: entity/DTO/remote/repo/cubit + browse screen (theme chips, grid Mới/saved badge, detail pinch-zoom + Lưu). Dedupe qua StampInput.id (BR-03/AC-05), free (BR-05). Route /samples từ nút "Tem mẫu" trong Album. Gate OK |
-| SM-025 | 021-chia-se-tem-mxh | album (share_stamp) | P1 | — | 🔨 | BUILD TỪ ĐẦU. Mức 1 (chỉ tem) đầy đủ: layout 9:16↔1:1 toggle (BR-04), watermark cưỡng bức baked-in PNG (BR-06/AC-03), capture RepaintBoundary→toImage, native share sheet qua SharePlus (BR-07). Nút Chia sẻ ở stamp detail. Test watermark/toggle/share-PNG. **CÒN MỞ**: Mức 2/3 (trích dẫn/toàn văn thư — cần letter content, thuộc reveal share path không phải Album), BR-05 lưu gallery (cần dep `gal` + iOS photo permission config), BR-03 cảnh báo lộ nội dung (chỉ khi có Mức 2/3). Gate OK |
+| SM-025 | 021-chia-se-tem-mxh | album (share_stamp) | P1 | — | ✅ | ĐẦY ĐỦ. Mức 1/2/3 (BR-02): ShareStampScreen nhận optional letterText → level selector + cảnh báo lộ nội dung (BR-03) + composite text vào post. Toggle 9:16↔1:1 (BR-04), watermark baked-in (BR-06/AC-03), share sheet (BR-07). Gallery save (BR-05): GallerySaveService (gal) + nút Lưu + snackbar. Share từ Album (chỉ tem) VÀ từ màn đọc thư (Mức 2/3 với letter text). ShareStampScreen dùng stampImageUrl (không phụ thuộc entity). Test level chips/warning/watermark/share-PNG. Gate OK |
 | SM-026 | 022-thong-bao-push | notifications + app shell + backend | P1 | 11/15/10/4 | ✅ | ĐẦY ĐỦ 3 loại push end-to-end: letter_opened, quota_low (once-per-cross), letter_received (reply threading: publicLetter sender_uid→ReceivedLetter→onReply→composer→LetterInput→reply_to_uid→push once-per-letter). Per-type FCM topic user_<uid>_<kind>; toggle BR-02 = subscribe/unsubscribe + persist prefs (không local nữa); subscribe khi login. Tap→route theo kind (BR-04). Backend tests + composer thread test. Gate OK |
 | SM-027 | 023-cai-dat-tai-khoan | profile / settings | P2 | — | ⬜ | SettingsScreen mounted ở router |
 | SM-028 | 024-nang-cap-premium | premium | ⏸️ | 0/7/0/0 | ➖ | D17 disable v1 — khóa không CTA mua |
@@ -41,10 +41,9 @@ SM-007 (xóa nền AI), SM-033 (Dấu/Rewards), SM-023 (Series), SM-031 (Time Ca
 
 ## GAP full-stack còn mở — cần quyết định scope (không kẹt, là công việc lớn)
 
-- **SM-025 Mức 2/3 + gallery save**: Mức 2 (tem + 1 dòng trích dẫn) và Mức 3 (tem + toàn văn thư) cần **letter content** — share tem từ Album chỉ có tem, không có context thư, nên Mức 2/3 phải làm ở luồng share từ màn đọc thư (reveal), không phải Album. BR-03 cảnh báo lộ nội dung chỉ áp khi có Mức 2/3. BR-05 lưu gallery cần thêm dep `gal` + cấu hình iOS `NSPhotoLibraryAddUsageDescription`. Làm riêng.
-- **SM-025/backend đơn vị quota D11**: backend hiện trừ quota ở `CreateLink`; D11 chốt phải trừ ở cấp TẠO THƯ (nhiều link/1 thư không trừ thêm). Chưa verify/sửa — để khi rà lại letters/gửi.
-- **SM-026 letter_received push + device token store (A11/D4)**: loại push thứ 3 cần bảng `device_tokens` + endpoint register/unregister + `MulticastMessage` + biết uid người nhận (D12: chỉ reply). Khối lớn, làm riêng. Hiện push qua topic (letter_opened) + quota_low đã chạy.
-- **SM-026 persist notification toggle lên server (BR-02)**: settings screen mới toggle local state (`_values`), chưa lưu server nên tắt loại chưa thực sự chặn push phía server. Cần endpoint lưu preference + backend đọc trước khi push.
+- **Quota theo D11** (SM-016/backend): backend hiện trừ quota ở `CreateLink`; D11 chốt phải trừ ở cấp TẠO THƯ (nhiều link/1 thư không trừ thêm). Chưa verify/sửa — để khi rà lại letters/gửi.
+- **SM-026 device token store (nâng cấp tùy chọn)**: hiện dùng per-type topic (đủ cho BR-02 toggle + 3 loại push). Chỉ cần token store nếu muốn delivery receipt / targeting chính xác từng thiết bị — không bắt buộc cho MVP.
+- **SM-026 notification toggle — persist server-side**: hiện lưu prefs local + subscribe/unsubscribe FCM topic (đủ chặn push phía FCM). Nếu muốn preference đọc được từ backend (đa thiết bị đồng bộ) thì thêm endpoint — không bắt buộc.
 
 ## Nhật ký verify
 
@@ -57,5 +56,7 @@ SM-007 (xóa nền AI), SM-033 (Dấu/Rewards), SM-023 (Series), SM-031 (Time Ca
 - 2026-07-17: **SM-020 ✅** — bổ sung BR-01 prefill người gửi (full-stack sender_name). Backend commit 967c9e0, flutter commit 2a3a59a.
 - 2026-07-17: **SM-035 ✅** — build từ đầu bộ tem mẫu (backend catalog endpoint + client browse/save). Backend commit 41860e4, flutter commit 5d1708e.
 - 2026-07-17: **SM-026 🔨** — quota_low push (backend 10677b0) + tap→route theo kind (flutter 639412d). letter_received + device token store + persist toggle còn mở (xem trên).
-- 2026-07-17: **SM-025 🔨** — build từ đầu share-tem Mức 1 (layout+toggle+watermark+share sheet). Flutter commit a855c45. Mức 2/3 + gallery save (`gal`) còn mở.
-- Gate cuối phiên: backend build+vet+test(race) sạch · `analyze` sạch · root 38 + packages 528 test · golden 8 · `build apk --debug --flavor dev` OK. (staging flavor build đỏ vì google-services.json thiếu client `.staging` — blocker config có sẵn, không do converge.)
+- 2026-07-17: **SM-025 🔨** — build từ đầu share-tem Mức 1 (layout+toggle+watermark+share sheet). Flutter commit a855c45.
+- 2026-07-17: **SM-026 ✅ (full)** — letter_received push + per-type topic + reply threading full-stack + persist toggle. Backend 2efb59a/69dfa3a, flutter 862f95f.
+- 2026-07-17: **SM-025 ✅ (full)** — Mức 2/3 (level selector + cảnh báo BR-03) + gallery save (gal) + share từ màn đọc thư. Flutter commit 1184712.
+- Gate cuối phiên: backend build+vet+test(race) sạch · `analyze` sạch · root 38 + packages 531 test · golden 8 · `build apk --debug --flavor dev` OK. (staging flavor build đỏ vì google-services.json thiếu client `.staging` — blocker config có sẵn, không do converge.)
