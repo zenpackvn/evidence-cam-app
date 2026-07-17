@@ -29,7 +29,7 @@ Legend status: ⬜ pending · 🔍 verifying · 🔨 building · ✅ done (gate 
 | SM-022 | 020-album-suu-tap | album | P0 | 7/28/6/2 | ✅ | BR-01/02/03/05/09 OK. **ĐÃ BỔ SUNG full-stack**: BR-08 tên tem + đổi tên ≤30 (field `name` xuyên backend domain/SQLite/PATCH + client entity/DTO/sync-adapter/repo/dialog), BR-06 hiển thị tên, BR-04 toggle lưới/danh sách, BR-07 attach-to-letter. Gate: backend+analyze+test+build OK. Còn lại chỉ BR-07 điều hướng preselect stamp vào composer (khi composer nhận initial stamp — thuộc C3/letters) |
 | SM-035 | 029-bo-tem-mau | album (sample_stamps) | P1 | — | ✅ | BUILD TỪ ĐẦU (chưa có gì). Backend: domain SampleStamp + themes, SampleCatalog in-memory, GET /api/sm/sample-stamps[?theme]. Client: entity/DTO/remote/repo/cubit + browse screen (theme chips, grid Mới/saved badge, detail pinch-zoom + Lưu). Dedupe qua StampInput.id (BR-03/AC-05), free (BR-05). Route /samples từ nút "Tem mẫu" trong Album. Gate OK |
 | SM-025 | 021-chia-se-tem-mxh | letters? / stamp_creator | P1 | — | ⬜ | 5 nền tảng share tem (khác 8 nền tảng link) |
-| SM-026 | 022-thong-bao-push | notifications | P1 | 11/15/10/4 | ⬜ | 3 loại: letter_opened/quota_low/letter_received(reply) (D12) |
+| SM-026 | 022-thong-bao-push | notifications + app shell + backend | P1 | 11/15/10/4 | 🔨 | ĐÃ CÓ: FCM service (permission BR-03, token, foreground/bg/terminated), settings 3 toggle (BR-02 UI, local-only), letter_opened push. BỔ SUNG: quota_low push backend (BR-01.3/AC-04, once-per-cross), tap→route theo kind (BR-04/AC-03: letter_opened→sent, letter_received→reveal, quota_low→settings). **CÒN MỞ**: letter_received push (cần device token store + biết uid — D12), persist toggle lên server (BR-02 mới local). Gate OK |
 | SM-027 | 023-cai-dat-tai-khoan | profile / settings | P2 | — | ⬜ | SettingsScreen mounted ở router |
 | SM-028 | 024-nang-cap-premium | premium | ⏸️ | 0/7/0/0 | ➖ | D17 disable v1 — khóa không CTA mua |
 | SM-029 | 025-quan-ly-premium | premium | ⏸️ | ↑ | ➖ | D17 disable v1 |
@@ -43,6 +43,8 @@ SM-007 (xóa nền AI), SM-033 (Dấu/Rewards), SM-023 (Series), SM-031 (Time Ca
 
 - **SM-022 BR-07 — Chia sẻ tem từ chi tiết**: nút "Gắn lên thư" đã có (điều hướng tới composer), nhưng share-tem-lên-MXH thật (3 mức nội dung, 9:16↔1:1, watermark) là **SM-025** (P1, chưa verify) — làm khi tới SM-025/C8.
 - **SM-025/backend đơn vị quota D11**: backend hiện trừ quota ở `CreateLink`; D11 chốt phải trừ ở cấp TẠO THƯ (nhiều link/1 thư không trừ thêm). Chưa verify/sửa — để khi rà lại letters/gửi.
+- **SM-026 letter_received push + device token store (A11/D4)**: loại push thứ 3 cần bảng `device_tokens` + endpoint register/unregister + `MulticastMessage` + biết uid người nhận (D12: chỉ reply). Khối lớn, làm riêng. Hiện push qua topic (letter_opened) + quota_low đã chạy.
+- **SM-026 persist notification toggle lên server (BR-02)**: settings screen mới toggle local state (`_values`), chưa lưu server nên tắt loại chưa thực sự chặn push phía server. Cần endpoint lưu preference + backend đọc trước khi push.
 
 ## Nhật ký verify
 
@@ -54,4 +56,5 @@ SM-007 (xóa nền AI), SM-033 (Dấu/Rewards), SM-023 (Series), SM-031 (Time Ca
 - 2026-07-17: **SM-000 ✅** — verify auth (60 test). Password<6/username 3-30/link-verify không OTP/lockout 5×15ph đều khớp. Không gap, không đổi code.
 - 2026-07-17: **SM-020 ✅** — bổ sung BR-01 prefill người gửi (full-stack sender_name). Backend commit 967c9e0, flutter commit 2a3a59a.
 - 2026-07-17: **SM-035 ✅** — build từ đầu bộ tem mẫu (backend catalog endpoint + client browse/save). Backend commit 41860e4, flutter commit 5d1708e.
+- 2026-07-17: **SM-026 🔨** — quota_low push (backend 10677b0) + tap→route theo kind (flutter 639412d). letter_received + device token store + persist toggle còn mở (xem trên).
 - Gate cuối phiên: backend build+vet+test(race) sạch · `analyze` sạch · root 38 + packages 525 test · golden 8 · `build apk --debug --flavor dev` OK. (staging flavor build đỏ vì google-services.json thiếu client `.staging` — blocker config có sẵn, không do converge.)
