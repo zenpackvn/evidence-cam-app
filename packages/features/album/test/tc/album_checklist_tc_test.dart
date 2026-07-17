@@ -20,6 +20,9 @@ class _FakeStamps implements StampsRepository {
   Future<Result<Stamp>> save(StampInput input) async =>
       const Err(UnknownFailure());
   @override
+  Future<Result<Stamp>> rename(String id, String name) async =>
+      const Err(NotFoundFailure());
+  @override
   Future<Result<void>> delete(String id) async => const Ok(null);
 }
 

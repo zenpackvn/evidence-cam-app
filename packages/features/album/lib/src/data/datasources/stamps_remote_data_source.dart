@@ -5,8 +5,9 @@ import '../models/stamp_request.dart';
 
 part 'stamps_remote_data_source.g.dart';
 
-/// StampMail stamps REST API. Stamps are immutable (re-editing makes a new
-/// stamp), so there is no update endpoint.
+/// StampMail stamps REST API. The image and recipe are immutable (re-editing
+/// makes a new stamp); the only mutable field is the user-set name (SM-022
+/// BR-08), exposed via [rename].
 @RestApi()
 abstract class StampsRemoteDataSource {
   factory StampsRemoteDataSource(Dio dio, {String baseUrl}) =
@@ -20,6 +21,13 @@ abstract class StampsRemoteDataSource {
 
   @POST('/api/sm/stamps')
   Future<StampDto> create(@Body() StampRequest body);
+
+  @PATCH('/api/sm/stamps/{id}')
+  Future<StampDto> rename(
+    @Path('id') String id,
+    @Body() StampRenameRequest body,
+    @Header('X-Expected-Rev') int? expectedRev,
+  );
 
   @DELETE('/api/sm/stamps/{id}')
   Future<void> delete(

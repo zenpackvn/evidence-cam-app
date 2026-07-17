@@ -24,6 +24,7 @@ class Stamp {
     required this.source,
     required this.createdAt,
     this.thumbUrl,
+    this.name = '',
     this.senderName,
     this.senderUid,
     this.isPendingSync = false,
@@ -32,6 +33,11 @@ class Stamp {
   final String id;
   final String imageUrl;
   final String? thumbUrl;
+
+  /// User-set label (SM-022 BR-08). Empty means "no custom name" — the UI shows
+  /// the creation date instead.
+  final String name;
+
   final StampSource source;
 
   /// Sender's display name / uid, set when [source] is [StampSource.received].

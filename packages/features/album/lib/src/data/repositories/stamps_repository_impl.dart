@@ -22,6 +22,9 @@ class StampsRepositoryImpl implements StampsRepository {
   final StampsSyncController _sync;
   final Uuid _uuid;
 
+  /// SM-022 BR-08: a stamp name is at most 30 characters.
+  static const _maxNameLen = 30;
+
   @override
   Future<Result<List<Stamp>>> list() async {
     final result = await listLocal();
@@ -61,6 +64,28 @@ class StampsRepositoryImpl implements StampsRepository {
     await _local.putNew(entity);
     _sync.sync().fire();
     return Ok(entity.toDomain());
+  }
+
+  @override
+  Future<Result<Stamp>> rename(String id, String name) async {
+    final trimmed = name.trim();
+    if (trimmed.runes.length > _maxNameLen) {
+      return const Err(ValidationFailure('Tên tem tối đa 30 ký tự.'));
+    }
+    final existing = await _local.getByUuid(id);
+    if (existing == null || existing.syncState == SyncState.pendingDelete) {
+      return const Err(NotFoundFailure('Stamp not found.'));
+    }
+    existing.name = trimmed;
+    existing.updatedAt = clock.now().toUtc();
+    // A never-synced pendingCreate stays pendingCreate (the create carries the
+    // name); an already-synced row becomes pendingUpdate to push a rename.
+    if (existing.syncState != SyncState.pendingCreate) {
+      existing.syncState = SyncState.pendingUpdate;
+    }
+    await _local.put(existing);
+    _sync.sync().fire();
+    return Ok(existing.toDomain());
   }
 
   @override

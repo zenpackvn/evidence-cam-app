@@ -9,6 +9,7 @@ class _FakeStampsRepository implements StampsRepository {
   List<Stamp> stamps;
   bool fail;
   final deleted = <String>[];
+  final renamed = <String, String>{};
 
   @override
   Future<Result<List<Stamp>>> list() async =>
@@ -23,6 +24,21 @@ class _FakeStampsRepository implements StampsRepository {
 
   @override
   Future<Result<Stamp>> save(StampInput input) async => const Err(UnknownFailure());
+
+  @override
+  Future<Result<Stamp>> rename(String id, String name) async {
+    renamed[id] = name;
+    final s = stamps.firstWhere((s) => s.id == id);
+    return Ok(
+      Stamp(
+        id: s.id,
+        imageUrl: s.imageUrl,
+        name: name,
+        source: s.source,
+        createdAt: s.createdAt,
+      ),
+    );
+  }
 
   @override
   Future<Result<void>> delete(String id) async {
@@ -73,6 +89,29 @@ void main() {
     await cubit.delete('a');
     expect(cubit.state.stamps.map((s) => s.id), ['b']);
     expect(repo.deleted, ['a']);
+    addTearDown(cubit.close);
+  });
+
+  test('rename updates the stamp name in state (BR-08 / AC-06)', () async {
+    final repo = _FakeStampsRepository(stamps: [_stamp('a'), _stamp('b')]);
+    final cubit = AlbumCubit(repo);
+    await cubit.load();
+    await cubit.rename('a', 'Tem biển');
+    expect(repo.renamed['a'], 'Tem biển');
+    expect(
+      cubit.state.stamps.firstWhere((s) => s.id == 'a').name,
+      'Tem biển',
+    );
+    // The other stamp is untouched.
+    expect(cubit.state.stamps.firstWhere((s) => s.id == 'b').name, '');
+    addTearDown(cubit.close);
+  });
+
+  test('setViewMode toggles grid/list (BR-04)', () async {
+    final cubit = AlbumCubit(_FakeStampsRepository());
+    expect(cubit.state.viewMode, AlbumViewMode.grid);
+    cubit.setViewMode(AlbumViewMode.list);
+    expect(cubit.state.viewMode, AlbumViewMode.list);
     addTearDown(cubit.close);
   });
 }

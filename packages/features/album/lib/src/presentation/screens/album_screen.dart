@@ -9,15 +9,21 @@ import '../bloc/album_state.dart';
 import '../widgets/album_search_bar.dart';
 import '../widgets/album_stats_banner.dart';
 import '../widgets/stamp_tile.dart';
+import 'stamp_detail_screen.dart';
 
-/// SM-022 — "Bộ sưu tập của bạn" (F02-S10): the flat grid of the user's stamps
-/// (created + received) with a search bar and a total-count banner. Tapping a
-/// stamp opens its detail; the empty state (F02-S19) invites creating one.
+/// SM-022 — "Bộ sưu tập của bạn" (F02-S10): the flat list of the user's stamps
+/// (grid or list, BR-04) with a search bar and a total-count banner. Tapping a
+/// stamp opens its detail (rename/delete wired to the cubit here so they run
+/// inside the Album's BlocProvider); the empty state (F02-S19) invites creating
+/// one.
 class AlbumScreen extends StatelessWidget {
-  const AlbumScreen({required this.onOpenStamp, this.onCreate, super.key});
+  const AlbumScreen({this.onCreate, this.onAttachStamp, super.key});
 
-  final ValueChanged<Stamp> onOpenStamp;
   final VoidCallback? onCreate;
+
+  /// Navigates to the letter composer with the given stamp preselected
+  /// (SM-022 BR-07).
+  final ValueChanged<Stamp>? onAttachStamp;
 
   static const _ground = Color(0xFFFCF6EF);
 
@@ -39,11 +45,29 @@ class AlbumScreen extends StatelessWidget {
               }
               return _AlbumBody(
                 state: state,
-                onOpenStamp: onOpenStamp,
+                onOpenStamp: (stamp) => _openDetail(context, stamp),
                 onCreate: onCreate,
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+
+  void _openDetail(BuildContext context, Stamp stamp) {
+    final cubit = context.read<AlbumCubit>();
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => StampDetailScreen(
+          stamp: stamp,
+          onBack: () => Navigator.of(context).maybePop(),
+          onRename: (name) => cubit.rename(stamp.id, name),
+          onDelete: () {
+            cubit.delete(stamp.id);
+            Navigator.of(context).maybePop();
+          },
+          onAttach: onAttachStamp == null ? null : () => onAttachStamp!(stamp),
         ),
       ),
     );
@@ -85,7 +109,16 @@ class _AlbumBody extends StatelessWidget {
                 const SizedBox(height: AppSpacing.md),
                 const AlbumSearchBar(),
                 const SizedBox(height: AppSpacing.md),
-                AlbumStatsBanner(count: state.stamps.length),
+                Row(
+                  children: [
+                    Expanded(child: AlbumStatsBanner(count: state.stamps.length)),
+                    const SizedBox(width: AppSpacing.sm),
+                    _ViewModeToggle(
+                      mode: state.viewMode,
+                      onChanged: context.read<AlbumCubit>().setViewMode,
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -103,25 +136,129 @@ class _AlbumBody extends StatelessWidget {
               AppSpacing.xxl,
               AppSpacing.xxl,
             ),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: AppSpacing.sm,
-                mainAxisSpacing: AppSpacing.sm,
-                childAspectRatio: 3 / 4,
+            sliver: switch (state.viewMode) {
+              AlbumViewMode.grid => SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: AppSpacing.sm,
+                  mainAxisSpacing: AppSpacing.sm,
+                  childAspectRatio: 3 / 4,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) => StampTile(
+                    stamp: state.stamps[i],
+                    onTap: () => onOpenStamp(state.stamps[i]),
+                  ),
+                  childCount: state.stamps.length,
+                ),
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, i) => StampTile(
+              AlbumViewMode.list => SliverList.separated(
+                itemCount: state.stamps.length,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: AppSpacing.sm),
+                itemBuilder: (context, i) => _StampListItem(
                   stamp: state.stamps[i],
                   onTap: () => onOpenStamp(state.stamps[i]),
                 ),
-                childCount: state.stamps.length,
               ),
-            ),
+            },
           ),
       ],
     );
   }
+}
+
+/// SM-022 BR-04: grid / list switch. Two icon buttons; the active one is
+/// highlighted.
+class _ViewModeToggle extends StatelessWidget {
+  const _ViewModeToggle({required this.mode, required this.onChanged});
+
+  final AlbumViewMode mode;
+  final ValueChanged<AlbumViewMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    Widget button(AlbumViewMode m, IconData icon, String tip) {
+      final active = m == mode;
+      return IconButton(
+        tooltip: tip,
+        onPressed: active ? null : () => onChanged(m),
+        icon: Icon(icon),
+        color: active ? scheme.primary : scheme.onSurfaceVariant,
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        button(AlbumViewMode.grid, Icons.grid_view_rounded, 'Xem lưới'),
+        button(AlbumViewMode.list, Icons.view_list_rounded, 'Xem danh sách'),
+      ],
+    );
+  }
+}
+
+/// A single stamp row in list mode: thumbnail + name (or the creation date when
+/// unnamed — BR-08).
+class _StampListItem extends StatelessWidget {
+  const _StampListItem({required this.stamp, required this.onTap});
+
+  final Stamp stamp;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final title = stamp.name.isNotEmpty ? stamp.name : _formatDate(stamp.createdAt);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: SizedBox(
+              width: 56,
+              height: 72,
+              child: AppNetworkImage(
+                imageUrl: stamp.thumbUrl ?? stamp.imageUrl,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Đã lưu ${_formatDate(stamp.createdAt)}',
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/'
+      '${d.month.toString().padLeft(2, '0')}/${d.year}';
 }
 
 class _AlbumEmpty extends StatelessWidget {

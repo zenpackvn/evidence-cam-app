@@ -260,7 +260,7 @@
     },
     {
       "id": "6:6919779428344454717",
-      "lastPropertyId": "12:7206826295526741995",
+      "lastPropertyId": "13:6534338598757263601",
       "name": "StampEntity",
       "properties": [
         {
@@ -325,6 +325,11 @@
           "id": "12:7206826295526741995",
           "name": "syncStateCode",
           "type": 6
+        },
+        {
+          "id": "13:6534338598757263601",
+          "name": "name",
+          "type": 9
         }
       ],
       "relations": []

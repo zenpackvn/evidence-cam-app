@@ -10,6 +10,7 @@ abstract class StampDto with _$StampDto {
     required String id,
     @JsonKey(name: 'image_url') required String imageUrl,
     @JsonKey(name: 'thumb_url') @Default('') String thumbUrl,
+    @Default('') String name,
     required String source,
     @JsonKey(name: 'sender_name') @Default('') String senderName,
     @JsonKey(name: 'sender_uid') @Default('') String senderUid,

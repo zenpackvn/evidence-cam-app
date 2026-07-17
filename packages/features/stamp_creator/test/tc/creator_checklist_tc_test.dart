@@ -55,6 +55,10 @@ class _FakeStamps implements StampsRepository {
   @override
   Future<Result<Stamp>> get(String id) async => const Err(NotFoundFailure());
   @override
+  Future<Result<Stamp>> rename(String id, String name) async =>
+      const Err(UnknownFailure());
+
+  @override
   Future<Result<void>> delete(String id) async => const Ok(null);
 }
 

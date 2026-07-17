@@ -4,14 +4,15 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/stamp.dart';
 
 /// SM-022 detail (F02-S18) — "Chi tiết tem": the stamp shown large on a warm
-/// mat, its meta (source + date), and actions. "Attach to a letter" is wired by
-/// the letters feature; delete is provided by the host via [onDelete].
+/// mat, its name + date, and actions. "Attach to a letter" is wired by the
+/// letters feature; delete and rename are provided by the host.
 class StampDetailScreen extends StatelessWidget {
   const StampDetailScreen({
     required this.stamp,
     required this.onBack,
     this.onAttach,
     this.onDelete,
+    this.onRename,
     super.key,
   });
 
@@ -20,7 +21,13 @@ class StampDetailScreen extends StatelessWidget {
   final VoidCallback? onAttach;
   final VoidCallback? onDelete;
 
+  /// Called with the new name when the user renames the stamp (SM-022 BR-08).
+  final ValueChanged<String>? onRename;
+
   static const _ground = Color(0xFFFAF4EC);
+
+  /// SM-022 BR-08: a stamp name is at most 30 characters.
+  static const _maxNameLen = 30;
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +73,12 @@ class StampDetailScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
-              _MetaCard(stamp: stamp),
+              _MetaCard(
+                stamp: stamp,
+                onRename: onRename == null
+                    ? null
+                    : () => _promptRename(context),
+              ),
               const Spacer(),
               if (onAttach != null)
                 SizedBox(
@@ -105,18 +117,48 @@ class StampDetailScreen extends StatelessWidget {
     );
     if (ok ?? false) onDelete?.call();
   }
+
+  Future<void> _promptRename(BuildContext context) async {
+    final controller = TextEditingController(text: stamp.name);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Đổi tên tem'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: _maxNameLen,
+          decoration: const InputDecoration(hintText: 'Tên con tem'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Huỷ'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Lưu'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name != null) onRename?.call(name);
+  }
 }
 
 class _MetaCard extends StatelessWidget {
-  const _MetaCard({required this.stamp});
+  const _MetaCard({required this.stamp, this.onRename});
 
   final Stamp stamp;
+  final VoidCallback? onRename;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    // SM-022 BR-03: no source label. The default name is the creation date
-    // (BR-08) until per-stamp rename lands.
+    // SM-022 BR-03: no source label. BR-06/BR-08: show the stamp name, or the
+    // creation date when unnamed; tapping the name row renames it.
+    final title = stamp.name.isNotEmpty ? stamp.name : _formatDate(stamp.createdAt);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -127,10 +169,25 @@ class _MetaCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _formatDate(stamp.createdAt),
-            style: context.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+          InkWell(
+            onTap: onRename,
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (onRename != null) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  Icon(Icons.edit_outlined, size: 16, color: scheme.primary),
+                ],
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.xs),

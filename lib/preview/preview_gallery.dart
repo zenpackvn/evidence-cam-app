@@ -199,7 +199,7 @@ List<GallerySection> buildGallerySections() => [
       'F02-S10',
       'Bộ sưu tập của bạn (Album)',
       build: (context) => _shell(
-        AlbumScreen(onOpenStamp: (st) => _pushDetail(context, st)),
+        const AlbumScreen(),
         tab: 2,
       ),
       prepare: (s) => s.emptyStamps = false,
@@ -245,7 +245,7 @@ List<GallerySection> buildGallerySections() => [
       'F02-S19',
       'Album — Empty (Sưu tầm)',
       build: (context) => _shell(
-        AlbumScreen(onOpenStamp: (_) {}),
+        const AlbumScreen(),
         tab: 2,
       ),
       prepare: (s) => s.emptyStamps = true,
@@ -492,17 +492,6 @@ void _pushWizard(BuildContext context, String imagePath) {
         onExit: () => Navigator.of(context).maybePop(),
         onViewAlbum: () => Navigator.of(context).maybePop(),
         onCreateAnother: () => Navigator.of(context).maybePop(),
-      ),
-    ),
-  );
-}
-
-void _pushDetail(BuildContext context, Stamp stamp) {
-  Navigator.of(context).push<void>(
-    MaterialPageRoute(
-      builder: (_) => StampDetailScreen(
-        stamp: stamp,
-        onBack: () => Navigator.of(context).maybePop(),
       ),
     ),
   );

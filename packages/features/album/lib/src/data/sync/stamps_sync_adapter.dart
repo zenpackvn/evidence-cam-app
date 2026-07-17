@@ -6,9 +6,9 @@ import '../datasources/stamps_remote_data_source.dart';
 import '../models/stamp_dto.dart';
 import '../models/stamp_request.dart';
 
-/// Bridges the stamps REST API to the generic sync engine. Stamps are immutable
-/// (re-editing makes a new stamp), so [update] is never reached; the create and
-/// delete paths and the delta pull mirror the collections adapter.
+/// Bridges the stamps REST API to the generic sync engine. The only mutable
+/// field is the user-set name (SM-022 BR-08), so [update] pushes a rename; the
+/// create and delete paths and the delta pull mirror the collections adapter.
 class StampsSyncAdapter implements SyncRemoteAdapter<StampEntity> {
   StampsSyncAdapter(this._remote);
 
@@ -36,11 +36,25 @@ class StampsSyncAdapter implements SyncRemoteAdapter<StampEntity> {
 
   @override
   Future<PushResult<StampEntity>> update(StampEntity row) async {
-    // Stamps are immutable — there is no local update flow, so this is
-    // unreachable. Fail loud (terminal) if the invariant is ever broken.
-    throw const SyncTerminalException(
-      'stamps are immutable; update is not supported',
-    );
+    // The only mutable field is the name (SM-022 BR-08); a local update is a
+    // rename. Mirrors the collections update path.
+    try {
+      final dto = await _remote.rename(
+        row.uuid,
+        StampRenameRequest(name: row.name),
+        _expectedRev(row),
+      );
+      return PushApplied(_record(dto));
+    } on DioException catch (e) {
+      switch (e.response?.statusCode) {
+        case 404:
+          return const PushGone();
+        case 409:
+          return const PushConflict();
+        default:
+          _classify(e);
+      }
+    }
   }
 
   @override
@@ -81,6 +95,7 @@ class StampsSyncAdapter implements SyncRemoteAdapter<StampEntity> {
     id: row.uuid,
     imageUrl: row.imageUrl,
     thumbUrl: row.thumbUrl ?? '',
+    name: row.name,
     source: row.source,
     senderName: row.senderName ?? '',
     senderUid: row.senderUid ?? '',
@@ -101,6 +116,7 @@ class StampsSyncAdapter implements SyncRemoteAdapter<StampEntity> {
     uuid: dto.id,
     imageUrl: dto.imageUrl,
     thumbUrl: dto.thumbUrl.isEmpty ? null : dto.thumbUrl,
+    name: dto.name,
     source: dto.source,
     senderName: dto.senderName.isEmpty ? null : dto.senderName,
     senderUid: dto.senderUid.isEmpty ? null : dto.senderUid,
@@ -115,6 +131,7 @@ class StampsSyncAdapter implements SyncRemoteAdapter<StampEntity> {
     row
       ..imageUrl = dto.imageUrl
       ..thumbUrl = dto.thumbUrl.isEmpty ? null : dto.thumbUrl
+      ..name = dto.name
       ..source = dto.source
       ..senderName = dto.senderName.isEmpty ? null : dto.senderName
       ..senderUid = dto.senderUid.isEmpty ? null : dto.senderUid

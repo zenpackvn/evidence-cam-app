@@ -128,14 +128,10 @@ class AlbumRoute extends GoRouteData with $AlbumRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) => AlbumScreen(
     onCreate: () => const CreateStampRoute().go(context),
-    onOpenStamp: (stamp) => Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => StampDetailScreen(
-          stamp: stamp,
-          onBack: () => Navigator.of(context).maybePop(),
-        ),
-      ),
-    ),
+    // SM-022 BR-07: attach a stamp to a new letter → composer. Placeholder
+    // navigation to the template list; passing the preselected stamp through
+    // the composer is wired when the composer accepts an initial stamp.
+    onAttachStamp: (_) => const LetterComposeRoute().go(context),
   );
 }
 

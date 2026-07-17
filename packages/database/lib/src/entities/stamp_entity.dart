@@ -15,6 +15,7 @@ class StampEntity implements Syncable {
     required this.uuid,
     required this.imageUrl,
     this.thumbUrl,
+    this.name = '',
     required this.source,
     this.senderName,
     this.senderUid,
@@ -40,6 +41,9 @@ class StampEntity implements Syncable {
 
   /// Smaller preview URL, when available.
   String? thumbUrl;
+
+  /// User-set label (SM-022 BR-08). Empty means no custom name.
+  String name;
 
   /// `created` (made in the stamp creator) or `received` (saved from a letter).
   String source;

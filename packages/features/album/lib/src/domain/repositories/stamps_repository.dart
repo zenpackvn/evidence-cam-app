@@ -17,5 +17,9 @@ abstract interface class StampsRepository {
   /// self-created stamp (SM-011 BR-06); received stamps don't count.
   Future<Result<Stamp>> save(StampInput input);
 
+  /// Renames a stamp (SM-022 BR-08). [name] is trimmed; an empty string clears
+  /// the custom name. Commits locally then syncs.
+  Future<Result<Stamp>> rename(String id, String name);
+
   Future<Result<void>> delete(String id);
 }

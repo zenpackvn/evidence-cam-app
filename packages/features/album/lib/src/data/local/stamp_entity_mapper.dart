@@ -9,6 +9,7 @@ extension StampEntityMapper on StampEntity {
     id: uuid,
     imageUrl: imageUrl,
     thumbUrl: thumbUrl == null || thumbUrl!.isEmpty ? null : thumbUrl,
+    name: name,
     source: StampSource.fromWire(source),
     senderName: senderName == null || senderName!.isEmpty ? null : senderName,
     senderUid: senderUid == null || senderUid!.isEmpty ? null : senderUid,
