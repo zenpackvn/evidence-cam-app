@@ -11,10 +11,11 @@ import 'package:shared_contracts/shared_contracts.dart';
 /// imports (SM-004).
 @LazySingleton(as: HomeDataLoader)
 class StampMailHomeDataLoader implements HomeDataLoader {
-  StampMailHomeDataLoader(this._stamps, this._letters);
+  StampMailHomeDataLoader(this._stamps, this._letters, this._quota);
 
   final StampsRepository _stamps;
   final LettersRepository _letters;
+  final QuotaReader _quota;
 
   static const _maxStamps = 6;
   static const _maxLetters = 5;
@@ -42,7 +43,18 @@ class StampMailHomeDataLoader implements HomeDataLoader {
       Err() => const <HomeLetterItem>[],
     };
 
-    return HomeData(recentStamps: stamps, recentLetters: letters);
+    // Quota for the low-quota nudge (SM-030). A read failure degrades to
+    // unlimited so the banner just stays hidden rather than erroring the home.
+    final quota = switch (await _quota()) {
+      Ok(value: final q) => q,
+      Err() => QuotaRemaining.unlimited,
+    };
+
+    return HomeData(
+      recentStamps: stamps,
+      recentLetters: letters,
+      quota: quota,
+    );
   }
 
   HomeLetterItem _toLetterItem(SentLetter sent) {

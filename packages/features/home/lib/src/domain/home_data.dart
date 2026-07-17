@@ -35,12 +35,17 @@ class HomeData {
   const HomeData({
     this.recentStamps = const [],
     this.recentLetters = const [],
+    this.quota = QuotaRemaining.unlimited,
   });
 
   static const empty = HomeData();
 
   final List<StampRef> recentStamps;
   final List<HomeLetterItem> recentLetters;
+
+  /// Remaining monthly quota, for the low-quota nudge (SM-030). Defaults to
+  /// unlimited so the banner stays hidden until real data loads / for Premium.
+  final QuotaRemaining quota;
 
   /// First-run state: nothing created yet → show the hero invite (BR-02,
   /// F01-S15).

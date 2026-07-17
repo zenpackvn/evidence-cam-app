@@ -88,13 +88,21 @@ class OnboardingRoute extends GoRouteData with $OnboardingRoute {
   const OnboardingRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) => OnboardingScreen(
-    onDone: () {
-      GetIt.instance<OnboardingStore>().markSeen().then((_) {
-        if (context.mounted) const HomeRoute().go(context);
-      });
-    },
-  );
+  Widget build(BuildContext context, GoRouterState state) {
+    final store = GetIt.instance<OnboardingStore>();
+    return OnboardingScreen(
+      // SM-003 §5: resume where the user left off, persisting each step.
+      initialStep: store.lastStep,
+      onStepChanged: store.saveStep,
+      onDone: () {
+        // SM-003 BR-04: finishing onboarding leads into creating the first
+        // stamp (SM-005), not straight to Home.
+        store.markSeen().then((_) {
+          if (context.mounted) const CreateStampRoute().go(context);
+        });
+      },
+    );
+  }
 }
 
 @TypedGoRoute<CreateStampRoute>(path: '/create', name: 'create')

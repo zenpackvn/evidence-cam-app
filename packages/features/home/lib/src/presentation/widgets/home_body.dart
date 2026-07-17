@@ -118,6 +118,16 @@ class _LoadedHome extends StatelessWidget {
       children: [
         _Header(name: name),
         const SizedBox(height: 14),
+        // SM-030: low-quota nudge — hidden unless the Free user is under the
+        // 20% threshold; QuotaNudgeBanner handles the visibility itself.
+        QuotaNudgeBanner(
+          quota: data.quota,
+          labels: QuotaNudgeLabels(
+            stampRemaining: (n) => 'Còn $n tem trong tháng này',
+            letterRemaining: (n) => 'Còn $n thư trong tháng này',
+            offlineMessage: 'Không có kết nối. Vui lòng thử lại khi có mạng.',
+          ),
+        ),
         _CreateCard(onCreate: onCreateStamp),
         const SizedBox(height: AppSpacing.lg),
         _SectionHeader(title: 'Tem gần đây', onSeeAll: onOpenAlbum),
