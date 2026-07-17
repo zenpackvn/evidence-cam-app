@@ -60,14 +60,16 @@ class StampMailHomeDataLoader implements HomeDataLoader {
     );
   }
 
+  // Labels for the SM-016 BR-04 share platforms (wire values from SharePlatform).
   String _platformLabel(String platform) => switch (platform) {
     'messenger' => 'Messenger',
-    'zalo' => 'Zalo',
     'instagram' => 'Instagram',
-    'facebook' => 'Facebook',
-    'telegram' => 'Telegram',
     'tiktok' => 'TikTok',
-    'x' => 'X',
+    'threads' => 'Threads',
+    'zalo' => 'Zalo',
+    'whatsapp' => 'WhatsApp',
+    'imessage' => 'iMessage',
+    'twitter' => 'X',
     '' => 'liên kết',
     _ => platform,
   };
