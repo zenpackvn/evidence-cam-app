@@ -26,7 +26,7 @@ Legend status: ⬜ pending · 🔍 verifying · 🔨 building · ✅ done (gate 
 | SM-019 | 017-mo-thu-animation | letter_inbox | P0 | ↑ | ✅ | Animation 4 bước khớp BR-01. Nút chỉ còn Trả lời (BR-03). Gate OK |
 | SM-020 | 018-tra-loi-thu | letter_inbox / letters | P1 | ↑ | ⬜ | |
 | SM-021 | 019-hop-thu-da-gui | letters | P2 | ↑ | ⬜ | Recreate link cho thư tồn tại = miễn quota (D11) |
-| SM-022 | 020-album-suu-tap | album | P0 | 7/28/6/2 | 🔨 | ĐÃ SỬA BR-01/03 (gỡ nhãn "Nhận"/"Nhận từ"), BR-02 danh sách phẳng, BR-05 sort, BR-09 xóa-xác-nhận OK. **GAP CÒN MỞ**: BR-04 toggle lưới/danh sách (chỉ có grid), BR-06/08 tên tem + đổi tên ≤30 (Stamp entity + backend DTO thiếu field `name` → gap full-stack), BR-07 share tem (dẫn SM-025). Xem note dưới |
+| SM-022 | 020-album-suu-tap | album | P0 | 7/28/6/2 | ✅ | BR-01/02/03/05/09 OK. **ĐÃ BỔ SUNG full-stack**: BR-08 tên tem + đổi tên ≤30 (field `name` xuyên backend domain/SQLite/PATCH + client entity/DTO/sync-adapter/repo/dialog), BR-06 hiển thị tên, BR-04 toggle lưới/danh sách, BR-07 attach-to-letter. Gate: backend+analyze+test+build OK. Còn lại chỉ BR-07 điều hướng preselect stamp vào composer (khi composer nhận initial stamp — thuộc C3/letters) |
 | SM-035 | 029-bo-tem-mau | stamp_creator? | P1 | — | ⬜ | Tem mẫu — tất cả free (SM-033 gỡ) |
 | SM-025 | 021-chia-se-tem-mxh | letters? / stamp_creator | P1 | — | ⬜ | 5 nền tảng share tem (khác 8 nền tảng link) |
 | SM-026 | 022-thong-bao-push | notifications | P1 | 11/15/10/4 | ⬜ | 3 loại: letter_opened/quota_low/letter_received(reply) (D12) |
@@ -41,14 +41,14 @@ SM-007 (xóa nền AI), SM-033 (Dấu/Rewards), SM-023 (Series), SM-031 (Time Ca
 
 ## GAP full-stack còn mở — cần quyết định scope (không kẹt, là công việc lớn)
 
-- **SM-022 BR-06/BR-08 — Tên tem + đổi tên (≤30 ký tự)**: `Stamp` entity (client) và stamp DTO (backend) đều KHÔNG có field `name`; backend stamp table chưa lưu name; chưa có PATCH `/api/sm/stamps/{id}`. Cần: thêm `name` xuyên stamp domain client + DTO + migration backend + endpoint rename + UI đổi tên trong detail. Khối full-stack, làm ở phiên sau.
-- **SM-022 BR-04 — Toggle chế độ lưới/danh sách**: album_screen mới chỉ render grid (crossAxisCount 3). Cần thêm list mode + nút chuyển. UI-only, làm được không cần backend.
-- **SM-022 BR-07 — Chia sẻ tem từ chi tiết**: detail screen chưa có nút share (dẫn SM-025). Phụ thuộc SM-025 (P1, chưa verify).
+- **SM-022 BR-07 — Chia sẻ tem từ chi tiết**: nút "Gắn lên thư" đã có (điều hướng tới composer), nhưng share-tem-lên-MXH thật (3 mức nội dung, 9:16↔1:1, watermark) là **SM-025** (P1, chưa verify) — làm khi tới SM-025/C8.
+- **SM-025/backend đơn vị quota D11**: backend hiện trừ quota ở `CreateLink`; D11 chốt phải trừ ở cấp TẠO THƯ (nhiều link/1 thư không trừ thêm). Chưa verify/sửa — để khi rà lại letters/gửi.
 
 ## Nhật ký verify
 
 - 2026-07-17: Khởi tạo. Baseline analyze sạch, backend build sạch (511 test).
 - 2026-07-17: **SM-016 ✅** — sửa drift 8 nền tảng share cho khớp AC-07. Commit 7014c6f.
 - 2026-07-17: **SM-017/019 ✅** — gỡ save-stamp (vi phạm BR-05/BR-03) xuyên stack + gỡ dep feature_album. Commit 4a44ae7.
-- 2026-07-17: **SM-022 🔨** — gỡ nhãn nguồn (BR-01/03). Commit b15da2a. Còn gap BR-04/06/07/08 (xem trên).
-- Gate cuối phiên: `analyze` sạch · root 38 + packages 515 test · golden 8 · `build apk --debug --flavor dev` OK. (staging flavor build đỏ vì google-services.json thiếu client `.staging` — blocker config có sẵn, không do converge.)
+- 2026-07-17: **SM-022 🔨** — gỡ nhãn nguồn (BR-01/03). Commit b15da2a.
+- 2026-07-17: **SM-022 ✅** — bổ sung full-stack rename (BR-08) + grid/list (BR-04) + tên tem (BR-06) + attach (BR-07). Backend commit 283dcfd, flutter commit 145657e. API contract cập nhật PATCH `/api/sm/stamps/{id}` + field `name`.
+- Gate cuối phiên: backend build+vet+test(race) sạch · `analyze` sạch · root 38 + packages 517 test · golden 8 · `build apk --debug --flavor dev` OK. (staging flavor build đỏ vì google-services.json thiếu client `.staging` — blocker config có sẵn, không do converge.)
