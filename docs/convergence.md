@@ -22,8 +22,8 @@ Legend status: ⬜ pending · 🔍 verifying · 🔨 building · ✅ done (gate 
 | SM-014 | 012-dinh-tem-len-thu | letters | P2 | ↑ | ⬜ | |
 | SM-015 | 013-xem-truoc-thu | letters | P2 | ↑ | ⬜ | |
 | SM-016 | 014-gui-thu-mxh | letters | P0 | ↑ | ✅ | 8 nền tảng khớp AC-07 (đã sửa drift enum). Backend: single-use/expiry/quota/attribution test pass. Gate: analyze+test+build apk(dev) OK |
-| SM-017 | 015-nhan-thu-qua-link | letter_inbox / web_letter | P0 | 5/7/2/2 | 🔍 | Web viewer = Cloudflare Pages (D3), xem web_letter/ |
-| SM-019 | 017-mo-thu-animation | letter_inbox | P0 | ↑ | 🔍 | Animation CODE thuần bám keyframe .pen (D2) |
+| SM-017 | 015-nhan-thu-qua-link | letter_inbox / web_letter | P0 | 5/7/2/2 | ✅ | Đã GỠ save-stamp (vi phạm BR-05). App 4-beat reveal + alreadyOpened/expired/invalid. Backend single-use/expiry test pass. Gate OK |
+| SM-019 | 017-mo-thu-animation | letter_inbox | P0 | ↑ | ✅ | Animation 4 bước khớp BR-01. Nút chỉ còn Trả lời (BR-03). Gate OK |
 | SM-020 | 018-tra-loi-thu | letter_inbox / letters | P1 | ↑ | ⬜ | |
 | SM-021 | 019-hop-thu-da-gui | letters | P2 | ↑ | ⬜ | Recreate link cho thư tồn tại = miễn quota (D11) |
 | SM-022 | 020-album-suu-tap | album | P0 | 7/28/6/2 | 🔍 | data dày (28), verify presentation đủ chưa |

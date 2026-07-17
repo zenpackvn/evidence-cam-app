@@ -115,7 +115,8 @@ class _MetaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final received = stamp.source == StampSource.received;
+    // SM-022 BR-03: no source label. The default name is the creation date
+    // (BR-08) until per-stamp rename lands.
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -127,9 +128,7 @@ class _MetaCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            received
-                ? 'Nhận từ ${stamp.senderName ?? 'một người bạn'}'
-                : 'Bạn tự tạo',
+            _formatDate(stamp.createdAt),
             style: context.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),

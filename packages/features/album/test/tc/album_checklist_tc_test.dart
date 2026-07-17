@@ -32,14 +32,13 @@ Stamp _stamp(String id, {StampSource source = StampSource.created}) => Stamp(
 
 void main() {
   group('AlbumCubit (TC-20-xxx)', () {
-    test('TC-20-001: tải album thành công — tem tự tạo + được tặng', () async {
+    test('TC-20-001: tải album thành công — một danh sách phẳng các tem',
+        () async {
+      // SM-022 BR-01: the Album holds the user's own stamps + saved sample
+      // stamps in one flat list. Received stamps are never in the Album
+      // (SM-017 BR-05), so nothing here carries StampSource.received.
       final cubit = AlbumCubit(
-        _FakeStamps(
-          stamps: [
-            _stamp('s1'),
-            _stamp('s2', source: StampSource.received),
-          ],
-        ),
+        _FakeStamps(stamps: [_stamp('s1'), _stamp('s2')]),
       );
       await cubit.load();
 
@@ -47,8 +46,9 @@ void main() {
       expect(cubit.state.error, isFalse);
       expect(cubit.state.stamps, hasLength(2));
       expect(
-        cubit.state.stamps.map((s) => s.source).toSet(),
-        {StampSource.created, StampSource.received},
+        cubit.state.stamps.every((s) => s.source != StampSource.received),
+        isTrue,
+        reason: 'received stamps must never appear in the Album (BR-01)',
       );
     });
 
