@@ -27,7 +27,7 @@ Legend status: ⬜ pending · 🔍 verifying · 🔨 building · ✅ done (gate 
 | SM-020 | 018-tra-loi-thu | letter_inbox / letters | P1 | ↑ | ✅ | Nút Trả lời khả dụng (BR-03/05 gửi qua link). BỔ SUNG BR-01 prefill người gửi: backend publicLetter trả sender_name (resolve username), client mang qua ReceivedLetter→onReply→template list hiển thị "Trả lời — Gửi tới [tên]". BR-04 thư độc lập/không threading giữ nguyên. Gate OK |
 | SM-021 | 019-hop-thu-da-gui | letters | P2 | ↑ | ⬜ | Recreate link cho thư tồn tại = miễn quota (D11) |
 | SM-022 | 020-album-suu-tap | album | P0 | 7/28/6/2 | ✅ | BR-01/02/03/05/09 OK. **ĐÃ BỔ SUNG full-stack**: BR-08 tên tem + đổi tên ≤30 (field `name` xuyên backend domain/SQLite/PATCH + client entity/DTO/sync-adapter/repo/dialog), BR-06 hiển thị tên, BR-04 toggle lưới/danh sách, BR-07 attach-to-letter. Gate: backend+analyze+test+build OK. Còn lại chỉ BR-07 điều hướng preselect stamp vào composer (khi composer nhận initial stamp — thuộc C3/letters) |
-| SM-035 | 029-bo-tem-mau | stamp_creator? | P1 | — | ⬜ | Tem mẫu — tất cả free (SM-033 gỡ) |
+| SM-035 | 029-bo-tem-mau | album (sample_stamps) | P1 | — | ✅ | BUILD TỪ ĐẦU (chưa có gì). Backend: domain SampleStamp + themes, SampleCatalog in-memory, GET /api/sm/sample-stamps[?theme]. Client: entity/DTO/remote/repo/cubit + browse screen (theme chips, grid Mới/saved badge, detail pinch-zoom + Lưu). Dedupe qua StampInput.id (BR-03/AC-05), free (BR-05). Route /samples từ nút "Tem mẫu" trong Album. Gate OK |
 | SM-025 | 021-chia-se-tem-mxh | letters? / stamp_creator | P1 | — | ⬜ | 5 nền tảng share tem (khác 8 nền tảng link) |
 | SM-026 | 022-thong-bao-push | notifications | P1 | 11/15/10/4 | ⬜ | 3 loại: letter_opened/quota_low/letter_received(reply) (D12) |
 | SM-027 | 023-cai-dat-tai-khoan | profile / settings | P2 | — | ⬜ | SettingsScreen mounted ở router |
@@ -53,4 +53,5 @@ SM-007 (xóa nền AI), SM-033 (Dấu/Rewards), SM-023 (Series), SM-031 (Time Ca
 - 2026-07-17: **SM-022 ✅** — bổ sung full-stack rename (BR-08) + grid/list (BR-04) + tên tem (BR-06) + attach (BR-07). Backend commit 283dcfd, flutter commit 145657e. API contract cập nhật PATCH `/api/sm/stamps/{id}` + field `name`.
 - 2026-07-17: **SM-000 ✅** — verify auth (60 test). Password<6/username 3-30/link-verify không OTP/lockout 5×15ph đều khớp. Không gap, không đổi code.
 - 2026-07-17: **SM-020 ✅** — bổ sung BR-01 prefill người gửi (full-stack sender_name). Backend commit 967c9e0, flutter commit 2a3a59a.
-- Gate cuối phiên: backend build+vet+test(race) sạch · `analyze` sạch · root 38 + packages 521 test · golden 8 · `build apk --debug --flavor dev` OK. (staging flavor build đỏ vì google-services.json thiếu client `.staging` — blocker config có sẵn, không do converge.)
+- 2026-07-17: **SM-035 ✅** — build từ đầu bộ tem mẫu (backend catalog endpoint + client browse/save). Backend commit 41860e4, flutter commit 5d1708e.
+- Gate cuối phiên: backend build+vet+test(race) sạch · `analyze` sạch · root 38 + packages 525 test · golden 8 · `build apk --debug --flavor dev` OK. (staging flavor build đỏ vì google-services.json thiếu client `.staging` — blocker config có sẵn, không do converge.)
