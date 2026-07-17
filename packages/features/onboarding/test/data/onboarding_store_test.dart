@@ -26,4 +26,21 @@ void main() {
     final store2 = OnboardingStore(prefs);
     expect(store2.hasSeenOnboarding, isTrue);
   });
+
+  test('lastStep is 0 when nothing saved', () {
+    expect(store.lastStep, 0);
+  });
+
+  test('saveStep persists the resume position across instances', () async {
+    await store.saveStep(2);
+    final store2 = OnboardingStore(prefs);
+    expect(store2.lastStep, 2);
+  });
+
+  test('markSeen clears the saved resume position', () async {
+    await store.saveStep(2);
+    await store.markSeen();
+    expect(store.lastStep, 0);
+    expect(store.hasSeenOnboarding, isTrue);
+  });
 }

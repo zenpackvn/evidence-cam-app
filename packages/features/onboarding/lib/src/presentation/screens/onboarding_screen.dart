@@ -11,7 +11,13 @@ import '../widgets/onboarding_step.dart';
 /// or skips, and the app shell decides where to go next (and persists the
 /// "seen" flag via `OnboardingStore`).
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({required this.onDone, this.steps, super.key});
+  const OnboardingScreen({
+    required this.onDone,
+    this.steps,
+    this.initialStep = 0,
+    this.onStepChanged,
+    super.key,
+  });
 
   /// Invoked when the user skips or completes the flow.
   final VoidCallback onDone;
@@ -19,13 +25,30 @@ class OnboardingScreen extends StatefulWidget {
   /// Override the default copy (primarily for tests).
   final List<OnboardingStepData>? steps;
 
+  /// The page to open on (0-based). Lets the app shell resume an interrupted
+  /// flow at the last-viewed slide (SM-003 §5); defaults to the first slide.
+  final int initialStep;
+
+  /// Invoked whenever the visible page changes, so the app shell can persist the
+  /// resume position. Not called for the initial page.
+  final ValueChanged<int>? onStepChanged;
+
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  final _controller = PageController();
-  int _page = 0;
+  late final PageController _controller;
+  late int _page;
+
+  @override
+  void initState() {
+    super.initState();
+    // Clamp so a stale/out-of-range saved step can never open on a missing page.
+    final count = widget.steps?.length ?? 3;
+    _page = widget.initialStep.clamp(0, count - 1);
+    _controller = PageController(initialPage: _page);
+  }
 
   List<OnboardingStepData> _steps(AppLocalizations l10n) =>
       widget.steps ??
@@ -149,7 +172,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 Expanded(
                   child: PageView.builder(
                     controller: _controller,
-                    onPageChanged: (i) => setState(() => _page = i),
+                    onPageChanged: (i) {
+                      setState(() => _page = i);
+                      widget.onStepChanged?.call(i);
+                    },
                     itemCount: steps.length,
                     itemBuilder: (_, i) => OnboardingStep(data: steps[i]),
                   ),

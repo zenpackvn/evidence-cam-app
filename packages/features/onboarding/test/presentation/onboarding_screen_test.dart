@@ -72,4 +72,39 @@ void main() {
     await tester.tap(find.text('Get started'));
     expect(called, isTrue);
   });
+
+  testWidgets('resumes at initialStep (SM-003 mid-flow exit)', (tester) async {
+    await _pump(
+      tester,
+      OnboardingScreen(onDone: () {}, steps: _steps, initialStep: 1),
+    );
+    // Opens directly on the second (last) page, so the CTA is "Get started".
+    expect(find.text('Step 2'), findsOneWidget);
+    expect(find.text('Get started'), findsOneWidget);
+  });
+
+  testWidgets('clamps an out-of-range initialStep to the last page', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      OnboardingScreen(onDone: () {}, steps: _steps, initialStep: 99),
+    );
+    expect(find.text('Step 2'), findsOneWidget);
+  });
+
+  testWidgets('onStepChanged fires when the page advances', (tester) async {
+    final seen = <int>[];
+    await _pump(
+      tester,
+      OnboardingScreen(
+        onDone: () {},
+        steps: _steps,
+        onStepChanged: seen.add,
+      ),
+    );
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(seen, contains(1));
+  });
 }
