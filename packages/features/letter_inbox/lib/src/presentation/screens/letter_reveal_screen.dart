@@ -28,9 +28,11 @@ class LetterRevealScreen extends StatelessWidget {
   final String? viewerUid;
   final String? senderName;
 
-  /// Called with the original sender's name to prefill the reply recipient
-  /// (SM-020 BR-01).
-  final ValueChanged<String> onReply;
+  /// Called to start a reply with the original sender's name (prefill the
+  /// recipient, SM-020 BR-01) and uid (address the "letter received" push,
+  /// SM-026 D12).
+  final void Function({required String senderName, required String senderUid})
+  onReply;
 
   static const _ground = Color(0xFFFBF4EC);
 
@@ -60,13 +62,15 @@ class LetterRevealScreen extends StatelessWidget {
                 RevealPhase.opened => OpenedLetterView(
                   letter: state.letter!,
                   senderName: state.senderName,
-                  // SM-020 BR-01: reply prefills the original sender. Prefer the
-                  // name the server resolved on the letter, then any deferred-
-                  // link name.
+                  // SM-020 BR-01 / SM-026 D12: reply prefills the original
+                  // sender and addresses the push back to them. Prefer the name
+                  // the server resolved on the letter, then any deferred-link
+                  // name.
                   onReply: () => onReply(
-                    state.letter!.senderName.isNotEmpty
+                    senderName: state.letter!.senderName.isNotEmpty
                         ? state.letter!.senderName
                         : (state.senderName ?? ''),
+                    senderUid: state.letter!.senderUid,
                   ),
                 ),
                 RevealPhase.alreadyOpened => const _Terminal(

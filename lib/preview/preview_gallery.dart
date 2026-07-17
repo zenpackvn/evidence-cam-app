@@ -65,7 +65,7 @@ Widget _shell(Widget child, {int tab = 0}) => Scaffold(
 );
 
 void _noop() {}
-void _noopReply(String _) {}
+void _noopReply({required String senderName, required String senderUid}) {}
 
 List<GallerySection> buildGallerySections() => [
   GallerySection('Flow 1 · Khởi đầu', [

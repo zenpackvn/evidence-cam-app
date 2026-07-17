@@ -10,6 +10,7 @@ class ReceivedLetter {
     required this.createdAt,
     this.templateId = 'classic',
     this.senderName = '',
+    this.senderUid = '',
   });
 
   final String id;
@@ -25,6 +26,10 @@ class ReceivedLetter {
   /// The original sender's display name, used to prefill the recipient when the
   /// reader replies (SM-020 BR-01). Empty when the server couldn't resolve it.
   final String senderName;
+
+  /// The original sender's uid, used to address a reply back to them for the
+  /// "letter received" push (SM-026 D12). Empty for an anonymous/legacy letter.
+  final String senderUid;
 }
 
 /// The outcome of opening a link (SM-017). A link is one-time and 7-day, so a

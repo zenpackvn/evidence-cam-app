@@ -4,14 +4,26 @@ import 'package:flutter/material.dart';
 import '../widgets/profile_sub_scaffold.dart';
 
 /// F07-S12 — notification preferences: the permission status card, per-topic
-/// toggle groups, and the deep-link info banners.
-///
-// ponytail: toggles are local state until notification preferences persist
-// (A11 device tokens + a prefs endpoint).
+/// toggle groups, and the deep-link info banners. Each toggle maps to one
+/// backend notification kind; [onKindChanged] lets the host subscribe/
+/// unsubscribe the FCM topic and persist the choice (SM-026 BR-02).
 class NotificationSettingsScreen extends StatefulWidget {
-  const NotificationSettingsScreen({this.permissionGranted = true, super.key});
+  const NotificationSettingsScreen({
+    this.permissionGranted = true,
+    this.initialValues,
+    this.onKindChanged,
+    super.key,
+  });
 
   final bool permissionGranted;
+
+  /// Starting on/off state per toggle id (new-letter / letter-read / quota).
+  /// Defaults to all-on when null.
+  final Map<String, bool>? initialValues;
+
+  /// Called when a toggle flips, with the toggle id and its new value. The host
+  /// maps the id to a backend kind, (un)subscribes the topic, and persists it.
+  final void Function(String id, {required bool value})? onKindChanged;
 
   @override
   State<NotificationSettingsScreen> createState() =>
@@ -20,10 +32,11 @@ class NotificationSettingsScreen extends StatefulWidget {
 
 class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
-  final _values = <String, bool>{
+  late final Map<String, bool> _values = {
     'new-letter': true,
     'letter-read': true,
     'quota': true,
+    ...?widget.initialValues,
   };
 
   @override
@@ -124,8 +137,10 @@ class _NotificationSettingsScreenState
                 ),
               ],
               values: _values,
-              onChanged: (id, {required value}) =>
-                  setState(() => _values[id] = value),
+              onChanged: (id, {required value}) {
+                setState(() => _values[id] = value);
+                widget.onKindChanged?.call(id, value: value);
+              },
             ),
             const SizedBox(height: 10),
             // Deep-link info banner.

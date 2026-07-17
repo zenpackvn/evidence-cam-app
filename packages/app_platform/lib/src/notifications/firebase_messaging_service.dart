@@ -68,6 +68,30 @@ class FirebaseMessagingService {
 
   Future<String?> getToken() => _messaging.getToken();
 
+  /// The three SM-026 notification kinds, matching the backend topic suffixes.
+  static const notificationKinds = ['letter_opened', 'letter_received', 'quota_low'];
+
+  /// Subscribes/unsubscribes the device to a per-user-per-kind topic
+  /// (`user_<uid>_<kind>`), so a type toggled off in settings stops delivering
+  /// (SM-026 BR-02). Topic names must match the backend's `userKindTopic`.
+  Future<void> setKindEnabled({
+    required String uid,
+    required String kind,
+    required bool enabled,
+  }) async {
+    if (kIsWeb) return;
+    final topic = 'user_${_sanitizeTopic(uid)}_${_sanitizeTopic(kind)}';
+    if (enabled) {
+      await _messaging.subscribeToTopic(topic);
+    } else {
+      await _messaging.unsubscribeFromTopic(topic);
+    }
+  }
+
+  /// Mirrors the backend's topic sanitizer: FCM topics allow only
+  /// `[a-zA-Z0-9-_.~%]`.
+  String _sanitizeTopic(String s) => s.replaceAll(RegExp(r'[^a-zA-Z0-9\-_.~%]'), '_');
+
   Future<void> _saveInitialToken() async {
     // On Apple platforms, `getToken()` throws `apns-token-not-set` until the
     // device has received its APNs token from Apple, which happens

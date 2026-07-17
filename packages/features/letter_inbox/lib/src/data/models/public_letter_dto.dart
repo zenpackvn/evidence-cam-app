@@ -25,6 +25,7 @@ abstract class PublicLetterDto with _$PublicLetterDto {
     required String id,
     @JsonKey(name: 'content_json') @Default('') String contentJson,
     @JsonKey(name: 'sender_name') @Default('') String senderName,
+    @JsonKey(name: 'sender_uid') @Default('') String senderUid,
     @JsonKey(name: 'created_at') required DateTime createdAt,
     @Default([]) List<PublicStampDto> stamps,
   }) = _PublicLetterDto;

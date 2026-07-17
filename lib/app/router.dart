@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_ui/shared_ui.dart';
+import 'package:storage/storage.dart';
 
 import 'widgets/app_shell.dart';
 
@@ -152,6 +153,44 @@ Future<void> _shareStampImage(Uint8List png) async {
   await SharePlus.instance.share(ShareParams(files: [XFile(path)]));
 }
 
+// SM-026 BR-02: map a settings toggle id to its backend notification kind.
+const _notificationKinds = <String, String>{
+  'new-letter': 'letter_received',
+  'letter-read': 'letter_opened',
+  'quota': 'quota_low',
+};
+
+/// The prefs key for a notification kind's on/off state. Keyed by kind (not the
+/// UI toggle id) so the settings screen and the sign-in subscription sync read
+/// the same value (SM-026 BR-02).
+String _notifPrefKey(String kind) => 'notif_enabled_kind_$kind';
+
+/// Reads persisted notification toggle state (defaults on) for the settings
+/// screen (SM-026 BR-02).
+Map<String, bool> _notificationPrefs() {
+  if (!GetIt.instance.isRegistered<SharedPreferences>()) return const {};
+  final prefs = GetIt.instance<SharedPreferences>();
+  return {
+    for (final entry in _notificationKinds.entries)
+      entry.key: prefs.getBool(_notifPrefKey(entry.value)) ?? true,
+  };
+}
+
+/// Persists a toggle and (un)subscribes its FCM topic (SM-026 BR-02).
+void _setNotificationKind(String uid, String id, {required bool value}) {
+  final kind = _notificationKinds[id];
+  if (kind == null) return;
+  if (GetIt.instance.isRegistered<SharedPreferences>()) {
+    unawaited(GetIt.instance<SharedPreferences>().setBool(_notifPrefKey(kind), value));
+  }
+  if (GetIt.instance.isRegistered<FirebaseMessagingService>()) {
+    unawaited(
+      GetIt.instance<FirebaseMessagingService>()
+          .setKindEnabled(uid: uid, kind: kind, enabled: value),
+    );
+  }
+}
+
 /// SM-035 — the curated sample-stamp catalog (a separate browse area, BR-01).
 @TypedGoRoute<SampleStampsRoute>(path: '/samples', name: 'samples')
 class SampleStampsRoute extends GoRouteData with $SampleStampsRoute {
@@ -164,28 +203,33 @@ class SampleStampsRoute extends GoRouteData with $SampleStampsRoute {
 
 @TypedGoRoute<LetterComposeRoute>(path: '/compose', name: 'compose')
 class LetterComposeRoute extends GoRouteData with $LetterComposeRoute {
-  const LetterComposeRoute({this.replyTo});
+  const LetterComposeRoute({this.replyTo, this.replyToUid});
 
   /// The original sender's name when this is a reply (SM-020 BR-01); a query
   /// param so a deep link / reply can carry it.
   final String? replyTo;
 
+  /// The original sender's uid when replying (SM-026 D12), threaded to the
+  /// created letter so the server pushes "letter received".
+  final String? replyToUid;
+
   @override
   Widget build(BuildContext context, GoRouterState state) => TemplateListScreen(
     // SM-020 BR-01: when replying, the template picker shows the original
-    // sender as recipient. The send flow itself is unchanged (a fresh link,
-    // BR-03/BR-04) so the composer needs no recipient plumbing.
+    // sender as recipient.
     replyToName: replyTo,
-    onPick: (template) => _openComposer(context, template.id),
+    onPick: (template) =>
+        _openComposer(context, template.id, replyToUid: replyToUid),
   );
 }
 
-void _openComposer(BuildContext context, String templateId) {
+void _openComposer(BuildContext context, String templateId, {String? replyToUid}) {
   final rootContext = context;
   Navigator.of(context).push<void>(
     MaterialPageRoute(
       builder: (_) => ComposerFlow(
         templateId: templateId,
+        replyToUid: replyToUid,
         letters: GetIt.instance<LettersRepository>(),
         stamps: GetIt.instance<StampsRepository>(),
         // ponytail: link base is a placeholder until the web viewer is deployed
@@ -232,11 +276,13 @@ class LetterRevealRoute extends GoRouteData with $LetterRevealRoute {
     // chính chủ mở lại (link 1 lần với người khác — SM-017 BR-03/BR-10).
     viewerUid: SessionScope.of(context).currentUser?.id,
     // SM-020 BR-01: reply opens the composer prefilled with the original
-    // sender as recipient. (The send itself still goes out as a fresh link —
-    // BR-03/BR-04, no threading.)
-    onReply: (senderName) =>
-        LetterComposeRoute(replyTo: senderName.isEmpty ? null : senderName)
-            .go(context),
+    // sender as recipient; SM-026 D12: carry their uid so the sent reply pushes
+    // "letter received" to them. (The send still goes out as a fresh link —
+    // BR-03/BR-04.)
+    onReply: ({required senderName, required senderUid}) => LetterComposeRoute(
+      replyTo: senderName.isEmpty ? null : senderName,
+      replyToUid: senderUid.isEmpty ? null : senderUid,
+    ).go(context),
   );
 }
 
@@ -270,11 +316,20 @@ class SettingsRoute extends GoRouteData with $SettingsRoute {
         builder: (_) => LanguageScreen(selected: 'vi', onSelect: (_) {}),
       ),
     ),
-    onNotifications: () => Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => const NotificationSettingsScreen(),
-      ),
-    ),
+    onNotifications: () {
+      final uid = SessionScope.of(context).currentUser?.id;
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => NotificationSettingsScreen(
+            initialValues: _notificationPrefs(),
+            onKindChanged: uid == null
+                ? null
+                : (id, {required value}) =>
+                    _setNotificationKind(uid, id, value: value),
+          ),
+        ),
+      );
+    },
     onDeleteAccount: () => Navigator.of(context).push<void>(
       MaterialPageRoute(
         // ponytail: confirm routes into the existing DeleteAccountCubit flow

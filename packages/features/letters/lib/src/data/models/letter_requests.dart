@@ -11,6 +11,7 @@ abstract class CreateLetterRequest with _$CreateLetterRequest {
     String? id,
     @JsonKey(name: 'content_json') required String contentJson,
     @JsonKey(name: 'stamp_ids') @Default([]) List<String> stampIds,
+    @JsonKey(name: 'reply_to_uid') @Default('') String replyToUid,
   }) = _CreateLetterRequest;
 
   factory CreateLetterRequest.fromJson(Map<String, dynamic> json) =>

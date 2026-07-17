@@ -14,6 +14,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_contracts/shared_contracts.dart';
 import 'package:shared_ui/shared_ui.dart';
+import 'package:storage/storage.dart';
 import 'package:theme/theme.dart';
 
 import '../core/extensions/build_context_extensions.dart';
@@ -109,7 +110,25 @@ class _AppState extends State<App> {
     };
   }
 
+  /// SM-026 BR-02: on sign-in, subscribe the device to each enabled
+  /// notification kind's topic (defaults on), so pushes start arriving. Toggling
+  /// in settings later unsubscribes individual kinds.
+  void _syncNotificationSubscriptions(String uid) {
+    if (!getIt.isRegistered<FirebaseMessagingService>()) return;
+    final fcm = getIt<FirebaseMessagingService>();
+    final prefs = getIt.isRegistered<SharedPreferences>()
+        ? getIt<SharedPreferences>()
+        : null;
+    for (final kind in FirebaseMessagingService.notificationKinds) {
+      final enabled = prefs?.getBool('notif_enabled_kind_$kind') ?? true;
+      unawaited(fcm.setKindEnabled(uid: uid, kind: kind, enabled: enabled));
+    }
+  }
+
   void _onAuthChanged(AuthState state) {
+    if (state is AuthAuthenticated) {
+      _syncNotificationSubscriptions(state.user.id);
+    }
     for (final c in _syncControllers) {
       unawaited(
         (state is AuthAuthenticated ? c.start() : c.stop()).catchError(

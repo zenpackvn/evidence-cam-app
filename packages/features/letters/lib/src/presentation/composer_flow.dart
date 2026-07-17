@@ -30,12 +30,17 @@ class ComposerFlow extends StatelessWidget {
     required this.onClose,
     required this.onOpenShare,
     this.share = const LetterShare(),
+    this.replyToUid,
     super.key,
   });
 
   final String templateId;
   final LettersRepository letters;
   final StampsRepository stamps;
+
+  /// Set when composing a reply (SM-020) — the original sender's uid, threaded
+  /// to the created letter for the "letter received" push (SM-026 D12).
+  final String? replyToUid;
 
   /// Base URL a letter link resolves under (from config); used to build the
   /// shareable URL from the minted link id.
@@ -52,7 +57,11 @@ class ComposerFlow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ComposerCubit(letters, templateId: templateId),
+      create: (_) => ComposerCubit(
+        letters,
+        templateId: templateId,
+        replyToUid: replyToUid,
+      ),
       child: _ComposerNavigator(
         stamps: stamps,
         linkBaseUrl: linkBaseUrl,

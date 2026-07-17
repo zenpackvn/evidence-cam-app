@@ -10,10 +10,14 @@ import 'composer_state.dart';
 /// it (template / text / font / paper / attached stamps ≤3), and on send creates
 /// the letter then mints a share link for the chosen platform.
 class ComposerCubit extends Cubit<ComposerState> {
-  ComposerCubit(this._letters, {String templateId = 'classic'})
+  ComposerCubit(this._letters, {String templateId = 'classic', this.replyToUid})
     : super(ComposerState.initial(templateId));
 
   final LettersRepository _letters;
+
+  /// Set when composing a reply (SM-020) — threaded into the created letter so
+  /// the server pushes "letter received" to the original sender (SM-026 D12).
+  final String? replyToUid;
 
   // ── Editing ──────────────────────────────────────────────────────────────
   void selectTemplate(String templateId) => emit(
@@ -54,7 +58,11 @@ class ComposerCubit extends Cubit<ComposerState> {
     emit(state.copyWith(phase: ComposerPhase.sending));
 
     final created = await _letters.create(
-      LetterInput(content: state.content, stampIds: state.stampIds),
+      LetterInput(
+        content: state.content,
+        stampIds: state.stampIds,
+        replyToUid: replyToUid,
+      ),
     );
     switch (created) {
       case Ok(:final value):

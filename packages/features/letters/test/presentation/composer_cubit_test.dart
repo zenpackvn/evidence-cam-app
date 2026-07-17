@@ -83,6 +83,17 @@ void main() {
     expect(cubit.state.phase, ComposerPhase.sent);
     expect(cubit.state.link?.id, 'tok123');
     expect(repo.lastInput?.stampIds, ['s1']);
+    expect(repo.lastInput?.replyToUid, isNull);
+    addTearDown(cubit.close);
+  });
+
+  test('a reply threads replyToUid into the created letter (SM-026 D12)',
+      () async {
+    final repo = _FakeLettersRepository();
+    final cubit = ComposerCubit(repo, replyToUid: 'original-uid');
+    cubit.setText('Cảm ơn bạn');
+    await cubit.send(platform: 'zalo');
+    expect(repo.lastInput?.replyToUid, 'original-uid');
     addTearDown(cubit.close);
   });
 

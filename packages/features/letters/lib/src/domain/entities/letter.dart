@@ -21,10 +21,18 @@ class Letter {
 
 /// The data needed to compose and save a letter before sending.
 class LetterInput {
-  const LetterInput({required this.content, this.stampIds = const []});
+  const LetterInput({
+    required this.content,
+    this.stampIds = const [],
+    this.replyToUid,
+  });
 
   final LetterContent content;
   final List<String> stampIds;
+
+  /// The original sender's uid when this letter is a reply (SM-020), so the
+  /// server can push them "letter received" (SM-026 D12). Null otherwise.
+  final String? replyToUid;
 
   /// Max stamps attachable to one letter (SM-014 BR-03).
   static const maxStamps = 3;

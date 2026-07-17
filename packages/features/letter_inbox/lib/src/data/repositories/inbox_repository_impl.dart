@@ -42,6 +42,7 @@ class InboxRepositoryImpl implements InboxRepository {
       templateId: decoded.templateId,
       text: decoded.text,
       senderName: dto.senderName,
+      senderUid: dto.senderUid,
       stamps: [
         for (final s in dto.stamps)
           StampRef(

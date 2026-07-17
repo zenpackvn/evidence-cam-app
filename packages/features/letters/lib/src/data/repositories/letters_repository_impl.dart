@@ -27,6 +27,7 @@ class LettersRepositoryImpl implements LettersRepository {
           id: _uuid.v4(),
           contentJson: input.content.encode(),
           stampIds: stampIds,
+          replyToUid: input.replyToUid ?? '',
         ),
       );
       return Ok(
