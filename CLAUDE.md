@@ -152,6 +152,15 @@ second feature needs it.
 
 ---
 
+## Commits: one per feature
+
+Commit each feature separately — never bundle several features into one commit.
+A commit should cover one feature (plus its tests/docs) and stand on its own.
+Same for the reverse: don't split one feature across a chain of half-working
+commits just to make them small.
+
+---
+
 ## Generic Flutter coding rules
 
 Flutter's official AI rules (vendored from `docs/rules/rules.md` in
