@@ -4,8 +4,11 @@ import 'package:feature_home/feature_home.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rev_sync/rev_sync.dart';
 import 'package:shared_contracts/shared_contracts.dart';
 import 'package:shared_ui/shared_ui.dart';
+
+import '../support.dart';
 
 class _Loader implements HomeDataLoader {
   _Loader(this.data);
@@ -52,12 +55,17 @@ HomeData _loaded() => HomeData(
   ],
 );
 
-Widget _wrap(HomeDataLoader loader, {String username = 'sunny'}) {
+Widget _wrap(
+  HomeDataLoader loader,
+  ConnectivitySource connectivity, {
+  String username = 'sunny',
+}) {
   return MaterialApp(
     home: SessionScope(
       session: _Session(AuthUser(id: 'u1', username: username)),
       child: BlocProvider(
-        create: (_) => HomeBloc(loader)..add(const HomeLoadRequested()),
+        create: (_) =>
+            HomeBloc(loader, connectivity)..add(const HomeLoadRequested()),
         child: const HomeBody(),
       ),
     ),
@@ -65,9 +73,14 @@ Widget _wrap(HomeDataLoader loader, {String username = 'sunny'}) {
 }
 
 void main() {
+  late FakeConnectivity connectivity;
+
+  setUp(() => connectivity = FakeConnectivity());
+  tearDown(() => connectivity.dispose());
+
   group('HomeBloc (TC-04-xxx)', () {
     test('TC-04: load thành công → data hiển thị, hết loading', () async {
-      final bloc = HomeBloc(_Loader(_loaded()))
+      final bloc = HomeBloc(_Loader(_loaded()), connectivity)
         ..add(const HomeLoadRequested());
       await Future<void>.delayed(Duration.zero);
       expect(bloc.state.isLoading, isFalse);
@@ -76,10 +89,41 @@ void main() {
     });
 
     test('TC-04 lỗi tải → error, không kẹt loading', () async {
-      final bloc = HomeBloc(_ThrowingLoader())..add(const HomeLoadRequested());
+      final bloc = HomeBloc(_ThrowingLoader(), connectivity)
+        ..add(const HomeLoadRequested());
       await Future<void>.delayed(Duration.zero);
       expect(bloc.state.isLoading, isFalse);
       expect(bloc.state.error, isNotNull);
+      await bloc.close();
+    });
+
+    test('TC-04 AC-05: mất mạng → giữ nội dung đã tải + cờ ngoại tuyến',
+        () async {
+      connectivity.online = false;
+      final bloc = HomeBloc(_Loader(_loaded()), connectivity)
+        ..add(const HomeLoadRequested());
+      await Future<void>.delayed(Duration.zero);
+
+      expect(bloc.state.data.recentStamps, hasLength(1));
+      expect(bloc.state.error, isNull);
+      expect(bloc.state.isOffline, isTrue);
+      await bloc.close();
+    });
+
+    test('TC-04 AC-06: mất mạng → làm mới bị vô hiệu, dữ liệu không đổi',
+        () async {
+      connectivity.online = false;
+      final bloc = HomeBloc(_Loader(_loaded()), connectivity)
+        ..add(const HomeLoadRequested());
+      await Future<void>.delayed(Duration.zero);
+      final data = bloc.state.data;
+
+      bloc.add(const HomeLoadRequested(isRefresh: true));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(bloc.state.canRefresh, isFalse);
+      expect(bloc.state.data, same(data));
+      expect(bloc.state.error, isNull);
       await bloc.close();
     });
   });
@@ -87,7 +131,7 @@ void main() {
   group('HomeBody (TC-04-xxx · F01-S15/S16)', () {
     testWidgets('TC-04: loaded — chào đúng tên, không có badge thư chưa đọc',
         (tester) async {
-      await tester.pumpWidget(_wrap(_Loader(_loaded())));
+      await tester.pumpWidget(_wrap(_Loader(_loaded()), connectivity));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -101,7 +145,7 @@ void main() {
 
     testWidgets('TC-04: empty — lời mời tạo tem đầu tiên (F01-S15)',
         (tester) async {
-      await tester.pumpWidget(_wrap(_Loader(HomeData.empty)));
+      await tester.pumpWidget(_wrap(_Loader(HomeData.empty), connectivity));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -112,7 +156,7 @@ void main() {
 
     testWidgets('TC-04: username rỗng → chào "bạn" (không crash — bug đã fix)',
         (tester) async {
-      await tester.pumpWidget(_wrap(_Loader(_loaded()), username: ''));
+      await tester.pumpWidget(_wrap(_Loader(_loaded()), connectivity, username: ''));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('Chào bạn 👋'), findsOneWidget);

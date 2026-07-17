@@ -6,10 +6,16 @@ import '../../domain/entities/stamp.dart';
 /// SM-022 detail (F02-S18) — "Chi tiết tem": the stamp shown large on a warm
 /// mat, its name + date, and actions. "Attach to a letter" is wired by the
 /// letters feature; delete and rename are provided by the host.
+///
+/// The write actions (rename, delete) need a network link. While [canMutate]
+/// is false they are shown disabled and a tap reports [onMutateBlocked]
+/// instead of running (SM-022 BR-11 / AC-10).
 class StampDetailScreen extends StatelessWidget {
   const StampDetailScreen({
     required this.stamp,
     required this.onBack,
+    this.canMutate = true,
+    this.onMutateBlocked,
     this.onAttach,
     this.onDelete,
     this.onRename,
@@ -19,6 +25,15 @@ class StampDetailScreen extends StatelessWidget {
 
   final Stamp stamp;
   final VoidCallback onBack;
+
+  /// Whether the network-bound writes (rename, delete) are available
+  /// (SM-022 BR-11): false while the device is offline.
+  final bool canMutate;
+
+  /// Invoked instead of a write when [canMutate] is false — the host surfaces
+  /// the "reconnect" notice (SM-022 AC-10).
+  final VoidCallback? onMutateBlocked;
+
   final VoidCallback? onAttach;
   final VoidCallback? onDelete;
 
@@ -50,8 +65,17 @@ class StampDetailScreen extends StatelessWidget {
             ),
           if (onDelete != null)
             IconButton(
-              onPressed: () => _confirmDelete(context),
-              icon: Icon(Icons.delete_outline, color: scheme.onSurfaceVariant),
+              // BR-11: offline, the button reports the blocked action rather
+              // than opening the confirm dialog.
+              onPressed: canMutate
+                  ? () => _confirmDelete(context)
+                  : onMutateBlocked,
+              icon: Icon(
+                Icons.delete_outline,
+                color: canMutate
+                    ? scheme.onSurfaceVariant
+                    : Theme.of(context).disabledColor,
+              ),
             ),
         ],
       ),
@@ -84,9 +108,12 @@ class StampDetailScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.xl),
               _MetaCard(
                 stamp: stamp,
+                canRename: canMutate,
                 onRename: onRename == null
                     ? null
-                    : () => _promptRename(context),
+                    : () => canMutate
+                          ? _promptRename(context)
+                          : onMutateBlocked?.call(),
               ),
               const Spacer(),
               if (onAttach != null)
@@ -128,39 +155,69 @@ class StampDetailScreen extends StatelessWidget {
   }
 
   Future<void> _promptRename(BuildContext context) async {
-    final controller = TextEditingController(text: stamp.name);
     final name = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Đổi tên tem'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: _maxNameLen,
-          decoration: const InputDecoration(hintText: 'Tên con tem'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Huỷ'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Lưu'),
-          ),
-        ],
-      ),
+      builder: (_) => _RenameDialog(initialName: stamp.name),
     );
-    controller.dispose();
     if (name != null) onRename?.call(name);
   }
 }
 
+/// The rename prompt (SM-022 BR-08). A [StatefulWidget] so its
+/// [TextEditingController] lives exactly as long as the dialog route: disposing
+/// it right after `showDialog` returns would tear it down while the dialog's
+/// exit transition is still rebuilding the field.
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog({required this.initialName});
+
+  final String initialName;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final _controller = TextEditingController(text: widget.initialName);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Đổi tên tem'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLength: StampDetailScreen._maxNameLen,
+        decoration: const InputDecoration(hintText: 'Tên con tem'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Huỷ'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: const Text('Lưu'),
+        ),
+      ],
+    );
+  }
+}
+
 class _MetaCard extends StatelessWidget {
-  const _MetaCard({required this.stamp, this.onRename});
+  const _MetaCard({required this.stamp, this.onRename, this.canRename = true});
 
   final Stamp stamp;
   final VoidCallback? onRename;
+
+  /// SM-022 BR-11: offline the pencil affordance is greyed out; tapping the
+  /// name still fires [onRename], which reports the blocked action.
+  final bool canRename;
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +251,13 @@ class _MetaCard extends StatelessWidget {
                 ),
                 if (onRename != null) ...[
                   const SizedBox(width: AppSpacing.xs),
-                  Icon(Icons.edit_outlined, size: 16, color: scheme.primary),
+                  Icon(
+                    Icons.edit_outlined,
+                    size: 16,
+                    color: canRename
+                        ? scheme.primary
+                        : Theme.of(context).disabledColor,
+                  ),
                 ],
               ],
             ),

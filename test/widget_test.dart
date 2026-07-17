@@ -12,10 +12,21 @@ import 'package:flutter_starter_template/app/app.dart';
 import 'package:flutter_starter_template/app/di/injection.dart';
 import 'package:flutter_starter_template/app/feature_module.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rev_sync/rev_sync.dart';
 import 'package:storage/storage.dart';
 import 'package:theme/theme.dart';
 
 import 'test_utils.dart';
+
+final class _AlwaysOnline implements ConnectivitySource {
+  const _AlwaysOnline();
+
+  @override
+  Future<bool> isOnline() async => true;
+
+  @override
+  Stream<bool> get onOnlineChanged => const Stream<bool>.empty();
+}
 
 final class _NoOpSyncModule extends FeatureModule {
   @override
@@ -67,7 +78,7 @@ void main() {
     themeBloc = ThemeBloc(await SharedPreferences.getInstance(), analytics);
 
     getIt.registerFactory<HomeBloc>(() {
-      final bloc = HomeBloc(_EmptyHomeLoader());
+      final bloc = HomeBloc(_EmptyHomeLoader(), const _AlwaysOnline());
       homeBloc = bloc;
       return bloc;
     });

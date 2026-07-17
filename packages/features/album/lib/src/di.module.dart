@@ -91,11 +91,13 @@ class FeatureAlbumPackageModule extends _i526.MicroPackageModule {
           gh<_i875.StampsSyncController>(),
           gh<_i706.Uuid>(),
         ));
-    gh.factory<_i257.AlbumCubit>(
-        () => _i257.AlbumCubit(gh<_i815.StampsRepository>()));
     gh.factory<_i606.SampleStampsCubit>(() => _i606.SampleStampsCubit(
           gh<_i1053.SampleStampsRepository>(),
           gh<_i815.StampsRepository>(),
+        ));
+    gh.factory<_i257.AlbumCubit>(() => _i257.AlbumCubit(
+          gh<_i815.StampsRepository>(),
+          gh<_i520.ConnectivitySource>(),
         ));
   }
 }

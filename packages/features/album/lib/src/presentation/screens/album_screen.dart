@@ -4,6 +4,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_ui/shared_ui.dart';
 
 import '../../domain/entities/stamp.dart';
 import '../bloc/album_cubit.dart';
@@ -49,6 +50,13 @@ class AlbumScreen extends StatelessWidget {
 
   static const _ground = Color(0xFFFCF6EF);
 
+  /// SM-022 BR-10 / AC-09 copy.
+  static const offlineLabel = 'Đang xem ngoại tuyến';
+
+  /// SM-022 BR-11 / AC-10 copy, shown when a write is attempted offline.
+  static const offlineActionMessage =
+      'Không có kết nối. Vui lòng thử lại khi có mạng.';
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -59,17 +67,25 @@ class AlbumScreen extends StatelessWidget {
           bottom: false,
           child: BlocBuilder<AlbumCubit, AlbumState>(
             builder: (context, state) {
-              if (state.loading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (state.error) {
-                return _AlbumError(onRetry: context.read<AlbumCubit>().load);
-              }
-              return _AlbumBody(
-                state: state,
-                onOpenStamp: (stamp) => _openDetail(context, stamp),
-                onCreate: onCreate,
-                onBrowseSamples: onBrowseSamples,
+              // BR-10: the notice sits above the list rather than over it, and
+              // shows in every branch (loading / error / loaded).
+              return Column(
+                children: [
+                  if (state.isOffline)
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        AppSpacing.xxl,
+                        AppSpacing.md,
+                        AppSpacing.xxl,
+                        0,
+                      ),
+                      child: OfflineBanner(
+                        isOffline: true,
+                        label: offlineLabel,
+                      ),
+                    ),
+                  Expanded(child: _content(context, state)),
+                ],
               );
             },
           ),
@@ -78,30 +94,68 @@ class AlbumScreen extends StatelessWidget {
     );
   }
 
+  Widget _content(BuildContext context, AlbumState state) {
+    if (state.loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (state.error) {
+      return _AlbumError(onRetry: context.read<AlbumCubit>().load);
+    }
+    return _AlbumBody(
+      state: state,
+      onOpenStamp: (stamp) => _openDetail(context, stamp),
+      onCreate: onCreate,
+      onBrowseSamples: onBrowseSamples,
+    );
+  }
+
   void _openDetail(BuildContext context, Stamp stamp) {
     final cubit = context.read<AlbumCubit>();
+    final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).push<void>(
       MaterialPageRoute(
-        builder: (_) => StampDetailScreen(
-          stamp: stamp,
-          onBack: () => Navigator.of(context).maybePop(),
-          onRename: (name) => cubit.rename(stamp.id, name),
-          onDelete: () {
-            cubit.delete(stamp.id);
-            Navigator.of(context).maybePop();
-          },
-          onAttach: onAttachStamp == null ? null : () => onAttachStamp!(stamp),
-          onShare: onShareImage == null
-              ? null
-              : () => Navigator.of(context).push<void>(
-                  MaterialPageRoute(
-                    builder: (_) => ShareStampScreen(
-                      stampImageUrl: stamp.imageUrl,
-                      onShareImage: onShareImage!,
-                      onSaveToGallery: onSaveImageToGallery,
-                    ),
-                  ),
+        // BR-11 / AC-10: rebuild the detail on connectivity changes so its
+        // rename/delete affordances enable again the moment the link returns.
+        builder: (_) => BlocProvider.value(
+          value: cubit,
+          child: BlocBuilder<AlbumCubit, AlbumState>(
+            builder: (context, state) => StampDetailScreen(
+              // AC-06: read the stamp back out of the state so a rename shows
+              // on the detail immediately, not just in the list behind it. It
+              // is gone from the list the moment a delete lands, hence the
+              // fallback to the stamp this route was opened with.
+              stamp: state.stamps.firstWhere(
+                (s) => s.id == stamp.id,
+                orElse: () => stamp,
+              ),
+              canMutate: state.canMutate,
+              onBack: () => Navigator.of(context).maybePop(),
+              onMutateBlocked: () => messenger
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  const SnackBar(content: Text(offlineActionMessage)),
                 ),
+              onRename: (name) => cubit.rename(stamp.id, name),
+              onDelete: () {
+                cubit.delete(stamp.id);
+                Navigator.of(context).maybePop();
+              },
+              onAttach: onAttachStamp == null
+                  ? null
+                  : () => onAttachStamp!(stamp),
+              onShare: onShareImage == null
+                  ? null
+                  : () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(
+                        builder: (_) => ShareStampScreen(
+                          stampImageUrl: stamp.imageUrl,
+                          onShareImage: onShareImage!,
+                          onSaveToGallery: onSaveImageToGallery,
+                        ),
+                      ),
+                    ),
+            ),
+          ),
         ),
       ),
     );

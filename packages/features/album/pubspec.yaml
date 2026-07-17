@@ -23,6 +23,7 @@ dependencies:
     path: ../../../published/rev_sync
   database: ^0.1.0
   shared_contracts: ^0.1.0
+  shared_ui: ^0.1.0
   localization: ^0.1.0
   app_ui: ^0.1.0
 

@@ -30,6 +30,9 @@ class HomeBody extends StatelessWidget {
 
   static const package = 'feature_home';
 
+  /// SM-004 BR-07 / AC-05 copy.
+  static const offlineLabel = 'Đang xem ngoại tuyến';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,9 +53,15 @@ class HomeBody extends StatelessWidget {
                     onOpenLetters: onOpenLetters,
                   ),
           );
-          return RefreshIndicator(
-            onRefresh: () async =>
-                context.read<HomeBloc>().add(const HomeLoadRequested()),
+          final scrollArea = RefreshIndicator(
+            onRefresh: () async => context.read<HomeBloc>().add(
+              const HomeLoadRequested(isRefresh: true),
+            ),
+            // BR-07 / AC-06: offline the pull-to-refresh gesture is disabled
+            // outright, so the loaded content can't be swapped for an error.
+            notificationPredicate: state.canRefresh
+                ? defaultScrollNotificationPredicate
+                : (_) => false,
             child: empty
                 // Corner decor exists only on the empty frame (F01-S15).
                 ? Stack(
@@ -81,6 +90,30 @@ class HomeBody extends StatelessWidget {
                     ],
                   )
                 : body,
+          );
+
+          // BR-07: the notice is pinned above the scroll area — in the layout
+          // flow, so it never covers the content it annotates (AC-05).
+          return Column(
+            children: [
+              if (state.isOffline)
+                const SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.xxl,
+                      AppSpacing.sm,
+                      AppSpacing.xxl,
+                      0,
+                    ),
+                    child: OfflineBanner(
+                      isOffline: true,
+                      label: offlineLabel,
+                    ),
+                  ),
+                ),
+              Expanded(child: scrollArea),
+            ],
           );
         },
       ),

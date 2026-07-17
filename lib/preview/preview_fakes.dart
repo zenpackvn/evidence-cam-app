@@ -26,6 +26,7 @@ import 'package:feature_stamp_creator/src/data/stamp_uploader.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:network/network.dart';
+import 'package:rev_sync/rev_sync.dart';
 import 'package:shared_contracts/shared_contracts.dart';
 
 /// Latency added to fake calls so loading states are visible during review.
@@ -378,6 +379,19 @@ class FakeHomeDataLoader implements HomeDataLoader {
   }
 }
 
+/// The preview harness renders the online design states, so connectivity is
+/// pinned online — the offline notice (SM-004 BR-07 / SM-022 BR-10) stays out
+/// of the frames unless a preview deliberately asks for it.
+class FakeOnlineConnectivity implements ConnectivitySource {
+  const FakeOnlineConnectivity();
+
+  @override
+  Future<bool> isOnline() async => true;
+
+  @override
+  Stream<bool> get onOnlineChanged => const Stream<bool>.empty();
+}
+
 // ──────────────────────────────────────────────────────── registration ──
 
 /// Registers every dependency the screens resolve via `GetIt`, backed by the
@@ -385,6 +399,7 @@ class FakeHomeDataLoader implements HomeDataLoader {
 void registerPreviewFakes() {
   final getIt = GetIt.instance;
   const analytics = NoOpAnalyticsService();
+  const connectivity = FakeOnlineConnectivity();
   final authRepo = FakeAuthRepository();
 
   getIt
@@ -392,8 +407,12 @@ void registerPreviewFakes() {
     ..registerLazySingleton<LettersRepository>(FakeLettersRepository.new)
     ..registerLazySingleton<InboxRepository>(FakeInboxRepository.new)
     ..registerLazySingleton<StampUploader>(FakeStampUploader.new)
-    ..registerFactory<HomeBloc>(() => HomeBloc(FakeHomeDataLoader()))
-    ..registerFactory<AlbumCubit>(() => AlbumCubit(getIt<StampsRepository>()))
+    ..registerFactory<HomeBloc>(
+      () => HomeBloc(FakeHomeDataLoader(), connectivity),
+    )
+    ..registerFactory<AlbumCubit>(
+      () => AlbumCubit(getIt<StampsRepository>(), connectivity),
+    )
     ..registerFactory<SentLettersCubit>(
       () => SentLettersCubit(getIt<LettersRepository>()),
     )

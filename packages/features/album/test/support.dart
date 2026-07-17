@@ -2,9 +2,7 @@ import 'dart:async';
 
 import 'package:rev_sync/rev_sync.dart';
 
-export 'package:test_utils/test_utils.dart';
-
-/// A controllable [ConnectivitySource] for the Home presentation tests
+/// A controllable [ConnectivitySource] for the Album presentation tests
 /// (hand-rolled, no mock framework, per repo convention).
 class FakeConnectivity implements ConnectivitySource {
   FakeConnectivity({this.online = true});
