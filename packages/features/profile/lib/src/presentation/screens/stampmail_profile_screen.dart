@@ -11,10 +11,16 @@ class StampMailProfileScreen extends StatelessWidget {
     required this.onOpenSettings,
     required this.onUpgrade,
     this.isPremium = false,
+    this.premiumExpiry,
     super.key,
   });
 
   final bool isPremium;
+
+  /// SM-024 BR-10 / AC-12: when the user is Premium, the plan's expiry date is
+  /// shown next to the "Premium" badge. Sourced from SM-029 (managed by the
+  /// host); `null` renders the badge without a date.
+  final DateTime? premiumExpiry;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenSettings;
   final VoidCallback onUpgrade;
@@ -41,6 +47,7 @@ class StampMailProfileScreen extends StatelessWidget {
             _ProfileHeader(
               username: user?.username ?? 'Bạn',
               isPremium: isPremium,
+              premiumExpiry: premiumExpiry,
             ),
             const SizedBox(height: AppSpacing.lg),
             _StatsRow(
@@ -133,10 +140,15 @@ class _StatCard extends StatelessWidget {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.username, required this.isPremium});
+  const _ProfileHeader({
+    required this.username,
+    required this.isPremium,
+    this.premiumExpiry,
+  });
 
   final String username;
   final bool isPremium;
+  final DateTime? premiumExpiry;
 
   @override
   Widget build(BuildContext context) {
@@ -167,11 +179,29 @@ class _ProfileHeader extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xs),
               _PlanBadge(isPremium: isPremium),
+              // SM-024 BR-10 / AC-12: Premium users see the plan's expiry date.
+              if (isPremium && premiumExpiry != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Hết hạn: ${_formatDate(premiumExpiry!)}',
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ],
     );
+  }
+
+  /// Formats an expiry date as `dd/MM/yyyy` without pulling in `intl`, matching
+  /// the app's Vietnamese date convention.
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
   }
 }
 
