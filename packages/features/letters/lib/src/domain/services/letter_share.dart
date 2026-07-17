@@ -1,14 +1,16 @@
-/// The social platforms a letter link can be shared to (SM-016). Names are the
-/// commercial platforms the sender picks; the link itself is platform-agnostic.
+/// The social platforms a letter link can be shared to (SM-016 BR-04). Exactly
+/// the eight platforms the spec lists, in spec order (AC-07). The link itself is
+/// platform-agnostic; the enum only drives which DM composer the sender opens
+/// and the `platform` label recorded for stats.
 enum SharePlatform {
-  zalo,
   messenger,
-  facebook,
   instagram,
-  telegram,
+  tiktok,
+  threads,
+  zalo,
   whatsapp,
-  sms,
-  copyLink;
+  imessage,
+  twitter;
 
   /// Wire value sent to the server as the link's `platform` (stats only).
   String get wire => name;
@@ -19,28 +21,31 @@ enum SharePlatform {
 ///
 /// Only the fallback (copy) is guaranteed; per-platform URL schemes change and
 /// the app may not be installed, so callers should try [dmUri] and fall back to
-/// the native share sheet or clipboard (SM-016 section 5).
+/// the native share sheet or clipboard (SM-016 section 5: copy the link and tell
+/// the user to paste it into any messenger).
 class LetterShare {
   const LetterShare();
 
   /// A best-effort URI that opens [platform]'s composer prefilled with
-  /// [letterUrl]. Returns null when there is no scheme (use the native share
-  /// sheet / clipboard instead) — e.g. [SharePlatform.copyLink].
+  /// [letterUrl]. Returns null when the platform exposes no reliable public
+  /// prefill scheme — the caller then uses the native share sheet / clipboard.
+  ///
+  /// Only WhatsApp, Twitter/X and iMessage publish a documented URL scheme that
+  /// prefills text. Messenger, Instagram DM, TikTok DM, Threads and Zalo have no
+  /// reliable public DM-prefill scheme, so they fall back to copy/share.
   Uri? dmUri(SharePlatform platform, String letterUrl) {
     final encoded = Uri.encodeComponent(letterUrl);
     return switch (platform) {
-      SharePlatform.telegram => Uri.parse('https://t.me/share/url?url=$encoded'),
       SharePlatform.whatsapp => Uri.parse('https://wa.me/?text=$encoded'),
-      SharePlatform.sms => Uri.parse('sms:?body=$encoded'),
-      SharePlatform.facebook => Uri.parse(
-        'https://www.facebook.com/sharer/sharer.php?u=$encoded',
+      SharePlatform.twitter => Uri.parse(
+        'https://twitter.com/intent/tweet?text=$encoded',
       ),
-      // Zalo / Messenger / Instagram have no reliable public prefill scheme;
-      // fall back to the native share sheet or clipboard.
-      SharePlatform.zalo ||
+      SharePlatform.imessage => Uri.parse('sms:&body=$encoded'),
       SharePlatform.messenger ||
       SharePlatform.instagram ||
-      SharePlatform.copyLink => null,
+      SharePlatform.tiktok ||
+      SharePlatform.threads ||
+      SharePlatform.zalo => null,
     };
   }
 }

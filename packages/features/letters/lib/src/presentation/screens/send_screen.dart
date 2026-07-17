@@ -27,15 +27,16 @@ class _SendScreenState extends State<SendScreen> {
 
   static const _ground = Color(0xFFFBF5EC);
 
+  // The eight platforms of SM-016 BR-04, in spec order (AC-07).
   static const _labels = <SharePlatform, (String, IconData)>{
     SharePlatform.messenger: ('Messenger', Icons.chat_bubble_outline),
     SharePlatform.instagram: ('Instagram', Icons.camera_alt_outlined),
-    SharePlatform.telegram: ('Telegram', Icons.send_outlined),
+    SharePlatform.tiktok: ('TikTok', Icons.music_note_outlined),
+    SharePlatform.threads: ('Threads', Icons.alternate_email_outlined),
     SharePlatform.zalo: ('Zalo', Icons.forum_outlined),
     SharePlatform.whatsapp: ('WhatsApp', Icons.call_outlined),
-    SharePlatform.facebook: ('Facebook', Icons.thumb_up_outlined),
-    SharePlatform.sms: ('Tin nhắn', Icons.sms_outlined),
-    SharePlatform.copyLink: ('Sao chép link', Icons.link_outlined),
+    SharePlatform.imessage: ('iMessage', Icons.sms_outlined),
+    SharePlatform.twitter: ('X', Icons.close_outlined),
   };
 
   @override

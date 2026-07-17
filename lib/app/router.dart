@@ -11,7 +11,6 @@ import 'package:feature_profile/feature_profile.dart';
 import 'package:feature_splash/feature_splash.dart';
 import 'package:feature_stamp_creator/feature_stamp_creator.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_ui/shared_ui.dart';
@@ -162,12 +161,14 @@ void _openComposer(BuildContext context, String templateId) {
         // (D3) and its base lands in config; the URL shape is already correct.
         linkBaseUrl: 'https://stampmail.app/letter',
         onClose: () => const AlbumRoute().go(rootContext),
-        onOpenShare: (platform, letterUrl) => switch (platform) {
-          SharePlatform.copyLink => Clipboard.setData(
-            ClipboardData(text: letterUrl),
-          ),
-          _ => SharePlus.instance.share(ShareParams(text: letterUrl)),
-        },
+        // SM-016 BR-05 / section 5: hand the link to the native share sheet so
+        // the user picks the target messenger and pastes it in. (Per-platform
+        // DM-prefill schemes exist for only 3 of the 8 platforms and change
+        // often — the share sheet covers all eight uniformly. ponytail: share
+        // sheet only; wire LetterShare.dmUri via url_launcher if deep-linking
+        // straight into a DM composer becomes a requirement.)
+        onOpenShare: (platform, letterUrl) =>
+            SharePlus.instance.share(ShareParams(text: letterUrl)),
       ),
     ),
   );

@@ -1,7 +1,7 @@
 # StampMail — Master Plan Triển Khai End-to-End (Production-Ready)
 
-> Tài liệu chính giao cho Product Owner / team. Tổng hợp từ context-brief + 6 draft workstream (A Backend, B Client Foundation/Auth, C Client Features, D Integrations, E Infra/QA/Release) + Flow-map. Nguồn đã đối chiếu code thật. **15 OPEN DECISIONS đã được chốt 2026-07-10 (xem §3.2).**
-> **Rev 2 (review kỹ thuật 2026-07-10):** sửa mâu thuẫn D11↔C5/Flow-5 (recreate link KHÔNG trừ quota); bổ sung **D15** (bảng gốc thiếu dòng) + **D16 claim thư sau cài app (⚠️ OPEN)**; D5 tz làm ngay Phase 0 trong A1; +2–3 ED **D1.5 web letter renderer parity**; A6 OTP relabel P0; spike C1 mở rộng 3 ứng viên; C3 chốt `flutter_quill`.
+> Tài liệu chính giao cho Product Owner / team. Tổng hợp từ context-brief + 6 draft workstream (A Backend, B Client Foundation/Auth, C Client Features, D Integrations, E Infra/QA/Release) + Flow-map. Nguồn đã đối chiếu code thật. **16/16 OPEN DECISIONS đã được chốt — 15 quyết định 2026-07-10, D16 chốt 2026-07-16 (xem §3.2).**
+> **Rev 2 (review kỹ thuật 2026-07-10):** sửa mâu thuẫn D11↔C5/Flow-5 (recreate link KHÔNG trừ quota); bổ sung **D15** (bảng gốc thiếu dòng) + **D16 claim thư sau cài app (✅ đã chốt 2026-07-16)**; D5 tz làm ngay Phase 0 trong A1; +2–3 ED **D1.5 web letter renderer parity**; A6 OTP relabel P0; spike C1 mở rộng 3 ứng viên; C3 chốt `flutter_quill`.
 > Repo gốc: `/Users/company/Documents/ex/stampmail/` — Docs `docs/projects/stampmail/` · Backend `stamp-mail-backend/` · Mobile `stamp-mail-flutter-app/`
 
 ---
@@ -39,7 +39,8 @@
 
 - **P0 (vòng lan truyền + nền tảng):** SM-005/006/008/009/010/011 (tạo tem), SM-016 (gửi link), SM-017/019 (nhận + animation), SM-022 (Album). Nền kỹ thuật P0: `internal/uploads`, auto-EnsureUser, OTP, inbox persistence, quota atomic, web viewer.
 - **P1:** SM-000 Auth (email/social — nền tảng, kỹ thuật P0), SM-020 (trả lời), SM-035 (tem mẫu), SM-025 (chia sẻ tem), SM-026 (push).
-- **P2:** SM-024 (Hồ sơ), SM-003 (Onboarding), SM-004 (Home), SM-012/013/014/015 (soạn thư — nhưng gắn liền SM-016 nên phải xong để gửi), SM-018/021 (inbox/sent), SM-027/028/029/030 (settings/premium/quota).
+- **P2:** SM-024 (Hồ sơ), SM-003 (Onboarding), SM-004 (Home), SM-012/013/014/015 (soạn thư — nhưng gắn liền SM-016 nên phải xong để gửi), SM-018/021 (inbox/sent), SM-027/030 (settings/quota).
+- **⏸️ TẠM DISABLE Ở V1 (D17, 2026-07-16):** SM-028 (Nâng cấp Premium & Thanh toán) + SM-029 (Quản lý đăng ký Premium) — toàn bộ thanh toán tắt ở version 1, spec giữ nguyên, bật lại ở v2. Chi tiết xem D17.
 
 - **ĐÃ LOẠI khỏi MVP (không build):** SM-007 (xóa nền AI), SM-033 (Dấu/Rewards), SM-023 (Series), SM-031 (Time Capsule), SM-032 (Group Card), SM-034 (tem giới hạn thời gian), SM-036 (nháp). Vĩnh viễn: kết bạn 2 chiều, tìm bạn (thay bằng gửi link). **Báo cáo nội dung** đã loại — ⚠️ xem OPEN DECISION D14 về rủi ro store UGC.
 
@@ -47,7 +48,7 @@
 
 ### 3.2 Quyết định đã CHỐT (cập nhật 2026-07-10)
 
-Toàn bộ 15 OPEN DECISIONS đã được chốt. Bảng dưới là quyết định cuối + tác động lên task. **Rev 2:** thêm dòng **D15** (bảng gốc thiếu dù C3/C6/§10 tham chiếu) và **D16 (⚠️ OPEN — cần PO xác nhận)** phát hiện khi review kỹ thuật.
+Toàn bộ **16/16** OPEN DECISIONS đã được chốt (D16 chốt sau cùng — PO duyệt 2026-07-16). Bảng dưới là quyết định cuối + tác động lên task. **Rev 2:** thêm dòng **D15** (bảng gốc thiếu dù C3/C6/§10 tham chiếu) và **D16** phát hiện khi review kỹ thuật.
 
 | # | Chủ đề | ✅ QUYẾT ĐỊNH CHỐT | Tác động task |
 |---|---|---|---|
@@ -66,7 +67,8 @@ Toàn bộ 15 OPEN DECISIONS đã được chốt. Bảng dưới là quyết đ
 | **D13** | Postgres timing | **SAU launch** — SQLite + volume bền + backup ≤24h, Cloud Run 1-instance; **làm migration tool ngay Phase 1** để port rẻ | A14 hạ xuống post-launch; A12 giữ Phase 1 |
 | **D14** | UGC/report (Apple 1.2) | **CHỈ chặn người dùng + link 1-lần/7-ngày** (KHÔNG thêm report cho MVP) — chấp nhận rủi ro review | ⚠️ **Rủi ro R2 GIỮ NGUYÊN**: chuẩn bị bổ sung "report thư" tối thiểu nếu Apple review flag |
 | **D15** | Số template thư Free/Premium *(dòng bổ sung Rev 2 — bảng gốc thiếu dù được C3/C6/§10 tham chiếu)* | **Free 3 template; số lượng + danh sách template Premium quyết sau cùng giá (D1), chốt trước Phase 4** — placeholder qua config/offering | C3 template list; C6 bảng so sánh; không chặn code |
-| **D16** | ⚠️ **OPEN — Claim thư sau khi cài app** (gap vòng viral, phát hiện Rev 2) | **KHUYẾN NGHỊ (cần PO duyệt):** web viewer phát **open-token** khi consume link (lưu localStorage + gắn vào OneLink); sau khi cài app + đăng nhập, app gọi `POST /api/sm/inbox/claim` (token) → bind thư vào inbox uid mới. Nếu KHÔNG có: link đã consume trên web (anonymous) → deferred deep-link mở app nhận 410 → **persona lõi "người lạ → cài → trả lời" không có thư để trả lời** | A17 (+claim endpoint), D3 (OneLink mang token), Phase 3 gate, §10 gate 3, R11 |
+| **D16** | Claim thư sau khi cài app (gap vòng viral, phát hiện Rev 2) | ✅ **CHỐT (PO duyệt 2026-07-16) theo đúng khuyến nghị:** web viewer phát **open-token** khi consume link (lưu localStorage + gắn vào OneLink); sau khi cài app + đăng nhập, app gọi `POST /api/sm/inbox/claim` (token) → bind thư vào inbox uid mới. Lý do: nếu không có, link đã consume trên web (anonymous) → deferred deep-link mở app nhận 410 → **persona lõi "người lạ → cài → trả lời" không có thư để trả lời** | A17 (+claim endpoint), D3 (OneLink mang token), Phase 3 gate, §10 gate 3, R11 |
+| **D17** | Thanh toán ở v1 *(bổ sung 2026-07-16)* | ✅ **TẠM DISABLE TOÀN BỘ THANH TOÁN Ở VERSION 1** (PO chốt 2026-07-16): không tích hợp IAP/RevenueCat, không dựng paywall; SM-028 + SM-029 hoãn sang v2 (spec giữ nguyên). Nội dung gắn Premium (sticker đặc biệt, viền khóa, template Premium) hiển thị trạng thái khóa nhưng **không có CTA mua**; quota Free (SM-030) vẫn áp dụng nhưng lời nhắc hạn mức không dẫn tới nâng cấp. Kiến trúc giữ seam entitlement (server source-of-truth) để bật lại ở v2 không phải đập | C6 + D5 (IAP/RevenueCat) hoãn v2; **D1 + D15 hết deadline Phase 4** — chốt trước khi bật lại thanh toán; gate Phase 4 bỏ mục IAP; frame paywall SM-028/029 không còn chặn design v1 |
 
 #### Thay đổi kéo theo D11 (quota theo THƯ, không theo link) — cần sửa
 
