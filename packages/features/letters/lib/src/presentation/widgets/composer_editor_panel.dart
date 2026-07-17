@@ -14,15 +14,21 @@ class ComposerEditorPanel extends StatefulWidget {
   const ComposerEditorPanel({
     required this.selectedFont,
     required this.selectedPaper,
+    required this.ruled,
     required this.onFont,
     required this.onPaper,
+    required this.onRuled,
     super.key,
   });
 
   final String? selectedFont;
   final int? selectedPaper;
+
+  /// Whether ruled lines are on (SM-013 BR-08).
+  final bool ruled;
   final ValueChanged<String> onFont;
   final ValueChanged<int> onPaper;
+  final ValueChanged<bool> onRuled;
 
   @override
   State<ComposerEditorPanel> createState() => _ComposerEditorPanelState();
@@ -114,8 +120,10 @@ class _ComposerEditorPanelState extends State<ComposerEditorPanel> {
                   papers: _papers,
                   selectedFont: widget.selectedFont,
                   selectedPaper: widget.selectedPaper,
+                  ruled: widget.ruled,
                   onFont: widget.onFont,
                   onPaper: widget.onPaper,
+                  onRuled: widget.onRuled,
                 ),
                 _EditorTab.align => _AlignTab(
                   align: _align,
@@ -194,15 +202,19 @@ class _PaperTab extends StatelessWidget {
     required this.papers,
     required this.selectedFont,
     required this.selectedPaper,
+    required this.ruled,
     required this.onFont,
     required this.onPaper,
+    required this.onRuled,
   });
 
   final List<(String, int)> papers;
   final String? selectedFont;
   final int? selectedPaper;
+  final bool ruled;
   final ValueChanged<String> onFont;
   final ValueChanged<int> onPaper;
+  final ValueChanged<bool> onRuled;
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +229,31 @@ class _PaperTab extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         FontChipRow(selected: selectedFont, onSelected: onFont),
+        const SizedBox(height: AppSpacing.lg),
+        // SM-013 BR-08: ruled vs plain paper.
+        Text(
+          'Kẻ dòng',
+          style: context.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(
+              value: false,
+              icon: Icon(Icons.crop_portrait),
+              label: Text('Không kẻ dòng'),
+            ),
+            ButtonSegment(
+              value: true,
+              icon: Icon(Icons.notes),
+              label: Text('Kẻ dòng'),
+            ),
+          ],
+          selected: {ruled},
+          onSelectionChanged: (set) => onRuled(set.first),
+        ),
         const SizedBox(height: AppSpacing.lg),
         Text(
           'Giấy nền',

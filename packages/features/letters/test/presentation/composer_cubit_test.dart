@@ -62,6 +62,31 @@ void main() {
     addTearDown(cubit.close);
   });
 
+  test('setRuled toggles ruled lines, keeping text (SM-013 BR-08/AC-07..08)',
+      () {
+    final cubit = ComposerCubit(_FakeLettersRepository());
+    cubit.setText('dòng một\ndòng hai');
+    expect(cubit.state.content.ruled, isFalse); // default = plain paper
+
+    cubit.setRuled(ruled: true); // AC-07: bật kẻ dòng
+    expect(cubit.state.content.ruled, isTrue);
+    expect(cubit.state.content.text, 'dòng một\ndòng hai'); // giữ nội dung
+
+    cubit.setRuled(ruled: false); // AC-08: tắt kẻ dòng
+    expect(cubit.state.content.ruled, isFalse);
+    expect(cubit.state.content.text, 'dòng một\ndòng hai');
+    addTearDown(cubit.close);
+  });
+
+  test('ruled flag round-trips through content_json so the recipient sees it '
+      '(SM-013 BR-08)', () {
+    const ruled = LetterContent(templateId: 'classic', text: 'x', ruled: true);
+    expect(LetterContent.decode(ruled.encode()).ruled, isTrue);
+    // Off is the default and stays omitted/false on decode.
+    const plain = LetterContent(templateId: 'classic', text: 'x');
+    expect(LetterContent.decode(plain.encode()).ruled, isFalse);
+  });
+
   test('toggleStamp caps at 3 (SM-014 BR-03)', () {
     final cubit = ComposerCubit(_FakeLettersRepository());
     cubit.toggleStamp('s1');

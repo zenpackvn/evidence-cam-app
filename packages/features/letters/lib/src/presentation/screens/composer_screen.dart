@@ -59,8 +59,10 @@ class ComposerScreen extends StatelessWidget {
                 ComposerEditorPanel(
                   selectedFont: state.content.fontFamily,
                   selectedPaper: state.content.paperColor,
+                  ruled: state.content.ruled,
                   onFont: cubit.selectFont,
                   onPaper: cubit.selectPaper,
+                  onRuled: (ruled) => cubit.setRuled(ruled: ruled),
                 ),
               ],
             ),

@@ -39,6 +39,11 @@ class ComposerCubit extends Cubit<ComposerState> {
     state.copyWith(content: state.content.copyWith(paperColor: paperColor)),
   );
 
+  /// Sets ruled lines on the paper (SM-013 BR-08 / AC-07..08). Text is kept.
+  void setRuled({required bool ruled}) => emit(
+    state.copyWith(content: state.content.copyWith(ruled: ruled)),
+  );
+
   /// Toggles a stamp attachment, capping at [LetterInput.maxStamps] (SM-014
   /// BR-03).
   void toggleStamp(String stampId) {

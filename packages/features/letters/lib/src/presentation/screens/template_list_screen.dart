@@ -2,10 +2,12 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 
 import '../composer_catalog.dart';
+import 'template_preview_screen.dart';
 
 /// SM-012 — "Danh sách template" (F03-S01): pick a letter template to start
-/// composing. Free templates are selectable; Premium ones show a lock and, when
-/// tapped by a Free user, hint at upgrading.
+/// composing. Tapping any card opens the full preview first (BR-04): Free
+/// templates preview with a "Dùng template này" CTA, Premium ones show the same
+/// full preview with a lock and an upgrade CTA instead (BR-03).
 ///
 /// When [replyToName] is set the screen is entered as a reply (SM-020): the
 /// original sender is shown as the recipient so the user doesn't re-enter it
@@ -15,6 +17,7 @@ class TemplateListScreen extends StatelessWidget {
     required this.onPick,
     this.isPremium = false,
     this.replyToName,
+    this.onUpgrade,
     super.key,
   });
 
@@ -24,7 +27,36 @@ class TemplateListScreen extends StatelessWidget {
   /// The original sender's name when composing a reply (SM-020 BR-01).
   final String? replyToName;
 
+  /// Routes to the Premium upgrade screen (SM-028) when a Free user confirms a
+  /// locked template's preview (BR-03). No-op when null.
+  final VoidCallback? onUpgrade;
+
   static const _ground = Color(0xFFFBF5EC);
+
+  /// SM-012 BR-04/AC-02..03/AC-07: open the full preview for [index]. Free →
+  /// "Dùng template này" starts composing; Premium (locked for a Free user) →
+  /// full preview with an upgrade CTA that routes to SM-028.
+  void _openPreview(BuildContext context, int index) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => TemplatePreviewScreen(
+          templates: letterTemplates,
+          initialIndex: index,
+          isPremium: isPremium,
+          onUse: (template) {
+            Navigator.of(context).pop();
+            onPick(template);
+          },
+          onUpgrade: onUpgrade == null
+              ? null
+              : () {
+                  Navigator.of(context).pop();
+                  onUpgrade!.call();
+                },
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,17 +103,9 @@ class TemplateListScreen extends StatelessWidget {
             return _TemplateCard(
               template: template,
               locked: locked,
-              onTap: () {
-                if (locked) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Mẫu thư này chỉ dành cho Premium ✨'),
-                    ),
-                  );
-                } else {
-                  onPick(template);
-                }
-              },
+              // BR-04 / AC-02..03: every card opens the full preview first;
+              // locked cards still preview fully, then show the upgrade CTA.
+              onTap: () => _openPreview(context, i),
             );
           },
         ),

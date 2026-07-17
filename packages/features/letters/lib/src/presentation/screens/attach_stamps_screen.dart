@@ -62,10 +62,29 @@ class AttachStampsScreen extends StatelessWidget {
                           itemBuilder: (context, i) {
                             final stamp = stamps[i];
                             final selected = state.stampIds.contains(stamp.id);
+                            final atLimit =
+                                state.stampIds.length >= LetterInput.maxStamps;
                             return _StampPick(
                               stamp: stamp,
                               selected: selected,
-                              onTap: () => cubit.toggleStamp(stamp.id),
+                              onTap: () {
+                                // SM-014 AC-02: picking a 4th stamp is blocked
+                                // and the user is told the 3-per-letter limit.
+                                if (!selected && atLimit) {
+                                  ScaffoldMessenger.of(context)
+                                    ..hideCurrentSnackBar()
+                                    ..showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Mỗi thư chỉ đính được tối đa '
+                                          '${LetterInput.maxStamps} con tem.',
+                                        ),
+                                      ),
+                                    );
+                                  return;
+                                }
+                                cubit.toggleStamp(stamp.id);
+                              },
                             );
                           },
                         ),

@@ -10,6 +10,7 @@ class LetterContent {
     required this.text,
     this.paperColor,
     this.fontFamily,
+    this.ruled = false,
   });
 
   factory LetterContent.fromJson(Map<String, dynamic> json) => LetterContent(
@@ -17,6 +18,7 @@ class LetterContent {
     text: (json['text'] as String?) ?? '',
     paperColor: json['paper_color'] as int?,
     fontFamily: json['font_family'] as String?,
+    ruled: (json['ruled'] as bool?) ?? false,
   );
 
   /// Parses the server's `content_json`. Falls back to an empty classic letter
@@ -45,16 +47,22 @@ class LetterContent {
   /// Font family token, if the user picked one.
   final String? fontFamily;
 
+  /// Whether the editor shows horizontal ruled lines (SM-013 BR-08). Persisted
+  /// so the recipient sees the same ruling. Defaults to off (plain paper).
+  final bool ruled;
+
   LetterContent copyWith({
     String? templateId,
     String? text,
     int? paperColor,
     String? fontFamily,
+    bool? ruled,
   }) => LetterContent(
     templateId: templateId ?? this.templateId,
     text: text ?? this.text,
     paperColor: paperColor ?? this.paperColor,
     fontFamily: fontFamily ?? this.fontFamily,
+    ruled: ruled ?? this.ruled,
   );
 
   Map<String, dynamic> toJson() => {
@@ -62,6 +70,7 @@ class LetterContent {
     'text': text,
     if (paperColor != null) 'paper_color': paperColor,
     if (fontFamily != null) 'font_family': fontFamily,
+    if (ruled) 'ruled': true,
   };
 
   /// Serialized form stored server-side as `content_json`.
