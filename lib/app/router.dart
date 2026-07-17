@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:app_platform/app_platform.dart';
 import 'package:feature_album/feature_album.dart';
@@ -135,7 +137,19 @@ class AlbumRoute extends GoRouteData with $AlbumRoute {
     // SM-035: the sample-stamp catalog is a separate browse area reached from
     // the Album.
     onBrowseSamples: () => const SampleStampsRoute().go(context),
+    // SM-025 BR-07: write the captured post to a temp file and open the native
+    // share sheet. The watermark is already baked into the PNG (BR-06).
+    onShareImage: _shareStampImage,
   );
+}
+
+/// Writes [png] to a temp file and opens the native share sheet (SM-025 BR-07).
+Future<void> _shareStampImage(Uint8List png) async {
+  final path =
+      '${Directory.systemTemp.path}/stampmail-share-${DateTime.now().millisecondsSinceEpoch}.png';
+  final file = File(path);
+  await file.writeAsBytes(png, flush: true);
+  await SharePlus.instance.share(ShareParams(files: [XFile(path)]));
 }
 
 /// SM-035 — the curated sample-stamp catalog (a separate browse area, BR-01).

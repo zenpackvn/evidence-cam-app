@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +11,7 @@ import '../bloc/album_state.dart';
 import '../widgets/album_search_bar.dart';
 import '../widgets/album_stats_banner.dart';
 import '../widgets/stamp_tile.dart';
+import 'share_stamp_screen.dart';
 import 'stamp_detail_screen.dart';
 
 /// SM-022 — "Bộ sưu tập của bạn" (F02-S10): the flat list of the user's stamps
@@ -21,6 +24,7 @@ class AlbumScreen extends StatelessWidget {
     this.onCreate,
     this.onAttachStamp,
     this.onBrowseSamples,
+    this.onShareImage,
     super.key,
   });
 
@@ -32,6 +36,11 @@ class AlbumScreen extends StatelessWidget {
 
   /// Opens the sample-stamp catalog (SM-035), a separate browse area.
   final VoidCallback? onBrowseSamples;
+
+  /// Shares a captured post PNG via the native share sheet (SM-025 BR-07). The
+  /// host owns share_plus / temp-file writing so this feature stays
+  /// platform-agnostic.
+  final Future<void> Function(Uint8List png)? onShareImage;
 
   static const _ground = Color(0xFFFCF6EF);
 
@@ -77,6 +86,16 @@ class AlbumScreen extends StatelessWidget {
             Navigator.of(context).maybePop();
           },
           onAttach: onAttachStamp == null ? null : () => onAttachStamp!(stamp),
+          onShare: onShareImage == null
+              ? null
+              : () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => ShareStampScreen(
+                      stamp: stamp,
+                      onShareImage: onShareImage!,
+                    ),
+                  ),
+                ),
         ),
       ),
     );

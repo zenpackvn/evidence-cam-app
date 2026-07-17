@@ -13,6 +13,7 @@ class StampDetailScreen extends StatelessWidget {
     this.onAttach,
     this.onDelete,
     this.onRename,
+    this.onShare,
     super.key,
   });
 
@@ -23,6 +24,9 @@ class StampDetailScreen extends StatelessWidget {
 
   /// Called with the new name when the user renames the stamp (SM-022 BR-08).
   final ValueChanged<String>? onRename;
+
+  /// Opens the share-to-social flow for this stamp (SM-022 BR-07 → SM-025).
+  final VoidCallback? onShare;
 
   static const _ground = Color(0xFFFAF4EC);
 
@@ -39,6 +43,11 @@ class StampDetailScreen extends StatelessWidget {
         elevation: 0,
         leading: BackButton(onPressed: onBack),
         actions: [
+          if (onShare != null)
+            IconButton(
+              onPressed: onShare,
+              icon: Icon(Icons.ios_share, color: scheme.onSurfaceVariant),
+            ),
           if (onDelete != null)
             IconButton(
               onPressed: () => _confirmDelete(context),

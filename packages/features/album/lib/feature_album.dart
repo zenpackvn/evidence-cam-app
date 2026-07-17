@@ -23,4 +23,5 @@ export 'src/presentation/bloc/sample_stamps_cubit.dart';
 export 'src/presentation/bloc/sample_stamps_state.dart';
 export 'src/presentation/screens/album_screen.dart';
 export 'src/presentation/screens/sample_stamps_screen.dart';
+export 'src/presentation/screens/share_stamp_screen.dart';
 export 'src/presentation/screens/stamp_detail_screen.dart';
