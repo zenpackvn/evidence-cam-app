@@ -9,16 +9,22 @@ class ReceivedLetter {
     required this.stamps,
     required this.createdAt,
     this.templateId = 'classic',
+    this.senderName = '',
   });
 
   final String id;
   final String templateId;
   final String text;
 
-  /// The stamps attached to the letter, ready to render or save to the album.
+  /// The stamps attached to the letter, ready to render (never saved to the
+  /// recipient's album — SM-017 BR-05).
   final List<StampRef> stamps;
 
   final DateTime createdAt;
+
+  /// The original sender's display name, used to prefill the recipient when the
+  /// reader replies (SM-020 BR-01). Empty when the server couldn't resolve it.
+  final String senderName;
 }
 
 /// The outcome of opening a link (SM-017). A link is one-time and 7-day, so a

@@ -8,7 +8,7 @@ Legend status: ⬜ pending · 🔍 verifying · 🔨 building · ✅ done (gate 
 
 | SM-ID | Product-spec | Feature package | Prio | Assess (pres/data/dom/test) | Status | Note |
 |---|---|---|---|---|---|---|
-| SM-000 | 001-auth | auth | P1 | 27/25/8/8 | 🔍 | Presentation dày, 8 test. Verify test pass + AC coverage |
+| SM-000 | 001-auth | auth | P1 | 27/25/8/8 | ✅ | 60 test pass. Verify: password<6 (BR-07/D7), username 3-30 (BR-04), forgot/verify LINK-based TTL 30ph resend 60s không OTP (BR-02/12), không tiết lộ email tồn tại, backend lockout 5 lần/15ph (BR-11). Không gap |
 | SM-024 | 002-ho-so-nguoi-dung | profile | P2 | 17/0/0/4 | ⬜ | UI-only (data qua shared_contracts) |
 | SM-003 | 003-onboarding | onboarding | P2 | 3/1/0/2 | ⬜ | |
 | SM-004 | 004-man-hinh-chinh | home | P2 | 5/0/1/3 | ⬜ | |

@@ -6,30 +6,52 @@ import '../composer_catalog.dart';
 /// SM-012 — "Danh sách template" (F03-S01): pick a letter template to start
 /// composing. Free templates are selectable; Premium ones show a lock and, when
 /// tapped by a Free user, hint at upgrading.
+///
+/// When [replyToName] is set the screen is entered as a reply (SM-020): the
+/// original sender is shown as the recipient so the user doesn't re-enter it
+/// (BR-01).
 class TemplateListScreen extends StatelessWidget {
   const TemplateListScreen({
     required this.onPick,
     this.isPremium = false,
+    this.replyToName,
     super.key,
   });
 
   final ValueChanged<LetterTemplate> onPick;
   final bool isPremium;
 
+  /// The original sender's name when composing a reply (SM-020 BR-01).
+  final String? replyToName;
+
   static const _ground = Color(0xFFFBF5EC);
 
   @override
   Widget build(BuildContext context) {
+    final isReply = replyToName != null && replyToName!.isNotEmpty;
     return Scaffold(
       backgroundColor: _ground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(
-          'Chọn mẫu thư',
-          style: context.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              isReply ? 'Trả lời' : 'Chọn mẫu thư',
+              style: context.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (isReply)
+              Text(
+                'Gửi tới $replyToName',
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              ),
+          ],
         ),
       ),
       body: SafeArea(

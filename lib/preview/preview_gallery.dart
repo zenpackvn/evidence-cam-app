@@ -65,6 +65,7 @@ Widget _shell(Widget child, {int tab = 0}) => Scaffold(
 );
 
 void _noop() {}
+void _noopReply(String _) {}
 
 List<GallerySection> buildGallerySections() => [
   GallerySection('Flow 1 · Khởi đầu', [
@@ -341,18 +342,18 @@ List<GallerySection> buildGallerySections() => [
       'F04-S02',
       'Đã mở / Hết hạn (in-app tương đương)',
       note: 'Mở link đã dùng → trạng thái already-opened (fake linkId).',
-      build: (_) => const LetterRevealScreen(linkId: 'already', onReply: _noop),
+      build: (_) => const LetterRevealScreen(linkId: 'already', onReply: _noopReply),
     ),
     GalleryEntry(
       'F04-S03/S04',
       'Animation mở phong bì (keyframes)',
-      build: (_) => const LetterRevealScreen(linkId: 'opened', onReply: _noop),
+      build: (_) => const LetterRevealScreen(linkId: 'opened', onReply: _noopReply),
     ),
     GalleryEntry(
       'F04-S05/S06',
       'Thư đã mở — Completed',
       note: 'Đi tiếp từ animation; nút lưu tem dùng fake.',
-      build: (_) => const LetterRevealScreen(linkId: 'opened', onReply: _noop),
+      build: (_) => const LetterRevealScreen(linkId: 'opened', onReply: _noopReply),
     ),
     GalleryEntry(
       'F04-S07d',

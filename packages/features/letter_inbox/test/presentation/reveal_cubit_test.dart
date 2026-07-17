@@ -12,9 +12,10 @@ class _FakeInboxRepository implements InboxRepository {
       outcome;
 }
 
-ReceivedLetter _letter() => ReceivedLetter(
+ReceivedLetter _letter({String senderName = ''}) => ReceivedLetter(
   id: 'L1',
   text: 'Chào bạn',
+  senderName: senderName,
   stamps: [
     StampRef(
       id: 's1',
@@ -34,6 +35,17 @@ void main() {
     await cubit.open();
     expect(cubit.state.phase, RevealPhase.opened);
     expect(cubit.state.letter?.text, 'Chào bạn');
+    addTearDown(cubit.close);
+  });
+
+  test('opened letter carries the sender name for the reply prefill (SM-020 BR-01)',
+      () async {
+    final cubit = RevealCubit(
+      _FakeInboxRepository(LetterOpened(_letter(senderName: 'An'))),
+      linkId: 'tok',
+    );
+    await cubit.open();
+    expect(cubit.state.letter?.senderName, 'An');
     addTearDown(cubit.close);
   });
 

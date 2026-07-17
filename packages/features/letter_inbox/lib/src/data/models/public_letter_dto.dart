@@ -24,6 +24,7 @@ abstract class PublicLetterDto with _$PublicLetterDto {
   const factory PublicLetterDto({
     required String id,
     @JsonKey(name: 'content_json') @Default('') String contentJson,
+    @JsonKey(name: 'sender_name') @Default('') String senderName,
     @JsonKey(name: 'created_at') required DateTime createdAt,
     @Default([]) List<PublicStampDto> stamps,
   }) = _PublicLetterDto;

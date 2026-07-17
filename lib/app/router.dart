@@ -137,10 +137,18 @@ class AlbumRoute extends GoRouteData with $AlbumRoute {
 
 @TypedGoRoute<LetterComposeRoute>(path: '/compose', name: 'compose')
 class LetterComposeRoute extends GoRouteData with $LetterComposeRoute {
-  const LetterComposeRoute();
+  const LetterComposeRoute({this.replyTo});
+
+  /// The original sender's name when this is a reply (SM-020 BR-01); a query
+  /// param so a deep link / reply can carry it.
+  final String? replyTo;
 
   @override
   Widget build(BuildContext context, GoRouterState state) => TemplateListScreen(
+    // SM-020 BR-01: when replying, the template picker shows the original
+    // sender as recipient. The send flow itself is unchanged (a fresh link,
+    // BR-03/BR-04) so the composer needs no recipient plumbing.
+    replyToName: replyTo,
     onPick: (template) => _openComposer(context, template.id),
   );
 }
@@ -196,9 +204,12 @@ class LetterRevealRoute extends GoRouteData with $LetterRevealRoute {
     // Người nhận đã đăng nhập mở link dưới uid của mình để server cho phép
     // chính chủ mở lại (link 1 lần với người khác — SM-017 BR-03/BR-10).
     viewerUid: SessionScope.of(context).currentUser?.id,
-    // ponytail: reply routes to compose for now; deferred deep-link + claim
-    // (D16) refine who the reply is addressed to once that lands.
-    onReply: () => const LetterComposeRoute().go(context),
+    // SM-020 BR-01: reply opens the composer prefilled with the original
+    // sender as recipient. (The send itself still goes out as a fresh link —
+    // BR-03/BR-04, no threading.)
+    onReply: (senderName) =>
+        LetterComposeRoute(replyTo: senderName.isEmpty ? null : senderName)
+            .go(context),
   );
 }
 
