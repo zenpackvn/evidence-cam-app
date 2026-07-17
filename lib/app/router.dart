@@ -405,12 +405,15 @@ class HomeRoute extends GoRouteData with $HomeRoute {
   );
 }
 
+/// SM-024 "Sửa hồ sơ" (`/me/edit`): the profile edit form — display name
+/// (BR-02), the once-only username change (BR-03) and the optional birthday
+/// (BR-06).
 class ProfileRoute extends GoRouteData with $ProfileRoute {
   const ProfileRoute();
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const ProfileScreen();
+      const EditProfileScreen();
 }
 
 class ChangePasswordRoute extends GoRouteData with $ChangePasswordRoute {
