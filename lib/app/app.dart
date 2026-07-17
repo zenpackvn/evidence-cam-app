@@ -75,6 +75,7 @@ class _AppState extends State<App> {
     );
     _router = result.router;
     _deepLink = result.deepLink;
+    _wireNotificationTaps();
     _syncControllers = features
         .map((f) => f.syncController)
         .whereType<FeatureSyncController>()
@@ -82,6 +83,30 @@ class _AppState extends State<App> {
     _videoPlayerService =
         widget.videoPlayerService ?? getIt<VideoPlayerService>();
     _authSub = _authBloc.stream.listen(_onAuthChanged);
+  }
+
+  /// SM-026 BR-04: route a notification tap to the screen for its kind. The
+  /// FCM service invokes this with the message data; `kind` mirrors the backend
+  /// push kinds (letter_opened / letter_received / quota_low).
+  void _wireNotificationTaps() {
+    if (!getIt.isRegistered<FirebaseMessagingService>()) return;
+    getIt<FirebaseMessagingService>().onNotificationTap = (data) {
+      final kind = data?['kind']?.toString();
+      switch (kind) {
+        case 'letter_opened':
+          // "Đã mở thư của bạn" → the sent mailbox (SM-021).
+          _router.go('/letters');
+        case 'letter_received':
+          final linkId = data?['link_id']?.toString();
+          if (linkId != null && linkId.isNotEmpty) {
+            _router.go('/letter/$linkId');
+          }
+        case 'quota_low':
+          // The upgrade screen (SM-028). Premium is disabled in v1 (D17); the
+          // route still shows the locked plan info.
+          _router.go('/settings');
+      }
+    };
   }
 
   void _onAuthChanged(AuthState state) {
