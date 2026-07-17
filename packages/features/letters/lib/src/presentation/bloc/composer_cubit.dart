@@ -2,8 +2,8 @@ import 'package:architecture/architecture.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/letter.dart';
+import '../../domain/entities/letter_content.dart';
 import '../../domain/repositories/letters_repository.dart';
-import '../composer_catalog.dart';
 import 'composer_state.dart';
 
 /// Drives the letter composer (SM-012..016): it owns the immutable draft, edits
@@ -24,12 +24,16 @@ class ComposerCubit extends Cubit<ComposerState> {
     state.copyWith(content: state.content.copyWith(templateId: templateId)),
   );
 
-  void setText(String text) {
-    final clipped = text.length > letterCharLimit
-        ? text.substring(0, letterCharLimit)
-        : text;
-    emit(state.copyWith(content: state.content.copyWith(text: clipped)));
-  }
+  /// Replaces the body with unformatted text, clipped to the limit (BR-04).
+  /// Drops any recorded formatting — the rich editor calls [setRichBody].
+  void setText(String text) =>
+      emit(state.copyWith(content: state.content.withPlainBody(text)));
+
+  /// Replaces the body with the editor's Delta (SM-013 BR-02 / BR-09). The
+  /// plain-text fallback and the character limit are enforced by
+  /// [LetterContent.withBody], so the two representations cannot drift.
+  void setRichBody(DeltaOps delta) =>
+      emit(state.copyWith(content: state.content.withBody(delta)));
 
   void selectFont(String fontFamily) => emit(
     state.copyWith(content: state.content.copyWith(fontFamily: fontFamily)),

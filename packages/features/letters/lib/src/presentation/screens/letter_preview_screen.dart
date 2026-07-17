@@ -83,13 +83,15 @@ class LetterPreviewScreen extends StatelessWidget {
                 style: context.textTheme.displayMedium?.copyWith(fontSize: 32),
               ),
               const SizedBox(height: 10),
-              // The real letter rendered read-only on its paper.
+              // The real letter rendered read-only on its paper — same widget,
+              // same Delta, so the preview matches the composer exactly
+              // (SM-015 BR-01).
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.xl),
                 child: SizedBox(
                   height: 392,
                   child: AbsorbPointer(
-                    child: LetterPaper(content: content, onTextChanged: (_) {}),
+                    child: ReadOnlyLetterPaper(content: content),
                   ),
                 ),
               ),

@@ -1,17 +1,27 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 
+import '../composer_catalog.dart';
+import 'editor_tab_item.dart';
 import 'font_chip_row.dart';
+import 'letter_format_bar.dart';
 
-/// The bottom editor sheet of the composer (F03-S04/S05/S06): four tabs —
-/// Giấy nền · Căn lề · Màu nền · Sticker — over a white sheet with 24px top
-/// radius, per the .pen `Editor/EditorTab` / `Editor/PaperCard` /
-/// `Content/FilterChip` components.
+/// The bottom editor sheet of the composer (F03-S04/S05/S06): the inline
+/// formatting row over five tabs — Giấy nền · Căn lề · Màu chữ · Màu nền ·
+/// Sticker — on a white sheet with 24px top radius, per the .pen
+/// `Editor/EditorTab` / `Editor/PaperCard` / `Content/FilterChip` components.
 ///
-// ponytail: alignment + stickers are UI-only until LetterContent carries them
-// (rich-text upgrade, SM-011); paper/color/font wire to the cubit today.
+/// Formatting (bold/italic/underline, align, ink) acts on the selection in
+/// [controller] — the same controller the paper renders — which is what makes
+/// BR-02 / BR-09 per-selection rather than whole-letter. Font, paper and ruling
+/// stay whole-letter and go through the cubit.
+///
+// ponytail: stickers are UI-only until LetterContent carries decorations
+// (BR-05).
 class ComposerEditorPanel extends StatefulWidget {
   const ComposerEditorPanel({
+    required this.controller,
     required this.selectedFont,
     required this.selectedPaper,
     required this.ruled,
@@ -20,6 +30,10 @@ class ComposerEditorPanel extends StatefulWidget {
     required this.onRuled,
     super.key,
   });
+
+  /// The composer's document. Formatting tabs read the current selection's
+  /// style from it and write attributes back to it.
+  final QuillController controller;
 
   final String? selectedFont;
   final int? selectedPaper;
@@ -34,11 +48,10 @@ class ComposerEditorPanel extends StatefulWidget {
   State<ComposerEditorPanel> createState() => _ComposerEditorPanelState();
 }
 
-enum _EditorTab { paper, align, color, sticker }
+enum _EditorTab { paper, align, ink, color, sticker }
 
 class _ComposerEditorPanelState extends State<ComposerEditorPanel> {
   _EditorTab _tab = _EditorTab.paper;
-  TextAlign _align = TextAlign.left;
   int _stickerCategory = 0;
 
   static const _papers = <(String, int)>[
@@ -82,27 +95,39 @@ class _ComposerEditorPanelState extends State<ComposerEditorPanel> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // SM-013 BR-02: always reachable, since it acts on whatever is
+          // selected rather than on a mode the user has to switch into.
+          LetterFormatBar(controller: widget.controller),
+          const SizedBox(height: AppSpacing.md),
+          Divider(height: 1, color: context.brand.borderSubtle),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
-              _TabItem(
+              EditorTabItem(
                 icon: Icons.description_outlined,
                 label: 'Giấy nền',
                 active: _tab == _EditorTab.paper,
                 onTap: () => setState(() => _tab = _EditorTab.paper),
               ),
-              _TabItem(
+              EditorTabItem(
                 icon: Icons.format_align_center,
                 label: 'Căn lề',
                 active: _tab == _EditorTab.align,
                 onTap: () => setState(() => _tab = _EditorTab.align),
               ),
-              _TabItem(
+              EditorTabItem(
+                icon: Icons.format_color_text,
+                label: 'Màu chữ',
+                active: _tab == _EditorTab.ink,
+                onTap: () => setState(() => _tab = _EditorTab.ink),
+              ),
+              EditorTabItem(
                 icon: Icons.format_color_fill,
                 label: 'Màu nền',
                 active: _tab == _EditorTab.color,
                 onTap: () => setState(() => _tab = _EditorTab.color),
               ),
-              _TabItem(
+              EditorTabItem(
                 icon: Icons.emoji_emotions_outlined,
                 label: 'Sticker',
                 active: _tab == _EditorTab.sticker,
@@ -125,10 +150,8 @@ class _ComposerEditorPanelState extends State<ComposerEditorPanel> {
                   onPaper: widget.onPaper,
                   onRuled: widget.onRuled,
                 ),
-                _EditorTab.align => _AlignTab(
-                  align: _align,
-                  onChanged: (a) => setState(() => _align = a),
-                ),
+                _EditorTab.align => _AlignTab(controller: widget.controller),
+                _EditorTab.ink => _InkTab(controller: widget.controller),
                 _EditorTab.color => _ColorTab(
                   colors: _colors,
                   selected: widget.selectedPaper,
@@ -143,55 +166,6 @@ class _ComposerEditorPanelState extends State<ComposerEditorPanel> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// .pen `Editor/EditorTab`: 20px glyph + caption label, coral when active with
-/// a 40×3 underline.
-class _TabItem extends StatelessWidget {
-  const _TabItem({
-    required this.icon,
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final color = active ? scheme.primary : scheme.onSurfaceVariant;
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              label,
-              style: context.textTheme.labelSmall?.copyWith(
-                color: color,
-                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Container(
-              width: 40,
-              height: 3,
-              decoration: BoxDecoration(
-                color: active ? scheme.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -334,34 +308,135 @@ class _PaperCard extends StatelessWidget {
   }
 }
 
+/// Paragraph alignment for the selection (SM-013 BR-02). `align` is a Delta
+/// *block* attribute, so it lands on the paragraphs the selection touches
+/// rather than on individual characters.
 class _AlignTab extends StatelessWidget {
-  const _AlignTab({required this.align, required this.onChanged});
+  const _AlignTab({required this.controller});
 
-  final TextAlign align;
-  final ValueChanged<TextAlign> onChanged;
+  final QuillController controller;
+
+  /// Left is Quill's default, so it is written as "no attribute" rather than
+  /// `align: left` — that keeps the Delta minimal and lets the web viewer's
+  /// default alignment apply (D1.5).
+  static const _options = <(String, IconData, Attribute<String?>?)>[
+    ('Trái', Icons.format_align_left, null),
+    ('Giữa', Icons.format_align_center, Attribute.centerAlignment),
+    ('Phải', Icons.format_align_right, Attribute.rightAlignment),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<TextAlign>(
-      segments: const [
-        ButtonSegment(
-          value: TextAlign.left,
-          icon: Icon(Icons.format_align_left),
-          label: Text('Trái'),
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final current =
+            controller.getSelectionStyle().attributes[Attribute.align.key];
+        return SegmentedButton<String>(
+          segments: [
+            for (final (label, icon, attribute) in _options)
+              ButtonSegment(
+                value: attribute?.value ?? 'left',
+                icon: Icon(icon),
+                label: Text(label),
+              ),
+          ],
+          selected: {(current?.value as String?) ?? 'left'},
+          onSelectionChanged: (set) {
+            final picked = _options.firstWhere(
+              (o) => (o.$3?.value ?? 'left') == set.first,
+            );
+            controller.formatSelection(
+              picked.$3 ?? Attribute.clone(Attribute.align, null),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/// The ink palette (SM-013 BR-09 / AC-09): applies `color` to the selected run
+/// only, so paragraphs the user did not select keep their own ink. Picking
+/// "Mực thường" clears the attribute back to the default ink.
+class _InkTab extends StatelessWidget {
+  const _InkTab({required this.controller});
+
+  final QuillController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final current =
+            controller.getSelectionStyle().attributes[Attribute.color.key]?.value
+                as String?;
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            for (final (label, argb) in letterInkColors)
+              _InkSwatch(
+                key: letterInkSwatchKey(argb),
+                label: label,
+                argb: argb,
+                // The default ink is the swatch shown when nothing is applied.
+                selected: argb == letterDefaultInk
+                    ? current == null
+                    : current?.toUpperCase() == inkHex(argb),
+                borderColor: scheme.primary,
+                onTap: () => controller.formatSelection(
+                  argb == letterDefaultInk
+                      ? Attribute.clone(Attribute.color, null)
+                      : ColorAttribute(inkHex(argb)),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _InkSwatch extends StatelessWidget {
+  const _InkSwatch({
+    required this.label,
+    required this.argb,
+    required this.selected,
+    required this.borderColor,
+    required this.onTap,
+    super.key,
+  });
+
+  final String label;
+  final int argb;
+  final bool selected;
+  final Color borderColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: label,
+      selected: selected,
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: Color(argb),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: selected ? borderColor : context.brand.borderSubtle,
+              width: selected ? 3 : 1,
+            ),
+          ),
         ),
-        ButtonSegment(
-          value: TextAlign.center,
-          icon: Icon(Icons.format_align_center),
-          label: Text('Giữa'),
-        ),
-        ButtonSegment(
-          value: TextAlign.right,
-          icon: Icon(Icons.format_align_right),
-          label: Text('Phải'),
-        ),
-      ],
-      selected: {align},
-      onSelectionChanged: (set) => onChanged(set.first),
+      ),
     );
   }
 }

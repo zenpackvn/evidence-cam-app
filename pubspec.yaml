@@ -153,6 +153,19 @@ dependencies:
 
   vector_graphics: ^1.2.2
   font_awesome_flutter: ^11.0.0
+
+# Why this override exists (SM-013 rich text, master-plan C3):
+#   flutter_quill 11.x -> quill_native_bridge ^11.0.0 -> quill_native_bridge_windows ^0.0.1
+# and that caret pin only reaches 0.0.2, which still requires win32 ^5.5.0.
+# package_info_plus ^10.1.0 requires win32 ^6.0.1, so pub cannot solve.
+# quill_native_bridge_windows 0.1.0-beta.1 is the same plugin already migrated to
+# win32 ^6.2.0 — upstream's caret simply has not caught up. We ship iOS/Android
+# only, so this package is a Windows-desktop plugin implementation that is never
+# compiled for our targets; the override unblocks resolution without affecting
+# any shipped platform. Remove once quill_native_bridge widens its constraint.
+dependency_overrides:
+  quill_native_bridge_windows: ^0.1.0-beta.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

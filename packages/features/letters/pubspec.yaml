@@ -24,6 +24,11 @@ dependencies:
   app_platform: ^0.1.0
   feature_album: ^0.1.0
 
+  # Rich-text letter body (SM-013 BR-02/BR-09): bold/italic/align/color are
+  # standard Delta attributes. The default toolbar is unused — the composer
+  # builds its own per the .pen design (master-plan C3).
+  flutter_quill: ^11.5.1
+
   flutter_bloc: ^9.1.1
   injectable: ^3.0.0
   get_it: ^9.2.1

@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart' show Key;
+
 /// A letter template (SM-012): Free gets 3, the rest are Premium (D15 — the
 /// exact Premium set is finalized with pricing). `paperColor` is the default
 /// paper tint the composer opens with.
@@ -114,5 +116,29 @@ const letterFonts = <String>[
   'Kalam',
 ];
 
-/// Max characters in a letter body (SM-013).
-const letterCharLimit = 500;
+/// The default ink the body is written in when no color is applied (SM-013
+/// BR-09: "đoạn chưa chọn màu giữ màu mặc định").
+const letterDefaultInk = 0xFF3A322C;
+
+/// The ink palette offered by the "Màu chữ" tab (SM-013 BR-09). Warm tones that
+/// stay legible on every paper in [letterTemplates]; the first is
+/// [letterDefaultInk] so the user can always return to the default.
+const letterInkColors = <(String, int)>[
+  ('Mực thường', letterDefaultInk),
+  ('San hô', 0xFFF35B43),
+  ('Đỏ thắm', 0xFFD7263D),
+  ('Hồng', 0xFFE8618C),
+  ('Tím', 0xFF8B6BD8),
+  ('Xanh dương', 0xFF2F6FB5),
+  ('Xanh lá', 0xFF3F8F5F),
+  ('Nâu', 0xFF8B5E3C),
+];
+
+/// Formats an ARGB color as the `#RRGGBB` string a Delta `color` attribute
+/// carries. Hex is what Quill parses and what CSS takes verbatim, so the web
+/// viewer (D1.5) renders the same ink with no translation table.
+String inkHex(int argb) =>
+    '#${(argb & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+/// Identifies one swatch in the "Màu chữ" palette, for tests and e2e.
+Key letterInkSwatchKey(int argb) => Key('letter-ink-${inkHex(argb)}');

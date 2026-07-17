@@ -1,63 +1,85 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 
 import '../../domain/entities/letter_content.dart';
 import '../composer_catalog.dart';
+import '../letter_document.dart';
 
-/// The letter "paper" (F03-S04): a tinted, rounded sheet holding the editable
-/// body in the chosen font. The paper color comes from the content (or the
-/// template default); the font is applied to the whole body for the MVP.
-class LetterPaper extends StatefulWidget {
+/// The letter "paper" (F03-S04): a tinted, rounded sheet holding the rich body
+/// (SM-013 BR-07). The paper color comes from the content (or the template
+/// default); the font applies to the whole body (BR-03 / AC-05), while
+/// bold/italic/align/color live per-run in the document (BR-02 / BR-09).
+///
+/// The body is owned by [controller], not by this widget: the composer's
+/// toolbar formats the same selection the editor shows, so the controller is
+/// created by the screen and shared. Rebuilding here never touches the
+/// document, so a paper/font change cannot disturb the caret.
+class LetterPaper extends StatelessWidget {
   const LetterPaper({
     required this.content,
-    required this.onTextChanged,
+    required this.controller,
+    this.focusNode,
     super.key,
   });
 
   final LetterContent content;
-  final ValueChanged<String> onTextChanged;
+  final QuillController controller;
+  final FocusNode? focusNode;
 
-  @override
-  State<LetterPaper> createState() => _LetterPaperState();
-}
-
-class _LetterPaperState extends State<LetterPaper> {
-  late final TextEditingController _controller =
-      TextEditingController(text: widget.content.text);
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  /// Body font size and line-height factor; the ruling lines align to these so
-  /// text sits on the lines (SM-013 BR-08).
+  /// Body font size and line-height factor. Locked through [DefaultStyles] so
+  /// every font renders on the same pitch and the ruling lines stay aligned
+  /// with the text (SM-013 BR-08).
   static const _fontSize = 17.0;
   static const _lineHeight = 1.6;
 
   @override
   Widget build(BuildContext context) {
-    final template = templateById(widget.content.templateId);
-    final paper = Color(widget.content.paperColor ?? template.paperColor);
-    final textField = TextField(
-      controller: _controller,
-      onChanged: widget.onTextChanged,
-      maxLines: null,
-      maxLength: letterCharLimit,
-      buildCounter: (_, {required currentLength, required isFocused, maxLength}) =>
-          null,
-      style: const TextStyle(
-        fontSize: _fontSize,
-        height: _lineHeight,
-        color: Color(0xFF3A322C),
-      ).copyWith(fontFamily: widget.content.fontFamily),
-      decoration: const InputDecoration(
-        border: InputBorder.none,
-        hintText: 'Gửi bạn,\n\nViết những dòng thật đẹp...',
-        isCollapsed: true,
+    final template = templateById(content.templateId);
+    final paper = Color(content.paperColor ?? template.paperColor);
+
+    final bodyStyle = TextStyle(
+      fontSize: _fontSize,
+      height: _lineHeight,
+      color: const Color(letterDefaultInk),
+      fontFamily: content.fontFamily,
+    );
+    // Zero every block/line spacing: the rules are painted on a fixed pitch of
+    // `_fontSize * _lineHeight`, so any extra paragraph spacing would drift the
+    // text off the lines.
+    DefaultTextBlockStyle block(TextStyle style) => DefaultTextBlockStyle(
+      style,
+      HorizontalSpacing.zero,
+      VerticalSpacing.zero,
+      VerticalSpacing.zero,
+      null,
+    );
+
+    final editor = QuillEditor.basic(
+      controller: controller,
+      focusNode: focusNode,
+      config: QuillEditorConfig(
+        // Single line on purpose: flutter_quill 11.5.1 builds the placeholder
+        // document by interpolating this string straight into a JSON literal
+        // (`raw_editor_state.dart`), so a newline or quote here throws a
+        // FormatException on the first build rather than failing gracefully.
+        placeholder: 'Gửi bạn, viết những dòng thật đẹp...',
+        padding: EdgeInsets.zero,
+        // The composer scrolls the whole paper, so the editor grows instead of
+        // scrolling inside itself.
+        scrollable: false,
+        expands: false,
+        customStyles: DefaultStyles(
+          paragraph: block(bodyStyle),
+          placeHolder: block(
+            bodyStyle.copyWith(
+              color: const Color(letterDefaultInk).withValues(alpha: 0.4),
+            ),
+          ),
+        ),
       ),
     );
+
     return Container(
       constraints: const BoxConstraints(minHeight: 420),
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -72,20 +94,69 @@ class _LetterPaperState extends State<LetterPaper> {
           ),
         ],
       ),
-      // SM-013 BR-08: ruled lines are a decorative background painted behind the
-      // text so they never block input; the line pitch matches the text line
-      // height so glyphs rest on the rules.
-      child: widget.content.ruled
-          ? CustomPaint(
-              painter: _RuledLinesPainter(
-                color: const Color(0xFF3A322C).withValues(alpha: 0.12),
-                lineHeight: _fontSize * _lineHeight,
-              ),
-              child: textField,
-            )
-          : textField,
+      // The editor needs FlutterQuillLocalizations. The app shell does not
+      // register the delegate (and letters cannot reach into it), so the
+      // feature supplies it here — merged over whatever the app already has.
+      child: Localizations.override(
+        context: context,
+        delegates: const [FlutterQuillLocalizations.delegate],
+        // SM-013 BR-08: the rules are a decorative background painted behind
+        // the text, so they never block input.
+        child: content.ruled
+            ? CustomPaint(
+                painter: _RuledLinesPainter(
+                  color: const Color(letterDefaultInk).withValues(alpha: 0.12),
+                  lineHeight: _fontSize * _lineHeight,
+                ),
+                child: editor,
+              )
+            : editor,
+      ),
     );
   }
+}
+
+/// A [LetterPaper] that renders a finished letter and cannot be edited
+/// (SM-015 BR-01 preview; also the shape any other read-only render needs).
+///
+/// Owns a read-only controller derived from [content], so callers can render a
+/// letter straight from its `content_json` without managing editor state. The
+/// controller is rebuilt only when the content object actually changes.
+class ReadOnlyLetterPaper extends StatefulWidget {
+  const ReadOnlyLetterPaper({required this.content, super.key});
+
+  final LetterContent content;
+
+  @override
+  State<ReadOnlyLetterPaper> createState() => _ReadOnlyLetterPaperState();
+}
+
+class _ReadOnlyLetterPaperState extends State<ReadOnlyLetterPaper> {
+  late QuillController _controller = letterController(
+    widget.content,
+    readOnly: true,
+  );
+
+  @override
+  void didUpdateWidget(ReadOnlyLetterPaper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The cubit emits a new content object per edit and reuses it otherwise, so
+    // identity is the cheap, exact signal that the body needs re-parsing.
+    if (!identical(oldWidget.content, widget.content)) {
+      _controller.dispose();
+      _controller = letterController(widget.content, readOnly: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      LetterPaper(content: widget.content, controller: _controller);
 }
 
 /// Paints evenly spaced horizontal rules across the paper body (SM-013 BR-08).
