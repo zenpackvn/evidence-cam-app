@@ -3,24 +3,40 @@
 **Tạo**: 2026-07-07
 **Mục tiêu**: Đưa app chạy **end-to-end thật** toàn bộ luồng nghiệp vụ (Phase 0→7),
 **cloud thật** (Cloud Run + Cloudflare R2 + Firebase Auth/FCM).
-**Trạng thái**: ✅ **ĐÃ DUYỆT + đang thực thi.** Cập nhật tiến độ 2026-07-07 ở mục dưới.
+**Trạng thái**: ✅ **ĐÃ DUYỆT + đang thực thi.** Cập nhật tiến độ 2026-07-17 ở mục dưới.
 
-## Tiến độ thực thi (2026-07-07)
+## Tiến độ thực thi (2026-07-17)
 
-Phần **code-được-ngay** (không cần credentials) đã xong; blocker gom ở [blockers.md](blockers.md).
+> Bảng này soát lại **từ code thực tế** ngày 2026-07-17. Bản trước (07-07) đã lệch xa:
+> nó ghi client Flutter ~5% trong khi 4/5 feature package đã có UI đầy đủ, và đánh
+> Phase 1 là "chờ Firebase config" trong khi `firebase_options.dart` đã là giá trị
+> thật của project `stampmail-dev`.
+>
+> **Đọc ✅ cho đúng**: ✅ = luồng chạy thật, có UI, analyze + test xanh. Không phải
+> "data layer xong". Ở bản 07-07, ✅ **loại trừ toàn bộ UI** — nay thì không.
+
+Blocker gom ở [blockers.md](blockers.md) — phần lớn là **credentials, không phải code**.
 
 | Phase | Trạng thái | Ghi chú |
 |---|---|---|
-| **0 — Nền** | ✅ shared_contracts, R2 presign, webhook verify, Dockerfile+CloudRun, design tokens | Postgres hoãn (TD-003) |
-| **1 — Auth client** | ⏸️ D1 — chờ Firebase config (A1) | UI có sẵn; data-layer swap khi có config |
-| **2 — Tem + Album** | ✅ `feature_album` (stamps + custom albums, offline-first, sync, wired vào app) | UI editor (D7) + `pro_image_editor` spike còn lại |
-| **3 — Gửi/Nhận thư + Web** | ✅ `feature_letters` + `feature_letter_send` (share helper) + `feature_letter_inbox` + **web viewer** (`web_letter/`) + backend public-letter DTO (embed stamp images) | Animation CSS placeholder (B2); AppsFlyer SDK = D5 |
-| **4 — Push** | ⏸️ D4 — FCM client (`feature_notifications` + noti preference) | Backend `NotificationService` đã có |
-| **5 — Premium** | ✅ `feature_premium` (`EntitlementReader` impl, offline cache) | RevenueCat purchase flow = D4 |
-| **6 — P1/P2** | ⏸️ UI hoàn thiện (D6) | sau P4 |
-| **7 — Ra mắt** | ⏸️ sau khi deploy thật | |
+| **0 — Nền** | ✅ | shared_contracts, R2 presign (`internal/uploads`), webhook verify, Dockerfile+CloudRun, design tokens. Postgres hoãn (TD-003) |
+| **1 — Auth client** | ✅ ~85% | Firebase Auth SDK **thật**, `firebase_options.dart` = `stampmail-dev` thật, email + Google chạy. ❌ **Apple + Facebook mới là snackbar "sắp ra mắt"** |
+| **2 — Tem + Album** | ✅ | `feature_album` (offline-first, delta sync) **và** `feature_stamp_creator` (wizard đủ 5 bước, upload R2 thật qua presign). `pro_image_editor` spike: đã đi hướng native Stack/Matrix4 |
+| **3 — Gửi/Nhận thư + Web** | ✅ ~80% | `feature_letters` (10 màn hình) + `feature_letter_inbox` + web viewer. Undo/redo (07-17) và **web viewer render Delta** (07-17) đã xong — trước đó người nhận mất trắng mọi định dạng. ❌ Sticker vẫn **chỉ là UI** (xem D8: cần chốt BR-05 + host ảnh). Animation CSS placeholder (B2) |
+| **4 — Push** | ✅ ~60% | FCM client thật — **nằm ở `packages/app_platform`**, không phải `features/notifications` (cái đó là rác template). Topic + tap-routing + màn hình tuỳ chọn đều chạy. Thiết kế push là **topic-based**, không cần device-token |
+| **5 — Premium** | 🔴 ~15% | Chỉ `EntitlementReader` + cache. ❌ Không paywall, ❌ không RevenueCat SDK, ❌ `isPremium` **hardcode `false`** ở `router.dart:126/:329` → gating không hoạt động. Spec mới đánh SM-028/029 `⏸️ Tạm disable v1` |
+| **6 — P1/P2** | 🟡 ~70% | "Đăng xuất tất cả thiết bị" đã thật (revoke refresh token, 07-17). ❌ **Xoá tài khoản vẫn giả** (bấm xác nhận chỉ đóng sheet; `DeleteAccountCubit` đã có + có test nhưng chưa nối). Ngôn ngữ/âm thanh liệt |
+| **7 — Ra mắt** | ⏸️ | Chờ credentials + native config |
 
-**Đã build/analyze/test xanh**: backend Go (build+vet+test), 4 feature package client + database + shared_contracts + app (analyze sạch). Docker image build OK.
+**Bằng chứng luồng lõi chạy thật**: `maestro/stampmail/` (login → tạo tem → gửi thư → nhận link → "Đã mở") bắn vào backend dev thật, assert cả upload R2. Đây là bằng chứng mạnh nhất, không phải tự nhận.
+
+**Đã build/analyze/test xanh (07-17)**: backend Go `build`+`vet`+`go test -race` toàn bộ pass; app `flutter analyze` **No issues found**; auth 64 test, letters 79, root 38, architecture 12 — tất cả pass.
+
+### Chặn deploy thật (không phải thiếu tính năng)
+
+- 🔴 **Firebase native config sai project**: `firebase_options.dart` = `stampmail-dev` (sender `725681265816`) nhưng `GoogleService-Info.plist` ở root = project `stamp-mail` (sender `975726644424`). Plist lại nằm sai chỗ — đường dẫn iOS build đọc (`ios/Runner/GoogleService-Info.plist`) đang bị gitignore. **Không có `google-services.json`** cho Android.
+- ⚠️ `integration_test/` vẫn là code template cũ 100% (bookmarks/collections) — **zero coverage StampMail**. E2E thật chỉ có ở `maestro/stampmail/`.
+- ⚠️ `web_letter/` **không có test nào trong repo** và CI không đụng tới. Delta renderer (07-17) verify bằng headless Chrome thủ công.
 
 ---
 
@@ -31,7 +47,17 @@ Phần **code-được-ngay** (không cần credentials) đã xong; blocker gom 
 
 ---
 
-## 0. Thực trạng đã khảo sát (điểm xuất phát thật)
+## 0. Thực trạng đã khảo sát — ẢNH CHỤP 2026-07-07 (lịch sử, KHÔNG phải hiện tại)
+
+> ⚠️ **Đây là điểm xuất phát ngày 07-07, giữ lại để đối chiếu — đừng đọc như trạng
+> thái hôm nay.** Mọi con số dưới đây đã lỗi thời:
+> - "Flutter client ~5%" → thực tế 07-17 là **~75%**, 4/5 feature package có UI đầy đủ
+> - "6 feature package chưa tồn tại" → **đã tồn tại đủ cả 6**
+> - "`firebase_options.dart` = placeholder" → **đã là giá trị thật** của `stampmail-dev`
+> - "Web viewer 0%" → **đã có** `web_letter/`, và từ 07-17 render được cả Delta
+> - "R2 presign chưa có" → **đã có** `internal/uploads` + `POST /api/sm/uploads/presign`
+>
+> Trạng thái hiện tại: xem bảng **Tiến độ thực thi (2026-07-17)** ở đầu file.
 
 Khác hẳn ước lượng ban đầu — backend đã đi rất xa:
 

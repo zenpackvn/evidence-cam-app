@@ -44,6 +44,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
     final body = <String, dynamic>{};
     if (edit.displayName != null) body['display_name'] = edit.displayName;
     if (edit.username != null) body['username'] = edit.username;
+    // Sent as-is, including "" — the backend treats an empty string as "clear
+    // the avatar", so an omitted field (null) and a cleared one differ.
+    if (edit.avatarUrl != null) body['avatar_url'] = edit.avatarUrl;
     if (edit.clearBirthDate) {
       body['date_of_birth'] = null;
     } else if (edit.birthDate != null) {
@@ -86,7 +89,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
     // BR-03 / AC-04: the username allowance is spent. Only a username change
     // produces a 403, which is what lets the form put it on that field.
     if (status == 403 && code == 'username_change_limit') {
-      return PermissionFailure(message ?? 'Bạn đã hết lượt đổi tên người dùng.');
+      return PermissionFailure(
+        message ?? 'Bạn đã hết lượt đổi tên người dùng.',
+      );
     }
     // §5: the name belongs to someone else.
     if (status == 409) {

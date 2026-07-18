@@ -1616,6 +1616,12 @@ abstract class AppLocalizations {
   /// **'Back to sign in'**
   String get smForgotBackToLogin;
 
+  /// No description provided for @smExitConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Press back again to exit'**
+  String get smExitConfirm;
+
   /// No description provided for @smForgotCodeTitle.
   ///
   /// In en, this message translates to:

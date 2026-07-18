@@ -841,6 +841,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get smForgotBackToLogin => 'Quay lại đăng nhập';
 
   @override
+  String get smExitConfirm => 'Bấm lần nữa để thoát';
+
+  @override
   String get smForgotCodeTitle => 'Kiểm tra email của bạn ✨';
 
   @override

@@ -41,9 +41,14 @@ abstract class EditProfileState with _$EditProfileState {
     String? usernameError,
     String? birthDateError,
     String? saveError,
+
     /// AC-03: set on the save that spends the last username change, so the
     /// screen can tell the user the allowance is now gone.
     @Default(false) bool usernameJustExhausted,
+
+    /// True while a new avatar is uploading + saving. Separate from [status] so
+    /// the avatar spinner is independent of the form's save button.
+    @Default(false) bool isSavingAvatar,
   }) = _EditProfileState;
 
   const EditProfileState._();
@@ -55,5 +60,7 @@ abstract class EditProfileState with _$EditProfileState {
 
   /// A save is offered only when no field is currently in error.
   bool get hasFieldErrors =>
-      displayNameError != null || usernameError != null || birthDateError != null;
+      displayNameError != null ||
+      usernameError != null ||
+      birthDateError != null;
 }

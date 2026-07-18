@@ -77,10 +77,16 @@ class ProfileEdit {
     this.birthDate,
     this.clearBirthDate = false,
     this.username,
+    this.avatarUrl,
   });
 
   final String? displayName;
   final BirthDate? birthDate;
   final bool clearBirthDate;
   final String? username;
+
+  /// The new avatar's public URL (SM-024). `null` leaves the avatar untouched;
+  /// an empty string clears it. Unlike the birthday, an empty value is a valid
+  /// edit here, so no separate clear flag is needed.
+  final String? avatarUrl;
 }

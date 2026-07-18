@@ -24,6 +24,18 @@ abstract interface class AuthRepository {
 
   Future<Result<void>> signOut();
 
+  /// Signs the user out on every device by revoking their refresh tokens
+  /// server-side, then clears the local session (SM-027).
+  ///
+  /// Unlike [signOut], this is not best-effort: if the server call fails the
+  /// local session is left intact and an `Err` is returned, so the UI can say
+  /// so. Dropping the session anyway would tell the user their other devices
+  /// are signed out when they are not.
+  ///
+  /// Other devices stop working once their current ID token expires (up to an
+  /// hour), not the instant this returns.
+  Future<Result<void>> signOutAllDevices();
+
   /// Permanently deletes the current account on the server and clears the
   /// local session. Unlike [signOut], the local session is only cleared when
   /// the server confirms the deletion, so a failure leaves the user signed in.

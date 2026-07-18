@@ -70,6 +70,18 @@ class CreatorCubit extends Cubit<CreatorState> {
     ),
   );
 
+  /// SM-008: repositions the sticker at [index] to a new normalized center as
+  /// the user drags it around the canvas.
+  void moveSticker(int index, double dx, double dy) {
+    final stickers = [...state.draft.stickers];
+    if (index < 0 || index >= stickers.length) return;
+    stickers[index] = stickers[index].copyWith(
+      dx: dx.clamp(0.0, 1.0),
+      dy: dy.clamp(0.0, 1.0),
+    );
+    emit(state.copyWith(draft: state.draft.copyWith(stickers: stickers)));
+  }
+
   void updateSticker(int index, StickerPlacement sticker) {
     final next = [...state.draft.stickers];
     if (index < 0 || index >= next.length) return;
@@ -85,6 +97,29 @@ class CreatorCubit extends Cubit<CreatorState> {
   void selectBorder(String borderId) =>
       emit(state.copyWith(draft: state.draft.copyWith(borderId: borderId)));
 
+  /// SM-009 "Nền": sets the stamp's paper/background colour.
+  void selectPaper(int color) =>
+      emit(state.copyWith(draft: state.draft.copyWith(paperColor: color)));
+
+  // ── Preview / hoàn thiện (SM-010) ────────────────────────────────────────
+  /// Sets the stamp name shown on the finish form; persisted on save.
+  void setStampName(String name) => emit(state.copyWith(name: name));
+
+  /// Adds a tag (trimmed, ignoring blanks and duplicates).
+  void addTag(String tag) {
+    final t = tag.trim();
+    if (t.isEmpty || state.tags.contains(t)) return;
+    emit(state.copyWith(tags: [...state.tags, t]));
+  }
+
+  void removeTag(int index) {
+    if (index < 0 || index >= state.tags.length) return;
+    emit(state.copyWith(tags: [...state.tags]..removeAt(index)));
+  }
+
+  /// Sets the personal note attached to the stamp on the finish form.
+  void setNote(String note) => emit(state.copyWith(note: note));
+
   // ── Save (SM-011) ────────────────────────────────────────────────────────
   /// Saves the stamp (SM-011, S0-2): render the composed stamp to PNG, upload it
   /// to R2 (3-hop presign→PUT), then persist the public URL through the stamps
@@ -96,7 +131,9 @@ class CreatorCubit extends Cubit<CreatorState> {
     try {
       final png = await _capturePng();
       final imageUrl = await _uploader.upload(png);
-      final result = await _stamps.save(StampInput(imageUrl: imageUrl));
+      final result = await _stamps.save(
+        StampInput(imageUrl: imageUrl, name: state.name.trim()),
+      );
       switch (result) {
         case Ok():
           emit(state.copyWith(saving: false, saved: true));

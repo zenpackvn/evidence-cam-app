@@ -101,6 +101,50 @@ void main() {
     addTearDown(cubit.close);
   });
 
+  test('moveSticker repositions the placement, clamped to the canvas', () {
+    final cubit = build();
+    cubit.addSticker(const StickerPlacement(glyph: '🌸', dx: 0.5, dy: 0.5));
+    cubit.moveSticker(0, 0.8, 0.2);
+    expect(cubit.state.draft.stickers.single.dx, 0.8);
+    expect(cubit.state.draft.stickers.single.dy, 0.2);
+    // Out-of-canvas drags clamp to [0, 1].
+    cubit.moveSticker(0, 1.4, -0.3);
+    expect(cubit.state.draft.stickers.single.dx, 1.0);
+    expect(cubit.state.draft.stickers.single.dy, 0.0);
+    addTearDown(cubit.close);
+  });
+
+  test('selectPaper sets the stamp paper colour', () {
+    final cubit = build();
+    expect(cubit.state.draft.paperColor, isNull);
+    cubit.selectPaper(0xFFFDE7EC);
+    expect(cubit.state.draft.paperColor, 0xFFFDE7EC);
+    addTearDown(cubit.close);
+  });
+
+  test('setStampName and setNote update the finish form fields', () {
+    final cubit = build();
+    cubit.setStampName('Bình minh Cappadocia');
+    cubit.setNote('Chuyến đi đáng nhớ');
+    expect(cubit.state.name, 'Bình minh Cappadocia');
+    expect(cubit.state.note, 'Chuyến đi đáng nhớ');
+    addTearDown(cubit.close);
+  });
+
+  test('addTag trims, ignores blanks and duplicates; removeTag drops one', () {
+    final cubit = build();
+    cubit.addTag('  du lịch  ');
+    cubit.addTag('du lịch'); // duplicate — ignored
+    cubit.addTag('   '); // blank — ignored
+    cubit.addTag('bình minh');
+    expect(cubit.state.tags, ['du lịch', 'bình minh']);
+    cubit.removeTag(0);
+    expect(cubit.state.tags, ['bình minh']);
+    cubit.removeTag(5); // out of range — no-op
+    expect(cubit.state.tags, ['bình minh']);
+    addTearDown(cubit.close);
+  });
+
   test('save surfaces an error when the preview is not mounted', () async {
     // Without a mounted RepaintBoundary the capture fails; save must recover
     // (not throw) and surface an error rather than mark saved. The happy-path

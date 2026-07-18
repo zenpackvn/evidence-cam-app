@@ -841,6 +841,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get smForgotBackToLogin => 'Back to sign in';
 
   @override
+  String get smExitConfirm => 'Press back again to exit';
+
+  @override
   String get smForgotCodeTitle => 'Check your email ✨';
 
   @override

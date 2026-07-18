@@ -92,8 +92,7 @@ class FakeAuthRepository implements AuthRepository {
   Future<Result<bool>> checkEmailVerified() async => const Ok(true);
 
   @override
-  Future<Result<void>> sendPasswordReset(String email) async =>
-      const Ok(null);
+  Future<Result<void>> sendPasswordReset(String email) async => const Ok(null);
 
   @override
   Future<Result<AuthUser>> signIn({
@@ -138,6 +137,12 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<Result<void>> signOut() async => const Ok(null);
+
+  @override
+  Future<Result<void>> signOutAllDevices() async {
+    await Future<void>.delayed(_lag * 2);
+    return const Ok(null);
+  }
 
   @override
   Future<Result<void>> deleteAccount() async {
@@ -185,7 +190,12 @@ final _fakeStamps = <Stamp>[
   ),
 ];
 
-const _stampNames = ['Tulip nở hồng', 'Ngày nắng đẹp', 'Cún đáng yêu', 'Tem của mẹ'];
+const _stampNames = [
+  'Tulip nở hồng',
+  'Ngày nắng đẹp',
+  'Cún đáng yêu',
+  'Tem của mẹ',
+];
 
 class FakeStampsRepository implements StampsRepository {
   @override

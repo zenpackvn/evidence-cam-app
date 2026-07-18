@@ -10,9 +10,10 @@ import '../bloc/creator_cubit.dart';
 import '../bloc/creator_state.dart';
 import '../widgets/stamp_frame.dart';
 
-/// SM-008/009 — "Trang trí con tem": the stamp preview over a tabbed panel of
-/// stickers (tap to drop one) and borders (tap to select). Placed stickers land
-/// near center with a little random scatter so repeats don't stack exactly.
+/// SM-008/009 — "Trang trí con tem": the stamp preview over an elevated panel
+/// (F02-S07 `panel`) with three tabs — Sticker (a grid you tap to drop),
+/// Viền tem (borders), and Nền (paper colour). Placed stickers land near center
+/// with a little random scatter so repeats don't stack exactly.
 class DecorateStep extends StatefulWidget {
   const DecorateStep({super.key});
 
@@ -20,7 +21,19 @@ class DecorateStep extends StatefulWidget {
   State<DecorateStep> createState() => _DecorateStepState();
 }
 
-enum _Panel { stickers, borders }
+enum _Panel { stickers, borders, paper }
+
+/// SM-009 "Nền" paper colours.
+const _paperColors = <int>[
+  0xFFFFFFFF,
+  0xFFFBF3EA,
+  0xFFFDE7EC,
+  0xFFFCE9D6,
+  0xFFE9F5E9,
+  0xFFE3F1FB,
+  0xFFEDE7F6,
+  0xFFF4E1E1,
+];
 
 class _DecorateStepState extends State<DecorateStep> {
   _Panel _panel = _Panel.stickers;
@@ -35,18 +48,21 @@ class _DecorateStepState extends State<DecorateStep> {
           child: Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-              child: StampFrame(draft: state.draft, interactive: true),
+              child: StampFrame(
+              draft: state.draft,
+              interactive: true,
+              onStickerMoved: (i, dx, dy) =>
+                  context.read<CreatorCubit>().moveSticker(i, dx, dy),
+            ),
             ),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        _PanelTabs(panel: _panel, onChanged: (p) => setState(() => _panel = p)),
-        const SizedBox(height: AppSpacing.sm),
-        SizedBox(
-          height: 96,
-          child: _panel == _Panel.stickers
-              ? _StickerGrid(onPick: _dropSticker)
-              : _BorderRow(state: state),
+        _DecoratePanel(
+          panel: _panel,
+          onTab: (p) => setState(() => _panel = p),
+          state: state,
+          onPickSticker: _dropSticker,
         ),
       ],
     );
@@ -60,69 +76,126 @@ class _DecorateStepState extends State<DecorateStep> {
   }
 }
 
-class _PanelTabs extends StatelessWidget {
-  const _PanelTabs({required this.panel, required this.onChanged});
+/// The elevated card holding the tabs and the active tool grid (F02-S07 `panel`).
+class _DecoratePanel extends StatelessWidget {
+  const _DecoratePanel({
+    required this.panel,
+    required this.onTab,
+    required this.state,
+    required this.onPickSticker,
+  });
 
   final _Panel panel;
-  final ValueChanged<_Panel> onChanged;
+  final ValueChanged<_Panel> onTab;
+  final CreatorState state;
+  final ValueChanged<String> onPickSticker;
 
   @override
   Widget build(BuildContext context) {
+    final Widget content = switch (panel) {
+      _Panel.stickers => _StickerGrid(onPick: onPickSticker),
+      _Panel.borders => _BorderGrid(state: state),
+      _Panel.paper => _PaperGrid(state: state),
+    };
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+      decoration: BoxDecoration(
+        color: context.brand.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1424211F),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _SegTabs(panel: panel, onTab: onTab),
+          const SizedBox(height: 10),
+          SizedBox(height: 132, child: _ToolCard(child: content)),
+        ],
+      ),
+    );
+  }
+}
+
+/// The three full-width segment tabs (F02-S07 `tabs`, from `Editor/SegTab`).
+class _SegTabs extends StatelessWidget {
+  const _SegTabs({required this.panel, required this.onTab});
+
+  final _Panel panel;
+  final ValueChanged<_Panel> onTab;
+
+  static const Map<_Panel, String> _labels = {
+    _Panel.stickers: 'Sticker',
+    _Panel.borders: 'Viền tem',
+    _Panel.paper: 'Nền',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _Tab(
-          label: 'Sticker',
-          active: panel == _Panel.stickers,
-          onTap: () => onChanged(_Panel.stickers),
-        ),
-        const SizedBox(width: AppSpacing.xxl),
-        _Tab(
-          label: 'Viền tem',
-          active: panel == _Panel.borders,
-          onTap: () => onChanged(_Panel.borders),
-        ),
+        for (final entry in _labels.entries)
+          Expanded(
+            child: InkWell(
+              onTap: () => onTab(entry.key),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      entry.value,
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: panel == entry.key
+                            ? scheme.primary
+                            : scheme.onSurfaceVariant,
+                        fontWeight: panel == entry.key
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 3,
+                      width: 40,
+                      decoration: BoxDecoration(
+                        color: panel == entry.key
+                            ? scheme.primary
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
 }
 
-class _Tab extends StatelessWidget {
-  const _Tab({required this.label, required this.active, required this.onTap});
+/// The inner tinted card that frames each tool grid (F02-S07 `stickerGrid`).
+class _ToolCard extends StatelessWidget {
+  const _ToolCard({required this.child});
 
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: active ? scheme.primary : scheme.onSurfaceVariant,
-                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              width: 40,
-              height: 3,
-              decoration: BoxDecoration(
-                color: active ? scheme.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFBF4EC),
+        borderRadius: BorderRadius.circular(14),
       ),
+      child: child,
     );
   }
 }
@@ -134,25 +207,23 @@ class _StickerGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      scrollDirection: Axis.horizontal,
+    return GridView.count(
+      crossAxisCount: 6,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      padding: EdgeInsets.zero,
       children: [
         for (final glyph in stickerGlyphs)
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.sm),
-            child: InkWell(
-              onTap: () => onPick(glyph),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: Container(
-                width: 54,
-                height: 54,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: context.colorScheme.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Text(glyph, style: const TextStyle(fontSize: 26)),
+          InkWell(
+            onTap: () => onPick(glyph),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Container(
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: context.brand.surfaceElevated,
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
+              child: Text(glyph, style: const TextStyle(fontSize: 22)),
             ),
           ),
       ],
@@ -160,8 +231,8 @@ class _StickerGrid extends StatelessWidget {
   }
 }
 
-class _BorderRow extends StatelessWidget {
-  const _BorderRow({required this.state});
+class _BorderGrid extends StatelessWidget {
+  const _BorderGrid({required this.state});
 
   final CreatorState state;
 
@@ -169,57 +240,43 @@ class _BorderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<CreatorCubit>();
     final scheme = context.colorScheme;
-    return ListView(
-      scrollDirection: Axis.horizontal,
+    return GridView.count(
+      crossAxisCount: 4,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      padding: EdgeInsets.zero,
+      childAspectRatio: 1.6,
       children: [
         for (final border in stampBorders)
           Builder(
             builder: (context) {
               final locked = border.premium && !state.isPremium;
               final selected = state.draft.borderId == border.id;
-              return Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: InkWell(
-                  onTap: () {
-                    if (locked) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Viền này chỉ dành cho Premium ✨'),
-                        ),
-                      );
-                    } else {
-                      cubit.selectBorder(border.id);
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  child: SizedBox(
-                    width: 72,
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: scheme.surfaceContainerLowest,
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                            border: selected
-                                ? Border.all(color: scheme.primary, width: 2)
-                                : null,
-                          ),
-                          child: locked
-                              ? Icon(
-                                  Icons.lock,
-                                  size: 18,
-                                  color: scheme.onSurfaceVariant,
-                                )
-                              : Icon(
-                                  Icons.crop_portrait,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
+              return InkWell(
+                onTap: () {
+                  if (locked) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Viền này chỉ dành cho Premium ✨'),
+                      ),
+                    );
+                  } else {
+                    cubit.selectBorder(border.id);
+                  }
+                },
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: Container(
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: context.brand.surfaceElevated,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: selected
+                        ? Border.all(color: scheme.primary, width: 2)
+                        : null,
+                  ),
+                  child: locked
+                      ? Icon(Icons.lock, size: 16, color: scheme.onSurfaceVariant)
+                      : Text(
                           border.label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -227,14 +284,52 @@ class _BorderRow extends StatelessWidget {
                             color: selected
                                 ? scheme.primary
                                 : scheme.onSurfaceVariant,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
                 ),
               );
             },
+          ),
+      ],
+    );
+  }
+}
+
+class _PaperGrid extends StatelessWidget {
+  const _PaperGrid({required this.state});
+
+  final CreatorState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<CreatorCubit>();
+    final scheme = context.colorScheme;
+    final current = state.draft.paperColor ?? 0xFFFFFFFF;
+    return GridView.count(
+      crossAxisCount: 6,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      padding: EdgeInsets.zero,
+      children: [
+        for (final color in _paperColors)
+          InkWell(
+            onTap: () => cubit.selectPaper(color),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Color(color),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                  color: current == color
+                      ? scheme.primary
+                      : scheme.outlineVariant,
+                  width: current == color ? 2 : 1,
+                ),
+              ),
+            ),
           ),
       ],
     );

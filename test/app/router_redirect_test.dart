@@ -17,8 +17,10 @@ import '../test_utils.dart';
 
 const splash = '/splash';
 const home = '/';
+const onboarding = '/onboarding';
 const String login = AuthRoutes.login;
 const String register = AuthRoutes.register;
+const String forgotPassword = AuthRoutes.forgotPassword;
 
 /// Builds a fresh deep-link gate for one navigation.
 DeepLinkState gate({bool splashCompleted = false, String? pending}) {
@@ -43,6 +45,8 @@ String? resolve({
     splashLocation: splash,
     loginLocation: login,
     registerLocation: register,
+    onboardingLocation: onboarding,
+    forgotPasswordLocation: forgotPassword,
     homeLocation: home,
   );
 }
@@ -151,6 +155,34 @@ void main() {
         ),
         isNull,
       );
+    });
+
+    test('allows onboarding (pre-auth flow: splash → onboarding → login)', () {
+      final deepLink = gate(splashCompleted: true);
+      expect(
+        resolve(
+          auth: const AuthState.initial(),
+          location: onboarding,
+          deepLink: deepLink,
+        ),
+        isNull,
+      );
+      // Onboarding is not captured as a post-login target.
+      expect(deepLink.pendingRedirect, isNull);
+    });
+
+    test('allows forgot-password (reached from login, no session)', () {
+      final deepLink = gate(splashCompleted: true);
+      expect(
+        resolve(
+          auth: const AuthState.initial(),
+          location: forgotPassword,
+          deepLink: deepLink,
+        ),
+        isNull,
+      );
+      // Forgot-password is not captured as a post-login target.
+      expect(deepLink.pendingRedirect, isNull);
     });
 
     test('does not overwrite an already-captured target', () {

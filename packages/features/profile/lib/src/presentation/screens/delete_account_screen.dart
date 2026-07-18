@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 
 import '../widgets/profile_sub_scaffold.dart';
 
-/// F07-S13 — delete account confirmation: the pending-delete explainer card
-/// (7-day grace, cancel by re-login, permanent wipe), an "I understand"
-/// checkbox, and the destructive confirm / cancel buttons.
+/// F07-S13 — delete account confirmation: an explainer card that deletion is
+/// immediate and permanent, an "I understand" checkbox, and the destructive
+/// confirm / cancel buttons.
+///
+/// Wording matches the backend: [onConfirm] runs `AuthRepository.deleteAccount`,
+/// which deletes the Firebase account outright — there is no pending-delete
+/// grace period, so the copy must not promise one.
 class DeleteAccountScreen extends StatefulWidget {
   const DeleteAccountScreen({
     required this.onConfirm,
@@ -61,7 +65,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    'Tài khoản sẽ vào trạng thái chờ xoá',
+                    'Tài khoản sẽ bị xoá vĩnh viễn',
                     textAlign: TextAlign.center,
                     style: context.textTheme.bodyLarge?.copyWith(
                       fontSize: 19,
@@ -79,23 +83,22 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                     child: const Column(
                       children: [
                         _WarnRow(
-                          icon: Icons.hourglass_bottom,
-                          text: 'Sau khi xác nhận, tài khoản của bạn sẽ được '
-                              'giữ ở trạng thái chờ xoá trong ',
-                          emphasis: '7 ngày.',
-                        ),
-                        _WarnDivider(),
-                        _WarnRow(
-                          icon: Icons.undo,
-                          text: 'Trong thời gian này, bạn có thể huỷ yêu cầu '
-                              'bằng cách đăng nhập lại.',
+                          icon: Icons.bolt_outlined,
+                          text:
+                              'Sau khi xác nhận, tài khoản của bạn sẽ bị xoá ',
+                          emphasis: 'ngay lập tức.',
                         ),
                         _WarnDivider(),
                         _WarnRow(
                           icon: Icons.delete_forever_outlined,
-                          text: 'Sau 7 ngày, tem, thư và dữ liệu liên quan '
-                              'sẽ bị ',
+                          text: 'Tem, thư và toàn bộ dữ liệu liên quan sẽ bị ',
                           emphasis: 'xoá vĩnh viễn.',
+                        ),
+                        _WarnDivider(),
+                        _WarnRow(
+                          icon: Icons.block,
+                          text: 'Thao tác này ',
+                          emphasis: 'không thể hoàn tác.',
                         ),
                       ],
                     ),
@@ -136,8 +139,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
-                        'Tôi hiểu rằng thao tác này có thể được hoàn tác '
-                        'trong 7 ngày đầu.',
+                        'Tôi hiểu rằng thao tác này không thể hoàn tác.',
                         style: context.textTheme.bodyMedium,
                       ),
                     ),

@@ -1,3 +1,4 @@
+import 'package:app_platform/app_platform.dart';
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,25 +9,33 @@ import '../../locator.dart';
 import '../bloc/edit_profile_cubit.dart';
 import '../bloc/edit_profile_state.dart';
 import '../widgets/profile_sub_scaffold.dart';
+import 'crop_avatar_screen.dart';
 
 /// SM-024 — "Sửa hồ sơ": the form behind the profile's edit action. Covers the
-/// display name (BR-02), the once-only username change (BR-03) and the optional
-/// birthday (BR-06).
+/// avatar, display name (BR-02), the once-only username change (BR-03) and the
+/// optional birthday (BR-06).
 class EditProfileScreen extends StatelessWidget {
-  const EditProfileScreen({super.key});
+  const EditProfileScreen({this.picker, super.key});
+
+  /// Supplied by the host (the router) so the feature does not reach into the
+  /// platform itself. Null in contexts without a picker (some tests), where the
+  /// avatar tap is simply inert.
+  final ImagePickerService? picker;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<EditProfileCubit>(
       create: (_) => getIt<EditProfileCubit>()..load(),
-      child: const EditProfileBody(),
+      child: EditProfileBody(picker: picker),
     );
   }
 }
 
 @visibleForTesting
 class EditProfileBody extends StatelessWidget {
-  const EditProfileBody({super.key});
+  const EditProfileBody({this.picker, super.key});
+
+  final ImagePickerService? picker;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +65,7 @@ class EditProfileBody extends StatelessWidget {
             message: state.saveError,
             onRetry: () => context.read<EditProfileCubit>().load(),
           ),
-          _ => _Form(state: state),
+          _ => _Form(state: state, picker: picker),
         },
       ),
     );
@@ -81,9 +90,10 @@ class _LoadFailure extends StatelessWidget {
 }
 
 class _Form extends StatelessWidget {
-  const _Form({required this.state});
+  const _Form({required this.state, this.picker});
 
   final EditProfileState state;
+  final ImagePickerService? picker;
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +101,8 @@ class _Form extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.xxl),
       children: [
+        _AvatarField(state: state, picker: picker),
+        const SizedBox(height: AppSpacing.xl),
         // BR-02: freely editable, at most 30 characters. The length is not
         // hard-capped — §5 asks for an error at the field when it is exceeded,
         // which a cap would make unreachable.
@@ -123,6 +135,115 @@ class _Form extends StatelessWidget {
           expand: true,
         ),
       ],
+    );
+  }
+}
+
+/// SM-024 avatar: the current picture (or an initial-letter placeholder),
+/// tappable to pick → crop → upload a new one. A spinner replaces the edit
+/// badge while the new avatar uploads and saves.
+class _AvatarField extends StatelessWidget {
+  const _AvatarField({required this.state, this.picker});
+
+  final EditProfileState state;
+  final ImagePickerService? picker;
+
+  static const _size = 96.0;
+
+  /// Picks a photo, sends it through the crop screen, and hands the cropped
+  /// bytes to the cubit. A cancel at either step is a no-op.
+  Future<void> _pickAndCrop(BuildContext context) async {
+    final service = picker;
+    if (service == null) return;
+    final cubit = context.read<EditProfileCubit>();
+    final navigator = Navigator.of(context);
+
+    final file = await service.pickImage(source: ImageSource.gallery);
+    if (file == null) return;
+
+    await navigator.push<void>(
+      MaterialPageRoute(
+        builder: (_) => CropAvatarScreen(
+          imagePath: file.path,
+          onSave: (bytes) {
+            navigator.pop();
+            cubit.changeAvatar(bytes);
+          },
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final avatarUrl = state.profile?.avatarUrl ?? '';
+    final initial = state.displayName.isNotEmpty
+        ? state.displayName.characters.first.toUpperCase()
+        : (state.username.isNotEmpty
+              ? state.username.characters.first.toUpperCase()
+              : '?');
+
+    return Center(
+      child: Semantics(
+        button: true,
+        label: 'Đổi ảnh đại diện',
+        child: InkWell(
+          key: const Key('editProfile_avatar'),
+          onTap: state.isSavingAvatar ? null : () => _pickAndCrop(context),
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: _size,
+            height: _size,
+            child: Stack(
+              children: [
+                ClipOval(
+                  child: SizedBox(
+                    width: _size,
+                    height: _size,
+                    child: avatarUrl.isEmpty
+                        ? ColoredBox(
+                            color: scheme.primaryContainer,
+                            child: Center(
+                              child: Text(
+                                initial,
+                                style: context.textTheme.displaySmall?.copyWith(
+                                  color: scheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          )
+                        : AppNetworkImage(imageUrl: avatarUrl),
+                  ),
+                ),
+                // The edit badge, replaced by a spinner while saving.
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: CircleAvatar(
+                    radius: 16,
+                    backgroundColor: scheme.primary,
+                    child: state.isSavingAvatar
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: scheme.onPrimary,
+                            ),
+                          )
+                        : Icon(
+                            Icons.camera_alt,
+                            size: 16,
+                            color: scheme.onPrimary,
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

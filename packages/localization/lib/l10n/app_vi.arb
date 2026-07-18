@@ -325,6 +325,7 @@
   "smForgotEmailHint": "Email",
   "smForgotSubmit": "Gửi link đặt lại",
   "smForgotBackToLogin": "Quay lại đăng nhập",
+  "smExitConfirm": "Bấm lần nữa để thoát",
   "smForgotCodeTitle": "Kiểm tra email của bạn ✨",
   "smForgotCodeSubtitle": "Chúng tôi đã gửi link đặt lại mật khẩu đến địa chỉ",
   "smForgotCodeContinue": "Tiếp tục",

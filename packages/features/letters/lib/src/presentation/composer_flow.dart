@@ -72,7 +72,7 @@ class ComposerFlow extends StatelessWidget {
   }
 }
 
-class _ComposerNavigator extends StatelessWidget {
+class _ComposerNavigator extends StatefulWidget {
   const _ComposerNavigator({
     required this.stamps,
     required this.linkBaseUrl,
@@ -86,19 +86,39 @@ class _ComposerNavigator extends StatelessWidget {
   final void Function(SharePlatform platform, String letterUrl) onOpenShare;
 
   @override
+  State<_ComposerNavigator> createState() => _ComposerNavigatorState();
+}
+
+class _ComposerNavigatorState extends State<_ComposerNavigator> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
+
+  StampsRepository get stamps => widget.stamps;
+  String get linkBaseUrl => widget.linkBaseUrl;
+  VoidCallback get onClose => widget.onClose;
+  void Function(SharePlatform, String) get onOpenShare => widget.onOpenShare;
+
+  @override
   Widget build(BuildContext context) {
-    return Navigator(
-      onGenerateInitialRoutes: (navigator, _) => [
-        MaterialPageRoute<void>(
-          builder: (_) => _provide(
-            context,
-            ComposerScreen(
-              onBack: onClose,
-              onNext: () => _pushAttach(navigator, context),
+    // System back steps through the nested flow (compose → attach → preview →
+    // send → success); only from the first screen does it fall through and leave
+    // the flow. Without this the OS back would pop the whole /compose route at
+    // once, skipping the steps.
+    return NavigatorPopHandler(
+      onPopWithResult: (_) => _navigatorKey.currentState?.maybePop(),
+      child: Navigator(
+        key: _navigatorKey,
+        onGenerateInitialRoutes: (navigator, _) => [
+          MaterialPageRoute<void>(
+            builder: (_) => _provide(
+              context,
+              ComposerScreen(
+                onBack: onClose,
+                onNext: () => _pushAttach(navigator, context),
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

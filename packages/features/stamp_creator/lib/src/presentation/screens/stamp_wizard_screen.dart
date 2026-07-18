@@ -77,9 +77,9 @@ class _WizardView extends StatelessWidget {
       subtitle: 'Thêm sticker, họa tiết và viền tem để con tem thêm sinh động.',
     ),
     CreatorStep.preview: (
-      lead: 'Xem trước ',
-      accent: 'con tem',
-      subtitle: 'Kiểm tra con tem của bạn trước khi lưu vào Album.',
+      lead: 'Xem trước & hoàn thiện',
+      accent: '',
+      subtitle: 'Kiểm tra lần cuối trước khi lưu vào bộ sưu tập của bạn.',
     ),
   };
 
@@ -94,42 +94,69 @@ class _WizardView extends StatelessWidget {
         );
       },
       builder: (context, state) {
+        final cubit = context.read<CreatorCubit>();
+
+        // System back mirrors the "Quay lại" button: step back through the
+        // wizard, and only leave to the picker from the first step. Without this
+        // the OS back would pop the whole wizard at once, skipping the steps.
+        void handleBack() {
+          if (state.saved) {
+            onViewAlbum();
+            return;
+          }
+          if (!cubit.back()) onExit();
+        }
+
+        final Widget child;
         if (state.saved) {
-          return SaveSuccessScreen(
+          final name = state.name.trim();
+          child = SaveSuccessScreen(
             onViewAlbum: onViewAlbum,
             onCreateAnother: onCreateAnother,
+            draft: state.draft,
+            stampName: name.isEmpty ? 'Con tem mới' : name,
+          );
+        } else {
+          final copy = _copy[state.step]!;
+          final isPreview = state.step == CreatorStep.preview;
+          child = WizardScaffold(
+            titleLead: copy.lead,
+            titleAccent: copy.accent,
+            subtitle: copy.subtitle,
+            showCrown: !state.isPremium && !isPreview,
+            body: switch (state.step) {
+              CreatorStep.source => const SizedBox.shrink(),
+              CreatorStep.filter => const FilterStep(),
+              CreatorStep.decorate => const DecorateStep(),
+              CreatorStep.preview => const PreviewStep(),
+            },
+            actions: WizardActions(
+              nextLabel: isPreview ? 'Lưu tem ✨' : 'Tiếp theo',
+              nextEnabled: !state.saving,
+              onBack: handleBack,
+              onNext: () {
+                if (isPreview) {
+                  cubit.save();
+                } else {
+                  cubit.next();
+                }
+              },
+            ),
           );
         }
 
-        final cubit = context.read<CreatorCubit>();
-        final copy = _copy[state.step]!;
-        final isPreview = state.step == CreatorStep.preview;
-
-        return WizardScaffold(
-          titleLead: copy.lead,
-          titleAccent: copy.accent,
-          subtitle: copy.subtitle,
-          showCrown: !state.isPremium && !isPreview,
-          body: switch (state.step) {
-            CreatorStep.source => const SizedBox.shrink(),
-            CreatorStep.filter => const FilterStep(),
-            CreatorStep.decorate => const DecorateStep(),
-            CreatorStep.preview => const PreviewStep(),
+        // Let the route pop itself (back to the picker) from the first step;
+        // only intercept when there is an earlier step or success screen to
+        // fall back to — otherwise `onExit`'s maybePop would be swallowed by
+        // this PopScope and back would do nothing.
+        final canPop = !state.saved && state.step == CreatorStep.filter;
+        return PopScope(
+          canPop: canPop,
+          onPopInvokedWithResult: (didPop, _) {
+            if (didPop) return;
+            handleBack();
           },
-          actions: WizardActions(
-            nextLabel: isPreview ? 'Lưu tem' : 'Tiếp theo',
-            nextEnabled: !state.saving,
-            onBack: () {
-              if (!cubit.back()) onExit();
-            },
-            onNext: () {
-              if (isPreview) {
-                cubit.save();
-              } else {
-                cubit.next();
-              }
-            },
-          ),
+          child: child,
         );
       },
     );

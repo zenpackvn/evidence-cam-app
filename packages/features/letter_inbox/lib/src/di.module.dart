@@ -17,14 +17,16 @@ import 'package:injectable/injectable.dart' as _i526;
 import 'package:network/network.dart' as _i372;
 
 class FeatureLetterInboxPackageModule extends _i526.MicroPackageModule {
-// initializes the registration of main-scope dependencies inside of GetIt
+  // initializes the registration of main-scope dependencies inside of GetIt
   @override
   _i687.FutureOr<void> init(_i526.GetItHelper gh) {
     final inboxRemoteModule = _$InboxRemoteModule();
     gh.lazySingleton<_i432.InboxRemoteDataSource>(
-        () => inboxRemoteModule.provideInboxRemoteDataSource(gh<_i372.Dio>()));
+      () => inboxRemoteModule.provideInboxRemoteDataSource(gh<_i372.Dio>()),
+    );
     gh.lazySingleton<_i972.InboxRepository>(
-        () => _i917.InboxRepositoryImpl(gh<_i432.InboxRemoteDataSource>()));
+      () => _i917.InboxRepositoryImpl(gh<_i432.InboxRemoteDataSource>()),
+    );
   }
 }
 

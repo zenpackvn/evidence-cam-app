@@ -18,7 +18,12 @@ import '../datasources/sm_user_data_source.dart';
 /// `currentUser`.
 @LazySingleton(as: AuthRepository)
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl(this._firebase, this._smUser, this._local, this._tokenProvider) {
+  AuthRepositoryImpl(
+    this._firebase,
+    this._smUser,
+    this._local,
+    this._tokenProvider,
+  ) {
     // Point the network interceptor at Firebase's ID token. One-way binding
     // (network → Firebase) so the network package stays firebase-free.
     _tokenProvider.bind(_firebase.idToken);
@@ -96,6 +101,44 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Result<void>> signOutAllDevices() async {
+    // Revoke first: only once the server confirms every session is gone may the
+    // local one be dropped. The reverse order would sign this device out and
+    // leave the user unable to tell that the others are still logged in.
+    try {
+      await _smUser.revokeSessions();
+    } on DioException catch (e) {
+      return Err(_mapRevokeError(e));
+    }
+    await _firebase.signOut();
+    await _local.clearSession();
+    return const Ok(null);
+  }
+
+  /// Maps a failed revoke. The endpoint takes no input and needs only the
+  /// caller's token, so there is nothing the user can correct — the only
+  /// distinction worth drawing is "you're offline" from "the server refused".
+  Failure _mapRevokeError(DioException e) {
+    const offline = {
+      DioExceptionType.connectionError,
+      DioExceptionType.connectionTimeout,
+      DioExceptionType.receiveTimeout,
+      DioExceptionType.sendTimeout,
+    };
+    if (offline.contains(e.type)) {
+      return const UnknownFailure(
+        'Không có kết nối. Chưa đăng xuất được thiết bị nào.',
+      );
+    }
+    if (e.response?.statusCode == 401) {
+      return const NoSessionFailure();
+    }
+    return const UnknownFailure(
+      'Không đăng xuất được các thiết bị. Vui lòng thử lại.',
+    );
+  }
+
+  @override
   Future<Result<void>> deleteAccount() async {
     try {
       await _firebase.deleteAccount();
@@ -162,11 +205,15 @@ class AuthRepositoryImpl implements AuthRepository {
       case 'wrong-password':
       case 'user-not-found':
       case 'invalid-email':
-        return const InvalidCredentialsFailure('Email hoặc mật khẩu không đúng.');
+        return const InvalidCredentialsFailure(
+          'Email hoặc mật khẩu không đúng.',
+        );
       case 'email-already-in-use':
         return const InvalidCredentialsFailure('Email này đã được đăng ký.');
       case 'weak-password':
-        return const InvalidCredentialsFailure('Mật khẩu quá yếu (tối thiểu 6 ký tự).');
+        return const InvalidCredentialsFailure(
+          'Mật khẩu quá yếu (tối thiểu 6 ký tự).',
+        );
       case 'network-request-failed':
         return const UnknownFailure('Không có kết nối mạng.');
       default:

@@ -165,11 +165,11 @@ ColorFilter? effectiveColorFilter(StampDraft draft) {
 /// Derives a 5x4 color matrix from manual adjustments (SM-006 "Chỉnh tay").
 /// brightness/contrast/warmth/saturation are each in [-1, 1].
 List<double> adjustmentMatrix(Adjustments a) {
-  // Saturation.
+  // Saturation. "Độ nét" (sharpness) adds a little pop on top.
   const lumR = 0.2126;
   const lumG = 0.7152;
   const lumB = 0.0722;
-  final s = 1 + a.saturation; // 0..2
+  final s = 1 + a.saturation + a.sharpness * 0.3; // pop
   final sr = (1 - s) * lumR;
   final sg = (1 - s) * lumG;
   final sb = (1 - s) * lumB;
@@ -182,7 +182,7 @@ List<double> adjustmentMatrix(Adjustments a) {
 
   // Contrast (pivot at 0.5) and brightness (offset), plus a warmth tilt that
   // pushes red up and blue down.
-  final c = 1 + a.contrast; // 0..2
+  final c = 1 + a.contrast + a.sharpness * 0.3; // pop
   final t = (0.5 - 0.5 * c + a.brightness) * 255;
   final warmR = a.warmth * 40;
   final warmB = -a.warmth * 40;

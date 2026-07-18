@@ -101,7 +101,10 @@ void main() {
         dateOfBirth: DateOfBirthDto(day: 3, month: 4),
       );
 
-      expect(unwrap(await repo.me()).birthDate, const BirthDate(day: 3, month: 4));
+      expect(
+        unwrap(await repo.me()).birthDate,
+        const BirthDate(day: 3, month: 4),
+      );
     });
 
     test('BR-03: no changes left means the username is locked', () async {
@@ -129,6 +132,34 @@ void main() {
       await repo.update(const ProfileEdit(displayName: 'Alice'));
 
       expect(remote.lastBody!.containsKey('date_of_birth'), isFalse);
+    });
+
+    test('SM-024: sends the new avatar url when set', () async {
+      await repo.update(
+        const ProfileEdit(
+          avatarUrl: 'https://cdn.stampmail.com/avatars/u1/a.png',
+        ),
+      );
+
+      expect(remote.lastBody, {
+        'avatar_url': 'https://cdn.stampmail.com/avatars/u1/a.png',
+      });
+    });
+
+    test(
+      'an empty avatar url is sent (clears the avatar), not omitted',
+      () async {
+        await repo.update(const ProfileEdit(avatarUrl: ''));
+
+        expect(remote.lastBody, {'avatar_url': ''});
+        expect(remote.lastBody!.containsKey('avatar_url'), isTrue);
+      },
+    );
+
+    test('an untouched avatar is left out of the body entirely', () async {
+      await repo.update(const ProfileEdit(displayName: 'Alice'));
+
+      expect(remote.lastBody!.containsKey('avatar_url'), isFalse);
     });
 
     test('BR-06: a birthday without a year sends a null year', () async {
@@ -159,31 +190,37 @@ void main() {
   });
 
   group('update failures', () {
-    test('AC-04: 403 username_change_limit becomes a permission failure', () async {
-      remote.error = _httpError(
-        403,
-        code: 'username_change_limit',
-        message: 'Bạn đã hết lượt đổi tên người dùng.',
-      );
+    test(
+      'AC-04: 403 username_change_limit becomes a permission failure',
+      () async {
+        remote.error = _httpError(
+          403,
+          code: 'username_change_limit',
+          message: 'Bạn đã hết lượt đổi tên người dùng.',
+        );
 
-      final failure = failureOf(await repo.update(const ProfileEdit()));
+        final failure = failureOf(await repo.update(const ProfileEdit()));
 
-      expect(failure, isA<PermissionFailure>());
-      expect(failure.message, 'Bạn đã hết lượt đổi tên người dùng.');
-    });
+        expect(failure, isA<PermissionFailure>());
+        expect(failure.message, 'Bạn đã hết lượt đổi tên người dùng.');
+      },
+    );
 
-    test('§5: 409 becomes a validation failure carrying the server message', () async {
-      remote.error = _httpError(
-        409,
-        code: 'username_taken',
-        message: 'Tên người dùng đã tồn tại',
-      );
+    test(
+      '§5: 409 becomes a validation failure carrying the server message',
+      () async {
+        remote.error = _httpError(
+          409,
+          code: 'username_taken',
+          message: 'Tên người dùng đã tồn tại',
+        );
 
-      final failure = failureOf(await repo.update(const ProfileEdit()));
+        final failure = failureOf(await repo.update(const ProfileEdit()));
 
-      expect(failure, isA<ValidationFailure>());
-      expect(failure.message, 'Tên người dùng đã tồn tại');
-    });
+        expect(failure, isA<ValidationFailure>());
+        expect(failure.message, 'Tên người dùng đã tồn tại');
+      },
+    );
 
     test('400 becomes a validation failure', () async {
       remote.error = _httpError(

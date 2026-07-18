@@ -13,6 +13,18 @@ class SmUserDataSource {
 
   final Dio _dio;
 
+  /// Revokes every refresh token the signed-in user holds, ending their
+  /// sessions on all devices (`POST /api/sm/sessions/revoke`, SM-027).
+  ///
+  /// The caller's own session is revoked too, so the caller is expected to drop
+  /// its local session afterwards. Other devices keep working until their
+  /// current ID token expires (Firebase issues them with a one-hour lifetime) —
+  /// revoking only stops them minting a new one. Don't let UI copy promise that
+  /// other devices drop instantly.
+  Future<void> revokeSessions() async {
+    await _dio.post<void>('/api/sm/sessions/revoke');
+  }
+
   /// Fetches the current user's profile. Requires a valid bearer token, which
   /// the auth interceptor attaches from Firebase.
   Future<AuthUser> me() async {

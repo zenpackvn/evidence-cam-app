@@ -13,11 +13,13 @@ import 'package:feature_profile/feature_profile.dart';
 import 'package:feature_splash/feature_splash.dart';
 import 'package:feature_stamp_creator/feature_stamp_creator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_ui/shared_ui.dart';
 import 'package:storage/storage.dart';
 
+import '../core/locale/locale_bloc.dart';
 import 'widgets/app_shell.dart';
 
 part 'router.g.dart';
@@ -95,10 +97,10 @@ class OnboardingRoute extends GoRouteData with $OnboardingRoute {
       initialStep: store.lastStep,
       onStepChanged: store.saveStep,
       onDone: () {
-        // SM-003 BR-04: finishing onboarding leads into creating the first
-        // stamp (SM-005), not straight to Home.
+        // Onboarding is the first-run intro shown before auth: finishing (or
+        // skipping) it leads to sign-in, not into the app.
         store.markSeen().then((_) {
-          if (context.mounted) const CreateStampRoute().go(context);
+          if (context.mounted) context.go(AuthRoutes.login);
         });
       },
     );
@@ -138,14 +140,14 @@ class AlbumRoute extends GoRouteData with $AlbumRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) => AlbumScreen(
-    onCreate: () => const CreateStampRoute().go(context),
+    onCreate: () => const CreateStampRoute().push<void>(context),
     // SM-022 BR-07: attach a stamp to a new letter → composer. Placeholder
     // navigation to the template list; passing the preselected stamp through
     // the composer is wired when the composer accepts an initial stamp.
-    onAttachStamp: (_) => const LetterComposeRoute().go(context),
+    onAttachStamp: (_) => const LetterComposeRoute().push<void>(context),
     // SM-035: the sample-stamp catalog is a separate browse area reached from
     // the Album.
-    onBrowseSamples: () => const SampleStampsRoute().go(context),
+    onBrowseSamples: () => const SampleStampsRoute().push<void>(context),
     // SM-025 BR-07: write the captured post to a temp file and open the native
     // share sheet. The watermark is already baked into the PNG (BR-06).
     onShareImage: _shareStampImage,
@@ -202,12 +204,17 @@ void _setNotificationKind(String uid, String id, {required bool value}) {
   final kind = _notificationKinds[id];
   if (kind == null) return;
   if (GetIt.instance.isRegistered<SharedPreferences>()) {
-    unawaited(GetIt.instance<SharedPreferences>().setBool(_notifPrefKey(kind), value));
+    unawaited(
+      GetIt.instance<SharedPreferences>().setBool(_notifPrefKey(kind), value),
+    );
   }
   if (GetIt.instance.isRegistered<FirebaseMessagingService>()) {
     unawaited(
-      GetIt.instance<FirebaseMessagingService>()
-          .setKindEnabled(uid: uid, kind: kind, enabled: value),
+      GetIt.instance<FirebaseMessagingService>().setKindEnabled(
+        uid: uid,
+        kind: kind,
+        enabled: value,
+      ),
     );
   }
 }
@@ -244,7 +251,11 @@ class LetterComposeRoute extends GoRouteData with $LetterComposeRoute {
   );
 }
 
-void _openComposer(BuildContext context, String templateId, {String? replyToUid}) {
+void _openComposer(
+  BuildContext context,
+  String templateId, {
+  String? replyToUid,
+}) {
   final rootContext = context;
   Navigator.of(context).push<void>(
     MaterialPageRoute(
@@ -278,7 +289,7 @@ class SentLettersRoute extends GoRouteData with $SentLettersRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) => SentLettersPage(
     createCubit: () => GetIt.instance<SentLettersCubit>(),
-    onCompose: () => const LetterComposeRoute().go(context),
+    onCompose: () => const LetterComposeRoute().push<void>(context),
   );
 }
 
@@ -303,7 +314,7 @@ class LetterRevealRoute extends GoRouteData with $LetterRevealRoute {
     onReply: ({required senderName, required senderUid}) => LetterComposeRoute(
       replyTo: senderName.isEmpty ? null : senderName,
       replyToUid: senderUid.isEmpty ? null : senderUid,
-    ).go(context),
+    ).push<void>(context),
     // SM-025: share the opened letter to social (Mức 1/2/3) with its stamp and
     // text; the same capture → share sheet / gallery plumbing as the Album.
     onShare: ({required stampImageUrl, required letterText}) =>
@@ -328,8 +339,8 @@ class StampMailProfileRoute extends GoRouteData with $StampMailProfileRoute {
       StampMailProfileScreen(
         // ponytail: isPremium is false until the entitlement reader is wired
         // (C6); the Premium card / badge gate on it.
-        onEditProfile: () => const ProfileRoute().go(context),
-        onOpenSettings: () => const SettingsRoute().go(context),
+        onEditProfile: () => const ProfileRoute().push<void>(context),
+        onOpenSettings: () => const SettingsRoute().push<void>(context),
         onUpgrade: () {},
       );
 }
@@ -339,41 +350,144 @@ class SettingsRoute extends GoRouteData with $SettingsRoute {
   const SettingsRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) => SettingsScreen(
-    onChangePassword: () => const ChangePasswordRoute().go(context),
-    onSignOut: () => SessionScope.of(context).signOut(),
-    onSignOutAll: () => SessionScope.of(context).signOut(),
-    // ponytail: locale switching persists once the locale store lands; the
-    // picker UI (F07-S08) is design-complete.
-    onLanguage: () => Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => LanguageScreen(selected: 'vi', onSelect: (_) {}),
-      ),
-    ),
-    onNotifications: () {
-      final uid = SessionScope.of(context).currentUser?.id;
-      Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) => NotificationSettingsScreen(
-            initialValues: _notificationPrefs(),
-            onKindChanged: uid == null
-                ? null
-                : (id, {required value}) =>
-                    _setNotificationKind(uid, id, value: value),
-          ),
+  Widget build(BuildContext context, GoRouterState state) =>
+      BlocProvider<SignOutAllDevicesCubit>(
+        create: (_) => GetIt.instance<SignOutAllDevicesCubit>(),
+        child: Builder(
+          builder: (context) =>
+              BlocListener<SignOutAllDevicesCubit, SignOutAllDevicesState>(
+                listener: _onSignOutAllState,
+                child: _buildSettings(context),
+              ),
         ),
       );
-    },
-    onDeleteAccount: () => Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        // ponytail: confirm routes into the existing DeleteAccountCubit flow
-        // (profile edit) until the pending-delete endpoint lands.
-        builder: (_) => DeleteAccountScreen(
-          onConfirm: () => Navigator.of(context).maybePop(),
+
+  /// Reacts to the revoke result. On success the repository has already ended
+  /// the session server-side and locally, so the session is only cleared here to
+  /// send the router back to login — mirroring the delete-account flow.
+  void _onSignOutAllState(BuildContext context, SignOutAllDevicesState state) {
+    switch (state) {
+      case SignOutAllDevicesSuccess():
+        SessionScope.of(context).clearSession();
+      case SignOutAllDevicesFailure(:final failure):
+        // The user is still signed in everywhere. Say so rather than let the
+        // screen sit there looking like it worked.
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.message)));
+      case SignOutAllDevicesInitial() || SignOutAllDevicesSubmitting():
+        break;
+    }
+  }
+
+  /// Confirms before ending every session.
+  ///
+  /// The dialog is where the one-hour caveat belongs: the row promises "tất cả
+  /// thiết bị", and revoking refresh tokens does not drop other devices until
+  /// their current ID token expires. Better the user reads that here than
+  /// discovers it on a device that is still logged in.
+  Future<void> _confirmSignOutAll(BuildContext context) async {
+    final cubit = context.read<SignOutAllDevicesCubit>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Đăng xuất tất cả thiết bị?'),
+        content: const Text(
+          'Bạn sẽ đăng xuất khỏi thiết bị này và tất cả thiết bị khác.\n\n'
+          'Các thiết bị khác có thể mất tới 1 giờ để đăng xuất hoàn toàn.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Huỷ'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Đăng xuất'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed ?? false) await cubit.submit();
+  }
+
+  Widget _buildSettings(BuildContext context) {
+    // Read (not watch): switching the locale rebuilds MaterialApp, which
+    // rebuilds this route, so a fresh read here always reflects the current
+    // language.
+    final localeBloc = context.read<LocaleBloc>();
+    final code = localeBloc.state.locale.languageCode;
+    return SettingsScreen(
+      languageLabel: _languageLabel(code),
+      onChangePassword: () => const ChangePasswordRoute().push<void>(context),
+      onSignOut: () => SessionScope.of(context).signOut(),
+      onSignOutAll: () => _confirmSignOutAll(context),
+      onLanguage: () => Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => LanguageScreen(
+            selected: code,
+            onSelect: (picked) => localeBloc.add(LocaleChanged(picked)),
+          ),
         ),
       ),
-    ),
-  );
+      onNotifications: () {
+        final uid = SessionScope.of(context).currentUser?.id;
+        Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (_) => NotificationSettingsScreen(
+              initialValues: _notificationPrefs(),
+              onKindChanged: uid == null
+                  ? null
+                  : (id, {required value}) =>
+                        _setNotificationKind(uid, id, value: value),
+            ),
+          ),
+        );
+      },
+      onDeleteAccount: () => Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => BlocProvider<DeleteAccountCubit>(
+            create: (_) => GetIt.instance<DeleteAccountCubit>(),
+            child: BlocListener<DeleteAccountCubit, DeleteAccountState>(
+              listener: (_, state) => _onDeleteAccountState(context, state),
+              child: Builder(
+                builder: (buttonContext) => DeleteAccountScreen(
+                  onConfirm: () =>
+                      buttonContext.read<DeleteAccountCubit>().submit(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Reacts to the delete-account result. On success the account is already
+  /// gone server-side (Firebase `user.delete()`), so the session is cleared to
+  /// send the router to login; on failure the user stays put with a message.
+  void _onDeleteAccountState(BuildContext context, DeleteAccountState state) {
+    switch (state) {
+      case DeleteAccountSuccess():
+        SessionScope.of(context).clearSession();
+      case DeleteAccountFailure():
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không xoá được tài khoản. Vui lòng thử lại.'),
+          ),
+        );
+      case DeleteAccountInitial() || DeleteAccountSubmitting():
+        break;
+    }
+  }
+
+  /// Display name for a language code. Only the two codes with a bundled
+  /// translation appear here; the picker offers more, but LocaleBloc ignores
+  /// any it cannot render, so the label can only ever be one of these.
+  static String _languageLabel(String code) => switch (code) {
+    'en' => 'English',
+    _ => 'Tiếng Việt',
+  };
 }
 
 @TypedGoRoute<SplashRoute>(path: '/splash', name: 'splash')
@@ -399,7 +513,7 @@ class HomeRoute extends GoRouteData with $HomeRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) => HomeScreen(
-    onCreateStamp: () => const CreateStampRoute().go(context),
+    onCreateStamp: () => const CreateStampRoute().push<void>(context),
     onOpenAlbum: () => const AlbumRoute().go(context),
     onOpenLetters: () => const SentLettersRoute().go(context),
   );
@@ -413,7 +527,7 @@ class ProfileRoute extends GoRouteData with $ProfileRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const EditProfileScreen();
+      EditProfileScreen(picker: GetIt.instance<ImagePickerService>());
 }
 
 class ChangePasswordRoute extends GoRouteData with $ChangePasswordRoute {
@@ -465,8 +579,10 @@ class DeepLinkScope extends InheritedWidget {
   final deepLink = DeepLinkState();
   final homeLocation = const HomeRoute().location;
   final splashLocation = const SplashRoute().location;
+  final onboardingLocation = const OnboardingRoute().location;
   const loginLocation = AuthRoutes.login;
   const registerLocation = AuthRoutes.register;
+  const forgotPasswordLocation = AuthRoutes.forgotPassword;
 
   final router = GoRouter(
     // No initialLocation — GoRouter resolves the platform deep-link URI on
@@ -483,6 +599,8 @@ class DeepLinkScope extends InheritedWidget {
       splashLocation: splashLocation,
       loginLocation: loginLocation,
       registerLocation: registerLocation,
+      onboardingLocation: onboardingLocation,
+      forgotPasswordLocation: forgotPasswordLocation,
       homeLocation: homeLocation,
     ),
   );
@@ -510,6 +628,8 @@ String? resolveSplashRedirect({
   required String splashLocation,
   required String loginLocation,
   required String registerLocation,
+  required String onboardingLocation,
+  required String forgotPasswordLocation,
   required String homeLocation,
 }) {
   // ── Phase 1: Before splash completes ──
@@ -528,7 +648,14 @@ String? resolveSplashRedirect({
   // ── Phase 2: Unauthenticated ──
   // Splash completed with no session, or user signed out.
   if (auth is AuthInitial || auth is AuthFailure) {
-    if (location == loginLocation || location == registerLocation) {
+    // The pre-auth routes reachable without a session: onboarding (first-run
+    // intro, splash → onboarding → login) and forgot-password (reached from the
+    // login screen's "Quên mật khẩu?" link). Without whitelisting them here the
+    // redirect would bounce the user straight back to login.
+    if (location == loginLocation ||
+        location == registerLocation ||
+        location == onboardingLocation ||
+        location == forgotPasswordLocation) {
       return null;
     }
     deepLink.pendingRedirect ??= requestedUri;

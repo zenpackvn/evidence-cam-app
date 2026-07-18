@@ -442,6 +442,7 @@
   "smForgotEmailHint": "Email",
   "smForgotSubmit": "Send reset link",
   "smForgotBackToLogin": "Back to sign in",
+  "smExitConfirm": "Press back again to exit",
   "smForgotCodeTitle": "Check your email ✨",
   "smForgotCodeSubtitle": "We sent a password-reset link to",
   "smForgotCodeContinue": "Continue",

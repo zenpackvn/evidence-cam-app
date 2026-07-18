@@ -147,7 +147,12 @@ class _LoadedHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.xxl, 18, AppSpacing.xxl, 120),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xxl,
+        18,
+        AppSpacing.xxl,
+        120,
+      ),
       children: [
         _Header(name: name),
         const SizedBox(height: 14),
@@ -230,8 +235,7 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: AppSpacing.md),
-        FaIcon(FontAwesomeIcons.bell, size: 26, color: scheme.onSurface),
+        // .pen F01-S16 header is avatar + greeting only — no bell glyph.
       ],
     );
   }
@@ -253,6 +257,14 @@ class _CreateCard extends StatelessWidget {
         color: context.brand.softPeach,
         borderRadius: BorderRadius.circular(AppRadius.xxl),
         border: Border.all(color: context.brand.borderSubtle),
+        // .pen F01-S16 createCard: outer shadow blur 6, offset (0,2), #24211F @ 6%.
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F24211F),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,6 +291,10 @@ class _CreateCard extends StatelessWidget {
                     onPressed: onCreate,
                     style: FilledButton.styleFrom(
                       backgroundColor: scheme.primary,
+                      // .pen btnCreate: coral pill, outer shadow blur 12,
+                      // offset (0,4), #24211F @ 8%.
+                      elevation: 4,
+                      shadowColor: const Color(0x2624211F),
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -560,7 +576,12 @@ class _EmptyHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.xxl, 16, AppSpacing.xxl, 120),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xxl,
+        16,
+        AppSpacing.xxl,
+        120,
+      ),
       children: [
         // .pen F01-S15 logoRow: the shared brand lockup (cAuthLogo).
         const StampMailBrandmark(),
@@ -616,6 +637,14 @@ class _EmptyHeroCard extends StatelessWidget {
         color: context.brand.surfaceElevated,
         borderRadius: BorderRadius.circular(AppRadius.xxl),
         border: Border.all(color: context.brand.borderSubtle),
+        // .pen F01-S15 heroCard: outer shadow blur 12, offset (0,4), #24211F @ 8%.
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1424211F),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,6 +672,10 @@ class _EmptyHeroCard extends StatelessWidget {
                     onPressed: onCreateStamp,
                     style: FilledButton.styleFrom(
                       backgroundColor: scheme.primary,
+                      // .pen btnCreate: coral pill with an outer shadow
+                      // (blur 12, offset (0,4), #24211F @ 8%).
+                      elevation: 4,
+                      shadowColor: const Color(0x2624211F),
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -652,7 +685,10 @@ class _EmptyHeroCard extends StatelessWidget {
                       ),
                     ),
                     icon: const FaIcon(FontAwesomeIcons.plus, size: 18),
-                    label: const Text('Tạo tem đầu tiên'),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Tạo tem đầu tiên'),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -673,7 +709,10 @@ class _EmptyHeroCard extends StatelessWidget {
                       ),
                     ),
                     icon: const FaIcon(FontAwesomeIcons.solidGem, size: 18),
-                    label: const Text('Khám phá tem mẫu'),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Khám phá tem mẫu'),
+                    ),
                   ),
                 ),
               ],
@@ -723,6 +762,14 @@ class _EmptyStateRow extends StatelessWidget {
           color: context.brand.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadius.xl),
           border: Border.all(color: context.brand.borderSubtle),
+          // .pen cEmptyRow: outer shadow blur 6, offset (0,2), #24211F @ 6%.
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0F24211F),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [

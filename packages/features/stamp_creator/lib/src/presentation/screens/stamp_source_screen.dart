@@ -48,6 +48,11 @@ class StampSourceScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: _BackButton(onTap: () => Navigator.of(context).maybePop()),
+              ),
+              const SizedBox(height: AppSpacing.md),
               _Title(),
               const SizedBox(height: AppSpacing.sm),
               Text(
@@ -63,7 +68,7 @@ class StampSourceScreen extends StatelessWidget {
                 icon: Icons.photo_camera_outlined,
                 label: 'Chụp ảnh mới',
                 heroHeight: 183,
-                hero: const _HeroPlaceholder(),
+                hero: const _HeroImage('source-camera.png'),
                 onTap: () => _pick(context, ImageSource.camera),
               ),
               const SizedBox(height: AppSpacing.md + AppSpacing.xxs),
@@ -71,12 +76,42 @@ class StampSourceScreen extends StatelessWidget {
                 icon: Icons.image_outlined,
                 label: 'Chọn từ thư viện',
                 heroHeight: 130,
-                hero: const _HeroPlaceholder(),
+                hero: const _HeroImage('source-gallery.png'),
                 onTap: () => _pick(context, ImageSource.gallery),
               ),
               const SizedBox(height: AppSpacing.lg),
               const _TipPanel(),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A circular "back" affordance (top-left), so the screen can be left by tap as
+/// well as the system back gesture / edge swipe. Matches the create/compose
+/// flow's circular buttons.
+class _BackButton extends StatelessWidget {
+  const _BackButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: context.colorScheme.surfaceContainerLowest,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(
+            Icons.arrow_back,
+            size: 22,
+            color: context.colorScheme.onSurface,
           ),
         ),
       ),
@@ -109,25 +144,20 @@ class _Title extends StatelessWidget {
   }
 }
 
-/// Placeholder hero for the source cards until real illustration assets are
-/// wired. A soft tinted block keeps the layout faithful without shipping the
-/// design's stock photos.
-class _HeroPlaceholder extends StatelessWidget {
-  const _HeroPlaceholder();
+/// The hero illustration filling the top of a source card (F02-S02 `photo`
+/// frames). The design uses image fill mode "fill", so the photo covers the box
+/// and crops overflow — [BoxFit.cover].
+class _HeroImage extends StatelessWidget {
+  const _HeroImage(this.asset);
+
+  final String asset;
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: context.colorScheme.secondaryContainer,
-      child: Center(
-        child: Icon(
-          Icons.image_outlined,
-          size: 40,
-          color: context.colorScheme.onSecondaryContainer.withValues(
-            alpha: 0.4,
-          ),
-        ),
-      ),
+    return Image.asset(
+      'assets/illustrations/$asset',
+      package: 'feature_stamp_creator',
+      fit: BoxFit.cover,
     );
   }
 }

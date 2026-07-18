@@ -51,6 +51,7 @@ class Adjustments {
     this.contrast = 0,
     this.warmth = 0,
     this.saturation = 0,
+    this.sharpness = 0,
   });
 
   final double brightness;
@@ -58,19 +59,29 @@ class Adjustments {
   final double warmth;
   final double saturation;
 
+  /// "Độ nét" (SM-006): a clarity/pop amount folded into contrast + saturation
+  /// at render time (a colour-matrix proxy for true unsharp masking).
+  final double sharpness;
+
   bool get isIdentity =>
-      brightness == 0 && contrast == 0 && warmth == 0 && saturation == 0;
+      brightness == 0 &&
+      contrast == 0 &&
+      warmth == 0 &&
+      saturation == 0 &&
+      sharpness == 0;
 
   Adjustments copyWith({
     double? brightness,
     double? contrast,
     double? warmth,
     double? saturation,
+    double? sharpness,
   }) => Adjustments(
     brightness: brightness ?? this.brightness,
     contrast: contrast ?? this.contrast,
     warmth: warmth ?? this.warmth,
     saturation: saturation ?? this.saturation,
+    sharpness: sharpness ?? this.sharpness,
   );
 }
 
@@ -85,6 +96,7 @@ class StampDraft {
     this.adjustments = const Adjustments(),
     this.stickers = const [],
     this.borderId = kDefaultBorder,
+    this.paperColor,
   });
 
   /// Local path of the picked source photo (SM-005).
@@ -102,6 +114,10 @@ class StampDraft {
   /// Selected border style (SM-009).
   final String borderId;
 
+  /// Stamp paper/background colour (SM-009 "Nền"); null = the default white
+  /// stamp base.
+  final int? paperColor;
+
   static const kOriginalFilter = 'original';
   static const kDefaultBorder = 'classic';
 
@@ -111,11 +127,13 @@ class StampDraft {
     Adjustments? adjustments,
     List<StickerPlacement>? stickers,
     String? borderId,
+    int? paperColor,
   }) => StampDraft(
     imagePath: imagePath ?? this.imagePath,
     filterId: filterId ?? this.filterId,
     adjustments: adjustments ?? this.adjustments,
     stickers: stickers ?? this.stickers,
     borderId: borderId ?? this.borderId,
+    paperColor: paperColor ?? this.paperColor,
   );
 }

@@ -18,6 +18,7 @@ import 'package:storage/storage.dart';
 import 'package:theme/theme.dart';
 
 import '../core/extensions/build_context_extensions.dart';
+import '../core/locale/locale_bloc.dart';
 import 'di/injection.dart';
 import 'feature_module.dart';
 import 'features.dart';
@@ -29,6 +30,7 @@ class App extends StatefulWidget {
     super.key,
     this.authBloc,
     this.themeBloc,
+    this.localeBloc,
     this.features,
     this.navigatorObservers,
     this.session,
@@ -37,6 +39,7 @@ class App extends StatefulWidget {
 
   final AuthBloc? authBloc;
   final ThemeBloc? themeBloc;
+  final LocaleBloc? localeBloc;
 
   /// Optional feature overrides — primarily for testing. Defaults to
   /// [enabledFeatures] from `features.dart`.
@@ -52,6 +55,7 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   late final AuthBloc _authBloc;
   late final ThemeBloc _themeBloc;
+  late final LocaleBloc _localeBloc;
   late final Session _session;
   late final GoRouter _router;
   late final DeepLinkState _deepLink;
@@ -64,6 +68,7 @@ class _AppState extends State<App> {
     super.initState();
     _authBloc = widget.authBloc ?? getIt<AuthBloc>();
     _themeBloc = widget.themeBloc ?? getIt<ThemeBloc>();
+    _localeBloc = widget.localeBloc ?? getIt<LocaleBloc>();
     _session = widget.session ?? AuthSession(_authBloc);
     final features = widget.features ?? enabledFeatures;
     final result = buildRouterWithDeepLink(
@@ -182,28 +187,37 @@ class _AppState extends State<App> {
               providers: [
                 BlocProvider.value(value: _authBloc),
                 BlocProvider.value(value: _themeBloc),
+                BlocProvider.value(value: _localeBloc),
                 // fst:feature:notifications:start
                 BlocProvider.value(value: getIt<NotificationsBloc>()),
                 // fst:feature:notifications:end
               ],
+              // Theme and locale both drive MaterialApp, so both blocs gate its
+              // rebuild. Nested rather than a Bloc-tuple to keep each concern
+              // independent.
               child: BlocBuilder<ThemeBloc, ThemeState>(
-                builder: (context, themeState) => MaterialApp.router(
-                  debugShowCheckedModeBanner: false,
-                  onGenerateTitle: (context) => context.l10n.appTitle,
-                  theme: AppTheme.light(scheme: themeState.scheme),
-                  darkTheme: AppTheme.dark(scheme: themeState.scheme),
-                  themeMode: themeState.mode,
-                  localizationsDelegates:
-                      AppLocalizations.localizationsDelegates,
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  routerConfig: _router,
-                  builder: (context, child) => ForceUpdateGate(
-                    remoteConfig: getIt.isRegistered<RemoteConfigService>()
-                        ? getIt<RemoteConfigService>()
-                        : null,
-                    child: child ?? const SizedBox.shrink(),
-                  ),
-                ),
+                builder: (context, themeState) =>
+                    BlocBuilder<LocaleBloc, LocaleState>(
+                      builder: (context, localeState) => MaterialApp.router(
+                        debugShowCheckedModeBanner: false,
+                        onGenerateTitle: (context) => context.l10n.appTitle,
+                        theme: AppTheme.light(scheme: themeState.scheme),
+                        darkTheme: AppTheme.dark(scheme: themeState.scheme),
+                        themeMode: themeState.mode,
+                        locale: localeState.locale,
+                        localizationsDelegates:
+                            AppLocalizations.localizationsDelegates,
+                        supportedLocales: AppLocalizations.supportedLocales,
+                        routerConfig: _router,
+                        builder: (context, child) => ForceUpdateGate(
+                          remoteConfig:
+                              getIt.isRegistered<RemoteConfigService>()
+                              ? getIt<RemoteConfigService>()
+                              : null,
+                          child: child ?? const SizedBox.shrink(),
+                        ),
+                      ),
+                    ),
               ),
             ),
           ),

@@ -5,7 +5,11 @@
 **Nền tảng**: iOS & Android
 **Mô hình kinh doanh**: Freemium (Free + Premium)
 **Ngày tạo**: 2026-06-24
-**Trạng thái**: Đang phát triển BRS
+**Trạng thái** (soát lại 2026-07-17): Spec đã ổn định (26 spec). **Đang code** — luồng lõi
+tạo tem → gửi thư → nhận qua link đã chạy thật end-to-end. Chi tiết:
+[e2e-execution-plan.md](e2e-execution-plan.md).
+Chặn ra mắt hiện là **credentials + native config**, không phải thiếu tính năng —
+xem [blockers.md](blockers.md).
 
 ---
 

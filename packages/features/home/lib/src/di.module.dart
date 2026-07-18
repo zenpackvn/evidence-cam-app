@@ -11,12 +11,14 @@ import 'package:injectable/injectable.dart' as _i526;
 import 'package:rev_sync/rev_sync.dart' as _i520;
 
 class FeatureHomePackageModule extends _i526.MicroPackageModule {
-// initializes the registration of main-scope dependencies inside of GetIt
+  // initializes the registration of main-scope dependencies inside of GetIt
   @override
   _i687.FutureOr<void> init(_i526.GetItHelper gh) {
-    gh.factory<_i854.HomeBloc>(() => _i854.HomeBloc(
-          gh<_i661.HomeDataLoader>(),
-          gh<_i520.ConnectivitySource>(),
-        ));
+    gh.factory<_i854.HomeBloc>(
+      () => _i854.HomeBloc(
+        gh<_i661.HomeDataLoader>(),
+        gh<_i520.ConnectivitySource>(),
+      ),
+    );
   }
 }

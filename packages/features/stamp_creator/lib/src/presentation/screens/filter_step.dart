@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,7 +8,6 @@ import '../../domain/filters.dart';
 import '../../domain/stamp_draft.dart';
 import '../bloc/creator_cubit.dart';
 import '../bloc/creator_state.dart';
-import '../widgets/stamp_frame.dart';
 
 /// SM-006 — "Chọn bộ lọc màu" + "Chỉnh ảnh thủ công". A live-filtered preview
 /// over a tool switcher: the "Bộ lọc" tab shows category chips + filter
@@ -30,11 +31,9 @@ class _FilterStepState extends State<FilterStep> {
     return Column(
       children: [
         Expanded(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: StampFrame(draft: state.draft),
-            ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: _PreviewPhoto(draft: state.draft),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -44,7 +43,7 @@ class _FilterStepState extends State<FilterStep> {
         ),
         const SizedBox(height: AppSpacing.md),
         SizedBox(
-          height: 118,
+          height: 134,
           child: _tool == _Tool.filters
               ? _FiltersPanel(
                   category: _category,
@@ -54,6 +53,31 @@ class _FilterStepState extends State<FilterStep> {
               : _AdjustPanel(state: state),
         ),
       ],
+    );
+  }
+}
+
+/// The live-filtered photo preview (F02-S04 `photo`): the raw photo with the
+/// selected filter + adjustments applied, in a plain rounded rect — no stamp
+/// frame here (the perforated frame comes in at the decorate step).
+class _PreviewPhoto extends StatelessWidget {
+  const _PreviewPhoto({required this.draft});
+
+  final StampDraft draft;
+
+  @override
+  Widget build(BuildContext context) {
+    final file = File(draft.imagePath);
+    var photo = file.existsSync()
+        ? Image.file(file, fit: BoxFit.cover) as Widget
+        : ColoredBox(color: context.colorScheme.secondaryContainer);
+    final filter = effectiveColorFilter(draft);
+    if (filter != null) {
+      photo = ColorFiltered(colorFilter: filter, child: photo);
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: SizedBox.expand(child: photo),
     );
   }
 }
@@ -143,7 +167,7 @@ class _FiltersPanel extends StatelessWidget {
 
   static const Map<FilterCategory, String> _categoryLabels = {
     FilterCategory.classic: 'Cổ điển',
-    FilterCategory.retro: 'Retro',
+    FilterCategory.retro: 'Retro/Vintage',
     FilterCategory.mood: 'Tâm trạng',
     FilterCategory.season: 'Mùa',
   };
@@ -174,27 +198,31 @@ class _FiltersPanel extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
+        // The thumbnails fill the row evenly (F02-S04 `thumbRow`), each a
+        // filtered preview of the photo with the name overlaid at the bottom.
         Expanded(
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: filters.length,
-            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
-            itemBuilder: (context, i) {
-              final filter = filters[i];
-              final locked = filter.premium && !state.isPremium;
-              return _FilterThumb(
-                filter: filter,
-                selected: state.draft.filterId == filter.id,
-                locked: locked,
-                onTap: () {
-                  if (locked) {
-                    _showPremiumHint(context);
-                  } else {
-                    cubit.selectFilter(filter.id);
-                  }
-                },
-              );
-            },
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final (i, filter) in filters.indexed) ...[
+                if (i > 0) const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: _FilterThumb(
+                    filter: filter,
+                    imagePath: state.draft.imagePath,
+                    selected: state.draft.filterId == filter.id,
+                    locked: filter.premium && !state.isPremium,
+                    onTap: () {
+                      if (filter.premium && !state.isPremium) {
+                        _showPremiumHint(context);
+                      } else {
+                        cubit.selectFilter(filter.id);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ],
@@ -247,17 +275,206 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
+/// A filter preview tile (F02-S04 `th-*`): the photo with this filter applied,
+/// a dark bottom gradient, and the filter name overlaid bottom-left. Selected
+/// tiles get a coral border; locked (Premium) tiles show a lock.
 class _FilterThumb extends StatelessWidget {
   const _FilterThumb({
     required this.filter,
+    required this.imagePath,
     required this.selected,
     required this.locked,
     required this.onTap,
   });
 
   final StampFilter filter;
+  final String imagePath;
   final bool selected;
   final bool locked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final file = File(imagePath);
+    var photo = file.existsSync()
+        ? Image.file(file, fit: BoxFit.cover) as Widget
+        : ColoredBox(color: scheme.secondaryContainer);
+    final matrix = filter.matrix;
+    if (matrix != null) {
+      photo = ColorFiltered(
+        colorFilter: ColorFilter.matrix(matrix),
+        child: photo,
+      );
+    }
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        foregroundDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: selected
+              ? Border.all(color: scheme.primary, width: 2)
+              : null,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              photo,
+              // Bottom scrim so the white label stays legible.
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.center,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x00000000), Color(0xB3000000)],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 5,
+                right: 3,
+                bottom: 4,
+                child: Text(
+                  filter.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+              if (locked)
+                const Center(
+                  child: Icon(Icons.lock, size: 16, color: Colors.white),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The manual-adjust tools (F02-S05 `toolRow`).
+enum _Adjust { brightness, contrast, warmth, saturation, sharpness }
+
+/// "Chỉnh tay" (F02-S05): one slider for the active tool over a row of tool
+/// buttons — tap a tool to edit it, drag the slider to set its amount.
+class _AdjustPanel extends StatefulWidget {
+  const _AdjustPanel({required this.state});
+
+  final CreatorState state;
+
+  @override
+  State<_AdjustPanel> createState() => _AdjustPanelState();
+}
+
+class _AdjustPanelState extends State<_AdjustPanel> {
+  _Adjust _active = _Adjust.brightness;
+
+  static const Map<_Adjust, String> _labels = {
+    _Adjust.brightness: 'Độ sáng',
+    _Adjust.contrast: 'Tương phản',
+    _Adjust.warmth: 'Ấm / Lạnh',
+    _Adjust.saturation: 'Bão hòa',
+    _Adjust.sharpness: 'Độ nét',
+  };
+  static const Map<_Adjust, IconData> _icons = {
+    _Adjust.brightness: Icons.wb_sunny_outlined,
+    _Adjust.contrast: Icons.contrast,
+    _Adjust.warmth: Icons.thermostat,
+    _Adjust.saturation: Icons.water_drop_outlined,
+    _Adjust.sharpness: Icons.center_focus_strong_outlined,
+  };
+
+  double _valueOf(Adjustments a) => switch (_active) {
+    _Adjust.brightness => a.brightness,
+    _Adjust.contrast => a.contrast,
+    _Adjust.warmth => a.warmth,
+    _Adjust.saturation => a.saturation,
+    _Adjust.sharpness => a.sharpness,
+  };
+
+  void _apply(Adjustments a, double v) {
+    final next = switch (_active) {
+      _Adjust.brightness => a.copyWith(brightness: v),
+      _Adjust.contrast => a.copyWith(contrast: v),
+      _Adjust.warmth => a.copyWith(warmth: v),
+      _Adjust.saturation => a.copyWith(saturation: v),
+      _Adjust.sharpness => a.copyWith(sharpness: v),
+    };
+    context.read<CreatorCubit>().setAdjustments(next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = widget.state.draft.adjustments;
+    final value = _valueOf(a);
+    final scheme = context.colorScheme;
+    return Column(
+      children: [
+        Row(
+          children: [
+            Text(_labels[_active]!, style: context.textTheme.bodyMedium),
+            const Spacer(),
+            Text(
+              '${value >= 0 ? '+' : ''}${(value * 100).round()}',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: scheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 4,
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+          ),
+          child: Slider(
+            value: value,
+            min: -1,
+            max: 1,
+            onChanged: (v) => _apply(a, v),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            for (final tool in _Adjust.values)
+              Expanded(
+                child: _ToolButton(
+                  icon: _icons[tool]!,
+                  label: _labels[tool]!,
+                  active: tool == _active,
+                  onTap: () => setState(() => _active = tool),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// A circular adjust-tool button with its label (F02-S05 `AdjustTool`).
+class _ToolButton extends StatelessWidget {
+  const _ToolButton({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool active;
   final VoidCallback onTap;
 
   @override
@@ -266,109 +483,38 @@ class _FilterThumb extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.md),
-      child: SizedBox(
-        width: 64,
-        child: Column(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: scheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: selected
-                    ? Border.all(color: scheme.primary, width: 2)
-                    : null,
-              ),
-              child: locked
-                  ? Icon(Icons.lock, size: 18, color: scheme.onSurfaceVariant)
-                  : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: active
+                  ? scheme.primary
+                  : context.brand.surfaceElevated,
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              filter.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.textTheme.labelSmall?.copyWith(
-                color: selected ? scheme.primary : scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AdjustPanel extends StatelessWidget {
-  const _AdjustPanel({required this.state});
-
-  final CreatorState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<CreatorCubit>();
-    final a = state.draft.adjustments;
-    return ListView(
-      children: [
-        _AdjustSlider(
-          label: 'Độ sáng',
-          value: a.brightness,
-          onChanged: (v) => cubit.setAdjustments(a.copyWith(brightness: v)),
-        ),
-        _AdjustSlider(
-          label: 'Tương phản',
-          value: a.contrast,
-          onChanged: (v) => cubit.setAdjustments(a.copyWith(contrast: v)),
-        ),
-        _AdjustSlider(
-          label: 'Ấm / Lạnh',
-          value: a.warmth,
-          onChanged: (v) => cubit.setAdjustments(a.copyWith(warmth: v)),
-        ),
-        _AdjustSlider(
-          label: 'Bão hòa',
-          value: a.saturation,
-          onChanged: (v) => cubit.setAdjustments(a.copyWith(saturation: v)),
-        ),
-      ],
-    );
-  }
-}
-
-class _AdjustSlider extends StatelessWidget {
-  const _AdjustSlider({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final String label;
-  final double value;
-  final ValueChanged<double> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 84,
-          child: Text(label, style: context.textTheme.bodySmall),
-        ),
-        Expanded(
-          child: Slider(value: value, min: -1, max: 1, onChanged: onChanged),
-        ),
-        SizedBox(
-          width: 36,
-          child: Text(
-            '${(value * 100).round()}',
-            textAlign: TextAlign.end,
-            style: context.textTheme.labelSmall?.copyWith(
-              color: context.colorScheme.primary,
+            child: Icon(
+              icon,
+              size: 20,
+              color: active ? scheme.onPrimary : scheme.onSurfaceVariant,
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.textTheme.labelSmall?.copyWith(
+              color: active ? scheme.primary : scheme.onSurfaceVariant,
+              fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+              letterSpacing: 0,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

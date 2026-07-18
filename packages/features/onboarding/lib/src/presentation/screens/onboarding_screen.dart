@@ -92,8 +92,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Onboarding, like auth, is pinned to the light StampMail theme.
-    return Theme(data: AppTheme.light(), child: Builder(builder: _build));
+    // System back steps to the previous onboarding page; only from the first
+    // page does it leave onboarding.
+    return PopScope(
+      canPop: _page == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _controller.previousPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      },
+      // Onboarding, like auth, is pinned to the light StampMail theme.
+      child: Theme(data: AppTheme.light(), child: Builder(builder: _build)),
+    );
   }
 
   Widget _build(BuildContext context) {

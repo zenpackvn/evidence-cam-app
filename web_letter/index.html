@@ -75,6 +75,20 @@
     }
     .card.show { opacity: 1; transform: translateY(0); }
     .letter-text { white-space: pre-wrap; line-height: 1.6; font-size: 17px; }
+    /* A Delta paragraph. `pre-wrap` on each one preserves the sender's spacing
+       the same way the flat-text fallback did. */
+    .letter-text p { white-space: pre-wrap; min-height: 1.6em; }
+    /* SM-013 BR-08: the sender's ruled paper, painted behind the text like the
+       app's _RuledLinesPainter — same 12% ink, same line height (1.6 × 17px). */
+    .letter-text.ruled {
+      background-image: linear-gradient(
+        to bottom,
+        transparent calc(1.6em - 1px),
+        rgba(42, 35, 32, 0.12) calc(1.6em - 1px),
+        rgba(42, 35, 32, 0.12) 1.6em
+      );
+      background-size: 100% 1.6em;
+    }
     .stamps { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
     .stamps img {
       width: 84px; height: 84px; object-fit: cover;
@@ -115,7 +129,9 @@
     </div>
 
     <section id="content" class="card hidden">
-      <p class="letter-text" id="letterText"></p>
+      <!-- A div, not a p: the Delta renderer appends one <p> per paragraph, and
+           a <p> may not contain another. -->
+      <div class="letter-text" id="letterText"></div>
       <div class="stamps" id="stamps"></div>
       <a class="cta" id="installCta" href="#">Tải StampMail để lưu tem 📮</a>
     </section>
@@ -166,11 +182,122 @@
       });
     }
 
+    // ── Delta renderer (SM-013 BR-02 / BR-09) ──────────────────────────────
+    //
+    // `content_json.delta` is the app ↔ web-viewer contract: inline attributes
+    // (bold/italic/underline/color) ride on a text op, block attributes (align)
+    // ride on the newline that closes the paragraph. Colors are already
+    // `#RRGGBB`, so no translation table is needed.
+    //
+    // Everything here builds DOM nodes and assigns `textContent`. The letter
+    // body is attacker-supplied — whoever wrote the letter chose every byte —
+    // so it must never reach innerHTML. Attributes are whitelisted for the same
+    // reason: an unrecognised one is dropped, not passed through.
+
+    var ALIGNMENTS = { left: 'left', center: 'center', right: 'right', justify: 'justify' };
+
+    // Quill writes #RRGGBB, but this arrives over the wire from a client we do
+    // not control. Anything else is dropped rather than handed to the CSS parser.
+    function safeColor(value) {
+      return (typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value)) ? value : null;
+    }
+
+    /// One inline run: a <span> carrying only the attributes we recognise.
+    function inlineSpan(text, attrs) {
+      var span = document.createElement('span');
+      span.textContent = text;
+      if (!attrs) return span;
+      if (attrs.bold) span.style.fontWeight = '700';
+      if (attrs.italic) span.style.fontStyle = 'italic';
+      if (attrs.underline) span.style.textDecoration = 'underline';
+      var color = safeColor(attrs.color);
+      if (color) span.style.color = color;
+      return span;
+    }
+
+    /// Splits [ops] into paragraphs. A newline inside an insert closes the
+    /// current paragraph and applies that op's block attributes to it, which is
+    /// what makes align per-paragraph rather than per-letter.
+    function paragraphsFromDelta(ops) {
+      var paragraphs = [];
+      var current = [];
+
+      function close(attrs) {
+        paragraphs.push({ runs: current, attrs: attrs || null });
+        current = [];
+      }
+
+      ops.forEach(function (op) {
+        // Insert-only documents; an embed (image, etc.) is not part of the
+        // letter contract, so anything non-string is skipped.
+        if (typeof op.insert !== 'string') return;
+        var pieces = op.insert.split('\n');
+        pieces.forEach(function (piece, i) {
+          if (piece) current.push({ text: piece, attrs: op.attributes });
+          // Every split point but the last was a real newline in the source.
+          if (i < pieces.length - 1) close(op.attributes);
+        });
+      });
+      if (current.length) close(null);
+      return paragraphs;
+    }
+
+    /// Renders [ops] into [host]. Returns false when there is nothing to show,
+    /// so the caller can fall back to the plain text.
+    function renderDelta(host, ops) {
+      var paragraphs = paragraphsFromDelta(ops);
+      if (!paragraphs.length) return false;
+      // Quill documents always end with a newline, which closes a trailing
+      // empty paragraph. Rendering it would add a blank line the sender never
+      // typed.
+      if (paragraphs.length > 1) {
+        var last = paragraphs[paragraphs.length - 1];
+        if (!last.runs.length) paragraphs.pop();
+      }
+      paragraphs.forEach(function (para) {
+        var p = document.createElement('p');
+        var align = para.attrs && ALIGNMENTS[para.attrs.align];
+        if (align) p.style.textAlign = align;
+        para.runs.forEach(function (run) {
+          p.appendChild(inlineSpan(run.text, run.attrs));
+        });
+        host.appendChild(p);
+      });
+      return true;
+    }
+
+    /// ARGB int (Dart's Color.value) → #RRGGBB. The alpha byte is dropped: the
+    /// paper is opaque in the app too.
+    function paperCss(value) {
+      if (typeof value !== 'number' || !isFinite(value)) return null;
+      var rgb = (value & 0xFFFFFF).toString(16);
+      return '#' + '000000'.slice(rgb.length) + rgb;
+    }
+
     function fillContent(data) {
-      var text = '';
-      try { text = (JSON.parse(data.content_json || '{}').text) || ''; }
-      catch (_) { text = ''; }
-      document.getElementById('letterText').textContent = text;
+      var content = {};
+      try { content = JSON.parse(data.content_json || '{}') || {}; }
+      catch (_) { content = {}; }
+
+      var host = document.getElementById('letterText');
+      // Prefer the rich body; fall back to the plain text the writer always
+      // sends, so a letter with unreadable formatting still shows its words.
+      var rendered = Array.isArray(content.delta) && renderDelta(host, content.delta);
+      if (!rendered) host.textContent = content.text || '';
+
+      // SM-013 BR-08: the sender chose this ruling, so the recipient sees it.
+      if (content.ruled === true) host.classList.add('ruled');
+
+      // SM-013 BR-03: the sender's paper color, applied to the card the letter
+      // sits on rather than the text block, matching the app's LetterPaper.
+      var paper = paperCss(content.paper_color);
+      if (paper) document.getElementById('content').style.background = paper;
+
+      // `font_family` is deliberately not applied: this page ships no external
+      // fonts (TD-011 — light, fast, self-contained), so honouring the token
+      // would mean either a network font or a silent mismatch. The system stack
+      // is the honest render until a font is bundled.
+
       var wrap = document.getElementById('stamps');
       (data.stamps || []).forEach(function (s) {
         var img = document.createElement('img');

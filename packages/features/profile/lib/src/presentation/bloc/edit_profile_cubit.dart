@@ -1,7 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:architecture/architecture.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:network/network.dart';
 
+import '../../data/datasources/avatar_uploader.dart';
 import '../../domain/entities/birth_date.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/profile_validation.dart';
@@ -15,9 +19,11 @@ import 'edit_profile_state.dart';
 /// AC-11 requires the typed values to survive an offline attempt.
 @injectable
 class EditProfileCubit extends Cubit<EditProfileState> {
-  EditProfileCubit(this._repository) : super(const EditProfileState());
+  EditProfileCubit(this._repository, this._avatarUploader)
+    : super(const EditProfileState());
 
   final ProfileRepository _repository;
+  final AvatarUploader _avatarUploader;
 
   /// Loads the profile the form edits.
   Future<void> load() async {
@@ -37,6 +43,37 @@ class EditProfileCubit extends Cubit<EditProfileState> {
 
   /// Seeds the form from an already-loaded profile, skipping the fetch.
   void start(UserProfile profile) => emit(_formFor(profile));
+
+  /// Uploads the cropped avatar [bytes] and saves the resulting URL (SM-024).
+  ///
+  /// Applied immediately rather than folded into the form save: the avatar is
+  /// picked, cropped and confirmed in its own flow, so it commits on return.
+  /// Only [EditProfileState.profile] is replaced — the form fields the user may
+  /// be mid-editing are left exactly as they are.
+  Future<void> changeAvatar(Uint8List bytes) async {
+    final profile = state.profile;
+    if (profile == null || state.isSavingAvatar) return;
+
+    emit(state.copyWith(isSavingAvatar: true, saveError: null));
+    try {
+      final url = await _avatarUploader.upload(bytes);
+      switch (await _repository.update(ProfileEdit(avatarUrl: url))) {
+        case Ok(:final value):
+          emit(state.copyWith(profile: value, isSavingAvatar: false));
+        case Err(:final failure):
+          emit(
+            state.copyWith(isSavingAvatar: false, saveError: failure.message),
+          );
+      }
+    } on DioException {
+      emit(
+        state.copyWith(
+          isSavingAvatar: false,
+          saveError: 'Không tải được ảnh đại diện. Vui lòng thử lại.',
+        ),
+      );
+    }
+  }
 
   EditProfileState _formFor(UserProfile p) => EditProfileState(
     status: EditProfileStatus.ready,
@@ -63,13 +100,16 @@ class EditProfileCubit extends Cubit<EditProfileState> {
     emit(
       state.copyWith(
         username: value,
-        usernameError: profile == null ? null : validateUsername(value, profile),
+        usernameError: profile == null
+            ? null
+            : validateUsername(value, profile),
         saveError: null,
       ),
     );
   }
 
-  void dayChanged(String value) => _birthDateChanged(state.copyWith(day: value));
+  void dayChanged(String value) =>
+      _birthDateChanged(state.copyWith(day: value));
 
   void monthChanged(String value) =>
       _birthDateChanged(state.copyWith(month: value));
@@ -161,11 +201,12 @@ class EditProfileCubit extends Cubit<EditProfileState> {
   /// form-wide banner: the spent allowance (BR-03), and any value the server
   /// refused on a save that changed the username — a taken name (§5) being the
   /// case the user must see there.
-  bool _belongsToUsername(Failure failure, ProfileEdit edit) => switch (failure) {
-    PermissionFailure() => true,
-    ValidationFailure() => edit.username != null,
-    _ => false,
-  };
+  bool _belongsToUsername(Failure failure, ProfileEdit edit) =>
+      switch (failure) {
+        PermissionFailure() => true,
+        ValidationFailure() => edit.username != null,
+        _ => false,
+      };
 
   /// Builds the partial edit: only what actually changed is sent, so an
   /// untouched username never spends a BR-03 change.

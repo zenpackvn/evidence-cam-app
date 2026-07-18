@@ -49,56 +49,76 @@ import 'package:rev_sync/rev_sync.dart' as _i520;
 import 'package:uuid/uuid.dart' as _i706;
 
 class FeatureAlbumPackageModule extends _i526.MicroPackageModule {
-// initializes the registration of main-scope dependencies inside of GetIt
+  // initializes the registration of main-scope dependencies inside of GetIt
   @override
   _i687.FutureOr<void> init(_i526.GetItHelper gh) {
     final albumsRemoteModule = _$AlbumsRemoteModule();
     final sampleStampsRemoteModule = _$SampleStampsRemoteModule();
     final stampsRemoteModule = _$StampsRemoteModule();
     gh.lazySingleton<_i750.AlbumsLocalDataSource>(
-        () => _i750.ObjectBoxAlbumsDataSource(gh<_i252.Store>()));
-    gh.lazySingleton<_i121.AlbumsRemoteDataSource>(() =>
-        albumsRemoteModule.provideAlbumsRemoteDataSource(gh<_i372.Dio>()));
-    gh.lazySingleton<_i656.SampleStampsRemoteDataSource>(() =>
-        sampleStampsRemoteModule
-            .provideSampleStampsRemoteDataSource(gh<_i372.Dio>()));
-    gh.lazySingleton<_i244.StampsRemoteDataSource>(() =>
-        stampsRemoteModule.provideStampsRemoteDataSource(gh<_i372.Dio>()));
+      () => _i750.ObjectBoxAlbumsDataSource(gh<_i252.Store>()),
+    );
+    gh.lazySingleton<_i121.AlbumsRemoteDataSource>(
+      () => albumsRemoteModule.provideAlbumsRemoteDataSource(gh<_i372.Dio>()),
+    );
+    gh.lazySingleton<_i656.SampleStampsRemoteDataSource>(
+      () => sampleStampsRemoteModule.provideSampleStampsRemoteDataSource(
+        gh<_i372.Dio>(),
+      ),
+    );
+    gh.lazySingleton<_i244.StampsRemoteDataSource>(
+      () => stampsRemoteModule.provideStampsRemoteDataSource(gh<_i372.Dio>()),
+    );
     gh.lazySingleton<_i591.StampsLocalDataSource>(
-        () => _i591.ObjectBoxStampsDataSource(gh<_i252.Store>()));
-    gh.lazySingleton<_i1053.SampleStampsRepository>(() =>
-        _i911.SampleStampsRepositoryImpl(
-            gh<_i656.SampleStampsRemoteDataSource>()));
-    gh.lazySingleton<_i875.StampsSyncController>(() => _i639.StampsSyncService(
-          gh<_i591.StampsLocalDataSource>(),
-          gh<_i244.StampsRemoteDataSource>(),
-          gh<_i520.ConnectivitySource>(),
-          gh<_i520.SyncCursorStore>(),
-        ));
-    gh.lazySingleton<_i669.AlbumsSyncController>(() => _i825.AlbumsSyncService(
-          gh<_i750.AlbumsLocalDataSource>(),
-          gh<_i121.AlbumsRemoteDataSource>(),
-          gh<_i520.ConnectivitySource>(),
-          gh<_i520.SyncCursorStore>(),
-        ));
-    gh.lazySingleton<_i526.AlbumsRepository>(() => _i659.AlbumsRepositoryImpl(
-          gh<_i750.AlbumsLocalDataSource>(),
-          gh<_i669.AlbumsSyncController>(),
-          gh<_i706.Uuid>(),
-        ));
-    gh.lazySingleton<_i815.StampsRepository>(() => _i749.StampsRepositoryImpl(
-          gh<_i591.StampsLocalDataSource>(),
-          gh<_i875.StampsSyncController>(),
-          gh<_i706.Uuid>(),
-        ));
-    gh.factory<_i606.SampleStampsCubit>(() => _i606.SampleStampsCubit(
-          gh<_i1053.SampleStampsRepository>(),
-          gh<_i815.StampsRepository>(),
-        ));
-    gh.factory<_i257.AlbumCubit>(() => _i257.AlbumCubit(
-          gh<_i815.StampsRepository>(),
-          gh<_i520.ConnectivitySource>(),
-        ));
+      () => _i591.ObjectBoxStampsDataSource(gh<_i252.Store>()),
+    );
+    gh.lazySingleton<_i1053.SampleStampsRepository>(
+      () => _i911.SampleStampsRepositoryImpl(
+        gh<_i656.SampleStampsRemoteDataSource>(),
+      ),
+    );
+    gh.lazySingleton<_i875.StampsSyncController>(
+      () => _i639.StampsSyncService(
+        gh<_i591.StampsLocalDataSource>(),
+        gh<_i244.StampsRemoteDataSource>(),
+        gh<_i520.ConnectivitySource>(),
+        gh<_i520.SyncCursorStore>(),
+      ),
+    );
+    gh.lazySingleton<_i669.AlbumsSyncController>(
+      () => _i825.AlbumsSyncService(
+        gh<_i750.AlbumsLocalDataSource>(),
+        gh<_i121.AlbumsRemoteDataSource>(),
+        gh<_i520.ConnectivitySource>(),
+        gh<_i520.SyncCursorStore>(),
+      ),
+    );
+    gh.lazySingleton<_i526.AlbumsRepository>(
+      () => _i659.AlbumsRepositoryImpl(
+        gh<_i750.AlbumsLocalDataSource>(),
+        gh<_i669.AlbumsSyncController>(),
+        gh<_i706.Uuid>(),
+      ),
+    );
+    gh.lazySingleton<_i815.StampsRepository>(
+      () => _i749.StampsRepositoryImpl(
+        gh<_i591.StampsLocalDataSource>(),
+        gh<_i875.StampsSyncController>(),
+        gh<_i706.Uuid>(),
+      ),
+    );
+    gh.factory<_i606.SampleStampsCubit>(
+      () => _i606.SampleStampsCubit(
+        gh<_i1053.SampleStampsRepository>(),
+        gh<_i815.StampsRepository>(),
+      ),
+    );
+    gh.factory<_i257.AlbumCubit>(
+      () => _i257.AlbumCubit(
+        gh<_i815.StampsRepository>(),
+        gh<_i520.ConnectivitySource>(),
+      ),
+    );
   }
 }
 

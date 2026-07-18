@@ -28,11 +28,15 @@ import 'package:feature_auth/src/domain/usecases/sign_in.dart' as _i147;
 import 'package:feature_auth/src/domain/usecases/sign_in_with_google.dart'
     as _i25;
 import 'package:feature_auth/src/domain/usecases/sign_out.dart' as _i1002;
+import 'package:feature_auth/src/domain/usecases/sign_out_all_devices.dart'
+    as _i344;
 import 'package:feature_auth/src/presentation/bloc/auth_bloc.dart' as _i1014;
 import 'package:feature_auth/src/presentation/bloc/change_password_cubit.dart'
     as _i1062;
 import 'package:feature_auth/src/presentation/bloc/delete_account_cubit.dart'
     as _i1061;
+import 'package:feature_auth/src/presentation/bloc/sign_out_all_devices_cubit.dart'
+    as _i379;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:network/network.dart' as _i372;
 import 'package:storage/storage.dart' as _i431;
@@ -85,6 +89,15 @@ class FeatureAuthPackageModule extends _i526.MicroPackageModule {
     );
     gh.factory<_i1002.SignOutUseCase>(
       () => _i1002.SignOutUseCase(gh<_i1063.AuthRepository>()),
+    );
+    gh.factory<_i344.SignOutAllDevicesUseCase>(
+      () => _i344.SignOutAllDevicesUseCase(gh<_i1063.AuthRepository>()),
+    );
+    gh.factory<_i379.SignOutAllDevicesCubit>(
+      () => _i379.SignOutAllDevicesCubit(
+        gh<_i344.SignOutAllDevicesUseCase>(),
+        gh<_i548.AnalyticsService>(),
+      ),
     );
     gh.factory<_i1061.DeleteAccountCubit>(
       () => _i1061.DeleteAccountCubit(

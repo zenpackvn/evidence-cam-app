@@ -6,6 +6,7 @@ import 'package:feature_auth/src/domain/usecases/restore_session.dart';
 import 'package:feature_auth/src/domain/usecases/sign_in.dart';
 import 'package:feature_auth/src/domain/usecases/sign_in_with_google.dart';
 import 'package:feature_auth/src/domain/usecases/sign_out.dart';
+import 'package:feature_auth/src/domain/usecases/sign_out_all_devices.dart';
 import 'package:test_utils/test_utils.dart';
 
 export 'package:test_utils/test_utils.dart';
@@ -17,6 +18,8 @@ class MockRegister extends Mock implements RegisterUseCase {}
 class MockSignOut extends Mock implements SignOutUseCase {}
 
 class MockDeleteAccount extends Mock implements DeleteAccountUseCase {}
+
+class MockSignOutAllDevices extends Mock implements SignOutAllDevicesUseCase {}
 
 class MockRestoreSession extends Mock implements RestoreSessionUseCase {}
 

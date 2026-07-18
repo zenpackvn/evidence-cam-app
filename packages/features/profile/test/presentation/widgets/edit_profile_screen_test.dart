@@ -3,12 +3,45 @@
 // birthday can be cleared (AC-07).
 
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:app_platform/app_platform.dart';
 import 'package:architecture/architecture.dart';
 import 'package:feature_profile/feature_profile.dart';
+import 'package:feature_profile/src/data/datasources/avatar_uploader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// The avatar tap flow is not exercised in these form tests, so a no-op
+/// uploader satisfies the cubit's dependency.
+class _NoopAvatarUploader implements AvatarUploader {
+  @override
+  Future<String> upload(Uint8List bytes) async => '';
+}
+
+/// Returns a scripted [XFile] (or null for a cancel) and records that it was
+/// asked. Only pickImage is used; anything else is a test bug.
+class _FakePicker implements ImagePickerService {
+  XFile? next;
+  bool called = false;
+
+  @override
+  Future<XFile?> pickImage({
+    required ImageSource source,
+    double? maxWidth,
+    double? maxHeight,
+    int? imageQuality,
+    CameraDevice preferredCameraDevice = CameraDevice.rear,
+    bool requestFullMetadata = true,
+  }) async {
+    called = true;
+    return next;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
 
 class _FakeProfileRepository implements ProfileRepository {
   _FakeProfileRepository(this.profile);
@@ -37,15 +70,16 @@ void main() {
 
   Future<EditProfileCubit> pumpForm(
     WidgetTester tester,
-    _FakeProfileRepository repo,
-  ) async {
-    final cubit = EditProfileCubit(repo);
+    _FakeProfileRepository repo, {
+    ImagePickerService? picker,
+  }) async {
+    final cubit = EditProfileCubit(repo, _NoopAvatarUploader());
     unawaited(cubit.load());
     await tester.pumpWidget(
       MaterialApp(
         home: BlocProvider<EditProfileCubit>.value(
           value: cubit,
-          child: const EditProfileBody(),
+          child: EditProfileBody(picker: picker),
         ),
       ),
     );
@@ -111,7 +145,10 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('editProfile_birthDay')), '31');
     await tester.pump();
-    await tester.enterText(find.byKey(const Key('editProfile_birthMonth')), '4');
+    await tester.enterText(
+      find.byKey(const Key('editProfile_birthMonth')),
+      '4',
+    );
     await tester.pump();
 
     expect(
@@ -163,8 +200,34 @@ void main() {
     expect(find.text('Alice II'), findsOneWidget);
   });
 
+  testWidgets('SM-024: tapping the avatar picks and opens the crop screen', (
+    tester,
+  ) async {
+    final picker = _FakePicker()..next = XFile('/tmp/nonexistent.png');
+    await pumpForm(tester, _FakeProfileRepository(alice), picker: picker);
+
+    await tester.tap(find.byKey(const Key('editProfile_avatar')));
+    await tester.pumpAndSettle();
+
+    expect(picker.called, isTrue);
+    // The picked photo advanced to the crop step.
+    expect(find.text('Cắt ảnh theo tỉ lệ 1:1'), findsOneWidget);
+  });
+
+  testWidgets('cancelling the picker leaves the form as-is', (tester) async {
+    final picker = _FakePicker()..next = null;
+    await pumpForm(tester, _FakeProfileRepository(alice), picker: picker);
+
+    await tester.tap(find.byKey(const Key('editProfile_avatar')));
+    await tester.pumpAndSettle();
+
+    expect(picker.called, isTrue);
+    // No crop screen: a cancel is a no-op.
+    expect(find.text('Cắt ảnh theo tỉ lệ 1:1'), findsNothing);
+  });
+
   testWidgets('§5: the load error offers a retry', (tester) async {
-    final cubit = EditProfileCubit(_FailingRepository());
+    final cubit = EditProfileCubit(_FailingRepository(), _NoopAvatarUploader());
     unawaited(cubit.load());
     await tester.pumpWidget(
       MaterialApp(

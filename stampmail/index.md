@@ -1,9 +1,10 @@
 # StampMail — Catalog tính năng
 
-**Cập nhật lần cuối**: 2026-07-10
-**Tổng số spec**: 27
+**Cập nhật lần cuối**: 2026-07-14
+**Tổng số spec**: 26
 
 > Catalog này liệt kê toàn bộ tính năng và liên kết đến `spec.md` tương ứng. Cập nhật khi thêm/bỏ/đổi tên spec.
+> Bản chuẩn: `projects/stampmail/index.md` bên repo `specs`.
 
 ---
 
@@ -54,7 +55,6 @@
 | Mã | Tính năng | Ưu tiên | Spec |
 |----|-----------|---------|------|
 | SM-017 | Nhận thư qua Link | 🔴 P0 | [spec](specs/015-nhan-thu-qua-link/spec.md) |
-| SM-018 | Hộp thư đến (Inbox) | P2 | [spec](specs/016-hop-thu-den/spec.md) |
 | SM-019 | Mở thư & Animation | 🔴 P0 | [spec](specs/017-mo-thu-animation/spec.md) |
 | SM-020 | Trả lời thư | 🟡 P1 | [spec](specs/018-tra-loi-thu/spec.md) |
 | SM-021 | Hộp thư đã gửi & Theo dõi trạng thái | P2 | [spec](specs/019-hop-thu-da-gui/spec.md) |
@@ -84,8 +84,8 @@
 |----|-----------|---------|------|
 | SM-026 | Thông báo push | 🟡 P1 | [spec](specs/022-thong-bao-push/spec.md) |
 | SM-027 | Cài đặt tài khoản & Quyền riêng tư | P2 | [spec](specs/023-cai-dat-tai-khoan/spec.md) |
-| SM-028 | Nâng cấp Premium & Thanh toán | P2 | [spec](specs/024-nang-cap-premium/spec.md) |
-| SM-029 | Quản lý đăng ký Premium | P2 | [spec](specs/025-quan-ly-premium/spec.md) |
+| SM-028 | Nâng cấp Premium & Thanh toán | ⏸️ Tạm disable v1 | [spec](specs/024-nang-cap-premium/spec.md) |
+| SM-029 | Quản lý đăng ký Premium | ⏸️ Tạm disable v1 | [spec](specs/025-quan-ly-premium/spec.md) |
 | SM-030 | Giới hạn tháng & Nhắc hạn mức (Free) | P2 | [spec](specs/026-gioi-han-thang/spec.md) |
 
 ---
@@ -113,3 +113,4 @@
 | ~~SM-023~~ | Kết bạn 2 chiều | Thay bằng gửi qua link MXH |
 | ~~SM-029~~ | Báo cáo nội dung | Không còn mạng xã hội nội bộ |
 | ~~SM-030~~ | Tìm kiếm bạn bè | Không còn mạng xã hội nội bộ |
+| ~~SM-018~~ | Hộp thư đến (Inbox) | Đã bỏ. Tab "Hộp thư" chỉ còn danh sách thư đã gửi & trạng thái (SM-021). Thư nhận chỉ xem được qua link (SM-017), không lưu lại để xem sau |

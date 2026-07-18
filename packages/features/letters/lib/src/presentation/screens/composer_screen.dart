@@ -72,7 +72,9 @@ class _ComposerScreenState extends State<ComposerScreen> {
   void _onDocumentChanged() {
     if (_clipping) return;
     _enforceCharLimit();
-    context.read<ComposerCubit>().setRichBody(letterDeltaOf(_controller.document));
+    context.read<ComposerCubit>().setRichBody(
+      letterDeltaOf(_controller.document),
+    );
   }
 
   /// SM-013 BR-04 / AC-04: refuse characters past the limit. Trimming the
@@ -83,6 +85,15 @@ class _ComposerScreenState extends State<ComposerScreen> {
     final length = _controller.document.length - 1;
     if (length <= letterCharLimit) return;
     _clipping = true;
+    // The trim is deliberately left in the undo history. Quill's History merges
+    // changes recorded within its 400ms interval, and this one lands in the same
+    // frame as the edit that overflowed — so the two collapse into a single undo
+    // step and one undo drops the whole over-limit paste.
+    //
+    // Do not "fix" this by setting history.ignoreChange around the replace: the
+    // recorded inverse is computed against the document as it was, so skipping
+    // the trim leaves history describing a document that no longer exists, and
+    // undo then restores the overflow. Covered by composer_undo_redo_test.dart.
     _controller.replaceText(
       letterCharLimit,
       length - letterCharLimit,
@@ -111,6 +122,7 @@ class _ComposerScreenState extends State<ComposerScreen> {
                     ),
                     child: _TopBar(
                       canSend: state.canSend,
+                      controller: _controller,
                       onBack: widget.onBack,
                       onDone: widget.onNext,
                     ),
@@ -131,7 +143,8 @@ class _ComposerScreenState extends State<ComposerScreen> {
                   _CharCounter(count: state.charCount),
                   ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxHeight: constraints.maxHeight * _panelMaxHeightFraction,
+                      maxHeight:
+                          constraints.maxHeight * _panelMaxHeightFraction,
                     ),
                     child: ComposerEditorPanel(
                       controller: _controller,
@@ -158,11 +171,17 @@ class _ComposerScreenState extends State<ComposerScreen> {
 class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.canSend,
+    required this.controller,
     required this.onBack,
     required this.onDone,
   });
 
   final bool canSend;
+
+  /// Undo/redo delegate to the editor's own history — Quill's [Document]
+  /// already records every change, so the composer keeps none of its own.
+  final QuillController controller;
+
   final VoidCallback onBack;
   final VoidCallback onDone;
 
@@ -184,11 +203,27 @@ class _TopBar extends StatelessWidget {
             style: context.textTheme.displayMedium?.copyWith(fontSize: 24),
           ),
         ),
-        // ponytail: undo/redo/preview are visual until the composer keeps
-        // history / a live preview is wired (.pen F03-S04 topbar).
-        _CircleAction(size: 40, icon: Icons.undo, onTap: () {}),
-        const SizedBox(width: AppSpacing.sm),
-        _CircleAction(size: 40, icon: Icons.redo, onTap: () {}),
+        // Rebuilt from the controller rather than the bloc state: an undo that
+        // lands on identical content emits no new state, which would leave
+        // these buttons showing the previous history's enablement.
+        ListenableBuilder(
+          listenable: controller,
+          builder: (context, _) => Row(
+            children: [
+              _CircleAction(
+                size: 40,
+                icon: Icons.undo,
+                onTap: controller.hasUndo ? controller.undo : null,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              _CircleAction(
+                size: 40,
+                icon: Icons.redo,
+                onTap: controller.hasRedo ? controller.redo : null,
+              ),
+            ],
+          ),
+        ),
         const SizedBox(width: AppSpacing.sm),
         _CircleAction(size: 40, icon: Icons.visibility_outlined, onTap: () {}),
         const SizedBox(width: AppSpacing.sm),
@@ -234,8 +269,9 @@ class _CircleAction extends StatelessWidget {
           child: Icon(
             icon,
             size: size < 44 ? 18 : 20,
-            color: (iconColor ?? context.colorScheme.onSurface)
-                .withValues(alpha: enabled ? 1 : 0.4),
+            color: (iconColor ?? context.colorScheme.onSurface).withValues(
+              alpha: enabled ? 1 : 0.4,
+            ),
           ),
         ),
       ),
