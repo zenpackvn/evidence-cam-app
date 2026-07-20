@@ -68,12 +68,12 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
               Row(
                 children: [
                   _CircleButton(
-                    icon: Icons.arrow_back,
+                    icon: Icons.chevron_left,
                     onTap: () => Navigator.of(context).maybePop(),
                   ),
                   const Spacer(),
                   _CircleButton(
-                    icon: Icons.favorite_border,
+                    icon: Icons.favorite,
                     color: scheme.primary,
                     onTap: () {},
                   ),
@@ -130,7 +130,7 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
                     textStyle: context.textTheme.titleMedium,
                   ),
                   icon: Icon(
-                    locked ? Icons.workspace_premium_outlined : Icons.edit,
+                    locked ? Icons.workspace_premium_outlined : Icons.send,
                     size: 20,
                   ),
                   label: Text(

@@ -1,40 +1,14 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:localization/localization.dart';
 
-/// The StampMail wordmark shown at the top of every auth screen: the stamp
-/// logo followed by the app name in the brand coral.
+/// The StampMail brand lockup at the top of every auth screen — the shared
+/// [StampMailBrandmark] (`.pen` Brand/AuthLogo), aliased so auth call sites read
+/// intently while the lockup itself lives once in the design system.
 class AuthBrandHeader extends StatelessWidget {
   const AuthBrandHeader({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Image.asset(
-          'assets/illustrations/logo-stamp.png',
-          package: 'feature_auth',
-          width: 65,
-          height: 71,
-          excludeFromSemantics: true,
-        ),
-        const SizedBox(height: AppSpacing.xxs),
-        Text(
-          context.l10n.appTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          // .pen Brand/AuthLogo wordmark: Baloo 2, 30px, w700, coral.
-          style: context.textTheme.displayMedium?.copyWith(
-            color: context.colorScheme.primary,
-            fontSize: 30,
-            height: 1.21,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => const StampMailBrandmark();
 }
 
 /// The centered title + subtitle block below [AuthBrandHeader].

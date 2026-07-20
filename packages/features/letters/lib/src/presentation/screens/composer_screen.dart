@@ -171,7 +171,7 @@ class _TopBar extends StatelessWidget {
     final scheme = context.colorScheme;
     return Row(
       children: [
-        _CircleAction(size: 44, icon: Icons.arrow_back, onTap: onBack),
+        _CircleAction(size: 44, icon: Icons.chevron_left, onTap: onBack),
         const SizedBox(width: AppSpacing.sm),
         // Takes the slack between the back button and the actions (the old
         // Spacer's job) while staying shrinkable, so the title can never push
@@ -184,10 +184,13 @@ class _TopBar extends StatelessWidget {
             style: context.textTheme.displayMedium?.copyWith(fontSize: 24),
           ),
         ),
-        // ponytail: undo/redo are visual until the composer keeps history.
+        // ponytail: undo/redo/preview are visual until the composer keeps
+        // history / a live preview is wired (.pen F03-S04 topbar).
         _CircleAction(size: 40, icon: Icons.undo, onTap: () {}),
         const SizedBox(width: AppSpacing.sm),
         _CircleAction(size: 40, icon: Icons.redo, onTap: () {}),
+        const SizedBox(width: AppSpacing.sm),
+        _CircleAction(size: 40, icon: Icons.visibility_outlined, onTap: () {}),
         const SizedBox(width: AppSpacing.sm),
         _CircleAction(
           size: 40,
@@ -247,24 +250,78 @@ class _CharCounter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final semantic = context.semanticColors;
     final near = count >= letterCharLimit - 20;
+    // .pen counter: a surface-elevated card — bold count + "/ 500 ký tự", then
+    // an encouraging "Tốt lắm!" pill while there's room left.
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xl,
-        vertical: AppSpacing.sm,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.sm,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            '$count / $letterCharLimit ký tự',
-            style: context.textTheme.bodySmall?.copyWith(
-              color: near
-                  ? context.colorScheme.error
-                  : context.colorScheme.onSurfaceVariant,
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: context.brand.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '$count',
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: near ? scheme.error : scheme.onSurface,
+                      ),
+                    ),
+                    TextSpan(
+                      text: ' / $letterCharLimit ký tự',
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-        ],
+            if (count > 0 && !near) ...[
+              const SizedBox(width: AppSpacing.sm),
+              Container(
+                height: 28,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                alignment: Alignment.center,
+                decoration: ShapeDecoration(
+                  color: semantic.successContainer,
+                  shape: const StadiumBorder(),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome, size: 12, color: semantic.success),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Tốt lắm!',
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: semantic.success,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

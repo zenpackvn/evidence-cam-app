@@ -170,6 +170,7 @@ class _EmailStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AuthScaffold(
+      topGap: 34,
       child: Form(
         key: formKey,
         child: Column(
@@ -250,6 +251,7 @@ class _LinkSentStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AuthScaffold(
+      topGap: 32,
       bottomAsset: 'otp-key-envelope.png',
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -382,6 +384,7 @@ class _ResetStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AuthScaffold(
+      topGap: 34,
       bottomAsset: 'reset-lock-envelope.png',
       child: Form(
         key: formKey,
@@ -533,6 +536,7 @@ class _SuccessStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AuthScaffold(
+      topGap: 34,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

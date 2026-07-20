@@ -71,6 +71,7 @@ class _ChooseUsernameScreenState extends State<ChooseUsernameScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AuthScaffold(
+      topGap: 40,
       topLeftAsset: 'verify-top-left-letter.png',
       topLeftWidth: 90,
       topRightAsset: 'user-top-right-leaves.png',
@@ -82,12 +83,13 @@ class _ChooseUsernameScreenState extends State<ChooseUsernameScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const AuthBrandHeader().animateSlideDown(),
-          const SizedBox(height: AppSpacing.xxl),
+          // .pen F01-S09 flow gaps: header→title 16, title→field 16.
+          const SizedBox(height: AppSpacing.lg),
           AuthHeading(
             title: l10n.smUsernameTitle,
             subtitle: l10n.smUsernameSubtitle,
           ).animateSlideDown(delay: 50.ms),
-          const SizedBox(height: AppSpacing.xxxl),
+          const SizedBox(height: AppSpacing.lg),
           AuthTextField(
             controller: _controller,
             label: l10n.smUsernameLabel,
@@ -109,7 +111,7 @@ class _ChooseUsernameScreenState extends State<ChooseUsernameScreen> {
               ),
             ),
           ],
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.md),
           _Suggestions(
             label: l10n.smUsernameSuggestions,
             suggestions: _suggestions,
@@ -141,6 +143,7 @@ class _Suggestions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
+    // .pen suggestBlock: 12px between the label and the chip rows.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -155,26 +158,58 @@ class _Suggestions extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        Wrap(
-          spacing: AppSpacing.md,
-          runSpacing: AppSpacing.md,
-          children: [
-            for (final suggestion in suggestions)
-              ActionChip(
-                label: Text(suggestion),
-                onPressed: onPick == null ? null : () => onPick!(suggestion),
-                backgroundColor: colorScheme.surfaceContainerLowest,
-                side: BorderSide(color: colorScheme.outlineVariant),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                labelStyle: context.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface,
-                ),
-              ),
-          ],
-        ),
+        // .pen chipRow: two 148×48 pill chips per row, 14px apart; a lone
+        // chip keeps its half-width (left-aligned) via the trailing spacer.
+        for (var i = 0; i < suggestions.length; i += 2) ...[
+          if (i > 0) const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(child: _SuggestionChip(suggestions[i], onPick)),
+              const SizedBox(width: 14),
+              if (i + 1 < suggestions.length)
+                Expanded(child: _SuggestionChip(suggestions[i + 1], onPick))
+              else
+                const Spacer(),
+            ],
+          ),
+        ],
       ],
+    );
+  }
+}
+
+/// One suggestion pill — the .pen `Content/Chip`: h48, radius-pill,
+/// surface-elevated fill with the border-default hairline, label 15/w500.
+class _SuggestionChip extends StatelessWidget {
+  const _SuggestionChip(this.value, this.onPick);
+
+  final String value;
+  final ValueChanged<String>? onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    return SizedBox(
+      height: 48,
+      child: Material(
+        color: context.brand.surfaceElevated,
+        shape: StadiumBorder(
+          side: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPick == null ? null : () => onPick!(value),
+          child: Center(
+            child: Text(
+              value,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

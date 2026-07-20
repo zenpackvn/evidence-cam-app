@@ -31,21 +31,18 @@ class AttachStampsScreen extends StatelessWidget {
         final cubit = context.read<ComposerCubit>();
         return Scaffold(
           backgroundColor: _ground,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: BackButton(onPressed: onBack),
-            title: Text(
-              'Đính tem (${state.stampIds.length}/${LetterInput.maxStamps})',
-              style: context.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
           body: SafeArea(
-            top: false,
             child: Column(
               children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                  ),
+                  child: _AttachHeader(onBack: onBack),
+                ),
                 Expanded(
                   child: stamps.isEmpty
                       ? const _NoStamps()
@@ -53,10 +50,11 @@ class AttachStampsScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(AppSpacing.xl),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
+                                // .pen F03-S07: 4-up stamp grid.
+                                crossAxisCount: 4,
                                 mainAxisSpacing: AppSpacing.sm,
                                 crossAxisSpacing: AppSpacing.sm,
-                                childAspectRatio: 3 / 4,
+                                childAspectRatio: 0.82,
                               ),
                           itemCount: stamps.length,
                           itemBuilder: (context, i) {
@@ -65,6 +63,7 @@ class AttachStampsScreen extends StatelessWidget {
                             final atLimit =
                                 state.stampIds.length >= LetterInput.maxStamps;
                             return _StampPick(
+                              key: ValueKey('stamp-pick-${stamp.id}'),
                               stamp: stamp,
                               selected: selected,
                               onTap: () {
@@ -115,11 +114,59 @@ class AttachStampsScreen extends StatelessWidget {
   }
 }
 
+/// Back button, "Đính tem" title, and a help button (`.pen` F03-S07 topbar).
+class _AttachHeader extends StatelessWidget {
+  const _AttachHeader({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _HeaderButton(icon: Icons.chevron_left, onTap: onBack),
+        const SizedBox(width: AppSpacing.sm),
+        Text(
+          'Đính tem',
+          style: context.textTheme.displayMedium?.copyWith(fontSize: 26),
+        ),
+        const Spacer(),
+        _HeaderButton(icon: Icons.help_outline, onTap: () {}),
+      ],
+    );
+  }
+}
+
+class _HeaderButton extends StatelessWidget {
+  const _HeaderButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: context.brand.surfaceElevated,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, size: 22, color: context.colorScheme.onSurface),
+        ),
+      ),
+    );
+  }
+}
+
 class _StampPick extends StatelessWidget {
   const _StampPick({
     required this.stamp,
     required this.selected,
     required this.onTap,
+    super.key,
   });
 
   final Stamp stamp;

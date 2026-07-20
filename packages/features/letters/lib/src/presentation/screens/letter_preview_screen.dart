@@ -54,7 +54,7 @@ class LetterPreviewScreen extends StatelessWidget {
                 children: [
                   _CircleButton(
                     size: 44,
-                    icon: Icons.arrow_back,
+                    icon: Icons.chevron_left,
                     onTap: () => Navigator.of(context).maybePop(),
                   ),
                   const Spacer(),
@@ -110,7 +110,7 @@ class LetterPreviewScreen extends StatelessWidget {
                     _InfoRow(
                       leading: const _IconBox(
                         color: Color(0xFFF2EAFE),
-                        icon: Icons.description_outlined,
+                        icon: Icons.mail_outline,
                         iconColor: Color(0xFF8B6BD8),
                       ),
                       label: 'Mẫu thư',
@@ -156,7 +156,7 @@ class LetterPreviewScreen extends StatelessWidget {
                     _InfoRow(
                       leading: const _IconBox(
                         color: Color(0xFFFDEBE2),
-                        icon: Icons.favorite_outline,
+                        icon: Icons.person_outline,
                         iconColor: Color(0xFFF35B43),
                       ),
                       label: 'Gửi đến',

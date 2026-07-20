@@ -562,26 +562,8 @@ class _EmptyHome extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(AppSpacing.xxl, 16, AppSpacing.xxl, 120),
       children: [
-        // Centered brand logo row.
-        Column(
-          children: [
-            Image.asset(
-              'assets/illustrations/logo-stamp.png',
-              package: HomeBody.package,
-              width: 65,
-              height: 71,
-              excludeFromSemantics: true,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'StampMail',
-              style: context.textTheme.displayMedium?.copyWith(
-                color: context.colorScheme.primary,
-                fontSize: 30,
-              ),
-            ),
-          ],
-        ),
+        // .pen F01-S15 logoRow: the shared brand lockup (cAuthLogo).
+        const StampMailBrandmark(),
         const SizedBox(height: 10),
         Text(
           'Chào $name 👋',

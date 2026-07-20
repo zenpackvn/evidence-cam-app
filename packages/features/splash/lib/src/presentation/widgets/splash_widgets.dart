@@ -96,24 +96,8 @@ class SplashContent extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset(
-                    'assets/illustrations/splash-stamp-white.png',
-                    package: 'feature_splash',
-                    width: 125,
-                    height: 149,
-                    excludeFromSemantics: true,
-                  ).animateScale(),
-                  const SizedBox(height: 18),
-                  Text(
-                    context.l10n.appTitle,
-                    // .pen F01-S01 wordmark: Baloo 2, 44px, w700.
-                    style: context.textTheme.displayLarge?.copyWith(
-                      color: Colors.white,
-                      fontSize: 44,
-                      height: 1.21,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ).animateSlideUp(delay: AppDurations.medium),
+                  // .pen F01-S01: white 125×149 mark + 44px white wordmark.
+                  const StampMailBrandmark.splash().animateScale(),
                   const SizedBox(height: 10),
                   Text(
                     context.l10n.splashTagline,
@@ -126,6 +110,15 @@ class SplashContent extends StatelessWidget {
                       height: 1.35,
                     ),
                   ).animateFadeIn(delay: AppDurations.slow),
+                  const SizedBox(height: 22),
+                  // .pen F01-S01: a 26px white heart closes the lockup.
+                  // ponytail: Material solid heart ≈ Lucide `heart` filled;
+                  // swap to a Lucide glyph if literal glyph parity is needed.
+                  const Icon(
+                    Icons.favorite,
+                    size: 26,
+                    color: Colors.white,
+                  ),
                 ],
               ),
             ),

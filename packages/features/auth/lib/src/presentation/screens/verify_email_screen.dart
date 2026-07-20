@@ -94,6 +94,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     final canResend = _resendIn == 0;
     final email = widget.email.isEmpty ? 'hello@stampmail.com' : widget.email;
     return AuthScaffold(
+      topGap: 46,
       topLeftAsset: 'verify-top-left-letter.png',
       topLeftWidth: 90,
       topRightAsset: 'reg-top-right-plane.png',

@@ -183,13 +183,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 _Dots(count: steps.length, current: _page),
                 const SizedBox(height: AppSpacing.xl),
                 Padding(
+                  // .pen ctaWrap: 319-wide button, ~37px side margins.
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl,
+                    37,
                     0,
-                    AppSpacing.xl,
+                    37,
                     AppSpacing.xxl,
                   ),
-                  child: _OnboardingCta(
+                  child: StampMailPrimaryButton(
                     label: _isLast(steps.length)
                         ? l10n.smOnboardingStart
                         : l10n.smOnboardingNext,
@@ -200,37 +201,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// The full-width coral CTA with a right-aligned sparkle (matches the auth CTA).
-class _OnboardingCta extends StatelessWidget {
-  const _OnboardingCta({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-    return SizedBox(
-      height: 56,
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          textStyle: context.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        child: Text(label),
       ),
     );
   }

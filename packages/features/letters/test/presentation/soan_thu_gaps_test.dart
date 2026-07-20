@@ -64,8 +64,9 @@ void main() {
         _wrap(TemplateListScreen(onPick: (t) => picked = t)),
       );
 
-      // "Cổ điển" is a Free template.
-      await tester.tap(find.text('Cổ điển'));
+      // "Cổ điển" (classic) is a Free template. The card shows no visible
+      // label (pure art per the .pen), so locate it by its key.
+      await tester.tap(find.byKey(const ValueKey('template-classic')));
       await tester.pumpAndSettle();
 
       // AC-02: full preview screen is shown with the Free CTA, not the upgrade.
@@ -80,37 +81,40 @@ void main() {
     });
 
     testWidgets(
-      'Free user tapping a locked Premium card previews then sees the upgrade '
-      'CTA (BR-03/AC-03/AC-07)',
+      'every template is Free — tapping opens the preview with the use CTA, '
+      'no upgrade (D15 revised)',
       (tester) async {
-        var picked = false;
+        LetterTemplate? picked;
         var upgraded = false;
         await tester.pumpWidget(
           _wrap(
             TemplateListScreen(
-              onPick: (_) => picked = true,
+              onPick: (t) => picked = t,
               onUpgrade: () => upgraded = true,
             ),
           ),
         );
 
-        // "Sinh nhật" is a Premium template (lower in the grid — scroll to it).
-        final birthday = find.text('Sinh nhật');
-        await tester.ensureVisible(birthday);
+        // A formerly-Premium template (birthday) is now Free.
+        final birthday = find.byKey(const ValueKey('template-birthday'));
+        await tester.dragUntilVisible(
+          birthday,
+          find.byType(GridView),
+          const Offset(0, -220),
+        );
         await tester.pumpAndSettle();
         await tester.tap(birthday);
         await tester.pumpAndSettle();
 
-        // AC-03: the full preview still opens for a Free user.
         expect(find.text('Xem trước template'), findsOneWidget);
-        // AC-07: the use CTA is replaced by the upgrade CTA.
-        expect(find.text('Dùng template này'), findsNothing);
-        expect(find.text('Nâng cấp Premium'), findsOneWidget);
+        // The free use CTA shows; no upgrade CTA anywhere.
+        expect(find.text('Dùng template này'), findsOneWidget);
+        expect(find.text('Nâng cấp Premium'), findsNothing);
 
-        await tester.tap(find.text('Nâng cấp Premium'));
+        await tester.tap(find.text('Dùng template này'));
         await tester.pumpAndSettle();
-        expect(upgraded, isTrue);
-        expect(picked, isFalse);
+        expect(picked?.id, 'birthday');
+        expect(upgraded, isFalse);
       },
     );
 
@@ -123,8 +127,12 @@ void main() {
         ),
       );
 
-      final birthday = find.text('Sinh nhật');
-      await tester.ensureVisible(birthday);
+      final birthday = find.byKey(const ValueKey('template-birthday'));
+      await tester.dragUntilVisible(
+        birthday,
+        find.byType(GridView),
+        const Offset(0, -220),
+      );
       await tester.pumpAndSettle();
       await tester.tap(birthday);
       await tester.pumpAndSettle();
@@ -200,8 +208,7 @@ void main() {
       expect(cubit.state.stampIds.length, LetterInput.maxStamps);
 
       // Tapping the 4th (unselected) stamp is refused with a message (AC-02).
-      // s4 is the last stamp card; each card is an InkWell.
-      final fourth = find.byType(InkWell).at(3);
+      final fourth = find.byKey(const ValueKey('stamp-pick-s4'));
       await tester.ensureVisible(fourth);
       await tester.pump();
       await tester.tap(fourth, warnIfMissed: false);

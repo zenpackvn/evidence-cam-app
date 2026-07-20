@@ -104,6 +104,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     bool submitting,
   ) {
     return AuthScaffold(
+      topGap: 28,
       topRightAsset: 'reg-top-right-plane.png',
       topRightWidth: 117,
       bottomLeftAsset: 'reg-bottom-left.png',

@@ -18,6 +18,7 @@ import 'package:feature_splash/feature_splash.dart';
 import 'package:feature_stamp_creator/feature_stamp_creator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 
 import '../app/widgets/app_shell.dart';
@@ -320,6 +321,17 @@ List<GallerySection> buildGallerySections() => [
         onSend: () async {
           await showEmptyLetterWarning(context);
         },
+      ),
+    ),
+    GalleryEntry(
+      'F03-S11',
+      'Platform picker — Gửi thư',
+      build: (context) => BlocProvider(
+        create: (_) => ComposerCubit(GetIt.instance<LettersRepository>()),
+        child: SendScreen(
+          onBack: () => Navigator.of(context).maybePop(),
+          onSent: (_) {},
+        ),
       ),
     ),
     GalleryEntry(

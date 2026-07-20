@@ -31,11 +31,12 @@ class OpenedLetterView extends StatelessWidget {
       children: [
         _SenderHeader(name: senderName),
         const SizedBox(height: AppSpacing.md),
+        // .pen F04-S05: a coral heart above the "Thư đã mở" title (30/w700).
+        Icon(Icons.favorite, size: 20, color: scheme.primary),
+        const SizedBox(height: AppSpacing.xs),
         Text(
           'Thư đã mở',
-          style: context.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          style: context.textTheme.displayMedium?.copyWith(fontSize: 30),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
@@ -158,10 +159,17 @@ class _Actions extends StatelessWidget {
       children: [
         SizedBox(
           width: double.infinity,
-          height: 52,
-          child: OutlinedButton.icon(
+          height: 54,
+          child: FilledButton.icon(
             onPressed: onReply,
-            icon: const Icon(Icons.reply_outlined),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.colorScheme.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              textStyle: context.textTheme.titleMedium,
+            ),
+            icon: const Icon(Icons.send, size: 18),
             label: const Text('Trả lời'),
           ),
         ),

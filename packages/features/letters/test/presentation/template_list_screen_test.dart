@@ -12,7 +12,7 @@ void main() {
   group('TemplateListScreen reply mode (SM-020 BR-01)', () {
     testWidgets('default mode shows the plain title, no recipient', (tester) async {
       await tester.pumpWidget(_host(TemplateListScreen(onPick: (_) {})));
-      expect(find.text('Chọn mẫu thư'), findsOneWidget);
+      expect(find.text('Chọn template'), findsOneWidget);
       expect(find.textContaining('Gửi tới'), findsNothing);
     });
 
@@ -30,7 +30,7 @@ void main() {
       await tester.pumpWidget(
         _host(TemplateListScreen(onPick: (_) {}, replyToName: '')),
       );
-      expect(find.text('Chọn mẫu thư'), findsOneWidget);
+      expect(find.text('Chọn template'), findsOneWidget);
       expect(find.textContaining('Gửi tới'), findsNothing);
     });
   });

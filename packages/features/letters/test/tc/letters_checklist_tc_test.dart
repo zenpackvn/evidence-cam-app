@@ -59,12 +59,13 @@ Widget _wrap(Widget child) => MaterialApp(
 void main() {
   // ── 010 · chọn template ──────────────────────────────────────────────────
   group('Template catalog (TC-10-001..)', () {
-    test('TC-10-001: gói Free có đúng 3 template dùng được', () {
-      expect(letterTemplates.where((t) => !t.premium).length, 3);
+    test('TC-10-001: mọi template đều Free và dùng được (D15 revised)', () {
+      expect(letterTemplates, isNotEmpty);
+      expect(letterTemplates.every((t) => !t.premium), isTrue);
     });
 
-    test('TC-10-004: template Premium được đánh dấu khoá với Free', () {
-      expect(letterTemplates.where((t) => t.premium), isNotEmpty);
+    test('TC-10-004: không còn template Premium (tất cả Free)', () {
+      expect(letterTemplates.where((t) => t.premium), isEmpty);
     });
 
     test('templateById rơi về classic khi id lạ (chống crash sent-box)', () {
@@ -152,7 +153,7 @@ void main() {
 
       expect(find.text('Xem trước thư'), findsOneWidget);
       expect(find.text('Mẫu thư'), findsOneWidget);
-      expect(find.text('Sinh nhật'), findsOneWidget);
+      expect(find.text('Chúc mừng sinh nhật'), findsOneWidget);
       expect(find.text('Hoa mùa xuân'), findsOneWidget);
       expect(find.text('Chỉnh sửa'), findsOneWidget);
       expect(find.text('Gửi thư'), findsOneWidget);

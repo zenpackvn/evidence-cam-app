@@ -61,54 +61,224 @@ class TemplateListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isReply = replyToName != null && replyToName!.isNotEmpty;
+    // .pen F03-S01: back button, "Chọn template" 32px, a search row, the
+    // category chips, then the template grid. (The .pen also draws the app tab
+    // bar, but this is a pushed sub-screen with a back button, so it is omitted.)
     return Scaffold(
       backgroundColor: _ground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              isReply ? 'Trả lời' : 'Chọn mẫu thư',
-              style: context.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+      body: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Image.asset(
+                'assets/illustrations/f3-decor-tr-c.png',
+                package: 'feature_letters',
+                width: 144,
+                excludeFromSemantics: true,
               ),
             ),
-            if (isReply)
-              Text(
-                'Gửi tới $replyToName',
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant,
+          ),
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xl,
+                    AppSpacing.sm,
+                    AppSpacing.xl,
+                    0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _CircleButton(
+                        icon: Icons.chevron_left,
+                        onTap: () => Navigator.of(context).maybePop(),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        isReply ? 'Trả lời' : 'Chọn template',
+                        style: context.textTheme.displayMedium?.copyWith(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (isReply)
+                        Text(
+                          'Gửi tới $replyToName',
+                          style: context.textTheme.bodySmall?.copyWith(
+                            color: context.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      const SizedBox(height: 10),
+                      const _SearchRow(),
+                      const SizedBox(height: 10),
+                      const _CategoryChips(),
+                    ],
+                  ),
                 ),
-              ),
-          ],
+                const SizedBox(height: 12),
+                Expanded(
+                  child: GridView.builder(
+                    // Small fixed catalog — keep every card built so it never
+                    // drops out of the tree off-screen.
+                    cacheExtent: 1200,
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.xl,
+                      0,
+                      AppSpacing.xl,
+                      AppSpacing.xl,
+                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: AppSpacing.md,
+                          crossAxisSpacing: AppSpacing.md,
+                          childAspectRatio: 3 / 4,
+                        ),
+                    itemCount: letterTemplates.length,
+                    itemBuilder: (context, i) {
+                      final template = letterTemplates[i];
+                      return _TemplateCard(
+                        key: ValueKey('template-${template.id}'),
+                        template: template,
+                        // D15 revised: every template is Free.
+                        locked: false,
+                        onTap: () => _openPreview(context, i),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A round pill button (`.pen` `cbtn`): surface-elevated with a centered icon.
+class _CircleButton extends StatelessWidget {
+  const _CircleButton({
+    required this.icon,
+    required this.onTap,
+    this.size = 44,
+    this.iconColor,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final double size;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: context.brand.surfaceElevated,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Icon(
+            icon,
+            size: 22,
+            color: iconColor ?? context.colorScheme.onSurface,
+          ),
         ),
       ),
-      body: SafeArea(
-        top: false,
-        child: GridView.builder(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: AppSpacing.lg,
-            crossAxisSpacing: AppSpacing.lg,
-            childAspectRatio: 3 / 4,
+    );
+  }
+}
+
+/// The search field + filter button (`.pen` searchRow). ponytail: visual only —
+/// the catalog is 6 items, so wire filtering when it grows.
+class _SearchRow extends StatelessWidget {
+  const _SearchRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 46,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            decoration: ShapeDecoration(
+              color: context.brand.surfaceElevated,
+              shape: const StadiumBorder(),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.search, size: 18, color: scheme.onSurfaceVariant),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  'Tìm template',
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
           ),
-          itemCount: letterTemplates.length,
-          itemBuilder: (context, i) {
-            final template = letterTemplates[i];
-            final locked = template.premium && !isPremium;
-            return _TemplateCard(
-              template: template,
-              locked: locked,
-              // BR-04 / AC-02..03: every card opens the full preview first;
-              // locked cards still preview fully, then show the upgrade CTA.
-              onTap: () => _openPreview(context, i),
-            );
-          },
         ),
+        const SizedBox(width: 10),
+        _CircleButton(
+          icon: Icons.tune,
+          size: 46,
+          iconColor: scheme.primary,
+          onTap: () {},
+        ),
+      ],
+    );
+  }
+}
+
+/// The category filter chips (`.pen` chips, `Content/FilterChip`). ponytail:
+/// visual only for now — "Tất cả" is the active state.
+class _CategoryChips extends StatelessWidget {
+  const _CategoryChips();
+
+  static const _labels = ['Tất cả', 'Sinh nhật', 'Tình yêu', 'Cảm ơn', 'Chúc mừng'];
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _labels.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
+        itemBuilder: (context, i) {
+          final active = i == 0;
+          return Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            decoration: ShapeDecoration(
+              color: active ? scheme.primary : context.brand.surfaceElevated,
+              shape: StadiumBorder(
+                side: active
+                    ? BorderSide.none
+                    : BorderSide(color: scheme.outlineVariant),
+              ),
+            ),
+            child: Text(
+              _labels[i],
+              style: context.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: active ? scheme.onPrimary : scheme.onSurface,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -119,6 +289,7 @@ class _TemplateCard extends StatelessWidget {
     required this.template,
     required this.locked,
     required this.onTap,
+    super.key,
   });
 
   final LetterTemplate template;
@@ -128,7 +299,12 @@ class _TemplateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    return InkWell(
+    // The .pen card shows no visible label (the name is baked into the art),
+    // so the template name lives in the accessible name instead.
+    return Semantics(
+      label: template.label,
+      button: true,
+      child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.xl),
       child: Container(
@@ -158,17 +334,9 @@ class _TemplateCard extends StatelessWidget {
                   color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
                 ),
               ),
-            Positioned(
-              left: AppSpacing.md,
-              bottom: AppSpacing.md,
-              child: Text(
-                template.label,
-                style: context.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: scheme.onSurface,
-                ),
-              ),
-            ),
+            // .pen Content/TemplateCard is pure art — the template name is baked
+            // into the asset, so no overlaid label (it collided with the art's
+            // own caption).
             if (locked)
               Positioned(
                 top: AppSpacing.md,
@@ -177,6 +345,7 @@ class _TemplateCard extends StatelessWidget {
               ),
           ],
         ),
+      ),
       ),
     );
   }

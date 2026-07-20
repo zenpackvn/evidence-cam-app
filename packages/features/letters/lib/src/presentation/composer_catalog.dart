@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart' show Key;
 
-/// A letter template (SM-012): Free gets 3, the rest are Premium (D15 — the
-/// exact Premium set is finalized with pricing). `paperColor` is the default
-/// paper tint the composer opens with.
+/// A letter template (SM-012). D15 revised: every template is Free — the
+/// [premium] flag stays for compatibility but no template sets it.
+/// `paperColor` is the default paper tint the composer opens with.
 class LetterTemplate {
   const LetterTemplate({
     required this.id,
@@ -39,62 +39,57 @@ class LetterTemplate {
 
 const _tplAssets = 'packages/feature_letters/assets/templates';
 
-/// Free 3 + Premium templates (D15).
+/// The letter templates (SM-012, D15 revised: all templates are Free). Names
+/// and artwork match the `.pen` template set — the name is baked into each art,
+/// so cards render the art alone. Ids stay stable ([LetterContent.templateId]).
 const letterTemplates = <LetterTemplate>[
   LetterTemplate(
     id: 'classic',
-    label: 'Cổ điển',
+    label: 'Ngày mới rực rỡ',
     paperColor: 0xFFFDF6EC,
     artAsset: '$_tplAssets/f3-tpl-1.png',
-    description: 'Nét mộc mạc, tinh tế cho mọi lời nhắn. '
-        'Một khởi đầu nhẹ nhàng để gửi gắm yêu thương.',
+    description: 'Nắng sớm rực rỡ cho một khởi đầu tràn đầy năng lượng — '
+        'gửi lời chào ngày mới thật tươi.',
   ),
   LetterTemplate(
     id: 'floral',
-    label: 'Hoa lá',
+    label: 'Cảm ơn chân thành',
     paperColor: 0xFFFBF3F4,
-    artAsset: '$_tplAssets/f3-tpl-1.png',
-    description: 'Sắc hoa dịu dàng cho những lời chúc tươi mới, '
-        'gửi đến người bạn trân quý.',
-  ),
-  LetterTemplate(
-    id: 'kraft',
-    label: 'Giấy kraft',
-    paperColor: 0xFFF3E7D3,
-    artAsset: '$_tplAssets/f3-tpl-1.png',
-    description: 'Chất giấy kraft ấm áp, hoài niệm — hợp với những '
-        'dòng tâm sự chân thành.',
+    artAsset: '$_tplAssets/f3-tpl-2.png',
+    description: 'Trang giấy kẻ ô nhẹ nhàng điểm hoa cỏ — hợp để nói lời '
+        'cảm ơn từ tận đáy lòng.',
   ),
   LetterTemplate(
     id: 'birthday',
-    label: 'Sinh nhật',
+    label: 'Chúc mừng sinh nhật',
     paperColor: 0xFFFDF0F5,
-    premium: true,
-    artAsset: '$_tplAssets/f3-tpl-p1.png',
-    previewAsset: '$_tplAssets/f3-preview-bday.png',
-    thumbAsset: '$_tplAssets/f3-thumb-bday.png',
-    description: 'Template sinh nhật pastel nhẹ nhàng với bánh kem, '
-        'hoa tươi, bóng bay và những lời chúc ngọt ngào.',
-  ),
-  LetterTemplate(
-    id: 'holiday',
-    label: 'Lễ hội',
-    paperColor: 0xFFEFF6EF,
-    premium: true,
-    artAsset: '$_tplAssets/f3-tpl-p1.png',
-    description: 'Không khí lễ hội rộn ràng cho mùa sum vầy, '
-        'gửi lời chúc an lành đến mọi người.',
+    artAsset: '$_tplAssets/f3-tpl-3.png',
+    description: 'Bánh kem, bóng bay và sắc pastel ngọt ngào cho lời chúc '
+        'sinh nhật thật đáng nhớ.',
   ),
   LetterTemplate(
     id: 'love',
-    label: 'Tình yêu',
+    label: 'Ký gửi yêu thương',
     paperColor: 0xFFFCEDEE,
-    premium: true,
-    artAsset: '$_tplAssets/f3-tpl-p1.png',
-    previewAsset: '$_tplAssets/f3-preview-self.png',
-    thumbAsset: '$_tplAssets/f3-thumb-self.png',
-    description: 'Một lá thư dịu dàng gửi đến người thương. '
-        'Trân trọng từng khoảnh khắc bên nhau.',
+    artAsset: '$_tplAssets/f3-tpl-4.png',
+    description: 'Một lá thư dịu dàng gửi trọn yêu thương đến người bạn '
+        'trân quý nhất.',
+  ),
+  LetterTemplate(
+    id: 'kraft',
+    label: 'Nhật ký nhỏ',
+    paperColor: 0xFFF3E7D3,
+    artAsset: '$_tplAssets/f3-tpl-5c.png',
+    description: 'Chất giấy kraft ấm áp, hoài niệm — hợp với những dòng '
+        'tâm sự chân thành mỗi ngày.',
+  ),
+  LetterTemplate(
+    id: 'holiday',
+    label: 'Hành trình mỗi ngày',
+    paperColor: 0xFFEFF6EF,
+    artAsset: '$_tplAssets/f3-tpl-6c.png',
+    description: 'Ghi lại từng chặng đường và khoảnh khắc đẹp trên hành '
+        'trình của bạn.',
   ),
 ];
 

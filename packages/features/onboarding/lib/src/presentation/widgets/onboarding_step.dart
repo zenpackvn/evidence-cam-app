@@ -1,36 +1,6 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:localization/localization.dart';
-
-/// The StampMail wordmark (logo + name) shown atop each onboarding slide.
-class _OnboardingBrand extends StatelessWidget {
-  const _OnboardingBrand();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Image.asset(
-          'assets/illustrations/logo-stamp.png',
-          package: 'feature_onboarding',
-          width: 65,
-          height: 71,
-          excludeFromSemantics: true,
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          context.l10n.appTitle,
-          style: context.textTheme.headlineMedium?.copyWith(
-            color: context.colorScheme.primary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 /// One onboarding page's content. Immutable; the screen owns the list.
 @immutable
@@ -66,36 +36,46 @@ class OnboardingStep extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const _OnboardingBrand(),
-          const SizedBox(height: AppSpacing.xxl),
+          const StampMailBrandmark(),
+          // .pen F01-S02 flow gaps: brand→hero 14, hero→filter 18,
+          // filter→title 20, title→body 10.
+          const SizedBox(height: 14),
           Image.asset(
             'assets/illustrations/${data.heroAsset}',
             package: 'feature_onboarding',
+            width: 357,
             fit: BoxFit.contain,
             excludeFromSemantics: true,
           ).animateScale(),
           if (data.showFilters) ...[
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: 18),
             const _FilterRow(),
           ],
-          const SizedBox(height: AppSpacing.xxxl),
-          Text(
-            data.title,
-            textAlign: TextAlign.center,
-            style: context.textTheme.displaySmall?.copyWith(
-              color: context.colorScheme.onSurface,
-              fontWeight: FontWeight.w700,
-            ),
-          ).animateSlideUp(delay: 60.ms),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: 20),
+          // .pen heading: Baloo 2 27/w700, breaking to two lines — constrain
+          // the width so it wraps like the design instead of on one line.
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 360),
+            constraints: const BoxConstraints(maxWidth: 300),
+            child: Text(
+              data.title,
+              textAlign: TextAlign.center,
+              style: context.textTheme.displaySmall?.copyWith(
+                color: context.colorScheme.onSurface,
+                fontSize: 27,
+                fontWeight: FontWeight.w700,
+              ),
+            ).animateSlideUp(delay: 60.ms),
+          ),
+          const SizedBox(height: 10),
+          ConstrainedBox(
+            // .pen subtitle: body-md, 333 wide.
+            constraints: const BoxConstraints(maxWidth: 333),
             child: Text(
               data.description,
               textAlign: TextAlign.center,
-              style: context.textTheme.bodyLarge?.copyWith(
+              style: context.textTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
-                height: 1.5,
+                height: 1.47,
               ),
             ).animateFadeIn(delay: 120.ms),
           ),
@@ -121,14 +101,14 @@ class _FilterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
+    // .pen filterBar: 337 wide, surface-elevated, radius-20, padding [v12,h10];
+    // icons 22, caption labels; "Sáng" active in coral (w600), rest secondary.
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.md,
-      ),
+      width: 337,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        color: context.brand.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: [
           BoxShadow(
             color: colorScheme.shadow.withValues(alpha: 0.05),
@@ -146,7 +126,7 @@ class _FilterRow extends StatelessWidget {
               children: [
                 FaIcon(
                   icon,
-                  size: 20,
+                  size: 22,
                   color: index == 0
                       ? colorScheme.primary
                       : colorScheme.onSurfaceVariant,
@@ -159,7 +139,7 @@ class _FilterRow extends StatelessWidget {
                         ? colorScheme.primary
                         : colorScheme.onSurfaceVariant,
                     fontWeight: index == 0
-                        ? FontWeight.w700
+                        ? FontWeight.w600
                         : FontWeight.w500,
                   ),
                 ),

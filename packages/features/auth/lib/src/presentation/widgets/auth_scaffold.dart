@@ -27,10 +27,16 @@ class AuthScaffold extends StatelessWidget {
     this.topRightWidth = 105,
     this.bottomLeftAsset,
     this.bottomRightAsset,
+    this.topGap = 30,
     super.key,
   });
 
   final Widget child;
+
+  /// Space above the first content element (the logo). Per the `.pen` auth
+  /// frames this varies by screen — login/avatar 30, register 28, forgot 34,
+  /// choose-username 40.
+  final double topGap;
 
   /// Whether to paint the bottom illustration. Screens with tall content
   /// (e.g. the register form) hide it to avoid overlap.
@@ -146,10 +152,10 @@ class AuthScaffold extends StatelessWidget {
                             // .pen auth frames: 313px-wide form column
                             // ((393 − 313) / 2 = 40px side margins), first
                             // element 30px below the top.
-                            padding: const EdgeInsets.only(
+                            padding: EdgeInsets.only(
                               left: AppSpacing.xxxxl,
                               right: AppSpacing.xxxxl,
-                              top: 30,
+                              top: topGap,
                               bottom: AppSpacing.xxxl,
                             ),
                             child: Center(
