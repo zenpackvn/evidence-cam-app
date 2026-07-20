@@ -46,7 +46,9 @@ class StampMailBrandmark extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Image.asset(
-          light ? 'assets/brand/stamp-white.png' : 'assets/brand/stamp-coral.png',
+          light
+              ? 'assets/brand/stamp-white.png'
+              : 'assets/brand/stamp-coral.png',
           package: 'app_ui',
           width: logoWidth,
           height: logoHeight,

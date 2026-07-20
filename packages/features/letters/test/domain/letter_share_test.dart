@@ -43,16 +43,19 @@ void main() {
       expect(ims.toString(), contains(Uri.encodeComponent(url)));
     });
 
-    test('platforms without a reliable scheme return null (share-sheet path)', () {
-      for (final p in [
-        SharePlatform.messenger,
-        SharePlatform.instagram,
-        SharePlatform.tiktok,
-        SharePlatform.threads,
-        SharePlatform.zalo,
-      ]) {
-        expect(share.dmUri(p, url), isNull, reason: '$p should fall back');
-      }
-    });
+    test(
+      'platforms without a reliable scheme return null (share-sheet path)',
+      () {
+        for (final p in [
+          SharePlatform.messenger,
+          SharePlatform.instagram,
+          SharePlatform.tiktok,
+          SharePlatform.threads,
+          SharePlatform.zalo,
+        ]) {
+          expect(share.dmUri(p, url), isNull, reason: '$p should fall back');
+        }
+      },
+    );
   });
 }

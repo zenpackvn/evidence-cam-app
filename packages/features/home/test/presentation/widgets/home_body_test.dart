@@ -123,8 +123,9 @@ void main() {
       expect(banner.bottom, lessThanOrEqualTo(content.top));
     });
 
-    testWidgets('the notice appears on a drop and clears on reconnect',
-        (tester) async {
+    testWidgets('the notice appears on a drop and clears on reconnect', (
+      tester,
+    ) async {
       await pumpHome(tester, data: data);
       expect(find.text(HomeBody.offlineLabel), findsNothing);
 
@@ -144,7 +145,11 @@ void main() {
       connectivity.online = false;
       await pumpHome(tester, data: data);
 
-      await tester.fling(find.text('Thư gửi qua Zalo'), const Offset(0, 400), 1000);
+      await tester.fling(
+        find.text('Thư gửi qua Zalo'),
+        const Offset(0, 400),
+        1000,
+      );
       await tester.pumpAndSettle();
 
       // The refresh gesture never engages: no spinner, notice still up, data

@@ -63,7 +63,8 @@ class AlbumCubit extends Cubit<AlbumState> {
       emit(
         state.copyWith(
           stamps: [
-            for (final s in state.stamps) if (s.id == id) result.value else s,
+            for (final s in state.stamps)
+              if (s.id == id) result.value else s,
           ],
         ),
       );

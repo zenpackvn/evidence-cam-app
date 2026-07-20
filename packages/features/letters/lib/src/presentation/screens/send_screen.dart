@@ -94,8 +94,7 @@ class _SendScreenState extends State<SendScreen> {
                               label: label,
                               asset: asset,
                               selected: platform == _platform,
-                              onTap: () =>
-                                  setState(() => _platform = platform),
+                              onTap: () => setState(() => _platform = platform),
                             ),
                         ],
                       ),

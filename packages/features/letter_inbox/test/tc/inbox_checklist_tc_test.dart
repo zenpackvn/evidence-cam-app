@@ -67,14 +67,16 @@ void main() {
   });
 
   // ── SM-017 BR-05 · tem nhận KHÔNG được lưu vào Album ───────────────────
-  test('opened letter carries its stamps for display only (no save path)',
-      () async {
-    // The reveal state exposes the letter's stamps to render inside the letter,
-    // but there is no action to persist them (SM-017 BR-05 / SM-019 BR-03).
-    final repo = _FakeInbox(outcome: LetterOpened(_letter()));
-    final cubit = RevealCubit(repo, linkId: 'abc', viewerUid: 'u1');
-    await cubit.open();
+  test(
+    'opened letter carries its stamps for display only (no save path)',
+    () async {
+      // The reveal state exposes the letter's stamps to render inside the letter,
+      // but there is no action to persist them (SM-017 BR-05 / SM-019 BR-03).
+      final repo = _FakeInbox(outcome: LetterOpened(_letter()));
+      final cubit = RevealCubit(repo, linkId: 'abc', viewerUid: 'u1');
+      await cubit.open();
 
-    expect(cubit.state.letter?.stamps, hasLength(2));
-  });
+      expect(cubit.state.letter?.stamps, hasLength(2));
+    },
+  );
 }

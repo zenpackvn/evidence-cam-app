@@ -78,7 +78,9 @@ void main() {
     // No overflow error was thrown while laying the panel out.
   });
 
-  testWidgets('the "Chỉnh tay" tab shows the five adjust tools', (tester) async {
+  testWidgets('the "Chỉnh tay" tab shows the five adjust tools', (
+    tester,
+  ) async {
     await _pumpFilterStep(tester);
 
     await tester.tap(find.text('Chỉnh tay'));

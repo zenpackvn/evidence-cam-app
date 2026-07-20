@@ -38,16 +38,18 @@ void main() {
     addTearDown(cubit.close);
   });
 
-  test('opened letter carries the sender name for the reply prefill (SM-020 BR-01)',
-      () async {
-    final cubit = RevealCubit(
-      _FakeInboxRepository(LetterOpened(_letter(senderName: 'An'))),
-      linkId: 'tok',
-    );
-    await cubit.open();
-    expect(cubit.state.letter?.senderName, 'An');
-    addTearDown(cubit.close);
-  });
+  test(
+    'opened letter carries the sender name for the reply prefill (SM-020 BR-01)',
+    () async {
+      final cubit = RevealCubit(
+        _FakeInboxRepository(LetterOpened(_letter(senderName: 'An'))),
+        linkId: 'tok',
+      );
+      await cubit.open();
+      expect(cubit.state.letter?.senderName, 'An');
+      addTearDown(cubit.close);
+    },
+  );
 
   test('already-opened link lands on that terminal state', () async {
     final cubit = RevealCubit(

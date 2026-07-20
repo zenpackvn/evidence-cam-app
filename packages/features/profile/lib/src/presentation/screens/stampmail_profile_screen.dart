@@ -230,7 +230,9 @@ class _PlanBadge extends StatelessWidget {
           Icon(
             isPremium ? Icons.workspace_premium : Icons.check_circle_outline,
             size: 14,
-            color: isPremium ? const Color(0xFFF5BC58) : scheme.onSurfaceVariant,
+            color: isPremium
+                ? const Color(0xFFF5BC58)
+                : scheme.onSurfaceVariant,
           ),
           const SizedBox(width: 4),
           Text(

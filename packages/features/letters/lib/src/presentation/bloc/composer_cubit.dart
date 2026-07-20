@@ -53,7 +53,9 @@ class ComposerCubit extends Cubit<ComposerState> {
   void toggleStamp(String stampId) {
     final current = state.stampIds;
     if (current.contains(stampId)) {
-      emit(state.copyWith(stampIds: current.where((s) => s != stampId).toList()));
+      emit(
+        state.copyWith(stampIds: current.where((s) => s != stampId).toList()),
+      );
     } else if (current.length < LetterInput.maxStamps) {
       emit(state.copyWith(stampIds: [...current, stampId]));
     }

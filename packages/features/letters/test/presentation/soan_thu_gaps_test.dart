@@ -24,16 +24,18 @@ class _FakeLetters implements LettersRepository {
   );
 
   @override
-  Future<Result<LetterLink>> createLink(String letterId, {String? platform}) async =>
-      Ok(
-        LetterLink(
-          id: 'tok',
-          letterId: letterId,
-          platform: platform,
-          createdAt: DateTime(2026, 7, 17),
-          expiresAt: DateTime(2026, 7, 24),
-        ),
-      );
+  Future<Result<LetterLink>> createLink(
+    String letterId, {
+    String? platform,
+  }) async => Ok(
+    LetterLink(
+      id: 'tok',
+      letterId: letterId,
+      platform: platform,
+      createdAt: DateTime(2026, 7, 17),
+      expiresAt: DateTime(2026, 7, 24),
+    ),
+  );
 
   @override
   Future<Result<List<SentLetter>>> sent() async => const Ok([]);
@@ -56,46 +58,81 @@ Stamp _stamp(String id) => Stamp(
 
 void main() {
   // ── SM-012 · template list → preview ───────────────────────────────────────
-  group('TemplateListScreen preview flow (SM-012 BR-03/BR-04/AC-02..03/AC-07)', () {
-    testWidgets('tapping a Free card opens the full preview with a use CTA',
+  group(
+    'TemplateListScreen preview flow (SM-012 BR-03/BR-04/AC-02..03/AC-07)',
+    () {
+      testWidgets('tapping a Free card opens the full preview with a use CTA', (
+        tester,
+      ) async {
+        LetterTemplate? picked;
+        await tester.pumpWidget(
+          _wrap(TemplateListScreen(onPick: (t) => picked = t)),
+        );
+
+        // "Cổ điển" (classic) is a Free template. The card shows no visible
+        // label (pure art per the .pen), so locate it by its key.
+        await tester.tap(find.byKey(const ValueKey('template-classic')));
+        await tester.pumpAndSettle();
+
+        // AC-02: full preview screen is shown with the Free CTA, not the upgrade.
+        expect(find.text('Xem trước template'), findsOneWidget);
+        expect(find.text('Dùng template này'), findsOneWidget);
+        expect(find.text('Nâng cấp Premium'), findsNothing);
+
+        // AC-04: confirming picks the template.
+        await tester.tap(find.text('Dùng template này'));
+        await tester.pumpAndSettle();
+        expect(picked?.id, 'classic');
+      });
+
+      testWidgets(
+        'every template is Free — tapping opens the preview with the use CTA, '
+        'no upgrade (D15 revised)',
         (tester) async {
-      LetterTemplate? picked;
-      await tester.pumpWidget(
-        _wrap(TemplateListScreen(onPick: (t) => picked = t)),
+          LetterTemplate? picked;
+          var upgraded = false;
+          await tester.pumpWidget(
+            _wrap(
+              TemplateListScreen(
+                onPick: (t) => picked = t,
+                onUpgrade: () => upgraded = true,
+              ),
+            ),
+          );
+
+          // A formerly-Premium template (birthday) is now Free.
+          final birthday = find.byKey(const ValueKey('template-birthday'));
+          await tester.dragUntilVisible(
+            birthday,
+            find.byType(GridView),
+            const Offset(0, -220),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(birthday);
+          await tester.pumpAndSettle();
+
+          expect(find.text('Xem trước template'), findsOneWidget);
+          // The free use CTA shows; no upgrade CTA anywhere.
+          expect(find.text('Dùng template này'), findsOneWidget);
+          expect(find.text('Nâng cấp Premium'), findsNothing);
+
+          await tester.tap(find.text('Dùng template này'));
+          await tester.pumpAndSettle();
+          expect(picked?.id, 'birthday');
+          expect(upgraded, isFalse);
+        },
       );
 
-      // "Cổ điển" (classic) is a Free template. The card shows no visible
-      // label (pure art per the .pen), so locate it by its key.
-      await tester.tap(find.byKey(const ValueKey('template-classic')));
-      await tester.pumpAndSettle();
-
-      // AC-02: full preview screen is shown with the Free CTA, not the upgrade.
-      expect(find.text('Xem trước template'), findsOneWidget);
-      expect(find.text('Dùng template này'), findsOneWidget);
-      expect(find.text('Nâng cấp Premium'), findsNothing);
-
-      // AC-04: confirming picks the template.
-      await tester.tap(find.text('Dùng template này'));
-      await tester.pumpAndSettle();
-      expect(picked?.id, 'classic');
-    });
-
-    testWidgets(
-      'every template is Free — tapping opens the preview with the use CTA, '
-      'no upgrade (D15 revised)',
-      (tester) async {
+      testWidgets('a Premium user can use a Premium template directly', (
+        tester,
+      ) async {
         LetterTemplate? picked;
-        var upgraded = false;
         await tester.pumpWidget(
           _wrap(
-            TemplateListScreen(
-              onPick: (t) => picked = t,
-              onUpgrade: () => upgraded = true,
-            ),
+            TemplateListScreen(isPremium: true, onPick: (t) => picked = t),
           ),
         );
 
-        // A formerly-Premium template (birthday) is now Free.
         final birthday = find.byKey(const ValueKey('template-birthday'));
         await tester.dragUntilVisible(
           birthday,
@@ -105,49 +142,20 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(birthday);
         await tester.pumpAndSettle();
-
-        expect(find.text('Xem trước template'), findsOneWidget);
-        // The free use CTA shows; no upgrade CTA anywhere.
         expect(find.text('Dùng template này'), findsOneWidget);
-        expect(find.text('Nâng cấp Premium'), findsNothing);
 
         await tester.tap(find.text('Dùng template này'));
         await tester.pumpAndSettle();
         expect(picked?.id, 'birthday');
-        expect(upgraded, isFalse);
-      },
-    );
-
-    testWidgets('a Premium user can use a Premium template directly',
-        (tester) async {
-      LetterTemplate? picked;
-      await tester.pumpWidget(
-        _wrap(
-          TemplateListScreen(isPremium: true, onPick: (t) => picked = t),
-        ),
-      );
-
-      final birthday = find.byKey(const ValueKey('template-birthday'));
-      await tester.dragUntilVisible(
-        birthday,
-        find.byType(GridView),
-        const Offset(0, -220),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(birthday);
-      await tester.pumpAndSettle();
-      expect(find.text('Dùng template này'), findsOneWidget);
-
-      await tester.tap(find.text('Dùng template này'));
-      await tester.pumpAndSettle();
-      expect(picked?.id, 'birthday');
-    });
-  });
+      });
+    },
+  );
 
   // ── SM-013 · kẻ dòng ───────────────────────────────────────────────────────
   group('ComposerEditorPanel ruling toggle (SM-013 BR-08/AC-07..08)', () {
-    testWidgets('toggling "Kẻ dòng" drives the cubit and paints/removes lines',
-        (tester) async {
+    testWidgets('toggling "Kẻ dòng" drives the cubit and paints/removes lines', (
+      tester,
+    ) async {
       final cubit = ComposerCubit(_FakeLetters(), templateId: 'classic');
       addTearDown(cubit.close);
 
@@ -178,8 +186,9 @@ void main() {
 
   // ── SM-014 · giới hạn 3 tem ─────────────────────────────────────────────────
   group('AttachStampsScreen stamp limit (SM-014 AC-02)', () {
-    testWidgets('picking a 4th stamp is blocked and shows the limit message',
-        (tester) async {
+    testWidgets('picking a 4th stamp is blocked and shows the limit message', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);

@@ -1,5 +1,6 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../composer_catalog.dart';
 import 'template_preview_screen.dart';
@@ -125,7 +126,7 @@ class TemplateListScreen extends StatelessWidget {
                   child: GridView.builder(
                     // Small fixed catalog — keep every card built so it never
                     // drops out of the tree off-screen.
-                    cacheExtent: 1200,
+                    scrollCacheExtent: const ScrollCacheExtent.pixels(1200),
                     padding: const EdgeInsets.fromLTRB(
                       AppSpacing.xl,
                       0,
@@ -246,7 +247,13 @@ class _SearchRow extends StatelessWidget {
 class _CategoryChips extends StatelessWidget {
   const _CategoryChips();
 
-  static const _labels = ['Tất cả', 'Sinh nhật', 'Tình yêu', 'Cảm ơn', 'Chúc mừng'];
+  static const _labels = [
+    'Tất cả',
+    'Sinh nhật',
+    'Tình yêu',
+    'Cảm ơn',
+    'Chúc mừng',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -305,47 +312,47 @@ class _TemplateCard extends StatelessWidget {
       label: template.label,
       button: true,
       child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.xl),
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: Color(template.paperColor),
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: scheme.outlineVariant),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0F24211F),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (template.artAsset != null)
-              Image.asset(template.artAsset!, fit: BoxFit.cover)
-            else
-              Center(
-                child: Icon(
-                  Icons.mail_outline,
-                  size: 40,
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: Color(template.paperColor),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: scheme.outlineVariant),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0F24211F),
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (template.artAsset != null)
+                Image.asset(template.artAsset!, fit: BoxFit.cover)
+              else
+                Center(
+                  child: Icon(
+                    Icons.mail_outline,
+                    size: 40,
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  ),
                 ),
-              ),
-            // .pen Content/TemplateCard is pure art — the template name is baked
-            // into the asset, so no overlaid label (it collided with the art's
-            // own caption).
-            if (locked)
-              Positioned(
-                top: AppSpacing.md,
-                right: AppSpacing.md,
-                child: Icon(Icons.lock, size: 18, color: scheme.primary),
-              ),
-          ],
+              // .pen Content/TemplateCard is pure art — the template name is baked
+              // into the asset, so no overlaid label (it collided with the art's
+              // own caption).
+              if (locked)
+                Positioned(
+                  top: AppSpacing.md,
+                  right: AppSpacing.md,
+                  child: Icon(Icons.lock, size: 18, color: scheme.primary),
+                ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

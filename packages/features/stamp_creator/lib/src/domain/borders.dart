@@ -36,6 +36,20 @@ StampBorder borderById(String id) => stampBorders.firstWhere(
 /// The sticker glyphs offered on the decorate step (SM-008). Emoji keep it
 /// asset-free for the MVP; the design's lucide glyphs can replace these later.
 const stickerGlyphs = <String>[
-  '🌸', '🌿', '❤️', '✨', '⭐', '🌟', '☀️', '☁️',
-  '🎁', '🎵', '📷', '🍦', '☕', '🌈', '🦋', '🌻',
+  '🌸',
+  '🌿',
+  '❤️',
+  '✨',
+  '⭐',
+  '🌟',
+  '☀️',
+  '☁️',
+  '🎁',
+  '🎵',
+  '📷',
+  '🍦',
+  '☕',
+  '🌈',
+  '🦋',
+  '🌻',
 ];

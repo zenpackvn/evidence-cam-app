@@ -117,7 +117,10 @@ class LetterPreviewScreen extends StatelessWidget {
                       value: template.label,
                       action: onChangeTemplate == null
                           ? null
-                          : _PillAction(label: 'Đổi mẫu', onTap: onChangeTemplate!),
+                          : _PillAction(
+                              label: 'Đổi mẫu',
+                              onTap: onChangeTemplate!,
+                            ),
                     ),
                     Divider(height: 21, color: context.brand.borderSubtle),
                     if (stampName != null)
@@ -140,7 +143,10 @@ class LetterPreviewScreen extends StatelessWidget {
                         value: stampName!,
                         action: onChangeStamp == null
                             ? null
-                            : _PillAction(label: 'Đổi tem', onTap: onChangeStamp!),
+                            : _PillAction(
+                                label: 'Đổi tem',
+                                onTap: onChangeStamp!,
+                              ),
                       )
                     else
                       const _InfoRow(

@@ -67,7 +67,8 @@ class SentLettersState {
     letters: letters,
     isLoading: isLoading,
     error: error,
-    recreatingLetterId:
-        clearRecreating ? null : (recreatingLetterId ?? this.recreatingLetterId),
+    recreatingLetterId: clearRecreating
+        ? null
+        : (recreatingLetterId ?? this.recreatingLetterId),
   );
 }

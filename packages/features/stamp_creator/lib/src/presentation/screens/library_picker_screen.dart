@@ -122,7 +122,11 @@ class _Segmented extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.photo_camera_outlined, size: 20, color: scheme.outline),
+                Icon(
+                  Icons.photo_camera_outlined,
+                  size: 20,
+                  color: scheme.outline,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
                   'Máy ảnh',

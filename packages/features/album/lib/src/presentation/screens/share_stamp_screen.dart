@@ -219,7 +219,9 @@ class _ShareStampScreenState extends State<ShareStampScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          ok ? 'Đã lưu ảnh về thư viện' : 'Không lưu được ảnh. Kiểm tra quyền truy cập ảnh.',
+          ok
+              ? 'Đã lưu ảnh về thư viện'
+              : 'Không lưu được ảnh. Kiểm tra quyền truy cập ảnh.',
         ),
       ),
     );
@@ -350,7 +352,10 @@ class _Watermark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(999),

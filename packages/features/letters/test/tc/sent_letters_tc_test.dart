@@ -67,33 +67,37 @@ void main() {
       expect(cubit.state.error, isNotNull);
     });
 
-    test('recreateLink mints a new link for an expired letter (BR-04)',
-        () async {
-      final expired = SentLetter.fromLink(
-        _link(expiresAt: DateTime(2020), openedAt: null),
-      );
-      final repo = _FakeLetters()..sentResult = Ok([expired]);
-      final cubit = SentLettersCubit(repo);
-      await cubit.load();
+    test(
+      'recreateLink mints a new link for an expired letter (BR-04)',
+      () async {
+        final expired = SentLetter.fromLink(
+          _link(expiresAt: DateTime(2020), openedAt: null),
+        );
+        final repo = _FakeLetters()..sentResult = Ok([expired]);
+        final cubit = SentLettersCubit(repo);
+        await cubit.load();
 
-      final ok = await cubit.recreateLink(expired);
-      expect(ok, isTrue);
-      expect(repo.createdLinksFor, [expired.link.letterId]);
-    });
+        final ok = await cubit.recreateLink(expired);
+        expect(ok, isTrue);
+        expect(repo.createdLinksFor, [expired.link.letterId]);
+      },
+    );
 
-    test('recreateLink is blocked for an already-opened letter (BR-05)',
-        () async {
-      final opened = SentLetter.fromLink(
-        _link(openedAt: DateTime(2026, 7, 11), openedBy: 'u2'),
-      );
-      final repo = _FakeLetters()..sentResult = Ok([opened]);
-      final cubit = SentLettersCubit(repo);
-      await cubit.load();
+    test(
+      'recreateLink is blocked for an already-opened letter (BR-05)',
+      () async {
+        final opened = SentLetter.fromLink(
+          _link(openedAt: DateTime(2026, 7, 11), openedBy: 'u2'),
+        );
+        final repo = _FakeLetters()..sentResult = Ok([opened]);
+        final cubit = SentLettersCubit(repo);
+        await cubit.load();
 
-      final ok = await cubit.recreateLink(opened);
-      expect(ok, isFalse);
-      expect(repo.createdLinksFor, isEmpty);
-    });
+        final ok = await cubit.recreateLink(opened);
+        expect(ok, isFalse);
+        expect(repo.createdLinksFor, isEmpty);
+      },
+    );
   });
 
   group('SentLettersScreen widget (TC-19)', () {

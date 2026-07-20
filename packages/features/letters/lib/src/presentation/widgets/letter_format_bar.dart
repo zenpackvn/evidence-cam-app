@@ -17,7 +17,10 @@ class LetterFormatBar extends StatelessWidget {
 
   final QuillController controller;
 
-  void _toggle(Attribute<Object?> attribute, Map<String, Attribute<Object?>> active) {
+  void _toggle(
+    Attribute<Object?> attribute,
+    Map<String, Attribute<Object?>> active,
+  ) {
     final isOn = active.containsKey(attribute.key);
     controller.formatSelection(
       isOn ? Attribute.clone(attribute, null) : attribute,

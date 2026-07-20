@@ -176,7 +176,9 @@ class _FiltersPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<CreatorCubit>();
     final filters = stampFilters
-        .where((f) => f.category == category || f.id == StampDraft.kOriginalFilter)
+        .where(
+          (f) => f.category == category || f.id == StampDraft.kOriginalFilter,
+        )
         .toList();
     return Column(
       children: [
@@ -259,9 +261,7 @@ class _CategoryChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: active ? scheme.surfaceContainerLowest : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-          border: active
-              ? Border.all(color: scheme.primary, width: 1.5)
-              : null,
+          border: active ? Border.all(color: scheme.primary, width: 1.5) : null,
         ),
         child: Text(
           label,
@@ -313,9 +313,7 @@ class _FilterThumb extends StatelessWidget {
       child: Container(
         foregroundDecoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: selected
-              ? Border.all(color: scheme.primary, width: 2)
-              : null,
+          border: selected ? Border.all(color: scheme.primary, width: 2) : null,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -492,9 +490,7 @@ class _ToolButton extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: active
-                  ? scheme.primary
-                  : context.brand.surfaceElevated,
+              color: active ? scheme.primary : context.brand.surfaceElevated,
             ),
             child: Icon(
               icon,

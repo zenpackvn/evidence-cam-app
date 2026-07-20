@@ -120,7 +120,9 @@ class _LanguageRow extends StatelessWidget {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: selected ? scheme.primary : context.brand.surfaceElevated,
+                color: selected
+                    ? scheme.primary
+                    : context.brand.surfaceElevated,
                 shape: BoxShape.circle,
                 border: selected
                     ? null

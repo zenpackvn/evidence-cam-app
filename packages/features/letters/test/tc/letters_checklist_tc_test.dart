@@ -88,16 +88,18 @@ void main() {
       expect(cubit.state.charCount, 490);
     });
 
-    test('TC-11-007/008: đổi font áp cho toàn bộ nội dung (state đổi ngay)',
-        () {
-      final cubit = ComposerCubit(_FakeLetters());
-      cubit.setText('xin chào');
-      cubit.selectFont('Pacifico');
-      expect(cubit.state.content.fontFamily, 'Pacifico');
-      cubit.selectFont('Lora');
-      expect(cubit.state.content.fontFamily, 'Lora');
-      expect(cubit.state.content.text, 'xin chào');
-    });
+    test(
+      'TC-11-007/008: đổi font áp cho toàn bộ nội dung (state đổi ngay)',
+      () {
+        final cubit = ComposerCubit(_FakeLetters());
+        cubit.setText('xin chào');
+        cubit.selectFont('Pacifico');
+        expect(cubit.state.content.fontFamily, 'Pacifico');
+        cubit.selectFont('Lora');
+        expect(cubit.state.content.fontFamily, 'Lora');
+        expect(cubit.state.content.text, 'xin chào');
+      },
+    );
 
     test('TC-11-009: đổi màu giấy — nội dung giữ nguyên', () {
       final cubit = ComposerCubit(_FakeLetters());
@@ -134,8 +136,9 @@ void main() {
 
   // ── 013 · xem trước thư ──────────────────────────────────────────────────
   group('LetterPreviewScreen (TC-13-xxx)', () {
-    testWidgets('hiển thị mẫu thư + tem đã dán + người nhận (F03-S09)',
-        (tester) async {
+    testWidgets('hiển thị mẫu thư + tem đã dán + người nhận (F03-S09)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           LetterPreviewScreen(
@@ -201,22 +204,24 @@ void main() {
 
   // ── 014 · gửi thư ────────────────────────────────────────────────────────
   group('ComposerCubit send (TC-14-001..)', () {
-    test('TC-14-001: gửi thành công → phase sent + link 7 ngày + platform',
-        () async {
-      final repo = _FakeLetters();
-      final cubit = ComposerCubit(repo);
-      cubit.setText('lá thư đầu tiên');
+    test(
+      'TC-14-001: gửi thành công → phase sent + link 7 ngày + platform',
+      () async {
+        final repo = _FakeLetters();
+        final cubit = ComposerCubit(repo);
+        cubit.setText('lá thư đầu tiên');
 
-      await cubit.send(platform: 'messenger');
+        await cubit.send(platform: 'messenger');
 
-      expect(cubit.state.phase, ComposerPhase.sent);
-      expect(cubit.state.link, isNotNull);
-      expect(repo.lastPlatform, 'messenger');
-      expect(
-        cubit.state.link!.expiresAt.difference(cubit.state.link!.createdAt),
-        const Duration(days: 7),
-      );
-    });
+        expect(cubit.state.phase, ComposerPhase.sent);
+        expect(cubit.state.link, isNotNull);
+        expect(repo.lastPlatform, 'messenger');
+        expect(
+          cubit.state.link!.expiresAt.difference(cubit.state.link!.createdAt),
+          const Duration(days: 7),
+        );
+      },
+    );
 
     test('thư trống không gửi được (canSend gate, TC-13 empty)', () async {
       final cubit = ComposerCubit(_FakeLetters());

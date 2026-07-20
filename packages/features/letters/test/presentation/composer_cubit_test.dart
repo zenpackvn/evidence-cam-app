@@ -22,7 +22,10 @@ class _FakeLettersRepository implements LettersRepository {
   }
 
   @override
-  Future<Result<LetterLink>> createLink(String letterId, {String? platform}) async {
+  Future<Result<LetterLink>> createLink(
+    String letterId, {
+    String? platform,
+  }) async {
     if (failLink) return const Err(UnknownFailure());
     return Ok(
       LetterLink(
@@ -62,21 +65,23 @@ void main() {
     addTearDown(cubit.close);
   });
 
-  test('setRuled toggles ruled lines, keeping text (SM-013 BR-08/AC-07..08)',
-      () {
-    final cubit = ComposerCubit(_FakeLettersRepository());
-    cubit.setText('dòng một\ndòng hai');
-    expect(cubit.state.content.ruled, isFalse); // default = plain paper
+  test(
+    'setRuled toggles ruled lines, keeping text (SM-013 BR-08/AC-07..08)',
+    () {
+      final cubit = ComposerCubit(_FakeLettersRepository());
+      cubit.setText('dòng một\ndòng hai');
+      expect(cubit.state.content.ruled, isFalse); // default = plain paper
 
-    cubit.setRuled(ruled: true); // AC-07: bật kẻ dòng
-    expect(cubit.state.content.ruled, isTrue);
-    expect(cubit.state.content.text, 'dòng một\ndòng hai'); // giữ nội dung
+      cubit.setRuled(ruled: true); // AC-07: bật kẻ dòng
+      expect(cubit.state.content.ruled, isTrue);
+      expect(cubit.state.content.text, 'dòng một\ndòng hai'); // giữ nội dung
 
-    cubit.setRuled(ruled: false); // AC-08: tắt kẻ dòng
-    expect(cubit.state.content.ruled, isFalse);
-    expect(cubit.state.content.text, 'dòng một\ndòng hai');
-    addTearDown(cubit.close);
-  });
+      cubit.setRuled(ruled: false); // AC-08: tắt kẻ dòng
+      expect(cubit.state.content.ruled, isFalse);
+      expect(cubit.state.content.text, 'dòng một\ndòng hai');
+      addTearDown(cubit.close);
+    },
+  );
 
   test('ruled flag round-trips through content_json so the recipient sees it '
       '(SM-013 BR-08)', () {
@@ -112,15 +117,17 @@ void main() {
     addTearDown(cubit.close);
   });
 
-  test('a reply threads replyToUid into the created letter (SM-026 D12)',
-      () async {
-    final repo = _FakeLettersRepository();
-    final cubit = ComposerCubit(repo, replyToUid: 'original-uid');
-    cubit.setText('Cảm ơn bạn');
-    await cubit.send(platform: 'zalo');
-    expect(repo.lastInput?.replyToUid, 'original-uid');
-    addTearDown(cubit.close);
-  });
+  test(
+    'a reply threads replyToUid into the created letter (SM-026 D12)',
+    () async {
+      final repo = _FakeLettersRepository();
+      final cubit = ComposerCubit(repo, replyToUid: 'original-uid');
+      cubit.setText('Cảm ơn bạn');
+      await cubit.send(platform: 'zalo');
+      expect(repo.lastInput?.replyToUid, 'original-uid');
+      addTearDown(cubit.close);
+    },
+  );
 
   test('send surfaces error when link minting fails', () async {
     final cubit = ComposerCubit(_FakeLettersRepository(failLink: true));
@@ -137,7 +144,9 @@ void main() {
       createdAt: DateTime(2026, 7, 11),
       expiresAt: DateTime(2026, 7, 18),
     );
-    expect(link.shareUrl('https://stampmail.app/letter'),
-        'https://stampmail.app/letter/abc');
+    expect(
+      link.shareUrl('https://stampmail.app/letter'),
+      'https://stampmail.app/letter/abc',
+    );
   });
 }

@@ -165,7 +165,10 @@ class _LoginScreenState extends State<LoginScreen> {
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               enabled: !submitting,
-              autofillHints: const [AutofillHints.username, AutofillHints.email],
+              autofillHints: const [
+                AutofillHints.username,
+                AutofillHints.email,
+              ],
               validator: (value) => (value == null || value.trim().isEmpty)
                   ? l10n.smValEmailRequired
                   : null,

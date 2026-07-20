@@ -49,11 +49,11 @@ class _DecorateStepState extends State<DecorateStep> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
               child: StampFrame(
-              draft: state.draft,
-              interactive: true,
-              onStickerMoved: (i, dx, dy) =>
-                  context.read<CreatorCubit>().moveSticker(i, dx, dy),
-            ),
+                draft: state.draft,
+                interactive: true,
+                onStickerMoved: (i, dx, dy) =>
+                    context.read<CreatorCubit>().moveSticker(i, dx, dy),
+              ),
             ),
           ),
         ),
@@ -275,7 +275,11 @@ class _BorderGrid extends StatelessWidget {
                         : null,
                   ),
                   child: locked
-                      ? Icon(Icons.lock, size: 16, color: scheme.onSurfaceVariant)
+                      ? Icon(
+                          Icons.lock,
+                          size: 16,
+                          color: scheme.onSurfaceVariant,
+                        )
                       : Text(
                           border.label,
                           maxLines: 1,

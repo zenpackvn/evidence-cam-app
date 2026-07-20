@@ -37,7 +37,10 @@ class LetterRevealScreen extends StatelessWidget {
 
   /// Opens the share-to-social flow for the opened letter (SM-025 Mức 1/2/3),
   /// with the first stamp's image and the letter text. Null hides the action.
-  final void Function({required String stampImageUrl, required String letterText})?
+  final void Function({
+    required String stampImageUrl,
+    required String letterText,
+  })?
   onShare;
 
   static const _ground = Color(0xFFFBF4EC);
@@ -90,7 +93,8 @@ class LetterRevealScreen extends StatelessWidget {
                 RevealPhase.alreadyOpened => const _Terminal(
                   icon: Icons.drafts_outlined,
                   title: 'Thư đã được mở',
-                  body: 'Bức thư này đã được mở trước đó. Mỗi link chỉ mở '
+                  body:
+                      'Bức thư này đã được mở trước đó. Mỗi link chỉ mở '
                       'được một lần.',
                 ),
                 RevealPhase.expired => const _Terminal(

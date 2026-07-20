@@ -51,7 +51,9 @@ class CreatorCubit extends Cubit<CreatorState> {
   bool back() {
     const steps = CreatorStep.values;
     final i = steps.indexOf(state.step);
-    if (i <= 1) return false; // filter is index 1; source (0) is a separate screen
+    if (i <= 1) {
+      return false; // filter is index 1; source (0) is a separate screen
+    }
     emit(state.copyWith(step: steps[i - 1]));
     return true;
   }
@@ -60,8 +62,9 @@ class CreatorCubit extends Cubit<CreatorState> {
   void selectFilter(String filterId) =>
       emit(state.copyWith(draft: state.draft.copyWith(filterId: filterId)));
 
-  void setAdjustments(Adjustments adjustments) =>
-      emit(state.copyWith(draft: state.draft.copyWith(adjustments: adjustments)));
+  void setAdjustments(Adjustments adjustments) => emit(
+    state.copyWith(draft: state.draft.copyWith(adjustments: adjustments)),
+  );
 
   // ── Decorate step (SM-008/009) ───────────────────────────────────────────
   void addSticker(StickerPlacement sticker) => emit(
@@ -162,8 +165,7 @@ class CreatorCubit extends Cubit<CreatorState> {
   /// captured image rather than being an overlay.
   Future<Uint8List> _capturePng() async {
     final boundary =
-        repaintKey.currentContext?.findRenderObject()
-            as RenderRepaintBoundary?;
+        repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     if (boundary == null) {
       throw StateError('stamp preview not mounted');
     }

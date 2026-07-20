@@ -42,13 +42,14 @@ class _FakeStamps implements StampsRepository {
   Future<Result<void>> delete(String id) async => const Ok(null);
 }
 
-SampleStamp _sample(String id, String theme, {bool isNew = false}) => SampleStamp(
-  id: id,
-  imageUrl: 'https://cdn/$id.png',
-  thumbUrl: 'https://cdn/${id}_t.png',
-  theme: theme,
-  isNew: isNew,
-);
+SampleStamp _sample(String id, String theme, {bool isNew = false}) =>
+    SampleStamp(
+      id: id,
+      imageUrl: 'https://cdn/$id.png',
+      thumbUrl: 'https://cdn/${id}_t.png',
+      theme: theme,
+      isNew: isNew,
+    );
 
 void main() {
   test('load exposes the catalog and its distinct themes', () async {

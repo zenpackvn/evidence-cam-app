@@ -25,8 +25,7 @@ class AuthTokenProvider {
   void bind(TokenProvider provider) => _provider = provider;
 
   /// A fresh bearer token, or null when unbound / signed out.
-  Future<String?> getToken() async =>
-      _provider == null ? null : _provider!();
+  Future<String?> getToken() async => _provider == null ? null : _provider!();
 
   bool get isBound => _provider != null;
 }

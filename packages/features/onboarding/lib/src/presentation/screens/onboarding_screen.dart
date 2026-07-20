@@ -104,7 +104,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         );
       },
       // Onboarding, like auth, is pinned to the light StampMail theme.
-      child: Theme(data: AppTheme.light(), child: Builder(builder: _build)),
+      child: Theme(
+        data: AppTheme.light(),
+        child: Builder(builder: _build),
+      ),
     );
   }
 

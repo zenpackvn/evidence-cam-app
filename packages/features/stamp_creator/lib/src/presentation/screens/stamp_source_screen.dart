@@ -50,7 +50,9 @@ class StampSourceScreen extends StatelessWidget {
             children: [
               Align(
                 alignment: Alignment.centerLeft,
-                child: _BackButton(onTap: () => Navigator.of(context).maybePop()),
+                child: _BackButton(
+                  onTap: () => Navigator.of(context).maybePop(),
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               _Title(),

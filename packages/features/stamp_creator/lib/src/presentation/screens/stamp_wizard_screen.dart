@@ -65,7 +65,8 @@ class _WizardView extends StatelessWidget {
   final VoidCallback onViewAlbum;
   final VoidCallback onCreateAnother;
 
-  static const Map<CreatorStep, ({String accent, String lead, String subtitle})> _copy = {
+  static const Map<CreatorStep, ({String accent, String lead, String subtitle})>
+  _copy = {
     CreatorStep.filter: (
       lead: 'Chọn ',
       accent: 'bộ lọc màu',

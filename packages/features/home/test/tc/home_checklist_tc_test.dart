@@ -97,40 +97,45 @@ void main() {
       await bloc.close();
     });
 
-    test('TC-04 AC-05: mất mạng → giữ nội dung đã tải + cờ ngoại tuyến',
-        () async {
-      connectivity.online = false;
-      final bloc = HomeBloc(_Loader(_loaded()), connectivity)
-        ..add(const HomeLoadRequested());
-      await Future<void>.delayed(Duration.zero);
+    test(
+      'TC-04 AC-05: mất mạng → giữ nội dung đã tải + cờ ngoại tuyến',
+      () async {
+        connectivity.online = false;
+        final bloc = HomeBloc(_Loader(_loaded()), connectivity)
+          ..add(const HomeLoadRequested());
+        await Future<void>.delayed(Duration.zero);
 
-      expect(bloc.state.data.recentStamps, hasLength(1));
-      expect(bloc.state.error, isNull);
-      expect(bloc.state.isOffline, isTrue);
-      await bloc.close();
-    });
+        expect(bloc.state.data.recentStamps, hasLength(1));
+        expect(bloc.state.error, isNull);
+        expect(bloc.state.isOffline, isTrue);
+        await bloc.close();
+      },
+    );
 
-    test('TC-04 AC-06: mất mạng → làm mới bị vô hiệu, dữ liệu không đổi',
-        () async {
-      connectivity.online = false;
-      final bloc = HomeBloc(_Loader(_loaded()), connectivity)
-        ..add(const HomeLoadRequested());
-      await Future<void>.delayed(Duration.zero);
-      final data = bloc.state.data;
+    test(
+      'TC-04 AC-06: mất mạng → làm mới bị vô hiệu, dữ liệu không đổi',
+      () async {
+        connectivity.online = false;
+        final bloc = HomeBloc(_Loader(_loaded()), connectivity)
+          ..add(const HomeLoadRequested());
+        await Future<void>.delayed(Duration.zero);
+        final data = bloc.state.data;
 
-      bloc.add(const HomeLoadRequested(isRefresh: true));
-      await Future<void>.delayed(Duration.zero);
+        bloc.add(const HomeLoadRequested(isRefresh: true));
+        await Future<void>.delayed(Duration.zero);
 
-      expect(bloc.state.canRefresh, isFalse);
-      expect(bloc.state.data, same(data));
-      expect(bloc.state.error, isNull);
-      await bloc.close();
-    });
+        expect(bloc.state.canRefresh, isFalse);
+        expect(bloc.state.data, same(data));
+        expect(bloc.state.error, isNull);
+        await bloc.close();
+      },
+    );
   });
 
   group('HomeBody (TC-04-xxx · F01-S15/S16)', () {
-    testWidgets('TC-04: loaded — chào đúng tên, không có badge thư chưa đọc',
-        (tester) async {
+    testWidgets('TC-04: loaded — chào đúng tên, không có badge thư chưa đọc', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(_Loader(_loaded()), connectivity));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
@@ -143,23 +148,31 @@ void main() {
       expect(find.text('Cảm ơn mẹ yêu ❤️'), findsOneWidget);
     });
 
-    testWidgets('TC-04: empty — lời mời tạo tem đầu tiên (F01-S15)',
-        (tester) async {
+    testWidgets('TC-04: empty — lời mời tạo tem đầu tiên (F01-S15)', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(_Loader(HomeData.empty), connectivity));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Bạn chưa có\nbức thư hay\ncon tem nào.'), findsOneWidget);
+      expect(
+        find.text('Bạn chưa có\nbức thư hay\ncon tem nào.'),
+        findsOneWidget,
+      );
       expect(find.text('Tạo tem đầu tiên'), findsOneWidget);
       expect(find.text('Chưa có thư nào'), findsOneWidget);
     });
 
-    testWidgets('TC-04: username rỗng → chào "bạn" (không crash — bug đã fix)',
-        (tester) async {
-      await tester.pumpWidget(_wrap(_Loader(_loaded()), connectivity, username: ''));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('Chào bạn 👋'), findsOneWidget);
-    });
+    testWidgets(
+      'TC-04: username rỗng → chào "bạn" (không crash — bug đã fix)',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(_Loader(_loaded()), connectivity, username: ''),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text('Chào bạn 👋'), findsOneWidget);
+      },
+    );
   });
 }

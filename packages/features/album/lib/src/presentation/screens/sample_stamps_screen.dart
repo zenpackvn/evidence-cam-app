@@ -123,7 +123,11 @@ class _ThemeChips extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
         children: [
-          _Chip(label: 'Tất cả', active: selected == null, onTap: () => onSelect(null)),
+          _Chip(
+            label: 'Tất cả',
+            active: selected == null,
+            onTap: () => onSelect(null),
+          ),
           for (final t in themes)
             _Chip(label: t, active: selected == t, onTap: () => onSelect(t)),
         ],
@@ -208,7 +212,10 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 2,
+      ),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(999),
@@ -265,7 +272,8 @@ class _SampleDetail extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: saved
                           ? null
-                          : () => context.read<SampleStampsCubit>().save(sample),
+                          : () =>
+                                context.read<SampleStampsCubit>().save(sample),
                       icon: Icon(saved ? Icons.check : Icons.download_outlined),
                       label: Text(saved ? 'Đã lưu vào Album' : 'Lưu vào Album'),
                     ),

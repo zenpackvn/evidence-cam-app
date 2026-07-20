@@ -6,7 +6,11 @@ import '../composer_catalog.dart';
 /// The horizontal font picker (F03-S04): a chip per font, rendered in that font
 /// so the user previews the look. The active chip is coral-outlined.
 class FontChipRow extends StatelessWidget {
-  const FontChipRow({required this.selected, required this.onSelected, super.key});
+  const FontChipRow({
+    required this.selected,
+    required this.onSelected,
+    super.key,
+  });
 
   final String? selected;
   final ValueChanged<String> onSelected;

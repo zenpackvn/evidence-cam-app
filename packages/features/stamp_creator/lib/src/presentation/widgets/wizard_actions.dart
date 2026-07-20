@@ -22,7 +22,9 @@ class WizardActions extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: _PillButton.secondary(label: 'Quay lại', onTap: onBack)),
+        Expanded(
+          child: _PillButton.secondary(label: 'Quay lại', onTap: onBack),
+        ),
         const SizedBox(width: AppSpacing.xxl),
         Expanded(
           child: _PillButton.primary(

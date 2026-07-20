@@ -41,14 +41,15 @@ const _tplAssets = 'packages/feature_letters/assets/templates';
 
 /// The letter templates (SM-012, D15 revised: all templates are Free). Names
 /// and artwork match the `.pen` template set — the name is baked into each art,
-/// so cards render the art alone. Ids stay stable ([LetterContent.templateId]).
+/// so cards render the art alone. Ids stay stable (`LetterContent.templateId`).
 const letterTemplates = <LetterTemplate>[
   LetterTemplate(
     id: 'classic',
     label: 'Ngày mới rực rỡ',
     paperColor: 0xFFFDF6EC,
     artAsset: '$_tplAssets/f3-tpl-1.png',
-    description: 'Nắng sớm rực rỡ cho một khởi đầu tràn đầy năng lượng — '
+    description:
+        'Nắng sớm rực rỡ cho một khởi đầu tràn đầy năng lượng — '
         'gửi lời chào ngày mới thật tươi.',
   ),
   LetterTemplate(
@@ -56,7 +57,8 @@ const letterTemplates = <LetterTemplate>[
     label: 'Cảm ơn chân thành',
     paperColor: 0xFFFBF3F4,
     artAsset: '$_tplAssets/f3-tpl-2.png',
-    description: 'Trang giấy kẻ ô nhẹ nhàng điểm hoa cỏ — hợp để nói lời '
+    description:
+        'Trang giấy kẻ ô nhẹ nhàng điểm hoa cỏ — hợp để nói lời '
         'cảm ơn từ tận đáy lòng.',
   ),
   LetterTemplate(
@@ -64,7 +66,8 @@ const letterTemplates = <LetterTemplate>[
     label: 'Chúc mừng sinh nhật',
     paperColor: 0xFFFDF0F5,
     artAsset: '$_tplAssets/f3-tpl-3.png',
-    description: 'Bánh kem, bóng bay và sắc pastel ngọt ngào cho lời chúc '
+    description:
+        'Bánh kem, bóng bay và sắc pastel ngọt ngào cho lời chúc '
         'sinh nhật thật đáng nhớ.',
   ),
   LetterTemplate(
@@ -72,7 +75,8 @@ const letterTemplates = <LetterTemplate>[
     label: 'Ký gửi yêu thương',
     paperColor: 0xFFFCEDEE,
     artAsset: '$_tplAssets/f3-tpl-4.png',
-    description: 'Một lá thư dịu dàng gửi trọn yêu thương đến người bạn '
+    description:
+        'Một lá thư dịu dàng gửi trọn yêu thương đến người bạn '
         'trân quý nhất.',
   ),
   LetterTemplate(
@@ -80,7 +84,8 @@ const letterTemplates = <LetterTemplate>[
     label: 'Nhật ký nhỏ',
     paperColor: 0xFFF3E7D3,
     artAsset: '$_tplAssets/f3-tpl-5c.png',
-    description: 'Chất giấy kraft ấm áp, hoài niệm — hợp với những dòng '
+    description:
+        'Chất giấy kraft ấm áp, hoài niệm — hợp với những dòng '
         'tâm sự chân thành mỗi ngày.',
   ),
   LetterTemplate(
@@ -88,7 +93,8 @@ const letterTemplates = <LetterTemplate>[
     label: 'Hành trình mỗi ngày',
     paperColor: 0xFFEFF6EF,
     artAsset: '$_tplAssets/f3-tpl-6c.png',
-    description: 'Ghi lại từng chặng đường và khoảnh khắc đẹp trên hành '
+    description:
+        'Ghi lại từng chặng đường và khoảnh khắc đẹp trên hành '
         'trình của bạn.',
   ),
 ];

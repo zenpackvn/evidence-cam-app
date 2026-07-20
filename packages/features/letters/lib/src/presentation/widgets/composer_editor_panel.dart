@@ -330,8 +330,9 @@ class _AlignTab extends StatelessWidget {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
-        final current =
-            controller.getSelectionStyle().attributes[Attribute.align.key];
+        final current = controller
+            .getSelectionStyle()
+            .attributes[Attribute.align.key];
         return SegmentedButton<String>(
           segments: [
             for (final (label, icon, attribute) in _options)
@@ -371,7 +372,10 @@ class _InkTab extends StatelessWidget {
       listenable: controller,
       builder: (context, _) {
         final current =
-            controller.getSelectionStyle().attributes[Attribute.color.key]?.value
+            controller
+                    .getSelectionStyle()
+                    .attributes[Attribute.color.key]
+                    ?.value
                 as String?;
         return Wrap(
           spacing: 10,

@@ -26,7 +26,9 @@ class ObjectBoxStampsDataSource implements StampsLocalDataSource {
   @override
   Future<List<StampEntity>> listVisible() async {
     final query = _box
-        .query(StampEntity_.syncStateCode.notEquals(SyncState.pendingDelete.code))
+        .query(
+          StampEntity_.syncStateCode.notEquals(SyncState.pendingDelete.code),
+        )
         .order(StampEntity_.createdAt, flags: Order.descending)
         .build();
     try {

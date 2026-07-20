@@ -299,7 +299,9 @@ class _InfoCard extends StatelessWidget {
               if (!template.premium)
                 Container(
                   height: 30,
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: semantic.successContainer,
@@ -314,7 +316,11 @@ class _InfoCard extends StatelessWidget {
                   ),
                 )
               else
-                Icon(Icons.lock_outline, size: 20, color: scheme.onSurfaceVariant),
+                Icon(
+                  Icons.lock_outline,
+                  size: 20,
+                  color: scheme.onSurfaceVariant,
+                ),
             ],
           ),
           const SizedBox(height: 6),

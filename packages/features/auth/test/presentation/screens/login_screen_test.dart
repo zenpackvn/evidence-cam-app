@@ -75,7 +75,10 @@ void main() {
       await tester.pumpWidget(wrapWithDependencies(mockBloc));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextFormField).at(0), 'alice@example.com');
+      await tester.enterText(
+        find.byType(TextFormField).at(0),
+        'alice@example.com',
+      );
       await tester.enterText(find.byType(TextFormField).at(1), 'hunter2');
       await tester.tap(find.text('Sign in'));
       await tester.pump(const Duration(milliseconds: 100));
@@ -84,7 +87,11 @@ void main() {
         () => mockBloc.add(
           any(
             that: isA<AuthSignInRequested>()
-                .having((event) => event.username, 'username', 'alice@example.com')
+                .having(
+                  (event) => event.username,
+                  'username',
+                  'alice@example.com',
+                )
                 .having((event) => event.password, 'password', 'hunter2'),
           ),
         ),
@@ -103,7 +110,10 @@ void main() {
       // Submitting shows a spinner (never settles), so pump a fixed duration.
       await tester.pump(const Duration(seconds: 1));
 
-      await tester.enterText(find.byType(TextFormField).at(0), 'alice@example.com');
+      await tester.enterText(
+        find.byType(TextFormField).at(0),
+        'alice@example.com',
+      );
       await tester.enterText(find.byType(TextFormField).at(1), 'hunter2');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump(const Duration(milliseconds: 100));

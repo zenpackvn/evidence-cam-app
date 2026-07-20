@@ -108,6 +108,10 @@ dependencies:
   # iOS-style icon set, used via the CupertinoIcons class.
   cupertino_icons: ^1.0.8
 
+  # Google Fonts runtime. Referenced directly by the design-capture integration
+  # test (integration_test/flow1_capture_test.dart) to fetch real fonts on macOS.
+  google_fonts: ^8.1.0
+
   # State management: BLoC pattern (BlocProvider, BlocBuilder, BlocListener).
   flutter_bloc: ^9.1.1
   # Event transformers for Bloc handlers.

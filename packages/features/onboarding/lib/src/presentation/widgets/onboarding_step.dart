@@ -138,9 +138,7 @@ class _FilterRow extends StatelessWidget {
                     color: index == 0
                         ? colorScheme.primary
                         : colorScheme.onSurfaceVariant,
-                    fontWeight: index == 0
-                        ? FontWeight.w600
-                        : FontWeight.w500,
+                    fontWeight: index == 0 ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
               ],

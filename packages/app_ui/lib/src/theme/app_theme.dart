@@ -228,8 +228,7 @@ extension BuildContextTheme on BuildContext {
       theme.extension<SemanticColors>() ?? SemanticColors.light;
 
   /// StampMail brand tokens (soft surfaces + accent hues) for the active theme.
-  BrandColors get brand =>
-      theme.extension<BrandColors>() ?? BrandColors.light;
+  BrandColors get brand => theme.extension<BrandColors>() ?? BrandColors.light;
   Brightness get brightness => theme.brightness;
   bool get isDark => brightness == Brightness.dark;
   bool get isLight => brightness == Brightness.light;

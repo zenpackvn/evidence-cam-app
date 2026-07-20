@@ -50,8 +50,12 @@ class Stamp {
   final bool isPendingSync;
 
   /// Projection for cross-feature use (attaching to a letter, SM-014).
-  StampRef toRef() =>
-      StampRef(id: id, imageUrl: imageUrl, thumbUrl: thumbUrl, createdAt: createdAt);
+  StampRef toRef() => StampRef(
+    id: id,
+    imageUrl: imageUrl,
+    thumbUrl: thumbUrl,
+    createdAt: createdAt,
+  );
 }
 
 /// The data needed to save a newly rendered stamp (SM-011). The image must

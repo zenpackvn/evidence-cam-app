@@ -25,7 +25,8 @@ class _FakeStampsRepository implements StampsRepository {
       Ok(stamps.firstWhere((s) => s.id == id));
 
   @override
-  Future<Result<Stamp>> save(StampInput input) async => const Err(UnknownFailure());
+  Future<Result<Stamp>> save(StampInput input) async =>
+      const Err(UnknownFailure());
 
   @override
   Future<Result<Stamp>> rename(String id, String name) async {
@@ -148,17 +149,20 @@ void main() {
       expect(cubit.state.canMutate, isTrue);
     });
 
-    test('a connectivity drop flips isOffline without touching the list', () async {
-      final cubit = build(_FakeStampsRepository(stamps: [_stamp('a')]));
-      await cubit.load();
-      expect(cubit.state.isOffline, isFalse);
+    test(
+      'a connectivity drop flips isOffline without touching the list',
+      () async {
+        final cubit = build(_FakeStampsRepository(stamps: [_stamp('a')]));
+        await cubit.load();
+        expect(cubit.state.isOffline, isFalse);
 
-      connectivity.goOffline();
-      await pumpEventQueue();
+        connectivity.goOffline();
+        await pumpEventQueue();
 
-      expect(cubit.state.isOffline, isTrue);
-      expect(cubit.state.stamps, hasLength(1));
-    });
+        expect(cubit.state.isOffline, isTrue);
+        expect(cubit.state.stamps, hasLength(1));
+      },
+    );
 
     test('regaining the link clears isOffline and re-enables writes', () async {
       connectivity.online = false;

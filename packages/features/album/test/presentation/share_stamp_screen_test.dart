@@ -13,13 +13,16 @@ Widget _host(Widget child) => MaterialApp(theme: AppTheme.light(), home: child);
 
 void main() {
   group('ShareStampScreen (SM-025)', () {
-    testWidgets('shows the mandatory watermark and both format options',
-        (tester) async {
+    testWidgets('shows the mandatory watermark and both format options', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        _host(ShareStampScreen(
-          stampImageUrl: _stampUrl,
-          onShareImage: (_) async {},
-        )),
+        _host(
+          ShareStampScreen(
+            stampImageUrl: _stampUrl,
+            onShareImage: (_) async {},
+          ),
+        ),
       );
 
       // BR-06 / AC-03: the StampMail watermark is always present.
@@ -32,41 +35,50 @@ void main() {
       expect(find.text('Kèm trích dẫn'), findsNothing);
     });
 
-    testWidgets('with a letter, shows the content-level chips (BR-02)',
-        (tester) async {
+    testWidgets('with a letter, shows the content-level chips (BR-02)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        _host(ShareStampScreen(
-          stampImageUrl: _stampUrl,
-          letterText: 'Dòng một\nDòng hai',
-          onShareImage: (_) async {},
-        )),
+        _host(
+          ShareStampScreen(
+            stampImageUrl: _stampUrl,
+            letterText: 'Dòng một\nDòng hai',
+            onShareImage: (_) async {},
+          ),
+        ),
       );
       expect(find.text('Chỉ tem'), findsOneWidget);
       expect(find.text('Kèm trích dẫn'), findsOneWidget);
       expect(find.text('Toàn bộ thư'), findsOneWidget);
     });
 
-    testWidgets('choosing Mức 2 warns before revealing content (BR-03)',
-        (tester) async {
+    testWidgets('choosing Mức 2 warns before revealing content (BR-03)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        _host(ShareStampScreen(
-          stampImageUrl: _stampUrl,
-          letterText: 'Bí mật',
-          onShareImage: (_) async {},
-        )),
+        _host(
+          ShareStampScreen(
+            stampImageUrl: _stampUrl,
+            letterText: 'Bí mật',
+            onShareImage: (_) async {},
+          ),
+        ),
       );
       await tester.tap(find.text('Kèm trích dẫn'));
       await tester.pumpAndSettle();
       expect(find.text('Nội dung thư sẽ công khai'), findsOneWidget);
     });
 
-    testWidgets('switching to 1:1 keeps the watermark (AC-03/AC-05)',
-        (tester) async {
+    testWidgets('switching to 1:1 keeps the watermark (AC-03/AC-05)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        _host(ShareStampScreen(
-          stampImageUrl: _stampUrl,
-          onShareImage: (_) async {},
-        )),
+        _host(
+          ShareStampScreen(
+            stampImageUrl: _stampUrl,
+            onShareImage: (_) async {},
+          ),
+        ),
       );
 
       await tester.tap(find.text('Vuông 1:1'));
@@ -75,8 +87,9 @@ void main() {
       expect(find.text('StampMail'), findsOneWidget);
     });
 
-    testWidgets('tapping share invokes onShareImage with PNG bytes (AC-01)',
-        (tester) async {
+    testWidgets('tapping share invokes onShareImage with PNG bytes (AC-01)', (
+      tester,
+    ) async {
       Uint8List? shared;
       await tester.pumpWidget(
         _host(

@@ -20,7 +20,9 @@ class ObjectBoxAlbumsDataSource implements AlbumsLocalDataSource {
   @override
   Future<List<AlbumEntity>> listVisible() async {
     final query = _box
-        .query(AlbumEntity_.syncStateCode.notEquals(SyncState.pendingDelete.code))
+        .query(
+          AlbumEntity_.syncStateCode.notEquals(SyncState.pendingDelete.code),
+        )
         .order(AlbumEntity_.createdAt, flags: Order.descending)
         .build();
     try {

@@ -52,33 +52,37 @@ void main() {
   tearDown(() => connectivity.dispose());
 
   group('AlbumCubit (TC-20-xxx)', () {
-    test('TC-20-001: tải album thành công — một danh sách phẳng các tem',
-        () async {
-      // SM-022 BR-01: the Album holds the user's own stamps + saved sample
-      // stamps in one flat list. Received stamps are never in the Album
-      // (SM-017 BR-05), so nothing here carries StampSource.received.
-      final cubit = AlbumCubit(
-        _FakeStamps(stamps: [_stamp('s1'), _stamp('s2')]),
-        connectivity,
-      );
-      await cubit.load();
+    test(
+      'TC-20-001: tải album thành công — một danh sách phẳng các tem',
+      () async {
+        // SM-022 BR-01: the Album holds the user's own stamps + saved sample
+        // stamps in one flat list. Received stamps are never in the Album
+        // (SM-017 BR-05), so nothing here carries StampSource.received.
+        final cubit = AlbumCubit(
+          _FakeStamps(stamps: [_stamp('s1'), _stamp('s2')]),
+          connectivity,
+        );
+        await cubit.load();
 
-      expect(cubit.state.loading, isFalse);
-      expect(cubit.state.error, isFalse);
-      expect(cubit.state.stamps, hasLength(2));
-      expect(
-        cubit.state.stamps.every((s) => s.source != StampSource.received),
-        isTrue,
-        reason: 'received stamps must never appear in the Album (BR-01)',
-      );
-    });
+        expect(cubit.state.loading, isFalse);
+        expect(cubit.state.error, isFalse);
+        expect(cubit.state.stamps, hasLength(2));
+        expect(
+          cubit.state.stamps.every((s) => s.source != StampSource.received),
+          isTrue,
+          reason: 'received stamps must never appear in the Album (BR-01)',
+        );
+      },
+    );
 
-    test('TC-20 album trống → isEmpty (hiện trạng thái trống F02-S19)',
-        () async {
-      final cubit = AlbumCubit(_FakeStamps(), connectivity);
-      await cubit.load();
-      expect(cubit.state.isEmpty, isTrue);
-    });
+    test(
+      'TC-20 album trống → isEmpty (hiện trạng thái trống F02-S19)',
+      () async {
+        final cubit = AlbumCubit(_FakeStamps(), connectivity);
+        await cubit.load();
+        expect(cubit.state.isEmpty, isTrue);
+      },
+    );
 
     test('TC-20 lỗi tải → error + có thể thử lại', () async {
       final cubit = AlbumCubit(_FakeStamps(fail: true), connectivity);
@@ -87,20 +91,22 @@ void main() {
       expect(cubit.state.loading, isFalse);
     });
 
-    test('TC-20 AC-09: mất mạng → vẫn thấy tem đã tải + cờ ngoại tuyến',
-        () async {
-      connectivity.online = false;
-      final cubit = AlbumCubit(
-        _FakeStamps(stamps: [_stamp('s1'), _stamp('s2')]),
-        connectivity,
-      );
+    test(
+      'TC-20 AC-09: mất mạng → vẫn thấy tem đã tải + cờ ngoại tuyến',
+      () async {
+        connectivity.online = false;
+        final cubit = AlbumCubit(
+          _FakeStamps(stamps: [_stamp('s1'), _stamp('s2')]),
+          connectivity,
+        );
 
-      await cubit.load();
+        await cubit.load();
 
-      expect(cubit.state.stamps, hasLength(2));
-      expect(cubit.state.error, isFalse);
-      expect(cubit.state.isOffline, isTrue);
-    });
+        expect(cubit.state.stamps, hasLength(2));
+        expect(cubit.state.error, isFalse);
+        expect(cubit.state.isOffline, isTrue);
+      },
+    );
 
     test('TC-20 AC-10: mất mạng → đổi tên và xoá bị chặn', () async {
       connectivity.online = false;

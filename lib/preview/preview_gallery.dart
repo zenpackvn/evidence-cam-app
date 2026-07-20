@@ -128,8 +128,9 @@ List<GallerySection> buildGallerySections() => [
       build: (context) => AvatarUploadScreen(
         onDone: () => Navigator.of(context).maybePop(),
         onPickFromLibrary: () async {
-          final f = await ImagePickerService(ImagePicker())
-              .pickImage(source: ImageSource.gallery);
+          final f = await ImagePickerService(
+            ImagePicker(),
+          ).pickImage(source: ImageSource.gallery);
           return f?.path;
         },
       ),
@@ -148,16 +149,20 @@ List<GallerySection> buildGallerySections() => [
     GalleryEntry(
       'F01-S13…S14',
       'Reset → Success (mở từ link đặt lại)',
-      note: 'Đường vào thật là universal link trong email; preview mở '
+      note:
+          'Đường vào thật là universal link trong email; preview mở '
           'thẳng bước reset.',
-      build: (_) =>
-          const ForgotPasswordScreen(initialStep: ForgotStep.reset),
+      build: (_) => const ForgotPasswordScreen(initialStep: ForgotStep.reset),
     ),
     GalleryEntry(
       'F01-S15',
       'Home — Empty',
       build: (_) => _shell(
-        const HomeScreen(onCreateStamp: _noop, onOpenAlbum: _noop, onOpenLetters: _noop),
+        const HomeScreen(
+          onCreateStamp: _noop,
+          onOpenAlbum: _noop,
+          onOpenLetters: _noop,
+        ),
       ),
       prepare: (s) => s
         ..emptyStamps = true
@@ -167,7 +172,11 @@ List<GallerySection> buildGallerySections() => [
       'F01-S16',
       'Home — Loaded',
       build: (_) => _shell(
-        const HomeScreen(onCreateStamp: _noop, onOpenAlbum: _noop, onOpenLetters: _noop),
+        const HomeScreen(
+          onCreateStamp: _noop,
+          onOpenAlbum: _noop,
+          onOpenLetters: _noop,
+        ),
       ),
       prepare: (s) => s
         ..emptyStamps = false
@@ -290,7 +299,8 @@ List<GallerySection> buildGallerySections() => [
       'F03-S05/S06',
       'Composer: panel Giấy nền · Căn lề · Màu nền · Sticker',
       status: EntryStatus.partial,
-      note: 'Panel 4 tab trong composer; căn lề + sticker mới là UI '
+      note:
+          'Panel 4 tab trong composer; căn lề + sticker mới là UI '
           '(chưa lưu vào thư — rich text SM-011).',
       build: (context) => _buildComposerFlow(context, 'classic'),
     ),
@@ -300,7 +310,8 @@ List<GallerySection> buildGallerySections() => [
       build: (context) => LetterPreviewScreen(
         content: const LetterContent(
           templateId: 'birthday',
-          text: 'Chúc mừng sinh nhật cậu!\nMong mọi điều tốt đẹp nhất '
+          text:
+              'Chúc mừng sinh nhật cậu!\nMong mọi điều tốt đẹp nhất '
               'sẽ đến với cậu trong tuổi mới. 🎂',
         ),
         stampName: 'Hoa mùa xuân',
@@ -354,18 +365,21 @@ List<GallerySection> buildGallerySections() => [
       'F04-S02',
       'Đã mở / Hết hạn (in-app tương đương)',
       note: 'Mở link đã dùng → trạng thái already-opened (fake linkId).',
-      build: (_) => const LetterRevealScreen(linkId: 'already', onReply: _noopReply),
+      build: (_) =>
+          const LetterRevealScreen(linkId: 'already', onReply: _noopReply),
     ),
     GalleryEntry(
       'F04-S03/S04',
       'Animation mở phong bì (keyframes)',
-      build: (_) => const LetterRevealScreen(linkId: 'opened', onReply: _noopReply),
+      build: (_) =>
+          const LetterRevealScreen(linkId: 'opened', onReply: _noopReply),
     ),
     GalleryEntry(
       'F04-S05/S06',
       'Thư đã mở — Completed',
       note: 'Đi tiếp từ animation; nút lưu tem dùng fake.',
-      build: (_) => const LetterRevealScreen(linkId: 'opened', onReply: _noopReply),
+      build: (_) =>
+          const LetterRevealScreen(linkId: 'opened', onReply: _noopReply),
     ),
     GalleryEntry(
       'F04-S07d',
@@ -596,10 +610,9 @@ class GalleryHome extends StatelessWidget {
           IconButton(
             tooltip: 'Đổi sáng/tối',
             icon: const Icon(Icons.brightness_6),
-            onPressed: () => themeMode.value =
-                themeMode.value == ThemeMode.dark
-                    ? ThemeMode.light
-                    : ThemeMode.dark,
+            onPressed: () => themeMode.value = themeMode.value == ThemeMode.dark
+                ? ThemeMode.light
+                : ThemeMode.dark,
           ),
         ],
       ),

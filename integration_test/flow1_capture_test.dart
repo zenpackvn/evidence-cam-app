@@ -8,7 +8,6 @@
 // Output PNGs land in build/flow1-shots/ (gitignored). Not a behaviour test —
 // it asserts only that each frame captured.
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:app_ui/app_ui.dart';
@@ -53,6 +52,7 @@ void main() {
     const flowIndex = int.fromEnvironment('FLOW');
 
     final flow = buildGallerySections()[flowIndex];
+    // Progress goes to stdout so the capture run is followable from the CLI.
     // ignore: avoid_print
     print('SECTION $flowIndex · ${flow.title}');
     for (final (i, entry) in flow.entries.indexed) {
@@ -84,6 +84,7 @@ void main() {
       final slug = entry.code.replaceAll(RegExp('[^A-Za-z0-9]+'), '-');
       final name = '${(i + 1).toString().padLeft(2, '0')}_$slug';
       await _capture(key, name);
+      // Progress goes to stdout so the capture run is followable from the CLI.
       // ignore: avoid_print
       print('CAPTURED $name  ←  ${entry.code} · ${entry.title}');
     }
@@ -128,7 +129,10 @@ class _App extends StatelessWidget {
           ],
           supportedLocales: const [Locale('vi'), Locale('en')],
           locale: const Locale('vi'),
-          home: RepaintBoundary(key: boundaryKey, child: Builder(builder: child)),
+          home: RepaintBoundary(
+            key: boundaryKey,
+            child: Builder(builder: child),
+          ),
         ),
       ),
     );

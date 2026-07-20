@@ -33,8 +33,11 @@ class AlbumStatsBanner extends StatelessWidget {
               color: scheme.surfaceContainerLowest,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.local_post_office_outlined,
-                size: 26, color: scheme.primary),
+            child: Icon(
+              Icons.local_post_office_outlined,
+              size: 26,
+              color: scheme.primary,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(

@@ -224,7 +224,9 @@ class _MetaCard extends StatelessWidget {
     final scheme = context.colorScheme;
     // SM-022 BR-03: no source label. BR-06/BR-08: show the stamp name, or the
     // creation date when unnamed; tapping the name row renames it.
-    final title = stamp.name.isNotEmpty ? stamp.name : _formatDate(stamp.createdAt);
+    final title = stamp.name.isNotEmpty
+        ? stamp.name
+        : _formatDate(stamp.createdAt);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),

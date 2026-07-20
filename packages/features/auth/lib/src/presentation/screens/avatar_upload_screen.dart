@@ -55,8 +55,9 @@ class _AvatarUploadScreenState extends State<AvatarUploadScreen> {
             subtitle: l10n.smAvatarSubtitle,
           ).animateSlideDown(delay: 50.ms),
           const SizedBox(height: AppSpacing.xxl),
-          Center(child: _AvatarPreview(imagePath: _imagePath))
-              .animateFadeIn(delay: 100.ms),
+          Center(
+            child: _AvatarPreview(imagePath: _imagePath),
+          ).animateFadeIn(delay: 100.ms),
           const SizedBox(height: AppSpacing.xxl),
           _OptionRow(
             icon: FontAwesomeIcons.image,

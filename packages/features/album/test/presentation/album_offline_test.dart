@@ -75,8 +75,9 @@ void main() {
       await connectivity.dispose();
     });
 
-    testWidgets('offline shows the notice and still lists the cached stamps',
-        (tester) async {
+    testWidgets('offline shows the notice and still lists the cached stamps', (
+      tester,
+    ) async {
       connectivity.online = false;
 
       await tester.pumpWidget(_host(const AlbumScreen()));
@@ -157,20 +158,23 @@ void main() {
   });
 
   group('StampDetailScreen write gating (BR-11 / AC-10)', () {
-    testWidgets('offline, delete does not run and reports the block',
-        (tester) async {
+    testWidgets('offline, delete does not run and reports the block', (
+      tester,
+    ) async {
       _usePhoneViewport(tester);
       var deleted = false;
       var blocked = 0;
 
       await tester.pumpWidget(
-        _host(StampDetailScreen(
-          stamp: _stamp('a', name: 'Tem biển'),
-          canMutate: false,
-          onBack: () {},
-          onDelete: () => deleted = true,
-          onMutateBlocked: () => blocked++,
-        )),
+        _host(
+          StampDetailScreen(
+            stamp: _stamp('a', name: 'Tem biển'),
+            canMutate: false,
+            onBack: () {},
+            onDelete: () => deleted = true,
+            onMutateBlocked: () => blocked++,
+          ),
+        ),
       );
 
       await tester.tap(find.byIcon(Icons.delete_outline));
@@ -182,20 +186,23 @@ void main() {
       expect(blocked, 1);
     });
 
-    testWidgets('offline, rename does not run and reports the block',
-        (tester) async {
+    testWidgets('offline, rename does not run and reports the block', (
+      tester,
+    ) async {
       _usePhoneViewport(tester);
       String? renamed;
       var blocked = 0;
 
       await tester.pumpWidget(
-        _host(StampDetailScreen(
-          stamp: _stamp('a', name: 'Tem biển'),
-          canMutate: false,
-          onBack: () {},
-          onRename: (name) => renamed = name,
-          onMutateBlocked: () => blocked++,
-        )),
+        _host(
+          StampDetailScreen(
+            stamp: _stamp('a', name: 'Tem biển'),
+            canMutate: false,
+            onBack: () {},
+            onRename: (name) => renamed = name,
+            onMutateBlocked: () => blocked++,
+          ),
+        ),
       );
 
       await tester.tap(find.text('Tem biển'));
@@ -206,19 +213,22 @@ void main() {
       expect(blocked, 1);
     });
 
-    testWidgets('online, delete opens the confirm dialog and never blocks',
-        (tester) async {
+    testWidgets('online, delete opens the confirm dialog and never blocks', (
+      tester,
+    ) async {
       _usePhoneViewport(tester);
       var deleted = false;
       var blocked = 0;
 
       await tester.pumpWidget(
-        _host(StampDetailScreen(
-          stamp: _stamp('a', name: 'Tem biển'),
-          onBack: () {},
-          onDelete: () => deleted = true,
-          onMutateBlocked: () => blocked++,
-        )),
+        _host(
+          StampDetailScreen(
+            stamp: _stamp('a', name: 'Tem biển'),
+            onBack: () {},
+            onDelete: () => deleted = true,
+            onMutateBlocked: () => blocked++,
+          ),
+        ),
       );
 
       await tester.tap(find.byIcon(Icons.delete_outline));
@@ -232,19 +242,22 @@ void main() {
       expect(blocked, 0);
     });
 
-    testWidgets('online, rename opens the dialog and never blocks',
-        (tester) async {
+    testWidgets('online, rename opens the dialog and never blocks', (
+      tester,
+    ) async {
       _usePhoneViewport(tester);
       String? renamed;
       var blocked = 0;
 
       await tester.pumpWidget(
-        _host(StampDetailScreen(
-          stamp: _stamp('a', name: 'Tem biển'),
-          onBack: () {},
-          onRename: (name) => renamed = name,
-          onMutateBlocked: () => blocked++,
-        )),
+        _host(
+          StampDetailScreen(
+            stamp: _stamp('a', name: 'Tem biển'),
+            onBack: () {},
+            onRename: (name) => renamed = name,
+            onMutateBlocked: () => blocked++,
+          ),
+        ),
       );
 
       await tester.tap(find.text('Tem biển'));

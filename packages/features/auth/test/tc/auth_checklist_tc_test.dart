@@ -286,7 +286,10 @@ void main() {
       await tester.pumpWidget(_wrap(const ForgotPasswordScreen()));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Gửi link đặt lại').first);
-      await tester.tap(find.text('Gửi link đặt lại').first, warnIfMissed: false);
+      await tester.tap(
+        find.text('Gửi link đặt lại').first,
+        warnIfMissed: false,
+      );
       await tester.pumpAndSettle();
       expect(find.text('Vui lòng nhập email'), findsOneWidget);
     });
@@ -297,7 +300,9 @@ void main() {
       (tester) async {
         String? sentTo;
         await tester.pumpWidget(
-          _wrap(ForgotPasswordScreen(onSendReset: (email) async => sentTo = email)),
+          _wrap(
+            ForgotPasswordScreen(onSendReset: (email) async => sentTo = email),
+          ),
         );
         await tester.pumpAndSettle();
         await tester.enterText(
@@ -384,7 +389,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(advanced, isFalse);
       expect(
-        find.text('Email chưa được xác nhận. Hãy bấm vào link trong email trước.'),
+        find.text(
+          'Email chưa được xác nhận. Hãy bấm vào link trong email trước.',
+        ),
         findsOneWidget,
       );
 
@@ -400,8 +407,9 @@ void main() {
 
   // ── F01-S07 · sheet chọn cách đăng ký (TC-01-002..004 UI gate) ──────────
   group('Social choice sheet (TC-01-002..004)', () {
-    testWidgets('chạm nút MXH ở Register mở sheet với 3 lựa chọn + Huỷ',
-        (tester) async {
+    testWidgets('chạm nút MXH ở Register mở sheet với 3 lựa chọn + Huỷ', (
+      tester,
+    ) async {
       final bloc = _idleBloc();
       await tester.pumpWidget(_wrap(const RegisterScreen(), bloc: bloc));
       await tester.pumpAndSettle();

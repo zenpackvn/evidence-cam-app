@@ -83,8 +83,7 @@ class QuotaNudgeBanner extends StatelessWidget {
   final VoidCallback? onUpgrade;
 
   /// Whether the stamp allowance has crossed under the low-quota threshold.
-  bool get _stampLow =>
-      !quota.isUnlimited && quota.stamps < kLowStampThreshold;
+  bool get _stampLow => !quota.isUnlimited && quota.stamps < kLowStampThreshold;
 
   /// Whether the letter allowance has crossed under the low-quota threshold.
   bool get _letterLow =>

@@ -13,7 +13,12 @@ import 'token_refresher.dart';
 /// (the legacy REST session path). Requests already carrying `__auth_retried__`
 /// in their extras skip the retry path so a doomed refresh can never loop.
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(this._tokens, this._refresher, this._dio, {this._tokenProvider});
+  AuthInterceptor(
+    this._tokens,
+    this._refresher,
+    this._dio, {
+    this._tokenProvider,
+  });
 
   final AuthTokenStore _tokens;
   final TokenRefresher _refresher;

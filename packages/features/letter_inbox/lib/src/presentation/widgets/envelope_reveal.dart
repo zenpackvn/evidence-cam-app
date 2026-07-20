@@ -172,7 +172,12 @@ class _LetterLines extends StatelessWidget {
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [line, line, line, SizedBox(width: 80, child: line)],
+      children: [
+        line,
+        line,
+        line,
+        SizedBox(width: 80, child: line),
+      ],
     );
   }
 }

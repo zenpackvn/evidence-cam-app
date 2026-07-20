@@ -151,8 +151,9 @@ void main() {
 
   // ── 009 · lưu tem ───────────────────────────────────────────────────────
   group('Save (TC-09-xxx)', () {
-    testWidgets('TC-09-001: lưu thành công → saved + đẩy đúng URL đã upload',
-        (tester) async {
+    testWidgets('TC-09-001: lưu thành công → saved + đẩy đúng URL đã upload', (
+      tester,
+    ) async {
       final stamps = _FakeStamps();
       final cubit = _build(stamps: stamps);
       await _mountBoundary(tester, cubit);
@@ -166,8 +167,9 @@ void main() {
       await cubit.close();
     });
 
-    testWidgets('TC-09 double-tap: đang lưu thì lần bấm sau bị bỏ qua',
-        (tester) async {
+    testWidgets('TC-09 double-tap: đang lưu thì lần bấm sau bị bỏ qua', (
+      tester,
+    ) async {
       final stamps = _FakeStamps();
       final cubit = _build(stamps: stamps);
       await _mountBoundary(tester, cubit);
@@ -183,8 +185,9 @@ void main() {
 
   // ── 026 · giới hạn tháng ────────────────────────────────────────────────
   group('Monthly quota (TC-26-xxx)', () {
-    testWidgets('TC-26: 403 khi hết quota → thông báo nâng cấp Premium',
-        (tester) async {
+    testWidgets('TC-26: 403 khi hết quota → thông báo nâng cấp Premium', (
+      tester,
+    ) async {
       final cubit = _build(uploader: _FakeUploader(quota403: true));
       await _mountBoundary(tester, cubit);
 

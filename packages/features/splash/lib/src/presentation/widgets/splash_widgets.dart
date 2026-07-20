@@ -70,7 +70,11 @@ class SplashContent extends StatelessWidget {
             const Positioned(
               left: 52,
               top: 64,
-              child: Icon(Icons.auto_awesome, size: 18, color: Color(0xFFF9D9A0)),
+              child: Icon(
+                Icons.auto_awesome,
+                size: 18,
+                color: Color(0xFFF9D9A0),
+              ),
             ),
             const Positioned(
               left: 318,
@@ -80,17 +84,29 @@ class SplashContent extends StatelessWidget {
             const Positioned(
               left: 322,
               top: 286,
-              child: Icon(Icons.auto_awesome, size: 20, color: Color(0xE6FFFFFF)),
+              child: Icon(
+                Icons.auto_awesome,
+                size: 20,
+                color: Color(0xE6FFFFFF),
+              ),
             ),
             const Positioned(
               left: 88,
               top: 580,
-              child: Icon(Icons.auto_awesome, size: 16, color: Color(0xFFFBE7BC)),
+              child: Icon(
+                Icons.auto_awesome,
+                size: 16,
+                color: Color(0xFFFBE7BC),
+              ),
             ),
             const Positioned(
               left: 300,
               top: 560,
-              child: Icon(Icons.auto_awesome, size: 22, color: Color(0xFFFCD98F)),
+              child: Icon(
+                Icons.auto_awesome,
+                size: 22,
+                color: Color(0xFFFCD98F),
+              ),
             ),
             Center(
               child: Column(

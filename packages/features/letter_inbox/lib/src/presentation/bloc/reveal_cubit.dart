@@ -9,8 +9,12 @@ import 'reveal_state.dart';
 /// the viewer's album (SM-017 BR-05 / SM-019 BR-03 — no "save stamp" action).
 /// Constructed with the link id at open time (not injectable).
 class RevealCubit extends Cubit<RevealState> {
-  RevealCubit(this._inbox, {required this.linkId, this.viewerUid, String? senderName})
-    : super(RevealState(senderName: senderName));
+  RevealCubit(
+    this._inbox, {
+    required this.linkId,
+    this.viewerUid,
+    String? senderName,
+  }) : super(RevealState(senderName: senderName));
 
   final InboxRepository _inbox;
   final String linkId;

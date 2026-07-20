@@ -30,10 +30,14 @@ class SentLettersPage extends StatelessWidget {
           onCompose: onCompose,
           recreatingLetterId: state.recreatingLetterId,
           onRecreate: (sent) async {
-            final ok = await context.read<SentLettersCubit>().recreateLink(sent);
+            final ok = await context.read<SentLettersCubit>().recreateLink(
+              sent,
+            );
             if (context.mounted && !ok && sent.status != SentStatus.opened) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Không tạo được link mới. Thử lại.')),
+                const SnackBar(
+                  content: Text('Không tạo được link mới. Thử lại.'),
+                ),
               );
             }
           },

@@ -50,7 +50,10 @@ void main() {
       ).thenAnswer((_) async => _FakeCredential());
       when(smUser.me).thenAnswer((_) async => testUser);
 
-      final result = await repository.signIn(username: 'a@b.com', password: 'pw');
+      final result = await repository.signIn(
+        username: 'a@b.com',
+        password: 'pw',
+      );
 
       expect(result, isA<Ok<AuthUser>>());
       expect((result as Ok<AuthUser>).value, testUser);
@@ -62,10 +65,16 @@ void main() {
         FirebaseAuthException(code: 'invalid-credential'),
       );
 
-      final result = await repository.signIn(username: 'a@b.com', password: 'x');
+      final result = await repository.signIn(
+        username: 'a@b.com',
+        password: 'x',
+      );
 
       expect(result, isA<Err<AuthUser>>());
-      expect((result as Err<AuthUser>).failure, isA<InvalidCredentialsFailure>());
+      expect(
+        (result as Err<AuthUser>).failure,
+        isA<InvalidCredentialsFailure>(),
+      );
     });
   });
 
@@ -80,16 +89,19 @@ void main() {
       verify(local.clearSession).called(1);
     });
 
-    test('falls back to cached user when profile fetch fails offline', () async {
-      when(local.load).thenAnswer((_) async {});
-      when(() => firebase.currentUser).thenReturn(_FakeUser());
-      when(smUser.me).thenThrow(Exception('offline'));
-      when(() => local.currentUser).thenReturn(testUser);
+    test(
+      'falls back to cached user when profile fetch fails offline',
+      () async {
+        when(local.load).thenAnswer((_) async {});
+        when(() => firebase.currentUser).thenReturn(_FakeUser());
+        when(smUser.me).thenThrow(Exception('offline'));
+        when(() => local.currentUser).thenReturn(testUser);
 
-      final result = await repository.restoreSession();
+        final result = await repository.restoreSession();
 
-      expect((result as Ok<AuthUser>).value, testUser);
-    });
+        expect((result as Ok<AuthUser>).value, testUser);
+      },
+    );
   });
 }
 

@@ -81,29 +81,31 @@ void main() {
       await bloc.close();
     });
 
-    test('a refresh offline is a no-op: data is kept, no error (AC-06)',
-        () async {
-      final loader = _CountingLoader(_loaded());
-      final bloc = HomeBloc(loader, connectivity)
-        ..add(const HomeLoadRequested());
-      await bloc.stream.firstWhere((state) => !state.isLoading);
-      expect(loader.calls, 1);
-      final loadedData = bloc.state.data;
+    test(
+      'a refresh offline is a no-op: data is kept, no error (AC-06)',
+      () async {
+        final loader = _CountingLoader(_loaded());
+        final bloc = HomeBloc(loader, connectivity)
+          ..add(const HomeLoadRequested());
+        await bloc.stream.firstWhere((state) => !state.isLoading);
+        expect(loader.calls, 1);
+        final loadedData = bloc.state.data;
 
-      connectivity.goOffline();
-      await bloc.stream.firstWhere((state) => state.isOffline);
-      bloc.add(const HomeLoadRequested(isRefresh: true));
-      await pumpEventQueue();
+        connectivity.goOffline();
+        await bloc.stream.firstWhere((state) => state.isOffline);
+        bloc.add(const HomeLoadRequested(isRefresh: true));
+        await pumpEventQueue();
 
-      // The loader was never reached again; the data is untouched.
-      expect(loader.calls, 1);
-      expect(bloc.state.data, same(loadedData));
-      expect(bloc.state.error, isNull);
-      expect(bloc.state.isOffline, true);
-      expect(bloc.state.isLoading, false);
+        // The loader was never reached again; the data is untouched.
+        expect(loader.calls, 1);
+        expect(bloc.state.data, same(loadedData));
+        expect(bloc.state.error, isNull);
+        expect(bloc.state.isOffline, true);
+        expect(bloc.state.isLoading, false);
 
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
 
     test('a refresh online reloads as usual', () async {
       final loader = _CountingLoader(_loaded());
@@ -136,22 +138,24 @@ void main() {
       await bloc.close();
     });
 
-    test('regaining the link clears isOffline and re-enables refresh',
-        () async {
-      connectivity.online = false;
-      final bloc = HomeBloc(_StubLoader(_loaded()), connectivity)
-        ..add(const HomeLoadRequested());
-      await bloc.stream.firstWhere((state) => !state.isLoading);
-      expect(bloc.state.canRefresh, false);
+    test(
+      'regaining the link clears isOffline and re-enables refresh',
+      () async {
+        connectivity.online = false;
+        final bloc = HomeBloc(_StubLoader(_loaded()), connectivity)
+          ..add(const HomeLoadRequested());
+        await bloc.stream.firstWhere((state) => !state.isLoading);
+        expect(bloc.state.canRefresh, false);
 
-      connectivity.goOnline();
-      await bloc.stream.firstWhere((state) => !state.isOffline);
+        connectivity.goOnline();
+        await bloc.stream.firstWhere((state) => !state.isOffline);
 
-      expect(bloc.state.isOffline, false);
-      expect(bloc.state.canRefresh, true);
+        expect(bloc.state.isOffline, false);
+        expect(bloc.state.canRefresh, true);
 
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
   });
 }
 

@@ -213,7 +213,9 @@ class _AlbumBody extends StatelessWidget {
                 const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
-                    Expanded(child: AlbumStatsBanner(count: state.stamps.length)),
+                    Expanded(
+                      child: AlbumStatsBanner(count: state.stamps.length),
+                    ),
                     const SizedBox(width: AppSpacing.sm),
                     _ViewModeToggle(
                       mode: state.viewMode,
@@ -312,7 +314,9 @@ class _StampListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final title = stamp.name.isNotEmpty ? stamp.name : _formatDate(stamp.createdAt);
+    final title = stamp.name.isNotEmpty
+        ? stamp.name
+        : _formatDate(stamp.createdAt);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.md),

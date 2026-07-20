@@ -50,9 +50,7 @@ void main() {
 
   setUp(() {
     systemCalls = <String>[];
-    TestDefaultBinaryMessengerBinding
-        .instance
-        .defaultBinaryMessenger
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
           systemCalls.add(call.method);
           return null;

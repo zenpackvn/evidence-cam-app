@@ -50,8 +50,7 @@ class SampleStampsState {
     bool? error,
   }) => SampleStampsState(
     all: all ?? this.all,
-    selectedTheme:
-        selectedTheme != null ? selectedTheme() : this.selectedTheme,
+    selectedTheme: selectedTheme != null ? selectedTheme() : this.selectedTheme,
     savedIds: savedIds ?? this.savedIds,
     loading: loading ?? this.loading,
     error: error ?? this.error,

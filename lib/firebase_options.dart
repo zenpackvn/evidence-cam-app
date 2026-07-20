@@ -80,7 +80,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '725681265816',
     projectId: 'stampmail-dev',
     storageBucket: 'stampmail-dev.firebasestorage.app',
-    iosClientId: '725681265816-tqi5kapfbrp48ht51gdg48bp4h244cf1.apps.googleusercontent.com',
+    iosClientId:
+        '725681265816-tqi5kapfbrp48ht51gdg48bp4h244cf1.apps.googleusercontent.com',
     iosBundleId: 'com.aktechvn.stampmail',
   );
 }

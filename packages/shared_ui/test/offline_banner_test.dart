@@ -7,7 +7,10 @@ const _label = 'Đang xem ngoại tuyến';
 
 // AppTheme.light() registers the SemanticColors extension the banner reads.
 Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
-  MaterialApp(theme: AppTheme.light(), home: Scaffold(body: child)),
+  MaterialApp(
+    theme: AppTheme.light(),
+    home: Scaffold(body: child),
+  ),
 );
 
 void main() {
