@@ -199,8 +199,15 @@ class _PaperPreview extends StatelessWidget {
         color: Color(template.paperColor),
         borderRadius: BorderRadius.circular(AppRadius.xxl),
       ),
+      // The art is a landscape card (166×117) with its name baked into the
+      // bottom; show it whole at its native ratio so the caption isn't cropped.
       child: art != null
-          ? Image.asset(art, fit: BoxFit.cover, width: double.infinity)
+          ? Center(
+              child: AspectRatio(
+                aspectRatio: 166 / 117,
+                child: Image.asset(art, fit: BoxFit.contain),
+              ),
+            )
           : Center(
               child: Text(
                 template.label,

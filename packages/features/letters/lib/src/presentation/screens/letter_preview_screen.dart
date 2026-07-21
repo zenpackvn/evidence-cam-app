@@ -16,7 +16,6 @@ class LetterPreviewScreen extends StatelessWidget {
     required this.onSend,
     this.stampName,
     this.stampImageUrl,
-    this.recipient = 'Trân quý',
     this.onChangeTemplate,
     this.onChangeStamp,
     super.key,
@@ -30,9 +29,6 @@ class LetterPreviewScreen extends StatelessWidget {
   final String? stampName;
   final String? stampImageUrl;
 
-  /// Recipient label (SM-016 targets one recipient per link).
-  final String recipient;
-
   final VoidCallback? onChangeTemplate;
   final VoidCallback? onChangeStamp;
 
@@ -44,7 +40,7 @@ class LetterPreviewScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: _ground,
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -86,12 +82,52 @@ class LetterPreviewScreen extends StatelessWidget {
               // The real letter rendered read-only on its paper — same widget,
               // same Delta, so the preview matches the composer exactly
               // (SM-015 BR-01).
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-                child: SizedBox(
-                  height: 392,
-                  child: AbsorbPointer(
-                    child: ReadOnlyLetterPaper(content: content),
+              // Fills the space between the header and the info card so the
+              // card + buttons sit at the bottom (no empty gap).
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: OverflowBox(
+                          alignment: Alignment.topCenter,
+                          minHeight: 0,
+                          maxHeight: double.infinity,
+                          child: AbsorbPointer(
+                            child: ReadOnlyLetterPaper(content: content),
+                          ),
+                        ),
+                      ),
+                      // The attached stamp shown on the letter (top-right, like
+                      // a postage stamp).
+                      if (stampImageUrl != null)
+                        Positioned(
+                          top: AppSpacing.lg,
+                          right: AppSpacing.lg,
+                          child: Container(
+                            width: 58,
+                            height: 62,
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                              border: Border.all(color: Colors.white, width: 3),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x33000000),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: AppNetworkImage(
+                              imageUrl: stampImageUrl!,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -158,21 +194,6 @@ class LetterPreviewScreen extends StatelessWidget {
                         label: 'Tem đã dán',
                         value: 'Chưa dán tem',
                       ),
-                    Divider(height: 21, color: context.brand.borderSubtle),
-                    _InfoRow(
-                      leading: const _IconBox(
-                        color: Color(0xFFFDEBE2),
-                        icon: Icons.person_outline,
-                        iconColor: Color(0xFFF35B43),
-                      ),
-                      label: 'Gửi đến',
-                      value: recipient,
-                      action: Icon(
-                        Icons.chevron_right,
-                        size: 20,
-                        color: context.colorScheme.outline,
-                      ),
-                    ),
                   ],
                 ),
               ),

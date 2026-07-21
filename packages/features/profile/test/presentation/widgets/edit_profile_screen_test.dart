@@ -109,31 +109,33 @@ void main() {
     expect(find.text('Tên hiển thị tối đa 30 ký tự'), findsOneWidget);
   });
 
-  testWidgets('AC-04: with no changes left the username field is disabled', (
-    tester,
-  ) async {
-    const locked = UserProfile(
-      id: 'u1',
-      username: 'alice',
-      usernameChangesLeft: 0,
-    );
-    await pumpForm(tester, _FakeProfileRepository(locked));
+  testWidgets(
+    'unlocked: the username field stays editable even at 0 allowance',
+    (
+      tester,
+    ) async {
+      const noAllowance = UserProfile(
+        id: 'u1',
+        username: 'alice',
+        usernameChangesLeft: 0,
+      );
+      await pumpForm(tester, _FakeProfileRepository(noAllowance));
 
-    expect(find.text('Bạn đã hết lượt đổi tên người dùng.'), findsOneWidget);
-    final field = tester.widget<TextFormField>(
-      find.descendant(
-        of: find.byKey(const Key('editProfile_username')),
-        matching: find.byType(TextFormField),
-      ),
-    );
-    expect(field.enabled, isFalse);
-  });
+      final field = tester.widget<TextFormField>(
+        find.descendant(
+          of: find.byKey(const Key('editProfile_username')),
+          matching: find.byType(TextFormField),
+        ),
+      );
+      expect(field.enabled, isTrue);
+    },
+  );
 
-  testWidgets('a user with a change left is told so', (tester) async {
+  testWidgets('the username can be changed any time', (tester) async {
     await pumpForm(tester, _FakeProfileRepository(alice));
 
     expect(
-      find.text('Bạn chỉ được đổi tên người dùng thêm 1 lần.'),
+      find.text('Bạn có thể đổi username bất cứ lúc nào.'),
       findsOneWidget,
     );
   });
@@ -157,6 +159,29 @@ void main() {
     );
     expect(find.text('Ngày sinh không hợp lệ'), findsOneWidget);
   });
+
+  testWidgets(
+    'typing the first birth-date digit keeps the field focused (keyboard stays)',
+    (tester) async {
+      await pumpForm(tester, _FakeProfileRepository(alice));
+
+      // Typing the first digit flips the field to "has value", which reveals the
+      // "Xoá" button above the row. The row must survive that so focus is kept.
+      await tester.enterText(
+        find.byKey(const Key('editProfile_birthDay')),
+        '1',
+      );
+      await tester.pump();
+
+      final editable = tester.widget<EditableText>(
+        find.descendant(
+          of: find.byKey(const Key('editProfile_birthDay')),
+          matching: find.byType(EditableText),
+        ),
+      );
+      expect(editable.focusNode.hasFocus, isTrue);
+    },
+  );
 
   testWidgets('AC-07: the clear action empties the birthday and saves it', (
     tester,

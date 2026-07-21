@@ -70,12 +70,29 @@ void main() {
   testWidgets('renders the filter thumbnails without overflow', (tester) async {
     await _pumpFilterStep(tester);
 
-    // The category chips use the design labels…
+    // The category chips use the design labels — the standalone "Gốc" tab
+    // precedes the four groups (F02-S04 cats). Later chips (Tâm trạng / Mùa)
+    // sit off-screen in the scrolling row, so they aren't asserted here.
+    expect(find.text('Gốc'), findsWidgets);
+    expect(find.text('Cổ điển'), findsOneWidget);
     expect(find.text('Retro/Vintage'), findsOneWidget);
     // …and the Classic category shows its filter thumbnails (label overlaid).
     expect(find.text('Đen trắng'), findsOneWidget);
     expect(find.text('Nâu cổ'), findsOneWidget);
     // No overflow error was thrown while laying the panel out.
+  });
+
+  testWidgets('the "Gốc" tab shows only the original', (tester) async {
+    await _pumpFilterStep(tester);
+
+    // Tapping the "Gốc" chip narrows the row to just the original — the classic
+    // presets (e.g. "Đen trắng") drop away.
+    await tester.tap(find.text('Gốc').first);
+    await tester.pump();
+
+    expect(find.text('Đen trắng'), findsNothing);
+    expect(find.text('Nâu cổ'), findsNothing);
+    expect(find.text('Gốc'), findsWidgets);
   });
 
   testWidgets('the "Chỉnh tay" tab shows the five adjust tools', (

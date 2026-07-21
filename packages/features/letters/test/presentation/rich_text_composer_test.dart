@@ -285,11 +285,12 @@ void main() {
       await tester.pump();
 
       expect(cubit.state.content.fontFamily, 'Playfair Display');
-      // The font is locked in through the editor's styles…
+      // The font is locked in through the editor's styles (google_fonts appends
+      // a variant suffix to the family name, e.g. "Playfair Display_regular").
       final editor = tester.widget<QuillEditor>(find.byType(QuillEditor));
       expect(
         editor.config.customStyles?.paragraph?.style.fontFamily,
-        'Playfair Display',
+        contains('Playfair'),
       );
       // …not written per-run, so it cannot end up applying to the selection
       // only (BR-03: "toàn bộ nội dung đổi phông ngay").
@@ -306,6 +307,9 @@ void main() {
       await _writeAndSelect(tester, 'Xin chào', base: 0, extent: 4);
       final before = cubit.state.content.delta;
 
+      // Paper swatches live on the "Giấy nền" tab (F03-S05).
+      await tester.tap(find.text('Giấy nền'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Giấy A4'));
       await tester.pump();
 
@@ -322,6 +326,9 @@ void main() {
       await tester.tap(find.byIcon(Icons.format_bold));
       await tester.pump();
 
+      // The ruling toggle lives on the "Giấy nền" tab (F03-S05).
+      await tester.tap(find.text('Giấy nền'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.notes));
       await tester.pump();
 

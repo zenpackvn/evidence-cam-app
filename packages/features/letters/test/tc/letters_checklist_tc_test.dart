@@ -59,13 +59,13 @@ Widget _wrap(Widget child) => MaterialApp(
 void main() {
   // ── 010 · chọn template ──────────────────────────────────────────────────
   group('Template catalog (TC-10-001..)', () {
-    test('TC-10-001: mọi template đều Free và dùng được (D15 revised)', () {
+    test('TC-10-001: có template Free dùng được (F03-S01)', () {
       expect(letterTemplates, isNotEmpty);
-      expect(letterTemplates.every((t) => !t.premium), isTrue);
+      expect(letterTemplates.any((t) => !t.premium), isTrue);
     });
 
-    test('TC-10-004: không còn template Premium (tất cả Free)', () {
-      expect(letterTemplates.where((t) => t.premium), isEmpty);
+    test('TC-10-004: có mục Premium (F03-S01 secPrem)', () {
+      expect(letterTemplates.where((t) => t.premium), isNotEmpty);
     });
 
     test('templateById rơi về classic khi id lạ (chống crash sent-box)', () {

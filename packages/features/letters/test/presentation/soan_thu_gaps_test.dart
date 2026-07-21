@@ -171,6 +171,10 @@ void main() {
       // Default: plain paper, no ruling painter.
       expect(cubit.state.content.ruled, isFalse);
 
+      // The ruling toggle lives on the "Giấy nền" tab (F03-S05).
+      await tester.tap(find.text('Giấy nền'));
+      await tester.pumpAndSettle();
+
       // AC-07: turn ruling on (tap the "Kẻ dòng" segment via its unique icon —
       // the section header shares the same label text).
       await tester.tap(find.byIcon(Icons.notes));

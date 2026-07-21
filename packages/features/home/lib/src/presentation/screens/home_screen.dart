@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_contracts/shared_contracts.dart';
 
+import '../../domain/home_data.dart';
 import '../../locator.dart';
 import '../bloc/home_bloc.dart';
 import '../widgets/home_body.dart';
@@ -12,6 +14,8 @@ class HomeScreen extends StatelessWidget {
     this.onCreateStamp,
     this.onOpenAlbum,
     this.onOpenLetters,
+    this.onOpenStamp,
+    this.onOpenLetter,
     super.key,
   });
 
@@ -21,6 +25,10 @@ class HomeScreen extends StatelessWidget {
   /// "Thư gần đây" see-all → the sent-letters tab (SM-021).
   final VoidCallback? onOpenLetters;
 
+  /// Tapping a single recent stamp / letter card opens that item.
+  final ValueChanged<StampRef>? onOpenStamp;
+  final ValueChanged<HomeLetterItem>? onOpenLetter;
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -29,6 +37,8 @@ class HomeScreen extends StatelessWidget {
         onCreateStamp: onCreateStamp,
         onOpenAlbum: onOpenAlbum,
         onOpenLetters: onOpenLetters,
+        onOpenStamp: onOpenStamp,
+        onOpenLetter: onOpenLetter,
       ),
     );
   }

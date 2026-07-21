@@ -12,6 +12,7 @@ import '../widgets/wizard_scaffold.dart';
 import 'decorate_step.dart';
 import 'filter_step.dart';
 import 'preview_step.dart';
+import 'quota_reached_sheet.dart';
 import 'save_success_screen.dart';
 
 /// The create-a-stamp wizard (SM-006 → SM-011), driven by [CreatorCubit]. It
@@ -88,11 +89,19 @@ class _WizardView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocConsumer<CreatorCubit, CreatorState>(
       listenWhen: (prev, next) =>
-          next.errorMessage != null && prev.errorMessage != next.errorMessage,
+          (!prev.quotaReached && next.quotaReached) ||
+          (next.errorMessage != null && prev.errorMessage != next.errorMessage),
       listener: (context, state) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(state.errorMessage!)),
-        );
+        if (state.quotaReached) {
+          // Show the F02-S13 quota modal once, then clear the flag so a later
+          // save can trigger it again.
+          context.read<CreatorCubit>().resetQuota();
+          showQuotaReachedSheet(context, draft: state.draft);
+        } else if (state.errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.errorMessage!)),
+          );
+        }
       },
       builder: (context, state) {
         final cubit = context.read<CreatorCubit>();

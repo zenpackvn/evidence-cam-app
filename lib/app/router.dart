@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:app_platform/app_platform.dart';
+import 'package:architecture/architecture.dart';
 import 'package:feature_album/feature_album.dart';
 import 'package:feature_auth/feature_auth.dart';
 import 'package:feature_home/feature_home.dart';
@@ -16,6 +17,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
+import 'package:rev_sync/rev_sync.dart';
+import 'package:shared_contracts/shared_contracts.dart';
 import 'package:shared_ui/shared_ui.dart';
 import 'package:storage/storage.dart';
 
@@ -114,9 +117,39 @@ class CreateStampRoute extends GoRouteData with $CreateStampRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) => StampSourceScreen(
     picker: GetIt.instance<ImagePickerService>(),
-    // On pick, enter the wizard (SM-006→SM-011) with the chosen photo. The
-    // wizard is pushed (not a typed route) because it needs the runtime path.
-    onPicked: (path) => _openWizard(context, path),
+    // On pick, show the "Xem trước ảnh" zoom/confirm step (SM-005, F02-S03)
+    // before entering the filter wizard.
+    onPicked: (path) => _openPhotoPreview(context, path),
+    // "Chọn từ thư viện" opens the in-app library grid (SM-005 F02-S11).
+    onBrowseLibrary: () => _openLibrary(context),
+  );
+}
+
+// SM-005 F02-S11: the in-app "Chọn từ thư viện" grid backed by the device
+// photo library. On pick it flows into the same "Xem trước ảnh" → wizard path.
+void _openLibrary(BuildContext context) {
+  Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => LibraryPickerFlow(
+        gallery: GetIt.instance<GalleryService>(),
+        onPicked: (path) => _openPhotoPreview(context, path),
+        onCamera: () => Navigator.of(context).maybePop(),
+      ),
+    ),
+  );
+}
+
+// SM-005 (F02-S03): confirm/zoom the picked photo before the wizard. "Xác nhận"
+// advances to the filter step; "Hủy" returns to the source picker.
+void _openPhotoPreview(BuildContext context, String imagePath) {
+  Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => PhotoPreviewScreen(
+        imagePath: imagePath,
+        onConfirm: () => _openWizard(context, imagePath),
+        onCancel: () => Navigator.of(context).maybePop(),
+      ),
+    ),
   );
 }
 
@@ -336,13 +369,100 @@ class StampMailProfileRoute extends GoRouteData with $StampMailProfileRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      StampMailProfileScreen(
-        // ponytail: isPremium is false until the entitlement reader is wired
-        // (C6); the Premium card / badge gate on it.
-        onEditProfile: () => const ProfileRoute().push<void>(context),
-        onOpenSettings: () => const SettingsRoute().push<void>(context),
-        onUpgrade: () {},
-      );
+      const _StampMailProfilePage();
+}
+
+/// Resolves the user's Premium entitlement, then shows the profile in either its
+/// Free (F07-S01) or Premium (F07-S02) state. Reads once and caches the future
+/// so a rebuild doesn't re-hit the network.
+class _StampMailProfilePage extends StatefulWidget {
+  const _StampMailProfilePage();
+
+  @override
+  State<_StampMailProfilePage> createState() => _StampMailProfilePageState();
+}
+
+class _StampMailProfilePageState extends State<_StampMailProfilePage> {
+  late final Future<Result<Entitlement>> _entitlement =
+      GetIt.instance<EntitlementReader>()();
+
+  // The single profile cubit shared with the "Sửa hồ sơ" screen, so an edit
+  // (name / username / avatar) reflects on this screen the moment it is saved.
+  late final EditProfileCubit _editCubit = GetIt.instance<EditProfileCubit>()
+    ..load();
+
+  @override
+  void dispose() {
+    _editCubit.close();
+    super.dispose();
+  }
+
+  /// F07-S04: pick a photo, crop it 1:1 like the demo, then upload + save it as
+  /// the avatar. The cubit shows the cropped picture immediately (optimistic).
+  Future<void> _editAvatar(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    final file = await GetIt.instance<ImagePickerService>().pickImage(
+      source: ImageSource.gallery,
+    );
+    if (file == null) return;
+    await navigator.push<void>(
+      MaterialPageRoute(
+        builder: (_) => CropAvatarScreen(
+          imagePath: file.path,
+          onSave: (bytes) {
+            navigator.pop();
+            _editCubit.changeAvatar(bytes);
+          },
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Result<Entitlement>>(
+      future: _entitlement,
+      builder: (context, snapshot) {
+        final entitlement = switch (snapshot.data) {
+          Ok(:final value) => value,
+          _ => Entitlement.free,
+        };
+        return BlocConsumer<EditProfileCubit, EditProfileState>(
+          bloc: _editCubit,
+          listenWhen: (prev, next) =>
+              prev.saveError != next.saveError && next.saveError != null,
+          listener: (context, editState) => ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(editState.saveError!))),
+          builder: (context, editState) => StampMailProfileScreen(
+            isPremium: entitlement.isPremium,
+            premiumExpiry: entitlement.expiresAt,
+            name: editState.profile?.effectiveName,
+            username: editState.profile?.username,
+            avatarUrl: editState.profile?.avatarUrl,
+            avatarBytes: editState.pendingAvatarBytes,
+            isSavingAvatar: editState.isSavingAvatar,
+            onEditAvatar: () => _editAvatar(context),
+            // The edit screen shares _editCubit, so saved name/handle/avatar
+            // land here live — no reload needed.
+            onEditProfile: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (_) => EditProfileScreen(
+                  cubit: _editCubit,
+                  picker: GetIt.instance<ImagePickerService>(),
+                ),
+              ),
+            ),
+            onOpenSettings: () => const SettingsRoute().push<void>(context),
+            // ponytail: the paywall / manage-subscription flow (RevenueCat)
+            // lands separately; both actions open Settings for now.
+            onUpgrade: () => const SettingsRoute().push<void>(context),
+            onManagePlan: () => const SettingsRoute().push<void>(context),
+          ),
+        );
+      },
+    );
+  }
 }
 
 @TypedGoRoute<SettingsRoute>(path: '/settings', name: 'settings')
@@ -411,49 +531,78 @@ class SettingsRoute extends GoRouteData with $SettingsRoute {
     if (confirmed ?? false) await cubit.submit();
   }
 
+  /// Confirms before signing out of this device (SM-027) — a stray tap should
+  /// not end the session.
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final session = SessionScope.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Đăng xuất?'),
+        content: const Text('Bạn có chắc muốn đăng xuất khỏi thiết bị này?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Huỷ'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Đăng xuất'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed ?? false) session.signOut();
+  }
+
   Widget _buildSettings(BuildContext context) {
     // Read (not watch): switching the locale rebuilds MaterialApp, which
     // rebuilds this route, so a fresh read here always reflects the current
     // language.
     final localeBloc = context.read<LocaleBloc>();
     final code = localeBloc.state.locale.languageCode;
-    return SettingsScreen(
-      languageLabel: _languageLabel(code),
-      onChangePassword: () => const ChangePasswordRoute().push<void>(context),
-      onSignOut: () => SessionScope.of(context).signOut(),
-      onSignOutAll: () => _confirmSignOutAll(context),
-      onLanguage: () => Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) => LanguageScreen(
-            selected: code,
-            onSelect: (picked) => localeBloc.add(LocaleChanged(picked)),
-          ),
+    return _SettingsConnectivity(
+      builder: (isOffline) => SettingsScreen(
+        isOffline: isOffline,
+        languageLabel: _languageLabel(code),
+        onChangePassword: () => Navigator.of(context).push<void>(
+          MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
         ),
-      ),
-      onNotifications: () {
-        final uid = SessionScope.of(context).currentUser?.id;
-        Navigator.of(context).push<void>(
+        onSignOut: () => _confirmSignOut(context),
+        onSignOutAll: () => _confirmSignOutAll(context),
+        onLanguage: () => Navigator.of(context).push<void>(
           MaterialPageRoute(
-            builder: (_) => NotificationSettingsScreen(
-              initialValues: _notificationPrefs(),
-              onKindChanged: uid == null
-                  ? null
-                  : (id, {required value}) =>
-                        _setNotificationKind(uid, id, value: value),
+            builder: (_) => LanguageScreen(
+              selected: code,
+              onSelect: (picked) => localeBloc.add(LocaleChanged(picked)),
             ),
           ),
-        );
-      },
-      onDeleteAccount: () => Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) => BlocProvider<DeleteAccountCubit>(
-            create: (_) => GetIt.instance<DeleteAccountCubit>(),
-            child: BlocListener<DeleteAccountCubit, DeleteAccountState>(
-              listener: (_, state) => _onDeleteAccountState(context, state),
-              child: Builder(
-                builder: (buttonContext) => DeleteAccountScreen(
-                  onConfirm: () =>
-                      buttonContext.read<DeleteAccountCubit>().submit(),
+        ),
+        onNotifications: () {
+          final uid = SessionScope.of(context).currentUser?.id;
+          Navigator.of(context).push<void>(
+            MaterialPageRoute(
+              builder: (_) => NotificationSettingsScreen(
+                initialValues: _notificationPrefs(),
+                onKindChanged: uid == null
+                    ? null
+                    : (id, {required value}) =>
+                          _setNotificationKind(uid, id, value: value),
+              ),
+            ),
+          );
+        },
+        onDeleteAccount: () => Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (_) => BlocProvider<DeleteAccountCubit>(
+              create: (_) => GetIt.instance<DeleteAccountCubit>(),
+              child: BlocListener<DeleteAccountCubit, DeleteAccountState>(
+                listener: (_, state) => _onDeleteAccountState(context, state),
+                child: Builder(
+                  builder: (buttonContext) => DeleteAccountScreen(
+                    onConfirm: () =>
+                        buttonContext.read<DeleteAccountCubit>().submit(),
+                  ),
                 ),
               ),
             ),
@@ -490,6 +639,50 @@ class SettingsRoute extends GoRouteData with $SettingsRoute {
   };
 }
 
+/// Watches connectivity and rebuilds its [builder] with the current offline
+/// flag, so the Settings screen can show the "Đang xem ngoại tuyến" notice
+/// (SM-004 BR-07) and hide it again the moment the connection returns.
+class _SettingsConnectivity extends StatefulWidget {
+  const _SettingsConnectivity({required this.builder});
+
+  // A single-bool builder reads clearly here (isOffline → widget).
+  // ignore: avoid_positional_boolean_parameters
+  final Widget Function(bool isOffline) builder;
+
+  @override
+  State<_SettingsConnectivity> createState() => _SettingsConnectivityState();
+}
+
+class _SettingsConnectivityState extends State<_SettingsConnectivity> {
+  final ConnectivitySource _connectivity = GetIt.instance<ConnectivitySource>();
+  bool _offline = false;
+  StreamSubscription<bool>? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Seed the current state (onOnlineChanged only fires on transitions), then
+    // track changes.
+    unawaited(
+      _connectivity.isOnline().then((online) {
+        if (mounted) setState(() => _offline = !online);
+      }),
+    );
+    _sub = _connectivity.onOnlineChanged.listen((online) {
+      if (mounted) setState(() => _offline = !online);
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(_offline);
+}
+
 @TypedGoRoute<SplashRoute>(path: '/splash', name: 'splash')
 class SplashRoute extends GoRouteData with $SplashRoute {
   const SplashRoute();
@@ -516,6 +709,10 @@ class HomeRoute extends GoRouteData with $HomeRoute {
     onCreateStamp: () => const CreateStampRoute().push<void>(context),
     onOpenAlbum: () => const AlbumRoute().go(context),
     onOpenLetters: () => const SentLettersRoute().go(context),
+    // Tapping a recent stamp opens the Album (where it can be viewed/edited);
+    // tapping a recent letter opens the sent-letters list.
+    onOpenStamp: (_) => const AlbumRoute().go(context),
+    onOpenLetter: (_) => const SentLettersRoute().go(context),
   );
 }
 

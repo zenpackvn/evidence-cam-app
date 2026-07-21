@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../domain/entities/user_profile.dart';
@@ -41,6 +43,10 @@ abstract class EditProfileState with _$EditProfileState {
     String? usernameError,
     String? birthDateError,
     String? saveError,
+
+    /// The just-cropped avatar, shown immediately (optimistic) so the new
+    /// picture lands on the profile even before the upload confirms.
+    Uint8List? pendingAvatarBytes,
 
     /// AC-03: set on the save that spends the last username change, so the
     /// screen can tell the user the allowance is now gone.

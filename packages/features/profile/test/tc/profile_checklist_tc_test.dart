@@ -10,7 +10,9 @@ Widget _wrap(Widget child) => MaterialApp(home: child);
 
 void main() {
   group('LanguageScreen (TC-23 ngôn ngữ · F07-S08)', () {
-    testWidgets('hiển thị 4 ngôn ngữ, chọn mới gọi onSelect', (tester) async {
+    testWidgets('hiển thị 4 ngôn ngữ; chọn rồi bấm Lưu mới gọi onSelect', (
+      tester,
+    ) async {
       String? picked;
       await tester.pumpWidget(
         _wrap(LanguageScreen(selected: 'vi', onSelect: (c) => picked = c)),
@@ -22,7 +24,14 @@ void main() {
       expect(find.text('한국어'), findsOneWidget);
       expect(find.text('日本語'), findsOneWidget);
 
+      // Picking alone does not apply the change.
       await tester.tap(find.text('English'));
+      await tester.pump();
+      expect(picked, isNull);
+
+      // Only "Lưu" applies it.
+      await tester.tap(find.text('Lưu'));
+      await tester.pump();
       expect(picked, 'en');
     });
   });

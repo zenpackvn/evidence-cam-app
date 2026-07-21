@@ -16,6 +16,8 @@ class HomeBody extends StatelessWidget {
     this.onCreateStamp,
     this.onOpenAlbum,
     this.onOpenLetters,
+    this.onOpenStamp,
+    this.onOpenLetter,
     super.key,
   });
 
@@ -24,6 +26,12 @@ class HomeBody extends StatelessWidget {
 
   /// "Thư gần đây" see-all → the sent-letters tab (SM-021).
   final VoidCallback? onOpenLetters;
+
+  /// Tapping a single "Tem gần đây" card → open that stamp.
+  final ValueChanged<StampRef>? onOpenStamp;
+
+  /// Tapping a single "Thư gần đây" card → open that sent letter.
+  final ValueChanged<HomeLetterItem>? onOpenLetter;
 
   /// .pen Home ground (slightly warmer than `surface-primary`).
   static const ground = Color(0xFFFCF6EF);
@@ -51,6 +59,8 @@ class HomeBody extends StatelessWidget {
                     onCreateStamp: onCreateStamp,
                     onOpenAlbum: onOpenAlbum,
                     onOpenLetters: onOpenLetters,
+                    onOpenStamp: onOpenStamp,
+                    onOpenLetter: onOpenLetter,
                   ),
           );
           final scrollArea = RefreshIndicator(
@@ -136,6 +146,8 @@ class _LoadedHome extends StatelessWidget {
     this.onCreateStamp,
     this.onOpenAlbum,
     this.onOpenLetters,
+    this.onOpenStamp,
+    this.onOpenLetter,
   });
 
   final String name;
@@ -143,6 +155,8 @@ class _LoadedHome extends StatelessWidget {
   final VoidCallback? onCreateStamp;
   final VoidCallback? onOpenAlbum;
   final VoidCallback? onOpenLetters;
+  final ValueChanged<StampRef>? onOpenStamp;
+  final ValueChanged<HomeLetterItem>? onOpenLetter;
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +184,11 @@ class _LoadedHome extends StatelessWidget {
         const SizedBox(height: AppSpacing.lg),
         _SectionHeader(title: 'Tem gần đây', onSeeAll: onOpenAlbum),
         const SizedBox(height: 10),
-        _StampRow(stamps: data.recentStamps, onCreate: onCreateStamp),
+        _StampRow(
+          stamps: data.recentStamps,
+          onCreate: onCreateStamp,
+          onOpenStamp: onOpenStamp,
+        ),
         const SizedBox(height: 14),
         _SectionHeader(title: 'Thư gần đây', onSeeAll: onOpenLetters),
         const SizedBox(height: 10),
@@ -183,7 +201,10 @@ class _LoadedHome extends StatelessWidget {
         else
           for (final (i, letter) in data.recentLetters.indexed) ...[
             if (i > 0) const SizedBox(height: 10),
-            _LetterCard(letter: letter),
+            _LetterCard(
+              letter: letter,
+              onTap: onOpenLetter == null ? null : () => onOpenLetter!(letter),
+            ),
           ],
       ],
     );
@@ -378,10 +399,11 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _StampRow extends StatelessWidget {
-  const _StampRow({required this.stamps, this.onCreate});
+  const _StampRow({required this.stamps, this.onCreate, this.onOpenStamp});
 
   final List<StampRef> stamps;
   final VoidCallback? onCreate;
+  final ValueChanged<StampRef>? onOpenStamp;
 
   @override
   Widget build(BuildContext context) {
@@ -399,7 +421,10 @@ class _StampRow extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         itemCount: stamps.length,
         separatorBuilder: (_, _) => const SizedBox(width: 6),
-        itemBuilder: (context, index) => _StampCard(stamp: stamps[index]),
+        itemBuilder: (context, index) => _StampCard(
+          stamp: stamps[index],
+          onTap: onOpenStamp == null ? null : () => onOpenStamp!(stamps[index]),
+        ),
       ),
     );
   }
@@ -408,75 +433,80 @@ class _StampRow extends StatelessWidget {
 /// .pen `Content/StampCard` (F01-S16 variant): 111px card, 95×97 art, name
 /// 13 w600, date 12 + heart 15.
 class _StampCard extends StatelessWidget {
-  const _StampCard({required this.stamp});
+  const _StampCard({required this.stamp, this.onTap});
 
   final StampRef stamp;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    return Container(
-      width: 111,
-      // 7px + the 1px border = the .pen card's 8px inset (stroke there is
-      // inner-aligned and doesn't consume layout).
-      padding: const EdgeInsets.fromLTRB(7, 7, 7, 9),
-      decoration: BoxDecoration(
-        color: context.brand.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: context.brand.borderSubtle),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppNetworkImage(
-            imageUrl: stamp.displayUrl,
-            width: double.infinity,
-            height: 97,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  stamp.name ?? 'Tem của bạn',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurface,
-                    fontWeight: FontWeight.w600,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: Container(
+        width: 111,
+        // 7px + the 1px border = the .pen card's 8px inset (stroke there is
+        // inner-aligned and doesn't consume layout).
+        padding: const EdgeInsets.fromLTRB(7, 7, 7, 9),
+        decoration: BoxDecoration(
+          color: context.brand.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: context.brand.borderSubtle),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppNetworkImage(
+              imageUrl: stamp.displayUrl,
+              width: double.infinity,
+              height: 97,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    stamp.name ?? 'Tem của bạn',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        _formatDate(stamp.createdAt),
-                        maxLines: 1,
-                        // .pen caption: 12/16 regular, no tracking (the M3
-                        // labelSmall letterSpacing would overflow the card).
-                        style: context.textTheme.labelSmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: 0,
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _formatDate(stamp.createdAt),
+                          maxLines: 1,
+                          // .pen caption: 12/16 regular, no tracking (the M3
+                          // labelSmall letterSpacing would overflow the card).
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 0,
+                          ),
                         ),
                       ),
-                    ),
-                    FaIcon(
-                      FontAwesomeIcons.heart,
-                      size: 15,
-                      color: scheme.outline,
-                    ),
-                  ],
-                ),
-              ],
+                      FaIcon(
+                        FontAwesomeIcons.heart,
+                        size: 15,
+                        color: scheme.outline,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -485,81 +515,86 @@ class _StampCard extends StatelessWidget {
 /// .pen `Content/LetterCard`: 58×48 envelope art, title 17 w600 + meta 13,
 /// 38×42 stamp mini, tertiary chevron.
 class _LetterCard extends StatelessWidget {
-  const _LetterCard({required this.letter});
+  const _LetterCard({required this.letter, this.onTap});
 
   final HomeLetterItem letter;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-      decoration: BoxDecoration(
-        color: context.brand.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: context.brand.borderSubtle),
-      ),
-      child: Row(
-        children: [
-          if (letter.envelopeImageUrl != null)
-            AppNetworkImage(
-              imageUrl: letter.envelopeImageUrl!,
-              width: 58,
-              height: 48,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            )
-          else
-            Container(
-              width: 58,
-              height: 48,
-              decoration: BoxDecoration(
-                color: scheme.primaryContainer,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        decoration: BoxDecoration(
+          color: context.brand.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: context.brand.borderSubtle),
+        ),
+        child: Row(
+          children: [
+            if (letter.envelopeImageUrl != null)
+              AppNetworkImage(
+                imageUrl: letter.envelopeImageUrl!,
+                width: 58,
+                height: 48,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: Center(
-                child: FaIcon(
-                  letter.opened
-                      ? FontAwesomeIcons.envelopeOpenText
-                      : FontAwesomeIcons.envelope,
-                  size: 18,
-                  color: scheme.primary,
+              )
+            else
+              Container(
+                width: 58,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
-              ),
-            ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  letter.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                child: Center(
+                  child: FaIcon(
+                    letter.opened
+                        ? FontAwesomeIcons.envelopeOpenText
+                        : FontAwesomeIcons.envelope,
+                    size: 18,
+                    color: scheme.primary,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(letter.meta, style: context.textTheme.bodySmall),
-              ],
-            ),
-          ),
-          if (letter.stampImageUrl != null) ...[
+              ),
             const SizedBox(width: AppSpacing.md),
-            AppNetworkImage(
-              imageUrl: letter.stampImageUrl!,
-              width: 38,
-              height: 42,
-              borderRadius: BorderRadius.circular(6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    letter.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(letter.meta, style: context.textTheme.bodySmall),
+                ],
+              ),
+            ),
+            if (letter.stampImageUrl != null) ...[
+              const SizedBox(width: AppSpacing.md),
+              AppNetworkImage(
+                imageUrl: letter.stampImageUrl!,
+                width: 38,
+                height: 42,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ],
+            const SizedBox(width: AppSpacing.md),
+            FaIcon(
+              FontAwesomeIcons.chevronRight,
+              size: 18,
+              color: scheme.outline,
             ),
           ],
-          const SizedBox(width: AppSpacing.md),
-          FaIcon(
-            FontAwesomeIcons.chevronRight,
-            size: 18,
-            color: scheme.outline,
-          ),
-        ],
+        ),
       ),
     );
   }

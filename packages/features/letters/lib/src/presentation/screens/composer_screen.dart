@@ -113,50 +113,62 @@ class _ComposerScreenState extends State<ComposerScreen> {
           body: SafeArea(
             bottom: false,
             child: LayoutBuilder(
-              builder: (context, constraints) => Column(
-                children: [
-                  const SizedBox(height: AppSpacing.md),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                    ),
-                    child: _TopBar(
-                      canSend: state.canSend,
-                      controller: _controller,
-                      onBack: widget.onBack,
-                      onDone: widget.onNext,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Expanded(
-                    child: SingleChildScrollView(
+              builder: (context, constraints) => GestureDetector(
+                // Tapping outside the editor (or dragging the paper down)
+                // dismisses the keyboard, so you can stop typing either way.
+                behavior: HitTestBehavior.translucent,
+                onTap: () => FocusScope.of(context).unfocus(),
+                child: Column(
+                  children: [
+                    const SizedBox(height: AppSpacing.md),
+                    Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.lg,
                       ),
-                      child: LetterPaper(
-                        content: state.content,
+                      child: _TopBar(
+                        canSend: state.canSend,
                         controller: _controller,
-                        focusNode: _focusNode,
+                        onBack: widget.onBack,
+                        onDone: widget.onNext,
                       ),
                     ),
-                  ),
-                  _CharCounter(count: state.charCount),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight:
-                          constraints.maxHeight * _panelMaxHeightFraction,
+                    const SizedBox(height: AppSpacing.sm),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        // Dragging the paper down dismisses the keyboard, so you
+                        // can stop typing with a swipe. AlwaysScrollable makes the
+                        // drag register even when the body already fits.
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                        ),
+                        child: LetterPaper(
+                          content: state.content,
+                          controller: _controller,
+                          focusNode: _focusNode,
+                        ),
+                      ),
                     ),
-                    child: ComposerEditorPanel(
-                      controller: _controller,
-                      selectedFont: state.content.fontFamily,
-                      selectedPaper: state.content.paperColor,
-                      ruled: state.content.ruled,
-                      onFont: cubit.selectFont,
-                      onPaper: cubit.selectPaper,
-                      onRuled: (ruled) => cubit.setRuled(ruled: ruled),
+                    _CharCounter(count: state.charCount),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight:
+                            constraints.maxHeight * _panelMaxHeightFraction,
+                      ),
+                      child: ComposerEditorPanel(
+                        controller: _controller,
+                        selectedFont: state.content.fontFamily,
+                        selectedPaper: state.content.paperColor,
+                        ruled: state.content.ruled,
+                        onFont: cubit.selectFont,
+                        onPaper: cubit.selectPaper,
+                        onRuled: (ruled) => cubit.setRuled(ruled: ruled),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

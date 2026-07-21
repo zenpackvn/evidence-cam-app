@@ -1,4 +1,17 @@
-import 'package:flutter/widgets.dart' show Key;
+import 'package:flutter/widgets.dart' show Key, TextStyle;
+import 'package:google_fonts/google_fonts.dart';
+
+/// Resolves a letter font family (SM-013 BR-03) to a loaded [TextStyle] via
+/// `google_fonts`, so the body and the font chips actually render in that font.
+/// Falls back to [base] for a null/unknown family.
+TextStyle letterFontStyle(String? family, TextStyle base) {
+  if (family == null || family.isEmpty) return base;
+  try {
+    return GoogleFonts.getFont(family, textStyle: base);
+  } on Exception {
+    return base;
+  }
+}
 
 /// A letter template (SM-012). D15 revised: every template is Free — the
 /// [premium] flag stays for compatibility but no template sets it.
@@ -96,6 +109,34 @@ const letterTemplates = <LetterTemplate>[
     description:
         'Ghi lại từng chặng đường và khoảnh khắc đẹp trên hành '
         'trình của bạn.',
+  ),
+  // Premium templates (F03-S01 `secPrem`): locked for Free users; the art carries
+  // the crown + lock. Tapping opens the preview with an upgrade CTA (BR-03).
+  LetterTemplate(
+    id: 'p-love',
+    label: 'Yêu thương trao đi',
+    paperColor: 0xFFFCEEF0,
+    premium: true,
+    artAsset: '$_tplAssets/f3-tpl-p1.png',
+    description:
+        'Sắc hồng lãng mạn cùng những đoá hồng — gửi trọn yêu '
+        'thương theo cách sang trọng nhất.',
+  ),
+  LetterTemplate(
+    id: 'p-elegant',
+    label: 'Thanh lịch',
+    paperColor: 0xFFF6EFE6,
+    premium: true,
+    artAsset: '$_tplAssets/f3-tpl-p2.png',
+    description: 'Mẫu thư cao cấp với tông màu tinh tế, thanh lịch.',
+  ),
+  LetterTemplate(
+    id: 'p-luxe',
+    label: 'Cao cấp',
+    paperColor: 0xFFF3EEF6,
+    premium: true,
+    artAsset: '$_tplAssets/f3-tpl-p3.png',
+    description: 'Thiết kế cao cấp, nổi bật cho những dịp đặc biệt.',
   ),
 ];
 

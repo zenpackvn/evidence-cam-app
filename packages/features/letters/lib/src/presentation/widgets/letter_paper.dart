@@ -38,11 +38,15 @@ class LetterPaper extends StatelessWidget {
     final template = templateById(content.templateId);
     final paper = Color(content.paperColor ?? template.paperColor);
 
-    final bodyStyle = TextStyle(
-      fontSize: _fontSize,
-      height: _lineHeight,
-      color: const Color(letterDefaultInk),
-      fontFamily: content.fontFamily,
+    // Load the selected font through google_fonts so the whole body renders in
+    // it (BR-03 / AC-05); a bare fontFamily string wouldn't register the font.
+    final bodyStyle = letterFontStyle(
+      content.fontFamily,
+      const TextStyle(
+        fontSize: _fontSize,
+        height: _lineHeight,
+        color: Color(letterDefaultInk),
+      ),
     );
     // Zero every block/line spacing: the rules are painted on a fixed pitch of
     // `_fontSize * _lineHeight`, so any extra paragraph spacing would drift the

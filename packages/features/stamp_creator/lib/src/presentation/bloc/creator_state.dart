@@ -14,6 +14,7 @@ class CreatorState {
     this.saving = false,
     this.saved = false,
     this.errorMessage,
+    this.quotaReached = false,
     this.name = '',
     this.tags = const [],
     this.note = '',
@@ -27,6 +28,7 @@ class CreatorState {
       saving = false,
       saved = false,
       errorMessage = null,
+      quotaReached = false,
       name = '',
       tags = const [],
       note = '';
@@ -37,8 +39,13 @@ class CreatorState {
   final bool saving;
   final bool saved;
 
-  /// Set when a save fails (quota reached, upload/network error).
+  /// Set when a save fails (upload/network error). Quota-reached is signalled
+  /// separately via [quotaReached] so the wizard can show the F02-S13 modal.
   final String? errorMessage;
+
+  /// Set when a save is rejected for the monthly quota (SM-011, 403), so the
+  /// wizard shows the "Đã đạt giới hạn 30 tem/tháng" modal.
+  final bool quotaReached;
 
   /// The "hoàn thiện" (SM-010) metadata captured on the preview step: the stamp
   /// name (persisted via `StampInput.name`), free-form tags, and a personal note.
@@ -56,6 +63,7 @@ class CreatorState {
     bool? saving,
     bool? saved,
     String? errorMessage,
+    bool? quotaReached,
     String? name,
     List<String>? tags,
     String? note,
@@ -66,6 +74,7 @@ class CreatorState {
     saving: saving ?? this.saving,
     saved: saved ?? this.saved,
     errorMessage: errorMessage,
+    quotaReached: quotaReached ?? this.quotaReached,
     name: name ?? this.name,
     tags: tags ?? this.tags,
     note: note ?? this.note,

@@ -31,7 +31,6 @@ class SentLettersScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
     return Scaffold(
       backgroundColor: _ground,
       body: SafeArea(
@@ -39,29 +38,28 @@ class SentLettersScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // F04-S07d topnav (☰ · StampMail · 🔍) + "Hộp thư" heading with the
+            // coral add-letter button.
+            const _InboxTopNav(),
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.xxl,
-                AppSpacing.lg,
+                AppSpacing.sm,
                 AppSpacing.xxl,
                 0,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    'Thư đã gửi 💌',
-                    style: context.textTheme.displayMedium?.copyWith(
-                      fontSize: 32,
+                  Expanded(
+                    child: Text(
+                      'Hộp thư',
+                      style: context.textTheme.displayMedium?.copyWith(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Theo dõi những bức thư bạn đã gửi đi ✨',
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
+                  if (onCompose != null) _AddButton(onTap: onCompose!),
                 ],
               ),
             ),
@@ -83,6 +81,78 @@ class SentLettersScreen extends StatelessWidget {
                     ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The top nav (F04-S07d `topnav`): a menu affordance, the centred "StampMail"
+/// wordmark, and a search icon (both inert here — the tab has no search yet).
+class _InboxTopNav extends StatelessWidget {
+  const _InboxTopNav();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xxl,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.menu, size: 24, color: scheme.onSurface),
+          Expanded(
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'StampMail',
+                    style: context.textTheme.headlineSmall?.copyWith(
+                      color: scheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Icon(
+                    Icons.waves,
+                    size: 16,
+                    color: scheme.primary.withValues(alpha: 0.7),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Icon(Icons.search, size: 22, color: scheme.onSurface),
+        ],
+      ),
+    );
+  }
+}
+
+/// The coral round add-letter button (F04-S07d `addBtn`) → composes a letter.
+class _AddButton extends StatelessWidget {
+  const _AddButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Material(
+      color: scheme.primary,
+      shape: const CircleBorder(),
+      elevation: 4,
+      shadowColor: const Color(0x3324211F),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(Icons.add, size: 24, color: scheme.onPrimary),
         ),
       ),
     );

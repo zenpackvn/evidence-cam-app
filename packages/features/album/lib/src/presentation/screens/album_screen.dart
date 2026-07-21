@@ -177,6 +177,16 @@ class _AlbumBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // F02-S19: an empty album is a clean invite — the StampMail top nav +
+    // illustration + CTA, without the search bar or stats header.
+    if (state.isEmpty) {
+      return Column(
+        children: [
+          const _AlbumTopNav(),
+          Expanded(child: _AlbumEmpty(onCreate: onCreate)),
+        ],
+      );
+    }
     return CustomScrollView(
       slivers: [
         SliverPadding(
@@ -203,7 +213,10 @@ class _AlbumBody extends StatelessWidget {
                     if (onBrowseSamples != null)
                       TextButton.icon(
                         onPressed: onBrowseSamples,
-                        icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                        icon: const Icon(
+                          Icons.auto_awesome_outlined,
+                          size: 18,
+                        ),
                         label: const Text('Tem mẫu'),
                       ),
                   ],
@@ -227,46 +240,39 @@ class _AlbumBody extends StatelessWidget {
             ),
           ),
         ),
-        if (state.isEmpty)
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: _AlbumEmpty(onCreate: onCreate),
-          )
-        else
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xxl,
-              0,
-              AppSpacing.xxl,
-              AppSpacing.xxl,
-            ),
-            sliver: switch (state.viewMode) {
-              AlbumViewMode.grid => SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: AppSpacing.sm,
-                  mainAxisSpacing: AppSpacing.sm,
-                  childAspectRatio: 3 / 4,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) => StampTile(
-                    stamp: state.stamps[i],
-                    onTap: () => onOpenStamp(state.stamps[i]),
-                  ),
-                  childCount: state.stamps.length,
-                ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xxl,
+            0,
+            AppSpacing.xxl,
+            AppSpacing.xxl,
+          ),
+          sliver: switch (state.viewMode) {
+            AlbumViewMode.grid => SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: AppSpacing.sm,
+                mainAxisSpacing: AppSpacing.sm,
+                childAspectRatio: 3 / 4,
               ),
-              AlbumViewMode.list => SliverList.separated(
-                itemCount: state.stamps.length,
-                separatorBuilder: (_, _) =>
-                    const SizedBox(height: AppSpacing.sm),
-                itemBuilder: (context, i) => _StampListItem(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) => StampTile(
                   stamp: state.stamps[i],
                   onTap: () => onOpenStamp(state.stamps[i]),
                 ),
+                childCount: state.stamps.length,
               ),
-            },
-          ),
+            ),
+            AlbumViewMode.list => SliverList.separated(
+              itemCount: state.stamps.length,
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+              itemBuilder: (context, i) => _StampListItem(
+                stamp: state.stamps[i],
+                onTap: () => onOpenStamp(state.stamps[i]),
+              ),
+            ),
+          },
+        ),
       ],
     );
   }
@@ -367,6 +373,52 @@ class _StampListItem extends StatelessWidget {
       '${d.month.toString().padLeft(2, '0')}/${d.year}';
 }
 
+/// The top nav for the empty album (F02-S19 `topnav`): a menu affordance, the
+/// centred "StampMail" wordmark, and a search icon. Search/menu are inert on the
+/// empty state (there's nothing to search yet) — they're here for visual parity.
+class _AlbumTopNav extends StatelessWidget {
+  const _AlbumTopNav();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xxl,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.menu, size: 24, color: scheme.onSurface),
+          Expanded(
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'StampMail',
+                    style: context.textTheme.headlineSmall?.copyWith(
+                      color: scheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Icon(
+                    Icons.waves,
+                    size: 16,
+                    color: scheme.primary.withValues(alpha: 0.7),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Icon(Icons.search, size: 22, color: scheme.onSurface),
+        ],
+      ),
+    );
+  }
+}
+
 class _AlbumEmpty extends StatelessWidget {
   const _AlbumEmpty({this.onCreate});
 
@@ -381,27 +433,44 @@ class _AlbumEmpty extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.photo_library_outlined, size: 56, color: scheme.primary),
+            // F02-S19 `illust` — the envelope + stamps empty illustration.
+            Image.asset(
+              'assets/illustrations/album-empty.png',
+              package: 'feature_album',
+              width: 240,
+              fit: BoxFit.contain,
+            ),
             const SizedBox(height: AppSpacing.xl),
             Text(
-              'Bộ sưu tập còn trống',
-              style: context.textTheme.titleLarge?.copyWith(
+              'Album của bạn đang trống',
+              textAlign: TextAlign.center,
+              style: context.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
+                color: scheme.onSurface,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Tạo con tem đầu tiên từ một bức ảnh của bạn.',
+              'Tạo tem đầu tiên của bạn để bắt đầu sưu tầm nhé!',
               textAlign: TextAlign.center,
-              style: context.textTheme.bodyMedium?.copyWith(
+              style: context.textTheme.bodyLarge?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
             ),
             if (onCreate != null) ...[
-              const SizedBox(height: AppSpacing.xxl),
-              FilledButton(
-                onPressed: onCreate,
-                child: const Text('Tạo tem ngay'),
+              const SizedBox(height: AppSpacing.xl),
+              SizedBox(
+                width: 290,
+                height: 54,
+                child: FilledButton(
+                  onPressed: onCreate,
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                  ),
+                  child: const Text('Tạo tem ngay'),
+                ),
               ),
             ],
           ],

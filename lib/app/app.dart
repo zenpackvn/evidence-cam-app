@@ -203,7 +203,11 @@ class _AppState extends State<App> {
                         onGenerateTitle: (context) => context.l10n.appTitle,
                         theme: AppTheme.light(scheme: themeState.scheme),
                         darkTheme: AppTheme.dark(scheme: themeState.scheme),
-                        themeMode: themeState.mode,
+                        // Locked to light for now — the dark theme isn't
+                        // designed yet, so following the system (themeState.mode)
+                        // renders an unfinished dark UI. Restore
+                        // `themeState.mode` once dark is done.
+                        themeMode: ThemeMode.light,
                         locale: localeState.locale,
                         localizationsDelegates:
                             AppLocalizations.localizationsDelegates,

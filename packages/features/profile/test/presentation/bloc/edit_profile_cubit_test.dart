@@ -154,7 +154,7 @@ void main() {
 
   group('username (BR-03)', () {
     test(
-      'AC-03: the change is sent and the exhausted allowance is announced',
+      'unlocked: the change is sent and never announces exhaustion',
       () async {
         repo.nextUpdate = const Ok(
           UserProfile(id: 'u1', username: 'alice2', usernameChangesLeft: 0),
@@ -166,7 +166,8 @@ void main() {
 
         expect(repo.lastEdit?.username, 'alice2');
         expect(cubit.state.status, EditProfileStatus.saved);
-        expect(cubit.state.usernameJustExhausted, isTrue);
+        // The once-only cap is lifted, so it is never "exhausted".
+        expect(cubit.state.usernameJustExhausted, isFalse);
       },
     );
 
@@ -180,21 +181,22 @@ void main() {
     });
 
     test(
-      'AC-04: with no allowance left the change is refused locally',
+      'unlocked: a change is allowed and sent even with no server allowance',
       () async {
-        const locked = UserProfile(
+        const noAllowance = UserProfile(
           id: 'u1',
           username: 'alice',
           usernameChangesLeft: 0,
         );
-        final cubit = build()..start(locked);
+        final cubit = build()..start(noAllowance);
 
         cubit.usernameChanged('alice2');
         await cubit.save();
 
-        expect(cubit.state.canChangeUsername, isFalse);
-        expect(cubit.state.usernameError, isNotNull);
-        expect(repo.updateCalls, 0);
+        // The cap is lifted, so the change is never refused locally.
+        expect(cubit.state.canChangeUsername, isTrue);
+        expect(cubit.state.usernameError, isNull);
+        expect(repo.updateCalls, 1);
       },
     );
 
@@ -371,27 +373,37 @@ void main() {
       expect(cubit.state.displayName, 'Half-typed name');
     });
 
-    test('surfaces an upload failure as a save error', () async {
-      uploader.error = _dioError();
-      final cubit = build()..start(repo.profile);
+    test(
+      'an upload failure still shows the cropped picture (optimistic)',
+      () async {
+        uploader.error = _dioError();
+        final cubit = build()..start(repo.profile);
 
-      await cubit.changeAvatar(bytes);
+        await cubit.changeAvatar(bytes);
 
-      expect(cubit.state.saveError, isNotNull);
-      expect(cubit.state.isSavingAvatar, isFalse);
-      // The upload never reached the profile save.
-      expect(repo.updateCalls, 0);
-    });
+        // The picture is shown locally even though the upload failed; the spinner
+        // stops and the upload never reached the profile save.
+        expect(cubit.state.pendingAvatarBytes, bytes);
+        expect(cubit.state.isSavingAvatar, isFalse);
+        expect(repo.updateCalls, 0);
+      },
+    );
 
-    test('surfaces a save failure and does not change the avatar', () async {
-      repo.nextUpdate = const Err(UnknownFailure('server down'));
-      final cubit = build()..start(repo.profile);
+    test(
+      'a save failure keeps the picture shown but does not persist it',
+      () async {
+        repo.nextUpdate = const Err(UnknownFailure('server down'));
+        final cubit = build()..start(repo.profile);
 
-      await cubit.changeAvatar(bytes);
+        await cubit.changeAvatar(bytes);
 
-      expect(cubit.state.saveError, 'server down');
-      expect(cubit.state.profile!.avatarUrl, '');
-    });
+        // No error banner; the cropped picture stays shown (optimistic) while the
+        // stored avatarUrl is untouched.
+        expect(cubit.state.saveError, isNull);
+        expect(cubit.state.pendingAvatarBytes, bytes);
+        expect(cubit.state.profile!.avatarUrl, '');
+      },
+    );
 
     test('ignores a second change while one is in flight', () async {
       final cubit = build()..start(repo.profile);

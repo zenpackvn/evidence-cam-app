@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../domain/repositories/letters_repository.dart';
 import '../domain/services/letter_share.dart';
 import 'bloc/composer_cubit.dart';
+import 'composer_catalog.dart';
 import 'screens/attach_stamps_screen.dart';
 import 'screens/composer_screen.dart';
 import 'screens/letter_preview_screen.dart';
@@ -173,14 +174,18 @@ class _ComposerNavigatorState extends State<_ComposerNavigator> {
                 content: state.content,
                 stampName: attached == null ? null : 'Tem của bạn',
                 stampImageUrl: attached?.imageUrl,
-                onEdit: navigator.pop,
+                // "Chỉnh sửa" returns to the composer; "Đổi tem" to the stamp
+                // picker one step back; "Đổi mẫu" opens the template chooser.
+                onEdit: () => navigator.popUntil((r) => r.isFirst),
+                onChangeStamp: navigator.pop,
+                onChangeTemplate: () => _pickTemplate(innerContext),
                 onSend: () async {
                   if (state.content.text.trim().isEmpty) {
                     final proceed = await showEmptyLetterWarning(innerContext);
                     if (!proceed) return;
                   }
                   if (innerContext.mounted) {
-                    _pushSend(navigator, innerContext);
+                    _pushSend(navigator, innerContext, attached);
                   }
                 },
               );
@@ -191,14 +196,82 @@ class _ComposerNavigatorState extends State<_ComposerNavigator> {
     );
   }
 
-  void _pushSend(NavigatorState navigator, BuildContext context) {
+  /// "Đổi mẫu" (F03-S09): a bottom sheet to swap the letter template; the cubit
+  /// re-tints the paper and the preview rebuilds.
+  void _pickTemplate(BuildContext context) {
+    final cubit = context.read<ComposerCubit>();
+    final current = cubit.state.content.templateId;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text(
+                'Đổi mẫu thư',
+                style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final t in letterTemplates.where((t) => !t.premium))
+                    ListTile(
+                      leading: t.artAsset != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.asset(
+                                t.artAsset!,
+                                width: 56,
+                                height: 40,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : null,
+                      title: Text(t.label),
+                      trailing: t.id == current
+                          ? Icon(
+                              Icons.check,
+                              color: Theme.of(sheetContext).colorScheme.primary,
+                            )
+                          : null,
+                      onTap: () {
+                        cubit.selectTemplate(t.id);
+                        Navigator.of(sheetContext).pop();
+                      },
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _pushSend(
+    NavigatorState navigator,
+    BuildContext context,
+    Stamp? stamp,
+  ) {
     navigator.push(
       MaterialPageRoute<void>(
         builder: (_) => _provide(
           context,
           SendScreen(
+            stampName: stamp == null ? null : 'Tem của bạn',
+            stampImageUrl: stamp?.imageUrl,
             onBack: navigator.pop,
-            onSent: (platform) => _pushSuccess(navigator, context, platform),
+            onSent: (platform) =>
+                _pushSuccess(navigator, context, platform, stamp),
           ),
         ),
       ),
@@ -209,14 +282,26 @@ class _ComposerNavigatorState extends State<_ComposerNavigator> {
     NavigatorState navigator,
     BuildContext context,
     SharePlatform platform,
+    Stamp? stamp,
   ) {
-    final link = context.read<ComposerCubit>().state.link;
+    final state = context.read<ComposerCubit>().state;
+    final link = state.link;
     if (link == null) return;
     final url = link.shareUrl(linkBaseUrl);
     onOpenShare(platform, url);
+    // "gửi như nào thì hiện như vậy": the success screen echoes the exact
+    // platform(s) the letter went to, plus its template and attached stamp —
+    // none of it is hard-coded.
     navigator.push(
       MaterialPageRoute<void>(
-        builder: (_) => SendSuccessScreen(linkUrl: url, onDone: onClose),
+        builder: (_) => SendSuccessScreen(
+          linkUrl: url,
+          platforms: [platform],
+          letterTitle: templateById(state.content.templateId).label,
+          stampName: stamp == null ? null : 'Tem của bạn',
+          stampImageUrl: stamp?.imageUrl,
+          onDone: onClose,
+        ),
       ),
     );
   }

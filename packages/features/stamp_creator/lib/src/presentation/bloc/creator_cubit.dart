@@ -149,7 +149,18 @@ class CreatorCubit extends Cubit<CreatorState> {
           );
       }
     } on DioException catch (e) {
-      emit(state.copyWith(saving: false, errorMessage: _dioMessage(e)));
+      // Quota-reached (Free 30/month) surfaces as a 403; the wizard shows the
+      // F02-S13 modal for it rather than an error snackbar.
+      if (e.response?.statusCode == 403) {
+        emit(state.copyWith(saving: false, quotaReached: true));
+      } else {
+        emit(
+          state.copyWith(
+            saving: false,
+            errorMessage: 'Không lưu được tem. Vui lòng thử lại.',
+          ),
+        );
+      }
     } on Object {
       emit(
         state.copyWith(
@@ -175,8 +186,7 @@ class CreatorCubit extends Cubit<CreatorState> {
     return data.buffer.asUint8List();
   }
 
-  // Quota-reached (BR: Free 30 stamps/month) surfaces as a 403 on presign/save.
-  String _dioMessage(DioException e) => e.response?.statusCode == 403
-      ? 'Bạn đã đạt giới hạn tem tháng này. Nâng cấp Premium để tạo thêm.'
-      : 'Không lưu được tem. Vui lòng thử lại.';
+  /// Clears the quota-reached flag once the wizard has shown its modal, so a
+  /// later save attempt can trigger it again.
+  void resetQuota() => emit(state.copyWith(quotaReached: false));
 }

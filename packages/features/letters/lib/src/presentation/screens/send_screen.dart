@@ -2,21 +2,34 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../domain/entities/letter_content.dart';
 import '../../domain/services/letter_share.dart';
 import '../bloc/composer_cubit.dart';
 import '../bloc/composer_state.dart';
+import '../composer_catalog.dart';
+import '../widgets/letter_paper.dart';
 
 /// SM-016 — "Gửi thư" (F03-S11): pick a platform to send the letter link to.
 /// On confirm the cubit creates the letter + mints a one-time/7-day link, then
 /// the host opens the platform's DM composer (or the share sheet) with the URL.
 class SendScreen extends StatefulWidget {
-  const SendScreen({required this.onBack, required this.onSent, super.key});
+  const SendScreen({
+    required this.onBack,
+    required this.onSent,
+    this.stampName,
+    this.stampImageUrl,
+    super.key,
+  });
 
   final VoidCallback onBack;
 
   /// Called with the picked platform once the link is minted, so the host can
   /// open the DM / share sheet.
   final void Function(SharePlatform platform) onSent;
+
+  /// The attached stamp summary shown on the letter card (F03-S11).
+  final String? stampName;
+  final String? stampImageUrl;
 
   @override
   State<SendScreen> createState() => _SendScreenState();
@@ -72,6 +85,15 @@ class _SendScreenState extends State<SendScreen> {
                       0,
                     ),
                     children: [
+                      _LetterCard(
+                        content: state.content,
+                        templateLabel: templateById(
+                          state.content.templateId,
+                        ).label,
+                        stampName: widget.stampName,
+                        stampImageUrl: widget.stampImageUrl,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
                       const _RulesCard(),
                       const SizedBox(height: AppSpacing.lg),
                       Text(
@@ -100,11 +122,14 @@ class _SendScreenState extends State<SendScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '🌼 Chọn nền tảng bạn hay dùng để mở DM cho nhanh.',
+                        '🌼 Có thể chọn nhiều nền tảng. Mỗi nền tảng sẽ tạo '
+                        'một link riêng.',
                         style: context.textTheme.bodySmall?.copyWith(
                           color: context.colorScheme.onSurfaceVariant,
                         ),
                       ),
+                      const SizedBox(height: AppSpacing.sm),
+                      const _QuotaCard(),
                     ],
                   ),
                 ),
@@ -211,6 +236,222 @@ class _Header extends StatelessWidget {
           style: context.textTheme.displayMedium?.copyWith(fontSize: 32),
         ),
       ],
+    );
+  }
+}
+
+/// The letter summary card (F03-S11 `letterCard`): a live thumbnail of the
+/// letter the user actually composed, its template name, the attached stamp,
+/// and a "Sẵn sàng gửi" pill.
+class _LetterCard extends StatelessWidget {
+  const _LetterCard({
+    required this.content,
+    required this.templateLabel,
+    required this.stampName,
+    required this.stampImageUrl,
+  });
+
+  final LetterContent content;
+  final String templateLabel;
+  final String? stampName;
+  final String? stampImageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final semantic = context.semanticColors;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: context.brand.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _LetterThumb(content: content),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  templateLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  stampName == null ? 'Chưa dán tem' : 'Tem: $stampName',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: 4,
+                  ),
+                  decoration: ShapeDecoration(
+                    color: semantic.successContainer,
+                    shape: const StadiumBorder(),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        size: 13,
+                        color: semantic.success,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Sẵn sàng gửi',
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: semantic.success,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// An 86×86 tile showing the real letter the user composed — the same paper,
+/// paper color and body Delta as the composer, rendered read-only and scaled
+/// down (top-aligned) so it reads as a true thumbnail, not a canned template.
+class _LetterThumb extends StatelessWidget {
+  const _LetterThumb({required this.content});
+
+  final LetterContent content;
+
+  // A reference letter size the read-only paper is laid out at before being
+  // scaled into the tile; ~A-series portrait ratio so the preview isn't skewed.
+  static const _refWidth = 300.0;
+  static const _refHeight = 380.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: SizedBox(
+        width: 86,
+        height: 86,
+        child: FittedBox(
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: _refWidth,
+            height: _refHeight,
+            child: OverflowBox(
+              alignment: Alignment.topCenter,
+              minHeight: 0,
+              maxHeight: double.infinity,
+              child: AbsorbPointer(
+                child: ReadOnlyLetterPaper(content: content),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The plan / quota card (F03-S11 `quota`): the monthly send count and a
+/// Premium upsell. ponytail: counts are placeholder until quota tracking lands.
+class _QuotaCard extends StatelessWidget {
+  const _QuotaCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.md,
+        horizontal: 14,
+      ),
+      decoration: BoxDecoration(
+        color: context.brand.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: context.brand.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.mail_outline,
+                size: 18,
+                color: scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      const TextSpan(text: 'Gói thường'),
+                      TextSpan(
+                        text: '  ·  Còn lại ',
+                        style: TextStyle(color: scheme.onSurfaceVariant),
+                      ),
+                      const TextSpan(
+                        text: '7/10',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      TextSpan(
+                        text: ' thư hàng tháng',
+                        style: TextStyle(color: scheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                  style: context.textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+          Divider(height: 17, color: context.brand.borderSubtle),
+          Row(
+            children: [
+              Icon(
+                Icons.workspace_premium_outlined,
+                size: 18,
+                color: scheme.primary,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Nâng cấp Premium để gửi không giới hạn',
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

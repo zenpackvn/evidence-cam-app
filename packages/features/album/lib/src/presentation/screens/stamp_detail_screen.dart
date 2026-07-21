@@ -51,81 +51,100 @@ class StampDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    // BR-11: offline, the write actions report the blocked action rather than
+    // running. These wrappers fold that in so every entry point behaves alike.
+    final renameAction = onRename == null
+        ? null
+        : () => canMutate ? _promptRename(context) : onMutateBlocked?.call();
+    final deleteAction = onDelete == null
+        ? null
+        : () => canMutate ? _confirmDelete(context) : onMutateBlocked?.call();
+    final title = stamp.name.isNotEmpty
+        ? stamp.name
+        : _formatDate(stamp.createdAt);
+
     return Scaffold(
       backgroundColor: _ground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
         leading: BackButton(onPressed: onBack),
+        title: const _Wordmark(),
         actions: [
-          if (onShare != null)
-            IconButton(
-              onPressed: onShare,
-              icon: Icon(Icons.ios_share, color: scheme.onSurfaceVariant),
-            ),
-          if (onDelete != null)
-            IconButton(
-              // BR-11: offline, the button reports the blocked action rather
-              // than opening the confirm dialog.
-              onPressed: canMutate
-                  ? () => _confirmDelete(context)
-                  : onMutateBlocked,
-              icon: Icon(
-                Icons.delete_outline,
-                color: canMutate
-                    ? scheme.onSurfaceVariant
-                    : Theme.of(context).disabledColor,
-              ),
+          if (renameAction != null || deleteAction != null)
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_horiz, color: scheme.onSurface),
+              onSelected: (v) {
+                if (v == 'rename') renameAction?.call();
+                if (v == 'delete') deleteAction?.call();
+              },
+              itemBuilder: (_) => [
+                if (renameAction != null)
+                  const PopupMenuItem(
+                    value: 'rename',
+                    child: Text('Đổi tên tem'),
+                  ),
+                if (deleteAction != null)
+                  const PopupMenuItem(value: 'delete', child: Text('Xoá tem')),
+              ],
             ),
         ],
       ),
       body: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xxl,
+            AppSpacing.sm,
+            AppSpacing.xxl,
+            AppSpacing.xl,
+          ),
           child: Column(
             children: [
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.xxl),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFFAF1E6), Color(0xFFF2E4D2)],
-                  ),
-                  borderRadius: BorderRadius.circular(AppRadius.xxl),
-                  border: Border.all(color: scheme.outlineVariant),
-                ),
-                child: AspectRatio(
-                  aspectRatio: 3 / 4,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                    child: AppNetworkImage(imageUrl: stamp.imageUrl),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              _MetaCard(
-                stamp: stamp,
+              _HeroMat(imageUrl: stamp.imageUrl),
+              const SizedBox(height: AppSpacing.md),
+              _NameRow(
+                title: title,
+                onRename: renameAction,
                 canRename: canMutate,
-                onRename: onRename == null
-                    ? null
-                    : () => canMutate
-                          ? _promptRename(context)
-                          : onMutateBlocked?.call(),
               ),
-              const Spacer(),
+              const SizedBox(height: AppSpacing.md),
+              _InfoCard(createdAt: stamp.createdAt),
+              const SizedBox(height: AppSpacing.lg),
               if (onAttach != null)
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: onAttach,
-                    icon: const Icon(Icons.mail_outline),
-                    label: const Text('Gắn lên thư'),
-                  ),
+                _PrimaryAction(
+                  label: 'Gắn lên thư',
+                  icon: Icons.mail_outline,
+                  onTap: onAttach!,
                 ),
-              const SizedBox(height: AppSpacing.xxl),
+              if (onShare != null || deleteAction != null) ...[
+                const SizedBox(height: AppSpacing.sm + AppSpacing.xxs),
+                Row(
+                  children: [
+                    if (onShare != null)
+                      Expanded(
+                        child: _SecondaryAction(
+                          label: 'Chia sẻ',
+                          icon: Icons.ios_share,
+                          onTap: onShare!,
+                        ),
+                      ),
+                    if (onShare != null && deleteAction != null)
+                      const SizedBox(width: AppSpacing.sm + AppSpacing.xxs),
+                    if (deleteAction != null)
+                      Expanded(
+                        child: _SecondaryAction(
+                          label: 'Xóa',
+                          icon: Icons.delete_outline,
+                          onTap: deleteAction,
+                          danger: true,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: AppSpacing.sm),
             ],
           ),
         ),
@@ -209,74 +228,301 @@ class _RenameDialogState extends State<_RenameDialog> {
   }
 }
 
-class _MetaCard extends StatelessWidget {
-  const _MetaCard({required this.stamp, this.onRename, this.canRename = true});
+String _formatDate(DateTime d) =>
+    '${d.day.toString().padLeft(2, '0')}/'
+    '${d.month.toString().padLeft(2, '0')}/${d.year}';
 
-  final Stamp stamp;
+String _formatDateTime(DateTime d) =>
+    '${_formatDate(d)} · '
+    '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+
+/// The centred "StampMail" wordmark in the top nav (F02-S18 `wm`).
+class _Wordmark extends StatelessWidget {
+  const _Wordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = context.colorScheme.primary;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'StampMail',
+          style: context.textTheme.headlineSmall?.copyWith(
+            color: primary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        Icon(Icons.waves, size: 16, color: primary.withValues(alpha: 0.7)),
+      ],
+    );
+  }
+}
+
+/// The warm mat holding the stamp image (F02-S18 `heroMat`).
+class _HeroMat extends StatelessWidget {
+  const _HeroMat({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.xxl,
+        horizontal: AppSpacing.xl,
+      ),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFFAF1E6), Color(0xFFF2E4D2)],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        border: Border.all(color: context.colorScheme.outlineVariant),
+      ),
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: 3 / 4,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x2924211F),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              child: AppNetworkImage(imageUrl: imageUrl),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The big stamp name with a pencil affordance (F02-S18 `nm`). Tapping it
+/// renames (or reports the blocked action offline).
+class _NameRow extends StatelessWidget {
+  const _NameRow({
+    required this.title,
+    required this.onRename,
+    required this.canRename,
+  });
+
+  final String title;
   final VoidCallback? onRename;
-
-  /// SM-022 BR-11: offline the pencil affordance is greyed out; tapping the
-  /// name still fires [onRename], which reports the blocked action.
   final bool canRename;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    // SM-022 BR-03: no source label. BR-06/BR-08: show the stamp name, or the
-    // creation date when unnamed; tapping the name row renames it.
-    final title = stamp.name.isNotEmpty
-        ? stamp.name
-        : _formatDate(stamp.createdAt);
+    return InkWell(
+      onTap: onRename,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Flexible(
+            child: Text(
+              title,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: scheme.onSurface,
+              ),
+            ),
+          ),
+          if (onRename != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            Icon(
+              Icons.edit_outlined,
+              size: 20,
+              color: canRename
+                  ? scheme.primary
+                  : Theme.of(context).disabledColor,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The elevated info card — creation date/time (F02-S18 `info`). Tags aren't
+/// persisted for created stamps yet, so only the date row is shown.
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({required this.createdAt});
+
+  final DateTime createdAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.md,
+        horizontal: AppSpacing.lg,
+      ),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          InkWell(
-            onTap: onRename,
-            child: Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                if (onRename != null) ...[
-                  const SizedBox(width: AppSpacing.xs),
-                  Icon(
-                    Icons.edit_outlined,
-                    size: 16,
-                    color: canRename
-                        ? scheme.primary
-                        : Theme.of(context).disabledColor,
-                  ),
-                ],
-              ],
+          Icon(
+            Icons.calendar_today_outlined,
+            size: 18,
+            color: scheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            'Ngày tạo',
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Đã lưu ${_formatDate(stamp.createdAt)}',
-            style: context.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              _formatDateTime(createdAt),
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  String _formatDate(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/'
-      '${d.month.toString().padLeft(2, '0')}/${d.year}';
+/// The primary coral action ("Gắn lên thư") — F02-S18 `ab-Gắn lên`.
+class _PrimaryAction extends StatelessWidget {
+  const _PrimaryAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: scheme.primary,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Container(
+            height: 54,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 18, color: scheme.onPrimary),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  label,
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A secondary elevated action ("Chia sẻ" / "Xóa") — F02-S18 `r1`. [danger]
+/// tints it for the destructive delete.
+class _SecondaryAction extends StatelessWidget {
+  const _SecondaryAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final fg = danger ? scheme.error : scheme.onSurface;
+    return Material(
+      color: scheme.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Container(
+          height: 52,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x14000000),
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: danger ? scheme.error : scheme.tertiary,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                label,
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: fg,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

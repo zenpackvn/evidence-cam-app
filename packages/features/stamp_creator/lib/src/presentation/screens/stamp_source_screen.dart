@@ -15,11 +15,20 @@ import '../widgets/source_card.dart';
 // ponytail: copy is inline Vietnamese for now. Add l10n keys (smCreateSource*)
 // and swap to context.l10n once the wizard's screens settle.
 class StampSourceScreen extends StatelessWidget {
-  const StampSourceScreen({required this.onPicked, this.picker, super.key});
+  const StampSourceScreen({
+    required this.onPicked,
+    this.onBrowseLibrary,
+    this.picker,
+    super.key,
+  });
 
   /// Called with the picked photo file path when the user chooses a source and
   /// the OS picker returns an image.
   final ValueChanged<String> onPicked;
+
+  /// Called when the user taps "Chọn từ thư viện" — opens the in-app library
+  /// grid (SM-005 F02-S11). When null the card falls back to the OS picker.
+  final VoidCallback? onBrowseLibrary;
 
   /// Injected in the app; tests pass a fake. When null the screen resolves it
   /// from the widget tree's DI at tap time (kept out of the const constructor).
@@ -79,7 +88,9 @@ class StampSourceScreen extends StatelessWidget {
                 label: 'Chọn từ thư viện',
                 heroHeight: 130,
                 hero: const _HeroImage('source-gallery.png'),
-                onTap: () => _pick(context, ImageSource.gallery),
+                onTap:
+                    onBrowseLibrary ??
+                    () => _pick(context, ImageSource.gallery),
               ),
               const SizedBox(height: AppSpacing.lg),
               const _TipPanel(),

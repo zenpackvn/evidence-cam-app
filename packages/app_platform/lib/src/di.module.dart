@@ -9,6 +9,7 @@ import 'package:analytics/analytics.dart' as _i548;
 import 'package:app_platform/src/crash/crash_module.dart' as _i1043;
 import 'package:app_platform/src/crash/crash_reporter.dart' as _i608;
 import 'package:app_platform/src/media/camera_service.dart' as _i883;
+import 'package:app_platform/src/media/gallery_service.dart' as _i478;
 import 'package:app_platform/src/media/image_picker_service.dart' as _i315;
 import 'package:app_platform/src/media/media_module.dart' as _i888;
 import 'package:app_platform/src/media/video_player_service.dart' as _i430;
@@ -41,6 +42,7 @@ class AppPlatformPackageModule extends _i526.MicroPackageModule {
       () => crashModule.provideCrashReporter(),
     );
     gh.lazySingleton<_i883.CameraService>(() => _i883.CameraService());
+    gh.lazySingleton<_i478.GalleryService>(() => _i478.GalleryService());
     gh.lazySingleton<_i183.ImagePicker>(() => mediaModule.imagePicker);
     gh.lazySingleton<_i430.VideoPlayerService>(
       () => _i430.VideoPlayerService(),

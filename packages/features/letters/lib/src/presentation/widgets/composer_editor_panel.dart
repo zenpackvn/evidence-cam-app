@@ -4,7 +4,6 @@ import 'package:flutter_quill/flutter_quill.dart';
 
 import '../composer_catalog.dart';
 import 'editor_tab_item.dart';
-import 'font_chip_row.dart';
 import 'letter_format_bar.dart';
 
 /// The bottom editor sheet of the composer (F03-S04/S05/S06): the inline
@@ -48,10 +47,19 @@ class ComposerEditorPanel extends StatefulWidget {
   State<ComposerEditorPanel> createState() => _ComposerEditorPanelState();
 }
 
-enum _EditorTab { paper, align, ink, color, sticker }
+enum _EditorTab { font, paper, align, ink, color, sticker }
 
 class _ComposerEditorPanelState extends State<ComposerEditorPanel> {
-  _EditorTab _tab = _EditorTab.paper;
+  _EditorTab _tab = _EditorTab.font;
+
+  static const _tabs = <(_EditorTab, IconData, String)>[
+    (_EditorTab.font, Icons.text_fields, 'Phông chữ'),
+    (_EditorTab.paper, Icons.description_outlined, 'Giấy nền'),
+    (_EditorTab.align, Icons.format_align_center, 'Căn lề'),
+    (_EditorTab.ink, Icons.format_color_text, 'Màu chữ'),
+    (_EditorTab.color, Icons.format_color_fill, 'Màu nền'),
+    (_EditorTab.sticker, Icons.emoji_emotions_outlined, 'Sticker'),
+  ];
   int _stickerCategory = 0;
 
   static const _papers = <(String, int)>[
@@ -82,6 +90,15 @@ class _ComposerEditorPanelState extends State<ComposerEditorPanel> {
     'Doodle',
   ];
 
+  /// A distinct set per category so the tabs actually differ.
+  static const _stickerSets = <List<String>>[
+    ['❤️', '💕', '😍', '🥰', '💖', '💗', '💘', '😘', '💝', '💞'],
+    ['🌸', '🌷', '🌻', '🌹', '🍀', '🌿', '🍃', '🌺', '🌼', '🌱'],
+    ['✈️', '🧳', '🏖️', '🗺️', '📷', '🚗', '⛰️', '🏝️', '🎒', '🧭'],
+    ['✨', '⭐', '🌟', '💫', '🌠', '⚡', '🔮', '💎', '🎆', '🎇'],
+    ['✏️', '🖍️', '🎨', '✒️', '📝', '💭', '☁️', '☀️', '🌈', '🔖'],
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -101,39 +118,28 @@ class _ComposerEditorPanelState extends State<ComposerEditorPanel> {
           const SizedBox(height: AppSpacing.md),
           Divider(height: 1, color: context.brand.borderSubtle),
           const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              EditorTabItem(
-                icon: Icons.description_outlined,
-                label: 'Giấy nền',
-                active: _tab == _EditorTab.paper,
-                onTap: () => setState(() => _tab = _EditorTab.paper),
-              ),
-              EditorTabItem(
-                icon: Icons.format_align_center,
-                label: 'Căn lề',
-                active: _tab == _EditorTab.align,
-                onTap: () => setState(() => _tab = _EditorTab.align),
-              ),
-              EditorTabItem(
-                icon: Icons.format_color_text,
-                label: 'Màu chữ',
-                active: _tab == _EditorTab.ink,
-                onTap: () => setState(() => _tab = _EditorTab.ink),
-              ),
-              EditorTabItem(
-                icon: Icons.format_color_fill,
-                label: 'Màu nền',
-                active: _tab == _EditorTab.color,
-                onTap: () => setState(() => _tab = _EditorTab.color),
-              ),
-              EditorTabItem(
-                icon: Icons.emoji_emotions_outlined,
-                label: 'Sticker',
-                active: _tab == _EditorTab.sticker,
-                onTap: () => setState(() => _tab = _EditorTab.sticker),
-              ),
-            ],
+          // The panel's tabs — a horizontally-scrolling row so all six fit
+          // (Phông chữ / Giấy nền / Căn lề / Màu chữ / Màu nền / Sticker),
+          // matching the F03-S04 / F03-S05 `tabs` rows.
+          SizedBox(
+            height: 58,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.zero,
+              children: [
+                for (final (tab, icon, label) in _tabs)
+                  SizedBox(
+                    width: 76,
+                    child: EditorTabItem(
+                      icon: icon,
+                      label: label,
+                      active: _tab == tab,
+                      onTap: () => setState(() => _tab = tab),
+                      expand: false,
+                    ),
+                  ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.xl),
           // Khi bàn phím mở, panel bị bóp chiều cao — cho nội dung tab cuộn
@@ -141,12 +147,14 @@ class _ComposerEditorPanelState extends State<ComposerEditorPanel> {
           Flexible(
             child: SingleChildScrollView(
               child: switch (_tab) {
+                _EditorTab.font => _FontTab(
+                  selected: widget.selectedFont,
+                  onFont: widget.onFont,
+                ),
                 _EditorTab.paper => _PaperTab(
                   papers: _papers,
-                  selectedFont: widget.selectedFont,
                   selectedPaper: widget.selectedPaper,
                   ruled: widget.ruled,
-                  onFont: widget.onFont,
                   onPaper: widget.onPaper,
                   onRuled: widget.onRuled,
                 ),
@@ -160,6 +168,7 @@ class _ComposerEditorPanelState extends State<ComposerEditorPanel> {
                 _EditorTab.sticker => _StickerTab(
                   categories: _stickerCategories,
                   selected: _stickerCategory,
+                  stickers: _stickerSets[_stickerCategory],
                   onCategory: (i) => setState(() => _stickerCategory = i),
                 ),
               },
@@ -171,22 +180,72 @@ class _ComposerEditorPanelState extends State<ComposerEditorPanel> {
   }
 }
 
+/// The "Phông chữ" tab (F03-S04 `fontsGrid`): a grid of font chips rendered in
+/// each font so the user previews the look.
+class _FontTab extends StatelessWidget {
+  const _FontTab({required this.selected, required this.onFont});
+
+  final String? selected;
+  final ValueChanged<String> onFont;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        for (final font in letterFonts)
+          GestureDetector(
+            onTap: () => onFont(font),
+            child: Container(
+              width: 104,
+              height: 46,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(
+                  color: font == selected
+                      ? scheme.primary
+                      : scheme.outlineVariant,
+                  width: font == selected ? 1.5 : 1,
+                ),
+              ),
+              child: Text(
+                font.split(' ').first,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                // Render each chip in its own font so the preview matches.
+                style: letterFontStyle(
+                  font,
+                  TextStyle(
+                    fontSize: 16,
+                    color: font == selected ? scheme.primary : scheme.onSurface,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// The "Giấy nền" tab (F03-S05 `papersGrid`): the ruled toggle and the paper
+/// swatch grid.
 class _PaperTab extends StatelessWidget {
   const _PaperTab({
     required this.papers,
-    required this.selectedFont,
     required this.selectedPaper,
     required this.ruled,
-    required this.onFont,
     required this.onPaper,
     required this.onRuled,
   });
 
   final List<(String, int)> papers;
-  final String? selectedFont;
   final int? selectedPaper;
   final bool ruled;
-  final ValueChanged<String> onFont;
   final ValueChanged<int> onPaper;
   final ValueChanged<bool> onRuled;
 
@@ -195,15 +254,6 @@ class _PaperTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Font chữ',
-          style: context.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        FontChipRow(selected: selectedFont, onSelected: onFont),
-        const SizedBox(height: AppSpacing.lg),
         // SM-013 BR-08: ruled vs plain paper.
         Text(
           'Kẻ dòng',
@@ -490,11 +540,15 @@ class _StickerTab extends StatelessWidget {
   const _StickerTab({
     required this.categories,
     required this.selected,
+    required this.stickers,
     required this.onCategory,
   });
 
   final List<String> categories;
   final int selected;
+
+  /// The sticker set for the [selected] category (each category differs).
+  final List<String> stickers;
   final ValueChanged<int> onCategory;
 
   @override
@@ -520,25 +574,22 @@ class _StickerTab extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.md),
         // ponytail: tapping will drop a sticker on the letter once
-        // LetterContent carries decorations (rich-text SM-011).
+        // LetterContent carries decorations (rich-text SM-011). Each category
+        // shows its own set.
         Wrap(
           spacing: 6,
           runSpacing: 6,
           children: [
-            for (var i = 1; i <= 10; i++)
+            for (final sticker in stickers)
               Container(
                 width: 64,
                 height: 64,
-                clipBehavior: Clip.antiAlias,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: context.colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                child: Image.asset(
-                  'packages/feature_letters/assets/stickers/'
-                  'f3-stk-${i.toString().padLeft(2, '0')}.png',
-                  fit: BoxFit.contain,
-                ),
+                child: Text(sticker, style: const TextStyle(fontSize: 32)),
               ),
           ],
         ),

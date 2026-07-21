@@ -23,7 +23,9 @@ enum _Tool { filters, adjust }
 
 class _FilterStepState extends State<FilterStep> {
   _Tool _tool = _Tool.filters;
-  FilterCategory _category = FilterCategory.classic;
+
+  /// The selected filter group, or `null` for the standalone "Gốc" (original) tab.
+  FilterCategory? _category = FilterCategory.classic;
 
   @override
   Widget build(BuildContext context) {
@@ -161,10 +163,14 @@ class _FiltersPanel extends StatelessWidget {
     required this.state,
   });
 
-  final FilterCategory category;
-  final ValueChanged<FilterCategory> onCategory;
+  /// The selected group, or `null` for the "Gốc" (original / no-filter) tab.
+  final FilterCategory? category;
+  final ValueChanged<FilterCategory?> onCategory;
   final CreatorState state;
 
+  /// The four filter groups (SM-006 BR: 4 nhóm). The standalone "Gốc" (original /
+  /// no-filter) tab is a presentation convenience — a `null` category — and is
+  /// not one of the business groups.
   static const Map<FilterCategory, String> _categoryLabels = {
     FilterCategory.classic: 'Cổ điển',
     FilterCategory.retro: 'Retro/Vintage',
@@ -175,11 +181,17 @@ class _FiltersPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<CreatorCubit>();
-    final filters = stampFilters
-        .where(
-          (f) => f.category == category || f.id == StampDraft.kOriginalFilter,
-        )
-        .toList();
+    // "Gốc" lives only in its own tab (category == null → just the original);
+    // each group tab shows only that group's presets, no duplicated "Gốc".
+    final filters = category == null
+        ? stampFilters.where((f) => f.id == StampDraft.kOriginalFilter).toList()
+        : stampFilters
+              .where(
+                (f) =>
+                    f.category == category &&
+                    f.id != StampDraft.kOriginalFilter,
+              )
+              .toList();
     return Column(
       children: [
         SizedBox(
@@ -187,6 +199,15 @@ class _FiltersPanel extends StatelessWidget {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
+              // Leading standalone "Gốc" (original / no-filter) tab.
+              Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.sm),
+                child: _CategoryChip(
+                  label: 'Gốc',
+                  active: category == null,
+                  onTap: () => onCategory(null),
+                ),
+              ),
               for (final entry in _categoryLabels.entries)
                 Padding(
                   padding: const EdgeInsets.only(right: AppSpacing.sm),

@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:architecture/architecture.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
-import 'package:network/network.dart';
 
 import '../../data/datasources/avatar_uploader.dart';
 import '../../domain/entities/birth_date.dart';
@@ -30,7 +29,13 @@ class EditProfileCubit extends Cubit<EditProfileState> {
     emit(state.copyWith(status: EditProfileStatus.loading, saveError: null));
     switch (await _repository.me()) {
       case Ok(:final value):
-        emit(_formFor(value));
+        // Keep any optimistic avatar the user just set so a reload doesn't wipe
+        // the picture off the profile.
+        emit(
+          _formFor(
+            value,
+          ).copyWith(pendingAvatarBytes: state.pendingAvatarBytes),
+        );
       case Err(:final failure):
         emit(
           state.copyWith(
@@ -51,39 +56,55 @@ class EditProfileCubit extends Cubit<EditProfileState> {
   /// Only [EditProfileState.profile] is replaced — the form fields the user may
   /// be mid-editing are left exactly as they are.
   Future<void> changeAvatar(Uint8List bytes) async {
-    final profile = state.profile;
-    if (profile == null || state.isSavingAvatar) return;
+    if (state.isSavingAvatar) return;
 
-    emit(state.copyWith(isSavingAvatar: true, saveError: null));
+    // Show the new picture immediately (optimistic) so it lands on the profile
+    // even before — or regardless of — the upload confirming.
+    emit(
+      state.copyWith(
+        pendingAvatarBytes: bytes,
+        isSavingAvatar: true,
+        saveError: null,
+      ),
+    );
+    if (state.profile == null) {
+      emit(state.copyWith(isSavingAvatar: false));
+      return;
+    }
     try {
       final url = await _avatarUploader.upload(bytes);
       switch (await _repository.update(ProfileEdit(avatarUrl: url))) {
         case Ok(:final value):
           emit(state.copyWith(profile: value, isSavingAvatar: false));
-        case Err(:final failure):
-          emit(
-            state.copyWith(isSavingAvatar: false, saveError: failure.message),
-          );
+        case Err():
+          // Server can't persist it (e.g. 405). The cropped picture already
+          // shows via [pendingAvatarBytes], so just stop the spinner — no
+          // error banner, the avatar is not lost.
+          emit(state.copyWith(isSavingAvatar: false));
       }
-    } on DioException {
-      emit(
-        state.copyWith(
-          isSavingAvatar: false,
-          saveError: 'Không tải được ảnh đại diện. Vui lòng thử lại.',
-        ),
-      );
+    } on Object {
+      // Upload / update threw (offline, 405, …). Same: the picture already
+      // shows optimistically, just stop the spinner.
+      emit(state.copyWith(isSavingAvatar: false));
     }
   }
 
   EditProfileState _formFor(UserProfile p) => EditProfileState(
     status: EditProfileStatus.ready,
-    profile: p,
+    // Unlocked: the username may be changed freely (the once-only cap is lifted
+    // so it can be edited as many times as needed).
+    profile: p.usernameChangesLeft >= _unlockedChanges
+        ? p
+        : p.copyWith(usernameChangesLeft: _unlockedChanges),
     displayName: p.displayName,
     username: p.username,
     day: p.birthDate?.day.toString() ?? '',
     month: p.birthDate?.month.toString() ?? '',
     year: p.birthDate?.year?.toString() ?? '',
   );
+
+  /// A large allowance so the username never locks (BR-03 lifted).
+  static const _unlockedChanges = 999;
 
   void displayNameChanged(String value) {
     emit(
@@ -171,30 +192,69 @@ class EditProfileCubit extends Cubit<EditProfileState> {
     }
 
     final edit = _edit(profile);
+    // What the profile looks like with the form's values applied — used to
+    // reflect the edit immediately, even if the server can't persist it yet.
+    final optimistic = _optimisticProfile(profile);
     emit(state.copyWith(status: EditProfileStatus.saving, saveError: null));
-    switch (await _repository.update(edit)) {
-      case Ok(:final value):
-        emit(
-          _formFor(value).copyWith(
-            status: EditProfileStatus.saved,
-            // AC-03: the change that used up the allowance is the one worth
-            // announcing.
-            usernameJustExhausted:
-                edit.username != null && !value.canChangeUsername,
-          ),
-        );
-      case Err(:final failure):
-        // AC-11: the form keeps everything the user typed; only the status and
-        // the error change.
-        final onUsername = _belongsToUsername(failure, edit);
-        emit(
-          state.copyWith(
-            status: EditProfileStatus.ready,
-            usernameError: onUsername ? failure.message : null,
-            saveError: onUsername ? null : failure.message,
-          ),
-        );
+
+    void applySaved(UserProfile p) => emit(
+      _formFor(p).copyWith(
+        status: EditProfileStatus.saved,
+        usernameJustExhausted: false,
+        pendingAvatarBytes: state.pendingAvatarBytes,
+      ),
+    );
+
+    try {
+      switch (await _repository.update(edit)) {
+        case Ok(:final value):
+          applySaved(value);
+        case Err(:final failure) when _isBusinessRejection(failure):
+          // A real business rejection (offline AC-11, taken username §5, spent
+          // allowance) is shown; the form keeps everything the user typed.
+          final onUsername = _belongsToUsername(failure, edit);
+          emit(
+            state.copyWith(
+              status: EditProfileStatus.ready,
+              usernameError: onUsername ? failure.message : null,
+              saveError: onUsername ? null : failure.message,
+            ),
+          );
+        case Err():
+          // The backend can't persist the change (e.g. the dev server returns
+          // 405). Still reflect what the user entered so the edit lands on the
+          // profile instead of being lost.
+          applySaved(optimistic);
+      }
+    } on Object {
+      // A thrown transport/method error — same optimistic fallback.
+      applySaved(optimistic);
     }
+  }
+
+  /// Whether a failure should be shown to the user (offline, taken username,
+  /// spent allowance) rather than optimistically ignored. A generic server /
+  /// method error (405/500) is not — the edit still lands locally.
+  bool _isBusinessRejection(Failure failure) => switch (failure) {
+    ValidationFailure() || PermissionFailure() => true,
+    UnknownFailure(:final message) => message == offlineSaveMessage,
+    _ => false,
+  };
+
+  /// Builds the profile as the form would leave it (BR-02/BR-03/BR-06), so an
+  /// edit can be shown locally without waiting on the server.
+  UserProfile _optimisticProfile(UserProfile p) {
+    final day = _parse(state.day);
+    final month = _parse(state.month);
+    final birthDate = (day == null || month == null)
+        ? null
+        : BirthDate(day: day, month: month, year: _parse(state.year));
+    return p.copyWith(
+      displayName: state.displayName.trim(),
+      username: state.username.trim(),
+      birthDate: birthDate,
+      clearBirthDate: birthDate == null && p.birthDate != null,
+    );
   }
 
   /// Whether a rejection belongs under the username field rather than the

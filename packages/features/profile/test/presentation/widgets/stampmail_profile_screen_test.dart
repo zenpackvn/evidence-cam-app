@@ -46,9 +46,11 @@ void main() {
         );
 
         expect(find.text('Premium'), findsOneWidget);
-        expect(find.text('Hết hạn: 31/12/2026'), findsOneWidget);
-        // BR-11: Premium users never see the upgrade shortcut.
+        expect(find.text('Hết hạn 31/12/2026'), findsOneWidget);
+        // BR-11: Premium users never see the upgrade shortcut — they get the
+        // "Quản lý gói" manage card instead.
         expect(find.text('Nâng cấp Premium'), findsNothing);
+        expect(find.text('Quản lý gói'), findsOneWidget);
       },
     );
 

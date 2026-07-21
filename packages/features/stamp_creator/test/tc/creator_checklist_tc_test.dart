@@ -185,21 +185,27 @@ void main() {
 
   // ── 026 · giới hạn tháng ────────────────────────────────────────────────
   group('Monthly quota (TC-26-xxx)', () {
-    testWidgets('TC-26: 403 khi hết quota → thông báo nâng cấp Premium', (
-      tester,
-    ) async {
-      final cubit = _build(uploader: _FakeUploader(quota403: true));
-      await _mountBoundary(tester, cubit);
+    testWidgets(
+      'TC-26: 403 khi hết quota → cờ quotaReached (mở modal F02-S13)',
+      (
+        tester,
+      ) async {
+        final cubit = _build(uploader: _FakeUploader(quota403: true));
+        await _mountBoundary(tester, cubit);
 
-      await tester.runAsync(cubit.save);
+        await tester.runAsync(cubit.save);
 
-      expect(cubit.state.saved, isFalse);
-      expect(cubit.state.saving, isFalse);
-      expect(
-        cubit.state.errorMessage,
-        'Bạn đã đạt giới hạn tem tháng này. Nâng cấp Premium để tạo thêm.',
-      );
-      await cubit.close();
-    });
+        expect(cubit.state.saved, isFalse);
+        expect(cubit.state.saving, isFalse);
+        // Quota-reached is signalled via the flag (the wizard shows the modal),
+        // not as an error snackbar.
+        expect(cubit.state.quotaReached, isTrue);
+        expect(cubit.state.errorMessage, isNull);
+
+        cubit.resetQuota();
+        expect(cubit.state.quotaReached, isFalse);
+        await cubit.close();
+      },
+    );
   });
 }

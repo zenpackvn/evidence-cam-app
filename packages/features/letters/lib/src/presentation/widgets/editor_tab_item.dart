@@ -14,6 +14,7 @@ class EditorTabItem extends StatelessWidget {
     required this.label,
     required this.active,
     required this.onTap,
+    this.expand = true,
     super.key,
   });
 
@@ -22,38 +23,41 @@ class EditorTabItem extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
 
+  /// Wrap in [Expanded] for an equal-width row (default). Set false to use it in
+  /// a horizontally-scrolling tab bar where each item has its own fixed width.
+  final bool expand;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final color = active ? scheme.primary : scheme.onSurfaceVariant;
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.textTheme.labelSmall?.copyWith(
-                color: color,
-                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-              ),
+    final item = InkWell(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: active ? FontWeight.w600 : FontWeight.w500,
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Container(
-              width: 40,
-              height: 3,
-              decoration: BoxDecoration(
-                color: active ? scheme.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(2),
-              ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Container(
+            width: 40,
+            height: 3,
+            decoration: BoxDecoration(
+              color: active ? scheme.primary : Colors.transparent,
+              borderRadius: BorderRadius.circular(2),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+    return expand ? Expanded(child: item) : item;
   }
 }

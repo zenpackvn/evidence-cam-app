@@ -9,6 +9,7 @@ import '../../domain/stamp_draft.dart';
 import '../bloc/creator_cubit.dart';
 import '../bloc/creator_state.dart';
 import '../widgets/stamp_frame.dart';
+import 'premium_sticker_sheet.dart';
 
 /// SM-008/009 — "Trang trí con tem": the stamp preview over an elevated panel
 /// (F02-S07 `panel`) with three tabs — Sticker (a grid you tap to drop),
@@ -63,6 +64,8 @@ class _DecorateStepState extends State<DecorateStep> {
           onTab: (p) => setState(() => _panel = p),
           state: state,
           onPickSticker: _dropSticker,
+          onOpenPremium: () =>
+              showPremiumStickerSheet(context, draft: state.draft),
         ),
       ],
     );
@@ -83,17 +86,23 @@ class _DecoratePanel extends StatelessWidget {
     required this.onTab,
     required this.state,
     required this.onPickSticker,
+    required this.onOpenPremium,
   });
 
   final _Panel panel;
   final ValueChanged<_Panel> onTab;
   final CreatorState state;
   final ValueChanged<String> onPickSticker;
+  final VoidCallback onOpenPremium;
 
   @override
   Widget build(BuildContext context) {
     final Widget content = switch (panel) {
-      _Panel.stickers => _StickerGrid(onPick: onPickSticker),
+      _Panel.stickers => _StickerGrid(
+        onPick: onPickSticker,
+        showPremium: !state.isPremium,
+        onOpenPremium: onOpenPremium,
+      ),
       _Panel.borders => _BorderGrid(state: state),
       _Panel.paper => _PaperGrid(state: state),
     };
@@ -201,9 +210,17 @@ class _ToolCard extends StatelessWidget {
 }
 
 class _StickerGrid extends StatelessWidget {
-  const _StickerGrid({required this.onPick});
+  const _StickerGrid({
+    required this.onPick,
+    required this.showPremium,
+    required this.onOpenPremium,
+  });
 
   final ValueChanged<String> onPick;
+
+  /// Whether to append the locked "Mở sticker đặc biệt" (Premium) tile (SM-009).
+  final bool showPremium;
+  final VoidCallback onOpenPremium;
 
   @override
   Widget build(BuildContext context) {
@@ -224,6 +241,25 @@ class _StickerGrid extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Text(glyph, style: const TextStyle(fontSize: 22)),
+            ),
+          ),
+        // The locked Premium sticker-pack tile → opens the upsell sheet (F02-S12).
+        if (showPremium)
+          InkWell(
+            onTap: onOpenPremium,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Container(
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF6E3),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: const Color(0xFFF5BC58)),
+              ),
+              child: const Icon(
+                Icons.workspace_premium_outlined,
+                size: 18,
+                color: Color(0xFFE0A83A),
+              ),
             ),
           ),
       ],

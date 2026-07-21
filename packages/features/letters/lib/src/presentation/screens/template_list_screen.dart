@@ -1,6 +1,5 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 import '../composer_catalog.dart';
 import 'template_preview_screen.dart';
@@ -62,6 +61,13 @@ class TemplateListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isReply = replyToName != null && replyToName!.isNotEmpty;
+    // Split the catalog into the Free grid and the Premium row (F03-S01),
+    // keeping each template's global index for the preview route.
+    final free = <({int index, LetterTemplate template})>[];
+    final premium = <({int index, LetterTemplate template})>[];
+    for (final (i, t) in letterTemplates.indexed) {
+      (t.premium ? premium : free).add((index: i, template: t));
+    }
     // .pen F03-S01: back button, "Chọn template" 32px, a search row, the
     // category chips, then the template grid. (The .pen also draws the app tab
     // bar, but this is a pushed sub-screen with a back button, so it is omitted.)
@@ -121,36 +127,43 @@ class TemplateListScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
                 Expanded(
-                  child: GridView.builder(
-                    // Small fixed catalog — keep every card built so it never
-                    // drops out of the tree off-screen.
-                    scrollCacheExtent: const ScrollCacheExtent.pixels(1200),
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(
                       AppSpacing.xl,
-                      0,
+                      AppSpacing.md,
                       AppSpacing.xl,
                       AppSpacing.xl,
                     ),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _SectionHeader(title: 'Miễn phí'),
+                        const SizedBox(height: AppSpacing.sm),
+                        // The art is a landscape card (166×117) with the name and
+                        // FREE badge baked in; match its ratio so nothing (esp.
+                        // the title below) is cropped.
+                        _TemplateGrid(
+                          entries: free,
                           crossAxisCount: 2,
-                          mainAxisSpacing: AppSpacing.md,
-                          crossAxisSpacing: AppSpacing.md,
-                          childAspectRatio: 3 / 4,
+                          aspectRatio: 166 / 117,
+                          onOpen: (i) => _openPreview(context, i),
                         ),
-                    itemCount: letterTemplates.length,
-                    itemBuilder: (context, i) {
-                      final template = letterTemplates[i];
-                      return _TemplateCard(
-                        key: ValueKey('template-${template.id}'),
-                        template: template,
-                        // D15 revised: every template is Free.
-                        locked: false,
-                        onTap: () => _openPreview(context, i),
-                      );
-                    },
+                        if (premium.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.lg),
+                          const _SectionHeader(title: 'Premium 👑'),
+                          const SizedBox(height: AppSpacing.sm),
+                          // Premium cards are the smaller 108×65 art (crown + lock
+                          // baked in), three to a row.
+                          _TemplateGrid(
+                            entries: premium,
+                            crossAxisCount: 3,
+                            aspectRatio: 108 / 65,
+                            onOpen: (i) => _openPreview(context, i),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -291,6 +304,83 @@ class _CategoryChips extends StatelessWidget {
   }
 }
 
+/// A section header (`.pen` `cSecHeader`): the title on the left and a "Xem tất
+/// cả" affordance on the right. The catalog shows every template already, so the
+/// link is a visual match for F03-S01 rather than a navigation.
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Row(
+      children: [
+        Text(
+          title,
+          style: context.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: scheme.onSurface,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          'Xem tất cả',
+          style: context.textTheme.bodyMedium?.copyWith(
+            color: scheme.primary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Icon(Icons.chevron_right, size: 18, color: scheme.primary),
+      ],
+    );
+  }
+}
+
+/// A non-scrolling grid of template cards for a section (Free or Premium).
+class _TemplateGrid extends StatelessWidget {
+  const _TemplateGrid({
+    required this.entries,
+    required this.crossAxisCount,
+    required this.aspectRatio,
+    required this.onOpen,
+  });
+
+  final List<({int index, LetterTemplate template})> entries;
+  final int crossAxisCount;
+  final double aspectRatio;
+
+  /// Called with the template's global index in [letterTemplates].
+  final ValueChanged<int> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        mainAxisSpacing: AppSpacing.md,
+        crossAxisSpacing: AppSpacing.md,
+        childAspectRatio: aspectRatio,
+      ),
+      itemCount: entries.length,
+      itemBuilder: (context, i) {
+        final entry = entries[i];
+        return _TemplateCard(
+          key: ValueKey('template-${entry.template.id}'),
+          template: entry.template,
+          // The lock/crown is baked into the Premium art, so no overlay.
+          locked: false,
+          onTap: () => onOpen(entry.index),
+        );
+      },
+    );
+  }
+}
+
 class _TemplateCard extends StatelessWidget {
   const _TemplateCard({
     required this.template,
@@ -332,6 +422,8 @@ class _TemplateCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               if (template.artAsset != null)
+                // The art already carries the name, sample text and FREE badge
+                // (F03-S01); show it whole so the title below is never cut.
                 Image.asset(template.artAsset!, fit: BoxFit.cover)
               else
                 Center(
@@ -341,9 +433,6 @@ class _TemplateCard extends StatelessWidget {
                     color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
                   ),
                 ),
-              // .pen Content/TemplateCard is pure art — the template name is baked
-              // into the asset, so no overlaid label (it collided with the art's
-              // own caption).
               if (locked)
                 Positioned(
                   top: AppSpacing.md,

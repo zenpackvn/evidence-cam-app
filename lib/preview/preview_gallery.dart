@@ -350,6 +350,7 @@ List<GallerySection> buildGallerySections() => [
       'Gửi thư — Success',
       build: (_) => const SendSuccessScreen(
         linkUrl: 'https://stampmail.app/letter/Ab3dE9',
+        platforms: [SharePlatform.messenger],
         onDone: _noop,
       ),
     ),
