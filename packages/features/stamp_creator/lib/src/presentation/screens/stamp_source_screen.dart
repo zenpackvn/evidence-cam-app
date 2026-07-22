@@ -18,6 +18,7 @@ class StampSourceScreen extends StatelessWidget {
   const StampSourceScreen({
     required this.onPicked,
     this.onBrowseLibrary,
+    this.onCapture,
     this.picker,
     super.key,
   });
@@ -29,6 +30,11 @@ class StampSourceScreen extends StatelessWidget {
   /// Called when the user taps "Chọn từ thư viện" — opens the in-app library
   /// grid (SM-005 F02-S11). When null the card falls back to the OS picker.
   final VoidCallback? onBrowseLibrary;
+
+  /// Called when the user taps "Chụp ảnh mới" — opens the in-app full-screen
+  /// camera with the square stamp viewfinder. When null the card falls back to
+  /// the OS camera picker.
+  final VoidCallback? onCapture;
 
   /// Injected in the app; tests pass a fake. When null the screen resolves it
   /// from the widget tree's DI at tap time (kept out of the const constructor).
@@ -80,7 +86,7 @@ class StampSourceScreen extends StatelessWidget {
                 label: 'Chụp ảnh mới',
                 heroHeight: 183,
                 hero: const _HeroImage('source-camera.png'),
-                onTap: () => _pick(context, ImageSource.camera),
+                onTap: onCapture ?? () => _pick(context, ImageSource.camera),
               ),
               const SizedBox(height: AppSpacing.md + AppSpacing.xxs),
               SourceCard(

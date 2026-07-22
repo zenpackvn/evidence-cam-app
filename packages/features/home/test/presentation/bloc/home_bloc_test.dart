@@ -32,6 +32,7 @@ void main() {
         recentLetters: const [
           HomeLetterItem(
             id: 'l1',
+            letterId: 'l1',
             title: 'Thư gửi qua Zalo',
             meta: 'Đã mở · 20/05/2026',
             opened: true,

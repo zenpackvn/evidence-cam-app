@@ -5,6 +5,7 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i687;
 
+import 'package:feature_album/feature_album.dart' as _i237;
 import 'package:feature_letters/src/data/datasources/letters_remote_data_source.dart'
     as _i711;
 import 'package:feature_letters/src/data/datasources/letters_remote_module.dart'
@@ -34,7 +35,10 @@ class FeatureLettersPackageModule extends _i526.MicroPackageModule {
       ),
     );
     gh.factory<_i164.SentLettersCubit>(
-      () => _i164.SentLettersCubit(gh<_i384.LettersRepository>()),
+      () => _i164.SentLettersCubit(
+        gh<_i384.LettersRepository>(),
+        gh<_i237.StampsRepository>(),
+      ),
     );
   }
 }

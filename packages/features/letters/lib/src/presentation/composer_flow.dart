@@ -127,6 +127,11 @@ class _ComposerNavigatorState extends State<_ComposerNavigator> {
   Widget _provide(BuildContext context, Widget child) =>
       BlocProvider.value(value: context.read<ComposerCubit>(), child: child);
 
+  /// The stamp's display label: the name the user gave it (SM-022 BR-08),
+  /// falling back to "Tem của bạn" only when it was left unnamed.
+  String _stampLabel(Stamp stamp) =>
+      stamp.name.trim().isNotEmpty ? stamp.name.trim() : 'Tem của bạn';
+
   Future<void> _pushAttach(
     NavigatorState navigator,
     BuildContext context,
@@ -166,13 +171,25 @@ class _ComposerNavigatorState extends State<_ComposerNavigator> {
           context,
           Builder(
             builder: (innerContext) {
+              final cubit = innerContext.read<ComposerCubit>();
               final state = innerContext.watch<ComposerCubit>().state;
               final attached = state.stampIds.isEmpty
                   ? null
                   : list.where((s) => s.id == state.stampIds.first).firstOrNull;
               return LetterPreviewScreen(
                 content: state.content,
-                stampName: attached == null ? null : 'Tem của bạn',
+                // The full stamp layout, so the preview matches "Đính tem" — and
+                // the stamps stay adjustable here too.
+                stamps: list,
+                stampIds: state.stampIds,
+                placements: state.placements,
+                onMoveStamp: cubit.moveStamp,
+                onRotateStamp: cubit.rotateStamp,
+                stampName: attached == null
+                    ? null
+                    : (state.stampIds.length > 1
+                          ? '${state.stampIds.length} con tem'
+                          : _stampLabel(attached)),
                 stampImageUrl: attached?.imageUrl,
                 // "Chỉnh sửa" returns to the composer; "Đổi tem" to the stamp
                 // picker one step back; "Đổi mẫu" opens the template chooser.
@@ -222,7 +239,8 @@ class _ComposerNavigatorState extends State<_ComposerNavigator> {
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  for (final t in letterTemplates.where((t) => !t.premium))
+                  // Creator/dev build: all templates unlocked (no premium gate).
+                  for (final t in letterTemplates)
                     ListTile(
                       leading: t.artAsset != null
                           ? ClipRRect(
@@ -267,7 +285,7 @@ class _ComposerNavigatorState extends State<_ComposerNavigator> {
         builder: (_) => _provide(
           context,
           SendScreen(
-            stampName: stamp == null ? null : 'Tem của bạn',
+            stampName: stamp == null ? null : _stampLabel(stamp),
             stampImageUrl: stamp?.imageUrl,
             onBack: navigator.pop,
             onSent: (platform) =>
@@ -289,16 +307,17 @@ class _ComposerNavigatorState extends State<_ComposerNavigator> {
     if (link == null) return;
     final url = link.shareUrl(linkBaseUrl);
     onOpenShare(platform, url);
-    // "gửi như nào thì hiện như vậy": the success screen echoes the exact
-    // platform(s) the letter went to, plus its template and attached stamp —
-    // none of it is hard-coded.
+    // "gửi như nào thì hiện như vậy" (fc2065): the success screen echoes the
+    // exact platform(s) sent to, the letter's title, and its attached stamp.
     navigator.push(
       MaterialPageRoute<void>(
         builder: (_) => SendSuccessScreen(
           linkUrl: url,
           platforms: [platform],
-          letterTitle: templateById(state.content.templateId).label,
-          stampName: stamp == null ? null : 'Tem của bạn',
+          letterTitle: state.content.title.isNotEmpty
+              ? state.content.title
+              : templateById(state.content.templateId).label,
+          stampName: stamp == null ? null : _stampLabel(stamp),
           stampImageUrl: stamp?.imageUrl,
           onDone: onClose,
         ),

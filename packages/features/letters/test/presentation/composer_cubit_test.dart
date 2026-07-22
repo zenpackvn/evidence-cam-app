@@ -40,6 +40,12 @@ class _FakeLettersRepository implements LettersRepository {
 
   @override
   Future<Result<List<SentLetter>>> sent() async => const Ok([]);
+
+  @override
+  Future<LetterContent?> cachedContent(String letterId) async => null;
+
+  @override
+  Future<CachedLetter?> cachedMeta(String letterId) async => null;
 }
 
 void main() {

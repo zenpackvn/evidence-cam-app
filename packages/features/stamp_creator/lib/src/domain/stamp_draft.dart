@@ -85,6 +85,22 @@ class Adjustments {
   );
 }
 
+/// The stamp's edge, drawn after old postage stamps (SM-005/SM-009). Chosen in
+/// the camera and kept through the whole wizard so every step — filter, decorate,
+/// preview — shows the same tem; also selectable on the decorate "Viền tem"
+/// panel.
+enum StampFrameStyle { perforated, sawtooth, scalloped, classic, dashed }
+
+extension StampFrameStyleLabel on StampFrameStyle {
+  String get label => switch (this) {
+    StampFrameStyle.perforated => 'Răng tròn',
+    StampFrameStyle.sawtooth => 'Lưỡi cưa',
+    StampFrameStyle.scalloped => 'Sò điệp',
+    StampFrameStyle.classic => 'Cổ điển',
+    StampFrameStyle.dashed => 'Nét đứt',
+  };
+}
+
 /// The immutable stamp being composed across the wizard. Every edit returns a
 /// new draft (no in-place mutation), so going back a step never corrupts the
 /// original (SM-005 BR-06 / SM-006 BR-06: the source image is preserved).
@@ -96,6 +112,7 @@ class StampDraft {
     this.adjustments = const Adjustments(),
     this.stickers = const [],
     this.borderId = kDefaultBorder,
+    this.frameStyle = StampFrameStyle.perforated,
     this.paperColor,
   });
 
@@ -114,6 +131,10 @@ class StampDraft {
   /// Selected border style (SM-009).
   final String borderId;
 
+  /// The tem edge drawn around the picture (SM-005), chosen in the camera and
+  /// editable on the decorate step.
+  final StampFrameStyle frameStyle;
+
   /// Stamp paper/background colour (SM-009 "Nền"); null = the default white
   /// stamp base.
   final int? paperColor;
@@ -127,6 +148,7 @@ class StampDraft {
     Adjustments? adjustments,
     List<StickerPlacement>? stickers,
     String? borderId,
+    StampFrameStyle? frameStyle,
     int? paperColor,
   }) => StampDraft(
     imagePath: imagePath ?? this.imagePath,
@@ -134,6 +156,7 @@ class StampDraft {
     adjustments: adjustments ?? this.adjustments,
     stickers: stickers ?? this.stickers,
     borderId: borderId ?? this.borderId,
+    frameStyle: frameStyle ?? this.frameStyle,
     paperColor: paperColor ?? this.paperColor,
   );
 }

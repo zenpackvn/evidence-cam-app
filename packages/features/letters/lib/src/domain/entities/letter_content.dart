@@ -30,6 +30,8 @@ class LetterContent {
   const LetterContent({
     required this.templateId,
     required this.text,
+    this.title = '',
+    this.recipient = '',
     this.delta,
     this.paperColor,
     this.fontFamily,
@@ -39,6 +41,8 @@ class LetterContent {
   factory LetterContent.fromJson(Map<String, dynamic> json) => LetterContent(
     templateId: (json['template_id'] as String?) ?? 'classic',
     text: (json['text'] as String?) ?? '',
+    title: (json['title'] as String?) ?? '',
+    recipient: (json['recipient'] as String?) ?? '',
     // Absent (old letter) or malformed → null, and [richDelta] rebuilds the
     // body from `text` rather than failing to open the letter.
     delta: deltaFromJson(json['delta']),
@@ -65,6 +69,14 @@ class LetterContent {
   }
 
   final String templateId;
+
+  /// A short, user-given title for the letter (e.g. "Chúc mừng sinh nhật"),
+  /// shown on the Home "Thư gần đây" card. Empty when the writer left it blank.
+  final String title;
+
+  /// Who the letter is for (the name the sender typed at send time), shown as
+  /// "Gửi đến …" on the Home card. Empty when not given.
+  final String recipient;
 
   /// The body as plain text — the cross-reader fallback, and what the
   /// character limit counts (BR-04). Always the plain-text projection of
@@ -98,6 +110,8 @@ class LetterContent {
     return LetterContent(
       templateId: templateId,
       text: plainTextFromDelta(clipped),
+      title: title,
+      recipient: recipient,
       delta: clipped,
       paperColor: paperColor,
       fontFamily: fontFamily,
@@ -114,6 +128,8 @@ class LetterContent {
     return LetterContent(
       templateId: templateId,
       text: clipped,
+      title: title,
+      recipient: recipient,
       paperColor: paperColor,
       fontFamily: fontFamily,
       ruled: ruled,
@@ -125,12 +141,16 @@ class LetterContent {
   /// sync.
   LetterContent copyWith({
     String? templateId,
+    String? title,
+    String? recipient,
     int? paperColor,
     String? fontFamily,
     bool? ruled,
   }) => LetterContent(
     templateId: templateId ?? this.templateId,
     text: text,
+    title: title ?? this.title,
+    recipient: recipient ?? this.recipient,
     delta: delta,
     paperColor: paperColor ?? this.paperColor,
     fontFamily: fontFamily ?? this.fontFamily,
@@ -141,6 +161,8 @@ class LetterContent {
     'template_id': templateId,
     // Always written: the reader that does not know `delta` still gets words.
     'text': text,
+    if (title.isNotEmpty) 'title': title,
+    if (recipient.isNotEmpty) 'recipient': recipient,
     if (delta != null) 'delta': delta,
     if (paperColor != null) 'paper_color': paperColor,
     if (fontFamily != null) 'font_family': fontFamily,

@@ -522,80 +522,145 @@ class _LetterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
         decoration: BoxDecoration(
           color: context.brand.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: context.brand.borderSubtle),
         ),
+        // Three parts (F01-S16): the envelope with its occasion symbol on the
+        // left, the letter's title in the middle, and its stamp on the right.
         child: Row(
           children: [
-            if (letter.envelopeImageUrl != null)
-              AppNetworkImage(
-                imageUrl: letter.envelopeImageUrl!,
-                width: 58,
-                height: 48,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              )
-            else
-              Container(
-                width: 58,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: scheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Center(
-                  child: FaIcon(
-                    letter.opened
-                        ? FontAwesomeIcons.envelopeOpenText
-                        : FontAwesomeIcons.envelope,
-                    size: 18,
-                    color: scheme.primary,
-                  ),
-                ),
-              ),
+            _OccasionEnvelope(icon: letter.icon),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     letter.title,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                     style: context.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Text(letter.meta, style: context.textTheme.bodySmall),
+                  Text(
+                    letter.meta,
+                    textAlign: TextAlign.center,
+                    style: context.textTheme.bodySmall,
+                  ),
                 ],
               ),
             ),
-            if (letter.stampImageUrl != null) ...[
-              const SizedBox(width: AppSpacing.md),
-              AppNetworkImage(
-                imageUrl: letter.stampImageUrl!,
-                width: 38,
-                height: 42,
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ],
             const SizedBox(width: AppSpacing.md),
-            FaIcon(
-              FontAwesomeIcons.chevronRight,
-              size: 18,
-              color: scheme.outline,
-            ),
+            _StampThumb(imageUrl: letter.stampImageUrl),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Left tile: an OPEN letter with the occasion symbol inside it — a little
+/// white note carrying the emoji (🎂 for a birthday…) rising out of an open
+/// envelope, matching the demo's per-letter picture (F01-S16).
+class _OccasionEnvelope extends StatelessWidget {
+  const _OccasionEnvelope({required this.icon});
+
+  final String icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Container(
+      width: 54,
+      height: 54,
+      decoration: BoxDecoration(
+        color: context.brand.softPeach,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.brand.borderSubtle),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // The open envelope.
+          Positioned(
+            bottom: 6,
+            child: FaIcon(
+              FontAwesomeIcons.solidEnvelopeOpen,
+              size: 34,
+              color: scheme.primary.withValues(alpha: 0.5),
+            ),
+          ),
+          // The note rising out of it, showing the occasion symbol.
+          Positioned(
+            top: 4,
+            child: Container(
+              width: 30,
+              height: 26,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(color: context.brand.borderSubtle),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x22000000),
+                    blurRadius: 3,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Text(icon, style: const TextStyle(fontSize: 16)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Right tile: the letter's attached stamp, framed like a postage stamp. Shows
+/// a soft placeholder when the letter has no cached stamp.
+class _StampThumb extends StatelessWidget {
+  const _StampThumb({required this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = imageUrl;
+    if (url == null) {
+      return Container(
+        width: 46,
+        height: 54,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: context.brand.softPeach,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: context.brand.borderSubtle),
+        ),
+        child: FaIcon(
+          FontAwesomeIcons.stamp,
+          size: 18,
+          color: context.colorScheme.outline,
+        ),
+      );
+    }
+    // Show the stamp exactly as the user made it — no extra frame or crop
+    // (BoxFit.contain), so its own design/border stays intact.
+    return SizedBox(
+      width: 52,
+      height: 56,
+      child: AppNetworkImage(imageUrl: url, fit: BoxFit.contain),
     );
   }
 }

@@ -1,9 +1,11 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:feature_album/feature_album.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/letter_content.dart';
+import '../bloc/composer_state.dart';
 import '../composer_catalog.dart';
-import '../widgets/letter_paper.dart';
+import '../widgets/stamped_letter_preview.dart';
 
 /// F03-S09 — "Xem trước thư": the rendered letter over an info card (template,
 /// attached stamp, recipient) with "Chỉnh sửa" / "Gửi thư" pills. The
@@ -14,6 +16,11 @@ class LetterPreviewScreen extends StatelessWidget {
     required this.content,
     required this.onEdit,
     required this.onSend,
+    this.stamps = const [],
+    this.stampIds = const [],
+    this.placements = const {},
+    this.onMoveStamp,
+    this.onRotateStamp,
     this.stampName,
     this.stampImageUrl,
     this.onChangeTemplate,
@@ -25,7 +32,19 @@ class LetterPreviewScreen extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onSend;
 
-  /// Attached stamp summary (name + preview); the row hides when null.
+  /// The attached stamps, their ids, and their placement on the letter — the
+  /// same data the "Đính tem" screen set, so the preview shows the identical
+  /// layout instead of a fixed stamp.
+  final List<Stamp> stamps;
+  final List<String> stampIds;
+  final Map<String, StampPlacement> placements;
+
+  /// When provided, the stamps stay adjustable here too — drag to move,
+  /// double-tap to rotate — writing straight back to the composer.
+  final void Function(String id, double dx, double dy)? onMoveStamp;
+  final ValueChanged<String>? onRotateStamp;
+
+  /// Attached stamp summary (name + preview) for the info card; hidden if null.
   final String? stampName;
   final String? stampImageUrl;
 
@@ -84,53 +103,29 @@ class LetterPreviewScreen extends StatelessWidget {
               // (SM-015 BR-01).
               // Fills the space between the header and the info card so the
               // card + buttons sit at the bottom (no empty gap).
+              // The letter with the attached stamps laid out exactly as on the
+              // "Đính tem" screen (SM-015 BR-01) — same widget, same placements,
+              // and still adjustable when the callbacks are wired.
               Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: OverflowBox(
-                          alignment: Alignment.topCenter,
-                          minHeight: 0,
-                          maxHeight: double.infinity,
-                          child: AbsorbPointer(
-                            child: ReadOnlyLetterPaper(content: content),
-                          ),
-                        ),
-                      ),
-                      // The attached stamp shown on the letter (top-right, like
-                      // a postage stamp).
-                      if (stampImageUrl != null)
-                        Positioned(
-                          top: AppSpacing.lg,
-                          right: AppSpacing.lg,
-                          child: Container(
-                            width: 58,
-                            height: 62,
-                            clipBehavior: Clip.antiAlias,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                              border: Border.all(color: Colors.white, width: 3),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x33000000),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: AppNetworkImage(
-                              imageUrl: stampImageUrl!,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                child: StampedLetterPreview(
+                  content: content,
+                  stamps: stamps,
+                  stampIds: stampIds,
+                  placements: placements,
+                  onMove: onMoveStamp,
+                  onRotate: onRotateStamp,
                 ),
               ),
+              if (onMoveStamp != null && stampIds.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Kéo thả để di chuyển  ·  Nhấn đúp để xoay tem',
+                  textAlign: TextAlign.center,
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               Container(
                 padding: const EdgeInsets.symmetric(

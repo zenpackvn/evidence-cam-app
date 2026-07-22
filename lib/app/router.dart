@@ -122,6 +122,25 @@ class CreateStampRoute extends GoRouteData with $CreateStampRoute {
     onPicked: (path) => _openPhotoPreview(context, path),
     // "Chọn từ thư viện" opens the in-app library grid (SM-005 F02-S11).
     onBrowseLibrary: () => _openLibrary(context),
+    // "Chụp ảnh mới" opens the in-app camera with the square stamp viewfinder.
+    onCapture: () => _openCamera(context),
+  );
+}
+
+// SM-005 F02-S02: the in-app full-screen camera with the square stamp
+// viewfinder. On capture it flows into the same "Xem trước ảnh" → wizard path.
+void _openCamera(BuildContext context) {
+  Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => CameraCaptureScreen(
+        camera: GetIt.instance<CameraService>(),
+        onCaptured: (path, frame) {
+          Navigator.of(context).pop();
+          _openPhotoPreview(context, path, frame);
+        },
+        onClose: () => Navigator.of(context).maybePop(),
+      ),
+    ),
   );
 }
 
@@ -141,25 +160,39 @@ void _openLibrary(BuildContext context) {
 
 // SM-005 (F02-S03): confirm/zoom the picked photo before the wizard. "Xác nhận"
 // advances to the filter step; "Hủy" returns to the source picker.
-void _openPhotoPreview(BuildContext context, String imagePath) {
+void _openPhotoPreview(
+  BuildContext context,
+  String imagePath, [
+  StampFrameStyle? frame,
+]) {
   Navigator.of(context).push<void>(
     MaterialPageRoute(
       builder: (_) => PhotoPreviewScreen(
         imagePath: imagePath,
-        onConfirm: () => _openWizard(context, imagePath),
+        frameStyle: frame,
+        // The user may have re-picked the tem edge and zoomed/positioned the
+        // photo — carry the chosen edge and the cropped image into the wizard.
+        onConfirm: (chosenFrame, croppedPath) =>
+            _openWizard(context, croppedPath, chosenFrame),
         onCancel: () => Navigator.of(context).maybePop(),
       ),
     ),
   );
 }
 
-void _openWizard(BuildContext context, String imagePath) {
+void _openWizard(
+  BuildContext context,
+  String imagePath, [
+  StampFrameStyle? frame,
+]) {
   Navigator.of(context).push<void>(
     MaterialPageRoute(
       builder: (_) => StampWizardScreen(
         imagePath: imagePath,
-        // ponytail: isPremium is false until the entitlement reader is wired
-        // (C6). Locked filters/borders gate on this.
+        frameStyle: frame ?? StampFrameStyle.perforated,
+        // Creator/dev build: everything unlocked — no locked filters/borders/
+        // stickers in the wizard.
+        isPremium: true,
         onExit: () => Navigator.of(context).maybePop(),
         onViewAlbum: () => const HomeRoute().go(context),
         onCreateAnother: () => const CreateStampRoute().go(context),
@@ -323,6 +356,7 @@ class SentLettersRoute extends GoRouteData with $SentLettersRoute {
   Widget build(BuildContext context, GoRouterState state) => SentLettersPage(
     createCubit: () => GetIt.instance<SentLettersCubit>(),
     onCompose: () => const LetterComposeRoute().push<void>(context),
+    onView: (sent) => _openLetterContent(context, sent.link.letterId),
   );
 }
 
@@ -383,8 +417,11 @@ class _StampMailProfilePage extends StatefulWidget {
 }
 
 class _StampMailProfilePageState extends State<_StampMailProfilePage> {
-  late final Future<Result<Entitlement>> _entitlement =
-      GetIt.instance<EntitlementReader>()();
+  // Creator/dev build: unlock everything — treat the user as Premium so no
+  // filter / border / sticker / screen is gated across any flow.
+  late final Future<Result<Entitlement>> _entitlement = Future.value(
+    const Ok(Entitlement(isPremium: true)),
+  );
 
   // The single profile cubit shared with the "Sửa hồ sơ" screen, so an edit
   // (name / username / avatar) reflects on this screen the moment it is saved.
@@ -710,9 +747,23 @@ class HomeRoute extends GoRouteData with $HomeRoute {
     onOpenAlbum: () => const AlbumRoute().go(context),
     onOpenLetters: () => const SentLettersRoute().go(context),
     // Tapping a recent stamp opens the Album (where it can be viewed/edited);
-    // tapping a recent letter opens the sent-letters list.
+    // tapping a recent letter opens that letter's composed content.
     onOpenStamp: (_) => const AlbumRoute().go(context),
-    onOpenLetter: (_) => const SentLettersRoute().go(context),
+    onOpenLetter: (letter) => _openLetterContent(context, letter.letterId),
+  );
+}
+
+/// Opens a read-only view of a letter the user composed, loading its body from
+/// the local cache the letters repo stashed at create time (the backend has no
+/// "read my letter by id" endpoint, so this only covers on-device letters).
+void _openLetterContent(BuildContext context, String letterId) {
+  Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => SentLetterViewScreen(
+        loadContent: () =>
+            GetIt.instance<LettersRepository>().cachedContent(letterId),
+      ),
+    ),
   );
 }
 

@@ -58,8 +58,28 @@ class _SendScreenState extends State<SendScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ComposerCubit, ComposerState>(
-      listenWhen: (prev, next) => next.phase == ComposerPhase.sent,
-      listener: (context, state) => widget.onSent(_platform),
+      listenWhen: (prev, next) =>
+          next.phase == ComposerPhase.sent || next.phase == ComposerPhase.error,
+      listener: (context, state) {
+        if (state.phase == ComposerPhase.sent) {
+          widget.onSent(_platform);
+        } else if (state.phase == ComposerPhase.error) {
+          // Show the real reason (quota, auth, network…) instead of a silent
+          // dead button.
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.errorMessage?.isNotEmpty ?? false
+                      ? 'Không gửi được: ${state.errorMessage}'
+                      : 'Không gửi được thư. Kiểm tra mạng rồi thử lại.',
+                ),
+                duration: const Duration(seconds: 5),
+              ),
+            );
+        }
+      },
       builder: (context, state) {
         final sending = state.phase == ComposerPhase.sending;
         return Scaffold(

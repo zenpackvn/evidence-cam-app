@@ -8,6 +8,7 @@ import '../../domain/filters.dart';
 import '../../domain/stamp_draft.dart';
 import '../bloc/creator_cubit.dart';
 import '../bloc/creator_state.dart';
+import '../widgets/stamp_frame.dart';
 
 /// SM-006 — "Chọn bộ lọc màu" + "Chỉnh ảnh thủ công". A live-filtered preview
 /// over a tool switcher: the "Bộ lọc" tab shows category chips + filter
@@ -35,7 +36,12 @@ class _FilterStepState extends State<FilterStep> {
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: _PreviewPhoto(draft: state.draft),
+            // The framed tem (same as "Xem trước ảnh" / decorate) so the live
+            // filter is seen inside the stamp. On a warm backdrop so the white
+            // stamp stands out from the cream ground.
+            child: Center(
+              child: StampBackdrop(child: StampFrame(draft: state.draft)),
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -55,31 +61,6 @@ class _FilterStepState extends State<FilterStep> {
               : _AdjustPanel(state: state),
         ),
       ],
-    );
-  }
-}
-
-/// The live-filtered photo preview (F02-S04 `photo`): the raw photo with the
-/// selected filter + adjustments applied, in a plain rounded rect — no stamp
-/// frame here (the perforated frame comes in at the decorate step).
-class _PreviewPhoto extends StatelessWidget {
-  const _PreviewPhoto({required this.draft});
-
-  final StampDraft draft;
-
-  @override
-  Widget build(BuildContext context) {
-    final file = File(draft.imagePath);
-    var photo = file.existsSync()
-        ? Image.file(file, fit: BoxFit.cover) as Widget
-        : ColoredBox(color: context.colorScheme.secondaryContainer);
-    final filter = effectiveColorFilter(draft);
-    if (filter != null) {
-      photo = ColorFiltered(colorFilter: filter, child: photo);
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: SizedBox.expand(child: photo),
     );
   }
 }

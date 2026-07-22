@@ -1,5 +1,5 @@
-// SM-005 (F02-S03): the "Xem trước ảnh" step confirms/zooms the picked photo
-// before the filter wizard. It shows the zoom badge and Hủy / Xác nhận actions.
+// SM-005 (F02-S03): the "Xem trước ảnh" step frames the picked photo in the tem
+// (swipe to change the edge) before the filter wizard. It shows Hủy / Xác nhận.
 import 'package:app_ui/app_ui.dart';
 import 'package:feature_stamp_creator/feature_stamp_creator.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 Future<void> _pump(
   WidgetTester tester, {
-  required VoidCallback onConfirm,
+  required void Function(StampFrameStyle, String) onConfirm,
   required VoidCallback onCancel,
 }) async {
   tester.view.physicalSize = const Size(393, 852);
@@ -32,11 +32,9 @@ void main() {
   testWidgets('renders the preview copy, zoom badge and actions', (
     tester,
   ) async {
-    await _pump(tester, onConfirm: () {}, onCancel: () {});
+    await _pump(tester, onConfirm: (_, _) {}, onCancel: () {});
 
-    expect(find.text('Xem trước ảnh'), findsOneWidget);
-    // The zoom badge starts at 1.0x.
-    expect(find.text('1.0x'), findsOneWidget);
+    // No instructional text on this screen — just the actions.
     expect(find.text('Hủy'), findsOneWidget);
     expect(find.text('Xác nhận'), findsOneWidget);
   });
@@ -46,7 +44,7 @@ void main() {
     var cancelled = false;
     await _pump(
       tester,
-      onConfirm: () => confirmed = true,
+      onConfirm: (_, _) => confirmed = true,
       onCancel: () => cancelled = true,
     );
 

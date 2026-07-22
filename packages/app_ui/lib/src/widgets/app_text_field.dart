@@ -74,6 +74,12 @@ class AppTextField extends StatelessWidget {
       readOnly: readOnly,
       autofocus: autofocus,
       obscureText: obscureText,
+      // Android auto-correct commits the composing text mid-word, which stops
+      // Vietnamese Telex/VNI from forming diacritics ("as" stays "as" instead
+      // of becoming "á"). Off across the app — auto-correct mangles Vietnamese
+      // anyway. Suggestions stay on: the keyboard's Vietnamese engine needs
+      // them to compose.
+      autocorrect: false,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       textCapitalization: textCapitalization,

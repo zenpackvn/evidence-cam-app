@@ -25,8 +25,14 @@ class CreatorCubit extends Cubit<CreatorState> {
     required String imagePath,
     required this._uploader,
     required this._stamps,
+    StampFrameStyle frameStyle = StampFrameStyle.perforated,
     bool isPremium = false,
-  }) : super(CreatorState.initial(imagePath).copyWith(isPremium: isPremium));
+  }) : super(
+         CreatorState.initial(imagePath).copyWith(
+           isPremium: isPremium,
+           draft: StampDraft(imagePath: imagePath, frameStyle: frameStyle),
+         ),
+       );
 
   final StampUploader _uploader;
   final StampsRepository _stamps;
@@ -99,6 +105,10 @@ class CreatorCubit extends Cubit<CreatorState> {
 
   void selectBorder(String borderId) =>
       emit(state.copyWith(draft: state.draft.copyWith(borderId: borderId)));
+
+  /// SM-005/SM-009 — the tem edge shown on every step of the wizard.
+  void selectFrameStyle(StampFrameStyle frame) =>
+      emit(state.copyWith(draft: state.draft.copyWith(frameStyle: frame)));
 
   /// SM-009 "Nền": sets the stamp's paper/background colour.
   void selectPaper(int color) =>

@@ -131,7 +131,10 @@ class StampsSyncAdapter implements SyncRemoteAdapter<StampEntity> {
     row
       ..imageUrl = dto.imageUrl
       ..thumbUrl = dto.thumbUrl.isEmpty ? null : dto.thumbUrl
-      ..name = dto.name
+      // Keep the local user-set name (SM-022 BR-08) when the server returns an
+      // empty one — the backend doesn't persist/echo the name yet, and a sync
+      // must not wipe the name the user typed in the wizard.
+      ..name = dto.name.isEmpty ? row.name : dto.name
       ..source = dto.source
       ..senderName = dto.senderName.isEmpty ? null : dto.senderName
       ..senderUid = dto.senderUid.isEmpty ? null : dto.senderUid

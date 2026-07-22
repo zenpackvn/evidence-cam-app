@@ -12,7 +12,7 @@ import 'template_preview_screen.dart';
 /// When [replyToName] is set the screen is entered as a reply (SM-020): the
 /// original sender is shown as the recipient so the user doesn't re-enter it
 /// (BR-01).
-class TemplateListScreen extends StatelessWidget {
+class TemplateListScreen extends StatefulWidget {
   const TemplateListScreen({
     required this.onPick,
     this.isPremium = false,
@@ -31,7 +31,43 @@ class TemplateListScreen extends StatelessWidget {
   /// locked template's preview (BR-03). No-op when null.
   final VoidCallback? onUpgrade;
 
+  @override
+  State<TemplateListScreen> createState() => _TemplateListScreenState();
+}
+
+class _TemplateListScreenState extends State<TemplateListScreen> {
   static const _ground = Color(0xFFFBF5EC);
+
+  /// The active category chip; filters the grids below (F03-S01). "Tất cả"
+  /// shows every template.
+  String _category = _CategoryChips.labels.first;
+
+  final _searchController = TextEditingController();
+
+  /// The free-text search query; filters templates by name/description.
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  /// Whether [t] belongs to [category], matched from its name/description —
+  /// templates carry no explicit category, so a birthday template ("Chúc mừng
+  /// sinh nhật") shows under both "Sinh nhật" and "Chúc mừng".
+  bool _matches(LetterTemplate t, String category) {
+    if (category == _CategoryChips.labels.first) return true; // "Tất cả"
+    final hay = '${t.label} ${t.id} ${t.description}'.toLowerCase();
+    bool has(List<String> keywords) => keywords.any(hay.contains);
+    return switch (category) {
+      'Sinh nhật' => has(['sinh nhật', 'birthday']),
+      'Tình yêu' => has(['yêu', 'thương', 'love']),
+      'Cảm ơn' => has(['cảm ơn', 'cam on', 'thank']),
+      'Chúc mừng' => has(['chúc mừng', 'chuc mung', 'mừng', 'congrat']),
+      _ => true,
+    };
+  }
 
   /// SM-012 BR-04/AC-02..03/AC-07: open the full preview for [index]. Free →
   /// "Dùng template này" starts composing; Premium (locked for a Free user) →
@@ -42,16 +78,16 @@ class TemplateListScreen extends StatelessWidget {
         builder: (_) => TemplatePreviewScreen(
           templates: letterTemplates,
           initialIndex: index,
-          isPremium: isPremium,
+          isPremium: widget.isPremium,
           onUse: (template) {
             Navigator.of(context).pop();
-            onPick(template);
+            widget.onPick(template);
           },
-          onUpgrade: onUpgrade == null
+          onUpgrade: widget.onUpgrade == null
               ? null
               : () {
                   Navigator.of(context).pop();
-                  onUpgrade!.call();
+                  widget.onUpgrade!.call();
                 },
         ),
       ),
@@ -60,12 +96,20 @@ class TemplateListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isReply = replyToName != null && replyToName!.isNotEmpty;
+    final replyToName = widget.replyToName;
+    final isReply = replyToName != null && replyToName.isNotEmpty;
     // Split the catalog into the Free grid and the Premium row (F03-S01),
-    // keeping each template's global index for the preview route.
+    // keeping each template's global index for the preview route. Only the
+    // templates matching the active category are kept.
     final free = <({int index, LetterTemplate template})>[];
     final premium = <({int index, LetterTemplate template})>[];
+    final query = _query.trim().toLowerCase();
     for (final (i, t) in letterTemplates.indexed) {
+      if (!_matches(t, _category)) continue;
+      if (query.isNotEmpty &&
+          !'${t.label} ${t.description}'.toLowerCase().contains(query)) {
+        continue;
+      }
       (t.premium ? premium : free).add((index: i, template: t));
     }
     // .pen F03-S01: back button, "Chọn template" 32px, a search row, the
@@ -121,9 +165,15 @@ class TemplateListScreen extends StatelessWidget {
                           ),
                         ),
                       const SizedBox(height: 10),
-                      const _SearchRow(),
+                      _SearchRow(
+                        controller: _searchController,
+                        onChanged: (q) => setState(() => _query = q),
+                      ),
                       const SizedBox(height: 10),
-                      const _CategoryChips(),
+                      _CategoryChips(
+                        selected: _category,
+                        onSelect: (c) => setState(() => _category = c),
+                      ),
                     ],
                   ),
                 ),
@@ -138,17 +188,31 @@ class TemplateListScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const _SectionHeader(title: 'Miễn phí'),
-                        const SizedBox(height: AppSpacing.sm),
-                        // The art is a landscape card (166×117) with the name and
-                        // FREE badge baked in; match its ratio so nothing (esp.
-                        // the title below) is cropped.
-                        _TemplateGrid(
-                          entries: free,
-                          crossAxisCount: 2,
-                          aspectRatio: 166 / 117,
-                          onOpen: (i) => _openPreview(context, i),
-                        ),
+                        if (free.isEmpty && premium.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: AppSpacing.xxl),
+                            child: Center(
+                              child: Text(
+                                'Chưa có template cho mục này',
+                                style: context.textTheme.bodyMedium?.copyWith(
+                                  color: context.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (free.isNotEmpty) ...[
+                          const _SectionHeader(title: 'Miễn phí'),
+                          const SizedBox(height: AppSpacing.sm),
+                          // The art is a landscape card (166×117) with the name
+                          // and FREE badge baked in; match its ratio so nothing
+                          // (esp. the title below) is cropped.
+                          _TemplateGrid(
+                            entries: free,
+                            crossAxisCount: 2,
+                            aspectRatio: 166 / 117,
+                            onOpen: (i) => _openPreview(context, i),
+                          ),
+                        ],
                         if (premium.isNotEmpty) ...[
                           const SizedBox(height: AppSpacing.lg),
                           const _SectionHeader(title: 'Premium 👑'),
@@ -177,17 +241,10 @@ class TemplateListScreen extends StatelessWidget {
 
 /// A round pill button (`.pen` `cbtn`): surface-elevated with a centered icon.
 class _CircleButton extends StatelessWidget {
-  const _CircleButton({
-    required this.icon,
-    required this.onTap,
-    this.size = 44,
-    this.iconColor,
-  });
+  const _CircleButton({required this.icon, required this.onTap});
 
   final IconData icon;
   final VoidCallback onTap;
-  final double size;
-  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -198,69 +255,82 @@ class _CircleButton extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: SizedBox(
-          width: size,
-          height: size,
-          child: Icon(
-            icon,
-            size: 22,
-            color: iconColor ?? context.colorScheme.onSurface,
-          ),
+          width: 44,
+          height: 44,
+          child: Icon(icon, size: 22, color: context.colorScheme.onSurface),
         ),
       ),
     );
   }
 }
 
-/// The search field + filter button (`.pen` searchRow). ponytail: visual only —
-/// the catalog is 6 items, so wire filtering when it grows.
+/// The search field (`.pen` searchRow): filters the grids by template name as
+/// the user types.
 class _SearchRow extends StatelessWidget {
-  const _SearchRow();
+  const _SearchRow({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 46,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            decoration: ShapeDecoration(
-              color: context.brand.surfaceElevated,
-              shape: const StadiumBorder(),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.search, size: 18, color: scheme.onSurfaceVariant),
-                const SizedBox(width: AppSpacing.sm),
-                Text(
-                  'Tìm template',
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                  ),
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      decoration: ShapeDecoration(
+        color: context.brand.surfaceElevated,
+        shape: const StadiumBorder(),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.search, size: 18, color: scheme.onSurfaceVariant),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              autocorrect: false,
+              textInputAction: TextInputAction.search,
+              style: context.textTheme.bodyMedium,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                border: InputBorder.none,
+                hintText: 'Tìm template',
+                hintStyle: context.textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 10),
-        _CircleButton(
-          icon: Icons.tune,
-          size: 46,
-          iconColor: scheme.primary,
-          onTap: () {},
-        ),
-      ],
+          if (controller.text.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                controller.clear();
+                onChanged('');
+              },
+              child: Icon(
+                Icons.close,
+                size: 18,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
-/// The category filter chips (`.pen` chips, `Content/FilterChip`). ponytail:
-/// visual only for now — "Tất cả" is the active state.
+/// The category filter chips (`.pen` chips, `Content/FilterChip`). Tapping a
+/// chip filters the grids below; [selected] is the active category.
 class _CategoryChips extends StatelessWidget {
-  const _CategoryChips();
+  const _CategoryChips({required this.selected, required this.onSelect});
 
-  static const _labels = [
+  final String selected;
+  final ValueChanged<String> onSelect;
+
+  static const labels = [
     'Tất cả',
     'Sinh nhật',
     'Tình yêu',
@@ -275,26 +345,31 @@ class _CategoryChips extends StatelessWidget {
       height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _labels.length,
+        itemCount: labels.length,
         separatorBuilder: (_, _) => const SizedBox(width: 6),
         itemBuilder: (context, i) {
-          final active = i == 0;
-          return Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            decoration: ShapeDecoration(
-              color: active ? scheme.primary : context.brand.surfaceElevated,
-              shape: StadiumBorder(
-                side: active
-                    ? BorderSide.none
-                    : BorderSide(color: scheme.outlineVariant),
-              ),
+          final label = labels[i];
+          final active = label == selected;
+          return Material(
+            color: active ? scheme.primary : context.brand.surfaceElevated,
+            shape: StadiumBorder(
+              side: active
+                  ? BorderSide.none
+                  : BorderSide(color: scheme.outlineVariant),
             ),
-            child: Text(
-              _labels[i],
-              style: context.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: active ? scheme.onPrimary : scheme.onSurface,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => onSelect(label),
+              child: Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Text(
+                  label,
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: active ? scheme.onPrimary : scheme.onSurface,
+                  ),
+                ),
               ),
             ),
           );
@@ -315,25 +390,14 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    return Row(
-      children: [
-        Text(
-          title,
-          style: context.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: scheme.onSurface,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          'Xem tất cả',
-          style: context.textTheme.bodyMedium?.copyWith(
-            color: scheme.primary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        Icon(Icons.chevron_right, size: 18, color: scheme.primary),
-      ],
+    // The catalog shows every template already, so there is no "Xem tất cả"
+    // navigation — just the section title.
+    return Text(
+      title,
+      style: context.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w700,
+        color: scheme.onSurface,
+      ),
     );
   }
 }

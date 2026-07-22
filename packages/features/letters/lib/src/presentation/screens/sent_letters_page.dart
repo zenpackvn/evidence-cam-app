@@ -11,6 +11,7 @@ class SentLettersPage extends StatelessWidget {
   const SentLettersPage({
     required this.createCubit,
     this.onCompose,
+    this.onView,
     super.key,
   });
 
@@ -20,6 +21,9 @@ class SentLettersPage extends StatelessWidget {
   /// Forwarded to the empty state's "Tạo thư đầu tiên" CTA (F04-S07d).
   final VoidCallback? onCompose;
 
+  /// Opens a sent letter's cached content when a row is tapped (SM-021).
+  final ValueChanged<SentLetter>? onView;
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -28,6 +32,7 @@ class SentLettersPage extends StatelessWidget {
         builder: (context, state) => SentLettersScreen(
           letters: state.letters,
           onCompose: onCompose,
+          onView: onView,
           recreatingLetterId: state.recreatingLetterId,
           onRecreate: (sent) async {
             final ok = await context.read<SentLettersCubit>().recreateLink(

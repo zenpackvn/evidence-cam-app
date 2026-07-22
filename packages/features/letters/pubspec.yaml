@@ -18,6 +18,7 @@ dependencies:
 
   architecture: ^0.1.0
   network: ^0.1.0
+  storage: ^0.1.0
   shared_contracts: ^0.1.0
   localization: ^0.1.0
   app_ui: ^0.1.0

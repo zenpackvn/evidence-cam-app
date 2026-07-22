@@ -516,7 +516,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navLetters => 'Inbox';
 
   @override
-  String get navAlbum => 'Album';
+  String get navAlbum => 'Stamps';
 
   @override
   String get navProfile => 'Profile';

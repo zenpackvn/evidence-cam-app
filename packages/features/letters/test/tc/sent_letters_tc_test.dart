@@ -2,9 +2,19 @@
 // the sent box only — list of sent links with status, empty state with the
 // compose CTA (F04-S07d).
 import 'package:architecture/architecture.dart';
+import 'package:feature_album/feature_album.dart';
 import 'package:feature_letters/feature_letters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// Only [listLocal] is exercised by the cubit; the rest is stubbed away.
+class _FakeStamps implements StampsRepository {
+  @override
+  Future<Result<List<Stamp>>> listLocal() async => const Ok([]);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 class _FakeLetters implements LettersRepository {
   Result<List<SentLetter>> sentResult = const Ok([]);
@@ -13,6 +23,12 @@ class _FakeLetters implements LettersRepository {
 
   @override
   Future<Result<List<SentLetter>>> sent() async => sentResult;
+
+  @override
+  Future<LetterContent?> cachedContent(String letterId) async => null;
+
+  @override
+  Future<CachedLetter?> cachedMeta(String letterId) async => null;
 
   @override
   Future<Result<Letter>> create(LetterInput input) async =>
@@ -51,7 +67,7 @@ void main() {
     test('TC-19: tải danh sách thành công → letters', () async {
       final repo = _FakeLetters()
         ..sentResult = Ok([SentLetter.fromLink(_link())]);
-      final cubit = SentLettersCubit(repo);
+      final cubit = SentLettersCubit(repo, _FakeStamps());
       await cubit.load();
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.letters, hasLength(1));
@@ -60,7 +76,7 @@ void main() {
     test('TC-19 lỗi mạng → trạng thái lỗi, không kẹt loading', () async {
       final repo = _FakeLetters()
         ..sentResult = const Err(UnknownFailure('mất mạng'));
-      final cubit = SentLettersCubit(repo);
+      final cubit = SentLettersCubit(repo, _FakeStamps());
       await cubit.load();
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.letters, isEmpty);
@@ -74,7 +90,7 @@ void main() {
           _link(expiresAt: DateTime(2020), openedAt: null),
         );
         final repo = _FakeLetters()..sentResult = Ok([expired]);
-        final cubit = SentLettersCubit(repo);
+        final cubit = SentLettersCubit(repo, _FakeStamps());
         await cubit.load();
 
         final ok = await cubit.recreateLink(expired);
@@ -90,7 +106,7 @@ void main() {
           _link(openedAt: DateTime(2026, 7, 11), openedBy: 'u2'),
         );
         final repo = _FakeLetters()..sentResult = Ok([opened]);
-        final cubit = SentLettersCubit(repo);
+        final cubit = SentLettersCubit(repo, _FakeStamps());
         await cubit.load();
 
         final ok = await cubit.recreateLink(opened);
@@ -112,19 +128,31 @@ void main() {
         tester,
         SentLettersScreen(
           letters: [
-            SentLetter.fromLink(
-              _link(
-                id: 'a',
-                platform: 'zalo',
-                openedBy: 'u9',
-                openedAt: DateTime(2026, 7, 11),
+            SentLetterView(
+              sent: SentLetter.fromLink(
+                _link(
+                  id: 'a',
+                  platform: 'zalo',
+                  openedBy: 'u9',
+                  openedAt: DateTime(2026, 7, 11),
+                ),
               ),
+              title: 'Thư sinh nhật',
+              icon: '🎂',
             ),
-            SentLetter.fromLink(
-              _link(id: 'b', expiresAt: DateTime(2099, 1, 1)),
+            SentLetterView(
+              sent: SentLetter.fromLink(
+                _link(id: 'b', expiresAt: DateTime(2099, 1, 1)),
+              ),
+              title: 'Thư cảm ơn',
+              icon: '💐',
             ),
-            SentLetter.fromLink(
-              _link(id: 'c', expiresAt: DateTime(2020, 1, 1)),
+            SentLetterView(
+              sent: SentLetter.fromLink(
+                _link(id: 'c', expiresAt: DateTime(2020, 1, 1)),
+              ),
+              title: 'Thư hết hạn',
+              icon: '💌',
             ),
           ],
         ),
@@ -133,7 +161,9 @@ void main() {
       expect(find.text('Đã mở'), findsOneWidget);
       expect(find.text('Chưa mở'), findsOneWidget);
       expect(find.text('Hết hạn'), findsOneWidget);
-      expect(find.text('Thư gửi qua zalo'), findsOneWidget);
+      // The row now shows the letter's title (like the Home card), not
+      // "Thư gửi qua …".
+      expect(find.text('Thư sinh nhật'), findsOneWidget);
     });
 
     testWidgets('TC-19 (trống): empty state + CTA tạo thư', (tester) async {

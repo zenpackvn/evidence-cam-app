@@ -23,23 +23,32 @@ class StampMailHomeDataLoader implements HomeDataLoader {
   @override
   Future<HomeData> load() async {
     // Stamps come from the local store first (offline-first, SM-004 BR-06).
-    final stamps = switch (await _stamps.listLocal()) {
-      Ok(value: final list) => [
-        for (final s in list.take(_maxStamps))
-          StampRef(
-            id: s.id,
-            imageUrl: s.imageUrl,
-            thumbUrl: s.thumbUrl,
-            createdAt: s.createdAt,
-          ),
-      ],
-      Err() => const <StampRef>[],
+    final stampList = switch (await _stamps.listLocal()) {
+      Ok(value: final list) => list,
+      Err() => const <Stamp>[],
     };
+    // Look up a letter's attached stamp so its Home card can show that stamp as
+    // the letter's picture (SM-004 F01-S16).
+    final stampById = {for (final s in stampList) s.id: s};
+    final stamps = [
+      for (final s in stampList.take(_maxStamps))
+        StampRef(
+          id: s.id,
+          imageUrl: s.imageUrl,
+          thumbUrl: s.thumbUrl,
+          createdAt: s.createdAt,
+          // Carry the user's stamp name (SM-022 BR-08) so the "Tem gần đây"
+          // card shows it instead of the generic "Tem của bạn". Empty → null
+          // so the card's date/label fallback still kicks in.
+          name: s.name.isEmpty ? null : s.name,
+        ),
+    ];
 
     final letters = switch (await _letters.sent()) {
-      Ok(value: final list) => [
-        for (final sent in list.take(_maxLetters)) _toLetterItem(sent),
-      ],
+      Ok(value: final list) => await Future.wait<HomeLetterItem>([
+        for (final sent in list.take(_maxLetters))
+          _toLetterItem(sent, stampById),
+      ]),
       Err() => const <HomeLetterItem>[],
     };
 
@@ -57,34 +66,41 @@ class StampMailHomeDataLoader implements HomeDataLoader {
     );
   }
 
-  HomeLetterItem _toLetterItem(SentLetter sent) {
+  Future<HomeLetterItem> _toLetterItem(
+    SentLetter sent,
+    Map<String, Stamp> stampById,
+  ) async {
     final link = sent.link;
     final status = switch (sent.status) {
       SentStatus.opened => 'Đã mở',
       SentStatus.expired => 'Hết hạn',
       SentStatus.pending => 'Đang chờ mở',
     };
+    // Title from the letter body, picture from its first attached stamp — both
+    // from the local cache, so the card shows what the letter is instead of
+    // "Thư gửi qua …" with a generic envelope (SM-004 F01-S16).
+    final meta = await _letters.cachedMeta(link.letterId);
+    final stampId = (meta?.stampIds.isNotEmpty ?? false)
+        ? meta!.stampIds.first
+        : null;
+    final stamp = stampId == null ? null : stampById[stampId];
+    final content = meta?.content;
+    final title = letterCardTitle(content);
+    final date = _formatDate(link.createdAt.toLocal());
+    final recipient = content?.recipient.trim() ?? '';
     return HomeLetterItem(
       id: link.id,
-      title: 'Thư gửi qua ${_platformLabel(link.platform ?? '')}',
-      meta: '$status · ${_formatDate(link.createdAt.toLocal())}',
+      letterId: link.letterId,
+      title: title,
+      // "Gửi đến <người nhận> · ngày" when the sender named one, else status.
+      meta: recipient.isNotEmpty
+          ? 'Gửi đến $recipient · $date'
+          : '$status · $date',
       opened: sent.status == SentStatus.opened,
+      icon: letterOccasionEmoji('$title ${content?.text ?? ''}'),
+      stampImageUrl: stamp?.thumbUrl ?? stamp?.imageUrl,
     );
   }
-
-  // Labels for the SM-016 BR-04 share platforms (wire values from SharePlatform).
-  String _platformLabel(String platform) => switch (platform) {
-    'messenger' => 'Messenger',
-    'instagram' => 'Instagram',
-    'tiktok' => 'TikTok',
-    'threads' => 'Threads',
-    'zalo' => 'Zalo',
-    'whatsapp' => 'WhatsApp',
-    'imessage' => 'iMessage',
-    'twitter' => 'X',
-    '' => 'liên kết',
-    _ => platform,
-  };
 
   String _formatDate(DateTime d) {
     String two(int v) => v.toString().padLeft(2, '0');

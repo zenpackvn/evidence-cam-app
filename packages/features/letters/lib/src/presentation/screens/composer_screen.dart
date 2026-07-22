@@ -48,6 +48,7 @@ class _ComposerScreenState extends State<ComposerScreen> {
 
   late final QuillController _controller;
   late final StreamSubscription<DocChange> _changes;
+  late final TextEditingController _titleController;
   final FocusNode _focusNode = FocusNode();
 
   /// Guards the re-entrant edit [_enforceCharLimit] makes.
@@ -58,6 +59,9 @@ class _ComposerScreenState extends State<ComposerScreen> {
     super.initState();
     // Seeded once from the draft: re-seeding on rebuild would fight the caret.
     _controller = letterController(context.read<ComposerCubit>().state.content);
+    _titleController = TextEditingController(
+      text: context.read<ComposerCubit>().state.content.title,
+    );
     _changes = _controller.document.changes.listen((_) => _onDocumentChanged());
   }
 
@@ -65,6 +69,7 @@ class _ComposerScreenState extends State<ComposerScreen> {
   void dispose() {
     unawaited(_changes.cancel());
     _controller.dispose();
+    _titleController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -108,6 +113,10 @@ class _ComposerScreenState extends State<ComposerScreen> {
     return BlocBuilder<ComposerCubit, ComposerState>(
       builder: (context, state) {
         final cubit = context.read<ComposerCubit>();
+        // While the keyboard is up the toolbar would cover the very lines being
+        // typed, so hide it then — the paper fills the space above the keyboard.
+        // It comes back when the keyboard is dismissed (tap out / drag down).
+        final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
         return Scaffold(
           backgroundColor: _ground,
           body: SafeArea(
@@ -144,29 +153,40 @@ class _ComposerScreenState extends State<ComposerScreen> {
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.lg,
                         ),
-                        child: LetterPaper(
-                          content: state.content,
-                          controller: _controller,
-                          focusNode: _focusNode,
+                        child: Column(
+                          children: [
+                            _TitleField(
+                              controller: _titleController,
+                              onChanged: cubit.setTitle,
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            LetterPaper(
+                              content: state.content,
+                              controller: _controller,
+                              focusNode: _focusNode,
+                            ),
+                          ],
                         ),
                       ),
                     ),
                     _CharCounter(count: state.charCount),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxHeight:
-                            constraints.maxHeight * _panelMaxHeightFraction,
+                    // Hidden while typing so the tools never cover the text.
+                    if (!keyboardOpen)
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxHeight:
+                              constraints.maxHeight * _panelMaxHeightFraction,
+                        ),
+                        child: ComposerEditorPanel(
+                          controller: _controller,
+                          selectedFont: state.content.fontFamily,
+                          selectedPaper: state.content.paperColor,
+                          ruled: state.content.ruled,
+                          onFont: cubit.selectFont,
+                          onPaper: cubit.selectPaper,
+                          onRuled: (ruled) => cubit.setRuled(ruled: ruled),
+                        ),
                       ),
-                      child: ComposerEditorPanel(
-                        controller: _controller,
-                        selectedFont: state.content.fontFamily,
-                        selectedPaper: state.content.paperColor,
-                        ruled: state.content.ruled,
-                        onFont: cubit.selectFont,
-                        onPaper: cubit.selectPaper,
-                        onRuled: (ruled) => cubit.setRuled(ruled: ruled),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -369,6 +389,56 @@ class _CharCounter extends StatelessWidget {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// SM-013 — the letter's title, above the paper. Shown later on the Home
+/// "Thư gần đây" card. Auto-correct is off so Vietnamese diacritics type.
+class _TitleField extends StatelessWidget {
+  const _TitleField({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      autocorrect: false,
+      textCapitalization: TextCapitalization.sentences,
+      textAlign: TextAlign.center,
+      maxLength: 60,
+      style: context.textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+      ),
+      decoration: InputDecoration(
+        counterText: '',
+        hintText: 'Tiêu đề thư (vd: Chúc mừng sinh nhật)',
+        hintStyle: context.textTheme.titleMedium?.copyWith(
+          color: context.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w500,
+        ),
+        filled: true,
+        fillColor: context.brand.surfaceElevated,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: BorderSide(color: context.brand.borderSubtle),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: BorderSide(color: context.brand.borderSubtle),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: BorderSide(color: context.colorScheme.primary),
         ),
       ),
     );

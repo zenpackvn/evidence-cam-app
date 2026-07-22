@@ -49,11 +49,13 @@ class _DecorateStepState extends State<DecorateStep> {
           child: Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-              child: StampFrame(
-                draft: state.draft,
-                interactive: true,
-                onStickerMoved: (i, dx, dy) =>
-                    context.read<CreatorCubit>().moveSticker(i, dx, dy),
+              child: StampBackdrop(
+                child: StampFrame(
+                  draft: state.draft,
+                  interactive: true,
+                  onStickerMoved: (i, dx, dy) =>
+                      context.read<CreatorCubit>().moveSticker(i, dx, dy),
+                ),
               ),
             ),
           ),
@@ -276,30 +278,21 @@ class _BorderGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<CreatorCubit>();
     final scheme = context.colorScheme;
+    // The tem edge (SM-005/SM-009): the 5 vintage frame styles, the same set the
+    // camera offers — so the frame chosen while shooting can still be changed.
     return GridView.count(
-      crossAxisCount: 4,
+      crossAxisCount: 3,
       mainAxisSpacing: 8,
       crossAxisSpacing: 8,
       padding: EdgeInsets.zero,
-      childAspectRatio: 1.6,
+      childAspectRatio: 1.9,
       children: [
-        for (final border in stampBorders)
+        for (final frame in StampFrameStyle.values)
           Builder(
             builder: (context) {
-              final locked = border.premium && !state.isPremium;
-              final selected = state.draft.borderId == border.id;
+              final selected = state.draft.frameStyle == frame;
               return InkWell(
-                onTap: () {
-                  if (locked) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Viền này chỉ dành cho Premium ✨'),
-                      ),
-                    );
-                  } else {
-                    cubit.selectBorder(border.id);
-                  }
-                },
+                onTap: () => cubit.selectFrameStyle(frame),
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 child: Container(
                   alignment: Alignment.center,
@@ -310,25 +303,17 @@ class _BorderGrid extends StatelessWidget {
                         ? Border.all(color: scheme.primary, width: 2)
                         : null,
                   ),
-                  child: locked
-                      ? Icon(
-                          Icons.lock,
-                          size: 16,
-                          color: scheme.onSurfaceVariant,
-                        )
-                      : Text(
-                          border.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: selected
-                                ? scheme.primary
-                                : scheme.onSurfaceVariant,
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.w500,
-                          ),
-                        ),
+                  child: Text(
+                    frame.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: selected
+                          ? scheme.primary
+                          : scheme.onSurfaceVariant,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                  ),
                 ),
               );
             },

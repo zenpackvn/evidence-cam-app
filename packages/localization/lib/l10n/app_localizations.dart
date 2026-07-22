@@ -1055,7 +1055,7 @@ abstract class AppLocalizations {
   /// No description provided for @navAlbum.
   ///
   /// In en, this message translates to:
-  /// **'Album'**
+  /// **'Stamps'**
   String get navAlbum;
 
   /// No description provided for @navProfile.

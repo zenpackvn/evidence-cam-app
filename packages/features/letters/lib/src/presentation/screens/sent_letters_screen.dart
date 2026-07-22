@@ -2,6 +2,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/letter_link.dart';
+import '../bloc/sent_letters_cubit.dart';
 
 /// SM-021 — the "Thư" tab: the sender's sent letters with each link's status.
 /// This is the whole tab — there is no received-letters list (SM-017 BR-10).
@@ -11,11 +12,12 @@ class SentLettersScreen extends StatelessWidget {
     this.letters = const [],
     this.onCompose,
     this.onRecreate,
+    this.onView,
     this.recreatingLetterId,
     super.key,
   });
 
-  final List<SentLetter> letters;
+  final List<SentLetterView> letters;
 
   /// Called by the "Tạo thư đầu tiên" CTA in the empty state (F04-S07d).
   final VoidCallback? onCompose;
@@ -23,6 +25,10 @@ class SentLettersScreen extends StatelessWidget {
   /// Recreates a share link for an expired letter (SM-021 BR-04). Null hides
   /// the action.
   final ValueChanged<SentLetter>? onRecreate;
+
+  /// Tapping a row opens the letter's content (from the local cache). Null
+  /// makes the rows non-interactive.
+  final ValueChanged<SentLetter>? onView;
 
   /// The letterId whose link is currently being recreated (shows a spinner).
   final String? recreatingLetterId;
@@ -76,6 +82,7 @@ class SentLettersScreen extends StatelessWidget {
                       child: _ListCard(
                         letters: letters,
                         onRecreate: onRecreate,
+                        onView: onView,
                         recreatingLetterId: recreatingLetterId,
                       ),
                     ),
@@ -164,11 +171,13 @@ class _ListCard extends StatelessWidget {
   const _ListCard({
     required this.letters,
     this.onRecreate,
+    this.onView,
     this.recreatingLetterId,
   });
 
-  final List<SentLetter> letters;
+  final List<SentLetterView> letters;
   final ValueChanged<SentLetter>? onRecreate;
+  final ValueChanged<SentLetter>? onView;
   final String? recreatingLetterId;
 
   @override
@@ -184,12 +193,13 @@ class _ListCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          for (final (i, letter) in letters.indexed) ...[
+          for (final (i, view) in letters.indexed) ...[
             if (i > 0) Divider(height: 1, color: context.brand.borderSubtle),
             _SentRow(
-              letter: letter,
+              view: view,
               onRecreate: onRecreate,
-              recreating: recreatingLetterId == letter.link.letterId,
+              onView: onView,
+              recreating: recreatingLetterId == view.sent.link.letterId,
             ),
           ],
         ],
@@ -200,69 +210,82 @@ class _ListCard extends StatelessWidget {
 
 class _SentRow extends StatelessWidget {
   const _SentRow({
-    required this.letter,
+    required this.view,
     this.onRecreate,
+    this.onView,
     this.recreating = false,
   });
 
-  final SentLetter letter;
+  final SentLetterView view;
   final ValueChanged<SentLetter>? onRecreate;
+  final ValueChanged<SentLetter>? onView;
   final bool recreating;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    final letter = view.sent;
     final link = letter.link;
-    final platform = (link.platform?.isNotEmpty ?? false)
-        ? link.platform!
-        : 'Link chia sẻ';
     // SM-021 BR-04/BR-05: recreate only offered for an expired link, never an
     // opened one (already reached its recipient).
     final canRecreate =
         onRecreate != null && letter.status == SentStatus.expired;
+    // Same three-part shape as the Home "Thư gần đây" card: envelope + occasion
+    // symbol · title + status/date · attached stamp.
+    final row = Row(
+      children: [
+        _OccasionEnvelope(icon: view.icon),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                view.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  _StatusChip(status: letter.status),
+                  const SizedBox(width: AppSpacing.sm),
+                  Flexible(
+                    child: Text(
+                      _formatDate(link.createdAt.toLocal()),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        _StampThumb(imageUrl: view.stampImageUrl),
+        if (onView != null) ...[
+          const SizedBox(width: AppSpacing.xs),
+          Icon(Icons.chevron_right, size: 18, color: scheme.outline),
+        ],
+      ],
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: Column(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: scheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Icon(
-                  Icons.mail_outline,
-                  color: scheme.onPrimaryContainer,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Thư gửi qua $platform',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      _formatDate(link.createdAt.toLocal()),
-                      style: context.textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              _StatusChip(status: letter.status),
-            ],
-          ),
+          if (onView != null)
+            InkWell(
+              onTap: () => onView!(letter),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              child: row,
+            )
+          else
+            row,
           if (canRecreate) ...[
             const SizedBox(height: AppSpacing.sm),
             Align(
@@ -288,6 +311,98 @@ class _SentRow extends StatelessWidget {
   static String _formatDate(DateTime d) {
     String two(int v) => v.toString().padLeft(2, '0');
     return '${two(d.day)}/${two(d.month)}/${d.year}';
+  }
+}
+
+/// Left tile: an open envelope with the occasion symbol on a little note —
+/// same picture as the Home "Thư gần đây" card (F01-S16).
+class _OccasionEnvelope extends StatelessWidget {
+  const _OccasionEnvelope({required this.icon});
+
+  final String icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: context.brand.softPeach,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.brand.borderSubtle),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            bottom: 6,
+            child: Icon(
+              Icons.drafts,
+              size: 34,
+              color: scheme.primary.withValues(alpha: 0.5),
+            ),
+          ),
+          Positioned(
+            top: 4,
+            child: Container(
+              width: 30,
+              height: 26,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(color: context.brand.borderSubtle),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x22000000),
+                    blurRadius: 3,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Text(icon, style: const TextStyle(fontSize: 16)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Right tile: the letter's attached stamp, framed like postage. A soft
+/// placeholder shows when the letter has no cached stamp.
+class _StampThumb extends StatelessWidget {
+  const _StampThumb({required this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = imageUrl;
+    if (url == null) {
+      return Container(
+        width: 46,
+        height: 56,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: context.brand.softPeach,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: context.brand.borderSubtle),
+        ),
+        child: Icon(
+          Icons.local_post_office_outlined,
+          size: 18,
+          color: context.colorScheme.outline,
+        ),
+      );
+    }
+    // Show the stamp exactly as the user made it — no extra frame or crop.
+    return SizedBox(
+      width: 52,
+      height: 56,
+      child: AppNetworkImage(imageUrl: url, fit: BoxFit.contain),
+    );
   }
 }
 

@@ -47,6 +47,12 @@ class _FakeLetters implements LettersRepository {
 
   @override
   Future<Result<List<SentLetter>>> sent() async => const Ok([]);
+
+  @override
+  Future<LetterContent?> cachedContent(String letterId) async => null;
+
+  @override
+  Future<CachedLetter?> cachedMeta(String letterId) async => null;
 }
 
 Widget _wrap(Widget child) => MaterialApp(

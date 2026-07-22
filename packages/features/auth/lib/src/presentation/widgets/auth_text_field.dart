@@ -73,6 +73,9 @@ class AuthTextField extends StatelessWidget {
         TextFormField(
           controller: controller,
           obscureText: obscureText,
+          // Off so Vietnamese Telex/VNI can compose diacritics — Android
+          // auto-correct commits mid-word and breaks it (see AppTextField).
+          autocorrect: false,
           enabled: enabled,
           keyboardType: keyboardType,
           textInputAction: textInputAction,

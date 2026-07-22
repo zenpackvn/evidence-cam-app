@@ -140,6 +140,7 @@ class _FinishForm extends StatelessWidget {
           const SizedBox(height: AppSpacing.xxs),
           TextField(
             controller: nameController,
+            autocorrect: false,
             onChanged: cubit.setStampName,
             textInputAction: TextInputAction.done,
             style: context.textTheme.titleMedium?.copyWith(
@@ -301,6 +302,7 @@ class _AddTagDialogState extends State<_AddTagDialog> {
       title: const Text('Thêm tag'),
       content: TextField(
         controller: _controller,
+        autocorrect: false,
         autofocus: true,
         textInputAction: TextInputAction.done,
         decoration: const InputDecoration(hintText: 'Ví dụ: du lịch'),
@@ -337,6 +339,7 @@ class _NoteBox extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
+        autocorrect: false,
         onChanged: onChanged,
         maxLines: 3,
         minLines: 2,

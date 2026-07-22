@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/filters.dart';
 import '../../domain/stamp_draft.dart';
+import 'stamp_frame_overlay.dart';
 
 /// Renders the composed stamp: the source photo with its color filter applied,
 /// inside a classic perforated stamp frame, with placed stickers on top. This is
@@ -29,72 +30,115 @@ class StampFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A landscape rectangle — the same tem the camera framed, so every wizard
+    // step matches "Xem trước ảnh" (SM-005/SM-009).
     return AspectRatio(
-      aspectRatio: 3 / 4,
-      child: CustomPaint(
-        // SM-009 "Nền" paper colour + "Viền tem" edge style.
-        painter: _PerforationPainter(
-          color: Color(draft.paperColor ?? 0xFFFFFFFF),
-          borderId: draft.borderId,
-        ),
-        child: Padding(
-          // The perforated white margin around the photo.
-          padding: const EdgeInsets.all(14),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: _FilteredPhoto(draft: draft),
+      aspectRatio: kStampAspect,
+      child: LayoutBuilder(
+        builder: (context, cons) {
+          final inset = cons.maxHeight * 0.09;
+          final window = Rect.fromLTWH(
+            inset,
+            inset,
+            cons.maxWidth - inset * 2,
+            cons.maxHeight - inset * 2,
+          );
+          // The picture sits inside the black key-line (the paper margin is 16).
+          final photo = window.deflate(16);
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned.fromRect(
+                rect: photo,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: _FilteredPhoto(draft: draft),
+                ),
+              ),
+              // SM-009: the premium borders add a coloured inner frame.
+              if (_borderAccent(draft.borderId) case final accent?)
+                Positioned.fromRect(
+                  rect: photo,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(3),
+                      border: Border.all(color: accent, width: 2),
+                    ),
                   ),
-                  // SM-009: the premium borders add a coloured inner frame.
-                  if (_borderAccent(draft.borderId) case final accent?)
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: accent, width: 2),
+                ),
+              for (final (i, sticker) in draft.stickers.indexed)
+                Positioned(
+                  left: photo.left + sticker.dx * photo.width - 18,
+                  top: photo.top + sticker.dy * photo.height - 18,
+                  child: GestureDetector(
+                    onPanUpdate: interactive && onStickerMoved != null
+                        ? (details) {
+                            final nx =
+                                (sticker.dx * photo.width + details.delta.dx) /
+                                photo.width;
+                            final ny =
+                                (sticker.dy * photo.height + details.delta.dy) /
+                                photo.height;
+                            onStickerMoved!(i, nx, ny);
+                          }
+                        : null,
+                    child: Transform.rotate(
+                      angle: sticker.rotation,
+                      child: Transform.scale(
+                        scale: sticker.scale,
+                        child: Text(
+                          sticker.glyph,
+                          style: const TextStyle(fontSize: 36),
                         ),
                       ),
                     ),
-                  for (final (i, sticker) in draft.stickers.indexed)
-                    Positioned(
-                      left: sticker.dx * constraints.maxWidth - 18,
-                      top: sticker.dy * constraints.maxHeight - 18,
-                      child: GestureDetector(
-                        onPanUpdate: interactive && onStickerMoved != null
-                            ? (details) {
-                                final nx =
-                                    (sticker.dx * constraints.maxWidth +
-                                        details.delta.dx) /
-                                    constraints.maxWidth;
-                                final ny =
-                                    (sticker.dy * constraints.maxHeight +
-                                        details.delta.dy) /
-                                    constraints.maxHeight;
-                                onStickerMoved!(i, nx, ny);
-                              }
-                            : null,
-                        child: Transform.rotate(
-                          angle: sticker.rotation,
-                          child: Transform.scale(
-                            scale: sticker.scale,
-                            child: Text(
-                              sticker.glyph,
-                              style: const TextStyle(fontSize: 36),
-                            ),
-                          ),
-                        ),
-                      ),
+                  ),
+                ),
+              // The tem frame (paper + perforation + key-line) — transparent
+              // outside the paper; IgnorePointer keeps stickers draggable.
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: StampFramePainter(
+                      window: window,
+                      style: draft.frameStyle,
+                      scrimColor: Colors.transparent,
+                      paperColor: Color(draft.paperColor ?? 0xFFFFFFFF),
                     ),
-                ],
-              );
-            },
-          ),
-        ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
+    );
+  }
+}
+
+/// A warm rounded backdrop behind a stamp so the white tem stands out from the
+/// cream wizard ground (the stamp paper is white too). Display-only — not part
+/// of the captured stamp.
+class StampBackdrop extends StatelessWidget {
+  const StampBackdrop({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFEADFCB),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Padding(padding: const EdgeInsets.all(12), child: child),
     );
   }
 }
@@ -128,60 +172,6 @@ Color? _borderAccent(String borderId) => switch (borderId) {
   'deco' => const Color(0xFF3A322C),
   _ => null,
 };
-
-/// Paints the stamp paper base and its edge (SM-009 "Viền tem"): perforated for
-/// most styles, larger scallops for 'scalloped', and a smooth rounded edge for
-/// 'rounded'.
-class _PerforationPainter extends CustomPainter {
-  _PerforationPainter({required this.color, required this.borderId});
-
-  final Color color;
-  final String borderId;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    final radius = borderId == 'rounded' ? 44.0 : 8.0;
-    final rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      Radius.circular(radius),
-    );
-
-    // 'rounded' has a clean, strongly-rounded edge — no perforations.
-    if (borderId == 'rounded') {
-      canvas.drawRRect(rrect, paint);
-      return;
-    }
-
-    // Much larger teeth read as bold scallops; the rest keep the classic
-    // fine perforation.
-    final teeth = borderId == 'scalloped' ? 34.0 : 12.0;
-    final stepX = size.width / (size.width / teeth).round();
-    final stepY = size.height / (size.height / teeth).round();
-    final punch = Paint()
-      ..color = color
-      ..blendMode = BlendMode.clear;
-    // Scallops punch nearly the full step so the arcs touch into a wave; the
-    // classic perforation leaves paper between each tooth.
-    final r = borderId == 'scalloped' ? teeth / 2 : teeth / 2.4;
-
-    canvas.saveLayer(Offset.zero & size, Paint());
-    canvas.drawRRect(rrect, paint);
-    for (var x = stepX / 2; x < size.width; x += stepX) {
-      canvas.drawCircle(Offset(x, 0), r, punch);
-      canvas.drawCircle(Offset(x, size.height), r, punch);
-    }
-    for (var y = stepY / 2; y < size.height; y += stepY) {
-      canvas.drawCircle(Offset(0, y), r, punch);
-      canvas.drawCircle(Offset(size.width, y), r, punch);
-    }
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(_PerforationPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.borderId != borderId;
-}
 
 extension on BuildContext {
   ColorScheme get colorScheme => Theme.of(this).colorScheme;

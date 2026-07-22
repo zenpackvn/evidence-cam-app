@@ -4,14 +4,21 @@ import 'package:shared_contracts/shared_contracts.dart';
 class HomeLetterItem {
   const HomeLetterItem({
     required this.id,
+    required this.letterId,
     required this.title,
     required this.meta,
     required this.opened,
+    this.icon = '💌',
     this.envelopeImageUrl,
     this.stampImageUrl,
   });
 
+  /// The share-link id (identifies the card).
   final String id;
+
+  /// The composed letter's id — the key its cached content is stored under, so
+  /// tapping the card can re-open what the sender wrote.
+  final String letterId;
 
   /// Card title, e.g. the platform the letter was sent through.
   final String title;
@@ -20,6 +27,10 @@ class HomeLetterItem {
   final String meta;
 
   final bool opened;
+
+  /// A theme emoji for the letter (🎂 for a birthday, ❤️ for thanks…), derived
+  /// from the body and shown as a badge over the stamp on the Home card.
+  final String icon;
 
   /// Envelope thumbnail (58×48 in the card); falls back to an icon when null.
   final String? envelopeImageUrl;

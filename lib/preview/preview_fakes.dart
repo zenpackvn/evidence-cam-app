@@ -295,6 +295,12 @@ class FakeLettersRepository implements LettersRepository {
 
   @override
   Future<Result<List<SentLetter>>> sent() async => const Ok([]);
+
+  @override
+  Future<LetterContent?> cachedContent(String letterId) async => null;
+
+  @override
+  Future<CachedLetter?> cachedMeta(String letterId) async => null;
 }
 
 // ─────────────────────────────────────────────────────── letter reveal ──
@@ -362,6 +368,7 @@ class FakeHomeDataLoader implements HomeDataLoader {
           : [
               HomeLetterItem(
                 id: 'l1',
+                letterId: 'l1',
                 title: 'Cảm ơn mẹ yêu ❤️',
                 meta: 'Gửi đến Mẹ  ·  20/05/2024',
                 opened: true,
@@ -370,6 +377,7 @@ class FakeHomeDataLoader implements HomeDataLoader {
               ),
               HomeLetterItem(
                 id: 'l2',
+                letterId: 'l2',
                 title: 'Happy Birthday Linh! 🎂',
                 meta: 'Gửi đến Linh  ·  19/05/2024',
                 opened: false,
@@ -378,6 +386,7 @@ class FakeHomeDataLoader implements HomeDataLoader {
               ),
               HomeLetterItem(
                 id: 'l3',
+                letterId: 'l3',
                 title: 'Nhớ chuyến đi Đà Lạt 🌿',
                 meta: 'Gửi đến Hội bạn thân  ·  18/05/2024',
                 opened: true,
@@ -424,7 +433,10 @@ void registerPreviewFakes() {
       () => AlbumCubit(getIt<StampsRepository>(), connectivity),
     )
     ..registerFactory<SentLettersCubit>(
-      () => SentLettersCubit(getIt<LettersRepository>()),
+      () => SentLettersCubit(
+        getIt<LettersRepository>(),
+        getIt<StampsRepository>(),
+      ),
     )
     ..registerFactory<ProfileBloc>(() => ProfileBloc(analytics))
     ..registerFactory<DeleteAccountCubit>(

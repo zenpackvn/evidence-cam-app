@@ -389,33 +389,45 @@ List<GallerySection> buildGallerySections() => [
       build: (context) => _shell(
         SentLettersScreen(
           letters: [
-            SentLetter.fromLink(
-              LetterLink(
-                id: 'lk1',
-                letterId: 'l1',
-                platform: 'messenger',
-                createdAt: DateTime(2026, 7, 10, 20, 15),
-                expiresAt: DateTime(2026, 7, 17, 20, 15),
-                openedBy: 'u9',
-                openedAt: DateTime(2026, 7, 11, 8),
+            SentLetterView(
+              sent: SentLetter.fromLink(
+                LetterLink(
+                  id: 'lk1',
+                  letterId: 'l1',
+                  platform: 'messenger',
+                  createdAt: DateTime(2026, 7, 10, 20, 15),
+                  expiresAt: DateTime(2026, 7, 17, 20, 15),
+                  openedBy: 'u9',
+                  openedAt: DateTime(2026, 7, 11, 8),
+                ),
               ),
+              title: 'Chúc mừng sinh nhật',
+              icon: '🎂',
             ),
-            SentLetter.fromLink(
-              LetterLink(
-                id: 'lk2',
-                letterId: 'l2',
-                platform: 'zalo',
-                createdAt: DateTime(2026, 7, 8, 9, 30),
-                expiresAt: DateTime(2026, 7, 15, 9, 30),
+            SentLetterView(
+              sent: SentLetter.fromLink(
+                LetterLink(
+                  id: 'lk2',
+                  letterId: 'l2',
+                  platform: 'zalo',
+                  createdAt: DateTime(2026, 7, 8, 9, 30),
+                  expiresAt: DateTime(2026, 7, 15, 9, 30),
+                ),
               ),
+              title: 'Cảm ơn bạn nhiều',
+              icon: '💐',
             ),
-            SentLetter.fromLink(
-              LetterLink(
-                id: 'lk3',
-                letterId: 'l3',
-                createdAt: DateTime(2026, 6, 20, 14, 2),
-                expiresAt: DateTime(2026, 6, 27, 14, 2),
+            SentLetterView(
+              sent: SentLetter.fromLink(
+                LetterLink(
+                  id: 'lk3',
+                  letterId: 'l3',
+                  createdAt: DateTime(2026, 6, 20, 14, 2),
+                  expiresAt: DateTime(2026, 6, 27, 14, 2),
+                ),
               ),
+              title: 'Nhớ chuyến đi Đà Lạt',
+              icon: '🌿',
             ),
           ],
         ),

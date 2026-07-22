@@ -748,13 +748,17 @@ class _SyncedFieldState extends State<_SyncedField> {
   late final TextEditingController _controller = TextEditingController(
     text: widget.value,
   );
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void didUpdateWidget(_SyncedField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only sync when the value changed from outside (a keystroke already made
-    // value == controller.text, so this leaves the cursor alone while typing).
-    if (widget.value != _controller.text) {
+    // Never rewrite the field while the user is editing it: replacing the
+    // controller value drops the IME composing region, which breaks Vietnamese
+    // (Telex/VNI) diacritics mid-word — you literally cannot type "â"/"ế". So
+    // adopt an external value only when the field is not focused (initial load,
+    // a programmatic reset), and let the controller own the text while typing.
+    if (!_focusNode.hasFocus && widget.value != _controller.text) {
       _controller.value = TextEditingValue(
         text: widget.value,
         selection: TextSelection.collapsed(offset: widget.value.length),
@@ -765,6 +769,7 @@ class _SyncedFieldState extends State<_SyncedField> {
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -773,6 +778,7 @@ class _SyncedFieldState extends State<_SyncedField> {
     return AppTextField(
       key: widget.fieldKey,
       controller: _controller,
+      focusNode: _focusNode,
       hint: widget.hint,
       errorText: widget.errorText,
       enabled: widget.enabled,

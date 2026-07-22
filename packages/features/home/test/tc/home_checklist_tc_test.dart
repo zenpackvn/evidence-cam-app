@@ -48,6 +48,7 @@ HomeData _loaded() => HomeData(
   recentLetters: const [
     HomeLetterItem(
       id: 'l1',
+      letterId: 'l1',
       title: 'Cảm ơn mẹ yêu ❤️',
       meta: 'Gửi đến Mẹ  ·  20/05/2024',
       opened: true,

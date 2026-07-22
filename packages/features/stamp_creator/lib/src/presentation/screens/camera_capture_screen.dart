@@ -1,0 +1,471 @@
+import 'dart:async';
+
+import 'package:app_platform/app_platform.dart';
+import 'package:app_ui/app_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'
+    show HapticFeedback, MethodChannel, SystemSound, SystemSoundType;
+
+import '../widgets/stamp_frame_overlay.dart';
+
+/// SM-005 — the in-app camera for "Chụp ảnh mới": a full-screen live preview
+/// with a square stamp viewfinder in the middle (the stamp is 1:1), so the user
+/// frames the shot inside the tem before capturing. The border style is
+/// swipeable (or tap a chip) so different tastes get different tem edges. On
+/// capture the photo path is handed back via [onCaptured] to continue the
+/// wizard (→ "Xem trước ảnh").
+class CameraCaptureScreen extends StatefulWidget {
+  const CameraCaptureScreen({
+    required this.camera,
+    required this.onCaptured,
+    this.onClose,
+    super.key,
+  });
+
+  /// The app's camera wrapper (owns the [CameraController] lifecycle).
+  final CameraService camera;
+
+  /// Called with the captured photo's file path and the stamp frame style the
+  /// user framed it with, so the preview shows the same tem.
+  final void Function(String path, StampFrameStyle frame) onCaptured;
+
+  /// Optional explicit close; defaults to popping the route.
+  final VoidCallback? onClose;
+
+  @override
+  State<CameraCaptureScreen> createState() => _CameraCaptureScreenState();
+}
+
+/// Plays the native Android camera shutter ("tạch") — an OS-level sound that
+/// isn't muted by the camera controller's audio-off setting. Other platforms
+/// fall back to the system click.
+const _shutterChannel = MethodChannel('stampmail/shutter');
+
+enum _CamState { loading, ready, denied, error }
+
+class _CameraCaptureScreenState extends State<CameraCaptureScreen>
+    with WidgetsBindingObserver {
+  _CamState _state = _CamState.loading;
+  bool _capturing = false;
+  CameraDescription? _description;
+  List<CameraDescription> _cameras = const [];
+  CameraLensDirection _lens = CameraLensDirection.back;
+  StampFrameStyle _frame = StampFrameStyle.perforated;
+
+  /// How big the stamp window is, as a fraction of its default size — the user
+  /// pinches to zoom the tem frame in/out. Clamped so it stays usable.
+  double _frameScale = 1;
+  double _baseScale = 1;
+  int _gesturePointers = 0;
+
+  static const _minFrameScale = 0.55;
+  static const _maxFrameScale = 1.25;
+
+  void _cycleFrame(int delta) {
+    const values = StampFrameStyle.values;
+    final next = (_frame.index + delta + values.length) % values.length;
+    setState(() => _frame = values[next]);
+  }
+
+  void _onScaleStart(ScaleStartDetails d) {
+    _baseScale = _frameScale;
+    _gesturePointers = d.pointerCount;
+  }
+
+  void _onScaleUpdate(ScaleUpdateDetails d) {
+    _gesturePointers = d.pointerCount;
+    // Two fingers → pinch-zoom the tem frame. One finger is left for the swipe
+    // (handled on end) so both gestures can share this recognizer.
+    if (d.pointerCount >= 2) {
+      setState(() {
+        _frameScale = (_baseScale * d.scale).clamp(
+          _minFrameScale,
+          _maxFrameScale,
+        );
+      });
+    }
+  }
+
+  // A one-finger swipe (horizontal or vertical) moves to the next/previous
+  // frame; a pinch is a zoom, not a swipe.
+  void _onScaleEnd(ScaleEndDetails d) {
+    if (_gesturePointers >= 2) return;
+    final v = d.velocity.pixelsPerSecond;
+    if (v.distance < 120) return;
+    final horizontal = v.dx.abs() >= v.dy.abs();
+    final forward = horizontal ? v.dx < 0 : v.dy < 0;
+    _cycleFrame(forward ? 1 : -1);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _setup();
+  }
+
+  Future<void> _setup() async {
+    // The stamp camera needs the CAMERA permission (declared in the manifest).
+    final granted = await Permission.camera.request();
+    if (!granted.isGranted) {
+      if (mounted) setState(() => _state = _CamState.denied);
+      return;
+    }
+    try {
+      final cameras = await widget.camera.getAvailableCameras();
+      if (cameras.isEmpty) {
+        if (mounted) setState(() => _state = _CamState.error);
+        return;
+      }
+      _cameras = cameras;
+      // Prefer the back camera for framing a subject; keep the last-chosen lens
+      // across a background/resume.
+      await _open(_lens);
+    } on Object {
+      if (mounted) setState(() => _state = _CamState.error);
+    }
+  }
+
+  Future<void> _open(CameraLensDirection lens) async {
+    final cam = _cameras.firstWhere(
+      (c) => c.lensDirection == lens,
+      orElse: () => _cameras.first,
+    );
+    _description = cam;
+    _lens = cam.lensDirection;
+    await widget.camera.initialize(
+      description: cam,
+      resolutionPreset: ResolutionPreset.high,
+      enableAudio: false,
+    );
+    if (mounted) setState(() => _state = _CamState.ready);
+  }
+
+  /// Whether the device has both a front and a back camera to flip between.
+  bool get _canFlip =>
+      _cameras.any((c) => c.lensDirection == CameraLensDirection.back) &&
+      _cameras.any((c) => c.lensDirection == CameraLensDirection.front);
+
+  Future<void> _flip() async {
+    if (_capturing || !_canFlip) return;
+    final next = _lens == CameraLensDirection.back
+        ? CameraLensDirection.front
+        : CameraLensDirection.back;
+    setState(() => _state = _CamState.loading);
+    try {
+      await widget.camera.dispose();
+      await _open(next);
+    } on Object {
+      if (mounted) setState(() => _state = _CamState.error);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Release the camera when backgrounded, re-acquire on resume — the OS may
+    // revoke the hardware to another app otherwise.
+    if (_description == null) return;
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      unawaited(widget.camera.dispose());
+    } else if (state == AppLifecycleState.resumed &&
+        !widget.camera.isInitialized) {
+      unawaited(_setup());
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    unawaited(widget.camera.dispose());
+    super.dispose();
+  }
+
+  void _close() {
+    final onClose = widget.onClose;
+    if (onClose != null) {
+      onClose();
+    } else {
+      Navigator.of(context).maybePop();
+    }
+  }
+
+  /// The shutter "tạch": the native Android shutter sound, falling back to the
+  /// system click where the channel isn't wired (iOS/tests). Always a light
+  /// haptic too.
+  Future<void> _playShutter() async {
+    unawaited(HapticFeedback.mediumImpact());
+    try {
+      await _shutterChannel.invokeMethod<void>('play');
+    } on Object {
+      unawaited(SystemSound.play(SystemSoundType.click));
+    }
+  }
+
+  Future<void> _capture() async {
+    if (_capturing || !widget.camera.isInitialized) return;
+    setState(() => _capturing = true);
+    unawaited(_playShutter());
+    try {
+      final file = await widget.camera.takePicture();
+      widget.onCaptured(file.path, _frame);
+    } on Object {
+      if (mounted) {
+        setState(() => _capturing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không chụp được ảnh. Thử lại nhé.')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          switch (_state) {
+            _CamState.ready => _CoverPreview(
+              controller: widget.camera.controller!,
+            ),
+            _CamState.loading => const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+            _CamState.denied => const _Message(
+              icon: Icons.no_photography_outlined,
+              text: 'Cần quyền camera để chụp ảnh.\nMở cài đặt để cấp quyền.',
+              actionLabel: 'Mở cài đặt',
+              onAction: openAppSettings,
+            ),
+            _CamState.error => const _Message(
+              icon: Icons.error_outline,
+              text: 'Không mở được camera trên thiết bị này.',
+            ),
+          },
+          // Pinch anywhere to zoom the tem frame; one-finger swipe changes its
+          // edge style.
+          if (_state == _CamState.ready)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onScaleStart: _onScaleStart,
+                onScaleUpdate: _onScaleUpdate,
+                onScaleEnd: _onScaleEnd,
+              ),
+            ),
+          // The square stamp viewfinder — only over a live preview.
+          if (_state == _CamState.ready)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: _StampViewfinder(style: _frame, scale: _frameScale),
+              ),
+            ),
+          // Close (top-left).
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: _RoundIconButton(icon: Icons.close, onTap: _close),
+              ),
+            ),
+          ),
+          // Flip front/back camera (top-right) — only when both exist.
+          if (_state == _CamState.ready && _canFlip)
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: _RoundIconButton(
+                    icon: Icons.cameraswitch_outlined,
+                    onTap: _flip,
+                  ),
+                ),
+              ),
+            ),
+          // Shutter (bottom) — only when the camera is live. No text/chips:
+          // swipe to change the tem edge, pinch to zoom.
+          if (_state == _CamState.ready)
+            SafeArea(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 28),
+                  child: _ShutterButton(busy: _capturing, onTap: _capture),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The camera preview scaled to cover the whole screen (BoxFit.cover) so there
+/// are no black bars behind the viewfinder.
+class _CoverPreview extends StatelessWidget {
+  const _CoverPreview({required this.controller});
+
+  final CameraController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = controller.value.previewSize;
+    if (preview == null) return CameraPreview(controller);
+    return ClipRect(
+      child: FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          // previewSize is reported landscape; swap for the portrait screen.
+          width: preview.height,
+          height: preview.width,
+          child: CameraPreview(controller),
+        ),
+      ),
+    );
+  }
+}
+
+/// Dims everything outside a centred square and draws a perforated stamp edge
+/// around it, plus a hint line — the "ô vuông tem" the user frames inside.
+class _StampViewfinder extends StatelessWidget {
+  const _StampViewfinder({required this.style, this.scale = 1});
+
+  final StampFrameStyle style;
+
+  /// Fraction of the default window size — the pinch-to-zoom factor.
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth * 0.86 * scale;
+        final h = w / kStampAspect;
+        final center = Offset(
+          constraints.maxWidth / 2,
+          constraints.maxHeight * 0.44,
+        );
+        final window = Rect.fromCenter(
+          center: center,
+          width: w,
+          height: h,
+        );
+        return CustomPaint(
+          painter: StampFramePainter(window: window, style: style),
+        );
+      },
+    );
+  }
+}
+
+class _ShutterButton extends StatelessWidget {
+  const _ShutterButton({required this.busy, required this.onTap});
+
+  final bool busy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: busy ? null : onTap,
+      child: Container(
+        width: 76,
+        height: 76,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white24,
+          border: Border.all(color: Colors.white, width: 4),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
+            child: busy
+                ? const Padding(
+                    padding: EdgeInsets.all(18),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color: Color(0xFFF35B43),
+                    ),
+                  )
+                : null,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RoundIconButton extends StatelessWidget {
+  const _RoundIconButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black38,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: Colors.white, size: 24),
+        ),
+      ),
+    );
+  }
+}
+
+class _Message extends StatelessWidget {
+  const _Message({
+    required this.icon,
+    required this.text,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String text;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white70, size: 56),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                height: 1.4,
+              ),
+            ),
+            if (actionLabel != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              FilledButton(onPressed: onAction, child: Text(actionLabel!)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

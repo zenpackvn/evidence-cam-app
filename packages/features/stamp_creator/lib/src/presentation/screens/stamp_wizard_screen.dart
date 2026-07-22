@@ -25,11 +25,15 @@ class StampWizardScreen extends StatelessWidget {
     required this.onExit,
     required this.onViewAlbum,
     required this.onCreateAnother,
+    this.frameStyle = StampFrameStyle.perforated,
     this.isPremium = false,
     super.key,
   });
 
   final String imagePath;
+
+  /// The tem edge chosen in the camera, carried into the whole wizard.
+  final StampFrameStyle frameStyle;
   final bool isPremium;
 
   /// Called when the user backs out of the first wizard step (to the picker).
@@ -42,6 +46,7 @@ class StampWizardScreen extends StatelessWidget {
     return BlocProvider(
       create: (_) => CreatorCubit(
         imagePath: imagePath,
+        frameStyle: frameStyle,
         isPremium: isPremium,
         uploader: GetIt.instance<StampUploader>(),
         stamps: GetIt.instance<StampsRepository>(),
