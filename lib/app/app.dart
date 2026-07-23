@@ -7,6 +7,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:config/config.dart';
 import 'package:database/database.dart';
 import 'package:feature_auth/feature_auth.dart';
+import 'package:feature_letters/feature_letters.dart';
 // fst:feature:notifications:start
 import 'package:feature_notifications/feature_notifications.dart';
 // fst:feature:notifications:end
@@ -63,6 +64,11 @@ class _AppState extends State<App> {
   late final List<FeatureSyncController> _syncControllers;
   late final VideoPlayerService _videoPlayerService;
   StreamSubscription<AuthState>? _authSub;
+
+  /// Whether an account was signed in during this app run. Gates the sign-out
+  /// wipe so it fires only on an actual logout (authenticated → AuthInitial),
+  /// never on the plain AuthInitial the app boots into before any sign-in.
+  bool _wasAuthenticated = false;
 
   @override
   void initState() {
@@ -150,12 +156,49 @@ class _AppState extends State<App> {
     unawaited(prefs?.setString(_lastUidKey, uid));
   }
 
+  /// Erases every trace of the signed-out account from this device: the
+  /// ObjectBox stores (stamps, albums, …) + sync cursors, the letters
+  /// SharedPreferences caches, the account-switch sentinel, and the in-memory
+  /// Premium entitlement. Device-level preferences (theme, locale, onboarding,
+  /// notification toggles) are intentionally kept. The server stays the source
+  /// of truth, so signing back in re-downloads everything.
+  Future<void> _clearLocalAccountData() async {
+    // Stop any in-flight sync first so a pull mid-flight can't write rows back
+    // after the wipe.
+    await Future.wait([
+      for (final c in _syncControllers)
+        c.stop().catchError((Object _, StackTrace _) {}),
+    ]);
+    if (getIt.isRegistered<ObjectBox>()) {
+      getIt<ObjectBox>().clearUserData();
+    }
+    if (getIt.isRegistered<LettersRepository>()) {
+      await getIt<LettersRepository>().clearLocalCache();
+    }
+    final prefs = getIt.isRegistered<SharedPreferences>()
+        ? getIt<SharedPreferences>()
+        : null;
+    await prefs?.remove(_lastUidKey);
+    // Drop the cached entitlement so the next account can't inherit Premium; a
+    // fresh reader re-fetches it from the server on the next read.
+    if (getIt.isRegistered<EntitlementReader>()) {
+      getIt.resetLazySingleton<EntitlementReader>();
+    }
+  }
+
   void _onAuthChanged(AuthState state) {
     if (state is AuthAuthenticated) {
+      _wasAuthenticated = true;
       // Must run before the sync controllers start (below) so the pull starts
       // from a clean slate for the freshly-signed-in account.
       _resetLocalDataOnAccountSwitch(state.user.id);
       _syncNotificationSubscriptions(state.user.id);
+    } else if (state is AuthInitial && _wasAuthenticated) {
+      // The user signed out (or deleted their account / signed out everywhere)
+      // — AuthInitial is the definitive logged-out state (AuthSigningOut still
+      // holds the user). Wipe their data so nothing leaks to the next person.
+      _wasAuthenticated = false;
+      unawaited(_clearLocalAccountData());
     }
     for (final c in _syncControllers) {
       unawaited(

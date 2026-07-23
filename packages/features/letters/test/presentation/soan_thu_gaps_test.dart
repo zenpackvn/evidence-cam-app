@@ -13,6 +13,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
 
 class _FakeLetters implements LettersRepository {
+  @override
+  Future<void> clearLocalCache() async {}
+
 
   @override
   Future<Result<List<Letter>>> letters() async => const Ok([]);

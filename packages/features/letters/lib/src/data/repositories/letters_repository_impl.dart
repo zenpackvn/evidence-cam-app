@@ -56,7 +56,8 @@ class LettersRepositoryImpl implements LettersRepository {
     }
   }
 
-  static String _contentKey(String letterId) => 'sm_letter_content_$letterId';
+  static const _contentPrefix = 'sm_letter_content_';
+  static String _contentKey(String letterId) => '$_contentPrefix$letterId';
 
   Future<void> _cache(
     String letterId,
@@ -71,6 +72,22 @@ class LettersRepositoryImpl implements LettersRepository {
       );
     } on Object {
       // Ignore: caching is a convenience, never a reason to fail a send.
+    }
+  }
+
+  @override
+  Future<void> clearLocalCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs
+          .getKeys()
+          .where((k) => k == _sentKey || k.startsWith(_contentPrefix))
+          .toList();
+      for (final k in keys) {
+        await prefs.remove(k);
+      }
+    } on Object {
+      // Best effort — a failed cache wipe must never block sign-out.
     }
   }
 

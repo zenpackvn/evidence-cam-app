@@ -37,4 +37,10 @@ abstract interface class LettersRepository {
   /// detail can show a letter's content next to its link statuses (SM-021).
   /// Returns Ok([]) against servers that don't expose the route yet.
   Future<Result<List<Letter>>> letters();
+
+  /// Erases every locally-cached letter from this device — the sent-links list
+  /// and the per-letter content blobs. Called on sign-out so a letter never
+  /// survives for the next account on a shared device; the server stays the
+  /// source of truth, so signing back in re-fetches them.
+  Future<void> clearLocalCache();
 }

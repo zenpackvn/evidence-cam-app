@@ -17,6 +17,9 @@ class _FakeStamps implements StampsRepository {
 }
 
 class _FakeLetters implements LettersRepository {
+  @override
+  Future<void> clearLocalCache() async {}
+
   Result<List<SentLetter>> sentResult = const Ok([]);
   bool createLinkOk = true;
   final createdLinksFor = <String>[];

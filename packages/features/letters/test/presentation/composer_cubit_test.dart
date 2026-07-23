@@ -6,6 +6,9 @@ class _FakeLettersRepository implements LettersRepository {
   _FakeLettersRepository({this.failLink = false});
 
   @override
+  Future<void> clearLocalCache() async {}
+
+  @override
   Future<Result<List<Letter>>> letters() async => const Ok([]);
 
   bool failLink;

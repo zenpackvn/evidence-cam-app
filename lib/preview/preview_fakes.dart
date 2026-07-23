@@ -267,6 +267,8 @@ class FakeLettersRepository implements LettersRepository {
   @override
   Future<Result<List<Letter>>> letters() async => const Ok([]);
   @override
+  Future<void> clearLocalCache() async {}
+  @override
   Future<Result<Letter>> create(LetterInput input) async {
     await Future<void>.delayed(_lag * 2);
     return Ok(
