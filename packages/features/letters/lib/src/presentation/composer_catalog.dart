@@ -145,6 +145,32 @@ LetterTemplate templateById(String id) => letterTemplates.firstWhere(
   orElse: () => letterTemplates.first,
 );
 
+/// A decorative accent colour per template, used for the letter's border frame
+/// on the composer / preview / send screens so the letter "wears" its template.
+int templateAccentColor(String templateId) => switch (templateId) {
+  'birthday' => 0xFF9B6BD8, // tím pastel sinh nhật
+  'love' || 'p-love' => 0xFFE8618C, // hồng yêu thương
+  'floral' => 0xFF6FA36B, // xanh lá hoa cỏ
+  'kraft' => 0xFF9C7A4E, // nâu kraft
+  'holiday' => 0xFF3F8F5F, // xanh hành trình
+  'p-elegant' => 0xFF9C8563, // taupe thanh lịch
+  'p-luxe' => 0xFF8B6BD8, // tím cao cấp
+  _ => 0xFFE0A43B, // classic — vàng nắng ấm
+};
+
+/// Decorative emoji per template, placed around the letter frame (e.g. a
+/// birthday letter gets 🎂🎈🎉). The written content stays the letter body.
+List<String> templateIcons(String templateId) => switch (templateId) {
+  'birthday' => ['🎂', '🎈', '🎉', '🎁'],
+  'love' || 'p-love' => ['❤️', '💌', '🌹', '💕'],
+  'floral' => ['🌸', '🌿', '🌼', '🌷'],
+  'kraft' => ['✒️', '📖', '🍂', '🕰️'],
+  'holiday' => ['🌿', '🧳', '☀️', '✈️'],
+  'p-elegant' => ['✨', '🕊️', '🤍', '🌙'],
+  'p-luxe' => ['👑', '✨', '💎', '🥂'],
+  _ => ['☀️', '🌼', '🌈', '🍃'], // classic
+};
+
 /// The handwriting/display fonts offered in the composer (SM-013, from the .pen
 /// font chips). All are Google Fonts available at build time.
 const letterFonts = <String>[

@@ -84,12 +84,16 @@ class LetterPaper extends StatelessWidget {
       ),
     );
 
+    // A decorative frame in the template's accent colour — a soft mat + a
+    // keyline — so the letter "wears" its chosen template (F03 fc1776).
+    final accent = Color(templateAccentColor(template.id));
     return Container(
       constraints: const BoxConstraints(minHeight: 420),
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.all(9),
       decoration: BoxDecoration(
-        color: paper,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: accent.withValues(alpha: 0.55), width: 2),
         boxShadow: const [
           BoxShadow(
             color: Color(0x1424211F),
@@ -98,25 +102,88 @@ class LetterPaper extends StatelessWidget {
           ),
         ],
       ),
-      // The editor needs FlutterQuillLocalizations. The app shell does not
-      // register the delegate (and letters cannot reach into it), so the
-      // feature supplies it here — merged over whatever the app already has.
-      child: Localizations.override(
-        context: context,
-        delegates: const [FlutterQuillLocalizations.delegate],
-        // SM-013 BR-08: the rules are a decorative background painted behind
-        // the text, so they never block input.
-        child: content.ruled
-            ? CustomPaint(
-                painter: _RuledLinesPainter(
-                  color: const Color(letterDefaultInk).withValues(alpha: 0.12),
-                  lineHeight: _fontSize * _lineHeight,
-                ),
-                child: editor,
-              )
-            : editor,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.xl,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            decoration: BoxDecoration(
+              color: paper,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: accent.withValues(alpha: 0.35)),
+            ),
+            // The editor needs FlutterQuillLocalizations. The app shell does
+            // not register the delegate (and letters cannot reach into it), so
+            // the feature supplies it here — merged over the app's own.
+            child: Localizations.override(
+              context: context,
+              delegates: const [FlutterQuillLocalizations.delegate],
+              // SM-013 BR-08: the rules are a decorative background painted
+              // behind the text, so they never block input.
+              child: content.ruled
+                  ? CustomPaint(
+                      painter: _RuledLinesPainter(
+                        color: const Color(
+                          letterDefaultInk,
+                        ).withValues(alpha: 0.12),
+                        lineHeight: _fontSize * _lineHeight,
+                      ),
+                      child: editor,
+                    )
+                  : editor,
+            ),
+          ),
+          // Template decorations (e.g. 🎂🎈 for a birthday) in the corners —
+          // the written content is unchanged, these just dress the frame.
+          ..._templateDecorations(templateIcons(content.templateId)),
+        ],
       ),
     );
+  }
+
+  List<Widget> _templateDecorations(List<String> icons) {
+    if (icons.isEmpty) return const [];
+    String at(int i) => icons[i % icons.length];
+    Widget deco(String e, double size) =>
+        Text(e, style: TextStyle(fontSize: size));
+    // Decorations scattered around the whole border (corners + edge midpoints),
+    // hanging just off the frame — like the fc1776 demo. They ride the frame,
+    // so they spread out as the letter grows.
+    return [
+      Positioned(top: -16, left: -6, child: deco(at(0), 28)),
+      Positioned(
+        top: -20,
+        left: 0,
+        right: 0,
+        child: Center(child: deco(at(1), 26)),
+      ),
+      Positioned(top: -16, right: -6, child: deco(at(2), 28)),
+      Positioned(
+        top: 0,
+        bottom: 0,
+        right: -14,
+        child: Center(child: deco(at(3), 26)),
+      ),
+      Positioned(bottom: -14, right: -4, child: deco(at(0), 26)),
+      Positioned(
+        bottom: -18,
+        left: 0,
+        right: 0,
+        child: Center(child: deco(at(2), 26)),
+      ),
+      Positioned(bottom: -14, left: -4, child: deco(at(1), 26)),
+      Positioned(
+        top: 0,
+        bottom: 0,
+        left: -14,
+        child: Center(child: deco(at(3), 26)),
+      ),
+    ];
   }
 }
 

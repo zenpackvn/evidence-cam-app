@@ -260,27 +260,43 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
       final frameInfo = await codec.getNextFrame();
       final src = frameInfo.image;
 
-      // 1. Draw the sensor image upright (rotate by sensorOrientation, mirror
-      // the front camera).
-      final orientation = desc.sensorOrientation;
-      final mirror = desc.lensDirection == CameraLensDirection.front;
-      final swap = (orientation ~/ 90).isOdd;
-      final uw = swap ? src.height : src.width;
-      final uh = swap ? src.width : src.height;
-      final rec = ui.PictureRecorder();
-      final rc = Canvas(rec);
-      rc.translate(uw / 2, uh / 2);
-      if (mirror) rc.scale(-1, 1);
-      rc.rotate(orientation * math.pi / 180);
-      rc.translate(-src.width / 2, -src.height / 2);
-      rc.drawImage(
-        src,
-        Offset.zero,
-        Paint()..filterQuality = FilterQuality.high,
-      );
-      final upright = await rec.endRecording().toImage(uw, uh);
+      // 1. Make sure the photo is upright. Many devices already return the
+      // image in display orientation — only rotate when it disagrees with the
+      // (portrait) screen, so we never turn an already-correct shot sideways.
+      final portraitScreen = screen.height >= screen.width;
+      final portraitImg = src.height >= src.width;
+      final ui.Image upright;
+      final bool rotatedNew;
+      if (portraitScreen == portraitImg) {
+        upright = src;
+        rotatedNew = false;
+      } else {
+        final orientation = desc.sensorOrientation;
+        final mirror = desc.lensDirection == CameraLensDirection.front;
+        final uw = src.height;
+        final uh = src.width;
+        final rec = ui.PictureRecorder();
+        final rc = Canvas(rec);
+        rc.translate(uw / 2, uh / 2);
+        if (mirror) rc.scale(-1, 1);
+        rc.rotate(orientation * math.pi / 180);
+        rc.translate(-src.width / 2, -src.height / 2);
+        rc.drawImage(
+          src,
+          Offset.zero,
+          Paint()..filterQuality = FilterQuality.high,
+        );
+        upright = await rec.endRecording().toImage(uw, uh);
+        rotatedNew = true;
+      }
+      final uw = upright.width;
+      final uh = upright.height;
 
-      // 2. Map the on-screen window into the upright image via the cover-fit.
+      // Crop to the picture area *inside* the frame border (not the whole tem),
+      // so we keep only what the user framed — no extra beyond the window.
+      final crop = window.deflate(window.shortestSide * 0.11);
+
+      // 2. Map the on-screen crop rect into the upright image via the cover-fit.
       final coverScale = math.max(screen.width / uw, screen.height / uh);
       final scaledW = uw * coverScale;
       final scaledH = uh * coverScale;
@@ -288,20 +304,20 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
       final offY = (scaledH - screen.height) / 2;
       double clampD(double v, double hi) => v < 0 ? 0 : (v > hi ? hi : v);
       final srcRect = Rect.fromLTRB(
-        clampD((window.left + offX) / coverScale, uw.toDouble()),
-        clampD((window.top + offY) / coverScale, uh.toDouble()),
-        clampD((window.right + offX) / coverScale, uw.toDouble()),
-        clampD((window.bottom + offY) / coverScale, uh.toDouble()),
+        clampD((crop.left + offX) / coverScale, uw.toDouble()),
+        clampD((crop.top + offY) / coverScale, uh.toDouble()),
+        clampD((crop.right + offX) / coverScale, uw.toDouble()),
+        clampD((crop.bottom + offY) / coverScale, uh.toDouble()),
       );
       if (srcRect.width < 1 || srcRect.height < 1) {
         src.dispose();
-        upright.dispose();
+        if (rotatedNew) upright.dispose();
         return path;
       }
 
-      // 3. Render the crop to a portrait tem-shaped PNG.
+      // 3. Render the crop to a PNG matching the picture area's shape.
       const outH = 1024;
-      final outW = (outH * kStampAspect).round();
+      final outW = (outH * (crop.width / crop.height)).round();
       final rec2 = ui.PictureRecorder();
       Canvas(rec2).drawImageRect(
         upright,
@@ -312,7 +328,7 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
       final out = await rec2.endRecording().toImage(outW, outH);
       final data = await out.toByteData(format: ui.ImageByteFormat.png);
       src.dispose();
-      upright.dispose();
+      if (rotatedNew) upright.dispose();
       out.dispose();
       if (data == null) return path;
       final outPath =

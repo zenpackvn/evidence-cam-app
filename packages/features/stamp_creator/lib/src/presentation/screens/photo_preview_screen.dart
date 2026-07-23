@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 
 import '../widgets/creator_theme.dart';
 import '../widgets/stamp_frame_overlay.dart';
@@ -165,68 +166,20 @@ class _FramedZoomablePhotoState extends State<_FramedZoomablePhoto> {
   Size? _imgSize;
   int _maxPointers = 0;
   bool _centered = false;
+  final GlobalKey _captureKey = GlobalKey();
 
-  // Last laid-out geometry (viewport window size + the photo's layout size), so
-  // the crop can map the visible window back to source pixels.
-  double _winW = 0;
-  double _winH = 0;
-  double _w = 0;
-  double _h = 0;
-
-  /// Renders exactly what's inside the tem window to a rectangular PNG on disk
-  /// and returns its path — the crop the wizard should work on. Null if the
-  /// image isn't ready (the caller falls back to the original).
+  /// Captures exactly what's shown in the picture area (WYSIWYG: the photo as
+  /// contained / zoomed / positioned, with the paper behind any letterbox) to a
+  /// PNG. Null on failure — the caller falls back to the original image.
   Future<String?> cropToSquareFile() async {
-    final size = _imgSize;
-    final file = File(widget.imagePath);
-    if (size == null ||
-        _winW <= 0 ||
-        _winH <= 0 ||
-        _w <= 0 ||
-        _h <= 0 ||
-        !file.existsSync()) {
-      return null;
-    }
     try {
-      final bytes = await file.readAsBytes();
-      final codec = await ui.instantiateImageCodec(bytes);
-      final frameInfo = await codec.getNextFrame();
-      final src = frameInfo.image;
-
-      // The visible window (0,0)-(winW,winH) in viewport space → child (layout)
-      // space via the inverse transform → source-pixel space by the layout↔px
-      // ratio.
-      final inv = Matrix4.inverted(_controller.value);
-      final tl = MatrixUtils.transformPoint(inv, Offset.zero);
-      final br = MatrixUtils.transformPoint(inv, Offset(_winW, _winH));
-      final sx = src.width / _w;
-      final sy = src.height / _h;
-      double clampD(double v, double hi) => v < 0 ? 0 : (v > hi ? hi : v);
-      final srcRect = Rect.fromLTRB(
-        clampD(tl.dx * sx, src.width.toDouble()),
-        clampD(tl.dy * sy, src.height.toDouble()),
-        clampD(br.dx * sx, src.width.toDouble()),
-        clampD(br.dy * sy, src.height.toDouble()),
-      );
-      if (srcRect.width < 1 || srcRect.height < 1) return null;
-
-      const outH = 1024;
-      final outW = (outH * (_winW / _winH)).round();
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-      canvas.drawImageRect(
-        src,
-        srcRect,
-        Rect.fromLTWH(0, 0, outW.toDouble(), outH.toDouble()),
-        Paint()..filterQuality = FilterQuality.high,
-      );
-      final picture = recorder.endRecording();
-      final outImg = await picture.toImage(outW, outH);
-      final data = await outImg.toByteData(format: ui.ImageByteFormat.png);
-      src.dispose();
-      picture.dispose();
-      outImg.dispose();
+      final ro = _captureKey.currentContext?.findRenderObject();
+      if (ro is! RenderRepaintBoundary) return null;
+      final img = await ro.toImage(pixelRatio: 3);
+      final data = await img.toByteData(format: ui.ImageByteFormat.png);
+      img.dispose();
       if (data == null) return null;
+      final file = File(widget.imagePath);
       final path =
           '${file.parent.path}/sm_crop_'
           '${DateTime.now().microsecondsSinceEpoch}.png';
@@ -318,22 +271,31 @@ class _FramedZoomablePhotoState extends State<_FramedZoomablePhoto> {
         builder: (context, c) {
           final inset =
               (c.maxWidth < c.maxHeight ? c.maxWidth : c.maxHeight) * 0.09;
-          final winW = c.maxWidth - inset * 2;
-          final winH = c.maxHeight - inset * 2;
-          final window = Rect.fromLTWH(inset, inset, winW, winH);
+          final window = Rect.fromLTWH(
+            inset,
+            inset,
+            c.maxWidth - inset * 2,
+            c.maxHeight - inset * 2,
+          );
+          // The picture area inside the frame border — what the saved crop is.
+          final hole = window.deflate(window.shortestSide * 0.11);
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Bottom layer: catches swipes on the margin *outside* the tem
-              // (the photo viewer on top handles gestures inside the window).
+              // Bottom layer: catches swipes on the margin *outside* the picture
+              // (the viewer on top handles gestures inside it).
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onHorizontalDragEnd: _onOutsideSwipe,
                 onVerticalDragEnd: _onOutsideSwipe,
               ),
-              Padding(
-                padding: EdgeInsets.all(inset),
-                child: ClipRect(child: _viewer(winW, winH)),
+              Positioned.fromRect(
+                rect: hole,
+                // Capture exactly the picture area, WYSIWYG.
+                child: RepaintBoundary(
+                  key: _captureKey,
+                  child: ClipRect(child: _viewer(hole.width, hole.height)),
+                ),
               ),
               IgnorePointer(
                 child: CustomPaint(
@@ -351,7 +313,7 @@ class _FramedZoomablePhotoState extends State<_FramedZoomablePhoto> {
     );
   }
 
-  Widget _viewer(double winW, double winH) {
+  Widget _viewer(double vw, double vh) {
     final file = File(widget.imagePath);
     if (!file.existsSync()) {
       return ColoredBox(
@@ -361,40 +323,35 @@ class _FramedZoomablePhotoState extends State<_FramedZoomablePhoto> {
     }
     final size = _imgSize;
     if (size == null) {
-      return Image.file(file, fit: BoxFit.cover, width: winW, height: winH);
+      return Image.file(file, fit: BoxFit.cover, width: vw, height: vh);
     }
-    // Lay the photo out just big enough to cover the window at 1× — so it can
-    // never be shrunk below covering it (minScale 1), only zoomed in and panned.
+    // Cover: the photo fills the frame so its edges line up with the frame's —
+    // never smaller (minScale 1), only zoomed in and panned; the pan is clamped
+    // so an edge can't be pulled inside the frame (no blank border).
     final imgAspect = size.width / size.height;
-    final winAspect = winW / winH;
+    final vAspect = vw / vh;
     final double w;
     final double h;
-    if (imgAspect >= winAspect) {
-      h = winH;
-      w = winH * imgAspect;
+    if (imgAspect >= vAspect) {
+      h = vh;
+      w = vh * imgAspect;
     } else {
-      w = winW;
-      h = winW / imgAspect;
+      w = vw;
+      h = vw / imgAspect;
     }
-    _winW = winW;
-    _winH = winH;
-    _w = w;
-    _h = h;
     if (!_centered) {
       _centered = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _controller.value = Matrix4.identity()
-          ..translateByDouble(-(w - winW) / 2, -(h - winH) / 2, 0, 1);
+          ..translateByDouble(-(w - vw) / 2, -(h - vh) / 2, 0, 1);
       });
     }
     return InteractiveViewer(
       transformationController: _controller,
       constrained: false,
       minScale: 1,
-      maxScale: 5,
-      // Zero margin clamps the pan so an edge of the photo can't be dragged
-      // inside the window — it always stays covered (no blank border).
+      maxScale: 6,
       boundaryMargin: EdgeInsets.zero,
       onInteractionStart: (d) => _maxPointers = d.pointerCount,
       onInteractionUpdate: (d) {

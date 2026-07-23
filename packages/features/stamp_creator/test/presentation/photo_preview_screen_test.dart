@@ -48,7 +48,13 @@ void main() {
       onCancel: () => cancelled = true,
     );
 
-    await tester.tap(find.text('Xác nhận'));
+    // Xác nhận captures the picture area (RepaintBoundary → image) before
+    // firing onConfirm — real async, so run it under runAsync and give it time.
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Xác nhận'));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    });
+    await tester.pump();
     expect(confirmed, isTrue);
 
     await tester.tap(find.text('Hủy'));
