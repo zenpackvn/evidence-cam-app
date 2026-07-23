@@ -10,10 +10,10 @@ import '../../domain/stamp_draft.dart';
 export '../../domain/stamp_draft.dart'
     show StampFrameStyle, StampFrameStyleLabel;
 
-/// The stamp's shape: a landscape rectangle (width : height), like a classic
-/// postage stamp. Used everywhere the tem is framed/cropped so it stays
+/// The stamp's shape: a portrait rectangle (width : height), like a classic
+/// upright postage stamp. Used everywhere the tem is framed/cropped so it stays
 /// consistent across the camera, preview, wizard and the saved image.
-const kStampAspect = 1.4;
+const kStampAspect = 0.72;
 
 /// Draws the vintage stamp frame around [window]: a white perforated/toothed
 /// paper edge, a white margin, and the black key-line around the picture.
@@ -207,7 +207,8 @@ class StampFramedPhoto extends StatelessWidget {
       aspectRatio: kStampAspect,
       child: LayoutBuilder(
         builder: (context, c) {
-          final inset = c.maxHeight * 0.09;
+          final inset =
+              (c.maxWidth < c.maxHeight ? c.maxWidth : c.maxHeight) * 0.09;
           final window = Rect.fromLTWH(
             inset,
             inset,

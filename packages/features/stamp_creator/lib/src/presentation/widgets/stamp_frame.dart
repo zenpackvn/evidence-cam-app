@@ -30,13 +30,17 @@ class StampFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // A landscape rectangle — the same tem the camera framed, so every wizard
+    // A portrait rectangle — the same tem the camera framed, so every wizard
     // step matches "Xem trước ảnh" (SM-005/SM-009).
     return AspectRatio(
       aspectRatio: kStampAspect,
       child: LayoutBuilder(
         builder: (context, cons) {
-          final inset = cons.maxHeight * 0.09;
+          final inset =
+              (cons.maxWidth < cons.maxHeight
+                  ? cons.maxWidth
+                  : cons.maxHeight) *
+              0.09;
           final window = Rect.fromLTWH(
             inset,
             inset,

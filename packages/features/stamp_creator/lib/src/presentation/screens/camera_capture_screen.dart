@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:app_platform/app_platform.dart';
 import 'package:app_ui/app_ui.dart';
@@ -7,6 +10,26 @@ import 'package:flutter/services.dart'
     show HapticFeedback, MethodChannel, SystemSound, SystemSoundType;
 
 import '../widgets/stamp_frame_overlay.dart';
+
+/// The tem viewfinder rect for a full-screen preview of [screen], at pinch
+/// [scale]. Shared by the overlay and the capture crop so they line up.
+Rect cameraTemWindow(Size screen, double scale) {
+  final maxW = screen.width * 0.86;
+  final maxH = screen.height * 0.62;
+  var w = maxW;
+  var h = w / kStampAspect;
+  if (h > maxH) {
+    h = maxH;
+    w = h * kStampAspect;
+  }
+  w *= scale;
+  h *= scale;
+  return Rect.fromCenter(
+    center: Offset(screen.width / 2, screen.height * 0.44),
+    width: w,
+    height: h,
+  );
+}
 
 /// SM-005 — the in-app camera for "Chụp ảnh mới": a full-screen live preview
 /// with a square stamp viewfinder in the middle (the stamp is 1:1), so the user
@@ -204,11 +227,17 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
 
   Future<void> _capture() async {
     if (_capturing || !widget.camera.isInitialized) return;
+    final screen = MediaQuery.of(context).size;
+    final window = cameraTemWindow(screen, _frameScale);
     setState(() => _capturing = true);
     unawaited(_playShutter());
     try {
       final file = await widget.camera.takePicture();
-      widget.onCaptured(file.path, _frame);
+      // Crop the shot to exactly the tem window (esp. when it was pinched
+      // smaller), so we keep only what was inside the frame.
+      final cropped = await _cropToWindow(file.path, screen, window);
+      if (!mounted) return;
+      widget.onCaptured(cropped, _frame);
     } on Object {
       if (mounted) {
         setState(() => _capturing = false);
@@ -216,6 +245,83 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
           const SnackBar(content: Text('Không chụp được ảnh. Thử lại nhé.')),
         );
       }
+    }
+  }
+
+  /// Crops the captured photo to the tem [window] (screen coordinates), undoing
+  /// the camera's sensor rotation / front-camera mirror and the preview's
+  /// cover-fit. Returns the original path on any failure.
+  Future<String> _cropToWindow(String path, Size screen, Rect window) async {
+    final desc = _description;
+    if (desc == null) return path;
+    try {
+      final bytes = await File(path).readAsBytes();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frameInfo = await codec.getNextFrame();
+      final src = frameInfo.image;
+
+      // 1. Draw the sensor image upright (rotate by sensorOrientation, mirror
+      // the front camera).
+      final orientation = desc.sensorOrientation;
+      final mirror = desc.lensDirection == CameraLensDirection.front;
+      final swap = (orientation ~/ 90).isOdd;
+      final uw = swap ? src.height : src.width;
+      final uh = swap ? src.width : src.height;
+      final rec = ui.PictureRecorder();
+      final rc = Canvas(rec);
+      rc.translate(uw / 2, uh / 2);
+      if (mirror) rc.scale(-1, 1);
+      rc.rotate(orientation * math.pi / 180);
+      rc.translate(-src.width / 2, -src.height / 2);
+      rc.drawImage(
+        src,
+        Offset.zero,
+        Paint()..filterQuality = FilterQuality.high,
+      );
+      final upright = await rec.endRecording().toImage(uw, uh);
+
+      // 2. Map the on-screen window into the upright image via the cover-fit.
+      final coverScale = math.max(screen.width / uw, screen.height / uh);
+      final scaledW = uw * coverScale;
+      final scaledH = uh * coverScale;
+      final offX = (scaledW - screen.width) / 2;
+      final offY = (scaledH - screen.height) / 2;
+      double clampD(double v, double hi) => v < 0 ? 0 : (v > hi ? hi : v);
+      final srcRect = Rect.fromLTRB(
+        clampD((window.left + offX) / coverScale, uw.toDouble()),
+        clampD((window.top + offY) / coverScale, uh.toDouble()),
+        clampD((window.right + offX) / coverScale, uw.toDouble()),
+        clampD((window.bottom + offY) / coverScale, uh.toDouble()),
+      );
+      if (srcRect.width < 1 || srcRect.height < 1) {
+        src.dispose();
+        upright.dispose();
+        return path;
+      }
+
+      // 3. Render the crop to a portrait tem-shaped PNG.
+      const outH = 1024;
+      final outW = (outH * kStampAspect).round();
+      final rec2 = ui.PictureRecorder();
+      Canvas(rec2).drawImageRect(
+        upright,
+        srcRect,
+        Rect.fromLTWH(0, 0, outW.toDouble(), outH.toDouble()),
+        Paint()..filterQuality = FilterQuality.high,
+      );
+      final out = await rec2.endRecording().toImage(outW, outH);
+      final data = await out.toByteData(format: ui.ImageByteFormat.png);
+      src.dispose();
+      upright.dispose();
+      out.dispose();
+      if (data == null) return path;
+      final outPath =
+          '${File(path).parent.path}/sm_cam_'
+          '${DateTime.now().microsecondsSinceEpoch}.png';
+      await File(outPath).writeAsBytes(data.buffer.asUint8List());
+      return outPath;
+    } on Object {
+      return path;
     }
   }
 
@@ -343,16 +449,9 @@ class _StampViewfinder extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final w = constraints.maxWidth * 0.86 * scale;
-        final h = w / kStampAspect;
-        final center = Offset(
-          constraints.maxWidth / 2,
-          constraints.maxHeight * 0.44,
-        );
-        final window = Rect.fromCenter(
-          center: center,
-          width: w,
-          height: h,
+        final window = cameraTemWindow(
+          Size(constraints.maxWidth, constraints.maxHeight),
+          scale,
         );
         return CustomPaint(
           painter: StampFramePainter(window: window, style: style),

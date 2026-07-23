@@ -316,7 +316,8 @@ class _FramedZoomablePhotoState extends State<_FramedZoomablePhoto> {
       aspectRatio: kStampAspect,
       child: LayoutBuilder(
         builder: (context, c) {
-          final inset = c.maxHeight * 0.09;
+          final inset =
+              (c.maxWidth < c.maxHeight ? c.maxWidth : c.maxHeight) * 0.09;
           final winW = c.maxWidth - inset * 2;
           final winH = c.maxHeight - inset * 2;
           final window = Rect.fromLTWH(inset, inset, winW, winH);
