@@ -5,6 +5,7 @@ import 'package:analytics/analytics.dart';
 import 'package:app_platform/app_platform.dart';
 import 'package:app_ui/app_ui.dart';
 import 'package:config/config.dart';
+import 'package:database/database.dart';
 import 'package:feature_auth/feature_auth.dart';
 // fst:feature:notifications:start
 import 'package:feature_notifications/feature_notifications.dart';
@@ -130,8 +131,30 @@ class _AppState extends State<App> {
     }
   }
 
+  static const _lastUidKey = 'last_synced_uid';
+
+  /// Ensures the local cache belongs to the account signing in. When it can't
+  /// be confirmed (a different uid last synced here, or none is recorded — e.g.
+  /// the first run after this fix, or a device that already holds someone
+  /// else's stamps), drop the cached rows + sync cursors so this user pulls
+  /// their own data from the server instead of seeing leftovers / reusing a
+  /// stale cursor.
+  void _resetLocalDataOnAccountSwitch(String uid) {
+    final prefs = getIt.isRegistered<SharedPreferences>()
+        ? getIt<SharedPreferences>()
+        : null;
+    final last = prefs?.getString(_lastUidKey);
+    if (last != uid && getIt.isRegistered<ObjectBox>()) {
+      getIt<ObjectBox>().clearUserData();
+    }
+    unawaited(prefs?.setString(_lastUidKey, uid));
+  }
+
   void _onAuthChanged(AuthState state) {
     if (state is AuthAuthenticated) {
+      // Must run before the sync controllers start (below) so the pull starts
+      // from a clean slate for the freshly-signed-in account.
+      _resetLocalDataOnAccountSwitch(state.user.id);
       _syncNotificationSubscriptions(state.user.id);
     }
     for (final c in _syncControllers) {

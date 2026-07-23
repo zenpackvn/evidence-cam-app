@@ -218,9 +218,7 @@ class _MailboxMenuSheet extends StatelessWidget {
       final selected = activeFilter == status;
       return ListTile(
         leading: Icon(
-          selected
-              ? Icons.radio_button_checked
-              : Icons.radio_button_unchecked,
+          selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
           color: selected ? scheme.primary : scheme.onSurfaceVariant,
         ),
         title: Text(label),
@@ -566,33 +564,40 @@ class _OccasionEnvelope extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
+          // The envelope, a bit bigger, near the bottom.
           Positioned(
-            bottom: 6,
+            bottom: 5,
             child: Icon(
               Icons.drafts,
-              size: 34,
+              size: 40,
               color: scheme.primary.withValues(alpha: 0.5),
             ),
           ),
+          // The note tucked into the envelope — centred, smaller, and low enough
+          // to look like it's sitting inside rather than floating above.
           Positioned(
-            top: 4,
-            child: Container(
-              width: 30,
-              height: 26,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(5),
-                border: Border.all(color: context.brand.borderSubtle),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x22000000),
-                    blurRadius: 3,
-                    offset: Offset(0, 1),
-                  ),
-                ],
+            top: 10,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 22,
+                height: 16,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(color: context.brand.borderSubtle),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x22000000),
+                      blurRadius: 3,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Text(icon, style: const TextStyle(fontSize: 11)),
               ),
-              child: Text(icon, style: const TextStyle(fontSize: 16)),
             ),
           ),
         ],
