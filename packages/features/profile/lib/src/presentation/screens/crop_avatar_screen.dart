@@ -134,7 +134,7 @@ class _CropAvatarScreenState extends State<CropAvatarScreen> {
                           quarterTurns: _quarterTurns,
                           child: Image.file(
                             File(widget.imagePath),
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                             errorBuilder: (_, _, _) => ColoredBox(
                               color: scheme.surfaceContainerHighest,
                               child: Icon(
