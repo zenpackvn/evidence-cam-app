@@ -45,6 +45,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Disable Impeller: its GPU toImage() path renders the captured/cropped
+             stamp photo too dark (SM-005/SM-006 preview + crop). Skia's toImage is
+             colour-faithful, so the saved stamp matches what the user picked/shot.
+             Keep until Impeller's readback colour bug is fixed upstream. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
     </application>
     <queries>
         <intent>
