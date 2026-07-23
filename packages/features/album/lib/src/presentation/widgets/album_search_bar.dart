@@ -2,9 +2,10 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 
 /// The Album search row (F02-S10): a rounded search field plus a square
-/// filter button (sort). Live: [onChanged] filters as the user types, the
-/// topnav's search icon focuses the field via [focusNode].
-class AlbumSearchBar extends StatelessWidget {
+/// filter button (sort). Live: [onChanged] filters as the user types; the
+/// trailing ✕ clears the field and reports an empty query so the full list
+/// comes back. [focusNode] lets callers focus the field.
+class AlbumSearchBar extends StatefulWidget {
   const AlbumSearchBar({
     this.onChanged,
     this.onFilter,
@@ -15,6 +16,33 @@ class AlbumSearchBar extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final VoidCallback? onFilter;
   final FocusNode? focusNode;
+
+  @override
+  State<AlbumSearchBar> createState() => _AlbumSearchBarState();
+}
+
+class _AlbumSearchBarState extends State<AlbumSearchBar> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleChanged(String value) {
+    widget.onChanged?.call(value);
+    // Rebuild so the clear (✕) button shows/hides with the text.
+    setState(() {});
+  }
+
+  void _clear() {
+    _controller.clear();
+    // Report the now-empty query so the album filter resets to every stamp.
+    widget.onChanged?.call('');
+    widget.focusNode?.unfocus();
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +70,9 @@ class AlbumSearchBar extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: TextField(
-                    focusNode: focusNode,
-                    onChanged: onChanged,
+                    controller: _controller,
+                    focusNode: widget.focusNode,
+                    onChanged: _handleChanged,
                     decoration: InputDecoration(
                       isCollapsed: true,
                       border: InputBorder.none,
@@ -54,13 +83,26 @@ class AlbumSearchBar extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (_controller.text.isNotEmpty)
+                  GestureDetector(
+                    onTap: _clear,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: AppSpacing.sm),
+                      child: Icon(
+                        Icons.close,
+                        size: 18,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
         InkWell(
-          onTap: onFilter,
+          onTap: widget.onFilter,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Container(
             width: 48,

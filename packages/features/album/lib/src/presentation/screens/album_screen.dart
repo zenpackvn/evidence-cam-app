@@ -63,31 +63,36 @@ class AlbumScreen extends StatelessWidget {
       create: (_) => GetIt.instance<AlbumCubit>()..load(),
       child: Scaffold(
         backgroundColor: _ground,
-        body: SafeArea(
-          bottom: false,
-          child: BlocBuilder<AlbumCubit, AlbumState>(
-            builder: (context, state) {
-              // BR-10: the notice sits above the list rather than over it, and
-              // shows in every branch (loading / error / loaded).
-              return Column(
-                children: [
-                  if (state.isOffline)
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        AppSpacing.xxl,
-                        AppSpacing.md,
-                        AppSpacing.xxl,
-                        0,
+        // Tapping anywhere outside the search field dismisses the keyboard.
+        body: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: SafeArea(
+            bottom: false,
+            child: BlocBuilder<AlbumCubit, AlbumState>(
+              builder: (context, state) {
+                // BR-10: the notice sits above the list rather than over it, and
+                // shows in every branch (loading / error / loaded).
+                return Column(
+                  children: [
+                    if (state.isOffline)
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          AppSpacing.xxl,
+                          AppSpacing.md,
+                          AppSpacing.xxl,
+                          0,
+                        ),
+                        child: OfflineBanner(
+                          isOffline: true,
+                          label: offlineLabel,
+                        ),
                       ),
-                      child: OfflineBanner(
-                        isOffline: true,
-                        label: offlineLabel,
-                      ),
-                    ),
-                  Expanded(child: _content(context, state)),
-                ],
-              );
-            },
+                    Expanded(child: _content(context, state)),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -193,7 +198,8 @@ class _AlbumBodyState extends State<_AlbumBody> {
     final result = await showModalBottomSheet<_AlbumMenuAction>(
       context: context,
       backgroundColor: context.brand.surfaceElevated,
-      builder: (_) => _AlbumMenuSheet(showSamples: widget.onBrowseSamples != null),
+      builder: (_) =>
+          _AlbumMenuSheet(showSamples: widget.onBrowseSamples != null),
     );
     if (!mounted || result == null) return;
     switch (result) {
@@ -220,18 +226,6 @@ class _AlbumBodyState extends State<_AlbumBody> {
     if (sort != null) cubit.setSort(sort);
   }
 
-  void _focusSearch() {
-    if (widget.state.isEmpty) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text('Chưa có tem để tìm kiếm.')),
-        );
-      return;
-    }
-    _searchFocus.requestFocus();
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
@@ -240,135 +234,144 @@ class _AlbumBodyState extends State<_AlbumBody> {
     if (state.isEmpty) {
       return Column(
         children: [
-          _AlbumTopNav(onMenu: _openMenu, onSearch: _focusSearch),
-          Expanded(child: _AlbumEmpty(onCreate: widget.onCreate)),
+          _AlbumTopNav(onMenu: _openMenu),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: context.read<AlbumCubit>().load,
+              child: _AlbumEmpty(onCreate: widget.onCreate),
+            ),
+          ),
         ],
       );
     }
     final visible = state.visibleStamps;
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: _AlbumTopNav(onMenu: _openMenu, onSearch: _focusSearch),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xxl,
-            0,
-            AppSpacing.xxl,
-            AppSpacing.md,
+    return RefreshIndicator(
+      onRefresh: context.read<AlbumCubit>().load,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: _AlbumTopNav(onMenu: _openMenu),
           ),
-          sliver: SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Page h1 in the flow-5 serif, mirroring the mailbox tab —
-                // collection screens lead with a large title above search.
-                Text(
-                  'Sưu tầm',
-                  style: AppSerif.style(
-                    fontSize: 38,
-                    color: context.colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Tất cả những con tem xinh xắn bạn đã tạo.',
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: context.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    if (widget.onBrowseSamples != null)
-                      TextButton.icon(
-                        onPressed: widget.onBrowseSamples,
-                        icon: const Icon(
-                          Icons.auto_awesome_outlined,
-                          size: 18,
-                        ),
-                        label: const Text('Tem mẫu'),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AlbumSearchBar(
-                  focusNode: _searchFocus,
-                  onChanged: context.read<AlbumCubit>().setQuery,
-                  onFilter: _openSort,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AlbumStatsBanner(count: state.stamps.length),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    _ViewModeToggle(
-                      mode: state.viewMode,
-                      onChanged: context.read<AlbumCubit>().setViewMode,
-                    ),
-                  ],
-                ),
-                if (state.sort != AlbumSort.newest)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.md),
-                    child: Row(
-                      children: [
-                        InputChip(
-                          label: Text('Sắp xếp: ${_sortLabel(state.sort)}'),
-                          onDeleted: () => context
-                              .read<AlbumCubit>()
-                              .setSort(AlbumSort.newest),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        if (visible.isEmpty && state.query.isNotEmpty)
-          const SliverToBoxAdapter(child: _NoStampMatches())
-        else
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.xxl,
               0,
               AppSpacing.xxl,
-              AppSpacing.xxl,
+              AppSpacing.md,
             ),
-            sliver: switch (state.viewMode) {
-              AlbumViewMode.grid => SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: AppSpacing.sm,
-                  mainAxisSpacing: AppSpacing.md,
-                  // 3/4 image plus one caption line under it (StampTile).
-                  childAspectRatio: 0.62,
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Page h1 in the flow-5 serif, mirroring the mailbox tab —
+                  // collection screens lead with a large title above search.
+                  Text(
+                    'Sưu tầm',
+                    style: AppSerif.style(
+                      fontSize: 38,
+                      color: context.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Tất cả những con tem xinh xắn bạn đã tạo.',
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            color: context.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      if (widget.onBrowseSamples != null)
+                        TextButton.icon(
+                          onPressed: widget.onBrowseSamples,
+                          icon: const Icon(
+                            Icons.auto_awesome_outlined,
+                            size: 18,
+                          ),
+                          label: const Text('Tem mẫu'),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AlbumSearchBar(
+                    focusNode: _searchFocus,
+                    onChanged: context.read<AlbumCubit>().setQuery,
+                    onFilter: _openSort,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AlbumStatsBanner(count: state.stamps.length),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      _ViewModeToggle(
+                        mode: state.viewMode,
+                        onChanged: context.read<AlbumCubit>().setViewMode,
+                      ),
+                    ],
+                  ),
+                  if (state.sort != AlbumSort.newest)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.md),
+                      child: Row(
+                        children: [
+                          InputChip(
+                            label: Text('Sắp xếp: ${_sortLabel(state.sort)}'),
+                            onDeleted: () => context.read<AlbumCubit>().setSort(
+                              AlbumSort.newest,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (visible.isEmpty && state.query.isNotEmpty)
+            const SliverToBoxAdapter(child: _NoStampMatches())
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xxl,
+                0,
+                AppSpacing.xxl,
+                AppSpacing.xxl,
+              ),
+              sliver: switch (state.viewMode) {
+                AlbumViewMode.grid => SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: AppSpacing.sm,
+                    mainAxisSpacing: AppSpacing.md,
+                    // 3/4 image plus one caption line under it (StampTile).
+                    childAspectRatio: 0.62,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) => StampTile(
+                      stamp: visible[i],
+                      onTap: () => widget.onOpenStamp(visible[i]),
+                    ),
+                    childCount: visible.length,
+                  ),
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) => StampTile(
+                AlbumViewMode.list => SliverList.separated(
+                  itemCount: visible.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: AppSpacing.sm),
+                  itemBuilder: (context, i) => _StampListItem(
                     stamp: visible[i],
                     onTap: () => widget.onOpenStamp(visible[i]),
                   ),
-                  childCount: visible.length,
                 ),
-              ),
-              AlbumViewMode.list => SliverList.separated(
-                itemCount: visible.length,
-                separatorBuilder: (_, _) =>
-                    const SizedBox(height: AppSpacing.sm),
-                itemBuilder: (context, i) => _StampListItem(
-                  stamp: visible[i],
-                  onTap: () => widget.onOpenStamp(visible[i]),
-                ),
-              ),
-            },
-          ),
-      ],
+              },
+            ),
+        ],
+      ),
     );
   }
 }
@@ -604,13 +607,12 @@ class _StampListItem extends StatelessWidget {
 }
 
 /// The Album top nav (F02-S19 `topnav`): the menu (☰) opens the action sheet
-/// (refresh, sample catalog), the centred "StampMail" wordmark, and the
-/// search icon focuses the search bar (or explains when the album is empty).
+/// (refresh, sample catalog) and the centred "StampMail" wordmark. Search lives
+/// in the dedicated bar below the title, so there is no top-nav search icon.
 class _AlbumTopNav extends StatelessWidget {
-  const _AlbumTopNav({required this.onMenu, required this.onSearch});
+  const _AlbumTopNav({required this.onMenu});
 
   final VoidCallback onMenu;
-  final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context) {
@@ -633,29 +635,30 @@ class _AlbumTopNav extends StatelessWidget {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'StampMail',
-                    // F02-S19 wordmark: Playfair Display 26.
-                    style: AppSerif.style(fontSize: 26, color: scheme.primary),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Icon(
-                    Icons.waves,
-                    size: 16,
-                    color: scheme.primary.withValues(alpha: 0.7),
-                  ),
-                ],
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'StampMail',
+                      // F02-S19 wordmark: Playfair Display 26.
+                      style: AppSerif.style(
+                        fontSize: 26,
+                        color: scheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Icon(
+                      Icons.waves,
+                      size: 16,
+                      color: scheme.primary.withValues(alpha: 0.7),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-          IconButton(
-            onPressed: onSearch,
-            tooltip: 'Tìm kiếm',
-            icon: Icon(Icons.search, size: 22, color: scheme.onSurface),
-          ),
+          // Balances the leading menu button so the wordmark stays centred now
+          // that the top-nav search icon is gone (search is in the bar below).
+          const SizedBox(width: 48),
         ],
       ),
     );
@@ -670,8 +673,10 @@ class _AlbumEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    // Scrollable so small viewports never overflow the fixed-height column.
+    // Scrollable so small viewports never overflow the fixed-height column,
+    // and always-scrollable so pull-to-refresh works over the empty state.
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(AppSpacing.xxl),
       child: Column(
         children: [
