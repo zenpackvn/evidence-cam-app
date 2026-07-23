@@ -89,10 +89,13 @@ class Adjustments {
 /// the camera and kept through the whole wizard so every step — filter, decorate,
 /// preview — shows the same tem; also selectable on the decorate "Viền tem"
 /// panel.
-enum StampFrameStyle { perforated, sawtooth, scalloped, classic, dashed }
+/// [none] is the default: just the photo (no tem edge), so the wizard shows the
+/// shot exactly as captured until the user picks a border.
+enum StampFrameStyle { none, perforated, sawtooth, scalloped, classic, dashed }
 
 extension StampFrameStyleLabel on StampFrameStyle {
   String get label => switch (this) {
+    StampFrameStyle.none => 'Không viền',
     StampFrameStyle.perforated => 'Răng tròn',
     StampFrameStyle.sawtooth => 'Lưỡi cưa',
     StampFrameStyle.scalloped => 'Sò điệp',

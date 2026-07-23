@@ -84,16 +84,24 @@ class LetterPaper extends StatelessWidget {
       ),
     );
 
-    // A decorative frame in the template's accent colour — a soft mat + a
-    // keyline — so the letter "wears" its chosen template (F03 fc1776).
-    final accent = Color(templateAccentColor(template.id));
+    // fc1644 look: a plain sheet with the template's decorations scattered
+    // around the edges (flowers → 🎂🎈 for a birthday), the written content in
+    // the middle, and the top-left kept clear for the stamp the user attaches.
+    final body = content.ruled
+        ? CustomPaint(
+            painter: _RuledLinesPainter(
+              color: const Color(letterDefaultInk).withValues(alpha: 0.12),
+              lineHeight: _fontSize * _lineHeight,
+            ),
+            child: editor,
+          )
+        : editor;
     return Container(
       constraints: const BoxConstraints(minHeight: 420),
-      padding: const EdgeInsets.all(9),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
+        color: paper,
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: accent.withValues(alpha: 0.55), width: 2),
         boxShadow: const [
           BoxShadow(
             color: Color(0x1424211F),
@@ -103,86 +111,47 @@ class LetterPaper extends StatelessWidget {
         ],
       ),
       child: Stack(
-        clipBehavior: Clip.none,
         children: [
-          Container(
+          // The writing area — padded so the corner/edge decorations frame it.
+          Padding(
             padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
               AppSpacing.xl,
-              AppSpacing.lg,
-              AppSpacing.lg,
+              AppSpacing.xl,
+              AppSpacing.xl,
+              44,
             ),
-            decoration: BoxDecoration(
-              color: paper,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: accent.withValues(alpha: 0.35)),
-            ),
-            // The editor needs FlutterQuillLocalizations. The app shell does
-            // not register the delegate (and letters cannot reach into it), so
-            // the feature supplies it here — merged over the app's own.
+            // The editor needs FlutterQuillLocalizations. The app shell does not
+            // register the delegate (and letters cannot reach into it), so the
+            // feature supplies it here — merged over the app's own.
             child: Localizations.override(
               context: context,
               delegates: const [FlutterQuillLocalizations.delegate],
-              // SM-013 BR-08: the rules are a decorative background painted
-              // behind the text, so they never block input.
-              child: content.ruled
-                  ? CustomPaint(
-                      painter: _RuledLinesPainter(
-                        color: const Color(
-                          letterDefaultInk,
-                        ).withValues(alpha: 0.12),
-                        lineHeight: _fontSize * _lineHeight,
-                      ),
-                      child: editor,
-                    )
-                  : editor,
+              child: body,
             ),
           ),
-          // Template decorations (e.g. 🎂🎈 for a birthday) in the corners —
-          // the written content is unchanged, these just dress the frame.
           ..._templateDecorations(templateIcons(content.templateId)),
         ],
       ),
     );
   }
 
+  /// Template decorations scattered around the sheet edges (fc1644): bigger in
+  /// the bottom corners, a couple up the sides, the top-left left clear for the
+  /// stamp. The written content is unchanged.
   List<Widget> _templateDecorations(List<String> icons) {
     if (icons.isEmpty) return const [];
     String at(int i) => icons[i % icons.length];
-    Widget deco(String e, double size) =>
-        Text(e, style: TextStyle(fontSize: size));
-    // Decorations scattered around the whole border (corners + edge midpoints),
-    // hanging just off the frame — like the fc1776 demo. They ride the frame,
-    // so they spread out as the letter grows.
+    Widget deco(String e, double size, double rot) => Transform.rotate(
+      angle: rot,
+      child: Text(e, style: TextStyle(fontSize: size)),
+    );
     return [
-      Positioned(top: -16, left: -6, child: deco(at(0), 28)),
-      Positioned(
-        top: -20,
-        left: 0,
-        right: 0,
-        child: Center(child: deco(at(1), 26)),
-      ),
-      Positioned(top: -16, right: -6, child: deco(at(2), 28)),
-      Positioned(
-        top: 0,
-        bottom: 0,
-        right: -14,
-        child: Center(child: deco(at(3), 26)),
-      ),
-      Positioned(bottom: -14, right: -4, child: deco(at(0), 26)),
-      Positioned(
-        bottom: -18,
-        left: 0,
-        right: 0,
-        child: Center(child: deco(at(2), 26)),
-      ),
-      Positioned(bottom: -14, left: -4, child: deco(at(1), 26)),
-      Positioned(
-        top: 0,
-        bottom: 0,
-        left: -14,
-        child: Center(child: deco(at(3), 26)),
-      ),
+      Positioned(bottom: 6, left: 8, child: deco(at(0), 34, -0.15)),
+      Positioned(bottom: 4, right: 10, child: deco(at(1), 32, 0.12)),
+      Positioned(bottom: 30, right: 8, child: deco(at(2), 22, -0.1)),
+      Positioned(top: 8, right: 8, child: deco(at(3), 26, 0.1)),
+      Positioned(top: 96, left: 4, child: deco(at(2), 22, -0.12)),
+      Positioned(top: 120, right: 2, child: deco(at(0), 20, 0.1)),
     ];
   }
 }

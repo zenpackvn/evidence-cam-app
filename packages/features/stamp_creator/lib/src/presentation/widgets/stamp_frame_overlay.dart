@@ -98,6 +98,32 @@ class StampFramePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final short = window.shortestSide;
+
+    // "Không viền": show the photo plainly with just a thin border — no tem edge
+    // until the user picks one on the decorate step.
+    if (style == StampFrameStyle.none) {
+      final photoRRect = RRect.fromRectAndRadius(
+        window.deflate(16),
+        const Radius.circular(4),
+      );
+      if (scrimColor.a < 0.25) {
+        canvas.drawShadow(
+          Path()..addRRect(photoRRect),
+          const Color(0xFF4A3A2E),
+          4,
+          false,
+        );
+      }
+      canvas.drawRRect(
+        photoRRect,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5,
+      );
+      return;
+    }
+
     final perfDepth = short * 0.04;
     final creamMargin = short * 0.07;
     final outerR = short * 0.06;

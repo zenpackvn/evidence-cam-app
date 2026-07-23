@@ -73,51 +73,27 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
   CameraDescription? _description;
   List<CameraDescription> _cameras = const [];
   CameraLensDirection _lens = CameraLensDirection.back;
-  StampFrameStyle _frame = StampFrameStyle.perforated;
 
-  /// How big the stamp window is, as a fraction of its default size — the user
-  /// pinches to zoom the tem frame in/out. Clamped so it stays usable.
+  // Pinch (2 fingers) resizes the crop frame — phóng to/thu nhỏ khung tem.
   double _frameScale = 1;
   double _baseScale = 1;
-  int _gesturePointers = 0;
-
   static const _minFrameScale = 0.55;
   static const _maxFrameScale = 1.25;
 
-  void _cycleFrame(int delta) {
-    const values = StampFrameStyle.values;
-    final next = (_frame.index + delta + values.length) % values.length;
-    setState(() => _frame = values[next]);
-  }
+  // The tem edge is chosen later in the wizard ("viền tem"), so the camera just
+  // shows a plain resizable crop frame — no edge style.
+  static const StampFrameStyle _frame = StampFrameStyle.none;
 
-  void _onScaleStart(ScaleStartDetails d) {
-    _baseScale = _frameScale;
-    _gesturePointers = d.pointerCount;
-  }
+  void _onScaleStart(ScaleStartDetails d) => _baseScale = _frameScale;
 
   void _onScaleUpdate(ScaleUpdateDetails d) {
-    _gesturePointers = d.pointerCount;
-    // Two fingers → pinch-zoom the tem frame. One finger is left for the swipe
-    // (handled on end) so both gestures can share this recognizer.
-    if (d.pointerCount >= 2) {
-      setState(() {
-        _frameScale = (_baseScale * d.scale).clamp(
-          _minFrameScale,
-          _maxFrameScale,
-        );
-      });
-    }
-  }
-
-  // A one-finger swipe (horizontal or vertical) moves to the next/previous
-  // frame; a pinch is a zoom, not a swipe.
-  void _onScaleEnd(ScaleEndDetails d) {
-    if (_gesturePointers >= 2) return;
-    final v = d.velocity.pixelsPerSecond;
-    if (v.distance < 120) return;
-    final horizontal = v.dx.abs() >= v.dy.abs();
-    final forward = horizontal ? v.dx < 0 : v.dy < 0;
-    _cycleFrame(forward ? 1 : -1);
+    if (d.pointerCount < 2) return;
+    setState(() {
+      _frameScale = (_baseScale * d.scale).clamp(
+        _minFrameScale,
+        _maxFrameScale,
+      );
+    });
   }
 
   @override
@@ -292,9 +268,9 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
       final uw = upright.width;
       final uh = upright.height;
 
-      // Crop to the picture area *inside* the frame border (not the whole tem),
-      // so we keep only what the user framed — no extra beyond the window.
-      final crop = window.deflate(window.shortestSide * 0.11);
+      // Crop to exactly the on-screen frame window — what the user saw framed is
+      // what the capture keeps (no smaller, no larger).
+      final crop = window;
 
       // 2. Map the on-screen crop rect into the upright image via the cover-fit.
       final coverScale = math.max(screen.width / uw, screen.height / uh);
@@ -366,22 +342,20 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
               text: 'Không mở được camera trên thiết bị này.',
             ),
           },
-          // Pinch anywhere to zoom the tem frame; one-finger swipe changes its
-          // edge style.
+          // Pinch (2 fingers) to resize the tem crop frame.
           if (_state == _CamState.ready)
             Positioned.fill(
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onScaleStart: _onScaleStart,
                 onScaleUpdate: _onScaleUpdate,
-                onScaleEnd: _onScaleEnd,
               ),
             ),
-          // The square stamp viewfinder — only over a live preview.
+          // The plain resizable crop frame over the live preview.
           if (_state == _CamState.ready)
             Positioned.fill(
               child: IgnorePointer(
-                child: _StampViewfinder(style: _frame, scale: _frameScale),
+                child: _StampViewfinder(scale: _frameScale),
               ),
             ),
           // Close (top-left).
@@ -451,14 +425,13 @@ class _CoverPreview extends StatelessWidget {
   }
 }
 
-/// Dims everything outside a centred square and draws a perforated stamp edge
-/// around it, plus a hint line — the "ô vuông tem" the user frames inside.
+/// Dims everything outside the centred crop window and draws a plain white
+/// rounded border — the frame the user lines the shot up inside. The tem edge
+/// is chosen later in the wizard, so no stamp edge is drawn here.
 class _StampViewfinder extends StatelessWidget {
-  const _StampViewfinder({required this.style, this.scale = 1});
+  const _StampViewfinder({this.scale = 1});
 
-  final StampFrameStyle style;
-
-  /// Fraction of the default window size — the pinch-to-zoom factor.
+  /// The pinch-to-resize factor for the crop frame.
   final double scale;
 
   @override
@@ -470,11 +443,43 @@ class _StampViewfinder extends StatelessWidget {
           scale,
         );
         return CustomPaint(
-          painter: StampFramePainter(window: window, style: style),
+          painter: _CameraCropFramePainter(window: window),
         );
       },
     );
   }
+}
+
+/// Dims outside [window] and draws a soft white rounded border on the camera.
+class _CameraCropFramePainter extends CustomPainter {
+  _CameraCropFramePainter({required this.window});
+
+  final Rect window;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      window,
+      Radius.circular(window.shortestSide * 0.05),
+    );
+    canvas.saveLayer(Offset.zero & size, Paint());
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = const Color(0x99000000),
+    );
+    canvas.drawRRect(rrect, Paint()..blendMode = BlendMode.clear);
+    canvas.restore();
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CameraCropFramePainter old) => old.window != window;
 }
 
 class _ShutterButton extends StatelessWidget {

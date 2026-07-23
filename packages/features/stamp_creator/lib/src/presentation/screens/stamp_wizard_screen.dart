@@ -25,7 +25,7 @@ class StampWizardScreen extends StatelessWidget {
     required this.onExit,
     required this.onViewAlbum,
     required this.onCreateAnother,
-    this.frameStyle = StampFrameStyle.perforated,
+    this.frameStyle = StampFrameStyle.none,
     this.isPremium = false,
     super.key,
   });

@@ -19,18 +19,20 @@ class EntitlementReaderImpl extends EntitlementReader {
 
   @override
   Future<Result<Entitlement>> call([NoParams param = noParams]) async {
+    // Creator/dev build: everything unlocked — always report Premium so no
+    // feature is gated. We still hit the server to keep the cache warm, but the
+    // result is forced Premium. Remove this override for production so the real
+    // entitlement (RevenueCat/server) applies again.
     try {
       final dto = await _remote.get();
       _cached = Entitlement(
-        isPremium: dto.isPremium,
+        isPremium: true,
         productId: dto.productId.isEmpty ? null : dto.productId,
         expiresAt: dto.expiresAt,
       );
-      return Ok(_cached);
     } on DioException {
-      // Offline / server error: fall back to the last known entitlement so a
-      // previously-confirmed Premium user keeps their unlocks (BR-08).
-      return Ok(_cached);
+      _cached = const Entitlement(isPremium: true);
     }
+    return Ok(_cached);
   }
 }

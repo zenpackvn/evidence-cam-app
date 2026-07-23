@@ -15,6 +15,23 @@ const List<_Pack> _packs = [
   (name: '✈️ Du lịch', stickers: ['🧳', '✈️', '🌴', '📷']),
 ];
 
+/// All premium sticker glyphs (flattened from the packs). A Premium user gets
+/// these appended straight into the decorate sticker grid.
+const premiumStickerGlyphs = <String>[
+  '🌸',
+  '🍁',
+  '❄️',
+  '🌻',
+  '😊',
+  '😍',
+  '😂',
+  '😭',
+  '🧳',
+  '✈️',
+  '🌴',
+  '📷',
+];
+
 /// SM-009 — the "Mở sticker đặc biệt" upsell (F02-S12): a dimmed stamp hero with
 /// a floating sheet that lets a Free user pick a premium sticker pack to unlock
 /// and upgrade to Premium. Push it over the decorate step; tapping outside the

@@ -38,31 +38,17 @@ class PhotoPreviewScreen extends StatefulWidget {
 }
 
 class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
-  late StampFrameStyle _frame = widget.frameStyle ?? StampFrameStyle.perforated;
+  // The tem edge is picked later in the wizard ("viền tem"), so here we keep a
+  // plain crop frame and just pass a default style through.
+  final StampFrameStyle _frame = StampFrameStyle.none;
   final _photoKey = GlobalKey<_FramedZoomablePhotoState>();
   bool _confirming = false;
-
-  void _cycleFrame(int delta) {
-    const values = StampFrameStyle.values;
-    final next = (_frame.index + delta + values.length) % values.length;
-    setState(() => _frame = values[next]);
-  }
-
-  // A swipe anywhere on the screen (outside the tem window and its buttons)
-  // changes the frame style — sideways or up/down.
-  void _onScreenSwipe(DragEndDetails d) {
-    final v = d.velocity.pixelsPerSecond;
-    if (v.distance < 120) return;
-    final horizontal = v.dx.abs() >= v.dy.abs();
-    final forward = horizontal ? v.dx < 0 : v.dy < 0;
-    _cycleFrame(forward ? 1 : -1);
-  }
 
   Future<void> _confirm() async {
     if (_confirming) return;
     setState(() => _confirming = true);
-    // Crop the photo to exactly what's framed in the tem window, so the wizard
-    // (bộ lọc màu…) works on that view — not the whole original image.
+    // Crop the photo to exactly what's framed, so the wizard (bộ lọc màu…)
+    // works on that view — not the whole original image.
     final cropped = await _photoKey.currentState?.cropToSquareFile();
     if (!mounted) return;
     widget.onConfirm(_frame, cropped ?? widget.imagePath);
@@ -72,88 +58,60 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: CreatorColors.ground,
-      body: Stack(
-        children: [
-          // Full-screen swipe catcher (behind the content); the tem window and
-          // buttons on top handle their own gestures.
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onHorizontalDragEnd: _onScreenSwipe,
-              onVerticalDragEnd: _onScreenSwipe,
-            ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxxl),
-              child: Column(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxxl),
+          child: Column(
+            children: [
+              const SizedBox(height: AppSpacing.xxl),
+              Expanded(
+                child: Center(
+                  child: _FramedZoomablePhoto(
+                    key: _photoKey,
+                    imagePath: widget.imagePath,
+                    background: CreatorColors.ground,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Row(
                 children: [
-                  const SizedBox(height: AppSpacing.xxl),
                   Expanded(
-                    child: Center(
-                      child: _FramedZoomablePhoto(
-                        key: _photoKey,
-                        imagePath: widget.imagePath,
-                        style: _frame,
-                        background: CreatorColors.ground,
-                        // A quick sideways flick changes the tem edge; a slow drag
-                        // just moves the photo.
-                        onSwipe: _cycleFrame,
-                      ),
+                    child: _PillButton.secondary(
+                      label: 'Hủy',
+                      onTap: widget.onCancel,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  _FramePips(
-                    count: StampFrameStyle.values.length,
-                    active: _frame.index,
+                  const SizedBox(width: AppSpacing.xxl),
+                  Expanded(
+                    child: _PillButton.primary(
+                      label: _confirming ? 'Đang xử lý…' : 'Xác nhận',
+                      onTap: _confirm,
+                    ),
                   ),
-                  const SizedBox(height: AppSpacing.xl),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _PillButton.secondary(
-                          label: 'Hủy',
-                          onTap: widget.onCancel,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xxl),
-                      Expanded(
-                        child: _PillButton.primary(
-                          label: _confirming ? 'Đang xử lý…' : 'Xác nhận',
-                          onTap: _confirm,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
                 ],
               ),
-            ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// The picked photo inside the stamp tem: pinch to zoom, drag to move the photo
-/// within the [style] frame. The frame paints on top (dimming outside the tem
-/// window) so the user positions the picture inside it.
+/// The picked photo inside a plain crop frame: pinch to zoom, drag to move the
+/// photo within it. The tem edge is chosen later in the wizard, so no edge
+/// style is picked here.
 class _FramedZoomablePhoto extends StatefulWidget {
   const _FramedZoomablePhoto({
     required this.imagePath,
-    required this.style,
     required this.background,
-    required this.onSwipe,
     super.key,
   });
 
   final String imagePath;
-  final StampFrameStyle style;
   final Color background;
-
-  /// A quick sideways flick: +1 next edge, -1 previous.
-  final ValueChanged<int> onSwipe;
 
   @override
   State<_FramedZoomablePhoto> createState() => _FramedZoomablePhotoState();
@@ -164,7 +122,6 @@ class _FramedZoomablePhotoState extends State<_FramedZoomablePhoto> {
   ImageStream? _stream;
   ImageStreamListener? _listener;
   Size? _imgSize;
-  int _maxPointers = 0;
   bool _centered = false;
   final GlobalKey _captureKey = GlobalKey();
 
@@ -241,28 +198,6 @@ class _FramedZoomablePhotoState extends State<_FramedZoomablePhoto> {
     super.dispose();
   }
 
-  void _onEnd(ScaleEndDetails d) {
-    final v = d.velocity.pixelsPerSecond;
-    // Inside the tem window a one-finger, clearly-horizontal flick changes the
-    // frame; pinch or a vertical/slow drag zooms/moves the photo.
-    if (_maxPointers <= 1 &&
-        v.dx.abs() > 500 &&
-        v.dx.abs() > v.dy.abs() * 1.5) {
-      widget.onSwipe(v.dx < 0 ? 1 : -1);
-    }
-    _maxPointers = 0;
-  }
-
-  // Outside the tem window there's no photo to pan, so any swipe (sideways or
-  // up/down) changes the frame style.
-  void _onOutsideSwipe(DragEndDetails d) {
-    final v = d.velocity.pixelsPerSecond;
-    if (v.distance < 120) return;
-    final horizontal = v.dx.abs() >= v.dy.abs();
-    final forward = horizontal ? v.dx < 0 : v.dy < 0;
-    widget.onSwipe(forward ? 1 : -1);
-  }
-
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
@@ -270,38 +205,34 @@ class _FramedZoomablePhotoState extends State<_FramedZoomablePhoto> {
       child: LayoutBuilder(
         builder: (context, c) {
           final inset =
-              (c.maxWidth < c.maxHeight ? c.maxWidth : c.maxHeight) * 0.09;
+              (c.maxWidth < c.maxHeight ? c.maxWidth : c.maxHeight) * 0.06;
           final window = Rect.fromLTWH(
             inset,
             inset,
             c.maxWidth - inset * 2,
             c.maxHeight - inset * 2,
           );
-          // The picture area inside the frame border — what the saved crop is.
-          final hole = window.deflate(window.shortestSide * 0.11);
+          final radius = window.shortestSide * 0.05;
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Bottom layer: catches swipes on the margin *outside* the picture
-              // (the viewer on top handles gestures inside it).
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onHorizontalDragEnd: _onOutsideSwipe,
-                onVerticalDragEnd: _onOutsideSwipe,
-              ),
               Positioned.fromRect(
-                rect: hole,
-                // Capture exactly the picture area, WYSIWYG.
+                rect: window,
+                // Capture exactly the framed picture, WYSIWYG.
                 child: RepaintBoundary(
                   key: _captureKey,
-                  child: ClipRect(child: _viewer(hole.width, hole.height)),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(radius),
+                    child: _viewer(window.width, window.height),
+                  ),
                 ),
               ),
+              // A plain crop frame: dim outside the window + a soft white border.
               IgnorePointer(
                 child: CustomPaint(
-                  painter: StampFramePainter(
+                  painter: _PlainFramePainter(
                     window: window,
-                    style: widget.style,
+                    radius: radius,
                     scrimColor: widget.background,
                   ),
                 ),
@@ -353,11 +284,6 @@ class _FramedZoomablePhotoState extends State<_FramedZoomablePhoto> {
       minScale: 1,
       maxScale: 6,
       boundaryMargin: EdgeInsets.zero,
-      onInteractionStart: (d) => _maxPointers = d.pointerCount,
-      onInteractionUpdate: (d) {
-        if (d.pointerCount > _maxPointers) _maxPointers = d.pointerCount;
-      },
-      onInteractionEnd: _onEnd,
       child: SizedBox(
         width: w,
         height: h,
@@ -367,35 +293,49 @@ class _FramedZoomablePhotoState extends State<_FramedZoomablePhoto> {
   }
 }
 
-/// Little dots under the preview showing which tem edge (of N) is selected.
-class _FramePips extends StatelessWidget {
-  const _FramePips({required this.count, required this.active});
+/// A plain crop frame: dims everything outside [window] and draws a soft white
+/// rounded border around it (no tem edge — that's chosen later in the wizard).
+class _PlainFramePainter extends CustomPainter {
+  _PlainFramePainter({
+    required this.window,
+    required this.radius,
+    required this.scrimColor,
+  });
 
-  final int count;
-  final int active;
+  final Rect window;
+  final double radius;
+  final Color scrimColor;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        for (var i = 0; i < count; i++)
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            width: i == active ? 18 : 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: i == active
-                  ? scheme.primary
-                  : scheme.onSurfaceVariant.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-      ],
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(window, Radius.circular(radius));
+    // Soft shadow so the frame reads on a light ground.
+    canvas.drawShadow(
+      Path()..addRRect(rrect),
+      const Color(0xFF4A3A2E),
+      6,
+      false,
+    );
+    // Dim outside the window.
+    canvas.saveLayer(Offset.zero & size, Paint());
+    canvas.drawRect(Offset.zero & size, Paint()..color = scrimColor);
+    canvas.drawRRect(rrect, Paint()..blendMode = BlendMode.clear);
+    canvas.restore();
+    // White frame border.
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4,
     );
   }
+
+  @override
+  bool shouldRepaint(_PlainFramePainter old) =>
+      old.window != window ||
+      old.radius != radius ||
+      old.scrimColor != scrimColor;
 }
 
 class _PillButton extends StatelessWidget {

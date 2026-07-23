@@ -232,7 +232,11 @@ class _StickerGrid extends StatelessWidget {
       crossAxisSpacing: 8,
       padding: EdgeInsets.zero,
       children: [
-        for (final glyph in stickerGlyphs)
+        for (final glyph in [
+          ...stickerGlyphs,
+          // Premium unlocked → the premium sticker packs are usable directly.
+          if (!showPremium) ...premiumStickerGlyphs,
+        ])
           InkWell(
             onTap: () => onPick(glyph),
             borderRadius: BorderRadius.circular(AppRadius.md),

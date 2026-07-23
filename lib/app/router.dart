@@ -189,7 +189,7 @@ void _openWizard(
     MaterialPageRoute(
       builder: (_) => StampWizardScreen(
         imagePath: imagePath,
-        frameStyle: frame ?? StampFrameStyle.perforated,
+        frameStyle: frame ?? StampFrameStyle.none,
         // Creator/dev build: everything unlocked — no locked filters/borders/
         // stickers in the wizard.
         isPremium: true,

@@ -25,7 +25,7 @@ class CreatorCubit extends Cubit<CreatorState> {
     required String imagePath,
     required this._uploader,
     required this._stamps,
-    StampFrameStyle frameStyle = StampFrameStyle.perforated,
+    StampFrameStyle frameStyle = StampFrameStyle.none,
     bool isPremium = false,
   }) : super(
          CreatorState.initial(imagePath).copyWith(
