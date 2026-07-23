@@ -23,6 +23,7 @@ class SampleStampsRepositoryImpl implements SampleStampsRepository {
         for (final d in dtos)
           SampleStamp(
             id: d.id,
+            name: d.name,
             imageUrl: d.imageUrl,
             thumbUrl: d.thumbUrl.isEmpty ? d.imageUrl : d.thumbUrl,
             theme: d.theme,

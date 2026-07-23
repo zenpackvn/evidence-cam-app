@@ -32,4 +32,9 @@ abstract interface class LettersRepository {
   /// The full cached record (content + attached stamp ids), or null if the
   /// letter was not composed on this device.
   Future<CachedLetter?> cachedMeta(String letterId);
+
+  /// The caller's letters, newest first — joined with [sent] so the mailbox
+  /// detail can show a letter's content next to its link statuses (SM-021).
+  /// Returns Ok([]) against servers that don't expose the route yet.
+  Future<Result<List<Letter>>> letters();
 }

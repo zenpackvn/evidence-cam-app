@@ -356,7 +356,6 @@ class SentLettersRoute extends GoRouteData with $SentLettersRoute {
   Widget build(BuildContext context, GoRouterState state) => SentLettersPage(
     createCubit: () => GetIt.instance<SentLettersCubit>(),
     onCompose: () => const LetterComposeRoute().push<void>(context),
-    onView: (sent) => _openLetterContent(context, sent.link.letterId),
   );
 }
 

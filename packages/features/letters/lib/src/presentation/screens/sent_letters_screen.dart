@@ -4,49 +4,113 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/letter_link.dart';
 import '../bloc/sent_letters_cubit.dart';
 
-/// SM-021 — the "Thư" tab: the sender's sent letters with each link's status.
-/// This is the whole tab — there is no received-letters list (SM-017 BR-10).
-/// Empty state per F04-S07d.
-class SentLettersScreen extends StatelessWidget {
+/// SM-021 — the "Thư" tab: the sender's sent letters, each row enriched with
+/// the letter's title, occasion symbol and attached stamp. Sent-only — there
+/// is no received-letters list (SM-017 BR-10). Empty state per F04-S07d.
+///
+/// Every affordance works: the search icon expands an in-place filter over the
+/// row titles/platforms, the menu (☰) opens an action sheet (refresh + status
+/// filter), and tapping a row opens the "xem thư đã gửi" detail. Link renewal
+/// lives in the detail screen ("Gia hạn link"), not on the rows.
+class SentLettersScreen extends StatefulWidget {
   const SentLettersScreen({
     this.letters = const [],
     this.onCompose,
-    this.onRecreate,
     this.onView,
-    this.recreatingLetterId,
+    this.onRefresh,
     super.key,
   });
 
   final List<SentLetterView> letters;
 
-  /// Called by the "Tạo thư đầu tiên" CTA in the empty state (F04-S07d).
+  /// Called by the "Tạo thư đầu tiên" CTA in the empty state (F04-S07d) and the
+  /// coral add button next to the heading.
   final VoidCallback? onCompose;
 
-  /// Recreates a share link for an expired letter (SM-021 BR-04). Null hides
-  /// the action.
-  final ValueChanged<SentLetter>? onRecreate;
-
-  /// Tapping a row opens the letter's content (from the local cache). Null
-  /// makes the rows non-interactive.
+  /// Tapping a row opens the letter's detail ("xem thư đã gửi"). Null makes the
+  /// rows non-interactive.
   final ValueChanged<SentLetter>? onView;
 
-  /// The letterId whose link is currently being recreated (shows a spinner).
-  final String? recreatingLetterId;
+  /// Reloads the list (menu → "Làm mới").
+  final VoidCallback? onRefresh;
 
-  static const _ground = Color(0xFFFBF4EC);
+  static const _ground = Color(0xFFFAF4EC);
+
+  @override
+  State<SentLettersScreen> createState() => _SentLettersScreenState();
+}
+
+class _SentLettersScreenState extends State<SentLettersScreen> {
+  final _searchController = TextEditingController();
+  bool _searching = false;
+  String _query = '';
+  SentStatus? _statusFilter;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _searching = !_searching;
+      if (!_searching) {
+        _searchController.clear();
+        _query = '';
+      }
+    });
+  }
+
+  /// The rows surviving the search query and the menu's status filter. The
+  /// match folds Vietnamese diacritics so "hoi an" finds "Hội An".
+  List<SentLetterView> get _visible {
+    final q = stripDiacritics(_query.toLowerCase());
+    return [
+      for (final v in widget.letters)
+        if (_statusFilter == null || v.sent.status == _statusFilter)
+          if (q.isEmpty ||
+              stripDiacritics(v.title.toLowerCase()).contains(q) ||
+              stripDiacritics(
+                (v.sent.link.platform ?? '').toLowerCase(),
+              ).contains(q))
+            v,
+    ];
+  }
+
+  Future<void> _openMenu() async {
+    final result = await showModalBottomSheet<Object>(
+      context: context,
+      backgroundColor: context.brand.surfaceElevated,
+      builder: (_) => _MailboxMenuSheet(activeFilter: _statusFilter),
+    );
+    if (!mounted || result == null) return;
+    if (result == _MenuAction.refresh) {
+      widget.onRefresh?.call();
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('Đã làm mới danh sách.')));
+    } else if (result is _StatusChoice) {
+      setState(() => _statusFilter = result.status);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final visible = _visible;
+    final hasFilter = _query.isNotEmpty || _statusFilter != null;
     return Scaffold(
-      backgroundColor: _ground,
+      backgroundColor: SentLettersScreen._ground,
       body: SafeArea(
         bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // F04-S07d topnav (☰ · StampMail · 🔍) + "Hộp thư" heading with the
-            // coral add-letter button.
-            const _InboxTopNav(),
+            _InboxTopNav(
+              searching: _searching,
+              onMenu: _openMenu,
+              onSearch: _toggleSearch,
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.xxl,
@@ -59,19 +123,53 @@ class SentLettersScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Hộp thư',
-                      style: context.textTheme.displayMedium?.copyWith(
-                        fontSize: 34,
-                        fontWeight: FontWeight.w700,
+                      style: AppSerif.style(
+                        fontSize: 38,
+                        color: context.colorScheme.onSurface,
                       ),
                     ),
                   ),
-                  if (onCompose != null) _AddButton(onTap: onCompose!),
+                  if (widget.onCompose != null)
+                    _AddButton(onTap: widget.onCompose!),
                 ],
               ),
             ),
+            if (_searching)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xxl,
+                  AppSpacing.md,
+                  AppSpacing.xxl,
+                  0,
+                ),
+                child: _SearchField(
+                  controller: _searchController,
+                  onChanged: (v) => setState(() => _query = v),
+                  onClear: _toggleSearch,
+                ),
+              ),
+            if (_statusFilter != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xxl,
+                  AppSpacing.md,
+                  AppSpacing.xxl,
+                  0,
+                ),
+                child: Row(
+                  children: [
+                    InputChip(
+                      label: Text('Lọc: ${_statusLabel(_statusFilter!)}'),
+                      onDeleted: () => setState(() => _statusFilter = null),
+                    ),
+                  ],
+                ),
+              ),
             Expanded(
-              child: letters.isEmpty
-                  ? _SentEmpty(onCompose: onCompose)
+              child: widget.letters.isEmpty
+                  ? _SentEmpty(onCompose: widget.onCompose)
+                  : visible.isEmpty && hasFilter
+                  ? const _NoMatches()
                   : SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(
                         AppSpacing.xxl,
@@ -80,10 +178,8 @@ class SentLettersScreen extends StatelessWidget {
                         AppSpacing.xxl,
                       ),
                       child: _ListCard(
-                        letters: letters,
-                        onRecreate: onRecreate,
-                        onView: onView,
-                        recreatingLetterId: recreatingLetterId,
+                        letters: visible,
+                        onView: widget.onView,
                       ),
                     ),
             ),
@@ -94,45 +190,223 @@ class SentLettersScreen extends StatelessWidget {
   }
 }
 
-/// The top nav (F04-S07d `topnav`): a menu affordance, the centred "StampMail"
-/// wordmark, and a search icon (both inert here — the tab has no search yet).
+enum _MenuAction { refresh }
+
+/// A status choice from the menu sheet; null [status] clears the filter.
+class _StatusChoice {
+  const _StatusChoice(this.status);
+
+  final SentStatus? status;
+}
+
+String _statusLabel(SentStatus s) => switch (s) {
+  SentStatus.opened => 'Đã mở',
+  SentStatus.pending => 'Chưa mở',
+  SentStatus.expired => 'Hết hạn',
+};
+
+/// The ☰ action sheet: refresh and a status filter for the list.
+class _MailboxMenuSheet extends StatelessWidget {
+  const _MailboxMenuSheet({this.activeFilter});
+
+  final SentStatus? activeFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    Widget statusTile(SentStatus? status, String label) {
+      final selected = activeFilter == status;
+      return ListTile(
+        leading: Icon(
+          selected
+              ? Icons.radio_button_checked
+              : Icons.radio_button_unchecked,
+          color: selected ? scheme.primary : scheme.onSurfaceVariant,
+        ),
+        title: Text(label),
+        onTap: () => Navigator.pop(context, _StatusChoice(status)),
+      );
+    }
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xxl,
+                AppSpacing.sm,
+                AppSpacing.xxl,
+                AppSpacing.xs,
+              ),
+              child: Text(
+                'Hộp thư',
+                style: AppSerif.style(fontSize: 22, color: scheme.onSurface),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.refresh, color: scheme.onSurface),
+              title: const Text('Làm mới danh sách'),
+              onTap: () => Navigator.pop(context, _MenuAction.refresh),
+            ),
+            Divider(height: 1, color: context.brand.borderSubtle),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xxl,
+                AppSpacing.md,
+                AppSpacing.xxl,
+                0,
+              ),
+              child: Text(
+                'Lọc theo trạng thái',
+                style: context.textTheme.labelLarge?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            statusTile(null, 'Tất cả'),
+            statusTile(SentStatus.pending, 'Chưa mở'),
+            statusTile(SentStatus.opened, 'Đã mở'),
+            statusTile(SentStatus.expired, 'Hết hạn'),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The expanding search field (🔍): filters by letter title or platform.
+class _SearchField extends StatelessWidget {
+  const _SearchField({
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      autofocus: true,
+      onChanged: onChanged,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: 'Tìm theo tiêu đề hoặc nền tảng...',
+        prefixIcon: const Icon(Icons.search, size: 20),
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.close, size: 20),
+          onPressed: onClear,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+      ),
+    );
+  }
+}
+
+/// Empty result for an active search/filter (distinct from the true empty
+/// state, which invites composing).
+class _NoMatches extends StatelessWidget {
+  const _NoMatches();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 40,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Không tìm thấy thư phù hợp.',
+              style: context.textTheme.bodyLarge?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The top nav (F04-S07d `topnav`): the menu (☰) opens the action sheet, the
+/// centred "StampMail" wordmark, and the search toggle.
 class _InboxTopNav extends StatelessWidget {
-  const _InboxTopNav();
+  const _InboxTopNav({
+    required this.searching,
+    required this.onMenu,
+    required this.onSearch,
+  });
+
+  final bool searching;
+  final VoidCallback onMenu;
+  final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xxl,
-        vertical: AppSpacing.md,
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xs,
       ),
       child: Row(
         children: [
-          Icon(Icons.menu, size: 24, color: scheme.onSurface),
+          IconButton(
+            onPressed: onMenu,
+            tooltip: 'Menu',
+            icon: Icon(Icons.menu, size: 24, color: scheme.onSurface),
+          ),
           Expanded(
             child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'StampMail',
-                    style: context.textTheme.headlineSmall?.copyWith(
-                      color: scheme.primary,
-                      fontWeight: FontWeight.w700,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'StampMail',
+                      style: AppSerif.style(
+                        fontSize: 26,
+                        color: scheme.primary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Icon(
-                    Icons.waves,
-                    size: 16,
-                    color: scheme.primary.withValues(alpha: 0.7),
-                  ),
-                ],
+                    const SizedBox(width: AppSpacing.xs),
+                    Icon(
+                      Icons.waves,
+                      size: 16,
+                      color: scheme.primary.withValues(alpha: 0.7),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          Icon(Icons.search, size: 22, color: scheme.onSurface),
+          IconButton(
+            onPressed: onSearch,
+            tooltip: 'Tìm kiếm',
+            icon: Icon(
+              searching ? Icons.search_off : Icons.search,
+              size: 22,
+              color: searching ? scheme.primary : scheme.onSurface,
+            ),
+          ),
         ],
       ),
     );
@@ -168,17 +442,10 @@ class _AddButton extends StatelessWidget {
 
 /// The white list card (radius-20) with hairline-divided rows.
 class _ListCard extends StatelessWidget {
-  const _ListCard({
-    required this.letters,
-    this.onRecreate,
-    this.onView,
-    this.recreatingLetterId,
-  });
+  const _ListCard({required this.letters, this.onView});
 
   final List<SentLetterView> letters;
-  final ValueChanged<SentLetter>? onRecreate;
   final ValueChanged<SentLetter>? onView;
-  final String? recreatingLetterId;
 
   @override
   Widget build(BuildContext context) {
@@ -195,12 +462,7 @@ class _ListCard extends StatelessWidget {
         children: [
           for (final (i, view) in letters.indexed) ...[
             if (i > 0) Divider(height: 1, color: context.brand.borderSubtle),
-            _SentRow(
-              view: view,
-              onRecreate: onRecreate,
-              onView: onView,
-              recreating: recreatingLetterId == view.sent.link.letterId,
-            ),
+            _SentRow(view: view, onView: onView),
           ],
         ],
       ),
@@ -209,27 +471,18 @@ class _ListCard extends StatelessWidget {
 }
 
 class _SentRow extends StatelessWidget {
-  const _SentRow({
-    required this.view,
-    this.onRecreate,
-    this.onView,
-    this.recreating = false,
-  });
+  const _SentRow({required this.view, this.onView});
 
   final SentLetterView view;
-  final ValueChanged<SentLetter>? onRecreate;
+
+  /// Opens this letter's detail view ("xem thư đã gửi").
   final ValueChanged<SentLetter>? onView;
-  final bool recreating;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final letter = view.sent;
     final link = letter.link;
-    // SM-021 BR-04/BR-05: recreate only offered for an expired link, never an
-    // opened one (already reached its recipient).
-    final canRecreate =
-        onRecreate != null && letter.status == SentStatus.expired;
     // Same three-part shape as the Home "Thư gần đây" card: envelope + occasion
     // symbol · title + status/date · attached stamp.
     final row = Row(
@@ -276,35 +529,13 @@ class _SentRow extends StatelessWidget {
     );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-      child: Column(
-        children: [
-          if (onView != null)
-            InkWell(
+      child: onView != null
+          ? InkWell(
               onTap: () => onView!(letter),
               borderRadius: BorderRadius.circular(AppRadius.sm),
               child: row,
             )
-          else
-            row,
-          if (canRecreate) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: recreating ? null : () => onRecreate!(letter),
-                icon: recreating
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh, size: 18),
-                label: const Text('Tạo link mới'),
-              ),
-            ),
-          ],
-        ],
-      ),
+          : row,
     );
   }
 
@@ -445,7 +676,7 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-/// F04-S07d — empty state: illustration, Baloo title, body-lg subtitle, and
+/// F04-S07d — empty state: illustration, serif title, body-lg subtitle, and
 /// the 290×54 coral CTA.
 class _SentEmpty extends StatelessWidget {
   const _SentEmpty({required this.onCompose});
@@ -468,7 +699,10 @@ class _SentEmpty extends StatelessWidget {
           const SizedBox(height: AppSpacing.xxl),
           Text(
             'Bạn chưa gửi thư nào',
-            style: context.textTheme.displayMedium?.copyWith(fontSize: 30),
+            style: AppSerif.style(
+              fontSize: 30,
+              color: context.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 10),
           Text(

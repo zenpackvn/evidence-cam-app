@@ -243,19 +243,21 @@ class _Wordmark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = context.colorScheme.primary;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'StampMail',
-          style: context.textTheme.headlineSmall?.copyWith(
-            color: primary,
-            fontWeight: FontWeight.w700,
+    // scaleDown keeps the wordmark from overflowing narrow app bars.
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'StampMail',
+            // F02-S18 wordmark: Playfair Display 26.
+            style: AppSerif.style(fontSize: 26, color: primary),
           ),
-        ),
-        const SizedBox(width: AppSpacing.xs),
-        Icon(Icons.waves, size: 16, color: primary.withValues(alpha: 0.7)),
-      ],
+          const SizedBox(width: AppSpacing.xs),
+          Icon(Icons.waves, size: 16, color: primary.withValues(alpha: 0.7)),
+        ],
+      ),
     );
   }
 }
@@ -336,10 +338,8 @@ class _NameRow extends StatelessWidget {
               maxLines: 2,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
-              style: context.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: scheme.onSurface,
-              ),
+              // F02-S18 `nm`: the stamp name in Playfair Display 30.
+              style: AppSerif.style(fontSize: 30, color: scheme.onSurface),
             ),
           ),
           if (onRename != null) ...[

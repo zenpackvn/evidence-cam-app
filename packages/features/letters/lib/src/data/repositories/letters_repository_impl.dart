@@ -107,6 +107,29 @@ class LettersRepositoryImpl implements LettersRepository {
   }
 
   @override
+  Future<Result<List<Letter>>> letters() async {
+    try {
+      final dtos = await _remote.list();
+      return Ok([
+        for (final dto in dtos)
+          Letter(
+            id: dto.id,
+            content: LetterContent.decode(dto.contentJson),
+            stampIds: List.of(dto.stampIds),
+            createdAt: dto.createdAt,
+          ),
+      ]);
+    } on DioException catch (e) {
+      // An older server without GET /api/sm/letters answers 404/405; the
+      // mailbox still works from link statuses alone, so that is "no letter
+      // documents", not a failure.
+      final status = e.response?.statusCode;
+      if (status == 404 || status == 405) return const Ok([]);
+      return Err(_mapDioError(e));
+    }
+  }
+
+  @override
   Future<Result<LetterLink>> createLink(
     String letterId, {
     String? platform,

@@ -521,7 +521,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get navAlbum => 'Tem';
 
   @override
-  String get navProfile => 'Cá nhân';
+  String get navProfile => 'Hồ sơ';
 
   @override
   String get navSettings => 'Cài đặt';

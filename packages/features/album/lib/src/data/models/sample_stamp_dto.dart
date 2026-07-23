@@ -10,6 +10,7 @@ abstract class SampleStampDto with _$SampleStampDto {
     required String id,
     @JsonKey(name: 'image_url') required String imageUrl,
     @JsonKey(name: 'thumb_url') @Default('') String thumbUrl,
+    @Default('') String name,
     @Default('') String theme,
     @JsonKey(name: 'is_new') @Default(false) bool isNew,
   }) = _SampleStampDto;

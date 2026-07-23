@@ -1,28 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../domain/entities/letter_link.dart';
 import '../bloc/sent_letters_cubit.dart';
+import 'sent_letter_detail_screen.dart';
 import 'sent_letters_screen.dart';
 
 /// Hosts [SentLettersScreen] behind [SentLettersCubit] (SM-021 — the whole
-/// "Thư" tab).
+/// "Thư" tab). A row tap opens the "xem thư đã gửi" detail, which reads from
+/// this page's cubit so a link renewal there refreshes the list behind it.
 class SentLettersPage extends StatelessWidget {
-  const SentLettersPage({
-    required this.createCubit,
-    this.onCompose,
-    this.onView,
-    super.key,
-  });
+  const SentLettersPage({required this.createCubit, this.onCompose, super.key});
 
   /// Builds the cubit (from the host's DI); the page owns and disposes it.
   final SentLettersCubit Function() createCubit;
 
   /// Forwarded to the empty state's "Tạo thư đầu tiên" CTA (F04-S07d).
   final VoidCallback? onCompose;
-
-  /// Opens a sent letter's cached content when a row is tapped (SM-021).
-  final ValueChanged<SentLetter>? onView;
 
   @override
   Widget build(BuildContext context) {
@@ -32,19 +25,19 @@ class SentLettersPage extends StatelessWidget {
         builder: (context, state) => SentLettersScreen(
           letters: state.letters,
           onCompose: onCompose,
-          onView: onView,
-          recreatingLetterId: state.recreatingLetterId,
-          onRecreate: (sent) async {
-            final ok = await context.read<SentLettersCubit>().recreateLink(
-              sent,
-            );
-            if (context.mounted && !ok && sent.status != SentStatus.opened) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Không tạo được link mới. Thử lại.'),
+          onRefresh: context.read<SentLettersCubit>().load,
+          onView: (sent) {
+            final cubit = context.read<SentLettersCubit>();
+            Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (_) => BlocProvider.value(
+                  value: cubit,
+                  child: SentLetterDetailScreen(
+                    letterId: sent.link.letterId,
+                  ),
                 ),
-              );
-            }
+              ),
+            );
           },
         ),
       ),

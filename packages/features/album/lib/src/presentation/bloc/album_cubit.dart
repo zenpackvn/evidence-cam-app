@@ -34,7 +34,15 @@ class AlbumCubit extends Cubit<AlbumState> {
     final result = await _stamps.list();
     switch (result) {
       case Ok(:final value):
-        emit(AlbumState(stamps: value, loading: false, isOffline: isOffline));
+        // copyWith so a reload keeps the user's view mode, query, and sort.
+        emit(
+          state.copyWith(
+            stamps: value,
+            loading: false,
+            error: false,
+            isOffline: isOffline,
+          ),
+        );
       case Err():
         emit(state.copyWith(loading: false, error: true, isOffline: isOffline));
     }
@@ -74,6 +82,16 @@ class AlbumCubit extends Cubit<AlbumState> {
   /// Toggles between the grid and list view modes (SM-022 BR-04).
   void setViewMode(AlbumViewMode mode) {
     if (mode != state.viewMode) emit(state.copyWith(viewMode: mode));
+  }
+
+  /// Live search over stamp names (diacritic-insensitive; the search bar).
+  void setQuery(String query) {
+    if (query != state.query) emit(state.copyWith(query: query));
+  }
+
+  /// Reorders the album (the filter button's sort sheet).
+  void setSort(AlbumSort sort) {
+    if (sort != state.sort) emit(state.copyWith(sort: sort));
   }
 
   void _onOnlineChanged(bool isOnline) {

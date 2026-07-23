@@ -31,6 +31,9 @@ class _FakeLetters implements LettersRepository {
   Future<CachedLetter?> cachedMeta(String letterId) async => null;
 
   @override
+  Future<Result<List<Letter>>> letters() async => const Ok([]);
+
+  @override
   Future<Result<Letter>> create(LetterInput input) async =>
       const Err(UnknownFailure());
 

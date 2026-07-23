@@ -10,6 +10,9 @@ import 'package:localization/localization.dart';
 class _FakeLetters implements LettersRepository {
   _FakeLetters({this.failCreate = false, this.failLink = false});
 
+  @override
+  Future<Result<List<Letter>>> letters() async => const Ok([]);
+
   final bool failCreate;
   final bool failLink;
   String? lastPlatform;

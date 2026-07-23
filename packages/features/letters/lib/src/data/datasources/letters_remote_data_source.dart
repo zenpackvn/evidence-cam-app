@@ -23,4 +23,10 @@ abstract class LettersRemoteDataSource {
 
   @GET('/api/sm/sent')
   Future<List<LinkDto>> sent();
+
+  /// The caller's live letters, newest first (SM-021 detail view). Older
+  /// servers without this route answer 404/405 — callers treat that as "no
+  /// letter documents available" rather than an error.
+  @GET('/api/sm/letters')
+  Future<List<LetterDto>> list();
 }

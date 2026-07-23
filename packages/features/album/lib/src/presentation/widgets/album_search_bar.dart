@@ -1,13 +1,20 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 
-/// The Album search row (F02-S10): a rounded search field plus a square filter
-/// button. Static for now — search wiring lands with the Album filter work.
+/// The Album search row (F02-S10): a rounded search field plus a square
+/// filter button (sort). Live: [onChanged] filters as the user types, the
+/// topnav's search icon focuses the field via [focusNode].
 class AlbumSearchBar extends StatelessWidget {
-  const AlbumSearchBar({this.onChanged, this.onFilter, super.key});
+  const AlbumSearchBar({
+    this.onChanged,
+    this.onFilter,
+    this.focusNode,
+    super.key,
+  });
 
   final ValueChanged<String>? onChanged;
   final VoidCallback? onFilter;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +42,7 @@ class AlbumSearchBar extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: TextField(
+                    focusNode: focusNode,
                     onChanged: onChanged,
                     decoration: InputDecoration(
                       isCollapsed: true,

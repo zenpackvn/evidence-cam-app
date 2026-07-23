@@ -1,5 +1,6 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// The Album total-count banner (F02-S10 "stats"): a coral stamp icon, the
 /// "Tổng số tem đã lưu" label with the count, on a soft-peach panel.
@@ -56,7 +57,10 @@ class AlbumStatsBanner extends StatelessWidget {
                   children: [
                     Text(
                       '$count',
-                      style: context.textTheme.headlineSmall?.copyWith(
+                      // F02-S10 `stats`: the count keeps the rounded Baloo 2
+                      // accent face while headings moved to Playfair Display.
+                      style: GoogleFonts.baloo2(
+                        textStyle: context.textTheme.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: scheme.primary,
                       ),

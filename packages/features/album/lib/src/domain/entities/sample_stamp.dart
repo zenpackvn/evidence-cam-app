@@ -7,10 +7,16 @@ class SampleStamp {
     required this.imageUrl,
     required this.thumbUrl,
     required this.theme,
+    this.name = '',
     this.isNew = false,
   });
 
   final String id;
+
+  /// Display name (SM-035): shown on the tile and detail, and carried onto the
+  /// saved album stamp so it stays recognizable.
+  final String name;
+
   final String imageUrl;
   final String thumbUrl;
 

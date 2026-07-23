@@ -5,6 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 class _FakeLettersRepository implements LettersRepository {
   _FakeLettersRepository({this.failLink = false});
 
+  @override
+  Future<Result<List<Letter>>> letters() async => const Ok([]);
+
   bool failLink;
   LetterInput? lastInput;
 
