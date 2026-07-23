@@ -31,8 +31,9 @@ class SentLettersScreen extends StatefulWidget {
   /// rows non-interactive.
   final ValueChanged<SentLetter>? onView;
 
-  /// Reloads the list (menu → "Làm mới").
-  final VoidCallback? onRefresh;
+  /// Reloads the list (pull-to-refresh + menu → "Làm mới"). Returns a future so
+  /// the pull-to-refresh spinner stays until the reload finishes.
+  final Future<void> Function()? onRefresh;
 
   static const _ground = Color(0xFFFAF4EC);
 
@@ -86,7 +87,8 @@ class _SentLettersScreenState extends State<SentLettersScreen> {
     );
     if (!mounted || result == null) return;
     if (result == _MenuAction.refresh) {
-      widget.onRefresh?.call();
+      await widget.onRefresh?.call();
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(const SnackBar(content: Text('Đã làm mới danh sách.')));
@@ -166,22 +168,28 @@ class _SentLettersScreenState extends State<SentLettersScreen> {
                 ),
               ),
             Expanded(
-              child: widget.letters.isEmpty
-                  ? _SentEmpty(onCompose: widget.onCompose)
-                  : visible.isEmpty && hasFilter
-                  ? const _NoMatches()
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.xxl,
-                        AppSpacing.md,
-                        AppSpacing.xxl,
-                        AppSpacing.xxl,
+              child: RefreshIndicator(
+                onRefresh: widget.onRefresh ?? () async {},
+                child: widget.letters.isEmpty
+                    ? _PullToRefreshFill(
+                        child: _SentEmpty(onCompose: widget.onCompose),
+                      )
+                    : visible.isEmpty && hasFilter
+                    ? const _PullToRefreshFill(child: _NoMatches())
+                    : SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.xxl,
+                          AppSpacing.md,
+                          AppSpacing.xxl,
+                          AppSpacing.xxl,
+                        ),
+                        child: _ListCard(
+                          letters: visible,
+                          onView: widget.onView,
+                        ),
                       ),
-                      child: _ListCard(
-                        letters: visible,
-                        onView: widget.onView,
-                      ),
-                    ),
+              ),
             ),
           ],
         ),
@@ -191,6 +199,28 @@ class _SentLettersScreenState extends State<SentLettersScreen> {
 }
 
 enum _MenuAction { refresh }
+
+/// Lets a non-scrolling body (the empty / no-match states) fill the viewport
+/// and still respond to pull-to-refresh, so the mailbox refreshes by pulling
+/// down even when the list is empty — matching the Home screen.
+class _PullToRefreshFill extends StatelessWidget {
+  const _PullToRefreshFill({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
 
 /// A status choice from the menu sheet; null [status] clears the filter.
 class _StatusChoice {
