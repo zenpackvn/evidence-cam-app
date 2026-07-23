@@ -490,10 +490,13 @@ class _StampMailProfilePageState extends State<_StampMailProfilePage> {
               ),
             ),
             onOpenSettings: () => const SettingsRoute().push<void>(context),
-            // ponytail: the paywall / manage-subscription flow (RevenueCat)
-            // lands separately; both actions open Settings for now.
-            onUpgrade: () => const SettingsRoute().push<void>(context),
-            onManagePlan: () => const SettingsRoute().push<void>(context),
+            // The paywall / manage-subscription flow (RevenueCat) is not built
+            // yet and pricing is still undecided (D1), so these show a
+            // "coming soon" notice rather than opening an unrelated screen.
+            onUpgrade: () =>
+                _showComingSoon(context, 'Nâng cấp Premium sẽ sớm khả dụng.'),
+            onManagePlan: () =>
+                _showComingSoon(context, 'Quản lý gói sẽ sớm khả dụng.'),
           ),
         );
       },
@@ -755,6 +758,14 @@ class HomeRoute extends GoRouteData with $HomeRoute {
 /// Opens a read-only view of a letter the user composed, loading its body from
 /// the local cache the letters repo stashed at create time (the backend has no
 /// "read my letter by id" endpoint, so this only covers on-device letters).
+/// Shows a transient "coming soon" notice for features whose flow isn't built
+/// yet (e.g. the Premium paywall / manage-subscription, pending RevenueCat).
+void _showComingSoon(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(message)));
+}
+
 void _openLetterContent(BuildContext context, String letterId) {
   Navigator.of(context).push<void>(
     MaterialPageRoute(
