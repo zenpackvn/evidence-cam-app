@@ -86,13 +86,7 @@ class _SentLettersScreenState extends State<SentLettersScreen> {
       builder: (_) => _MailboxMenuSheet(activeFilter: _statusFilter),
     );
     if (!mounted || result == null) return;
-    if (result == _MenuAction.refresh) {
-      await widget.onRefresh?.call();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('Đã làm mới danh sách.')));
-    } else if (result is _StatusChoice) {
+    if (result is _StatusChoice) {
       setState(() => _statusFilter = result.status);
     }
   }
@@ -198,8 +192,6 @@ class _SentLettersScreenState extends State<SentLettersScreen> {
   }
 }
 
-enum _MenuAction { refresh }
-
 /// Lets a non-scrolling body (the empty / no-match states) fill the viewport
 /// and still respond to pull-to-refresh, so the mailbox refreshes by pulling
 /// down even when the list is empty — matching the Home screen.
@@ -235,7 +227,7 @@ String _statusLabel(SentStatus s) => switch (s) {
   SentStatus.expired => 'Hết hạn',
 };
 
-/// The ☰ action sheet: refresh and a status filter for the list.
+/// The ☰ action sheet: a status filter for the list.
 class _MailboxMenuSheet extends StatelessWidget {
   const _MailboxMenuSheet({this.activeFilter});
 
@@ -273,11 +265,6 @@ class _MailboxMenuSheet extends StatelessWidget {
                 'Hộp thư',
                 style: AppSerif.style(fontSize: 22, color: scheme.onSurface),
               ),
-            ),
-            ListTile(
-              leading: Icon(Icons.refresh, color: scheme.onSurface),
-              title: const Text('Làm mới danh sách'),
-              onTap: () => Navigator.pop(context, _MenuAction.refresh),
             ),
             Divider(height: 1, color: context.brand.borderSubtle),
             Padding(
