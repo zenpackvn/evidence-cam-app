@@ -161,11 +161,13 @@ class _LoadedHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
+      // Bottom inset now just breathing room — the create button moved into
+      // the bottom bar, so the old FAB-clearance gap (120) is gone.
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.xxl,
         18,
         AppSpacing.xxl,
-        120,
+        AppSpacing.xxl,
       ),
       children: [
         _Header(name: name),
@@ -247,11 +249,6 @@ class _Header extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: context.textTheme.displayMedium?.copyWith(fontSize: 26),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Hôm nay bạn muốn gửi yêu thương đến ai?',
-                style: context.textTheme.bodySmall,
               ),
             ],
           ),
