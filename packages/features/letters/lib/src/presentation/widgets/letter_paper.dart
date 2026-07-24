@@ -97,11 +97,20 @@ class LetterPaper extends StatelessWidget {
           )
         : editor;
     return Container(
-      constraints: const BoxConstraints(minHeight: 420),
+      constraints: const BoxConstraints(minHeight: 460),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: paper,
         borderRadius: BorderRadius.circular(AppRadius.xl),
+        // fd0450 (f4-letter-open): the illustrated torn-paper letter — flowers
+        // down the sides and a photo-stamp bottom-right — as the sheet's
+        // background art.
+        image: const DecorationImage(
+          image: AssetImage(
+            'assets/illustrations/f4-letter-open.png',
+            package: 'feature_letters',
+          ),
+          fit: BoxFit.cover,
+        ),
         boxShadow: const [
           BoxShadow(
             color: Color(0x1424211F),
@@ -110,49 +119,30 @@ class LetterPaper extends StatelessWidget {
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          // The writing area — padded so the corner/edge decorations frame it.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xl,
-              AppSpacing.xl,
-              AppSpacing.xl,
-              44,
-            ),
-            // The editor needs FlutterQuillLocalizations. The app shell does not
-            // register the delegate (and letters cannot reach into it), so the
-            // feature supplies it here — merged over the app's own.
+      // Inset so the illustration's flowers (sides) and photo-stamp
+      // (bottom-right) stay visible; the writing area sits on a soft cream veil
+      // that hides the design's sample text so the user's own reads cleanly.
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 24, 22, 92),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: paper.withValues(alpha: 0.88),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          // The editor needs FlutterQuillLocalizations. The app shell does not
+          // register the delegate (and letters cannot reach into it), so the
+          // feature supplies it here — merged over the app's own.
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Localizations.override(
               context: context,
               delegates: const [FlutterQuillLocalizations.delegate],
               child: body,
             ),
           ),
-          ..._templateDecorations(templateIcons(content.templateId)),
-        ],
+        ),
       ),
     );
-  }
-
-  /// Template decorations scattered around the sheet edges (fc1644): bigger in
-  /// the bottom corners, a couple up the sides, the top-left left clear for the
-  /// stamp. The written content is unchanged.
-  List<Widget> _templateDecorations(List<String> icons) {
-    if (icons.isEmpty) return const [];
-    String at(int i) => icons[i % icons.length];
-    Widget deco(String e, double size, double rot) => Transform.rotate(
-      angle: rot,
-      child: Text(e, style: TextStyle(fontSize: size)),
-    );
-    return [
-      Positioned(bottom: 6, left: 8, child: deco(at(0), 34, -0.15)),
-      Positioned(bottom: 4, right: 10, child: deco(at(1), 32, 0.12)),
-      Positioned(bottom: 30, right: 8, child: deco(at(2), 22, -0.1)),
-      Positioned(top: 8, right: 8, child: deco(at(3), 26, 0.1)),
-      Positioned(top: 96, left: 4, child: deco(at(2), 22, -0.12)),
-      Positioned(top: 120, right: 2, child: deco(at(0), 20, 0.1)),
-    ];
   }
 }
 
