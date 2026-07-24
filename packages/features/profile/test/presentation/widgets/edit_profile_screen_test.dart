@@ -140,48 +140,33 @@ void main() {
     );
   });
 
-  testWidgets('an invalid birthday errors under the birthday field', (
+  testWidgets('the birthday shows as a summary and opens a scroll-wheel picker', (
     tester,
   ) async {
-    await pumpForm(tester, _FakeProfileRepository(alice));
-
-    await tester.enterText(find.byKey(const Key('editProfile_birthDay')), '31');
-    await tester.pump();
-    await tester.enterText(
-      find.byKey(const Key('editProfile_birthMonth')),
-      '4',
+    const withBirthday = UserProfile(
+      id: 'u1',
+      username: 'alice',
+      birthDate: BirthDate(day: 3, month: 4, year: 1990),
+      usernameChangesLeft: 1,
     );
-    await tester.pump();
+    await pumpForm(tester, _FakeProfileRepository(withBirthday));
 
-    expect(
-      find.byKey(const Key('editProfile_birthDateError')),
-      findsOneWidget,
+    // The stored birthday is shown as a read-only summary (dd/mm/yyyy).
+    expect(find.text('03/04/1990'), findsOneWidget);
+
+    // Tapping it opens the wheel picker — scroll wheels, not a keyboard. The
+    // field sits below the fold in the test viewport, so bring it on-screen.
+    await tester.ensureVisible(
+      find.byKey(const Key('editProfile_birthDateField')),
     );
-    expect(find.text('Ngày sinh không hợp lệ'), findsOneWidget);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('editProfile_birthDateField')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('editProfile_birthDayWheel')), findsOneWidget);
+    expect(find.byKey(const Key('editProfile_birthYearWheel')), findsOneWidget);
+    expect(find.text('Xong'), findsOneWidget);
   });
-
-  testWidgets(
-    'typing the first birth-date digit keeps the field focused (keyboard stays)',
-    (tester) async {
-      await pumpForm(tester, _FakeProfileRepository(alice));
-
-      // Typing the first digit flips the field to "has value", which reveals the
-      // "Xoá" button above the row. The row must survive that so focus is kept.
-      await tester.enterText(
-        find.byKey(const Key('editProfile_birthDay')),
-        '1',
-      );
-      await tester.pump();
-
-      final editable = tester.widget<EditableText>(
-        find.descendant(
-          of: find.byKey(const Key('editProfile_birthDay')),
-          matching: find.byType(EditableText),
-        ),
-      );
-      expect(editable.focusNode.hasFocus, isTrue);
-    },
-  );
 
   testWidgets('AC-07: the clear action empties the birthday and saves it', (
     tester,

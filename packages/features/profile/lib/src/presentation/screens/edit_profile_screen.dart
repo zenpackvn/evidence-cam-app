@@ -1,7 +1,7 @@
 import 'package:app_platform/app_platform.dart';
 import 'package:app_ui/app_ui.dart';
+import 'package:flutter/cupertino.dart' show CupertinoPicker;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/profile_validation.dart';
@@ -608,6 +608,9 @@ class _BirthDateField extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<EditProfileCubit>();
     final scheme = context.colorScheme;
+    final day = int.tryParse(state.day);
+    final month = int.tryParse(state.month);
+    final year = int.tryParse(state.year);
     final hasValue =
         state.day.isNotEmpty || state.month.isNotEmpty || state.year.isNotEmpty;
 
@@ -629,43 +632,19 @@ class _BirthDateField extends StatelessWidget {
             ),
           ),
         if (hasValue) const SizedBox(height: AppSpacing.xs),
-        Row(
-          // Keyed so the row (and the focused date field) is preserved when the
-          // "Xoá" button appears above it — otherwise the row is rebuilt on the
-          // first digit and the keyboard closes.
-          key: const ValueKey('editProfile_dobRow'),
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _DatePart(
-                fieldKey: const Key('editProfile_birthDay'),
-                hint: 'Ngày',
-                value: state.day,
-                enabled: !state.isSaving,
-                onChanged: cubit.dayChanged,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _DatePart(
-                fieldKey: const Key('editProfile_birthMonth'),
-                hint: 'Tháng',
-                value: state.month,
-                enabled: !state.isSaving,
-                onChanged: cubit.monthChanged,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _DatePart(
-                fieldKey: const Key('editProfile_birthYear'),
-                hint: 'Năm (tuỳ chọn)',
-                value: state.year,
-                enabled: !state.isSaving,
-                onChanged: cubit.yearChanged,
-              ),
-            ),
-          ],
+        // A read-only summary that opens a scroll-wheel picker (Ngày/Tháng/Năm)
+        // — the birthday is chosen by scrolling, not typed.
+        _BirthDateSummaryField(
+          fieldKey: const Key('editProfile_birthDateField'),
+          text: _formatBirthday(day, month, year),
+          enabled: !state.isSaving,
+          onTap: () => _openBirthDatePicker(
+            context,
+            cubit,
+            day: day,
+            month: month,
+            year: year,
+          ),
         ),
         if (state.birthDateError != null) ...[
           const SizedBox(height: AppSpacing.xs),
@@ -680,34 +659,267 @@ class _BirthDateField extends StatelessWidget {
   }
 }
 
-class _DatePart extends StatelessWidget {
-  const _DatePart({
+/// The birthday shown as `dd/mm` or `dd/mm/yyyy` (the year is optional, BR-06),
+/// or an empty string when unset.
+String _formatBirthday(int? day, int? month, int? year) {
+  if (day == null || month == null) return '';
+  final d = day.toString().padLeft(2, '0');
+  final m = month.toString().padLeft(2, '0');
+  return year == null ? '$d/$m' : '$d/$m/$year';
+}
+
+/// Opens the scroll-wheel birthday picker. Selections commit live to the cubit
+/// as the user scrolls, so closing the sheet just dismisses it.
+Future<void> _openBirthDatePicker(
+  BuildContext context,
+  EditProfileCubit cubit, {
+  int? day,
+  int? month,
+  int? year,
+}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: context.colorScheme.surface,
+    // Opened inside the profile tab's nested navigator, which is shorter than
+    // the screen — let the sheet size to its content instead of being capped.
+    isScrollControlled: true,
+    showDragHandle: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => _BirthDateWheelSheet(
+      initialDay: day ?? 1,
+      initialMonth: month ?? 1,
+      initialYear: year,
+      onChanged: (d, m, y) => cubit
+        ..dayChanged('$d')
+        ..monthChanged('$m')
+        ..yearChanged(y == null ? '' : '$y'),
+    ),
+  );
+}
+
+/// A read-only field that mirrors the other form fields' look but opens the
+/// wheel picker on tap instead of the keyboard.
+class _BirthDateSummaryField extends StatefulWidget {
+  const _BirthDateSummaryField({
     required this.fieldKey,
-    required this.hint,
-    required this.value,
+    required this.text,
     required this.enabled,
-    required this.onChanged,
+    required this.onTap,
   });
 
   final Key fieldKey;
-  final String hint;
-  final String value;
+  final String text;
   final bool enabled;
-  final ValueChanged<String> onChanged;
+  final VoidCallback onTap;
+
+  @override
+  State<_BirthDateSummaryField> createState() => _BirthDateSummaryFieldState();
+}
+
+class _BirthDateSummaryFieldState extends State<_BirthDateSummaryField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.text,
+  );
+
+  @override
+  void didUpdateWidget(_BirthDateSummaryField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.text != _controller.text) _controller.text = widget.text;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return _SyncedField(
-      fieldKey: fieldKey,
-      hint: hint,
-      value: value,
-      enabled: enabled,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      maxLength: 4,
-      onChanged: onChanged,
+    return AppTextField(
+      key: widget.fieldKey,
+      controller: _controller,
+      readOnly: true,
+      enabled: widget.enabled,
+      hint: 'Chọn ngày sinh',
+      suffix: Icon(
+        Icons.unfold_more,
+        size: 20,
+        color: context.colorScheme.onSurfaceVariant,
+      ),
+      onTap: widget.enabled ? widget.onTap : null,
     );
   }
+}
+
+/// Three scroll wheels — Ngày (1–31), Tháng (1–12), Năm ("Không" for no year,
+/// then most-recent first). Each change commits live via [onChanged].
+class _BirthDateWheelSheet extends StatefulWidget {
+  const _BirthDateWheelSheet({
+    required this.initialDay,
+    required this.initialMonth,
+    required this.initialYear,
+    required this.onChanged,
+  });
+
+  final int initialDay;
+  final int initialMonth;
+  final int? initialYear;
+  final void Function(int day, int month, int? year) onChanged;
+
+  @override
+  State<_BirthDateWheelSheet> createState() => _BirthDateWheelSheetState();
+}
+
+class _BirthDateWheelSheetState extends State<_BirthDateWheelSheet> {
+  static const int _minYear = 1900;
+  static const double _itemExtent = 40;
+
+  late final int _maxYear = DateTime.now().year;
+  late int _day;
+  late int _month;
+  int? _year;
+  late final FixedExtentScrollController _dayCtl;
+  late final FixedExtentScrollController _monthCtl;
+  late final FixedExtentScrollController _yearCtl;
+
+  // Year column: index 0 is "Không" (no year); index 1 is the most recent year.
+  int _yearToIndex(int? y) => y == null ? 0 : (_maxYear - y) + 1;
+  int? _indexToYear(int i) => i == 0 ? null : _maxYear - (i - 1);
+
+  @override
+  void initState() {
+    super.initState();
+    _day = widget.initialDay.clamp(1, 31);
+    _month = widget.initialMonth.clamp(1, 12);
+    _year = widget.initialYear?.clamp(_minYear, _maxYear);
+    _dayCtl = FixedExtentScrollController(initialItem: _day - 1);
+    _monthCtl = FixedExtentScrollController(initialItem: _month - 1);
+    _yearCtl = FixedExtentScrollController(initialItem: _yearToIndex(_year));
+  }
+
+  @override
+  void dispose() {
+    _dayCtl.dispose();
+    _monthCtl.dispose();
+    _yearCtl.dispose();
+    super.dispose();
+  }
+
+  void _commit() => widget.onChanged(_day, _month, _year);
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Ngày sinh',
+                  style: context.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                TextButton(
+                  key: const Key('editProfile_birthDatePickerDone'),
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Xong'),
+                ),
+              ],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Row(
+              children: [
+                Expanded(child: Center(child: _WheelHeader('Ngày'))),
+                Expanded(child: Center(child: _WheelHeader('Tháng'))),
+                Expanded(child: Center(child: _WheelHeader('Năm'))),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 200,
+            child: Row(
+              children: [
+                Expanded(
+                  child: CupertinoPicker(
+                    key: const Key('editProfile_birthDayWheel'),
+                    scrollController: _dayCtl,
+                    itemExtent: _itemExtent,
+                    onSelectedItemChanged: (i) {
+                      _day = i + 1;
+                      _commit();
+                    },
+                    children: [
+                      for (var d = 1; d <= 31; d++) Center(child: Text('$d')),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    key: const Key('editProfile_birthMonthWheel'),
+                    scrollController: _monthCtl,
+                    itemExtent: _itemExtent,
+                    onSelectedItemChanged: (i) {
+                      _month = i + 1;
+                      _commit();
+                    },
+                    children: [
+                      for (var m = 1; m <= 12; m++) Center(child: Text('$m')),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    key: const Key('editProfile_birthYearWheel'),
+                    scrollController: _yearCtl,
+                    itemExtent: _itemExtent,
+                    onSelectedItemChanged: (i) {
+                      _year = _indexToYear(i);
+                      _commit();
+                    },
+                    children: [
+                      const Center(child: Text('Không')),
+                      for (var y = _maxYear; y >= _minYear; y--)
+                        Center(child: Text('$y')),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WheelHeader extends StatelessWidget {
+  const _WheelHeader(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    text,
+    style: context.textTheme.labelMedium?.copyWith(
+      color: context.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    ),
+  );
 }
 
 /// A text field backed by its own [TextEditingController], so typing survives
@@ -723,9 +935,6 @@ class _SyncedField extends StatefulWidget {
     this.hint,
     this.errorText,
     this.enabled = true,
-    this.keyboardType,
-    this.inputFormatters,
-    this.maxLength,
     this.textCapitalization = TextCapitalization.none,
   });
 
@@ -735,9 +944,6 @@ class _SyncedField extends StatefulWidget {
   final String? hint;
   final String? errorText;
   final bool enabled;
-  final TextInputType? keyboardType;
-  final List<TextInputFormatter>? inputFormatters;
-  final int? maxLength;
   final TextCapitalization textCapitalization;
 
   @override
@@ -782,9 +988,6 @@ class _SyncedFieldState extends State<_SyncedField> {
       hint: widget.hint,
       errorText: widget.errorText,
       enabled: widget.enabled,
-      keyboardType: widget.keyboardType,
-      inputFormatters: widget.inputFormatters,
-      maxLength: widget.maxLength,
       textCapitalization: widget.textCapitalization,
       onChanged: widget.onChanged,
     );
