@@ -139,29 +139,29 @@ class _AppState extends State<App> {
 
   static const _lastUidKey = 'last_synced_uid';
 
-  /// Ensures the local cache belongs to the account signing in. When it can't
-  /// be confirmed (a different uid last synced here, or none is recorded — e.g.
-  /// the first run after this fix, or a device that already holds someone
-  /// else's stamps), drop the cached rows + sync cursors so this user pulls
-  /// their own data from the server instead of seeing leftovers / reusing a
-  /// stale cursor.
-  void _resetLocalDataOnAccountSwitch(String uid) {
+  /// Reconciles the local cache with the account signing in. Only a *different*
+  /// account (a new uid, or none recorded) triggers a wipe — the same account
+  /// keeps its cached stamps/albums/letters so they show instantly on re-login.
+  /// Sign-out deliberately no longer wipes (offline-first): the data lives on
+  /// the device per account, and cross-account isolation is preserved because
+  /// the next account clears the previous data here before any of it shows.
+  Future<void> _resetLocalDataOnAccountSwitch(String uid) async {
     final prefs = getIt.isRegistered<SharedPreferences>()
         ? getIt<SharedPreferences>()
         : null;
     final last = prefs?.getString(_lastUidKey);
-    if (last != uid && getIt.isRegistered<ObjectBox>()) {
-      getIt<ObjectBox>().clearUserData();
+    if (last != uid) {
+      await _clearLocalAccountData();
     }
-    unawaited(prefs?.setString(_lastUidKey, uid));
+    await prefs?.setString(_lastUidKey, uid);
   }
 
-  /// Erases every trace of the signed-out account from this device: the
-  /// ObjectBox stores (stamps, albums, …) + sync cursors, the letters
-  /// SharedPreferences caches, the account-switch sentinel, and the in-memory
-  /// Premium entitlement. Device-level preferences (theme, locale, onboarding,
-  /// notification toggles) are intentionally kept. The server stays the source
-  /// of truth, so signing back in re-downloads everything.
+  /// Erases every trace of the previous account from this device when a
+  /// *different* account signs in: the ObjectBox stores (stamps, albums, …) +
+  /// sync cursors, the letters SharedPreferences caches, the account-switch
+  /// sentinel, and the in-memory Premium entitlement. Device-level preferences
+  /// (theme, locale, onboarding, notification toggles) are intentionally kept.
+  /// The same account signing back in never reaches here, so its data survives.
   Future<void> _clearLocalAccountData() async {
     // Stop any in-flight sync first so a pull mid-flight can't write rows back
     // after the wipe.
@@ -189,29 +189,47 @@ class _AppState extends State<App> {
   void _onAuthChanged(AuthState state) {
     if (state is AuthAuthenticated) {
       _wasAuthenticated = true;
-      // Must run before the sync controllers start (below) so the pull starts
-      // from a clean slate for the freshly-signed-in account.
-      _resetLocalDataOnAccountSwitch(state.user.id);
-      _syncNotificationSubscriptions(state.user.id);
-    } else if (state is AuthInitial && _wasAuthenticated) {
-      // The user signed out (or deleted their account / signed out everywhere)
-      // — AuthInitial is the definitive logged-out state (AuthSigningOut still
-      // holds the user). Wipe their data so nothing leaks to the next person.
+      unawaited(_onSignedIn(state.user.id));
+      return;
+    }
+    // Sign-out (AuthInitial is the definitive logged-out state; AuthSigningOut
+    // still holds the user): stop syncing but KEEP this account's local data on
+    // the device, so signing back in shows everything immediately. A different
+    // account signing in later wipes it first (see
+    // _resetLocalDataOnAccountSwitch), so nothing leaks between accounts.
+    if (state is AuthInitial && _wasAuthenticated) {
       _wasAuthenticated = false;
-      unawaited(_clearLocalAccountData());
     }
     for (final c in _syncControllers) {
       unawaited(
-        (state is AuthAuthenticated ? c.start() : c.stop()).catchError(
-          (Object error, StackTrace stackTrace) {
-            developer.log(
-              'Feature sync lifecycle failed',
-              name: 'App',
-              error: error,
-              stackTrace: stackTrace,
-            );
-          },
-        ),
+        c.stop().catchError((Object error, StackTrace stackTrace) {
+          developer.log(
+            'Feature sync stop failed',
+            name: 'App',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }),
+      );
+    }
+  }
+
+  /// The sign-in pipeline: reconcile local data for the account, subscribe to
+  /// notifications, then start the feature syncs — in that order so a pull
+  /// never races the account-switch wipe.
+  Future<void> _onSignedIn(String uid) async {
+    await _resetLocalDataOnAccountSwitch(uid);
+    _syncNotificationSubscriptions(uid);
+    for (final c in _syncControllers) {
+      unawaited(
+        c.start().catchError((Object error, StackTrace stackTrace) {
+          developer.log(
+            'Feature sync start failed',
+            name: 'App',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }),
       );
     }
   }
@@ -279,12 +297,20 @@ class _AppState extends State<App> {
                             AppLocalizations.localizationsDelegates,
                         supportedLocales: AppLocalizations.supportedLocales,
                         routerConfig: _router,
-                        builder: (context, child) => ForceUpdateGate(
-                          remoteConfig:
-                              getIt.isRegistered<RemoteConfigService>()
-                              ? getIt<RemoteConfigService>()
-                              : null,
-                          child: child ?? const SizedBox.shrink(),
+                        // App-wide: tapping outside any text field dismisses
+                        // the keyboard (translucent so it never blocks the
+                        // widgets below — only empty-area taps reach it).
+                        builder: (context, child) => GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: () =>
+                              FocusManager.instance.primaryFocus?.unfocus(),
+                          child: ForceUpdateGate(
+                            remoteConfig:
+                                getIt.isRegistered<RemoteConfigService>()
+                                ? getIt<RemoteConfigService>()
+                                : null,
+                            child: child ?? const SizedBox.shrink(),
+                          ),
                         ),
                       ),
                     ),
