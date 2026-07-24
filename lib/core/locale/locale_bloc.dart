@@ -11,7 +11,7 @@ part 'locale_state.dart';
 
 const _kLocaleKey = 'app.locale';
 
-/// App-wide selected language (SM-027 — "Ngôn ngữ").
+/// App-wide selected language.
 ///
 /// Mirrors `ThemeBloc`: an app-level preference persisted to
 /// [SharedPreferences] and read back synchronously at startup so the first
@@ -20,8 +20,8 @@ const _kLocaleKey = 'app.locale';
 /// `externalPackageModulesBefore`.
 ///
 /// Only languages with a bundled translation (`AppLocalizations.supportedLocales`)
-/// are honoured; a request for any other is ignored, which is what lets the
-/// picker show ko/ja rows that quietly no-op until those translations exist.
+/// are honoured; a request for any other is ignored, which is what lets a
+/// language picker show rows that quietly no-op until those translations exist.
 @lazySingleton
 class LocaleBloc extends Bloc<LocaleEvent, LocaleState> {
   LocaleBloc(this._prefs) : super(_readInitial(_prefs)) {

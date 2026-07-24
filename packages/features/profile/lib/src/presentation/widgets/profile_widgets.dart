@@ -27,16 +27,12 @@ class ProfileBody extends StatelessWidget {
   void _onDeleteAccountState(BuildContext context, DeleteAccountState state) {
     switch (state) {
       case DeleteAccountSuccess():
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.profileDeleteAccountSuccess)),
-        );
+        AppToast.success(context, context.l10n.profileDeleteAccountSuccess);
         // Clearing the session flips the app to signed-out, so the router
         // redirects to the login screen.
         SessionScope.of(context).clearSession();
       case DeleteAccountFailure():
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.profileDeleteAccountError)),
-        );
+        AppToast.error(context, context.l10n.profileDeleteAccountError);
       case DeleteAccountInitial() || DeleteAccountSubmitting():
         break;
     }

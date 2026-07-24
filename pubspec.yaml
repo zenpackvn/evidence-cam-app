@@ -50,12 +50,6 @@ workspace:
   - packages/features/splash
   - packages/features/home
   - packages/features/profile
-  # StampMail feature packages.
-  - packages/features/album
-  - packages/features/letters
-  - packages/features/premium
-  - packages/features/letter_inbox
-  - packages/features/stamp_creator
   # fst:features — `fst add-feature` inserts new feature packages above this line
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -94,12 +88,6 @@ dependencies:
   feature_splash: ^0.1.0
   feature_home: ^0.1.0
   feature_profile: ^0.1.0
-  # StampMail features.
-  feature_album: ^0.1.0
-  feature_letters: ^0.1.0
-  feature_premium: ^0.1.0
-  feature_letter_inbox: ^0.1.0
-  feature_stamp_creator: ^0.1.0
   # fst:feature-deps — `fst add-feature` inserts new feature deps above this line
 
   flutter:
@@ -107,10 +95,6 @@ dependencies:
 
   # iOS-style icon set, used via the CupertinoIcons class.
   cupertino_icons: ^1.0.8
-
-  # Google Fonts runtime. Referenced directly by the design-capture integration
-  # test (integration_test/flow1_capture_test.dart) to fetch real fonts on macOS.
-  google_fonts: ^8.1.0
 
   # State management: BLoC pattern (BlocProvider, BlocBuilder, BlocListener).
   flutter_bloc: ^9.1.1
@@ -157,19 +141,6 @@ dependencies:
 
   vector_graphics: ^1.2.2
   font_awesome_flutter: ^11.0.0
-
-# Why this override exists (SM-013 rich text, master-plan C3):
-#   flutter_quill 11.x -> quill_native_bridge ^11.0.0 -> quill_native_bridge_windows ^0.0.1
-# and that caret pin only reaches 0.0.2, which still requires win32 ^5.5.0.
-# package_info_plus ^10.1.0 requires win32 ^6.0.1, so pub cannot solve.
-# quill_native_bridge_windows 0.1.0-beta.1 is the same plugin already migrated to
-# win32 ^6.2.0 — upstream's caret simply has not caught up. We ship iOS/Android
-# only, so this package is a Windows-desktop plugin implementation that is never
-# compiled for our targets; the override unblocks resolution without affecting
-# any shipped platform. Remove once quill_native_bridge widens its constraint.
-dependency_overrides:
-  quill_native_bridge_windows: ^0.1.0-beta.1
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -211,6 +182,10 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.3
   checks: ^0.3.1
 
+  # Fails tests when a Disposable (controllers, subscriptions, ...) isn't
+  # disposed before teardown. Enabled globally in test/flutter_test_config.dart.
+  leak_tracker_flutter_testing: ^3.0.10
+
 flutter_gen:
   output: lib/gen/
   line_length: 80
@@ -235,12 +210,12 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true
   min_sdk_android: 21
-  adaptive_icon_background: "#F5EFE0"
+  adaptive_icon_background: "#095D9E"
   adaptive_icon_foreground: "tool/launcher_icons/app_icon_foreground.png"
   web:
     generate: true
-    background_color: "#F5EFE0"
-    theme_color: "#E8503A"
+    background_color: "#095D9E"
+    theme_color: "#095D9E"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -259,8 +234,6 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-    # Design sample/content images (preview harness + bundled catalogs).
-    - assets/design/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

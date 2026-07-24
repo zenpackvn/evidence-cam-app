@@ -9,6 +9,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i558;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:shared_preferences/shared_preferences.dart' as _i460;
 import 'package:storage/src/auth_token_store.dart' as _i121;
+import 'package:storage/src/key_value_store.dart' as _i900;
+import 'package:storage/src/key_value_store_module.dart' as _i901;
 import 'package:storage/src/keychain_reset_on_reinstall.dart' as _i1049;
 import 'package:storage/src/secure_storage_module.dart' as _i837;
 import 'package:storage/src/shared_preferences_module.dart' as _i684;
@@ -19,6 +21,7 @@ class StoragePackageModule extends _i526.MicroPackageModule {
   _i687.FutureOr<void> init(_i526.GetItHelper gh) async {
     final sharedPreferencesModule = _$SharedPreferencesModule();
     final secureStorageModule = _$SecureStorageModule();
+    final keyValueStoreModule = _$KeyValueStoreModule();
     await gh.factoryAsync<_i460.SharedPreferences>(
       () => sharedPreferencesModule.provideSharedPreferences(),
       preResolve: true,
@@ -26,12 +29,17 @@ class StoragePackageModule extends _i526.MicroPackageModule {
     gh.lazySingleton<_i558.FlutterSecureStorage>(
       () => secureStorageModule.provideSecureStorage(),
     );
+    gh.lazySingleton<_i900.KeyValueStore>(
+      () => keyValueStoreModule.provideKeyValueStore(
+        gh<_i460.SharedPreferences>(),
+      ),
+    );
     gh.lazySingleton<_i121.AuthTokenStore>(
       () => _i121.SecureAuthTokenStore(gh<_i558.FlutterSecureStorage>()),
     );
     gh.lazySingleton<_i1049.KeychainResetOnReinstall>(
       () => _i1049.KeychainResetOnReinstall(
-        gh<_i460.SharedPreferences>(),
+        gh<_i900.KeyValueStore>(),
         gh<_i558.FlutterSecureStorage>(),
       ),
     );
@@ -41,3 +49,5 @@ class StoragePackageModule extends _i526.MicroPackageModule {
 class _$SharedPreferencesModule extends _i684.SharedPreferencesModule {}
 
 class _$SecureStorageModule extends _i837.SecureStorageModule {}
+
+class _$KeyValueStoreModule extends _i901.KeyValueStoreModule {}

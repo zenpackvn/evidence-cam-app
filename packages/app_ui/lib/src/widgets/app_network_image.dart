@@ -61,41 +61,22 @@ class AppNetworkImage extends StatelessWidget {
   /// as decorative and hidden from the semantics tree.
   final String? semanticLabel;
 
-  /// Prefix marking a bundled-asset "url" (`asset:<asset key>`), so
-  /// asset-backed content (design samples, offline catalogs) can flow through
-  /// the same string fields as remote images.
-  static const assetScheme = 'asset:';
-
   @override
   Widget build(BuildContext context) {
     if (imageUrl.isEmpty) {
       return _withSemantics(_buildErrorWidget(context, imageUrl, 'Empty URL'));
     }
 
-    final Widget imageWidget;
-    if (imageUrl.startsWith(assetScheme)) {
-      imageWidget = Image.asset(
-        imageUrl.substring(assetScheme.length),
-        fit: fit,
-        width: width,
-        height: height,
-        color: color,
-        colorBlendMode: colorBlendMode,
-        errorBuilder: (context, error, _) =>
-            _buildErrorWidget(context, imageUrl, error),
-      );
-    } else {
-      imageWidget = CachedNetworkImage(
-        imageUrl: imageUrl,
-        fit: fit,
-        width: width,
-        height: height,
-        color: color,
-        colorBlendMode: colorBlendMode,
-        placeholder: placeholder ?? _buildPlaceholder,
-        errorWidget: errorWidget ?? _buildErrorWidget,
-      );
-    }
+    final imageWidget = CachedNetworkImage(
+      imageUrl: imageUrl,
+      fit: fit,
+      width: width,
+      height: height,
+      color: color,
+      colorBlendMode: colorBlendMode,
+      placeholder: placeholder ?? _buildPlaceholder,
+      errorWidget: errorWidget ?? _buildErrorWidget,
+    );
 
     if (borderRadius != BorderRadius.zero) {
       return _withSemantics(

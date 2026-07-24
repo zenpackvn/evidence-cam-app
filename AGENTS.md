@@ -15,13 +15,6 @@ fvm dart <command>
 
 If `.fvm/flutter_sdk` is missing, run `fvm install` once.
 
-## iOS builds: CocoaPods, not Swift Package Manager
-
-iOS builds fail under SPM (Flutter 3.44 pins the SPM-generated package to
-iOS 13 while Firebase needs 15, and two plugins lack SPM support). Once per
-machine run `fvm flutter config --no-enable-swift-package-manager`, then use
-the normal CocoaPods flow (`pod install` in `ios/`). Details in CLAUDE.md.
-
 ## Common commands
 
 ```bash
@@ -39,20 +32,9 @@ Release modes against `lib/main.dart`.
 
 ## Project conventions
 
-- The repo is a Dart pub workspace. The root app (`lib/`) is a thin
-  composition root only (routing, DI composition, Firebase bootstrap, small
-  app-coupled glue under `lib/core/`); it owns no feature code.
-- Feature code lives in `packages/features/<name>/` (package
-  `feature_<name>`), under `lib/src/{data,domain,presentation}` with a barrel
-  exporting only its public surface. Features must not import other features
-  except through the documented single-consumer capability allowlist.
-- Cross-feature code goes in `packages/shared_contracts/` (business
-  contracts), `packages/shared_ui/` (shared Flutter widgets),
-  `packages/app_ui/` (design system), or an infra package (`network`,
-  `storage`, …). Promote there only once 2+ features need it (rule of three).
-- These boundaries are machine-enforced by `test/architecture/`
-  (`feature_boundaries_test.dart`, `package_layering_test.dart`). See
-  "Code organization" in CLAUDE.md for the full rules and a worked example.
+- Use the feature-first Clean Architecture layout already present under
+  `lib/features/<feature>/{data,domain,presentation}`.
+- Keep reusable cross-feature code under `lib/core`.
 - Prefer BLoC state patterns already used in the project.
 - Use immutable models and Freezed unions where the surrounding code does.
 - Do not hand-edit generated files such as `*.freezed.dart`, `*.g.dart`,

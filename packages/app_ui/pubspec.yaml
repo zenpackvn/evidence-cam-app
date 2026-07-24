@@ -28,9 +28,3 @@ dev_dependencies:
     sdk: flutter
 
   test_utils: ^0.1.0
-
-flutter:
-  uses-material-design: true
-  assets:
-    # Brand stamp marks for the shared StampMailBrandmark (coral + white).
-    - assets/brand/

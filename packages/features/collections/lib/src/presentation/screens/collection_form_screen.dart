@@ -75,9 +75,7 @@ class _CollectionFormViewState extends State<_CollectionFormView> {
         _hydrateFrom(state);
         if (state.saved) Navigator.of(context).pop();
         if (state.failure != null) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(state.failure!.message)));
+          AppToast.error(context, state.failure!.message);
         }
       },
       builder: (context, state) {

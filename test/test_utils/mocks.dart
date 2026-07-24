@@ -2,7 +2,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:feature_auth/src/domain/usecases/register.dart';
 import 'package:feature_auth/src/domain/usecases/restore_session.dart';
 import 'package:feature_auth/src/domain/usecases/sign_in.dart';
-import 'package:feature_auth/src/domain/usecases/sign_in_with_google.dart';
 import 'package:feature_auth/src/domain/usecases/sign_out.dart';
 // fst:feature:notifications:start
 import 'package:feature_notifications/feature_notifications.dart';
@@ -20,8 +19,6 @@ class MockRegister extends Mock implements RegisterUseCase {}
 class MockSignOut extends Mock implements SignOutUseCase {}
 
 class MockRestoreSession extends Mock implements RestoreSessionUseCase {}
-
-class MockSignInWithGoogle extends Mock implements SignInWithGoogleUseCase {}
 
 // fst:feature:notifications:start
 class MockNotificationsBloc

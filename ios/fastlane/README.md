@@ -72,6 +72,22 @@ this), else the git commit count. Pass one explicitly when needed:
 bundle exec fastlane beta flavor:prod build_number:42
 ```
 
+### QA builds via Firebase App Distribution
+
+```bash
+bundle exec fastlane match adhoc          # one-time: create ad-hoc profiles
+bundle exec fastlane firebase flavor:dev
+```
+
+Builds an **ad-hoc** signed IPA (separate from the App Store profile `beta`/
+`release` use — ad-hoc is what lets Firebase install directly on registered
+test devices) and pushes it to testers via Firebase App Distribution. Requires
+`bundle exec fastlane add_plugin firebase_app_distribution` once (already
+declared in `Pluginfile`; run `bundle install` after pulling this) and
+`FIREBASE_IOS_APP_ID_<FLAVOR>` set in `.env` per flavor. Register test devices'
+UDIDs with Apple first — ad-hoc profiles only install on devices already known
+to the profile.
+
 ## CI
 
 `.github/workflows/release.yml` runs this lane on a macOS runner (Xcode

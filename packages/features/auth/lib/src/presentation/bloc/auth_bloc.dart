@@ -7,7 +7,6 @@ import 'package:injectable/injectable.dart';
 import '../../domain/usecases/register.dart';
 import '../../domain/usecases/restore_session.dart';
 import '../../domain/usecases/sign_in.dart';
-import '../../domain/usecases/sign_in_with_google.dart';
 import '../../domain/usecases/sign_out.dart';
 import 'auth_state.dart';
 
@@ -21,7 +20,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this._signOut,
     required this._restoreSession,
     required this._analytics,
-    required this._signInWithGoogle,
   }) : super(const AuthState.initial()) {
     on<AuthSessionRestoreRequested>(
       _onSessionRestoreRequested,
@@ -29,16 +27,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     on<AuthSessionCleared>(_onSessionCleared);
     on<AuthSignInRequested>(_onSignInRequested, transformer: droppable());
-    on<AuthGoogleSignInRequested>(
-      _onGoogleSignInRequested,
-      transformer: droppable(),
-    );
     on<AuthRegisterRequested>(_onRegisterRequested, transformer: droppable());
     on<AuthSignOutRequested>(_onSignOutRequested, transformer: droppable());
   }
 
   final SignInUseCase _signIn;
-  final SignInWithGoogleUseCase _signInWithGoogle;
   final RegisterUseCase _register;
   final SignOutUseCase _signOut;
   final RestoreSessionUseCase _restoreSession;
@@ -84,25 +77,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       case Ok(value: final user):
         _analytics.setCurrentUser(user.id).fire();
         _analytics.logLogin(method: 'password').fire();
-        emit(AuthState.authenticated(user));
-      case Err(:final failure):
-        _analytics
-            .trackLoginFailed(errorType: failure.runtimeType.toString())
-            .fire();
-        emit(AuthState.failure(failure));
-    }
-  }
-
-  Future<void> _onGoogleSignInRequested(
-    AuthGoogleSignInRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(const AuthState.submitting());
-    final result = await _signInWithGoogle(null);
-    switch (result) {
-      case Ok(value: final user):
-        _analytics.setCurrentUser(user.id).fire();
-        _analytics.logLogin(method: 'google').fire();
         emit(AuthState.authenticated(user));
       case Err(:final failure):
         _analytics

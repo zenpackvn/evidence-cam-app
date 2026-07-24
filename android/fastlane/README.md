@@ -71,6 +71,29 @@ this), else the git commit count. Pass one explicitly when needed:
 bundle exec fastlane beta flavor:prod build_number:42
 ```
 
+### QA builds via Firebase App Distribution
+
+```bash
+bundle exec fastlane firebase flavor:dev
+```
+
+Builds a release APK for the flavor and pushes it straight to testers via
+Firebase App Distribution — no Play Console review, useful for handing a build
+to QA mid-sprint. Requires `bundle exec fastlane add_plugin
+firebase_app_distribution` once (already declared in `Pluginfile`; run `bundle
+install` after pulling this) and `FIREBASE_ANDROID_APP_ID_<FLAVOR>` set in
+`.env` per flavor.
+
+### Promoting to production
+
+```bash
+bundle exec fastlane promote flavor:prod rollout:0.1
+```
+
+Promotes the flavor's existing **internal**-track release to **production** at
+a staged rollout percentage (default 10%). Re-run with a higher `rollout:` to
+widen it, or finish the rollout from the Play Console.
+
 ## CI
 
 `.github/workflows/release.yml` runs this lane on `ubuntu-latest` (no Xcode

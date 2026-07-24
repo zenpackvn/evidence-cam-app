@@ -11,23 +11,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_starter_template/app/app.dart';
 import 'package:flutter_starter_template/app/di/injection.dart';
 import 'package:flutter_starter_template/app/feature_module.dart';
-import 'package:flutter_starter_template/core/locale/locale_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rev_sync/rev_sync.dart';
+import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
+import 'package:shared_contracts/shared_contracts.dart';
 import 'package:storage/storage.dart';
 import 'package:theme/theme.dart';
 
 import 'test_utils.dart';
-
-final class _AlwaysOnline implements ConnectivitySource {
-  const _AlwaysOnline();
-
-  @override
-  Future<bool> isOnline() async => true;
-
-  @override
-  Stream<bool> get onOnlineChanged => const Stream<bool>.empty();
-}
 
 final class _NoOpSyncModule extends FeatureModule {
   @override
@@ -42,23 +32,22 @@ final class _NoOpSync implements FeatureSyncController {
 }
 
 void main() {
+  // Opt this full-app integration test out of leak tracking (enabled globally
+  // in flutter_test_config.dart). A full app render leaves ~70 framework/plugin
+  // objects alive by design — CurvedAnimations, ImageStreamCompleterHandles,
+  // the router's Bloc listenable, app-lifetime DI singletons — none of which are
+  // app-owned disposables this test should chase. Leak tracking stays active for
+  // the focused component tests where it catches real leaks.
+  LeakTesting.settings = LeakTesting.settings.withIgnoredAll();
+
   late MockAnalyticsService analytics;
   late AuthBloc authBloc;
   late ThemeBloc themeBloc;
-  late LocaleBloc localeBloc;
   HomeBloc? homeBloc;
 
   setUp(() async {
     await getIt.reset();
-    // Pin the locale to English: the app now defaults to Vietnamese, but this
-    // test asserts against the English UI strings ('Sign in', …). LocaleBloc
-    // reads this key at startup. `onboarding_seen` skips the first-run intro so
-    // an unauthenticated launch goes straight to login (this test is about the
-    // sign-in → home flow, not onboarding).
-    SharedPreferences.setMockInitialValues({
-      'app.locale': 'en',
-      'onboarding_seen': true,
-    });
+    SharedPreferences.setMockInitialValues({});
     analytics = MockAnalyticsService();
     stubAnalyticsService(analytics);
 
@@ -77,19 +66,27 @@ void main() {
     final signOut = MockSignOut();
     when(signOut.call).thenAnswer((_) async => const Ok(null));
 
+    final bookmarkStats = MockBookmarkStatsReader();
+    when(
+      bookmarkStats.call,
+    ).thenAnswer((_) async => const Ok(BookmarkStats()));
+
+    final collectionsReader = MockCollectionsReader();
+    when(
+      collectionsReader.call,
+    ).thenAnswer((_) async => const Ok<List<CollectionSummary>>([]));
+
     authBloc = AuthBloc(
       signIn: signIn,
       register: MockRegister(),
       signOut: signOut,
       restoreSession: restoreSession,
       analytics: analytics,
-      signInWithGoogle: MockSignInWithGoogle(),
     );
     themeBloc = ThemeBloc(await SharedPreferences.getInstance(), analytics);
-    localeBloc = LocaleBloc(await SharedPreferences.getInstance());
 
     getIt.registerFactory<HomeBloc>(() {
-      final bloc = HomeBloc(_EmptyHomeLoader(), const _AlwaysOnline());
+      final bloc = HomeBloc(bookmarkStats, collectionsReader);
       homeBloc = bloc;
       return bloc;
     });
@@ -111,7 +108,6 @@ void main() {
       await bloc.close();
     }
     await themeBloc.close();
-    await localeBloc.close();
     await authBloc.close();
   });
 
@@ -120,7 +116,6 @@ void main() {
       App(
         authBloc: authBloc,
         themeBloc: themeBloc,
-        localeBloc: localeBloc,
         features: [_NoOpSyncModule(), _NoOpSyncModule(), _NoOpSyncModule()],
         navigatorObservers: const [],
         videoPlayerService: MockVideoPlayerService(),
@@ -137,34 +132,28 @@ void main() {
       await Future<void>.delayed(Duration.zero);
     });
     await tester.pump();
-    for (var i = 0; i < 40 && find.text('Sign in').evaluate().isEmpty; i++) {
+    for (var i = 0; i < 40 && find.text('Log In').evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    check(find.text('Sign in').evaluate()).isNotEmpty();
+    check(find.text('Log In').evaluate()).isNotEmpty();
 
     await tester.enterText(find.byType(TextFormField).at(0), 'alice');
     await tester.enterText(find.byType(TextFormField).at(1), 'hunter2');
 
-    // The CTA can sit just below the 600px test viewport; bring it on-screen
-    // before tapping (real devices are taller).
-    await tester.ensureVisible(find.text('Sign in'));
-    await tester.pump();
-    await tester.tap(find.text('Sign in'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Log In'));
     await tester.runAsync(() async {
       await Future<void>.delayed(Duration.zero);
     });
     await tester.pumpAndSettle();
-    for (
-      var i = 0;
-      i < 20 && find.text('Chào alice 👋').evaluate().isEmpty;
-      i++
-    ) {
+    for (var i = 0; i < 20 && find.text('Home').evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    // The StampMail home dashboard greets the signed-in user (F01-S15).
-    expect(find.text('Chào alice 👋'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('Home')),
+      findsOneWidget,
+    );
     expect(homeBloc, isNotNull);
     expect(authBloc.state, isA<AuthAuthenticated>());
     expect(
@@ -172,9 +161,4 @@ void main() {
       'alice',
     );
   });
-}
-
-class _EmptyHomeLoader implements HomeDataLoader {
-  @override
-  Future<HomeData> load() async => HomeData.empty;
 }

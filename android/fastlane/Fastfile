@@ -100,4 +100,56 @@ platform :android do
       skip_upload_screenshots: true,
     )
   end
+
+  desc "Build a flavor's APK and distribute it via Firebase App Distribution (QA, no Play Console)."
+  desc "Usage: bundle exec fastlane firebase flavor:dev (flavor: dev|staging|prod)"
+  lane :firebase do |options|
+    flavor = (options[:flavor] || "dev").to_s
+    FLAVORS.fetch(flavor) do
+      UI.user_error!(
+        "Unknown flavor '#{flavor}'. Expected one of: #{FLAVORS.keys.join(', ')}."
+      )
+    end
+
+    build_number = resolve_build_number(options)
+
+    flutter(
+      "build", "apk", "--release",
+      "--flavor", flavor, "--build-number", build_number,
+      "--dart-define-from-file", "env/#{flavor}.json",
+      "--obfuscate", "--split-debug-info=build/symbols/#{flavor}"
+    )
+
+    firebase_app_distribution(
+      app: require_env("FIREBASE_ANDROID_APP_ID_#{flavor.upcase}"),
+      apk_path: "../build/app/outputs/flutter-apk/app-#{flavor}-release.apk",
+      groups: ENV["FIREBASE_DISTRIBUTION_GROUPS"] || "internal-testers",
+      release_notes: options[:release_notes] || changelog_from_git_commits(commits_count: 5),
+      firebase_cli_token: ENV["FIREBASE_CLI_TOKEN"],
+    )
+  end
+
+  desc "Promote a flavor's internal-track release to production with a staged rollout."
+  desc "Usage: bundle exec fastlane promote flavor:prod rollout:0.1"
+  lane :promote do |options|
+    flavor = (options[:flavor] || "prod").to_s
+    config = FLAVORS.fetch(flavor) do
+      UI.user_error!(
+        "Unknown flavor '#{flavor}'. Expected one of: #{FLAVORS.keys.join(', ')}."
+      )
+    end
+
+    package_name = "#{require_env('ANDROID_PACKAGE_NAME_BASE')}#{config[:suffix]}"
+
+    upload_to_play_store(
+      package_name: package_name,
+      track: "internal",
+      track_promote_to: "production",
+      # Staged rollout — start small (default 10%) and widen manually in the
+      # Play Console, or re-run this lane with a higher `rollout:` value.
+      rollout: (options[:rollout] || "0.1").to_s,
+      json_key: require_env("PLAY_STORE_JSON_KEY_PATH"),
+      skip_upload_changelogs: false,
+    )
+  end
 end

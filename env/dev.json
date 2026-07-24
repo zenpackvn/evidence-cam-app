@@ -1,5 +1,5 @@
 {
   "FLAVOR": "dev",
-  "API_BASE_URL": "https://stampmail-backend-dev.sabeel.app",
+  "API_BASE_URL": "https://aye-dairy-bloggers-network.trycloudflare.com",
   "API_TIMEOUT_SECONDS": 10
 }

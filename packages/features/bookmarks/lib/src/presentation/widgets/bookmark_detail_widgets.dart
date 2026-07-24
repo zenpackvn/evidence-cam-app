@@ -697,7 +697,7 @@ Future<void> _openBookmarkUrl(BuildContext context, Bookmark bookmark) async {
 }
 
 void _toast(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  AppToast.show(context, message);
 }
 
 class _VideoSection extends StatefulWidget {

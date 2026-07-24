@@ -2,10 +2,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <!-- Photo library access for the in-app "Chọn từ thư viện" grid (SM-005). -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"
@@ -45,13 +41,6 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- Disable Impeller: its GPU toImage() path renders the captured/cropped
-             stamp photo too dark (SM-005/SM-006 preview + crop). Skia's toImage is
-             colour-faithful, so the saved stamp matches what the user picked/shot.
-             Keep until Impeller's readback colour bug is fixed upstream. -->
-        <meta-data
-            android:name="io.flutter.embedding.android.EnableImpeller"
-            android:value="false" />
     </application>
     <queries>
         <intent>

@@ -7,7 +7,7 @@ import '../../domain/usecases/delete_account.dart';
 import 'delete_account_state.dart';
 
 @injectable
-class DeleteAccountCubit extends Cubit<DeleteAccountState> {
+class DeleteAccountCubit extends Cubit<DeleteAccountState> with SafeEmitMixin {
   DeleteAccountCubit(this._deleteAccount, this._analytics)
     : super(const DeleteAccountState.initial());
 
@@ -21,13 +21,15 @@ class DeleteAccountCubit extends Cubit<DeleteAccountState> {
 
     final result = await _deleteAccount();
 
+    // The delete can outlive this cubit (the user may navigate away mid-flight),
+    // so guard the post-await emits against emit-after-close.
     switch (result) {
       case Ok():
         _analytics.trackAccountDeleted().fire();
         _analytics.setCurrentUser(null).fire();
-        emit(const DeleteAccountState.success());
+        safeEmit(const DeleteAccountState.success());
       case Err(:final failure):
-        emit(DeleteAccountState.failure(failure));
+        safeEmit(DeleteAccountState.failure(failure));
     }
   }
 }

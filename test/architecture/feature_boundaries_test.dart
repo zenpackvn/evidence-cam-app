@@ -43,11 +43,6 @@ const _allowedCrossFeatureImports = <String, Set<String>>{
   // profile surfaces auth's account-deletion flow (DeleteAccountCubit, single
   // consumer). See the DeleteAccountCubit worked example in CLAUDE.md.
   'feature_profile': {'feature_auth'},
-  // letters and stamp_creator consume album's stamp types (attach stamps to a
-  // letter; save a created stamp). letter_inbox no longer imports album:
-  // received stamps are never saved to the recipient's album (SM-017 BR-05).
-  'feature_letters': {'feature_album'},
-  'feature_stamp_creator': {'feature_album'},
 };
 
 void main() {

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:app_ui/app_ui.dart';
 import 'package:architecture/architecture.dart';
 import 'package:flutter/material.dart';
@@ -11,13 +9,7 @@ import 'package:localization/localization.dart';
 import '../auth_routes.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_state.dart';
-import '../widgets/widgets.dart';
 
-/// StampMail sign-in screen.
-///
-/// Email/password submit dispatches to [AuthBloc]; the per-provider social
-/// buttons are still local-only (ponytail — a provider event is added when
-/// Google/Apple sign-in is wired end-to-end).
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -26,322 +18,529 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  /// Temporary-lock window per SM-001 (5 wrong passwords → 15 minutes).
-  static const _lockDuration = Duration(minutes: 15);
-
   final _formKey = GlobalKey<FormState>();
-  final _identifierController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
-  AuthProvider? _socialLoading;
-  String? _formError;
-  Duration? _lockRemaining;
-  Timer? _lockTimer;
-
-  bool get _isLocked => _lockRemaining != null;
-
   @override
   void dispose() {
-    _lockTimer?.cancel();
-    _identifierController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _submit() {
-    final bloc = context.read<AuthBloc>();
-    // Ignore repeat submits while one is in flight (Enter key / double-tap).
-    if (bloc.state is AuthSubmitting || _isLocked) return;
-    setState(() => _formError = null);
+    final authBloc = context.read<AuthBloc>();
+    if (authBloc.state is AuthSubmitting) return;
     if (!_formKey.currentState!.validate()) return;
-    bloc.add(
+    authBloc.add(
       AuthSignInRequested(
-        username: _identifierController.text.trim(),
+        username: _usernameController.text.trim(),
         password: _passwordController.text,
       ),
     );
   }
 
-  /// Maps a sign-in failure onto the design's form states: a locked account
-  /// starts the countdown banner (F01-S05), anything else shows the error
-  /// banner above the CTA (F01-S04).
-  void _onFailure(Failure failure) {
-    final l10n = context.l10n;
-    if (failure is PermissionFailure) {
-      _startLockCountdown();
-      return;
-    }
-    setState(() {
-      _formError = failure is InvalidCredentialsFailure
-          ? l10n.smErrWrongCredentials
-          : l10n.smErrGeneric;
-    });
+  void _showPasswordRecoveryUnavailable() {
+    AppToast.info(context, context.l10n.loginPasswordRecoveryUnavailable);
   }
 
-  void _startLockCountdown() {
-    _lockTimer?.cancel();
-    setState(() {
-      _formError = null;
-      _lockRemaining = _lockDuration;
-    });
-    _lockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      final remaining = _lockRemaining;
-      if (remaining == null || remaining <= const Duration(seconds: 1)) {
-        timer.cancel();
-        setState(() => _lockRemaining = null);
-      } else {
-        setState(() => _lockRemaining = remaining - const Duration(seconds: 1));
-      }
-    });
+  void _showSocialUnavailable() {
+    AppToast.info(context, context.l10n.loginSocialUnavailable);
   }
 
-  String get _lockClock {
-    final total = _lockRemaining?.inSeconds ?? 0;
-    final minutes = (total ~/ 60).toString().padLeft(2, '0');
-    final seconds = (total % 60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
-
-  void _onSocial(AuthProvider provider) {
-    if (provider == AuthProvider.google) {
-      setState(() => _socialLoading = provider);
-      context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
-      return;
-    }
-    // ponytail: Apple/Facebook cần sign_in_with_apple / flutter_facebook_auth
-    // (chưa thêm dependency) — báo sắp ra mắt thay vì im lặng.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          provider == AuthProvider.apple
-              ? 'Đăng nhập Apple sắp ra mắt ✨'
-              : 'Đăng nhập Facebook sắp ra mắt ✨',
-        ),
-      ),
-    );
-  }
+  String _localizeFailure(Failure failure) => switch (failure) {
+    InvalidCredentialsFailure() => context.l10n.errorInvalidCredentials,
+    _ => context.l10n.errorUnknown,
+  };
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    // Drive the submit spinner / disabled state off the bloc so it reflects the
-    // real in-flight sign-in rather than a local flag.
-    final submitting = context.watch<AuthBloc>().state is AuthSubmitting;
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is AuthFailure) {
-          setState(() => _socialLoading = null);
-          _onFailure(state.failure);
-        }
-      },
-      child: _buildScaffold(context, l10n, submitting),
-    );
-  }
+    final colorScheme = context.colorScheme;
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 420;
+            final horizontalPadding = isCompact
+                ? AppSpacing.xl
+                : AppSpacing.xxxl;
 
-  Widget _buildScaffold(
-    BuildContext context,
-    AppLocalizations l10n,
-    bool submitting,
-  ) {
-    return AuthScaffold(
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const AuthBrandHeader().animateSlideDown(),
-            const SizedBox(height: AppSpacing.md),
-            AuthHeading(
-              title: l10n.smLoginTitle,
-              subtitle: l10n.smLoginSubtitle,
-            ).animateSlideDown(delay: 50.ms),
-            const SizedBox(height: 18),
-            AuthTextField(
-              controller: _identifierController,
-              hint: l10n.smLoginIdentifierHint,
-              icon: FontAwesomeIcons.envelope,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              enabled: !submitting,
-              autofillHints: const [
-                AutofillHints.username,
-                AutofillHints.email,
-              ],
-              validator: (value) => (value == null || value.trim().isEmpty)
-                  ? l10n.smValEmailRequired
-                  : null,
-            ).animateSlideLeft(delay: 100.ms),
-            const SizedBox(height: AppSpacing.md),
-            AuthTextField(
-              controller: _passwordController,
-              hint: l10n.smLoginPasswordHint,
-              icon: FontAwesomeIcons.lock,
-              obscureText: _obscurePassword,
-              enabled: !submitting,
-              autofillHints: const [AutofillHints.password],
-              onSubmitted: (_) => _submit(),
-              validator: (value) => (value == null || value.isEmpty)
-                  ? l10n.smValPasswordRequired
-                  : null,
-              suffix: _PasswordToggle(
-                obscured: _obscurePassword,
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl,
+                vertical: isCompact ? AppSpacing.xxl : AppSpacing.xxxxl,
               ),
-            ).animateSlideLeft(delay: 150.ms),
-            // Locked (F01-S05): forgot link gives way to the lock banner and
-            // the retry countdown; otherwise the design's forgot row, with the
-            // error banner beneath it when sign-in failed (F01-S04).
-            if (_isLocked) ...[
-              const SizedBox(height: 10),
-              AuthFormBanner(
-                message: l10n.smLoginLockedMessage,
-                icon: FontAwesomeIcons.lock,
-              ).animateShake(),
-              const SizedBox(height: 10),
-              _LockCountdown(
-                template: l10n.smLoginRetryIn(_lockClock),
-                time: _lockClock,
-              ),
-            ] else ...[
-              const SizedBox(height: AppSpacing.sm),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: submitting
-                      ? null
-                      : () => context.push(AuthRoutes.forgotPassword),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    foregroundColor: context.brand.link,
-                    // .pen: body-md (15) at w500 in the link blue.
-                    textStyle: context.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight:
+                      constraints.maxHeight -
+                      (isCompact ? AppSpacing.xxxxl : AppSpacing.xxxxl * 2),
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        border: Border.all(
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.36,
+                          ),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.shadow.withValues(
+                              alpha: context.isDark ? 0.28 : 0.05,
+                            ),
+                            blurRadius: 20,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
+                          vertical: AppSpacing.xxxl,
+                        ),
+                        child: BlocBuilder<AuthBloc, AuthState>(
+                          builder: (context, state) {
+                            final isSubmitting = state is AuthSubmitting;
+                            final errorMessage = state is AuthFailure
+                                ? _localizeFailure(state.failure)
+                                : null;
+                            return Form(
+                              key: _formKey,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const _BrandHeader().animateSlideDown(),
+                                  const SizedBox(height: AppSpacing.xxxl),
+                                  _LoginHeading(
+                                    isCompact: isCompact,
+                                  ).animateSlideDown(delay: 50.ms),
+                                  const SizedBox(height: AppSpacing.xxxl),
+                                  _LoginTextField(
+                                    controller: _usernameController,
+                                    label: context.l10n.loginUsernameLabel,
+                                    hint: context.l10n.loginUsernameHint,
+                                    icon: FontAwesomeIcons.envelope,
+                                    keyboardType: TextInputType.emailAddress,
+                                    textInputAction: TextInputAction.next,
+                                    autofillHints: const [
+                                      AutofillHints.username,
+                                      AutofillHints.email,
+                                    ],
+                                    validator: (value) =>
+                                        (value == null || value.trim().isEmpty)
+                                        ? context.l10n.fieldRequired
+                                        : null,
+                                  ).animateSlideLeft(delay: 100.ms),
+                                  const SizedBox(height: AppSpacing.xxl),
+                                  _LoginTextField(
+                                    controller: _passwordController,
+                                    label: context.l10n.loginPasswordLabel,
+                                    hint: context.l10n.loginPasswordHint,
+                                    icon: FontAwesomeIcons.lock,
+                                    obscureText: _obscurePassword,
+                                    autofillHints: const [
+                                      AutofillHints.password,
+                                    ],
+                                    suffix: IconButton(
+                                      tooltip: _obscurePassword
+                                          ? context.l10n.loginShowPassword
+                                          : context.l10n.loginHidePassword,
+                                      onPressed: () => setState(
+                                        () => _obscurePassword =
+                                            !_obscurePassword,
+                                      ),
+                                      icon: FaIcon(
+                                        _obscurePassword
+                                            ? FontAwesomeIcons.eyeSlash
+                                            : FontAwesomeIcons.eye,
+                                        size: 18,
+                                      ),
+                                    ),
+                                    onSubmitted: (_) => _submit(),
+                                    validator: (value) =>
+                                        (value == null || value.isEmpty)
+                                        ? context.l10n.fieldRequired
+                                        : null,
+                                    trailingLabel: TextButton(
+                                      onPressed: isSubmitting
+                                          ? null
+                                          : _showPasswordRecoveryUnavailable,
+                                      style: TextButton.styleFrom(
+                                        padding: EdgeInsets.zero,
+                                        minimumSize: Size.zero,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                        textStyle: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.8,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        context.l10n.loginForgotPassword,
+                                      ),
+                                    ),
+                                  ).animateSlideLeft(delay: 200.ms),
+                                  if (errorMessage != null) ...[
+                                    const SizedBox(height: AppSpacing.lg),
+                                    Text(
+                                      errorMessage,
+                                      style: TextStyle(
+                                        color: context.colorScheme.error,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ).animateShake(),
+                                  ],
+                                  const SizedBox(height: AppSpacing.xxxl),
+                                  AppButton(
+                                    label: context.l10n.loginSubmit,
+                                    icon: FontAwesomeIcons.arrowRight,
+                                    onPressed: _submit,
+                                    isLoading: isSubmitting,
+                                    expand: true,
+                                  ).animateSlideUp(delay: 300.ms),
+                                  const SizedBox(height: AppSpacing.xxxl),
+                                  _LoginDivider(
+                                    label: context.l10n.loginDividerLabel,
+                                  ).animateSlideUp(delay: 350.ms),
+                                  const SizedBox(height: AppSpacing.xxl),
+                                  _SocialButton(
+                                    label: context.l10n.loginGoogle,
+                                    icon: FontAwesomeIcons.google,
+                                    onPressed: isSubmitting
+                                        ? null
+                                        : _showSocialUnavailable,
+                                  ).animateSlideUp(delay: 400.ms),
+                                  const SizedBox(height: AppSpacing.lg),
+                                  _SocialButton(
+                                    label: context.l10n.loginApple,
+                                    icon: FontAwesomeIcons.apple,
+                                    onPressed: isSubmitting
+                                        ? null
+                                        : _showSocialUnavailable,
+                                  ).animateSlideUp(delay: 450.ms),
+                                  const SizedBox(height: AppSpacing.xxxl),
+                                  _RegisterPrompt(
+                                    isSubmitting: isSubmitting,
+                                  ).animateSlideUp(delay: 500.ms),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
-                  child: Text(l10n.smLoginForgot),
                 ),
               ),
-              if (_formError != null) ...[
-                const SizedBox(height: 10),
-                AuthFormBanner(message: _formError!).animateShake(),
-              ],
-            ],
-            const SizedBox(height: 14),
-            AuthPrimaryButton(
-              label: l10n.smLoginSubmit,
-              onPressed: _submit,
-              isLoading: submitting,
-              locked: _isLocked,
-            ).animateSlideUp(delay: 250.ms),
-            const SizedBox(height: AppSpacing.lg),
-            AuthSocialButtons(
-              dividerLabel: l10n.smLoginDivider,
-              loading: _socialLoading,
-              labelFor: (p) => switch (p) {
-                AuthProvider.apple => l10n.smContinueApple,
-                AuthProvider.google => l10n.smContinueGoogle,
-                AuthProvider.facebook => l10n.smContinueFacebook,
-              },
-              onPressed: _onSocial,
-            ),
-            const SizedBox(height: 14),
-            _RegisterPrompt(disabled: submitting).animateSlideUp(delay: 500.ms),
-          ],
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _PasswordToggle extends StatelessWidget {
-  const _PasswordToggle({required this.obscured, required this.onPressed});
-
-  final bool obscured;
-  final VoidCallback onPressed;
+class _BrandHeader extends StatelessWidget {
+  const _BrandHeader();
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return IconButton(
-      tooltip: obscured ? l10n.loginShowPassword : l10n.loginHidePassword,
-      onPressed: onPressed,
-      icon: FaIcon(
-        obscured ? FontAwesomeIcons.eye : FontAwesomeIcons.eyeSlash,
-        size: 18,
-        color: context.colorScheme.outline,
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: Image.asset(
+            'assets/icons/logo.png',
+            package: 'feature_auth',
+            width: 32,
+            height: 32,
+            excludeFromSemantics: true,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Flexible(
+          child: Text(
+            context.l10n.appTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.textTheme.headlineMedium?.copyWith(
+              color: context.colorScheme.primary,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              height: 1.15,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// The "Thử lại sau 14:32" row (F01-S05): the localized template in
-/// `text-secondary` with the ticking clock emphasized in coral w700.
-class _LockCountdown extends StatelessWidget {
-  const _LockCountdown({required this.template, required this.time});
+class _LoginHeading extends StatelessWidget {
+  const _LoginHeading({required this.isCompact});
 
-  /// The full localized string with [time] already interpolated.
-  final String template;
-  final String time;
+  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
-    final base = context.textTheme.bodyMedium?.copyWith(
-      color: context.colorScheme.onSurfaceVariant,
+    return Column(
+      children: [
+        Text(
+          context.l10n.loginHeadline,
+          textAlign: TextAlign.center,
+          style: context.textTheme.headlineLarge?.copyWith(
+            color: context.colorScheme.onSurface,
+            fontSize: isCompact ? 28 : 32,
+            fontWeight: FontWeight.w700,
+            height: isCompact ? 34 / 28 : 40 / 32,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          context.l10n.loginSubtitle,
+          textAlign: TextAlign.center,
+          style: context.textTheme.bodyLarge?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+            fontSize: 16,
+            height: 24 / 16,
+          ),
+        ),
+      ],
     );
-    final index = template.indexOf(time);
-    if (index < 0) return Text(template, textAlign: TextAlign.center);
-    return Text.rich(
-      TextSpan(
-        style: base,
-        children: [
-          TextSpan(text: template.substring(0, index)),
-          TextSpan(
-            text: time,
-            style: TextStyle(
-              color: context.colorScheme.primary,
-              fontWeight: FontWeight.w700,
+  }
+}
+
+class _LoginTextField extends StatelessWidget {
+  const _LoginTextField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    this.trailingLabel,
+    this.suffix,
+    this.obscureText = false,
+    this.keyboardType,
+    this.textInputAction,
+    this.autofillHints,
+    this.validator,
+    this.onSubmitted,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final FaIconData icon;
+  final Widget? trailingLabel;
+  final Widget? suffix;
+  final bool obscureText;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final Iterable<String>? autofillHints;
+  final FormFieldValidator<String>? validator;
+  final ValueChanged<String>? onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final outlineColor = colorScheme.outlineVariant;
+    final iconColor = colorScheme.outline;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: context.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                    height: 20 / 14,
+                  ),
+                ),
+              ),
+              ?trailingLabel,
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        TextFormField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          autofillHints: autofillHints,
+          validator: validator,
+          onFieldSubmitted: onSubmitted,
+          style: context.textTheme.bodyLarge?.copyWith(
+            color: colorScheme.onSurface,
+            fontSize: 16,
+            height: 24 / 16,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: context.textTheme.bodyLarge?.copyWith(
+              color: iconColor,
+              fontSize: 16,
+              height: 24 / 16,
+            ),
+            prefixIcon: Center(
+              widthFactor: 1,
+              child: FaIcon(icon, color: iconColor, size: 20),
+            ),
+            suffixIcon: suffix,
+            filled: true,
+            fillColor: colorScheme.surfaceContainerLowest,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
+            constraints: const BoxConstraints(minHeight: 48),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderSide: BorderSide(color: outlineColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderSide: BorderSide(color: outlineColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderSide: BorderSide(
+                color: context.colorScheme.primary,
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderSide: BorderSide(color: context.colorScheme.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderSide: BorderSide(
+                color: context.colorScheme.error,
+                width: 2,
+              ),
             ),
           ),
-          TextSpan(text: template.substring(index + time.length)),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+class _LoginDivider extends StatelessWidget {
+  const _LoginDivider({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    return Row(
+      children: [
+        Expanded(child: Divider(color: colorScheme.outlineVariant)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Text(
+            label,
+            style: context.textTheme.labelSmall?.copyWith(
+              color: colorScheme.outline,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        Expanded(child: Divider(color: colorScheme.outlineVariant)),
+      ],
+    );
+  }
+}
+
+class _SocialButton extends StatelessWidget {
+  const _SocialButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String label;
+  final FaIconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    return SizedBox(
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: colorScheme.onSurface,
+          side: BorderSide(color: colorScheme.outlineVariant),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.6,
+          ),
+        ),
+        icon: FaIcon(icon, size: 20),
+        label: Text(label),
       ),
-      textAlign: TextAlign.center,
     );
   }
 }
 
 class _RegisterPrompt extends StatelessWidget {
-  const _RegisterPrompt({required this.disabled});
+  const _RegisterPrompt({required this.isSubmitting});
 
-  final bool disabled;
+  final bool isSubmitting;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     return Wrap(
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(
-          l10n.smLoginNoAccount,
-          // .pen footer: body-md in text-primary (not the muted secondary).
+          context.l10n.loginRegisterPrompt,
           style: context.textTheme.bodyMedium?.copyWith(
-            color: context.colorScheme.onSurface,
+            color: context.colorScheme.onSurfaceVariant,
           ),
         ),
         TextButton(
-          onPressed: disabled ? null : () => context.go(AuthRoutes.register),
+          onPressed: isSubmitting
+              ? null
+              : () => context.go(AuthRoutes.register),
           style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            textStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          child: Text(l10n.smLoginRegisterCta),
+          child: Text(context.l10n.loginNavigateToRegister),
         ),
       ],
     );

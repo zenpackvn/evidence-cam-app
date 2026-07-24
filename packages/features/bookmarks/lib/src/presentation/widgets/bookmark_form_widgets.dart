@@ -61,10 +61,9 @@ class _BookmarkFormViewState extends State<BookmarkFormView> {
           }
           if (state.status == BookmarkFormStatus.idle &&
               state.failure != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(bookmarkFailureMessage(context, state.failure!)),
-              ),
+            AppToast.error(
+              context,
+              bookmarkFailureMessage(context, state.failure!),
             );
           }
         },

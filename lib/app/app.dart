@@ -1,14 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:analytics/analytics.dart';
 import 'package:app_platform/app_platform.dart';
 import 'package:app_ui/app_ui.dart';
 import 'package:config/config.dart';
-import 'package:database/database.dart';
 import 'package:feature_auth/feature_auth.dart';
-import 'package:feature_letters/feature_letters.dart';
 // fst:feature:notifications:start
 import 'package:feature_notifications/feature_notifications.dart';
 // fst:feature:notifications:end
@@ -17,7 +14,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_contracts/shared_contracts.dart';
 import 'package:shared_ui/shared_ui.dart';
-import 'package:storage/storage.dart';
 import 'package:theme/theme.dart';
 
 import '../core/extensions/build_context_extensions.dart';
@@ -66,11 +62,6 @@ class _AppState extends State<App> {
   late final VideoPlayerService _videoPlayerService;
   StreamSubscription<AuthState>? _authSub;
 
-  /// Whether an account was signed in during this app run. Gates the sign-out
-  /// wipe so it fires only on an actual logout (authenticated → AuthInitial),
-  /// never on the plain AuthInitial the app boots into before any sign-in.
-  bool _wasAuthenticated = false;
-
   @override
   void initState() {
     super.initState();
@@ -89,188 +80,28 @@ class _AppState extends State<App> {
     );
     _router = result.router;
     _deepLink = result.deepLink;
-    _wireNotificationTaps();
     _syncControllers = features
         .map((f) => f.syncController)
         .whereType<FeatureSyncController>()
         .toList(growable: false);
     _videoPlayerService =
         widget.videoPlayerService ?? getIt<VideoPlayerService>();
-    _wireProfileHeader();
     _authSub = _authBloc.stream.listen(_onAuthChanged);
   }
 
-  SharedPreferences? get _prefs => getIt.isRegistered<SharedPreferences>()
-      ? getIt<SharedPreferences>()
-      : null;
-
-  static String _profileHeaderKey(String uid) => 'profile_header_$uid';
-
-  /// Persists the Home greeting's name/avatar ([ProfileHeaderStore]) to
-  /// SharedPreferences keyed by uid, so a profile edit survives a re-login on
-  /// this device even while the backend can't store it yet.
-  void _wireProfileHeader() {
-    final prefs = _prefs;
-    if (prefs == null) return;
-    ProfileHeaderStore.instance.persist = (uid, header) {
-      unawaited(
-        prefs.setString(_profileHeaderKey(uid), jsonEncode(header.toJson())),
-      );
-    };
-  }
-
-  /// Restores an account's saved header on sign-in (or clears it when none).
-  void _loadProfileHeader(String uid) {
-    final raw = _prefs?.getString(_profileHeaderKey(uid));
-    if (raw == null) {
-      ProfileHeaderStore.instance.restore(null);
-      return;
-    }
-    try {
-      ProfileHeaderStore.instance.restore(
-        ProfileHeader.fromJson(jsonDecode(raw) as Map<String, dynamic>),
-      );
-    } on Object {
-      ProfileHeaderStore.instance.restore(null);
-    }
-  }
-
-  /// SM-026 BR-04: route a notification tap to the screen for its kind. The
-  /// FCM service invokes this with the message data; `kind` mirrors the backend
-  /// push kinds (letter_opened / letter_received / quota_low).
-  void _wireNotificationTaps() {
-    if (!getIt.isRegistered<FirebaseMessagingService>()) return;
-    getIt<FirebaseMessagingService>().onNotificationTap = (data) {
-      final kind = data?['kind']?.toString();
-      switch (kind) {
-        case 'letter_opened':
-          // "Đã mở thư của bạn" → the sent mailbox (SM-021).
-          _router.go('/letters');
-        case 'letter_received':
-          final linkId = data?['link_id']?.toString();
-          if (linkId != null && linkId.isNotEmpty) {
-            _router.go('/letter/$linkId');
-          }
-        case 'quota_low':
-          // The upgrade screen (SM-028). Premium is disabled in v1 (D17); the
-          // route still shows the locked plan info.
-          _router.go('/settings');
-      }
-    };
-  }
-
-  /// SM-026 BR-02: on sign-in, subscribe the device to each enabled
-  /// notification kind's topic (defaults on), so pushes start arriving. Toggling
-  /// in settings later unsubscribes individual kinds.
-  void _syncNotificationSubscriptions(String uid) {
-    if (!getIt.isRegistered<FirebaseMessagingService>()) return;
-    final fcm = getIt<FirebaseMessagingService>();
-    final prefs = getIt.isRegistered<SharedPreferences>()
-        ? getIt<SharedPreferences>()
-        : null;
-    for (final kind in FirebaseMessagingService.notificationKinds) {
-      final enabled = prefs?.getBool('notif_enabled_kind_$kind') ?? true;
-      unawaited(fcm.setKindEnabled(uid: uid, kind: kind, enabled: enabled));
-    }
-  }
-
-  static const _lastUidKey = 'last_synced_uid';
-
-  /// Reconciles the local cache with the account signing in. Only a *different*
-  /// account (a new uid, or none recorded) triggers a wipe — the same account
-  /// keeps its cached stamps/albums/letters so they show instantly on re-login.
-  /// Sign-out deliberately no longer wipes (offline-first): the data lives on
-  /// the device per account, and cross-account isolation is preserved because
-  /// the next account clears the previous data here before any of it shows.
-  Future<void> _resetLocalDataOnAccountSwitch(String uid) async {
-    final prefs = getIt.isRegistered<SharedPreferences>()
-        ? getIt<SharedPreferences>()
-        : null;
-    final last = prefs?.getString(_lastUidKey);
-    if (last != uid) {
-      await _clearLocalAccountData();
-    }
-    await prefs?.setString(_lastUidKey, uid);
-  }
-
-  /// Erases every trace of the previous account from this device when a
-  /// *different* account signs in: the ObjectBox stores (stamps, albums, …) +
-  /// sync cursors, the letters SharedPreferences caches, the account-switch
-  /// sentinel, and the in-memory Premium entitlement. Device-level preferences
-  /// (theme, locale, onboarding, notification toggles) are intentionally kept.
-  /// The same account signing back in never reaches here, so its data survives.
-  Future<void> _clearLocalAccountData() async {
-    // Stop any in-flight sync first so a pull mid-flight can't write rows back
-    // after the wipe.
-    await Future.wait([
-      for (final c in _syncControllers)
-        c.stop().catchError((Object _, StackTrace _) {}),
-    ]);
-    if (getIt.isRegistered<ObjectBox>()) {
-      getIt<ObjectBox>().clearUserData();
-    }
-    if (getIt.isRegistered<LettersRepository>()) {
-      await getIt<LettersRepository>().clearLocalCache();
-    }
-    final prefs = getIt.isRegistered<SharedPreferences>()
-        ? getIt<SharedPreferences>()
-        : null;
-    await prefs?.remove(_lastUidKey);
-    // Drop the cached entitlement so the next account can't inherit Premium; a
-    // fresh reader re-fetches it from the server on the next read.
-    if (getIt.isRegistered<EntitlementReader>()) {
-      getIt.resetLazySingleton<EntitlementReader>();
-    }
-  }
-
   void _onAuthChanged(AuthState state) {
-    if (state is AuthAuthenticated) {
-      _wasAuthenticated = true;
-      unawaited(_onSignedIn(state.user.id));
-      return;
-    }
-    // Sign-out (AuthInitial is the definitive logged-out state; AuthSigningOut
-    // still holds the user): stop syncing but KEEP this account's local data on
-    // the device, so signing back in shows everything immediately. A different
-    // account signing in later wipes it first (see
-    // _resetLocalDataOnAccountSwitch), so nothing leaks between accounts.
-    if (state is AuthInitial && _wasAuthenticated) {
-      _wasAuthenticated = false;
-      // Clear the greeting's name/avatar so it doesn't flash to the next
-      // account before their own header loads on sign-in.
-      ProfileHeaderStore.instance.restore(null);
-    }
     for (final c in _syncControllers) {
       unawaited(
-        c.stop().catchError((Object error, StackTrace stackTrace) {
-          developer.log(
-            'Feature sync stop failed',
-            name: 'App',
-            error: error,
-            stackTrace: stackTrace,
-          );
-        }),
-      );
-    }
-  }
-
-  /// The sign-in pipeline: reconcile local data for the account, subscribe to
-  /// notifications, then start the feature syncs — in that order so a pull
-  /// never races the account-switch wipe.
-  Future<void> _onSignedIn(String uid) async {
-    await _resetLocalDataOnAccountSwitch(uid);
-    _loadProfileHeader(uid);
-    _syncNotificationSubscriptions(uid);
-    for (final c in _syncControllers) {
-      unawaited(
-        c.start().catchError((Object error, StackTrace stackTrace) {
-          developer.log(
-            'Feature sync start failed',
-            name: 'App',
-            error: error,
-            stackTrace: stackTrace,
-          );
-        }),
+        (state is AuthAuthenticated ? c.start() : c.stop()).catchError(
+          (Object error, StackTrace stackTrace) {
+            developer.log(
+              'Feature sync lifecycle failed',
+              name: 'App',
+              error: error,
+              stackTrace: stackTrace,
+            );
+          },
+        ),
       );
     }
   }
@@ -299,8 +130,8 @@ class _AppState extends State<App> {
   Widget build(BuildContext context) {
     // App-wide UI fallback: a widget that throws during build degrades to a
     // friendly screen instead of Flutter's red error widget. Crash *reporting*
-    // is already installed globally by CrashReporter.install() in main, so the
-    // boundary stays UI-only and does not double-report.
+    // is already installed globally by installGlobalErrorHandlers() in main, so
+    // the boundary stays UI-only and does not double-report.
     return AppErrorBoundary(
       child: DeepLinkScope(
         deepLink: _deepLink,
@@ -328,30 +159,18 @@ class _AppState extends State<App> {
                         onGenerateTitle: (context) => context.l10n.appTitle,
                         theme: AppTheme.light(scheme: themeState.scheme),
                         darkTheme: AppTheme.dark(scheme: themeState.scheme),
-                        // Locked to light for now — the dark theme isn't
-                        // designed yet, so following the system (themeState.mode)
-                        // renders an unfinished dark UI. Restore
-                        // `themeState.mode` once dark is done.
-                        themeMode: ThemeMode.light,
+                        themeMode: themeState.mode,
                         locale: localeState.locale,
                         localizationsDelegates:
                             AppLocalizations.localizationsDelegates,
                         supportedLocales: AppLocalizations.supportedLocales,
                         routerConfig: _router,
-                        // App-wide: tapping outside any text field dismisses
-                        // the keyboard (translucent so it never blocks the
-                        // widgets below — only empty-area taps reach it).
-                        builder: (context, child) => GestureDetector(
-                          behavior: HitTestBehavior.translucent,
-                          onTap: () =>
-                              FocusManager.instance.primaryFocus?.unfocus(),
-                          child: ForceUpdateGate(
-                            remoteConfig:
-                                getIt.isRegistered<RemoteConfigService>()
-                                ? getIt<RemoteConfigService>()
-                                : null,
-                            child: child ?? const SizedBox.shrink(),
-                          ),
+                        builder: (context, child) => ForceUpdateGate(
+                          remoteConfig:
+                              getIt.isRegistered<RemoteConfigService>()
+                              ? getIt<RemoteConfigService>()
+                              : null,
+                          child: child ?? const SizedBox.shrink(),
                         ),
                       ),
                     ),

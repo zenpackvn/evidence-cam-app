@@ -3,10 +3,10 @@ import 'dart:typed_data';
 import 'package:gal/gal.dart';
 import 'package:injectable/injectable.dart';
 
-/// Saves an image to the device photo library (SM-025 BR-05). Wraps `gal` so
-/// features depend on this port, not the plugin. Requesting the OS add-photo
-/// permission is handled by `gal` on demand (Info.plist / manifest already
-/// declare it).
+/// Saves an image to the device photo library. Wraps `gal` so features depend
+/// on this port, not the plugin. Requesting the OS add-photo permission is
+/// handled by `gal` on demand — declare the usage strings in `Info.plist`
+/// (iOS `NSPhotoLibraryAddUsageDescription`) / the Android manifest.
 @lazySingleton
 class GallerySaveService {
   const GallerySaveService();

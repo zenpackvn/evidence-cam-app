@@ -12,9 +12,13 @@ package owns its own tests under `packages/<name>/test` (each feature with a
 `core/` suites here — they live beside the packages they exercise.
 
 - `architecture/`: Guardrail tests over the whole workspace —
-  `package_layering_test.dart` (dependency direction) and
+  `package_layering_test.dart` (dependency direction),
   `feature_boundaries_test.dart` (no cross-feature imports outside the
-  capability allowlist).
+  capability allowlist), `authenticated_dio_test.dart` (only `network` provides
+  the authenticated Dio), `di_module_ordering_test.dart` (DI module order), and
+  `wrapper_rule_test.dart` (feature code must consume wrapped plugins — dio,
+  shared_preferences, permission_handler, ... — through their infra package,
+  not import them directly).
 - `test_utils/`
   - `mocks.dart`: The few cross-feature mocks the app-level `widget_test` needs
     (auth use-case mocks, `MockNotificationsBloc`). Feature-local mocks live in
@@ -25,6 +29,9 @@ package owns its own tests under `packages/<name>/test` (each feature with a
   alongside the local `mocks.dart`.
 - `widget_test.dart`: An integration-style widget test that exercises the full
   app startup and sign-in flow.
+- `flutter_test_config.dart`: Enables `leak_tracker` for every test under this
+  directory — a test fails if it leaves a `Disposable` (controller,
+  subscription, ...) undisposed at teardown.
 
 ## Mocking Dependencies
 

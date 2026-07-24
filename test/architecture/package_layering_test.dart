@@ -59,9 +59,6 @@ const _layers = <String, int>{
   // fst:feature:notifications:end
   'feature_onboarding': 4,
   'feature_splash': 4,
-  // StampMail base features: no sibling-feature dependency.
-  'feature_album': 4,
-  'feature_premium': 4,
   // 5 — feature packages that surface a single sibling's capability; each
   //     depends on exactly one lower feature (the capability provider). The
   //     allowed edges are documented in feature_boundaries_test.
@@ -69,9 +66,6 @@ const _layers = <String, int>{
   'feature_bookmarks': 5, // -> feature_collections
   // fst:feature:bookmarks:end
   'feature_profile': 5, // -> feature_auth
-  'feature_letter_inbox': 5, // -> feature_album
-  'feature_letters': 5, // -> feature_album (attach stamps)
-  'feature_stamp_creator': 5, // -> feature_album (save created stamp)
 };
 
 void main() {

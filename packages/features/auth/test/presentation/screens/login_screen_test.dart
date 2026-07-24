@@ -50,48 +50,42 @@ void main() {
   group('LoginScreen', () {
     testWidgets('renders login form fields', (tester) async {
       await tester.pumpWidget(wrapWithDependencies(mockBloc));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('Welcome back! 👋'), findsOneWidget);
-      expect(find.text('Email or username'), findsOneWidget);
+      expect(find.text('Flutter Starter'), findsOneWidget);
+      expect(find.text('Welcome Back'), findsOneWidget);
+      expect(find.text('Email Address'), findsOneWidget);
       expect(find.text('Password'), findsOneWidget);
-      expect(find.text('Sign in'), findsOneWidget);
-      expect(find.text('Continue with Google'), findsOneWidget);
-      expect(find.text('Continue with Apple'), findsOneWidget);
-      expect(find.text('Register'), findsOneWidget);
+      expect(find.text('Log In'), findsOneWidget);
+      expect(find.text('Google'), findsOneWidget);
+      expect(find.text('Apple'), findsOneWidget);
+      expect(find.text('Create an account'), findsOneWidget);
     });
 
     testWidgets('shows validation errors on empty submit', (tester) async {
       await tester.pumpWidget(wrapWithDependencies(mockBloc));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
 
-      await tester.tap(find.text('Sign in'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Log In'));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Please enter your email'), findsAtLeast(1));
+      expect(find.text('Required'), findsAtLeast(1));
     });
 
     testWidgets('calls signIn with entered credentials', (tester) async {
       await tester.pumpWidget(wrapWithDependencies(mockBloc));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
 
-      await tester.enterText(
-        find.byType(TextFormField).at(0),
-        'alice@example.com',
-      );
+      await tester.enterText(find.byType(TextFormField).at(0), 'alice');
       await tester.enterText(find.byType(TextFormField).at(1), 'hunter2');
-      await tester.tap(find.text('Sign in'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Log In'));
       await tester.pump(const Duration(milliseconds: 100));
 
       verify(
         () => mockBloc.add(
           any(
             that: isA<AuthSignInRequested>()
-                .having(
-                  (event) => event.username,
-                  'username',
-                  'alice@example.com',
-                )
+                .having((event) => event.username, 'username', 'alice')
                 .having((event) => event.password, 'password', 'hunter2'),
           ),
         ),
@@ -107,13 +101,9 @@ void main() {
       ).thenAnswer((_) => Stream.value(const AuthState.submitting()));
 
       await tester.pumpWidget(wrapWithDependencies(mockBloc));
-      // Submitting shows a spinner (never settles), so pump a fixed duration.
       await tester.pump(const Duration(seconds: 1));
 
-      await tester.enterText(
-        find.byType(TextFormField).at(0),
-        'alice@example.com',
-      );
+      await tester.enterText(find.byType(TextFormField).at(0), 'alice');
       await tester.enterText(find.byType(TextFormField).at(1), 'hunter2');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump(const Duration(milliseconds: 100));
@@ -123,7 +113,7 @@ void main() {
 
     testWidgets('toggles password visibility', (tester) async {
       await tester.pumpWidget(wrapWithDependencies(mockBloc));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(
         tester.widget<EditableText>(find.byType(EditableText).last).obscureText,
@@ -140,13 +130,77 @@ void main() {
       );
     });
 
-    // Forgot-password now navigates to a dedicated screen and social sign-in
-    // wiring is in progress (ponytail), so the old "unavailable" snackbar tests
-    // were removed; navigation is covered by auth_routes_test / E4 journey.
+    testWidgets('shows unavailable message for forgot password action', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrapWithDependencies(mockBloc));
+      await tester.pump(const Duration(seconds: 1));
 
-    // The submitting-spinner and inline failure-message tests were removed:
-    // the screen now disables submit while submitting and surfaces auth errors
-    // through the bloc listener path, not a _FormError widget the mocked bloc
-    // can drive here. The failure→UI mapping is covered by auth_bloc_test.
+      await tester.tap(find.text('Forgot?'));
+      await tester.pump();
+
+      expect(
+        find.text("Password recovery isn't configured yet."),
+        findsOneWidget,
+      );
+      verifyNever(() => mockBloc.add(any()));
+    });
+
+    testWidgets('shows unavailable messages for social actions', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrapWithDependencies(mockBloc));
+      await tester.pump(const Duration(seconds: 1));
+
+      await tester.ensureVisible(find.text('Google'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Google'));
+      await tester.pump();
+
+      expect(
+        find.text("Social sign-in isn't configured yet."),
+        findsOneWidget,
+      );
+
+      await tester.pump(const Duration(seconds: 4));
+      await tester.ensureVisible(find.text('Apple'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apple'));
+      await tester.pump();
+
+      expect(
+        find.text("Social sign-in isn't configured yet."),
+        findsOneWidget,
+      );
+      verifyNever(() => mockBloc.add(any()));
+    });
+
+    testWidgets('shows CircularProgressIndicator while submitting', (
+      tester,
+    ) async {
+      when(() => mockBloc.state).thenReturn(const AuthState.submitting());
+      when(
+        () => mockBloc.stream,
+      ).thenAnswer((_) => Stream.value(const AuthState.submitting()));
+
+      await tester.pumpWidget(wrapWithDependencies(mockBloc));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('shows error message on auth failure', (tester) async {
+      when(
+        () => mockBloc.state,
+      ).thenReturn(const AuthState.failure(testFailure));
+      when(
+        () => mockBloc.stream,
+      ).thenAnswer((_) => Stream.value(const AuthState.failure(testFailure)));
+
+      await tester.pumpWidget(wrapWithDependencies(mockBloc));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Something went wrong.'), findsOneWidget);
+    });
   });
 }

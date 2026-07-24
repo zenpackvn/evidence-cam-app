@@ -348,17 +348,19 @@ Future<void> _openBookmarkDetail(WidgetTester tester, String title) async {
   expect(_popupMenuButton(), findsWidgets);
 }
 
-// ponytail: legacy template E2E (bookmarks/notifications journey). The demo
-// features were removed, so this navigates to a surviving route just to keep
-// the file compiling. E4.2 replaces this whole suite with the StampMail journey
-// (login → create stamp → send → open → reply).
 Future<void> _goToBookmarksList(
   WidgetTester tester,
   Finder contextFinder,
 ) async {
-  const AlbumRoute().go(tester.element(contextFinder));
+  const BookmarksListRoute().go(tester.element(contextFinder));
   await E2eApp.settle(tester);
   await tester.pumpAndSettle();
+  final bookmarksTitle = find.descendant(
+    of: find.byType(AppBar),
+    matching: find.text('Bookmarks'),
+  );
+  await E2eApp.pumpUntil(tester, bookmarksTitle);
+  expect(bookmarksTitle, findsOneWidget);
 }
 
 Finder _popupMenuButton() {

@@ -1,38 +1,23 @@
 import 'package:architecture/architecture.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:injectable/injectable.dart';
 import 'package:network/network.dart';
-import 'package:shared_contracts/shared_contracts.dart';
 
+import 'package:shared_contracts/shared_contracts.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_local_data_source.dart';
-import '../datasources/firebase_auth_data_source.dart';
-import '../datasources/sm_user_data_source.dart';
+import '../datasources/auth_remote_data_source.dart';
+import '../models/change_password_request.dart';
+import '../models/refresh_token_request.dart';
+import '../models/register_request.dart';
+import '../models/sign_in_request.dart';
 
-/// Firebase-backed auth (SM-000): the provider mechanics live in
-/// [FirebaseAuthDataSource]; after a successful sign-in the StampMail profile is
-/// loaded from the backend ([SmUserDataSource]) — the backend auto-provisions a
-/// Free profile on first call. The bearer token for `/api/sm/*` comes from
-/// Firebase via the network [AuthTokenProvider], so no tokens are persisted
-/// here; only the resolved [AuthUser] is cached locally for a synchronous
-/// `currentUser`.
 @LazySingleton(as: AuthRepository)
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl(
-    this._firebase,
-    this._smUser,
-    this._local,
-    this._tokenProvider,
-  ) {
-    // Point the network interceptor at Firebase's ID token. One-way binding
-    // (network → Firebase) so the network package stays firebase-free.
-    _tokenProvider.bind(_firebase.idToken);
-  }
+  AuthRepositoryImpl(this._remote, this._local, this._refresher);
 
-  final FirebaseAuthDataSource _firebase;
-  final SmUserDataSource _smUser;
+  final AuthRemoteDataSource _remote;
   final AuthLocalDataSource _local;
-  final AuthTokenProvider _tokenProvider;
+  final TokenRefresher _refresher;
 
   @override
   AuthUser? get currentUser => _local.currentUser;
@@ -41,42 +26,49 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Result<AuthUser>> signIn({
     required String username,
     required String password,
-  }) => _afterSignIn(() => _firebase.signInWithEmail(username, password));
+  }) async {
+    try {
+      final response = await _remote.signIn(
+        SignInRequest(username: username, password: password),
+      );
+      final user = response.user.toDomain();
+      await _local.setSession(
+        user: user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+      );
+      return Ok(user);
+    } on DioException catch (e) {
+      return Err(_mapDioError(e));
+    } on Object {
+      // A malformed response body makes the parse throw a non-Dio error; map
+      // it to a failure instead of letting it escape into the bloc.
+      return const Err(UnknownFailure('Unexpected server response'));
+    }
+  }
 
   @override
   Future<Result<AuthUser>> register({
     required String username,
     required String password,
-  }) => _afterSignIn(() async {
-    final cred = await _firebase.registerWithEmail(username, password);
-    // SM-001 BR-02: email sign-ups get a verification link right away. Best
-    // effort — the waiting screen offers resend if this send fails.
+  }) async {
     try {
-      await _firebase.sendEmailVerification();
-    } on FirebaseAuthException {
-      // ignore: resend is available on the waiting screen.
-    }
-    return cred;
-  });
-
-  @override
-  Future<Result<AuthUser>> signInWithGoogle() =>
-      _afterSignIn(_firebase.signInWithGoogle);
-
-  /// Runs a Firebase sign-in action, then loads + caches the profile. Maps
-  /// Firebase and network errors to domain failures.
-  Future<Result<AuthUser>> _afterSignIn(
-    Future<Object?> Function() action,
-  ) async {
-    try {
-      await action();
-      final user = await _smUser.me();
-      await _local.cacheUser(user);
+      final response = await _remote.register(
+        RegisterRequest(username: username, password: password),
+      );
+      final user = response.user.toDomain();
+      await _local.setSession(
+        user: user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+      );
       return Ok(user);
-    } on FirebaseAuthException catch (e) {
-      return Err(_mapFirebaseError(e));
+    } on DioException catch (e) {
+      return Err(_mapDioError(e));
     } on Object {
-      return const Err(UnknownFailure('Sign-in failed. Please try again.'));
+      // A malformed response body makes the parse throw a non-Dio error; map
+      // it to a failure instead of letting it escape into the bloc.
+      return const Err(UnknownFailure('Unexpected server response'));
     }
   }
 
@@ -86,138 +78,87 @@ class AuthRepositoryImpl implements AuthRepository {
     required String newPassword,
   }) async {
     try {
-      await _firebase.changePassword(currentPassword, newPassword);
+      await _remote.changePassword(
+        ChangePasswordRequest(
+          currentPassword: currentPassword,
+          newPassword: newPassword,
+        ),
+      );
       return const Ok(null);
-    } on FirebaseAuthException catch (e) {
-      return Err(_mapFirebaseError(e));
+    } on DioException catch (e) {
+      return Err(_mapDioError(e));
     }
   }
 
   @override
   Future<Result<void>> signOut() async {
-    await _firebase.signOut();
+    final refreshToken = _local.refreshToken;
+    if (refreshToken != null) {
+      try {
+        await _remote.signOut(RefreshTokenRequest(refreshToken: refreshToken));
+      } on DioException {
+        // Best-effort: drop the local session even if the server call fails so
+        // the user isn't stuck signed in after a network blip.
+      }
+    }
     await _local.clearSession();
     return const Ok(null);
-  }
-
-  @override
-  Future<Result<void>> signOutAllDevices() async {
-    // Revoke first: only once the server confirms every session is gone may the
-    // local one be dropped. The reverse order would sign this device out and
-    // leave the user unable to tell that the others are still logged in.
-    try {
-      await _smUser.revokeSessions();
-    } on DioException catch (e) {
-      return Err(_mapRevokeError(e));
-    }
-    await _firebase.signOut();
-    await _local.clearSession();
-    return const Ok(null);
-  }
-
-  /// Maps a failed revoke. The endpoint takes no input and needs only the
-  /// caller's token, so there is nothing the user can correct — the only
-  /// distinction worth drawing is "you're offline" from "the server refused".
-  Failure _mapRevokeError(DioException e) {
-    const offline = {
-      DioExceptionType.connectionError,
-      DioExceptionType.connectionTimeout,
-      DioExceptionType.receiveTimeout,
-      DioExceptionType.sendTimeout,
-    };
-    if (offline.contains(e.type)) {
-      return const UnknownFailure(
-        'Không có kết nối. Chưa đăng xuất được thiết bị nào.',
-      );
-    }
-    if (e.response?.statusCode == 401) {
-      return const NoSessionFailure();
-    }
-    return const UnknownFailure(
-      'Không đăng xuất được các thiết bị. Vui lòng thử lại.',
-    );
   }
 
   @override
   Future<Result<void>> deleteAccount() async {
     try {
-      await _firebase.deleteAccount();
+      await _remote.deleteAccount();
+      // Only drop the local session once the server confirms deletion, so a
+      // failed request leaves the user signed in to retry.
       await _local.clearSession();
       return const Ok(null);
-    } on FirebaseAuthException catch (e) {
-      return Err(_mapFirebaseError(e));
+    } on DioException catch (e) {
+      return Err(_mapDioError(e));
     }
   }
 
   @override
   Future<Result<AuthUser>> restoreSession() async {
     await _local.load();
-    if (_firebase.currentUser == null) {
-      await _local.clearSession();
+    final user = _local.currentUser;
+    final refreshToken = _local.refreshToken;
+    if (user == null || refreshToken == null) {
       return const Err(NoSessionFailure());
     }
-    // Signed-in Firebase user: refresh the cached profile. On a network error
-    // fall back to the cached user so offline launches keep the session.
-    try {
-      final user = await _smUser.me();
-      await _local.cacheUser(user);
-      return Ok(user);
-    } on Object {
-      final cached = _local.currentUser;
-      return cached != null ? Ok(cached) : const Err(NoSessionFailure());
+    final outcome = await _refresher.refresh();
+    switch (outcome) {
+      case RefreshOutcome.refreshed:
+        return Ok(user);
+      case RefreshOutcome.networkError:
+        // Offline or a transient server error at launch. Restore the session
+        // optimistically and let AuthInterceptor refresh lazily on the first
+        // 401 once connectivity returns. Wiping a possibly-valid session here
+        // is what forced offline users to re-login.
+        return Ok(user);
+      case RefreshOutcome.invalidSession:
+        // Tokens were already cleared by the refresher; drop the now-orphaned
+        // persisted user too so storage doesn't keep a userless session blob.
+        await _local.clearSession();
+        return const Err(NoSessionFailure('Session expired.'));
     }
   }
 
-  @override
-  Future<Result<void>> sendEmailVerification() async {
-    try {
-      await _firebase.sendEmailVerification();
-      return const Ok(null);
-    } on FirebaseAuthException catch (e) {
-      return Err(_mapFirebaseError(e));
+  Failure _mapDioError(DioException e) {
+    final status = e.response?.statusCode;
+    if (status == 401) {
+      final message =
+          _extractMessage(e.response?.data) ?? 'Invalid username or password.';
+      return InvalidCredentialsFailure(message);
     }
+    return UnknownFailure(e.message ?? 'Network error');
   }
 
-  @override
-  Future<Result<bool>> checkEmailVerified() async {
-    try {
-      return Ok(await _firebase.reloadEmailVerified());
-    } on FirebaseAuthException catch (e) {
-      return Err(_mapFirebaseError(e));
+  String? _extractMessage(Object? body) {
+    if (body is Map<String, dynamic>) {
+      final message = body['message'];
+      if (message is String) return message;
     }
-  }
-
-  @override
-  Future<Result<void>> sendPasswordReset(String email) async {
-    try {
-      await _firebase.sendPasswordResetEmail(email);
-      return const Ok(null);
-    } on FirebaseAuthException catch (e) {
-      // BR-12: never reveal whether the email exists.
-      if (e.code == 'user-not-found') return const Ok(null);
-      return Err(_mapFirebaseError(e));
-    }
-  }
-
-  Failure _mapFirebaseError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'invalid-credential':
-      case 'wrong-password':
-      case 'user-not-found':
-      case 'invalid-email':
-        return const InvalidCredentialsFailure(
-          'Email hoặc mật khẩu không đúng.',
-        );
-      case 'email-already-in-use':
-        return const InvalidCredentialsFailure('Email này đã được đăng ký.');
-      case 'weak-password':
-        return const InvalidCredentialsFailure(
-          'Mật khẩu quá yếu (tối thiểu 6 ký tự).',
-        );
-      case 'network-request-failed':
-        return const UnknownFailure('Không có kết nối mạng.');
-      default:
-        return UnknownFailure(e.message ?? 'Đăng nhập thất bại.');
-    }
+    return null;
   }
 }

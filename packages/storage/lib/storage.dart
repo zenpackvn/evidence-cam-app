@@ -3,4 +3,5 @@ export 'package:shared_preferences/shared_preferences.dart';
 
 export 'src/auth_token_store.dart';
 export 'src/di.module.dart' show StoragePackageModule;
+export 'src/key_value_store.dart';
 export 'src/keychain_reset_on_reinstall.dart';

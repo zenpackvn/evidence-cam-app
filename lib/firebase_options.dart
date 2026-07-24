@@ -59,29 +59,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCmj-Sq_ICf7svfxPZ0W4ShqiVXhXRpLXM',
-    appId: '1:725681265816:web:02f40cd8964e31b17744ed',
-    messagingSenderId: '725681265816',
-    projectId: 'stampmail-dev',
-    authDomain: 'stampmail-dev.firebaseapp.com',
-    storageBucket: 'stampmail-dev.firebasestorage.app',
+    apiKey: 'PLACEHOLDER_WEB_API_KEY',
+    appId: '1:000000000000:web:0000000000000000000000',
+    messagingSenderId: '000000000000',
+    projectId: 'your-firebase-project',
+    authDomain: 'your-firebase-project.firebaseapp.com',
+    storageBucket: 'your-firebase-project.appspot.com',
+    measurementId: 'G-0000000000',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCq_c28PLxAj8m4eUYzePX9hxngtwQ6Lxg',
-    appId: '1:725681265816:android:acfe7fdbc49de57d7744ed',
-    messagingSenderId: '725681265816',
-    projectId: 'stampmail-dev',
-    storageBucket: 'stampmail-dev.firebasestorage.app',
+    apiKey: 'AIzaSyABVGRZvoln47vOJ35q7u0pLwCruio_Zw4',
+    appId: '1:208874315324:android:6b9255220996a8692aad39',
+    messagingSenderId: '208874315324',
+    projectId: 'flutter-template-e45d8',
+    storageBucket: 'flutter-template-e45d8.firebasestorage.app',
   );
+
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCD4B1YUn6jxdQ7Xi6Vbslr7BQZnd-yUC0',
-    appId: '1:725681265816:ios:b371646277a097e77744ed',
-    messagingSenderId: '725681265816',
-    projectId: 'stampmail-dev',
-    storageBucket: 'stampmail-dev.firebasestorage.app',
-    iosClientId:
-        '725681265816-tqi5kapfbrp48ht51gdg48bp4h244cf1.apps.googleusercontent.com',
-    iosBundleId: 'com.aktechvn.stampmail',
+    apiKey: 'AIzaSyBf2CH2XfVUVS8xv5douspFCpUpK4czf-U',
+    appId: '1:208874315324:ios:af6e2475740a6faf2aad39',
+    messagingSenderId: '208874315324',
+    projectId: 'flutter-template-e45d8',
+    storageBucket: 'flutter-template-e45d8.firebasestorage.app',
+    iosBundleId: 'com.aktechvn.quangvn',
   );
 }

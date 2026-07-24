@@ -29,11 +29,50 @@ BaseOptions apiBaseOptions(
 /// output through `dart:developer` (not `print`) so it integrates with
 /// DevTools and stays off the release console. Gate the call site on
 /// [EnvConfig.isDev].
+///
+/// [LogInterceptor] dumps request/response *headers* and bodies verbatim,
+/// which includes the `Authorization: Bearer <token>` header the
+/// [AuthInterceptor] attaches, plus any `password`/`token` fields in a JSON
+/// body. Every logged line is passed through [redactSensitive] first so those
+/// secrets never reach the log sink — defense in depth even though this
+/// interceptor is already dev-gated (a demo screen recording, a mis-set
+/// `isDev`, or piping dev logs to an aggregator would otherwise leak them).
 Interceptor devLogInterceptor() => LogInterceptor(
   requestBody: true,
   responseBody: true,
-  logPrint: (object) => developer.log(object.toString(), name: 'dio'),
+  logPrint: (object) =>
+      developer.log(redactSensitive(object.toString()), name: 'dio'),
 );
+
+/// Bearer tokens in an `Authorization` header line.
+final _bearerHeader = RegExp(
+  r'(authorization:\s*bearer\s+)\S+',
+  caseSensitive: false,
+);
+
+/// `"password": "..."` / `token: ...` style key/value pairs in a JSON or
+/// header dump. Group 1 is the key + separator; group 2 is the value, kept so
+/// its quoting can be preserved. `authorization` is handled by [_bearerHeader]
+/// and deliberately excluded here to avoid double-redacting the `Bearer` word.
+final _sensitiveField = RegExp(
+  r'''((?:password|pass|pwd|access_token|refresh_token|token|secret|api_?key)["']?\s*[:=]\s*)("[^"]*"|'[^']*'|[^\s,}]+)''',
+  caseSensitive: false,
+);
+
+/// Replaces token/credential values in a log line with `[REDACTED]`, leaving
+/// the surrounding structure (keys, quotes) intact so the log is still useful.
+/// Exposed for unit testing.
+String redactSensitive(String input) => input
+    .replaceAllMapped(_bearerHeader, (m) => '${m[1]}[REDACTED]')
+    .replaceAllMapped(_sensitiveField, (m) {
+      final value = m[2]!;
+      final quote = value.startsWith('"')
+          ? '"'
+          : value.startsWith("'")
+          ? "'"
+          : '';
+      return '${m[1]}$quote[REDACTED]$quote';
+    });
 
 @module
 abstract class NetworkModule {
@@ -45,7 +84,10 @@ abstract class NetworkModule {
       Dio(apiBaseOptions(env.apiBaseUrl, timeout: env.apiTimeout));
 
   /// The bearer-token holder, bound to Firebase by the auth feature at startup.
-  /// Network-owned so the `Dio` doesn't depend on the auth package.
+  /// Network-owned so the `Dio` doesn't depend on the auth package: the auth
+  /// feature calls [AuthTokenProvider.bind] after Firebase is available instead
+  /// of the network package importing `firebase_auth` (which would invert the
+  /// layering). Unbound, the interceptor falls back to the persisted token store.
   @lazySingleton
   AuthTokenProvider provideTokenProvider() => AuthTokenProvider();
 
@@ -75,12 +117,7 @@ abstract class NetworkModule {
       dio.interceptors.add(PerformanceInterceptor(performance));
     }
     dio.interceptors.add(
-      AuthInterceptor(
-        tokens,
-        refresher,
-        dio,
-        tokenProvider: tokenProvider,
-      ),
+      AuthInterceptor(tokens, refresher, dio, tokenProvider: tokenProvider),
     );
     dio.interceptors.add(IdempotencyInterceptor());
     dio.interceptors.add(cacheInterceptor());

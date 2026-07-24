@@ -5,46 +5,46 @@ import 'package:test_utils/test_utils.dart';
 void main() {
   const installedFlagKey = 'app.installed';
 
-  late MockSharedPreferences prefs;
+  late MockKeyValueStore store;
   late MockFlutterSecureStorage secureStorage;
   late KeychainResetOnReinstall reset;
 
   setUp(() {
-    prefs = MockSharedPreferences();
+    store = MockKeyValueStore();
     secureStorage = MockFlutterSecureStorage();
-    reset = KeychainResetOnReinstall(prefs, secureStorage);
+    reset = KeychainResetOnReinstall(store, secureStorage);
   });
 
   group('KeychainResetOnReinstall', () {
     test('wipes secure storage and sets the flag on first run', () async {
-      when(() => prefs.getBool(installedFlagKey)).thenReturn(null);
+      when(() => store.getBool(installedFlagKey)).thenReturn(null);
       when(secureStorage.deleteAll).thenAnswer((_) async {});
       when(
-        () => prefs.setBool(installedFlagKey, true),
-      ).thenAnswer((_) async => true);
+        () => store.setBool(installedFlagKey, true),
+      ).thenAnswer((_) async {});
 
       await reset.run();
 
       verify(secureStorage.deleteAll).called(1);
-      verify(() => prefs.setBool(installedFlagKey, true)).called(1);
+      verify(() => store.setBool(installedFlagKey, true)).called(1);
     });
 
     test('does nothing when the flag is already set', () async {
-      when(() => prefs.getBool(installedFlagKey)).thenReturn(true);
+      when(() => store.getBool(installedFlagKey)).thenReturn(true);
 
       await reset.run();
 
       verifyNever(secureStorage.deleteAll);
-      verifyNever(() => prefs.setBool(any(), any()));
+      verifyNever(() => store.setBool(any(), any()));
     });
 
     test('leaves the flag unset if the wipe fails, so it retries', () async {
-      when(() => prefs.getBool(installedFlagKey)).thenReturn(null);
+      when(() => store.getBool(installedFlagKey)).thenReturn(null);
       when(secureStorage.deleteAll).thenThrow(Exception('keychain error'));
 
       await expectLater(reset.run(), throwsException);
 
-      verifyNever(() => prefs.setBool(any(), any()));
+      verifyNever(() => store.setBool(any(), any()));
     });
   });
 }

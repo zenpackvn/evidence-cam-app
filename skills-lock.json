@@ -115,6 +115,12 @@
       "skillPath": "skills/firebase-security-rules-auditor/SKILL.md",
       "computedHash": "5a90e991bb9acfd3e43bfb570498dee60b9cef94cbb80cfb99257c7e4f61c1a0"
     },
+    "flutter-accessibility": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-accessibility/SKILL.md",
+      "computedHash": "0fdd8e055460eb87bcd6bf600118a277bedab96019cc541ace8ccb4e52e73777"
+    },
     "flutter-add-integration-test": {
       "source": "flutter/skills",
       "sourceType": "github",
@@ -133,11 +139,53 @@
       "skillPath": "skills/flutter-add-widget-test/SKILL.md",
       "computedHash": "c4f263c59cfe331ef42dba2aa81e25142aa4f7284518907c6b847e04502676b0"
     },
+    "flutter-analytics": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-analytics/SKILL.md",
+      "computedHash": "6743809d4595e2b9f80422fe376dad21d7f7843c5ea7de3d4e9ba7a011ac14b7"
+    },
+    "flutter-animations": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-animations/SKILL.md",
+      "computedHash": "58338ccb4f3b331967f95d787d3cadf6718b7a4bff56bd86ac67a718501d8466"
+    },
+    "flutter-app-builder": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "7c4738bf7cf90766a0c3964022b41f786d05a9f2349fcdc22e4369902e60e325"
+    },
+    "flutter-app-shell": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-app-shell/SKILL.md",
+      "computedHash": "d4dbbf79878a718eafe4941bf904f063ff8fdb425696a16bb27f0bfd46c684b3"
+    },
     "flutter-apply-architecture-best-practices": {
       "source": "flutter/skills",
       "sourceType": "github",
       "skillPath": "skills/flutter-apply-architecture-best-practices/SKILL.md",
       "computedHash": "2b1b63214d6b153c50aacd4bbcb76ce91dece449de9e06f477f8aad3163d667f"
+    },
+    "flutter-architecture": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-architecture/SKILL.md",
+      "computedHash": "7ca2c23ec34dc768e380c519db225c7a471152edd3eedce6b12a36e685460ee8"
+    },
+    "flutter-auth": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-auth/SKILL.md",
+      "computedHash": "46451dfeee36ab1070c19b8c6a3540a74466e27ea51b68d6db82cee9311af78d"
+    },
+    "flutter-base-classes": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-base-classes/SKILL.md",
+      "computedHash": "30d810d4fa3080e6d02874c9caf55ea360c907c7d6d4e6cee78dd97acd19bd35"
     },
     "flutter-build-responsive-layout": {
       "source": "flutter/skills",
@@ -145,17 +193,167 @@
       "skillPath": "skills/flutter-build-responsive-layout/SKILL.md",
       "computedHash": "f762ea2ee83d4f1f35d9093b41d2520dd024ab80c9539d4860b9ae7f2a4dc6a0"
     },
+    "flutter-ci": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-ci/SKILL.md",
+      "computedHash": "6570779fc72fa8e96b1722029f52cdd4abfc5f9681e4d9fd4c029069d7c39a97"
+    },
+    "flutter-common-widgets": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-common-widgets/SKILL.md",
+      "computedHash": "2a1811a3dd524a4bba182872f0472ddbdcbc4bbcaec721a550e52332aee048b5"
+    },
+    "flutter-dart-patterns": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-dart-patterns/SKILL.md",
+      "computedHash": "9d14baad464b772da2f9bfd7829d8187e96bd194e7aef36a8c913fce5e6852c6"
+    },
+    "flutter-design-system": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-design-system/SKILL.md",
+      "computedHash": "56be6f76f82df09858568e2f790388f7e1d89ca80032c8ae953f04aa957d970a"
+    },
+    "flutter-di": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-di/SKILL.md",
+      "computedHash": "077b52cbf61b88fca6133e64748d9c05aa8230f78d672d572b88d31009c61d62"
+    },
+    "flutter-dialog": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-dialog/SKILL.md",
+      "computedHash": "ce3b92e8d357b33beb021856d88baa83c1077a09b89b558b67d19fd952033270"
+    },
+    "flutter-error-handling": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-error-handling/SKILL.md",
+      "computedHash": "6b34b2867573bde87779d47d27fdb788d2fc9f894d2028fb58ce3932ed022fc9"
+    },
+    "flutter-feature": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-feature/SKILL.md",
+      "computedHash": "fb937df85d80892647f0c8121278b7a1fbc343f92c0afcbc665afda247d8d351"
+    },
+    "flutter-feature-flags": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-feature-flags/SKILL.md",
+      "computedHash": "48e22f00d424246e490618d10a118718bc1fe0ca7ecd07c39ef21a44c144e106"
+    },
     "flutter-fix-layout-issues": {
       "source": "flutter/skills",
       "sourceType": "github",
       "skillPath": "skills/flutter-fix-layout-issues/SKILL.md",
       "computedHash": "1aaba922c951159118f9b141788f7bb7b8167bdc0bd5c6f0738ebb90c29b9532"
     },
+    "flutter-flavors": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-flavors/SKILL.md",
+      "computedHash": "ed3e066443727d1b1497f42ce6bf676f2f11501ab8c7394870f28c69375f08ba"
+    },
+    "flutter-forms": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-forms/SKILL.md",
+      "computedHash": "71d72f064927d92f254ec62a4d5e74019cf486cbc756088190ffe42f35c0e876"
+    },
     "flutter-implement-json-serialization": {
       "source": "flutter/skills",
       "sourceType": "github",
       "skillPath": "skills/flutter-implement-json-serialization/SKILL.md",
       "computedHash": "0eed26f25308d78c6a9036ec936db93342f064d64f2cbac5e0e8648ba6b9db3f"
+    },
+    "flutter-loading": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-loading/SKILL.md",
+      "computedHash": "d5f26e9dc970154b4f52df232018cbb2aff6e8baacf25c006f3e46b2643c8c65"
+    },
+    "flutter-localization": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-localization/SKILL.md",
+      "computedHash": "ecaa34a63fffea1c2b8de14cb20b3afab5f26a841ac91b78c329d333a498fbfe"
+    },
+    "flutter-logging": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-logging/SKILL.md",
+      "computedHash": "962a29968a63ce05e53fbf7ad28677d6b5e7837ea8793f2a0b7c7bc615653b26"
+    },
+    "flutter-memory-leak": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-memory-leak/SKILL.md",
+      "computedHash": "7ef3c1b7e7f839783abe9344b75c1b2d0ec9b4a6f7a07795ebac4beed33948dc"
+    },
+    "flutter-migration": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-migration/SKILL.md",
+      "computedHash": "58883b257cd7574404d5152fedc7a07e20e9fa7c8104c2fcc8d69f7c98ad1e84"
+    },
+    "flutter-network": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-network/SKILL.md",
+      "computedHash": "020f426d959cfd6715c1bf77adf75adb7aaf1a7ef2b856d73f6fdeea9552ccb9"
+    },
+    "flutter-offline": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-offline/SKILL.md",
+      "computedHash": "73cd2b991a60e55b31d672d19a6e47e74daebe2fb299cb4bf6fe3478bf3f12b8"
+    },
+    "flutter-performance": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-performance/SKILL.md",
+      "computedHash": "4258c395bc23b0a8e504e6971cf810cd48ed26219c1f334e42bf0635ff561d65"
+    },
+    "flutter-permissions": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-permissions/SKILL.md",
+      "computedHash": "1ef1d748876f6fba35deffcb5334848ed317219899010b720389399d1414ad7e"
+    },
+    "flutter-platform-channels": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-platform-channels/SKILL.md",
+      "computedHash": "f76d17365425ba2e13581fb7d9d4c2349120680e38cd36152e19b6a240f8831c"
+    },
+    "flutter-push": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-push/SKILL.md",
+      "computedHash": "1907a77fc618fbfbe25830469ccb98f2178a1c44954fc57a89768b51cd41fd47"
+    },
+    "flutter-release": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-release/SKILL.md",
+      "computedHash": "ce38171f9b53a97d80ede315ccbd336f50ab4a8220f0d43a274aa9f01bd6b134"
+    },
+    "flutter-routing": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-routing/SKILL.md",
+      "computedHash": "dcd2e3c430f6269510286a20e4fe8155402267df2ba626dc73dc84e0bbdf7f57"
+    },
+    "flutter-security": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-security/SKILL.md",
+      "computedHash": "105889b31e0099d51393c6cf1d9683927a3b1f4654ef1cd3e247251d2f357a41"
     },
     "flutter-setup-declarative-routing": {
       "source": "flutter/skills",
@@ -168,6 +366,30 @@
       "sourceType": "github",
       "skillPath": "skills/flutter-setup-localization/SKILL.md",
       "computedHash": "671bf254ca8f3172b6bda5287d9e756e9fd5b49165a815f710c5b707ebaa38f8"
+    },
+    "flutter-state-restoration": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-state-restoration/SKILL.md",
+      "computedHash": "83f71427ef99a6aa756ce4e988bd4d6f04237aadefcd0c02fc7940251cd31fdd"
+    },
+    "flutter-storage": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-storage/SKILL.md",
+      "computedHash": "d71bd25c0ab10b32d2f7d653ba5be67cb0f3cbfb8d4d43dd701de2675c24a429"
+    },
+    "flutter-tests": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-tests/SKILL.md",
+      "computedHash": "8497269373cf4c7f46078633832e442bfd17b4957018d8c3bf662a73d3b81cc3"
+    },
+    "flutter-theme": {
+      "source": "yendangn/flutter-app-builder",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-theme/SKILL.md",
+      "computedHash": "0638e0198fc91742de0402b8eb33aacbae308cd45843ce0029badf66cff7b6aa"
     },
     "flutter-use-http-package": {
       "source": "flutter/skills",

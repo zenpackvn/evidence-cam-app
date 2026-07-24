@@ -8,5 +8,11 @@ environment:
 
 resolution: workspace
 
+dependencies:
+  # Pure-Dart state-management core (no Flutter). Provides BlocBase for the
+  # SafeEmitMixin presentation primitive; keeps architecture a pure-Dart,
+  # zero-workspace-dependency leaf.
+  bloc: ^9.2.0
+
 dev_dependencies:
   test: ^1.31.0

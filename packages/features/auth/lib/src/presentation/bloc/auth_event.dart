@@ -32,10 +32,6 @@ final class AuthRegisterRequested extends AuthEvent {
   final String password;
 }
 
-final class AuthGoogleSignInRequested extends AuthEvent {
-  const AuthGoogleSignInRequested();
-}
-
 final class AuthSignOutRequested extends AuthEvent {
   const AuthSignOutRequested();
 }

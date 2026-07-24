@@ -63,9 +63,7 @@ class _CollectionDetailView extends StatelessWidget {
       listener: (context, state) {
         if (state.deleted) Navigator.of(context).pop();
         if (state.failure != null) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(state.failure!.message)));
+          AppToast.error(context, state.failure!.message);
         }
       },
       builder: (context, state) {

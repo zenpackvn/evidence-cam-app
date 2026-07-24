@@ -79,6 +79,63 @@ void main() {
     });
   });
 
+  group('with a bound token provider', () {
+    test('prefers the provider token over the persisted store', () async {
+      final provider = AuthTokenProvider()..bind(() async => 'firebase-tok');
+      final withProvider = AuthInterceptor(
+        tokens,
+        refresher,
+        dio,
+        tokenProvider: provider,
+      );
+      final handler = _MockRequestHandler();
+      final o = opts();
+      when(() => handler.next(any())).thenReturn(null);
+
+      await withProvider.onRequest(o, handler);
+
+      expect(o.headers['Authorization'], 'Bearer firebase-tok');
+      // The persisted store is never consulted when the provider is bound.
+      verifyNever(() => tokens.accessToken);
+    });
+
+    test(
+      'on 401 asks the provider again instead of the REST refresher',
+      () async {
+        final provider = AuthTokenProvider()..bind(() async => 'refreshed-tok');
+        final withProvider = AuthInterceptor(
+          tokens,
+          refresher,
+          dio,
+          tokenProvider: provider,
+        );
+        final o = opts();
+        final err = err401(o);
+        final handler = _MockErrorHandler();
+        when(
+          () => dio.fetch<dynamic>(any()),
+        ).thenAnswer(
+          (_) async => Response<dynamic>(
+            requestOptions: o,
+            statusCode: 200,
+          ),
+        );
+        when(() => handler.resolve(any())).thenReturn(null);
+        when(() => handler.next(any())).thenReturn(null);
+
+        await withProvider.onError(err, handler);
+
+        verifyNever(() => refresher.refresh());
+        final retriedOpts =
+            verify(
+                  () => dio.fetch<dynamic>(captureAny()),
+                ).captured.first
+                as RequestOptions;
+        expect(retriedOpts.headers['Authorization'], 'Bearer refreshed-tok');
+      },
+    );
+  });
+
   group('onError', () {
     test(
       'on 401: refreshes and retries with __auth_retried__ + new bearer',

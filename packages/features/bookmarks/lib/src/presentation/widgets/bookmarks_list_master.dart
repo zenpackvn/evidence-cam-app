@@ -63,30 +63,34 @@ class BookmarksListMaster extends StatelessWidget {
                 return const CollectionsListView();
               }
 
-              if (state.isLoading && state.items.isEmpty) {
-                return const AppSkeletonList(hasLeading: false);
-              }
-              if (state.failure != null && state.items.isEmpty) {
-                return AppErrorView(
-                  message: bookmarkFailureMessage(context, state.failure!),
-                  onRetry: () => context.read<BookmarksListBloc>().add(
-                    const BookmarksListLoadRequested(),
-                  ),
-                );
-              }
-
               final visible = _itemsForTab(state.visibleItems, activeTab);
-              if (visible.isEmpty) {
-                return _BookmarksEmptyState(
+              final status = switch (state) {
+                _ when state.isLoading && state.items.isEmpty =>
+                  AppAsyncStatus.loading,
+                _ when state.failure != null && state.items.isEmpty =>
+                  AppAsyncStatus.error,
+                _ when visible.isEmpty => AppAsyncStatus.empty,
+                _ => AppAsyncStatus.data,
+              };
+
+              return AppAsyncView(
+                status: status,
+                hasLeadingSkeleton: false,
+                errorMessage: state.failure != null
+                    ? bookmarkFailureMessage(context, state.failure!)
+                    : null,
+                onRetry: () => context.read<BookmarksListBloc>().add(
+                  const BookmarksListLoadRequested(),
+                ),
+                empty: _BookmarksEmptyState(
                   tab: activeTab,
                   query: state.query,
-                );
-              }
-
-              return _BookmarksGrid(
-                items: visible,
-                onReload: onReload,
-                onItemTap: onItemTap,
+                ),
+                data: (context) => _BookmarksGrid(
+                  items: visible,
+                  onReload: onReload,
+                  onItemTap: onItemTap,
+                ),
               );
             },
           ),

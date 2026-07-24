@@ -64,9 +64,7 @@ class _CopyableId extends StatelessWidget {
       onTap: () {
         Clipboard.setData(ClipboardData(text: id));
         context.read<ProfileBloc>().add(const ProfileUserIdCopied());
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.profileUserIdCopied)),
-        );
+        AppToast.success(context, context.l10n.profileUserIdCopied);
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(

@@ -144,4 +144,69 @@ platform :ios do
       skip_waiting_for_build_processing: true,
     )
   end
+
+  desc "Build a flavor's IPA (ad-hoc signed) and distribute it via Firebase App Distribution."
+  desc "Usage: bundle exec fastlane firebase flavor:dev (flavor: dev|staging|prod)"
+  lane :firebase do |options|
+    flavor = (options[:flavor] || "dev").to_s
+    config = FLAVORS.fetch(flavor) do
+      UI.user_error!(
+        "Unknown flavor '#{flavor}'. Expected one of: #{FLAVORS.keys.join(', ')}."
+      )
+    end
+
+    setup_ci if is_ci?
+
+    bundle_id = "#{require_env('IOS_BUNDLE_ID_BASE')}#{config[:suffix]}"
+    build_number = resolve_build_number(options)
+
+    api_key = app_store_connect_api_key(
+      key_id: require_env("APP_STORE_CONNECT_API_KEY_ID"),
+      issuer_id: require_env("APP_STORE_CONNECT_API_ISSUER_ID"),
+      key_content: require_env("APP_STORE_CONNECT_API_KEY_CONTENT"),
+      is_key_content_base64: true,
+    )
+
+    # Ad-hoc profiles are separate from the App Store ones the `beta`/`release`
+    # lanes use — Firebase App Distribution installs directly on registered
+    # test devices, which an App Store-method archive can't do. Run
+    # `bundle exec fastlane match adhoc` once locally to create these before
+    # the first use of this lane.
+    match(
+      type: "adhoc",
+      app_identifier: bundle_id,
+      api_key: api_key,
+      readonly: is_ci?,
+    )
+
+    flutter(
+      "build", "ios", "--release", "--no-codesign",
+      "--flavor", flavor, "--build-number", build_number,
+      "--dart-define-from-file", "env/#{flavor}.json",
+      "--obfuscate", "--split-debug-info=build/symbols/#{flavor}"
+    )
+
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: config[:scheme],
+      configuration: config[:configuration],
+      export_method: "ad-hoc",
+      output_directory: "build/ipa",
+      output_name: "#{flavor}-adhoc.ipa",
+      export_options: {
+        signingStyle: "manual",
+        provisioningProfiles: {
+          bundle_id => "match AdHoc #{bundle_id}",
+        },
+      },
+    )
+
+    firebase_app_distribution(
+      app: require_env("FIREBASE_IOS_APP_ID_#{flavor.upcase}"),
+      ipa_path: lane_context[SharedValues::IPA_OUTPUT_PATH],
+      groups: ENV["FIREBASE_DISTRIBUTION_GROUPS"] || "internal-testers",
+      release_notes: options[:release_notes] || changelog_from_git_commits(commits_count: 5),
+      firebase_cli_token: ENV["FIREBASE_CLI_TOKEN"],
+    )
+  end
 end

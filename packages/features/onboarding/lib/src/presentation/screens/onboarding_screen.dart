@@ -1,23 +1,16 @@
-import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:localization/localization.dart';
 
 import '../widgets/onboarding_step.dart';
 
 /// First-launch intro: a swipeable set of pages with progress dots and
-/// Skip / Next / Get started controls, on the warm StampMail cream ground.
+/// Skip / Next / Get started controls.
 ///
 /// The screen is navigation-agnostic: it calls [onDone] when the user finishes
 /// or skips, and the app shell decides where to go next (and persists the
-/// "seen" flag via `OnboardingStore`).
+/// "seen" flag via `OnboardingStore`). This keeps the feature free of router or
+/// DI coupling, matching how `SplashScreen` takes an `onRestored` callback.
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({
-    required this.onDone,
-    this.steps,
-    this.initialStep = 0,
-    this.onStepChanged,
-    super.key,
-  });
+  const OnboardingScreen({required this.onDone, this.steps, super.key});
 
   /// Invoked when the user skips or completes the flow.
   final VoidCallback onDone;
@@ -25,56 +18,44 @@ class OnboardingScreen extends StatefulWidget {
   /// Override the default copy (primarily for tests).
   final List<OnboardingStepData>? steps;
 
-  /// The page to open on (0-based). Lets the app shell resume an interrupted
-  /// flow at the last-viewed slide (SM-003 §5); defaults to the first slide.
-  final int initialStep;
-
-  /// Invoked whenever the visible page changes, so the app shell can persist the
-  /// resume position. Not called for the initial page.
-  final ValueChanged<int>? onStepChanged;
-
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  late final PageController _controller;
-  late int _page;
+  static const _defaultSteps = [
+    OnboardingStepData(
+      title: 'Welcome',
+      description:
+          'A production-ready Flutter base with offline-first sync, '
+          'auth, and a modular package architecture.',
+      icon: Icons.rocket_launch_outlined,
+    ),
+    OnboardingStepData(
+      title: 'Works offline',
+      description:
+          'Your data is cached locally and syncs in the background, so the '
+          'app stays usable on a flaky connection.',
+      icon: Icons.cloud_off_outlined,
+    ),
+    OnboardingStepData(
+      title: 'Ready to build',
+      description:
+          'Copy this template, swap in your features, and ship. The hard '
+          'infrastructure is already done.',
+      icon: Icons.check_circle_outline,
+    ),
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-    // Clamp so a stale/out-of-range saved step can never open on a missing page.
-    final count = widget.steps?.length ?? 3;
-    _page = widget.initialStep.clamp(0, count - 1);
-    _controller = PageController(initialPage: _page);
-  }
+  final _controller = PageController();
+  int _page = 0;
 
-  List<OnboardingStepData> _steps(AppLocalizations l10n) =>
-      widget.steps ??
-      [
-        OnboardingStepData(
-          title: l10n.smOnboard1Title,
-          description: l10n.smOnboard1Body,
-          heroAsset: 'onb-hero.png',
-          showFilters: true,
-        ),
-        OnboardingStepData(
-          title: l10n.smOnboard2Title,
-          description: l10n.smOnboard2Body,
-          heroAsset: 'onb-hero.png',
-        ),
-        OnboardingStepData(
-          title: l10n.smOnboard3Title,
-          description: l10n.smOnboard3Body,
-          heroAsset: 'onb-hero.png',
-        ),
-      ];
+  List<OnboardingStepData> get _steps => widget.steps ?? _defaultSteps;
 
-  bool _isLast(int count) => _page == count - 1;
+  bool get _isLast => _page == _steps.length - 1;
 
-  void _next(int count) {
-    if (_isLast(count)) {
+  void _next() {
+    if (_isLast) {
       widget.onDone();
       return;
     }
@@ -92,130 +73,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // System back steps to the previous onboarding page; only from the first
-    // page does it leave onboarding.
-    return PopScope(
-      canPop: _page == 0,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        _controller.previousPage(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      },
-      // Onboarding, like auth, is pinned to the light StampMail theme.
-      child: Theme(
-        data: AppTheme.light(),
-        child: Builder(builder: _build),
-      ),
-    );
-  }
-
-  Widget _build(BuildContext context) {
-    final l10n = context.l10n;
-    final colorScheme = context.colorScheme;
-    final steps = _steps(l10n);
-
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: Stack(
-        children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            child: Image.asset(
-              'assets/illustrations/corner-left-flowers.png',
-              package: 'feature_onboarding',
-              width: 88,
-              excludeFromSemantics: true,
-            ),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: Image.asset(
-              'assets/illustrations/corner-right-stamp.png',
-              package: 'feature_onboarding',
-              width: 105,
-              excludeFromSemantics: true,
-            ),
-          ),
-          Positioned(
-            bottom: 88,
-            left: 0,
-            child: IgnorePointer(
-              child: Image.asset(
-                'assets/illustrations/onb-bottom-left.png',
-                package: 'feature_onboarding',
-                width: 132,
-                excludeFromSemantics: true,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: widget.onDone,
+                child: const Text('Skip'),
               ),
             ),
-          ),
-          Positioned(
-            bottom: 88,
-            right: 0,
-            child: IgnorePointer(
-              child: Image.asset(
-                'assets/illustrations/onb-bottom-right.png',
-                package: 'feature_onboarding',
-                width: 124,
-                excludeFromSemantics: true,
+            Expanded(
+              child: PageView.builder(
+                controller: _controller,
+                onPageChanged: (i) => setState(() => _page = i),
+                itemCount: _steps.length,
+                itemBuilder: (_, i) => OnboardingStep(data: _steps[i]),
               ),
             ),
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: AppSpacing.sm,
-                      right: AppSpacing.lg,
-                    ),
-                    child: TextButton(
-                      onPressed: widget.onDone,
-                      style: TextButton.styleFrom(
-                        foregroundColor: colorScheme.onSurfaceVariant,
-                        textStyle: context.textTheme.titleSmall,
-                      ),
-                      child: Text(l10n.smOnboardingSkip),
-                    ),
-                  ),
+            _Dots(count: _steps.length, current: _page),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _next,
+                  child: Text(_isLast ? 'Get started' : 'Next'),
                 ),
-                Expanded(
-                  child: PageView.builder(
-                    controller: _controller,
-                    onPageChanged: (i) {
-                      setState(() => _page = i);
-                      widget.onStepChanged?.call(i);
-                    },
-                    itemCount: steps.length,
-                    itemBuilder: (_, i) => OnboardingStep(data: steps[i]),
-                  ),
-                ),
-                _Dots(count: steps.length, current: _page),
-                const SizedBox(height: AppSpacing.xl),
-                Padding(
-                  // .pen ctaWrap: 319-wide button, ~37px side margins.
-                  padding: const EdgeInsets.fromLTRB(
-                    37,
-                    0,
-                    37,
-                    AppSpacing.xxl,
-                  ),
-                  child: StampMailPrimaryButton(
-                    label: _isLast(steps.length)
-                        ? l10n.smOnboardingStart
-                        : l10n.smOnboardingNext,
-                    onPressed: () => _next(steps.length),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -230,7 +119,7 @@ class _Dots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
+    final scheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(count, (i) {
@@ -243,7 +132,7 @@ class _Dots extends StatelessWidget {
           decoration: BoxDecoration(
             color: active
                 ? scheme.primary
-                : scheme.primary.withValues(alpha: 0.25),
+                : scheme.onSurface.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(4),
           ),
         );

@@ -2,14 +2,13 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-/// A compact "you are offline" notice shown above already-loaded content
-/// (SM-004 BR-07, SM-022 BR-10).
+/// A compact "you are offline" notice shown above already-loaded content.
 ///
 /// Behaviour:
 /// - Renders nothing while online — a zero-size box, so it can be dropped
 ///   unconditionally into any layout.
 /// - Sits *in* the layout flow rather than floating over it, so it never
-///   obscures the content it annotates (SM-004 BR-07 / AC-05).
+///   obscures the content it annotates.
 ///
 /// Data-in only: the host passes the already-localized [label] (this package
 /// carries no localization dependency) and the [isOffline] flag it reads from
@@ -25,7 +24,7 @@ class OfflineBanner extends StatelessWidget {
   /// Whether the device is currently offline. When false nothing is rendered.
   final bool isOffline;
 
-  /// The already-localized notice, e.g. "Đang xem ngoại tuyến".
+  /// The already-localized notice, e.g. "You're offline".
   final String label;
 
   /// Inner padding of the banner surface.
@@ -42,8 +41,8 @@ class OfflineBanner extends StatelessWidget {
         width: double.infinity,
         padding: padding,
         decoration: BoxDecoration(
-          color: semantic.warningContainer,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          color: semantic.warning.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(
           children: [

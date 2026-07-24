@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import '../../app_ui.dart';
+
 /// Themed [TextFormField] with consistent border styling, an optional leading
 /// icon, an optional trailing widget (e.g. a password reveal button), and
 /// built-in support for [obscureText], validators, and error text.
@@ -74,12 +76,6 @@ class AppTextField extends StatelessWidget {
       readOnly: readOnly,
       autofocus: autofocus,
       obscureText: obscureText,
-      // Android auto-correct commits the composing text mid-word, which stops
-      // Vietnamese Telex/VNI from forming diacritics ("as" stays "as" instead
-      // of becoming "á"). Off across the app — auto-correct mangles Vietnamese
-      // anyway. Suggestions stay on: the keyboard's Vietnamese engine needs
-      // them to compose.
-      autocorrect: false,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       textCapitalization: textCapitalization,
@@ -109,10 +105,14 @@ class AppTextField extends StatelessWidget {
             ? Center(
                 widthFactor: 1,
                 heightFactor: 1,
-                child: FaIcon(prefixIcon, size: 22),
+                child: FaIcon(prefixIcon, size: AppIconSize.md),
               )
             : null,
         suffixIcon: suffix,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.lg,
+        ),
       ),
     );
   }

@@ -9,8 +9,9 @@ export 'package:video_player/video_player.dart';
 
 export 'src/crash/crash_reporter.dart';
 export 'src/di.module.dart' show AppPlatformPackageModule;
+export 'src/logging/app_bloc_observer.dart';
+export 'src/logging/app_logger.dart';
 export 'src/media/camera_service.dart';
-export 'src/media/gallery_service.dart';
 export 'src/media/image_picker_service.dart';
 export 'src/media/video_player_service.dart';
 export 'src/notifications/firebase_messaging_service.dart';
