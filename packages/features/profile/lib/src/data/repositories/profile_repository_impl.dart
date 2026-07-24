@@ -1,6 +1,7 @@
 import 'package:architecture/architecture.dart';
 import 'package:injectable/injectable.dart';
 import 'package:network/network.dart';
+import 'package:shared_contracts/shared_contracts.dart';
 
 import '../../domain/entities/birth_date.dart';
 import '../../domain/entities/user_profile.dart';
@@ -22,10 +23,35 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<Result<UserProfile>> me() async {
     try {
-      return Ok(_toProfile(await _remote.me()));
+      return Ok(_withLocalHeader(_toProfile(await _remote.me())));
     } on DioException catch (e) {
       return Err(_mapError(e));
     }
+  }
+
+  /// Overlays the locally-saved name/avatar ([ProfileHeaderStore]) onto the
+  /// server profile so an edit the backend couldn't store yet (PATCH 405) still
+  /// shows after a re-login on this device; seeds the store on the first read.
+  UserProfile _withLocalHeader(UserProfile server) {
+    final header = ProfileHeaderStore.instance.value;
+    if (header == null) {
+      ProfileHeaderStore.instance.update(
+        server.id,
+        ProfileHeader(
+          displayName: server.displayName,
+          avatarUrl: server.avatarUrl,
+        ),
+      );
+      return server;
+    }
+    return server.copyWith(
+      displayName: (header.displayName?.trim().isNotEmpty ?? false)
+          ? header.displayName!.trim()
+          : null,
+      avatarUrl: (header.avatarUrl?.isNotEmpty ?? false)
+          ? header.avatarUrl
+          : null,
+    );
   }
 
   @override

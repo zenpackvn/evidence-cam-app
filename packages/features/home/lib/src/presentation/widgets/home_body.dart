@@ -224,37 +224,52 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 24,
-          backgroundColor: scheme.primaryContainer,
-          // ponytail: avatar image lands with the profile API; initial for
-          // now. [name] is never empty (falls back to 'bạn').
-          child: Text(
-            name.characters.first.toUpperCase(),
-            style: context.textTheme.titleLarge?.copyWith(
-              color: scheme.primary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Chào $name 👋',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.textTheme.displayMedium?.copyWith(fontSize: 26),
+    // The name + avatar mirror the Profile edits (via ProfileHeaderStore), so
+    // changing them there updates this greeting immediately.
+    return ListenableBuilder(
+      listenable: ProfileHeaderStore.instance,
+      builder: (context, _) {
+        final header = ProfileHeaderStore.instance.value;
+        final shown = (header?.displayName?.trim().isNotEmpty ?? false)
+            ? header!.displayName!.trim()
+            : name;
+        final avatarUrl = header?.avatarUrl;
+        return Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: scheme.primaryContainer,
+              foregroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                  ? NetworkImage(avatarUrl)
+                  : null,
+              child: Text(
+                shown.characters.first.toUpperCase(),
+                style: context.textTheme.titleLarge?.copyWith(
+                  color: scheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ],
-          ),
-        ),
-        // .pen F01-S16 header is avatar + greeting only — no bell glyph.
-      ],
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Chào $shown 👋',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.displayMedium?.copyWith(
+                      fontSize: 26,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // .pen F01-S16 header is avatar + greeting only — no bell glyph.
+          ],
+        );
+      },
     );
   }
 }

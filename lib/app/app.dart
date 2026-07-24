@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:analytics/analytics.dart';
@@ -95,7 +96,43 @@ class _AppState extends State<App> {
         .toList(growable: false);
     _videoPlayerService =
         widget.videoPlayerService ?? getIt<VideoPlayerService>();
+    _wireProfileHeader();
     _authSub = _authBloc.stream.listen(_onAuthChanged);
+  }
+
+  SharedPreferences? get _prefs => getIt.isRegistered<SharedPreferences>()
+      ? getIt<SharedPreferences>()
+      : null;
+
+  static String _profileHeaderKey(String uid) => 'profile_header_$uid';
+
+  /// Persists the Home greeting's name/avatar ([ProfileHeaderStore]) to
+  /// SharedPreferences keyed by uid, so a profile edit survives a re-login on
+  /// this device even while the backend can't store it yet.
+  void _wireProfileHeader() {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    ProfileHeaderStore.instance.persist = (uid, header) {
+      unawaited(
+        prefs.setString(_profileHeaderKey(uid), jsonEncode(header.toJson())),
+      );
+    };
+  }
+
+  /// Restores an account's saved header on sign-in (or clears it when none).
+  void _loadProfileHeader(String uid) {
+    final raw = _prefs?.getString(_profileHeaderKey(uid));
+    if (raw == null) {
+      ProfileHeaderStore.instance.restore(null);
+      return;
+    }
+    try {
+      ProfileHeaderStore.instance.restore(
+        ProfileHeader.fromJson(jsonDecode(raw) as Map<String, dynamic>),
+      );
+    } on Object {
+      ProfileHeaderStore.instance.restore(null);
+    }
   }
 
   /// SM-026 BR-04: route a notification tap to the screen for its kind. The
@@ -199,6 +236,9 @@ class _AppState extends State<App> {
     // _resetLocalDataOnAccountSwitch), so nothing leaks between accounts.
     if (state is AuthInitial && _wasAuthenticated) {
       _wasAuthenticated = false;
+      // Clear the greeting's name/avatar so it doesn't flash to the next
+      // account before their own header loads on sign-in.
+      ProfileHeaderStore.instance.restore(null);
     }
     for (final c in _syncControllers) {
       unawaited(
@@ -219,6 +259,7 @@ class _AppState extends State<App> {
   /// never races the account-switch wipe.
   Future<void> _onSignedIn(String uid) async {
     await _resetLocalDataOnAccountSwitch(uid);
+    _loadProfileHeader(uid);
     _syncNotificationSubscriptions(uid);
     for (final c in _syncControllers) {
       unawaited(

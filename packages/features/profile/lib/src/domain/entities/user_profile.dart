@@ -50,6 +50,7 @@ class UserProfile {
     bool clearBirthDate = false,
     String? username,
     int? usernameChangesLeft,
+    String? avatarUrl,
   }) {
     return UserProfile(
       id: id,
@@ -57,7 +58,7 @@ class UserProfile {
       displayName: displayName ?? this.displayName,
       birthDate: clearBirthDate ? null : (birthDate ?? this.birthDate),
       usernameChangesLeft: usernameChangesLeft ?? this.usernameChangesLeft,
-      avatarUrl: avatarUrl,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       isPremium: isPremium,
       stampsCreated: stampsCreated,
       lettersSent: lettersSent,

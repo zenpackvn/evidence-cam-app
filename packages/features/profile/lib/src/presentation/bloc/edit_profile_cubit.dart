@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:architecture/architecture.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:shared_contracts/shared_contracts.dart';
 
 import '../../data/datasources/avatar_uploader.dart';
 import '../../domain/entities/birth_date.dart';
@@ -30,7 +31,8 @@ class EditProfileCubit extends Cubit<EditProfileState> {
     switch (await _repository.me()) {
       case Ok(:final value):
         // Keep any optimistic avatar the user just set so a reload doesn't wipe
-        // the picture off the profile.
+        // the picture off the profile. [value] already carries the locally-saved
+        // name/avatar (merged in ProfileRepository), so an edit survives re-login.
         emit(
           _formFor(
             value,
@@ -48,6 +50,22 @@ class EditProfileCubit extends Cubit<EditProfileState> {
 
   /// Seeds the form from an already-loaded profile, skipping the fetch.
   void start(UserProfile profile) => emit(_formFor(profile));
+
+  /// Mirrors a profile change into the app-wide [ProfileHeaderStore] so the Home
+  /// greeting updates now and the edit persists on this device (the backend
+  /// can't store it yet). Unspecified fields keep their current value.
+  void _syncHeader({String? displayName, String? avatarUrl}) {
+    final id = state.profile?.id;
+    if (id == null) return;
+    final current = ProfileHeaderStore.instance.value;
+    ProfileHeaderStore.instance.update(
+      id,
+      ProfileHeader(
+        displayName: displayName ?? current?.displayName,
+        avatarUrl: avatarUrl ?? current?.avatarUrl,
+      ),
+    );
+  }
 
   /// Uploads the cropped avatar [bytes] and saves the resulting URL (SM-024).
   ///
@@ -73,6 +91,9 @@ class EditProfileCubit extends Cubit<EditProfileState> {
     }
     try {
       final url = await _avatarUploader.upload(bytes);
+      // Show the new avatar on Home immediately (and persist it on this
+      // device), regardless of whether the backend accepts the save below.
+      _syncHeader(avatarUrl: url);
       switch (await _repository.update(ProfileEdit(avatarUrl: url))) {
         case Ok(:final value):
           emit(state.copyWith(profile: value, isSavingAvatar: false));
@@ -197,13 +218,16 @@ class EditProfileCubit extends Cubit<EditProfileState> {
     final optimistic = _optimisticProfile(profile);
     emit(state.copyWith(status: EditProfileStatus.saving, saveError: null));
 
-    void applySaved(UserProfile p) => emit(
-      _formFor(p).copyWith(
-        status: EditProfileStatus.saved,
-        usernameJustExhausted: false,
-        pendingAvatarBytes: state.pendingAvatarBytes,
-      ),
-    );
+    void applySaved(UserProfile p) {
+      emit(
+        _formFor(p).copyWith(
+          status: EditProfileStatus.saved,
+          usernameJustExhausted: false,
+          pendingAvatarBytes: state.pendingAvatarBytes,
+        ),
+      );
+      _syncHeader(displayName: p.displayName);
+    }
 
     try {
       switch (await _repository.update(edit)) {

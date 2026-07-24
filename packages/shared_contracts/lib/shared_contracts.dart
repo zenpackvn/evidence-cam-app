@@ -10,6 +10,7 @@ export 'src/bookmark_summaries.dart';
 export 'src/collections.dart';
 export 'src/di.module.dart' show SharedContractsPackageModule;
 export 'src/entitlement.dart';
+export 'src/profile_header.dart';
 export 'src/quota.dart';
 export 'src/session.dart';
 export 'src/stamp_ref.dart';
