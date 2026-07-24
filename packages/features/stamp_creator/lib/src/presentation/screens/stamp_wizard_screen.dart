@@ -84,7 +84,7 @@ class _WizardView extends StatelessWidget {
       subtitle: 'Thêm sticker, họa tiết và viền tem để con tem thêm sinh động.',
     ),
     CreatorStep.preview: (
-      lead: 'Xem trước & hoàn thiện',
+      lead: 'Xem trước và hoàn thiện',
       accent: '',
       subtitle: 'Kiểm tra lần cuối trước khi lưu vào bộ sưu tập của bạn.',
     ),

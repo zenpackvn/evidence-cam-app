@@ -143,24 +143,16 @@ class _FinishForm extends StatelessWidget {
             autocorrect: false,
             onChanged: cubit.setStampName,
             textInputAction: TextInputAction.done,
-            style: context.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: context.colorScheme.onSurface,
-            ),
-            decoration: InputDecoration(
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-              border: InputBorder.none,
+            decoration: const InputDecoration(
               hintText: 'Đặt tên cho con tem',
-              hintStyle: context.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: context.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.5,
-                ),
+              prefixIcon: Icon(Icons.local_offer_outlined, size: 20),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
           const Divider(color: _divider, height: 1),
           const SizedBox(height: AppSpacing.md),
           const _FieldLabel('Tags'),
@@ -330,30 +322,17 @@ class _NoteBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: const Color(0xFFEFE6DA)),
-      ),
-      child: TextField(
-        controller: controller,
-        autocorrect: false,
-        onChanged: onChanged,
-        maxLines: 3,
-        minLines: 2,
-        style: context.textTheme.bodyMedium?.copyWith(
-          color: context.colorScheme.onSurface,
-        ),
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding: EdgeInsets.zero,
-          border: InputBorder.none,
-          hintText: 'Thêm cảm nghĩ hoặc kỷ niệm gắn với con tem này…',
-          hintStyle: context.textTheme.bodyMedium?.copyWith(
-            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-          ),
+    return TextField(
+      controller: controller,
+      autocorrect: false,
+      onChanged: onChanged,
+      maxLines: 3,
+      minLines: 2,
+      decoration: const InputDecoration(
+        hintText: 'Thêm cảm nghĩ hoặc kỷ niệm gắn với con tem này…',
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
         ),
       ),
     );
