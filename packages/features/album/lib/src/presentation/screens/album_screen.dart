@@ -6,11 +6,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_ui/shared_ui.dart';
 
+import '../../domain/entities/sample_stamp.dart';
 import '../../domain/entities/stamp.dart';
 import '../bloc/album_cubit.dart';
 import '../bloc/album_state.dart';
+import '../bloc/sample_stamps_cubit.dart';
+import '../bloc/sample_stamps_state.dart';
 import '../widgets/album_search_bar.dart';
-import '../widgets/album_stats_banner.dart';
 import '../widgets/stamp_tile.dart';
 import 'share_stamp_screen.dart';
 import 'stamp_detail_screen.dart';
@@ -59,8 +61,13 @@ class AlbumScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => GetIt.instance<AlbumCubit>()..load(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => GetIt.instance<AlbumCubit>()..load()),
+        BlocProvider(
+          create: (_) => GetIt.instance<SampleStampsCubit>()..load(),
+        ),
+      ],
       child: Scaffold(
         backgroundColor: _ground,
         // Tapping anywhere outside the search field dismisses the keyboard.
@@ -194,7 +201,6 @@ class _AlbumBodyState extends State<_AlbumBody> {
   }
 
   Future<void> _openMenu() async {
-    final cubit = context.read<AlbumCubit>();
     final result = await showModalBottomSheet<_AlbumMenuAction>(
       context: context,
       backgroundColor: context.brand.surfaceElevated,
@@ -203,14 +209,6 @@ class _AlbumBodyState extends State<_AlbumBody> {
     );
     if (!mounted || result == null) return;
     switch (result) {
-      case _AlbumMenuAction.refresh:
-        await cubit.load();
-        if (!mounted) return;
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(content: Text('Đã làm mới bộ sưu tập.')),
-          );
       case _AlbumMenuAction.samples:
         widget.onBrowseSamples?.call();
     }
@@ -229,154 +227,293 @@ class _AlbumBodyState extends State<_AlbumBody> {
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
-    // F02-S19: an empty album is a clean invite — the StampMail top nav +
-    // illustration + CTA, without the search bar or stats header.
-    if (state.isEmpty) {
-      return Column(
-        children: [
-          _AlbumTopNav(onMenu: _openMenu),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: context.read<AlbumCubit>().load,
-              child: _AlbumEmpty(onCreate: widget.onCreate),
-            ),
-          ),
-        ],
-      );
-    }
     final visible = state.visibleStamps;
     return RefreshIndicator(
-      onRefresh: context.read<AlbumCubit>().load,
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: _AlbumTopNav(onMenu: _openMenu),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xxl,
-              0,
-              AppSpacing.xxl,
-              AppSpacing.md,
-            ),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Page h1 in the flow-5 serif, mirroring the mailbox tab —
-                  // collection screens lead with a large title above search.
-                  Text(
-                    'Sưu tầm',
-                    style: AppSerif.style(
-                      fontSize: 38,
-                      color: context.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Tất cả những con tem xinh xắn bạn đã tạo.',
-                          style: context.textTheme.bodyMedium?.copyWith(
-                            color: context.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      if (widget.onBrowseSamples != null)
-                        TextButton.icon(
-                          onPressed: widget.onBrowseSamples,
-                          icon: const Icon(
-                            Icons.auto_awesome_outlined,
-                            size: 18,
-                          ),
-                          label: const Text('Tem mẫu'),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  AlbumSearchBar(
-                    focusNode: _searchFocus,
-                    onChanged: context.read<AlbumCubit>().setQuery,
-                    onFilter: _openSort,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AlbumStatsBanner(count: state.stamps.length),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      _ViewModeToggle(
-                        mode: state.viewMode,
-                        onChanged: context.read<AlbumCubit>().setViewMode,
-                      ),
-                    ],
-                  ),
-                  if (state.sort != AlbumSort.newest)
-                    Padding(
-                      padding: const EdgeInsets.only(top: AppSpacing.md),
-                      child: Row(
-                        children: [
-                          InputChip(
-                            label: Text('Sắp xếp: ${_sortLabel(state.sort)}'),
-                            onDeleted: () => context.read<AlbumCubit>().setSort(
-                              AlbumSort.newest,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          if (visible.isEmpty && state.query.isNotEmpty)
-            const SliverToBoxAdapter(child: _NoStampMatches())
-          else
+      onRefresh: () async {
+        final album = context.read<AlbumCubit>();
+        final samples = context.read<SampleStampsCubit>();
+        await album.load();
+        await samples.load();
+      },
+      // Samples come from their own cubit; the whole scroll rebuilds with their
+      // state so the "Bộ tem mẫu" grid can be a sliver in the same list.
+      child: BlocBuilder<SampleStampsCubit, SampleStampsState>(
+        builder: (context, sampleState) => CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(child: _AlbumTopNav(onMenu: _openMenu)),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.xxl,
-                0,
+                AppSpacing.sm,
                 AppSpacing.xxl,
-                AppSpacing.xxl,
+                AppSpacing.md,
               ),
-              sliver: switch (state.viewMode) {
-                AlbumViewMode.grid => SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: AppSpacing.sm,
-                    mainAxisSpacing: AppSpacing.md,
-                    // 3/4 image plus one caption line under it (StampTile).
-                    childAspectRatio: 0.62,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) => StampTile(
-                      stamp: visible[i],
-                      onTap: () => widget.onOpenStamp(visible[i]),
-                    ),
-                    childCount: visible.length,
-                  ),
+              sliver: SliverToBoxAdapter(
+                child: AlbumSearchBar(
+                  focusNode: _searchFocus,
+                  onChanged: context.read<AlbumCubit>().setQuery,
+                  onFilter: _openSort,
                 ),
-                AlbumViewMode.list => SliverList.separated(
-                  itemCount: visible.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(height: AppSpacing.sm),
-                  itemBuilder: (context, i) => _StampListItem(
-                    stamp: visible[i],
-                    onTap: () => widget.onOpenStamp(visible[i]),
-                  ),
-                ),
-              },
+              ),
             ),
-        ],
+            // "Tem của bạn" — a horizontal strip of the user's own stamps.
+            const SliverToBoxAdapter(
+              child: _SectionHeader(title: 'Tem của bạn'),
+            ),
+            SliverToBoxAdapter(
+              child: _MyStampsRow(
+                stamps: visible,
+                searching: state.query.isNotEmpty,
+                onOpenStamp: widget.onOpenStamp,
+                onCreate: widget.onCreate,
+              ),
+            ),
+            // "Bộ tem mẫu" — the sample catalog, scrolling on down the page.
+            const SliverToBoxAdapter(
+              child: _SectionHeader(title: 'Bộ tem mẫu'),
+            ),
+            _sampleSliver(context, sampleState),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sampleSliver(BuildContext context, SampleStampsState state) {
+    if (state.loading) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.xxl),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+    final samples = state.visible;
+    if (samples.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xxl,
+            0,
+            AppSpacing.xxl,
+            AppSpacing.xxl,
+          ),
+          child: Text(
+            'Bộ tem mẫu sắp ra mắt.',
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      );
+    }
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xxl,
+        0,
+        AppSpacing.xxl,
+        AppSpacing.xxl,
+      ),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: AppSpacing.md,
+          mainAxisSpacing: AppSpacing.md,
+          childAspectRatio: 0.72,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, i) => _SampleCard(
+            sample: samples[i],
+            saved: state.savedIds.contains(samples[i].id),
+          ),
+          childCount: samples.length,
+        ),
       ),
     );
   }
 }
 
-enum _AlbumMenuAction { refresh, samples }
+/// A section title on the album page ("Tem của bạn" / "Bộ tem mẫu").
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xxl,
+        AppSpacing.sm,
+        AppSpacing.xxl,
+        AppSpacing.sm,
+      ),
+      child: Text(
+        title,
+        style: AppSerif.style(
+          fontSize: 22,
+          color: context.colorScheme.onSurface,
+        ),
+      ),
+    );
+  }
+}
+
+/// "Tem của bạn": the user's own stamps in a horizontal strip. Empty shows a
+/// hint (or a "no matches" note while searching), with a create shortcut.
+class _MyStampsRow extends StatelessWidget {
+  const _MyStampsRow({
+    required this.stamps,
+    required this.searching,
+    required this.onOpenStamp,
+    this.onCreate,
+  });
+
+  final List<Stamp> stamps;
+  final bool searching;
+  final ValueChanged<Stamp> onOpenStamp;
+  final VoidCallback? onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    if (stamps.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xxl,
+          0,
+          AppSpacing.xxl,
+          AppSpacing.md,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                searching
+                    ? 'Không tìm thấy tem phù hợp.'
+                    : 'Bạn chưa có con tem nào.',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            if (!searching && onCreate != null)
+              TextButton.icon(
+                onPressed: onCreate,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Tạo tem'),
+              ),
+          ],
+        ),
+      );
+    }
+    return SizedBox(
+      height: 172,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xxl,
+          0,
+          AppSpacing.xxl,
+          AppSpacing.md,
+        ),
+        itemCount: stamps.length,
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
+        itemBuilder: (context, i) => SizedBox(
+          width: 108,
+          child: StampTile(
+            stamp: stamps[i],
+            onTap: () => onOpenStamp(stamps[i]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One sample-stamp cell: its image, a saved check, and a tap that saves it
+/// into the album (SM-035; the cubit dedupes already-saved samples).
+class _SampleCard extends StatelessWidget {
+  const _SampleCard({required this.sample, required this.saved});
+
+  final SampleStamp sample;
+  final bool saved;
+
+  Future<void> _save(BuildContext context) async {
+    final cubit = context.read<SampleStampsCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await cubit.save(sample);
+    final text = switch (result) {
+      SampleSaveResult.saved => 'Đã lưu vào bộ sưu tập.',
+      SampleSaveResult.alreadySaved => 'Tem này đã có trong bộ sưu tập.',
+      SampleSaveResult.failed => 'Không lưu được. Vui lòng thử lại.',
+    };
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    return GestureDetector(
+      onTap: saved ? null : () => _save(context),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0F24211F),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      child: AppNetworkImage(
+                        imageUrl: sample.thumbUrl,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  if (saved)
+                    Positioned(
+                      top: AppSpacing.xs,
+                      right: AppSpacing.xs,
+                      child: Icon(
+                        Icons.check_circle,
+                        color: scheme.primary,
+                        size: 20,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              sample.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.labelMedium,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+enum _AlbumMenuAction { samples }
 
 String _sortLabel(AlbumSort s) => switch (s) {
   AlbumSort.newest => 'Mới nhất',
@@ -410,11 +547,6 @@ class _AlbumMenuSheet extends StatelessWidget {
                 'Sưu tầm',
                 style: AppSerif.style(fontSize: 22, color: scheme.onSurface),
               ),
-            ),
-            ListTile(
-              leading: Icon(Icons.refresh, color: scheme.onSurface),
-              title: const Text('Làm mới bộ sưu tập'),
-              onTap: () => Navigator.pop(context, _AlbumMenuAction.refresh),
             ),
             if (showSamples)
               ListTile(
@@ -483,129 +615,6 @@ class _SortSheet extends StatelessWidget {
   }
 }
 
-/// Empty result for an active search (distinct from the true empty state).
-class _NoStampMatches extends StatelessWidget {
-  const _NoStampMatches();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.xxxl),
-      child: Column(
-        children: [
-          Icon(
-            Icons.search_off,
-            size: 40,
-            color: context.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'Không tìm thấy tem phù hợp.',
-            style: context.textTheme.bodyLarge?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// SM-022 BR-04: grid / list switch. Two icon buttons; the active one is
-/// highlighted.
-class _ViewModeToggle extends StatelessWidget {
-  const _ViewModeToggle({required this.mode, required this.onChanged});
-
-  final AlbumViewMode mode;
-  final ValueChanged<AlbumViewMode> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    Widget button(AlbumViewMode m, IconData icon, String tip) {
-      final active = m == mode;
-      return IconButton(
-        tooltip: tip,
-        onPressed: active ? null : () => onChanged(m),
-        icon: Icon(icon),
-        color: active ? scheme.primary : scheme.onSurfaceVariant,
-      );
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        button(AlbumViewMode.grid, Icons.grid_view_rounded, 'Xem lưới'),
-        button(AlbumViewMode.list, Icons.view_list_rounded, 'Xem danh sách'),
-      ],
-    );
-  }
-}
-
-/// A single stamp row in list mode: thumbnail + name (or the creation date when
-/// unnamed — BR-08).
-class _StampListItem extends StatelessWidget {
-  const _StampListItem({required this.stamp, required this.onTap});
-
-  final Stamp stamp;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final title = stamp.name.isNotEmpty
-        ? stamp.name
-        : _formatDate(stamp.createdAt);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: SizedBox(
-              width: 56,
-              height: 72,
-              child: AppNetworkImage(
-                imageUrl: stamp.thumbUrl ?? stamp.imageUrl,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Đã lưu ${_formatDate(stamp.createdAt)}',
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/'
-      '${d.month.toString().padLeft(2, '0')}/${d.year}';
-}
-
 /// The Album top nav (F02-S19 `topnav`): the menu (☰) opens the action sheet
 /// (refresh, sample catalog) and the centred "StampMail" wordmark. Search lives
 /// in the dedicated bar below the title, so there is no top-nav search icon.
@@ -659,70 +668,6 @@ class _AlbumTopNav extends StatelessWidget {
           // Balances the leading menu button so the wordmark stays centred now
           // that the top-nav search icon is gone (search is in the bar below).
           const SizedBox(width: 48),
-        ],
-      ),
-    );
-  }
-}
-
-class _AlbumEmpty extends StatelessWidget {
-  const _AlbumEmpty({this.onCreate});
-
-  final VoidCallback? onCreate;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    // Scrollable so small viewports never overflow the fixed-height column,
-    // and always-scrollable so pull-to-refresh works over the empty state.
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(AppSpacing.xxl),
-      child: Column(
-        children: [
-          const SizedBox(height: AppSpacing.xxl),
-          // F02-S19 `illust` (315×263) — envelope + stamps illustration.
-          Image.asset(
-            'assets/illustrations/album-empty.png',
-            package: 'feature_album',
-            width: 315,
-            height: 263,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            'Album của bạn đang trống',
-            textAlign: TextAlign.center,
-            // F02-S19 title: Playfair Display 30, lh 1.21.
-            style: AppSerif.style(fontSize: 30, color: scheme.onSurface),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: 320,
-            child: Text(
-              'Tạo tem đầu tiên của bạn để bắt đầu sưu tầm nhé!',
-              textAlign: TextAlign.center,
-              style: context.textTheme.bodyLarge?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          if (onCreate != null) ...[
-            const SizedBox(height: AppSpacing.xl),
-            SizedBox(
-              width: 290,
-              height: 54,
-              child: FilledButton(
-                onPressed: onCreate,
-                style: FilledButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                ),
-                child: const Text('Tạo tem ngay'),
-              ),
-            ),
-          ],
         ],
       ),
     );

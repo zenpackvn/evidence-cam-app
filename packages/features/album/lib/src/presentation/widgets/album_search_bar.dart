@@ -50,53 +50,24 @@ class _AlbumSearchBarState extends State<AlbumSearchBar> {
     return Row(
       children: [
         Expanded(
-          child: Container(
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(999),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0F24211F),
-                  blurRadius: 6,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.search, size: 20, color: scheme.onSurfaceVariant),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    focusNode: widget.focusNode,
-                    onChanged: _handleChanged,
-                    decoration: InputDecoration(
-                      isCollapsed: true,
-                      border: InputBorder.none,
-                      hintText: 'Tìm kiếm tem...',
-                      hintStyle: context.textTheme.bodyMedium?.copyWith(
-                        color: scheme.outline,
-                      ),
+          child: TextField(
+            controller: _controller,
+            focusNode: widget.focusNode,
+            onChanged: _handleChanged,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Tìm kiếm tem...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: _controller.text.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: _clear,
                     ),
-                  ),
-                ),
-                if (_controller.text.isNotEmpty)
-                  GestureDetector(
-                    onTap: _clear,
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: AppSpacing.sm),
-                      child: Icon(
-                        Icons.close,
-                        size: 18,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-              ],
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
             ),
           ),
         ),
