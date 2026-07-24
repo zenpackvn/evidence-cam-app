@@ -141,14 +141,13 @@ class AppTheme {
     );
   }
 
-  /// StampMail typography per the `pencil-new.pen` foundations: Baloo 2
-  /// (rounded) for display/headline text and Be Vietnam Pro for titles, body,
-  /// and labels — the latter reads cleanly with Vietnamese diacritics. The
-  /// in-app flow-5 screens (mailbox, album, stamp detail) additionally use the
-  /// Playfair Display serif for wordmarks/page titles via `AppSerif`; the auth
-  /// flow keeps Baloo per its frames. Sizes follow the design's type scale.
+  /// StampMail typography: the Playfair Display serif (the "Hộp thư" / album
+  /// title face) is now used for every display/headline across the app so all
+  /// prominent text is consistent, and Be Vietnam Pro stays the body/label face
+  /// — it reads cleanly with Vietnamese diacritics where Playfair would not.
+  /// Sizes follow the design's type scale.
   static TextTheme _textTheme(ColorScheme scheme) {
-    final display = GoogleFonts.baloo2(color: scheme.onSurface);
+    final display = GoogleFonts.playfairDisplay(color: scheme.onSurface);
     final body = GoogleFonts.beVietnamPro(color: scheme.onSurface);
     return TextTheme(
       displayLarge: display.copyWith(
