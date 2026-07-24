@@ -274,49 +274,27 @@ class _SearchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    return Container(
-      height: 46,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      decoration: ShapeDecoration(
-        color: context.brand.surfaceElevated,
-        shape: const StadiumBorder(),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.search, size: 18, color: scheme.onSurfaceVariant),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              autocorrect: false,
-              textInputAction: TextInputAction.search,
-              style: context.textTheme.bodyMedium,
-              decoration: InputDecoration(
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-                border: InputBorder.none,
-                hintText: 'Tìm template',
-                hintStyle: context.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                ),
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      autocorrect: false,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: 'Tìm template',
+        prefixIcon: const Icon(Icons.search, size: 20),
+        suffixIcon: controller.text.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () {
+                  controller.clear();
+                  onChanged('');
+                },
               ),
-            ),
-          ),
-          if (controller.text.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                controller.clear();
-                onChanged('');
-              },
-              child: Icon(
-                Icons.close,
-                size: 18,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-        ],
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
       ),
     );
   }
