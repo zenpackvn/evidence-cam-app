@@ -73,16 +73,51 @@ class _AppShellState extends State<AppShell> {
       },
       child: Scaffold(
         body: widget.navigationShell,
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        floatingActionButton: StampMailCreateFab(
-          onPressed: () => const CreateStampRoute().push<void>(context),
-        ),
         bottomNavigationBar: StampMailTabBar(
           currentIndex: widget.navigationShell.currentIndex,
           onSelect: (index) => widget.navigationShell.goBranch(
             index,
             initialLocation: index == widget.navigationShell.currentIndex,
           ),
+          onCreate: () => _openCreateMenu(context),
+        ),
+      ),
+    );
+  }
+
+  /// The center "+" opens a small sheet above the bar to pick what to create —
+  /// a new stamp or a letter — instead of jumping straight into stamp creation.
+  Future<void> _openCreateMenu(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: scheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: FaIcon(FontAwesomeIcons.stamp, color: scheme.primary),
+              title: const Text('Tạo tem mới'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                const CreateStampRoute().push<void>(context);
+              },
+            ),
+            ListTile(
+              leading: FaIcon(FontAwesomeIcons.penNib, color: scheme.primary),
+              title: const Text('Viết thư'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                const LetterComposeRoute().push<void>(context);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
         ),
       ),
     );
@@ -117,10 +152,14 @@ class StampMailTabBar extends StatelessWidget {
     super.key,
     required this.currentIndex,
     required this.onSelect,
+    this.onCreate,
   });
 
   final int currentIndex;
   final ValueChanged<int> onSelect;
+
+  /// Tapping the center "+" (docked at the same level as the tabs).
+  final VoidCallback? onCreate;
 
   @override
   Widget build(BuildContext context) {
@@ -146,8 +185,8 @@ class StampMailTabBar extends StatelessWidget {
             selected: currentIndex == 1,
             onTap: () => onSelect(1),
           ),
-          // Slot for the docked create FAB (design: fabWrap).
-          const Spacer(),
+          // The create "+" sits inline with the tabs (no longer a raised FAB).
+          _CreateTab(onTap: onCreate),
           _Tab(
             icon: FontAwesomeIcons.images,
             selectedIcon: FontAwesomeIcons.solidImages,
@@ -163,6 +202,49 @@ class StampMailTabBar extends StatelessWidget {
             onTap: () => onSelect(3),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The center create button, sized and aligned to sit level with the tabs
+/// (a coral "+" chip + label) rather than floating above the bar.
+class _CreateTab extends StatelessWidget {
+  const _CreateTab({this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        child: Semantics(
+          button: true,
+          label: 'Tạo',
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: scheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.add, size: 20, color: scheme.onPrimary),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Tạo',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: scheme.primary),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
