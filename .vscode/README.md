@@ -12,10 +12,6 @@ Contains debug and run configurations for the project.
 - **Staging (Debug)**: Runs the mobile app with the staging environment (`env/staging.json`).
 - **Prod (Debug/Release)**: Runs the mobile app with the production environment (`env/prod.json`).
 
-**Backend Configurations:**
-- **Backend (Debug)**: Launches the local in-memory Go backend (`simple_backend_server`). Requires the official Go extension.
-- **Full Stack (Debug)**: A compound configuration that launches both the local Go backend and the Flutter Dev app simultaneously.
-
 ### 2. `settings.json`
 Workspace-specific settings to enforce consistency:
 - Pins the local Flutter SDK to the version managed by FVM (`.fvm/versions/...`).
@@ -30,6 +26,4 @@ A list of recommended extensions for this workspace. When opening this project i
 ## Usage Tips
 
 - Always use the **Run and Debug** view (`Cmd+Shift+D` on Mac) to select your target environment. 
-- When developing both the backend and frontend locally, select **Full Stack (Debug)** to run them together.
 - For full Flutter support, ensure you have the [Flutter extension](https://marketplace.visualstudio.com/items?itemName=Dart-Code.flutter) installed.
-- For backend support, ensure you have the [Go extension](https://marketplace.visualstudio.com/items?itemName=golang.Go) installed.

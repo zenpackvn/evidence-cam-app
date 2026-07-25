@@ -10,6 +10,7 @@ export 'objectbox.g.dart' hide SyncState;
 export 'src/entities/activity_entity.dart';
 export 'src/entities/bookmark_entity.dart';
 export 'src/entities/collection_entity.dart';
+export 'src/entities/evidence_clip_entity.dart';
 export 'src/entities/notification_entity.dart';
 export 'src/entities/sync_cursor_entity.dart';
 export 'src/object_box.dart';

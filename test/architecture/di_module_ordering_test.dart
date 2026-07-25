@@ -32,11 +32,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// every module in its value set. Keep every edge commented with its reason —
 /// an edge here is a real runtime dependency, not a style preference.
 const _mustPrecede = <String, Set<String>>{
-  // shared_contracts registers ActivityNotifier, consumed by the notifications
-  // BLoC at construction.
-  // fst:feature:notifications:start
-  'SharedContractsPackageModule': {'FeatureNotificationsPackageModule'},
-  // fst:feature:notifications:end
+  // No load-bearing ordering constraints remain: only infra modules are wired,
+  // and EvidenceCam's features are composed by the app shell.
 };
 
 void main() {

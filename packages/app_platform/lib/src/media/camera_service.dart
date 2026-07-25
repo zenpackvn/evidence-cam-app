@@ -67,6 +67,27 @@ class CameraService {
   bool get isRecordingVideo =>
       _controller != null && _controller!.value.isRecordingVideo;
 
+  /// Whether the camera is currently streaming image frames (for scanning).
+  bool get isStreamingImages =>
+      _controller != null && _controller!.value.isStreamingImages;
+
+  /// Starts streaming camera frames to [onAvailable] for on-device scanning.
+  ///
+  /// Throws a [CameraNotInitializedException] if the controller is not
+  /// initialized.
+  Future<void> startImageStream(onLatestImageAvailable onAvailable) async {
+    final activeController = _ensureInitialized();
+    await activeController.startImageStream(onAvailable);
+  }
+
+  /// Stops the idle frame stream. No-op when not currently streaming.
+  Future<void> stopImageStream() async {
+    final activeController = _controller;
+    if (activeController != null && activeController.value.isStreamingImages) {
+      await activeController.stopImageStream();
+    }
+  }
+
   /// Retrieves a list of available cameras on the device.
   Future<List<CameraDescription>> getAvailableCameras() {
     return _availableCameras();
@@ -112,10 +133,17 @@ class CameraService {
 
   /// Starts video recording.
   ///
-  /// Throws a [CameraNotInitializedException] if the controller is not initialized.
-  Future<void> startVideoRecording() async {
+  /// Pass [onAvailable] to also receive camera frames while recording (the
+  /// plugin streams them alongside the clip on iOS and CameraX-capable Android
+  /// devices) — used for hands-free bill detection mid-recording. Throws a
+  /// [CameraNotInitializedException] if the controller is not initialized; may
+  /// throw on Android hardware that can't stream and record concurrently, in
+  /// which case the caller should retry without [onAvailable].
+  Future<void> startVideoRecording({
+    onLatestImageAvailable? onAvailable,
+  }) async {
     final activeController = _ensureInitialized();
-    await activeController.startVideoRecording();
+    await activeController.startVideoRecording(onAvailable: onAvailable);
   }
 
   /// Stops the current video recording and returns the captured [XFile].

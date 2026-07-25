@@ -3,15 +3,18 @@ import 'dart:developer' as developer;
 
 import 'package:app_platform/app_platform.dart';
 import 'package:config/config.dart';
+import 'package:database/database.dart';
+import 'package:ec_data/ec_data.dart';
+import 'package:feature_capture/feature_capture.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:storage/storage.dart';
 
-import 'app/app.dart';
 import 'app/bootstrap_error_app.dart';
 import 'app/di/injection.dart';
 import 'app/firebase.dart';
 import 'core/platform/firebase/firebase_service.dart';
+import 'ec_app.dart';
 
 Future<void> main() async {
   // runZonedGuarded catches errors that escape asynchronous callbacks (unawaited
@@ -63,7 +66,22 @@ Future<void> main() async {
           logStateChanges: env.isDev,
         );
 
-        runApp(const App());
+        // Launch EvidenceCam through the production bootstrap above (DI, crash
+        // reporting, notifications, Firebase). Firebase is initialised via
+        // FirebaseService when kFirebaseEnabled, so bind the real Firebase auth
+        // then; otherwise fall back to the fake so the journey still runs. The
+        // repository comes from the EC_API_URL define (sample data when unset).
+        final ecAuth = kFirebaseEnabled ? FirebaseEcAuth() : FakeEcAuth();
+        // Evidence clips persist in ObjectBox (opened by the @preResolve store
+        // module during configureDependencies), so the upload queue survives
+        // restarts — the single source of truth (FR-08/FR-09).
+        runApp(
+          EcApp(
+            auth: ecAuth,
+            repo: buildRepository(),
+            evidenceStore: ObjectBoxEvidenceClipStore(getIt<Store>()),
+          ),
+        );
       } on Object catch (error, stackTrace) {
         await _reportBootstrapFailure(error, stackTrace);
         runApp(BootstrapErrorApp(error: error));

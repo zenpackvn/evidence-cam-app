@@ -49,7 +49,12 @@ end
 def flutter(*args)
   cmd = ENV.fetch("FLUTTER_CMD", "fvm flutter").split
   Dir.chdir("..") do # fastlane runs in ios/; the Flutter project root is one up.
-    sh(*cmd, *args)
+    # Strip fastlane's bundler env (BUNDLE_*/GEM_HOME) so Flutter's own
+    # `pod install` runs against the ambient Homebrew CocoaPods instead of
+    # colliding with the rbenv Ruby that `bundle exec fastlane` runs under
+    # ("CocoaPods installed but broken"). No-op in CI where FLUTTER_CMD=flutter
+    # and the runner already isolates the env.
+    Bundler.with_unbundled_env { sh(*cmd, *args) }
   end
 end
 
@@ -79,14 +84,11 @@ platform :ios do
       is_key_content_base64: true,
     )
 
-    # Fetch the signing cert + App Store profile for this bundle id. readonly on
-    # CI so a runner never mutates the match repo; locally it can create assets.
-    match(
-      type: "appstore",
-      app_identifier: bundle_id,
-      api_key: api_key,
-      readonly: is_ci?,
-    )
+    # Automatic signing: xcodebuild fetches/creates the App Store distribution
+    # cert + provisioning profile for this bundle id using the ASC API key set
+    # above (via -allowProvisioningUpdates below). No match repo needed — same
+    # approach as the sibling `omaniha` project, signing with team
+    # APPLE_TEAM_ID.
 
     # Compile Dart + assets without signing; gym handles archive & signing using
     # the match-provisioned profile selected below. The dart-define file carries
@@ -111,11 +113,14 @@ platform :ios do
       export_method: "app-store",
       output_directory: "build/ipa",
       output_name: "#{flavor}.ipa",
+      xcargs: "-allowProvisioningUpdates " \
+              "CODE_SIGN_STYLE=Automatic " \
+              "DEVELOPMENT_TEAM=#{require_env('APPLE_TEAM_ID')}",
       export_options: {
-        signingStyle: "manual",
-        provisioningProfiles: {
-          bundle_id => "match AppStore #{bundle_id}",
-        },
+        signingStyle: "automatic",
+        teamID: require_env("APPLE_TEAM_ID"),
+        uploadBitcode: false,
+        uploadSymbols: true,
       },
     )
 
@@ -135,13 +140,72 @@ platform :ios do
       )
     end
 
+    # Internal testers get every processed build automatically. External
+    # distribution is opt-in (external:true, or FL_DISTRIBUTE_EXTERNAL=true from
+    # tool/deploy-testflight.sh) and additionally submits the build to the named
+    # App Store Connect external groups — which needs the build fully processed
+    # and passing Apple's Beta App Review, so we must wait for processing.
+    distribute_external = options[:external] == true ||
+                          ENV["FL_DISTRIBUTE_EXTERNAL"] == "true"
+    external_groups = (ENV["TESTFLIGHT_GROUPS"] || "")
+                      .split(",").map(&:strip).reject(&:empty?)
+    if distribute_external && external_groups.empty?
+      UI.user_error!(
+        "External distribution needs TESTFLIGHT_GROUPS — a comma-separated " \
+        "list of App Store Connect external tester group names (e.g. \"Beta\")."
+      )
+    end
+
     upload_to_testflight(
       api_key: api_key,
       app_identifier: bundle_id,
       ipa: lane_context[SharedValues::IPA_OUTPUT_PATH],
-      # Don't block the lane on Apple's server-side processing; flip to false
-      # if a later lane needs the build immediately (e.g. external testers).
-      skip_waiting_for_build_processing: true,
+      distribute_external: distribute_external,
+      groups: distribute_external ? external_groups : nil,
+      notify_external_testers: distribute_external,
+      changelog: distribute_external ? changelog_from_git_commits(commits_count: 10) : nil,
+      # App-level "Test Information" Apple requires before external review. Set in
+      # .env, or fill once in App Store Connect (it then persists).
+      beta_app_description: distribute_external ? ENV["TESTFLIGHT_BETA_DESCRIPTION"] : nil,
+      beta_app_feedback_email: distribute_external ? ENV["TESTFLIGHT_FEEDBACK_EMAIL"] : nil,
+      # Internal-only delivery needn't block on Apple's processing; external
+      # submission does (the build must finish processing before review).
+      skip_waiting_for_build_processing: !distribute_external,
+    )
+  end
+
+  desc "Distribute an ALREADY-uploaded build to external testers — no rebuild."
+  desc "Usage: bundle exec fastlane distribute version:1.7.0 build:480"
+  lane :distribute do |options|
+    setup_ci if is_ci?
+    api_key = app_store_connect_api_key(
+      key_id: require_env("APP_STORE_CONNECT_API_KEY_ID"),
+      issuer_id: require_env("APP_STORE_CONNECT_API_ISSUER_ID"),
+      key_content: require_env("APP_STORE_CONNECT_API_KEY_CONTENT"),
+      is_key_content_base64: true,
+    )
+    groups = (ENV["TESTFLIGHT_GROUPS"] || "")
+             .split(",").map(&:strip).reject(&:empty?)
+    UI.user_error!("Set TESTFLIGHT_GROUPS in .env") if groups.empty?
+    upload_to_testflight(
+      api_key: api_key,
+      app_identifier: require_env("IOS_BUNDLE_ID_BASE"),
+      # No ipa here (distribute-only), so the platform + export-compliance answer
+      # must be explicit — otherwise pilot prompts and crashes non-interactively.
+      app_platform: "ios",
+      uses_non_exempt_encryption: false,
+      distribute_only: true,
+      app_version: options[:version],
+      build_number: options[:build]&.to_s,
+      distribute_external: true,
+      groups: groups,
+      notify_external_testers: true,
+      beta_app_description: ENV["TESTFLIGHT_BETA_DESCRIPTION"],
+      beta_app_feedback_email: ENV["TESTFLIGHT_FEEDBACK_EMAIL"],
+      # "What to Test" (per-build notes) — external submission requires it.
+      changelog: ENV["TESTFLIGHT_WHATS_NEW"] ||
+                 "Bản thử nghiệm EvidenceCam. Vui lòng thử luồng quay video " \
+                 "bằng chứng đóng hàng và gửi phản hồi.",
     )
   end
 

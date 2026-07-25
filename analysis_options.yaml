@@ -41,7 +41,6 @@ analyzer:
     # their own tooling. CI never checks out published/cli; this keeps local
     # `flutter analyze` and the pre-push hook consistent with CI.
     - published/**
-    - simple_backend_server/**
 
 
 # Additional information about this file can be found at

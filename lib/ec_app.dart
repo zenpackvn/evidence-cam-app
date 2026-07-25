@@ -1,32 +1,49 @@
+import 'package:app_platform/app_platform.dart' show ImagePicker, ImageSource;
 import 'package:app_ui/app_ui.dart';
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-
-import 'data/ec_auth.dart';
-import 'data/ec_models.dart' show OrderSummaryDto, QuotaDto;
-import 'data/ec_repository.dart';
-import 'data/ec_upload_queue.dart';
-import 'data/ec_uploader.dart';
-import 'screens/ec_flow1.dart';
-// Show only what we use — ec_flow1 and ec_flow2 both define e.g. EcOrderRow.
-import 'screens/ec_flow2.dart'
+import 'package:ec_data/ec_data.dart';
+import 'package:ec_ui/ec_ui.dart';
+import 'package:feature_account/feature_account.dart';
+// feature_capture re-exports Flow 3's screens, which also declare an
+// EcVideoType; we use Flow 1's (from feature_shift), so hide this one.
+import 'package:feature_capture/feature_capture.dart' hide EcVideoType;
+// Flow 1 and Flow 2 both declare EcOrderRow; show only what we use from orders
+// so Flow 1's (via feature_shift) is the one in scope.
+import 'package:feature_orders/feature_orders.dart'
     show
         EcOrderTimelineScreen,
         EcTimelineDay,
         EcTimelineVideo,
         EcVideoDetail,
         EcVideoDetailScreen;
-// ec_flow3 also declares an EcVideoType; we use ec_flow1's for ShopDetail.
-import 'screens/ec_flow3.dart' hide EcVideoType;
-import 'screens/ec_flow4.dart';
+import 'package:feature_shift/feature_shift.dart';
+import 'package:flutter/cupertino.dart'
+    show
+        CupertinoActivityIndicator,
+        CupertinoApp,
+        CupertinoPageScaffold,
+        CupertinoTextThemeData,
+        CupertinoThemeData;
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:storage/storage.dart';
+
+import 'app/di/injection.dart';
+import 'data/ec_uploader.dart';
 import 'screens/ec_record_route.dart';
-import 'screens/ec_screens.dart';
+import 'screens/ec_scan_route.dart';
 
 /// EvidenceCam app shell — wires the pixel-perfect screens into the real
 /// journey (Vào ca → 3 tab → tài khoản) with go_router. Presentational for now
 /// (sample data, no backend); B1 swaps sample data + callbacks for auth/API.
 class EcApp extends StatefulWidget {
-  const EcApp({this.repo = const FakeEcRepository(), this.auth, super.key});
+  const EcApp({
+    this.repo = const FakeEcRepository(),
+    this.auth,
+    this.evidenceStore,
+    super.key,
+  });
 
   /// Data source — [FakeEcRepository] by default; pass [RemoteEcRepository]
   /// (wrapping the typed API) once the Worker base URL is configured to go live.
@@ -35,6 +52,10 @@ class EcApp extends StatefulWidget {
   /// Auth — [FakeEcAuth] by default; pass `FirebaseEcAuth` once the Firebase
   /// config files are present (FR-15).
   final EcAuth? auth;
+
+  /// Upload-queue persistence. The app binds the ObjectBox store (single source
+  /// of truth, FR-08/FR-09); tests leave it null and get an in-memory store.
+  final EvidenceClipStore? evidenceStore;
 
   @override
   State<EcApp> createState() => _EcAppState();
@@ -46,20 +67,29 @@ class _EcAppState extends State<EcApp> {
   // and language screen read/write this; `MaterialApp.locale` follows it.
   // ponytail: screen strings are still hardcoded Vietnamese — this switches the
   // locale + labels; full text translation waits on l10n of the flow screens.
-  final ValueNotifier<EcAppLanguage> _language = ValueNotifier(EcAppLanguage.vi);
+  final ValueNotifier<EcAppLanguage> _language = ValueNotifier(
+    EcAppLanguage.vi,
+  );
 
   // Offline upload queue for recorded clips. The uploader is live transport to
   // EC_API_URL when set; without it, clips persist and wait (no backend yet).
   late final EcUploadQueue _queue = EcUploadQueue(
     uploader: _apiUrl.isEmpty ? null : HttpEvidenceUploader(baseUrl: _apiUrl),
+    store: widget.evidenceStore,
   );
   static const _apiUrl = String.fromEnvironment('EC_API_URL');
+
+  // The shop clocked into at the shop layer (FR-05). Its id drives which orders
+  // load, its resolution seeds the camera, and its role gates evidence deletion
+  // and shop management. Null until a shop is picked.
+  final ValueNotifier<EcShopSummary?> _selectedShop = ValueNotifier(null);
 
   late final GoRouter _router = _buildRouter(
     widget.repo,
     _auth,
     _language,
     _queue,
+    _selectedShop,
   );
 
   @override
@@ -73,6 +103,7 @@ class _EcAppState extends State<EcApp> {
     _router.dispose();
     _language.dispose();
     _queue.dispose();
+    _selectedShop.dispose();
     super.dispose();
   }
 
@@ -80,11 +111,29 @@ class _EcAppState extends State<EcApp> {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<EcAppLanguage>(
       valueListenable: _language,
-      builder: (context, language, _) => MaterialApp.router(
+      builder: (context, language, _) => CupertinoApp.router(
         debugShowCheckedModeBanner: false,
         title: 'ZenPack',
         locale: Locale(language == EcAppLanguage.vi ? 'vi' : 'en'),
-        theme: AppTheme.light(),
+        supportedLocales: const [Locale('vi'), Locale('en')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: CupertinoThemeData(
+          brightness: Brightness.light,
+          primaryColor: BrandColors.dark,
+          scaffoldBackgroundColor: BrandColors.bg,
+          applyThemeToAll: true,
+          // Keep the design's Inter face; everything else is iOS-native.
+          textTheme: CupertinoTextThemeData(
+            textStyle: GoogleFonts.inter(
+              color: BrandColors.ink,
+              fontSize: 15,
+            ),
+          ),
+        ),
         routerConfig: _router,
       ),
     );
@@ -93,14 +142,20 @@ class _EcAppState extends State<EcApp> {
 
 const _sampleShops = [
   EcShopSummary(
+    id: 's1',
     name: 'Shop ABC',
     platform: 'shopee',
     meta: 'Shopee · 24 đơn hôm nay',
+    role: 'owner',
+    resolution: '720p',
   ),
   EcShopSummary(
+    id: 's2',
     name: 'Shop XYZ',
     platform: 'tiktok',
     meta: 'TikTok · 8 đơn hôm nay',
+    role: 'staff',
+    resolution: '480p',
   ),
 ];
 
@@ -135,6 +190,7 @@ const _sampleVideoDetail = EcVideoDetail(
   recordedAt: '24 Th7 · 10:23',
   recordedBy: 'Nguyễn Văn A',
   device: 'iPhone 13',
+  fileSize: '48,2 MB',
   uploadStatus: 'Đã tải lên',
 );
 
@@ -178,6 +234,20 @@ class _LoginRouteState extends State<_LoginRoute> {
   final _email = TextEditingController();
   final _password = TextEditingController();
 
+  // Remember the email from the last successful sign-in so it prefills the form
+  // next time. Non-sensitive convenience only — the password is never stored.
+  // Absent in tests/widget pumps that skip DI → the getters no-op.
+  static const _lastEmailKey = 'auth.last_email';
+  KeyValueStore? get _emailMemory =>
+      getIt.isRegistered<KeyValueStore>() ? getIt<KeyValueStore>() : null;
+
+  @override
+  void initState() {
+    super.initState();
+    final saved = _emailMemory?.getString(_lastEmailKey);
+    if (saved != null) _email.text = saved;
+  }
+
   @override
   void dispose() {
     _email.dispose();
@@ -187,6 +257,7 @@ class _LoginRouteState extends State<_LoginRoute> {
 
   void _afterSignIn(Future<void> signIn) {
     signIn.then((_) {
+      _emailMemory?.setString(_lastEmailKey, _email.text.trim());
       if (mounted) context.go('/shops', extra: 'forward');
     });
   }
@@ -199,10 +270,108 @@ class _LoginRouteState extends State<_LoginRoute> {
         _afterSignIn(widget.auth.signInWithEmail(_email.text, _password.text)),
     onRegister: () => context.push('/register'),
     onForgot: () => context.push('/forgot'),
-    onGoogle: () => _afterSignIn(widget.auth.signInWithGoogle()),
-    onApple: () => _afterSignIn(widget.auth.signInWithApple()),
+    onGoogle: () => _afterSocialSignIn(context, widget.auth.signInWithGoogle()),
+    onApple: () => _afterSocialSignIn(context, widget.auth.signInWithApple()),
     onLanguage: () => _toast(context, 'Đổi ngôn ngữ'),
   );
+}
+
+/// Registration — owns the field controllers so the screen's inline validators
+/// (notably the confirm-password match) have live text to read. Sign-up itself
+/// is still a stub (FakeEcAuth): a valid submit just advances to shop selection.
+class _RegisterRoute extends StatefulWidget {
+  const _RegisterRoute({required this.auth});
+
+  final EcAuth auth;
+
+  @override
+  State<_RegisterRoute> createState() => _RegisterRouteState();
+}
+
+class _RegisterRouteState extends State<_RegisterRoute> {
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _phone = TextEditingController();
+  final _password = TextEditingController();
+  final _confirm = TextEditingController();
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    _phone.dispose();
+    _password.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => EcRegisterScreen(
+    nameController: _name,
+    emailController: _email,
+    phoneController: _phone,
+    passwordController: _password,
+    confirmPasswordController: _confirm,
+    onBack: () => _back(context, '/login'),
+    onLogin: () => _back(context, '/login'),
+    // ponytail: sign-up isn't wired to the seam yet — a valid form advances to
+    // shop selection, same as before; swap for auth.signUp when it lands.
+    onRegister: () => context.go('/shops', extra: 'forward'),
+    onGoogle: () => _afterSocialSignIn(context, widget.auth.signInWithGoogle()),
+    onApple: () => _afterSocialSignIn(context, widget.auth.signInWithApple()),
+    onLanguage: () => _toast(context, 'Đổi ngôn ngữ'),
+    onViewPolicy: () => _toast(context, 'Điều khoản & Chính sách'),
+  );
+}
+
+/// After an Apple/Google sign-in, force phone capture when the account has none
+/// (those providers don't supply a phone), otherwise continue to shop selection.
+void _afterSocialSignIn(BuildContext context, Future<EcUser> signIn) {
+  signIn.then((user) {
+    if (!context.mounted) return;
+    final needsPhone = (user.phone ?? '').trim().isEmpty;
+    context.go(needsPhone ? '/phone-setup' : '/shops', extra: 'forward');
+  });
+}
+
+/// Forced phone capture after a social sign-in with no phone on the account.
+/// Saves through the seam, then continues to shop selection.
+class _PhoneSetupRoute extends StatefulWidget {
+  const _PhoneSetupRoute({required this.auth});
+
+  final EcAuth auth;
+
+  @override
+  State<_PhoneSetupRoute> createState() => _PhoneSetupRouteState();
+}
+
+class _PhoneSetupRouteState extends State<_PhoneSetupRoute> {
+  final _phone = TextEditingController();
+
+  @override
+  void dispose() {
+    _phone.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    // The screen's inline Form guarantees a valid phone before this fires.
+    final phone = _phone.text.trim();
+    try {
+      // ponytail: with FirebaseEcAuth the phone lands in D1, not Firebase Auth
+      // (tech-spec §7) — persists once that profile endpoint is wired; today the
+      // FakeEcAuth binding keeps it in memory so the gate clears.
+      await widget.auth.updateProfile(phone: phone);
+      if (!mounted) return;
+      context.go('/shops', extra: 'forward');
+    } on Object catch (error) {
+      if (mounted) _toast(context, _authErrorText(error));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      EcPhoneSetupScreen(phoneController: _phone, onContinue: _save);
 }
 
 /// Turns an auth failure into a user-facing line. [EcAuthException] carries its
@@ -296,6 +465,7 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
   late final TextEditingController _phone = TextEditingController(
     text: widget.auth.currentUser?.phone ?? '',
   );
+  String? _avatarPath;
 
   @override
   void dispose() {
@@ -304,12 +474,14 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
     super.dispose();
   }
 
+  Future<void> _pickAvatar() async {
+    final path = await _pickImagePath();
+    if (path != null && mounted) setState(() => _avatarPath = path);
+  }
+
   Future<void> _save() async {
+    // The screen's inline Form guarantees a non-empty name before this fires.
     final name = _name.text.trim();
-    if (name.isEmpty) {
-      _toast(context, 'Vui lòng nhập họ tên');
-      return;
-    }
     try {
       await widget.auth.updateProfile(name: name, phone: _phone.text.trim());
       if (!mounted) return;
@@ -325,9 +497,11 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
     nameController: _name,
     phoneController: _phone,
     email: widget.auth.currentUser?.email ?? '—',
+    avatarPath: _avatarPath,
     onBack: () => _back(context, '/account'),
-    // ponytail: avatar upload needs image_picker + storage — wire when it lands.
-    onChangeAvatar: () => _toast(context, 'Đổi ảnh đại diện — sắp ra mắt'),
+    // ponytail: shows the picked avatar locally; persisting it to the profile
+    // needs the D1 avatar_url upload endpoint (tech-spec §7).
+    onChangeAvatar: _pickAvatar,
     onSave: _save,
   );
 }
@@ -365,18 +539,8 @@ class _ChangePasswordRouteState extends State<_ChangePasswordRoute> {
       _toast(context, 'Tài khoản Google/Apple — tạo mật khẩu sắp ra mắt');
       return;
     }
-    if (_current.text.isEmpty) {
-      _toast(context, 'Nhập mật khẩu hiện tại');
-      return;
-    }
-    if (_next.text.length < 8) {
-      _toast(context, 'Mật khẩu mới tối thiểu 8 ký tự');
-      return;
-    }
-    if (_next.text != _confirm.text) {
-      _toast(context, 'Mật khẩu nhập lại không khớp');
-      return;
-    }
+    // Presence, 8-char minimum and confirm-match are enforced inline by the
+    // screen's Form before this fires.
     try {
       await widget.auth.updatePassword(
         currentPassword: _current.text,
@@ -464,9 +628,9 @@ class _QuotaRouteState extends State<_QuotaRoute> {
       future: _quota,
       builder: (context, snap) {
         if (!snap.hasData) {
-          return const Scaffold(
+          return const CupertinoPageScaffold(
             backgroundColor: BrandColors.bg,
-            body: Center(child: CircularProgressIndicator()),
+            child: Center(child: CupertinoActivityIndicator()),
           );
         }
         final quota = snap.data!;
@@ -490,16 +654,7 @@ class _QuotaRouteState extends State<_QuotaRoute> {
 /// background, not a solid one.
 /// Lightweight feedback so no button is a dead end: actions that don't (yet)
 /// have a dedicated screen confirm they fired.
-void _toast(BuildContext c, String msg) {
-  ScaffoldMessenger.of(c)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        duration: const Duration(milliseconds: 1400),
-      ),
-    );
-}
+void _toast(BuildContext c, String msg) => ecToast(c, msg);
 
 /// Back that always works: pop when there's something to pop, otherwise go to
 /// a sensible parent. Prevents a dead back button when a screen is entered
@@ -556,6 +711,158 @@ CustomTransitionPage<void> _modalPage(Widget child) =>
           FadeTransition(opacity: animation, child: child),
       child: child,
     );
+
+/// Count of clips still needing the network — the "n chờ/tải" the record and
+/// orders headers show (uploaded clips don't count).
+int _pendingUploads(EcUploadQueue queue) =>
+    queue.tasks.where((t) => t.state != EcUploadState.done).length;
+
+/// The shop clocked into, or a safe default when the shop layer was skipped
+/// (e.g. `--dart-define=EC_START=/home` for QA/screenshots).
+EcShopSummary _shopOr(ValueNotifier<EcShopSummary?> selectedShop) =>
+    selectedShop.value ??
+    const EcShopSummary(id: 's1', name: 'Shop ABC', platform: 'shopee');
+
+/// Picks one image from the gallery; returns its local file path, or null if
+/// the user cancelled.
+Future<String?> _pickImagePath() async {
+  final file = await ImagePicker().pickImage(source: ImageSource.gallery);
+  return file?.path;
+}
+
+/// Picks a photo and attaches it to [tracking]'s evidence via the upload queue
+/// (uploads once the backend is configured). Shows a confirmation, or nothing
+/// if the user cancelled.
+Future<void> _attachPhoto(
+  BuildContext context,
+  EcUploadQueue queue,
+  String tracking,
+) async {
+  final path = await _pickImagePath();
+  if (path == null || !context.mounted) return;
+  await queue.enqueue(tracking: tracking, type: 'Ảnh đính kèm', filePath: path);
+  if (context.mounted) {
+    _toast(context, 'Đã đính kèm ảnh — đưa vào hàng chờ tải');
+  }
+}
+
+/// Orders tab — loads a page from the repository, supports pull-to-refresh and
+/// infinite scroll (20/page), and shows the live upload-queue count in the
+/// header. First page shows a full-screen spinner; later pages a trailing one.
+class _OrdersRoute extends StatefulWidget {
+  const _OrdersRoute({
+    required this.repo,
+    required this.queue,
+    required this.shopId,
+    required this.shopName,
+    this.onBack,
+    this.onNavRecord,
+    this.onNavAccount,
+    this.onQueueTap,
+    this.onOrderTap,
+    this.onScan,
+  });
+
+  final EcRepository repo;
+  final EcUploadQueue queue;
+  final String shopId;
+  final String shopName;
+  final VoidCallback? onBack;
+  final VoidCallback? onNavRecord;
+  final VoidCallback? onNavAccount;
+  final VoidCallback? onQueueTap;
+  final ValueChanged<EcOrderRow>? onOrderTap;
+  final Future<String?> Function()? onScan;
+
+  @override
+  State<_OrdersRoute> createState() => _OrdersRouteState();
+}
+
+class _OrdersRouteState extends State<_OrdersRoute> {
+  static const _pageSize = 20;
+
+  List<OrderSummaryDto> _orders = const [];
+  bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFirst();
+  }
+
+  Future<void> _loadFirst() async {
+    final page = await widget.repo.orders(widget.shopId);
+    if (!mounted) return;
+    setState(() {
+      _orders = page;
+      _hasMore = page.length >= _pageSize;
+      _loading = false;
+    });
+  }
+
+  /// Pull-to-refresh — reload the first page (no full-screen spinner).
+  Future<void> _refresh() async {
+    final page = await widget.repo.orders(widget.shopId);
+    if (!mounted) return;
+    setState(() {
+      _orders = page;
+      _hasMore = page.length >= _pageSize;
+    });
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore || _orders.isEmpty) return;
+    setState(() => _loadingMore = true);
+    final page = await widget.repo.orders(
+      widget.shopId,
+      before: _orders.last.createdAt,
+    );
+    if (!mounted) return;
+    setState(() {
+      _orders = [..._orders, ...page];
+      _hasMore = page.length >= _pageSize;
+      _loadingMore = false;
+    });
+  }
+
+  EcOrderRow _toRow(OrderSummaryDto o) => EcOrderRow(
+    code: o.tracking,
+    time: '—',
+    type: 'Đóng hàng',
+    videoCount: o.evidenceCount,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const CupertinoPageScaffold(
+        backgroundColor: BrandColors.bg,
+        child: Center(child: CupertinoActivityIndicator()),
+      );
+    }
+    return ListenableBuilder(
+      listenable: widget.queue,
+      builder: (context, _) => EcHomeOrdersScreen(
+        shopName: widget.shopName,
+        orders: _orders.map(_toRow).toList(),
+        queueCount: _pendingUploads(widget.queue),
+        onBack: widget.onBack,
+        onNavRecord: widget.onNavRecord,
+        onNavAccount: widget.onNavAccount,
+        onQueueTap: widget.onQueueTap,
+        onOrderTap: widget.onOrderTap,
+        onNavOrders: () {},
+        onScan: widget.onScan,
+        onRefresh: _refresh,
+        onLoadMore: _loadMore,
+        isLoadingMore: _loadingMore,
+        hasMore: _hasMore,
+      ),
+    );
+  }
+}
 
 /// Upload-queue tab ("Hàng đợi upload"), driven live by [EcUploadQueue]: shows
 /// the real recorded clips with their upload status, tab filtering, and retry.
@@ -622,6 +929,7 @@ GoRouter _buildRouter(
   EcAuth auth,
   ValueNotifier<EcAppLanguage> language,
   EcUploadQueue queue,
+  ValueNotifier<EcShopSummary?> selectedShop,
 ) => GoRouter(
   // Override the start route for screenshot/QA via --dart-define=EC_START=/home.
   initialLocation: const String.fromEnvironment('EC_START', defaultValue: '/'),
@@ -636,19 +944,11 @@ GoRouter _buildRouter(
     ),
     GoRoute(
       path: '/register',
-      builder: (c, s) => EcRegisterScreen(
-        onBack: () => _back(c, '/login'),
-        onLogin: () => _back(c, '/login'),
-        onRegister: () => c.go('/shops', extra: 'forward'),
-        onGoogle: () => auth.signInWithGoogle().then((_) {
-          if (c.mounted) c.go('/shops', extra: 'forward');
-        }),
-        onApple: () => auth.signInWithApple().then((_) {
-          if (c.mounted) c.go('/shops', extra: 'forward');
-        }),
-        onLanguage: () => _toast(c, 'Đổi ngôn ngữ'),
-        onViewPolicy: () => _toast(c, 'Điều khoản & Chính sách'),
-      ),
+      builder: (c, s) => _RegisterRoute(auth: auth),
+    ),
+    GoRoute(
+      path: '/phone-setup',
+      pageBuilder: (c, s) => _directionalPage(s, _PhoneSetupRoute(auth: auth)),
     ),
     GoRoute(
       path: '/forgot',
@@ -667,7 +967,12 @@ GoRouter _buildRouter(
         s,
         EcChooseShopScreen(
           shops: _sampleShops,
-          onSelect: (_) => c.go('/home'),
+          // Only owners/managers of at least one shop see shop management.
+          showManage: _sampleShops.any((shop) => shop.role != 'staff'),
+          onSelect: (shop) {
+            selectedShop.value = shop;
+            c.go('/home');
+          },
           onManage: () => c.push('/shop-mgmt'),
           onLogout: () => c.go('/login', extra: 'back'),
         ),
@@ -705,40 +1010,22 @@ GoRouter _buildRouter(
             GoRoute(
               path: '/home',
               // Data-driven: orders come from the repository (fake now, live
-              // once the Worker URL is set).
-              builder: (c, s) => FutureBuilder<List<OrderSummaryDto>>(
-                future: repo.orders('s1'),
-                builder: (ctx, snap) {
-                  if (!snap.hasData) {
-                    return const Scaffold(
-                      backgroundColor: BrandColors.bg,
-                      body: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  final orders = snap.data!
-                      .map(
-                        (o) => EcOrderRow(
-                          code: o.tracking,
-                          time: '—',
-                          type: 'Đóng hàng',
-                          videoCount: o.evidenceCount,
-                        ),
-                      )
-                      .toList();
-                  return EcHomeOrdersScreen(
-                    shopName: 'Shop ABC',
-                    orders: orders,
-                    queueCount: 4,
-                    onBack: () => c.go('/shops', extra: 'back'),
-                    onNavRecord: () => c.go('/record'),
-                    onNavAccount: () => c.go('/account'),
-                    onQueueTap: () => c.push('/queue'),
-                    onOrderTap: (_) => c.push('/order'),
-                    onNavOrders: () {},
-                    onScan: () => _toast(c, 'Quét mã vận đơn'),
-                  );
-                },
-              ),
+              // once the Worker URL is set), with pull-to-refresh + paging.
+              builder: (c, s) {
+                final shop = _shopOr(selectedShop);
+                return _OrdersRoute(
+                  repo: repo,
+                  queue: queue,
+                  shopId: shop.id,
+                  shopName: shop.name,
+                  onBack: () => c.go('/shops', extra: 'back'),
+                  onNavRecord: () => c.go('/record'),
+                  onNavAccount: () => c.go('/account'),
+                  onQueueTap: () => c.push('/queue'),
+                  onOrderTap: (_) => c.push('/order'),
+                  onScan: () => c.push<String>('/scan'),
+                );
+              },
             ),
           ],
         ),
@@ -746,17 +1033,22 @@ GoRouter _buildRouter(
           routes: [
             GoRoute(
               path: '/record',
-              builder: (c, s) => EcRecordRoute(
-                onBack: () => c.go('/home'),
-                onRequestCode: () => c.push<String>('/manual'),
-                onRequestType: () => c.push<String>('/type-sheet'),
-                onNavOrders: () => c.go('/home'),
-                onNavAccount: () => c.go('/account'),
-                onSettings: () => c.push('/type-sheet'),
-                onSaved: (path, code, type) {
-                  queue.enqueue(tracking: code, type: type, filePath: path);
-                  _toast(c, 'Đã lưu video — đưa vào hàng chờ tải');
-                },
+              builder: (c, s) => ListenableBuilder(
+                listenable: queue,
+                builder: (context, _) => EcRecordRoute(
+                  queueCount: _pendingUploads(queue),
+                  initialResolution: _shopOr(selectedShop).resolution,
+                  onBack: () => c.go('/home'),
+                  onRequestCode: () => c.push<String>('/manual'),
+                  onRequestType: () => c.push<String>('/type-sheet'),
+                  onNavOrders: () => c.go('/home'),
+                  onNavAccount: () => c.go('/account'),
+                  onSettings: () => c.push('/type-sheet'),
+                  onSaved: (path, code, type) {
+                    queue.enqueue(tracking: code, type: type, filePath: path);
+                    _toast(c, 'Đã lưu video — đưa vào hàng chờ tải');
+                  },
+                ),
               ),
             ),
           ],
@@ -787,7 +1079,7 @@ GoRouter _buildRouter(
         onCopyLink: () => _toast(c, 'Đã sao chép link hồ sơ'),
         onShareLink: () => _toast(c, 'Chia sẻ link hồ sơ'),
         onRetryUpload: () => _toast(c, 'Đang thử tải lại…'),
-        onAttachPhoto: () => _toast(c, 'Đính kèm ảnh vào đơn'),
+        onAttachPhoto: () => _attachPhoto(c, queue, 'SPXVN024567890'),
       ),
     ),
     GoRoute(
@@ -795,6 +1087,8 @@ GoRouter _buildRouter(
       pageBuilder: (c, s) => _modalPage(
         EcVideoDetailScreen(
           video: _sampleVideoDetail,
+          // Nhân viên (staff) can't delete evidence (FR-05).
+          canDelete: _shopOr(selectedShop).role != 'staff',
           onClose: () => c.pop(),
           onPlay: () => _toast(c, 'Phát video'),
           onDownload: () => _toast(c, 'Đang tải video về máy'),
@@ -834,6 +1128,14 @@ GoRouter _buildRouter(
           // that order — connects the "chờ bill" state to the "đang quay" state.
           onManualSubmit: (code) => c.pop(code),
         ),
+      ),
+    ),
+    GoRoute(
+      path: '/scan',
+      // Barcode scan from the order-search bar (FR-04); returns the scanned code.
+      builder: (c, s) => EcBarcodeScanRoute(
+        onCancel: () => c.pop(),
+        onDetected: (code) => c.pop(code),
       ),
     ),
     GoRoute(

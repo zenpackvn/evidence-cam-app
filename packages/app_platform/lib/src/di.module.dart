@@ -30,7 +30,7 @@ import 'package:injectable/injectable.dart' as _i526;
 import 'package:share_plus/share_plus.dart' as _i998;
 
 class AppPlatformPackageModule extends _i526.MicroPackageModule {
-// initializes the registration of main-scope dependencies inside of GetIt
+  // initializes the registration of main-scope dependencies inside of GetIt
   @override
   _i687.FutureOr<void> init(_i526.GetItHelper gh) {
     final crashModule = _$CrashModule();
@@ -38,34 +38,43 @@ class AppPlatformPackageModule extends _i526.MicroPackageModule {
     final notificationsModule = _$NotificationsModule();
     final shareModule = _$ShareModule();
     gh.lazySingleton<_i608.CrashReporter>(
-        () => crashModule.provideCrashReporter());
+      () => crashModule.provideCrashReporter(),
+    );
     gh.lazySingleton<_i883.CameraService>(() => _i883.CameraService());
     gh.lazySingleton<_i183.ImagePicker>(() => mediaModule.imagePicker);
     gh.lazySingleton<_i430.VideoPlayerService>(
-        () => _i430.VideoPlayerService());
+      () => _i430.VideoPlayerService(),
+    );
     gh.lazySingleton<_i163.FlutterLocalNotificationsPlugin>(
-        () => notificationsModule.providePlugin());
+      () => notificationsModule.providePlugin(),
+    );
     gh.lazySingleton<_i892.FirebaseMessaging>(
-        () => notificationsModule.provideFirebaseMessaging());
+      () => notificationsModule.provideFirebaseMessaging(),
+    );
     gh.lazySingleton<_i735.PermissionService>(() => _i735.PermissionService());
     gh.lazySingleton<_i1038.GallerySaveService>(
-        () => const _i1038.GallerySaveService());
+      () => const _i1038.GallerySaveService(),
+    );
     gh.lazySingleton<_i998.SharePlus>(() => shareModule.provideSharePlus());
     gh.lazySingleton<_i315.ImagePickerService>(
-        () => _i315.ImagePickerService(gh<_i183.ImagePicker>()));
+      () => _i315.ImagePickerService(gh<_i183.ImagePicker>()),
+    );
     gh.lazySingleton<_i527.ShareService>(
-        () => _i527.ShareService(gh<_i998.SharePlus>()));
+      () => _i527.ShareService(gh<_i998.SharePlus>()),
+    );
     gh.lazySingleton<_i479.NotificationsService>(
-        () => _i479.NotificationsService(
-              gh<_i163.FlutterLocalNotificationsPlugin>(),
-              gh<_i735.PermissionService>(),
-            ));
+      () => _i479.NotificationsService(
+        gh<_i163.FlutterLocalNotificationsPlugin>(),
+        gh<_i735.PermissionService>(),
+      ),
+    );
     gh.lazySingleton<_i1010.FirebaseMessagingService>(
-        () => _i1010.FirebaseMessagingService(
-              gh<_i479.NotificationsService>(),
-              gh<_i892.FirebaseMessaging>(),
-              gh<_i548.AnalyticsService>(),
-            ));
+      () => _i1010.FirebaseMessagingService(
+        gh<_i479.NotificationsService>(),
+        gh<_i892.FirebaseMessaging>(),
+        gh<_i548.AnalyticsService>(),
+      ),
+    );
   }
 }
 

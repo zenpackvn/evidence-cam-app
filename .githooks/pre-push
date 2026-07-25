@@ -38,7 +38,7 @@ fi
 
 echo "▶ pre-push: verifying formatting (dart format)…"
 # Check only files tracked by THIS repo. Submodule contents (published/cli,
-# published/rev_sync, simple_backend_server) are gitlinks, so `git ls-files`
+# published/rev_sync) are gitlinks, so `git ls-files`
 # excludes them — their own repos/CI own their formatting, and e.g. the CLI's
 # source is maintained on a different SDK. Passing `.` instead would reformat
 # the submodules and false-fail the push (CI is unaffected: it never checks out

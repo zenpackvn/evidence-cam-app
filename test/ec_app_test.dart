@@ -1,5 +1,5 @@
+import 'package:evidence_cam/ec_app.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_starter_template/ec_app.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 
@@ -7,7 +7,10 @@ void main() {
   testWidgets(
     'navigates Splash → Login → Shops → Home tab',
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
-      notDisposed: {'ImageStreamCompleterHandle': 1},
+      // FakeEcAuth's user notifier is an app-lifetime singleton (never disposed
+      // by design — see ec_auth.dart); the phone-setup step retains it long
+      // enough for GC to surface it here.
+      notDisposed: {'ImageStreamCompleterHandle': 1, 'ValueNotifier<EcUser?>': 1},
     ),
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
@@ -32,6 +35,12 @@ void main() {
       // Login
       expect(find.text('Đăng nhập'), findsWidgets);
       await tester.tap(find.text('Đăng nhập với Google'));
+      await tester.pumpAndSettle();
+
+      // Google has no phone → forced phone-capture step before shops.
+      expect(find.text('Thêm số điện thoại'), findsOneWidget);
+      await tester.enterText(find.byType(EditableText).first, '0912345678');
+      await tester.tap(find.text('Tiếp tục'));
       await tester.pumpAndSettle();
 
       // Shop layer → pick a shop → Home tab (Đơn hàng)

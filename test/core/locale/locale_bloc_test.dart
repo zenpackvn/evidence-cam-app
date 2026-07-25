@@ -1,6 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:evidence_cam/core/locale/locale_bloc.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_starter_template/core/locale/locale_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:test_utils/test_utils.dart';
 

@@ -1,0 +1,25 @@
+import 'dart:io';
+
+/// Uploads a recorded evidence clip to the backend, reporting progress 0..1.
+///
+/// A seam so the offline queue can be tested with a fake and pointed at a real
+/// backend. Concrete implementations (the presigned-R2 flow, the legacy
+/// multipart POST) live in the app shell — they depend on the EC API client —
+/// while this contract lives with the capture feature that produces clips.
+// ignore: one_member_abstracts
+abstract interface class EcEvidenceUploader {
+  /// Uploads [file] for the order with tracking code [tracking] of the given
+  /// video [type]; returns a stored remote id/URL. Throws on any failure so the
+  /// queue can mark it errored.
+  ///
+  /// [shopId] and [capturedAt] are needed by the real backend flow (they scope
+  /// the evidence to a shop/order); the legacy multipart uploader ignores them.
+  Future<String> upload(
+    File file, {
+    required String tracking,
+    required String type,
+    String? shopId,
+    int? capturedAt,
+    void Function(double progress)? onProgress,
+  });
+}

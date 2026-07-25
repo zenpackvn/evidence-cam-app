@@ -1,0 +1,28 @@
+name: ec_data
+description: >-
+  EvidenceCam backend integration: Workers API DTOs + typed client, the
+  repository seam (fake/remote), the EC_API_URL data-source builder, and the
+  auth seam (email/Google/Apple via Firebase). Consumed by the app shell.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  network: ^0.1.0
+
+  firebase_auth: ^6.5.6
+  google_sign_in: ^7.2.0
+  sign_in_with_apple: ^8.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  test_utils: ^0.1.0

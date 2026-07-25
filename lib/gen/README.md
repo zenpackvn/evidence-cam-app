@@ -18,7 +18,7 @@ Using generated asset classes helps avoid runtime errors caused by typos in asse
 Instead of hardcoding string paths, use the `Assets` class to load images and SVGs:
 
 ```dart
-import 'package:flutter_starter_template/gen/assets.gen.dart';
+import 'package:evidence_cam/gen/assets.gen.dart';
 
 // Loading an SVG icon
 Widget buildIcon() {

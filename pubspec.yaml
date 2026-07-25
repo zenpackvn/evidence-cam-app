@@ -1,4 +1,4 @@
-name: flutter_starter_template
+name: evidence_cam
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -23,6 +23,8 @@ environment:
 
 workspace:
   - packages/app_ui
+  - packages/ec_ui
+  - packages/ec_data
   - packages/analytics
   - packages/config
   - packages/architecture
@@ -30,27 +32,15 @@ workspace:
   - packages/app_platform
   - packages/storage
   - packages/sync_connectivity_plus
-  - packages/theme
   - packages/test_utils
   - packages/shared_contracts
   - packages/shared_ui
   - packages/database
   - packages/localization
-  - packages/features/auth
-  # fst:feature:notifications:start
-  - packages/features/notifications
-  # fst:feature:notifications:end
-  # fst:feature:collections:start
-  - packages/features/collections
-  # fst:feature:collections:end
-  # fst:feature:bookmarks:start
-  - packages/features/bookmarks
-  # fst:feature:bookmarks:end
-  - packages/features/onboarding
-  - packages/features/splash
-  - packages/features/home
-  - packages/features/profile
-  # fst:features — `fst add-feature` inserts new feature packages above this line
+  - packages/features/capture
+  - packages/features/shift
+  - packages/features/orders
+  - packages/features/account
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -60,6 +50,8 @@ workspace:
 # versions available, run `flutter pub outdated`.
 dependencies:
   app_ui: ^0.1.0
+  ec_ui: ^0.1.0
+  ec_data: ^0.1.0
   analytics: ^0.1.0
   config: ^0.1.0
   architecture: ^0.1.0
@@ -69,25 +61,14 @@ dependencies:
   rev_sync:
     path: published/rev_sync
   sync_connectivity_plus: ^0.1.0
-  theme: ^0.1.0
   shared_contracts: ^0.1.0
   shared_ui: ^0.1.0
   database: ^0.1.0
   localization: ^0.1.0
-  feature_auth: ^0.1.0
-  # fst:feature:notifications:start
-  feature_notifications: ^0.1.0
-  # fst:feature:notifications:end
-  # fst:feature:collections:start
-  feature_collections: ^0.1.0
-  # fst:feature:collections:end
-  # fst:feature:bookmarks:start
-  feature_bookmarks: ^0.1.0
-  # fst:feature:bookmarks:end
-  feature_onboarding: ^0.1.0
-  feature_splash: ^0.1.0
-  feature_home: ^0.1.0
-  feature_profile: ^0.1.0
+  feature_capture: ^0.1.0
+  feature_shift: ^0.1.0
+  feature_orders: ^0.1.0
+  feature_account: ^0.1.0
   # fst:feature-deps — `fst add-feature` inserts new feature deps above this line
 
   flutter:
@@ -157,6 +138,8 @@ dependencies:
   firebase_auth: ^6.5.6
   google_sign_in: ^7.2.0
   sign_in_with_apple: ^8.1.0
+  smooth_corner: ^1.1.1
+  google_fonts: ^8.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,0 +1,24 @@
+name: ec_ui
+description: >-
+  EvidenceCam design-system primitives: shared Cupertino building blocks
+  (continuous-corner "squircle" shapes, tap haptics, press-to-fade tappables,
+  overlay toast) used by every EvidenceCam screen. The iOS-native counterpart to
+  the starter's Material `app_ui`.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Third-party.
+  smooth_corner: ^1.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

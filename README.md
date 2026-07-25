@@ -84,7 +84,6 @@ To enable seamless local development and testing, this template is paired with a
 | 🔔 **Notifications**      | On‑device scheduling + tap‑to‑navigate |
 | 💉 **DI**                 | `get_it` + `injectable` code‑gen — zero manual wiring |
 | 📡 **REST**               | `Retrofit` + `Dio` typed clients with auth interceptor |
-| ⚙️ **Go Backend**         | Companion server — `chi/v5`, JWT issuer, bookmark & collection CRUD, uploads |
 | 🤖 **AI-Native**          | Rules, MCP servers, and agent skills for Claude, Cursor, Codex, Command Code, and Antigravity |
 | 🪄 **Feature Generator**  | `fst add-feature <name>` scaffolds a presentation feature package and wires the workspace, DI graph, and routing in one command |
 | 🚀 **Release CI**         | Fastlane lanes — iOS → TestFlight, Android → Play — flavor‑aware, wired to GitHub Actions |
@@ -382,7 +381,6 @@ project scaffolder.
 | Tool    | Version | Notes |
 |---------|---------|-------|
 | Flutter | ≥ 3.44  | Managed via [FVM](https://fvm.app/) — see `.fvmrc` |
-| Go      | ≥ 1.25  | Backend server |
 | Node.js | ≥ 18    | Optional — only for the `firebase` MCP server (`npx`) |
 
 ### ⚡ Install & Generate
@@ -392,19 +390,19 @@ project scaffolder.
 > directly.
 
 ```bash
-# --recurse-submodules pulls the companion Go backend (a git submodule)
+# --recurse-submodules pulls the vendored submodules (published/cli, rev_sync)
 git clone --recurse-submodules https://github.com/kido-luci/flutter-starter-template.git
 cd flutter-starter-template
 
 # One-shot bootstrap: submodules, FVM SDK, disable SPM (macOS), pub get,
-# code generation, backend deps, and the pre-push hook. Idempotent.
+# code generation, and the pre-push hook. Idempotent.
 ./tool/setup.sh
 ```
 
 > 💡 **Already cloned without submodules?** `tool/setup.sh` runs
 > `git submodule update --init --recursive` for you. Re-run the script anytime
 > your tree needs a refresh; pass `--help` to see flags (`--no-codegen`,
-> `--no-hooks`, `--no-backend`).
+> `--no-hooks`).
 
 <details>
 <summary><b>⚙️ Prefer to run the steps manually?</b></summary>
@@ -434,46 +432,6 @@ machine and CI runner must run it once** before the first iOS build.
 ```bash
 fvm flutter config --no-enable-swift-package-manager
 ```
-
-### 🖥 Start Backend
-
-The backend lives in the [`simple_backend_server`](simple_backend_server) git
-submodule. If it's empty, run `git submodule update --init --recursive` first.
-
-```bash
-cd simple_backend_server
-go run .                    # → http://localhost:8080
-```
-
-| Method   | Endpoint                      | Description               |
-|----------|-------------------------------|---------------------------|
-| `GET`    | `/health`                     | Health check              |
-| `POST`   | `/api/auth/register`          | Register a new account    |
-| `POST`   | `/api/auth/sign-in`           | Sign in                   |
-| `POST`   | `/api/auth/refresh`           | Refresh access token      |
-| `POST`   | `/api/auth/sign-out`          | Revoke refresh token      |
-| `GET`    | `/api/auth/me`                | Current user              |
-| `POST`   | `/api/auth/change-password`   | Change password           |
-| `POST`   | `/api/upload`                 | Upload an attachment      |
-| `GET`    | `/api/bookmarks`              | List bookmarks (`?since=<rev>` for delta sync) |
-| `POST`   | `/api/bookmarks`              | Create bookmark           |
-| `GET`    | `/api/bookmarks/:id`          | Get bookmark              |
-| `PUT`    | `/api/bookmarks/:id`          | Update bookmark (`X-Expected-Rev` → `409`) |
-| `DELETE` | `/api/bookmarks/:id`          | Delete bookmark (soft‑delete tombstone) |
-| `GET`    | `/api/collections`            | List collections (`?since=<rev>` for delta sync) |
-| `POST`   | `/api/collections`            | Create collection         |
-| `GET`    | `/api/collections/:id`        | Get collection            |
-| `PUT`    | `/api/collections/:id`        | Update collection (`X-Expected-Rev` → `409`) |
-| `DELETE` | `/api/collections/:id`        | Delete collection (soft‑delete tombstone) |
-| `GET`    | `/api/notifications`          | List notifications        |
-| `GET`    | `/api/activity`               | List activity feed        |
-
-> 💡 **Tip** — Any username + password works during development.
-
-> 🔄 **Sync protocol** — Bookmarks and collections carry a per‑owner `rev`
-> (monotonic revision) and `deleted_at` tombstones. Clients pull deltas with
-> `?since=<rev>` and send `X-Expected-Rev` on writes for optimistic‑concurrency
-> conflict detection (`409`). See [Offline‑First Sync](#-offlinefirst-sync).
 
 ### 📱 Launch App
 
@@ -517,27 +475,6 @@ macOS while CI runs on Ubuntu.
 
 Refer to the [test/README.md](test/README.md) file for detailed testing
 guidelines and patterns.
-
-### 🧭 End-to-End Testing
-
-Unlike the unit/widget/bloc suites above — which mock every boundary —
-`integration_test/` runs a single real-backend journey: it boots the actual
-assembled `App` (real DI, real Firebase, **no mocks**) against the local
-`simple_backend_server` and walks one self-seeded user through every feature —
-register, bookmarks, collections, notifications, sign-out — proving the real
-Dio client → repositories → use cases → backend → SQLite all wire together.
-
-```bash
-tool/run_e2e.sh                 # one shot: reset + start backend, run, tear down
-tool/run_e2e.sh <device-id>     # target a specific `flutter devices` id
-```
-
-It needs a booted **iOS Simulator** (not macOS — only `ios/` ships a
-`GoogleService-Info.plist`) and isn't run in CI, since it requires a live
-backend and emits real Firebase telemetry. Run it locally before cutting a
-release. See [integration_test/README.md](integration_test/README.md) for
-details, gotchas, and how to run it manually against an already-running
-backend.
 
 ### 🔍 Static Analysis & Linting
 

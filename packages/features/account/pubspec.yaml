@@ -1,0 +1,25 @@
+name: feature_account
+description: >-
+  EvidenceCam account & settings feature (Flow 4): profile, language, login methods, quota, change/delete account. Presentational screens.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  app_ui: ^0.1.0
+  ec_ui: ^0.1.0
+
+  # Declarative form-field validators (required/minLength/compose) used by the
+  # profile + password forms; plugs into standard Form/FormField validators.
+  form_builder_validators: ^11.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

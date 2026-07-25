@@ -1,26 +1,63 @@
 import 'dart:io';
 
-import 'package:network/network.dart' show BaseOptions, Dio, FormData, MultipartFile;
+import 'package:ec_data/ec_data.dart';
+import 'package:feature_capture/feature_capture.dart';
+import 'package:network/network.dart'
+    show BaseOptions, Dio, FormData, Headers, MultipartFile, Options;
 
-/// Uploads a recorded evidence clip to the backend, reporting progress 0..1.
+/// Real backend uploader following the EvidenceCam presigned-R2 flow:
 ///
-/// A seam so the queue can be tested with a fake and pointed at a real backend
-/// once one exists.
-// ignore: one_member_abstracts
-abstract interface class EcEvidenceUploader {
-  /// Uploads [file] for order [tracking] of the given [type]; returns the
-  /// stored remote URL. Throws on any failure so the queue can mark it errored.
+/// 1. `findOrCreateOrder(shopId, tracking)` → the order id;
+/// 2. `presignUpload(...)` → a one-time R2 `uploadUrl` + `evidenceId`;
+/// 3. `PUT` the clip bytes straight to R2 (a separate token-less Dio, since the
+///    presigned URL carries its own signature);
+/// 4. `completeUpload(...)` to mark the evidence stored.
+class ApiEvidenceUploader implements EcEvidenceUploader {
+  ApiEvidenceUploader(this._api, {Dio? r2Dio}) : _r2 = r2Dio ?? Dio();
+
+  final EcApi _api;
+  final Dio _r2;
+
+  @override
   Future<String> upload(
     File file, {
     required String tracking,
     required String type,
+    String? shopId,
+    int? capturedAt,
     void Function(double progress)? onProgress,
-  });
+  }) async {
+    if (shopId == null || shopId.isEmpty) {
+      throw StateError('ApiEvidenceUploader.upload requires a shopId');
+    }
+    final order = await _api.findOrCreateOrder(shopId, tracking);
+    final presign = await _api.presignUpload(
+      shopId,
+      order.id,
+      kind: 'video',
+      capturedAt: capturedAt ?? DateTime.now().millisecondsSinceEpoch,
+    );
+    final length = await file.length();
+    await _r2.put<void>(
+      presign.uploadUrl,
+      data: file.openRead(),
+      options: Options(
+        headers: {
+          Headers.contentLengthHeader: length,
+          Headers.contentTypeHeader: 'video/mp4',
+        },
+      ),
+      onSendProgress: (sent, total) {
+        if (total > 0) onProgress?.call(sent / total);
+      },
+    );
+    await _api.completeUpload(shopId, order.id, presign.evidenceId);
+    return presign.key;
+  }
 }
 
-/// Real multipart uploader hitting `<baseUrl>/api/evidence`. This is live
-/// transport — it simply errors until the backend actually serves that route,
-/// at which point recorded clips start uploading with no client change.
+/// Legacy multipart uploader (POST `<baseUrl>/api/evidence`). Kept for the
+/// offline/dev path; the real product flow is [ApiEvidenceUploader].
 class HttpEvidenceUploader implements EcEvidenceUploader {
   HttpEvidenceUploader({required String baseUrl, Dio? dio})
     : _dio = dio ?? Dio(BaseOptions(baseUrl: baseUrl));
@@ -32,6 +69,8 @@ class HttpEvidenceUploader implements EcEvidenceUploader {
     File file, {
     required String tracking,
     required String type,
+    String? shopId,
+    int? capturedAt,
     void Function(double progress)? onProgress,
   }) async {
     final form = FormData.fromMap({

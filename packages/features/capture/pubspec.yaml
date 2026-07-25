@@ -1,0 +1,35 @@
+name: feature_capture
+description: >-
+  Capture feature for EvidenceCam: the hands-free recording session state
+  machine (RecordingSessionBloc) and on-device bill scanner, as a self-contained
+  workspace package. Presentation (the record route + Flow 3 screens) still lives
+  in the app shell and is relocated in a later migration step.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Workspace packages.
+  app_platform: ^0.1.0
+  app_ui: ^0.1.0
+  ec_ui: ^0.1.0
+  database: ^0.1.0
+
+  # Third-party.
+  flutter_bloc: ^9.1.1
+  bloc_concurrency: ^0.3.0
+  google_mlkit_barcode_scanning: ^0.14.0
+  path_provider: ^2.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  bloc_test: ^10.0.0

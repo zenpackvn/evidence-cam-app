@@ -1,0 +1,36 @@
+name: feature_shift
+description: >-
+  EvidenceCam clock-in journey (splash, login, Flow 1 vao-ca): shop select/management, members, resolution, home orders. Presentational screens.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  app_ui: ^0.1.0
+  ec_ui: ^0.1.0
+
+  # Renders the multi-color Google "G" mark on the sign-in button (design uses
+  # the 4-color logo, not a single-color glyph).
+  flutter_svg: ^2.3.0
+
+  # Declarative form-field validators (required/email/minLength/compose) used by
+  # the auth + shop forms; plugs into standard Form/FormField validators.
+  form_builder_validators: ^11.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  # The splash logo, referenced as a bare `assets/icons/logo.png`. Bundled here
+  # so the package's own tests resolve it; the host app also declares it, so the
+  # same bare path resolves against the app bundle at runtime.
+  assets:
+    - assets/icons/

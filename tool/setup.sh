@@ -5,34 +5,30 @@
 #
 # It chains the steps documented in the README Quick Start and the iOS one-time
 # setup note: submodules, FVM SDK, disabling Swift Package Manager (macOS),
-# dependencies, code generation, backend deps, and the pre-push hook.
+# dependencies, code generation, and the pre-push hook.
 #
 # Usage: tool/setup.sh [options]
 #   --no-hooks      Don't enable the .githooks pre-push gate (enabled by default).
 #   --no-codegen    Skip build_runner (dep-only refresh).
-#   --no-backend    Skip fetching Go backend dependencies.
 #   -h, --help      Show this help and exit.
 #
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-backend_dir="$repo_root/simple_backend_server"
 
 # --- options ----------------------------------------------------------------
 enable_hooks=1
 run_codegen=1
-setup_backend=1
 
 usage() {
   # Print the comment header above (between the shebang and `set -euo`).
-  sed -n '3,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '3,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --no-hooks) enable_hooks=0 ;;
     --no-codegen) run_codegen=0 ;;
-    --no-backend) setup_backend=0 ;;
     -h | --help)
       usage
       exit 0
@@ -78,9 +74,6 @@ if [[ "$has_fvm" -eq 0 ]]; then
   echo "    from the pinned .fvmrc ($(cat .fvmrc | grep -o '[0-9.]*'))." >&2
 fi
 
-if ! command -v go >/dev/null 2>&1; then
-  echo "  ⚠ go not found — the companion backend won't run until Go is installed." >&2
-fi
 if ! command -v node >/dev/null 2>&1; then
   echo "  ⚠ node not found — only needed for the optional firebase MCP server." >&2
 fi
@@ -132,18 +125,7 @@ else
     "until you run build_runner."
 fi
 
-# --- 7. backend dependencies ------------------------------------------------
-if [[ "$setup_backend" -eq 1 ]]; then
-  if command -v go >/dev/null 2>&1 && [[ -f "$backend_dir/go.mod" ]]; then
-    echo "▶ setup: fetching backend Go dependencies…"
-    (cd "$backend_dir" && go mod download)
-    echo "✓ backend dependencies ready"
-  else
-    echo "• skipping backend deps (go missing or submodule empty)."
-  fi
-fi
-
-# --- 8. git hooks (opt-in, default on) --------------------------------------
+# --- 7. git hooks (opt-in, default on) --------------------------------------
 if [[ "$enable_hooks" -eq 1 ]]; then
   current_hooks_path="$(git config --get core.hooksPath || true)"
   if [[ "$current_hooks_path" != ".githooks" ]]; then
@@ -155,7 +137,7 @@ if [[ "$enable_hooks" -eq 1 ]]; then
   fi
 fi
 
-# --- 9. Firebase reminder ---------------------------------------------------
+# --- 8. Firebase reminder ---------------------------------------------------
 if [[ ! -f "$repo_root/android/app/google-services.json" ]] ||
   [[ ! -f "$repo_root/ios/Runner/GoogleService-Info.plist" ]]; then
   echo "• Firebase config is git-ignored and missing. The app builds with"
@@ -163,15 +145,12 @@ if [[ ! -f "$repo_root/android/app/google-services.json" ]] ||
   echo "  drop google-services.json / GoogleService-Info.plist into place."
 fi
 
-# --- 10. summary ------------------------------------------------------------
+# --- 9. summary -------------------------------------------------------------
 fvm_prefix=""
 [[ "$has_fvm" -eq 1 ]] && fvm_prefix="fvm "
 cat <<EOF
 
 ✓ Setup complete. Next steps:
-
-  # start the local backend (in another terminal)
-  cd simple_backend_server && go run .        # → http://localhost:8080
 
   # run the app
   ${fvm_prefix}flutter run

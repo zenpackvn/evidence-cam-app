@@ -6,11 +6,9 @@
 library;
 
 import 'package:app_ui/app_ui.dart';
+import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
-
-import '../screens/ec_flow1.dart';
-import '../screens/ec_screens.dart';
 
 /// Wraps a screen in the app theme so previews match the real look.
 Widget _framed(Widget child) => MaterialApp(

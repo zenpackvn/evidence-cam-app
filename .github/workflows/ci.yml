@@ -77,12 +77,11 @@ jobs:
               - '!.gitattributes'
               - '!.gitmodules'
               - '!.github/dependabot.yml'
-              # Submodule pointer bumps (incl. Dependabot's). These two aren't
-              # part of the Flutter build and aren't checked out, so a gitlink
+              # Submodule pointer bumps (incl. Dependabot's). published/cli isn't
+              # part of the Flutter build and isn't checked out, so a gitlink
               # change can't affect these jobs. (published/rev_sync is deliberately
               # NOT excluded: it's a path-dependency of the build, is checked out,
               # and its bumps must trigger these jobs.)
-              - '!simple_backend_server'
               - '!published/cli'
 
   analyze-and-test:
@@ -97,7 +96,7 @@ jobs:
           persist-credentials: false
 
       # rev_sync is a published package vendored as a submodule but consumed as
-      # a path dependency, so unlike the Go backend / CLI submodules it must be
+      # a path dependency, so unlike the CLI submodule it must be
       # checked out for `flutter pub get` to resolve. Fetch only that submodule.
       - name: Check out rev_sync submodule
         run: git submodule update --init published/rev_sync
@@ -258,7 +257,7 @@ jobs:
           persist-credentials: false
 
       # rev_sync is a published package vendored as a submodule but consumed as
-      # a path dependency, so unlike the Go backend / CLI submodules it must be
+      # a path dependency, so unlike the CLI submodule it must be
       # checked out for `flutter pub get` to resolve. Fetch only that submodule.
       - name: Check out rev_sync submodule
         run: git submodule update --init published/rev_sync
@@ -358,7 +357,7 @@ jobs:
           persist-credentials: false
 
       # rev_sync is a published package vendored as a submodule but consumed as
-      # a path dependency, so unlike the Go backend / CLI submodules it must be
+      # a path dependency, so unlike the CLI submodule it must be
       # checked out for `flutter pub get` to resolve. Fetch only that submodule.
       - name: Check out rev_sync submodule
         run: git submodule update --init published/rev_sync
@@ -523,7 +522,7 @@ jobs:
           persist-credentials: false
 
       # rev_sync is a published package vendored as a submodule but consumed as
-      # a path dependency, so unlike the Go backend / CLI submodules it must be
+      # a path dependency, so unlike the CLI submodule it must be
       # checked out for `flutter pub get` to resolve. Fetch only that submodule.
       - name: Check out rev_sync submodule
         run: git submodule update --init published/rev_sync

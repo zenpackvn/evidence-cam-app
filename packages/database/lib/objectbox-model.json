@@ -257,10 +257,76 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "6:610114076402941823",
+      "lastPropertyId": "11:1933466406096036724",
+      "name": "EvidenceClipEntity",
+      "properties": [
+        {
+          "id": "1:1762787338301645187",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6899482470547297462",
+          "name": "taskId",
+          "indexId": "6:6641517864325798176",
+          "type": 9,
+          "flags": 34848
+        },
+        {
+          "id": "3:2802271498557048313",
+          "name": "tracking",
+          "type": 9
+        },
+        {
+          "id": "4:5889065572093824481",
+          "name": "type",
+          "type": 9
+        },
+        {
+          "id": "5:3325672388678561565",
+          "name": "filePath",
+          "type": 9
+        },
+        {
+          "id": "6:5427566607392154019",
+          "name": "createdAt",
+          "type": 12
+        },
+        {
+          "id": "7:4068137096577911298",
+          "name": "stateCode",
+          "type": 6
+        },
+        {
+          "id": "8:1637055986477083097",
+          "name": "progress",
+          "type": 8
+        },
+        {
+          "id": "9:7860747567162053130",
+          "name": "retryCount",
+          "type": 6
+        },
+        {
+          "id": "10:5600401616203538484",
+          "name": "remoteUrl",
+          "type": 9
+        },
+        {
+          "id": "11:1933466406096036724",
+          "name": "shopId",
+          "type": 9
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "5:7251944359262926434",
-  "lastIndexId": "5:3983229944700575413",
+  "lastEntityId": "6:610114076402941823",
+  "lastIndexId": "6:6641517864325798176",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

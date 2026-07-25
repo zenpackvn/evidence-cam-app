@@ -83,5 +83,16 @@
 	<string>This app requires photo library access to let you select images and videos for bookmarks.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>This app requires write access to the photo library to save captured media.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.725879677565-vutnghoj6rdku415matc4vn4krjc18aj</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

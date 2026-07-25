@@ -1,29 +1,14 @@
 import 'package:analytics/analytics.dart';
 import 'package:app_platform/app_platform.dart';
 import 'package:config/config.dart';
-import 'package:feature_auth/feature_auth.dart';
-// fst:feature:bookmarks:start
-import 'package:feature_bookmarks/feature_bookmarks.dart';
-// fst:feature:bookmarks:end
-// fst:feature:collections:start
-import 'package:feature_collections/feature_collections.dart';
-// fst:feature:collections:end
-import 'package:feature_home/feature_home.dart';
-// fst:feature:notifications:start
-import 'package:feature_notifications/feature_notifications.dart';
-// fst:feature:notifications:end
-import 'package:feature_onboarding/feature_onboarding.dart';
-import 'package:feature_profile/feature_profile.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:network/network.dart';
 import 'package:shared_contracts/shared_contracts.dart';
 import 'package:storage/storage.dart';
 import 'package:sync_connectivity_plus/sync_connectivity_plus.dart';
-import 'package:theme/theme.dart';
 
 import 'injection.config.dart';
-import 'reader_fallbacks.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -32,10 +17,9 @@ final GetIt getIt = GetIt.instance;
 ///
 /// Ordering: `storage` provides the `AuthTokenStore` + `FlutterSecureStorage`
 /// that `network` builds the authenticated `Dio` on, so it is listed before
-/// `network`. `shared_contracts` registers `ActivityNotifier`, consumed by a
-/// feature BLoC, so it precedes the feature modules. The authenticated `Dio` is
-/// now provided by `network` (not by `feature_auth`), so no feature module
-/// needs to be ordered relative to `feature_auth` for it.
+/// `network`. Only infra modules remain — EvidenceCam's own features
+/// (`feature_capture` and the presentation packages) are constructed by the app
+/// shell, not through injectable package modules.
 @InjectableInit(
   externalPackageModulesBefore: [
     ExternalModule(AnalyticsPackageModule),
@@ -43,28 +27,10 @@ final GetIt getIt = GetIt.instance;
     ExternalModule(StoragePackageModule),
     ExternalModule(NetworkPackageModule),
     ExternalModule(AppPlatformPackageModule),
-    ExternalModule(ThemePackageModule),
     ExternalModule(SyncConnectivityPlusPackageModule),
     ExternalModule(SharedContractsPackageModule),
-    ExternalModule(FeatureAuthPackageModule),
-    // fst:feature:notifications:start
-    ExternalModule(FeatureNotificationsPackageModule),
-    // fst:feature:notifications:end
-    // fst:feature:collections:start
-    ExternalModule(FeatureCollectionsPackageModule),
-    // fst:feature:collections:end
-    // fst:feature:bookmarks:start
-    ExternalModule(FeatureBookmarksPackageModule),
-    // fst:feature:bookmarks:end
-    ExternalModule(FeatureOnboardingPackageModule),
-    ExternalModule(FeatureHomePackageModule),
-    ExternalModule(FeatureProfilePackageModule),
-    // fst:feature-modules — `fst add-feature` inserts new feature modules above
   ],
 )
 Future<void> configureDependencies() async {
   await getIt.init();
-  // Fill in Null-Object readers for any feature dropped at scaffold time, so
-  // `home` keeps working when bookmarks/collections were excluded.
-  registerReaderFallbacks(getIt);
 }

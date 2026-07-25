@@ -36,6 +36,7 @@ const _layers = <String, int>{
   'storage': 1, // shared_preferences / secure storage
   'analytics': 1, // -> architecture
   'app_ui': 1, // design tokens; no workspace package deps
+  'ec_ui': 1, // EvidenceCam Cupertino primitives; only flutter + smooth_corner
   'localization': 1, // gen-l10n AppLocalizations; no workspace package deps
   'shared_contracts': 1, // cross-feature domain contracts -> architecture
   'database': 1, // centralized ObjectBox persistence -> rev_sync
@@ -44,28 +45,15 @@ const _layers = <String, int>{
   'shared_ui': 2, // cross-feature presentation contracts -> shared_contracts
   'network': 2, // -> config
   'app_platform': 2, // -> analytics, architecture
-  'theme': 2, // -> analytics, architecture
   // 3 — shared test harness, sits on top of what it provides fakes for.
   'test_utils': 3, // -> analytics, app_platform, storage
-  // 4 — base feature packages: the top runtime layer (only the app composes
-  //     them), each depending on no sibling feature.
-  'feature_auth': 4,
-  // fst:feature:collections:start
-  'feature_collections': 4,
-  // fst:feature:collections:end
-  'feature_home': 4,
-  // fst:feature:notifications:start
-  'feature_notifications': 4,
-  // fst:feature:notifications:end
-  'feature_onboarding': 4,
-  'feature_splash': 4,
-  // 5 — feature packages that surface a single sibling's capability; each
-  //     depends on exactly one lower feature (the capability provider). The
-  //     allowed edges are documented in feature_boundaries_test.
-  // fst:feature:bookmarks:start
-  'feature_bookmarks': 5, // -> feature_collections
-  // fst:feature:bookmarks:end
-  'feature_profile': 5, // -> feature_auth
+  'ec_data': 3, // EC backend DTOs/API/repo/auth -> network + firebase/google/apple
+  // 4 — EvidenceCam feature packages: the top runtime layer (only the app
+  //     composes them); none depend on a sibling feature.
+  'feature_account': 4, // Flow 4 screens -> app_ui, ec_ui
+  'feature_capture': 4, // -> app_platform (camera + scanner); no sibling deps
+  'feature_orders': 4, // Flow 2 screens -> app_ui, ec_ui
+  'feature_shift': 4, // Flow 1 + splash/login screens -> app_ui, ec_ui
 };
 
 void main() {

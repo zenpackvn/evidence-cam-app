@@ -17,6 +17,7 @@ import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 import 'src/entities/activity_entity.dart';
 import 'src/entities/bookmark_entity.dart';
 import 'src/entities/collection_entity.dart';
+import 'src/entities/evidence_clip_entity.dart';
 import 'src/entities/notification_entity.dart';
 import 'src/entities/sync_cursor_entity.dart';
 
@@ -318,6 +319,83 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(6, 610114076402941823),
+    name: 'EvidenceClipEntity',
+    lastPropertyId: const obx_int.IdUid(11, 1933466406096036724),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 1762787338301645187),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 6899482470547297462),
+        name: 'taskId',
+        type: 9,
+        flags: 34848,
+        indexId: const obx_int.IdUid(6, 6641517864325798176),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 2802271498557048313),
+        name: 'tracking',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 5889065572093824481),
+        name: 'type',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 3325672388678561565),
+        name: 'filePath',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 5427566607392154019),
+        name: 'createdAt',
+        type: 12,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 4068137096577911298),
+        name: 'stateCode',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 1637055986477083097),
+        name: 'progress',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 7860747567162053130),
+        name: 'retryCount',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 5600401616203538484),
+        name: 'remoteUrl',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 1933466406096036724),
+        name: 'shopId',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -363,8 +441,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(5, 7251944359262926434),
-    lastIndexId: const obx_int.IdUid(5, 3983229944700575413),
+    lastEntityId: const obx_int.IdUid(6, 610114076402941823),
+    lastIndexId: const obx_int.IdUid(6, 6641517864325798176),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -794,6 +872,107 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    EvidenceClipEntity: obx_int.EntityDefinition<EvidenceClipEntity>(
+      model: _entities[5],
+      toOneRelations: (EvidenceClipEntity object) => [],
+      toManyRelations: (EvidenceClipEntity object) => {},
+      getId: (EvidenceClipEntity object) => object.id,
+      setId: (EvidenceClipEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (EvidenceClipEntity object, fb.Builder fbb) {
+        final taskIdOffset = fbb.writeString(object.taskId);
+        final trackingOffset = fbb.writeString(object.tracking);
+        final typeOffset = fbb.writeString(object.type);
+        final filePathOffset = fbb.writeString(object.filePath);
+        final remoteUrlOffset = object.remoteUrl == null
+            ? null
+            : fbb.writeString(object.remoteUrl!);
+        final shopIdOffset = object.shopId == null
+            ? null
+            : fbb.writeString(object.shopId!);
+        fbb.startTable(12);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, taskIdOffset);
+        fbb.addOffset(2, trackingOffset);
+        fbb.addOffset(3, typeOffset);
+        fbb.addOffset(4, filePathOffset);
+        fbb.addInt64(5, object.createdAt.microsecondsSinceEpoch * 1000);
+        fbb.addInt64(6, object.stateCode);
+        fbb.addFloat64(7, object.progress);
+        fbb.addInt64(8, object.retryCount);
+        fbb.addOffset(9, remoteUrlOffset);
+        fbb.addOffset(10, shopIdOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final taskIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final trackingParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final typeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final filePathParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final createdAtParam = DateTime.fromMicrosecondsSinceEpoch(
+          (const fb.Int64Reader().vTableGet(buffer, rootOffset, 14, 0) / 1000)
+              .round(),
+          isUtc: true,
+        );
+        final shopIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 24);
+        final stateCodeParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          16,
+          0,
+        );
+        final progressParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          18,
+          0,
+        );
+        final retryCountParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          20,
+          0,
+        );
+        final remoteUrlParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 22);
+        final object = EvidenceClipEntity(
+          id: idParam,
+          taskId: taskIdParam,
+          tracking: trackingParam,
+          type: typeParam,
+          filePath: filePathParam,
+          createdAt: createdAtParam,
+          shopId: shopIdParam,
+          stateCode: stateCodeParam,
+          progress: progressParam,
+          retryCount: retryCountParam,
+          remoteUrl: remoteUrlParam,
+        );
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -1011,5 +1190,63 @@ class SyncCursorEntity_ {
   /// See [SyncCursorEntity.rev].
   static final rev = obx.QueryIntegerProperty<SyncCursorEntity>(
     _entities[4].properties[2],
+  );
+}
+
+/// [EvidenceClipEntity] entity fields to define ObjectBox queries.
+class EvidenceClipEntity_ {
+  /// See [EvidenceClipEntity.id].
+  static final id = obx.QueryIntegerProperty<EvidenceClipEntity>(
+    _entities[5].properties[0],
+  );
+
+  /// See [EvidenceClipEntity.taskId].
+  static final taskId = obx.QueryStringProperty<EvidenceClipEntity>(
+    _entities[5].properties[1],
+  );
+
+  /// See [EvidenceClipEntity.tracking].
+  static final tracking = obx.QueryStringProperty<EvidenceClipEntity>(
+    _entities[5].properties[2],
+  );
+
+  /// See [EvidenceClipEntity.type].
+  static final type = obx.QueryStringProperty<EvidenceClipEntity>(
+    _entities[5].properties[3],
+  );
+
+  /// See [EvidenceClipEntity.filePath].
+  static final filePath = obx.QueryStringProperty<EvidenceClipEntity>(
+    _entities[5].properties[4],
+  );
+
+  /// See [EvidenceClipEntity.createdAt].
+  static final createdAt = obx.QueryDateNanoProperty<EvidenceClipEntity>(
+    _entities[5].properties[5],
+  );
+
+  /// See [EvidenceClipEntity.stateCode].
+  static final stateCode = obx.QueryIntegerProperty<EvidenceClipEntity>(
+    _entities[5].properties[6],
+  );
+
+  /// See [EvidenceClipEntity.progress].
+  static final progress = obx.QueryDoubleProperty<EvidenceClipEntity>(
+    _entities[5].properties[7],
+  );
+
+  /// See [EvidenceClipEntity.retryCount].
+  static final retryCount = obx.QueryIntegerProperty<EvidenceClipEntity>(
+    _entities[5].properties[8],
+  );
+
+  /// See [EvidenceClipEntity.remoteUrl].
+  static final remoteUrl = obx.QueryStringProperty<EvidenceClipEntity>(
+    _entities[5].properties[9],
+  );
+
+  /// See [EvidenceClipEntity.shopId].
+  static final shopId = obx.QueryStringProperty<EvidenceClipEntity>(
+    _entities[5].properties[10],
   );
 }

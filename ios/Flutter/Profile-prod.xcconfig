@@ -2,4 +2,4 @@
 #include "Generated.xcconfig"
 
 APP_DISPLAY_NAME = ZenPack
-PRODUCT_BUNDLE_IDENTIFIER = com.luci-studio.flutterStarterTemplate
+PRODUCT_BUNDLE_IDENTIFIER = com.aktechvn.zenpack
