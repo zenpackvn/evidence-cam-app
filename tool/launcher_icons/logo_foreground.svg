@@ -1,11 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <g transform="translate(-1.5 -0.75)">
-    <g stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" fill="none">
-      <path d="M24 14V32"/>
-      <path d="M24 14H43"/>
-      <path d="M24 23H39"/>
-    </g>
-    <path d="M40 38C40 34.5 24 34 24 41C24 46 40 44 40 49.5C40 55 25 55 23 50.5"
-          stroke="#FF6A2B" stroke-width="7" stroke-linecap="round" fill="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <g transform="translate(0 82) translate(512 430) scale(1.18) translate(-512 -430)">
+  <circle cx="512" cy="430" r="226" stroke="#626B9D" stroke-width="34"/>
+  <path
+    d="M512 250 338 328v232l174 78 174-78V328L512 250Z"
+    stroke="#15255F"
+    stroke-width="34"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M338 328 512 404l174-76M512 404v234"
+    stroke="#15255F"
+    stroke-width="34"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="m448 459 59 73 129-143"
+    stroke="#4B5792"
+    stroke-width="42"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
   </g>
 </svg>

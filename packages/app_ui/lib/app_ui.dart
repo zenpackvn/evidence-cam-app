@@ -7,6 +7,7 @@ export 'src/theme/app_icon_size.dart';
 export 'src/theme/app_radius.dart';
 export 'src/theme/app_spacing.dart';
 export 'src/theme/app_theme.dart';
+export 'src/theme/brand_colors.dart';
 export 'src/theme/semantic_colors.dart';
 export 'src/widgets/app_adaptive_scaffold.dart';
 export 'src/widgets/app_animated_text.dart';

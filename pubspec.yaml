@@ -96,6 +96,19 @@ dependencies:
   # iOS-style icon set, used via the CupertinoIcons class.
   cupertino_icons: ^1.0.8
 
+  # Persistent app-documents dir for the offline upload queue (recorded clips
+  # are copied here so OS temp cleanup never loses evidence — FR-08/FR-09).
+  path_provider: ^2.1.0
+
+  # On-device barcode scanning for hands-free bill detection (FR-01). Runs on
+  # the recording camera's image stream (scan-to-start). MLKit requires iOS
+  # 15.5, so ios/ deployment target was bumped 15.0 -> 15.5 (still >= Firebase's
+  # 15.0 floor).
+  # NOTE: MLKit has no arm64 iOS-Simulator slice, so simulator runs on
+  # Apple Silicon must temporarily drop this (see ec_bill_scanner.dart). Device
+  # builds are unaffected.
+  google_mlkit_barcode_scanning: ^0.14.0
+
   # State management: BLoC pattern (BlocProvider, BlocBuilder, BlocListener).
   flutter_bloc: ^9.1.1
   # Event transformers for Bloc handlers.
@@ -141,6 +154,9 @@ dependencies:
 
   vector_graphics: ^1.2.2
   font_awesome_flutter: ^11.0.0
+  firebase_auth: ^6.5.6
+  google_sign_in: ^7.2.0
+  sign_in_with_apple: ^8.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -210,12 +226,12 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true
   min_sdk_android: 21
-  adaptive_icon_background: "#095D9E"
+  adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "tool/launcher_icons/app_icon_foreground.png"
   web:
     generate: true
-    background_color: "#095D9E"
-    theme_color: "#095D9E"
+    background_color: "#FFFFFF"
+    theme_color: "#15255F"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

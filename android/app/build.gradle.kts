@@ -43,21 +43,21 @@ android {
     productFlavors {
         create("dev") {
             dimension = "environment"
-            resValue("string", "app_name", "Flutter Starter (Dev)")
+            resValue("string", "app_name", "ZenPack (Dev)")
         }
         create("staging") {
             dimension = "environment"
             applicationIdSuffix = ".staging"
-            resValue("string", "app_name", "Flutter Starter (Staging)")
+            resValue("string", "app_name", "ZenPack (Staging)")
         }
         create("prod") {
             dimension = "environment"
-            resValue("string", "app_name", "Flutter Starter")
+            resValue("string", "app_name", "ZenPack")
         }
     }
 
     defaultConfig {
-        applicationId = "com.aktechvn.quangsat"
+        applicationId = "com.aktechvn.zenpack"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -99,4 +99,3 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }
-

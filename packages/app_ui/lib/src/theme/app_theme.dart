@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'app_elevation.dart';
 import 'app_radius.dart';
+import 'brand_colors.dart';
 import 'semantic_colors.dart';
 
 /// Shared component theming applied to both [AppTheme.light] and
@@ -28,13 +29,13 @@ const _componentThemes = FlexSubThemesData(
   inputDecoratorUnfocusedBorderIsColored: false,
   inputDecoratorFocusedBorderWidth: 1.5,
 
-  // Buttons / FAB / chips: radius scale consistent with `AppButton._style()`
-  // (10/14/16 across small/medium/large) and elevation 2 for primary actions.
-  filledButtonRadius: 14,
-  elevatedButtonRadius: 14,
+  // Buttons / FAB / chips: EvidenceCam design uses a 10px button radius
+  // (C/BtnPrimary, C/BtnOutline in pencil-new.pen).
+  filledButtonRadius: 10,
+  elevatedButtonRadius: 10,
   elevatedButtonElevation: AppElevation.md - 1,
-  outlinedButtonRadius: 14,
-  textButtonRadius: 14,
+  outlinedButtonRadius: 10,
+  textButtonRadius: 10,
   fabRadius: AppRadius.lg,
   chipRadius: AppRadius.sm,
 
@@ -62,16 +63,39 @@ const _componentThemes = FlexSubThemesData(
 class AppTheme {
   const AppTheme._();
 
-  /// The light theme variant.
+  /// The light theme variant — EvidenceCam navy palette from `pencil-new.pen`.
   static ThemeData light({FlexScheme scheme = FlexScheme.blue}) {
-    return FlexThemeData.light(
-      scheme: scheme,
+    final base = FlexThemeData.light(
+      colors: const FlexSchemeColor(
+        primary: BrandColors.dark,
+        primaryContainer: BrandColors.soft,
+        secondary: BrandColors.ink,
+        secondaryContainer: BrandColors.soft,
+        tertiary: BrandColors.dark,
+        tertiaryContainer: BrandColors.soft,
+        appBarColor: BrandColors.bg,
+        error: BrandColors.rec,
+      ),
+      surface: BrandColors.bg,
+      scaffoldBackground: BrandColors.bg,
       textTheme: GoogleFonts.interTextTheme(),
       useMaterial3: true,
       subThemesData: _componentThemes,
       appBarElevation: AppElevation.none,
-      appBarStyle: FlexAppBarStyle.surface,
-    ).copyWith(
+      appBarStyle: FlexAppBarStyle.background,
+    );
+    // Pin the exact ink/muted/line/soft tokens so text, dividers and fills
+    // match the design precisely (FlexColorScheme would otherwise derive them).
+    return base.copyWith(
+      colorScheme: base.colorScheme.copyWith(
+        onSurface: BrandColors.ink,
+        onSurfaceVariant: BrandColors.mut,
+        outline: BrandColors.line,
+        outlineVariant: BrandColors.line,
+        surfaceContainerLowest: BrandColors.bg,
+        surfaceContainerLow: BrandColors.soft,
+        surfaceContainer: BrandColors.soft,
+      ),
       extensions: const [SemanticColors.light],
       bottomSheetTheme: const BottomSheetThemeData(showDragHandle: true),
     );

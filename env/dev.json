@@ -1,5 +1,5 @@
 {
   "FLAVOR": "dev",
-  "API_BASE_URL": "https://aye-dairy-bloggers-network.trycloudflare.com",
+  "API_BASE_URL": "https://evidencecam-api.thuannguyen7438.workers.dev",
   "API_TIMEOUT_SECONDS": 10
 }

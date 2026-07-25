@@ -1,15 +1,8 @@
-// PLACEHOLDER Firebase configuration — committed so the template compiles and
-// runs the test suite out of the box. The values are NOT real.
-//
-// Replace this file with your own project's config by running the FlutterFire
-// CLI before building for a device:
-//
-//     dart pub global activate flutterfire_cli
-//     flutterfire configure
-//
-// That also generates the native config (google-services.json /
-// GoogleService-Info.plist), which remain git-ignored and are required for
-// real device/emulator builds.
+// Firebase configuration for project `zenpack-e42d1`.
+// android/ios are the real values (kept in sync with google-services.json /
+// GoogleService-Info.plist). `web` is still a placeholder — no web app is
+// registered in the Firebase project; register one and rerun `flutterfire
+// configure` if a web build is ever needed.
 //
 // ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
@@ -69,19 +62,19 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyABVGRZvoln47vOJ35q7u0pLwCruio_Zw4',
-    appId: '1:208874315324:android:6b9255220996a8692aad39',
-    messagingSenderId: '208874315324',
-    projectId: 'flutter-template-e45d8',
-    storageBucket: 'flutter-template-e45d8.firebasestorage.app',
+    apiKey: 'AIzaSyDC9tWiVw_Qc_NdRAGFYnkcsxfrdXONyYE',
+    appId: '1:725879677565:android:f384298ae30a98546ac714',
+    messagingSenderId: '725879677565',
+    projectId: 'zenpack-e42d1',
+    storageBucket: 'zenpack-e42d1.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBf2CH2XfVUVS8xv5douspFCpUpK4czf-U',
-    appId: '1:208874315324:ios:af6e2475740a6faf2aad39',
-    messagingSenderId: '208874315324',
-    projectId: 'flutter-template-e45d8',
-    storageBucket: 'flutter-template-e45d8.firebasestorage.app',
-    iosBundleId: 'com.aktechvn.quangvn',
+    apiKey: 'AIzaSyCdMYkH-FR2yYZ0R2o6sIUUH5jDaC2wNfc',
+    appId: '1:725879677565:ios:3ca7ec20e9779c3f6ac714',
+    messagingSenderId: '725879677565',
+    projectId: 'zenpack-e42d1',
+    storageBucket: 'zenpack-e42d1.firebasestorage.app',
+    iosBundleId: 'com.aktechvn.zenpack',
   );
 }
