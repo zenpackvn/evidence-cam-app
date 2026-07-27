@@ -98,287 +98,11 @@ abstract class AppLocalizations {
     Locale('vi'),
   ];
 
-  /// No description provided for @appTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Flutter Starter'**
-  String get appTitle;
-
-  /// No description provided for @loginAppBarTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Sign in'**
-  String get loginAppBarTitle;
-
-  /// No description provided for @loginHeadline.
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome Back'**
-  String get loginHeadline;
-
-  /// No description provided for @loginSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Sign in to organize your digital space.'**
-  String get loginSubtitle;
-
-  /// No description provided for @loginUsernameLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Email Address'**
-  String get loginUsernameLabel;
-
-  /// No description provided for @loginUsernameHint.
-  ///
-  /// In en, this message translates to:
-  /// **'hello@example.com'**
-  String get loginUsernameHint;
-
-  /// No description provided for @loginPasswordLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Password'**
-  String get loginPasswordLabel;
-
-  /// No description provided for @loginPasswordHint.
-  ///
-  /// In en, this message translates to:
-  /// **'••••••••'**
-  String get loginPasswordHint;
-
-  /// No description provided for @loginShowPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Show password'**
-  String get loginShowPassword;
-
-  /// No description provided for @loginHidePassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Hide password'**
-  String get loginHidePassword;
-
-  /// No description provided for @loginForgotPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Forgot?'**
-  String get loginForgotPassword;
-
-  /// No description provided for @loginSubmit.
-  ///
-  /// In en, this message translates to:
-  /// **'Log In'**
-  String get loginSubmit;
-
-  /// No description provided for @loginDividerLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'OR CONTINUE WITH'**
-  String get loginDividerLabel;
-
-  /// No description provided for @loginGoogle.
-  ///
-  /// In en, this message translates to:
-  /// **'Google'**
-  String get loginGoogle;
-
-  /// No description provided for @loginApple.
-  ///
-  /// In en, this message translates to:
-  /// **'Apple'**
-  String get loginApple;
-
-  /// No description provided for @loginRegisterPrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'New to Flutter Starter? '**
-  String get loginRegisterPrompt;
-
-  /// No description provided for @loginNavigateToRegister.
-  ///
-  /// In en, this message translates to:
-  /// **'Create an account'**
-  String get loginNavigateToRegister;
-
-  /// No description provided for @loginPasswordRecoveryUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Password recovery isn\'t configured yet.'**
-  String get loginPasswordRecoveryUnavailable;
-
-  /// No description provided for @loginSocialUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Social sign-in isn\'t configured yet.'**
-  String get loginSocialUnavailable;
-
-  /// No description provided for @registerAppBarTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Register'**
-  String get registerAppBarTitle;
-
-  /// No description provided for @registerHeadline.
-  ///
-  /// In en, this message translates to:
-  /// **'Join Flutter Starter'**
-  String get registerHeadline;
-
-  /// No description provided for @registerSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Create an account to start organizing your digital life with clarity and ease.'**
-  String get registerSubtitle;
-
-  /// No description provided for @registerEmailLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Email Address'**
-  String get registerEmailLabel;
-
-  /// No description provided for @registerEmailHint.
-  ///
-  /// In en, this message translates to:
-  /// **'jane@example.com'**
-  String get registerEmailHint;
-
-  /// No description provided for @registerInvalidEmail.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a valid email address.'**
-  String get registerInvalidEmail;
-
-  /// No description provided for @registerUsernameLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Username'**
-  String get registerUsernameLabel;
-
-  /// No description provided for @registerPasswordLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Password'**
-  String get registerPasswordLabel;
-
-  /// No description provided for @registerPasswordHint.
-  ///
-  /// In en, this message translates to:
-  /// **'••••••••'**
-  String get registerPasswordHint;
-
-  /// No description provided for @registerPasswordHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Must be at least 8 characters.'**
-  String get registerPasswordHelp;
-
-  /// No description provided for @registerPasswordMinLengthError.
-  ///
-  /// In en, this message translates to:
-  /// **'Password must be at least 8 characters.'**
-  String get registerPasswordMinLengthError;
-
-  /// No description provided for @registerShowPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Show password'**
-  String get registerShowPassword;
-
-  /// No description provided for @registerHidePassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Hide password'**
-  String get registerHidePassword;
-
-  /// No description provided for @registerConfirmPasswordLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm Password'**
-  String get registerConfirmPasswordLabel;
-
-  /// No description provided for @registerSubmit.
-  ///
-  /// In en, this message translates to:
-  /// **'Join Flutter Starter'**
-  String get registerSubmit;
-
-  /// No description provided for @registerLoginPrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'Already have an account? '**
-  String get registerLoginPrompt;
-
-  /// No description provided for @registerNavigateToLogin.
-  ///
-  /// In en, this message translates to:
-  /// **'Log in'**
-  String get registerNavigateToLogin;
-
-  /// No description provided for @errorPasswordsDoNotMatch.
-  ///
-  /// In en, this message translates to:
-  /// **'Passwords do not match.'**
-  String get errorPasswordsDoNotMatch;
-
-  /// No description provided for @fieldRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Required'**
-  String get fieldRequired;
-
-  /// No description provided for @errorInvalidCredentials.
-  ///
-  /// In en, this message translates to:
-  /// **'Please enter a username and password.'**
-  String get errorInvalidCredentials;
-
-  /// No description provided for @errorInvalidInput.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid input.'**
-  String get errorInvalidInput;
-
-  /// No description provided for @errorUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'Something went wrong.'**
-  String get errorUnknown;
-
   /// No description provided for @commonCancel.
   ///
   /// In en, this message translates to:
   /// **'Cancel'**
   String get commonCancel;
-
-  /// No description provided for @commonCreate.
-  ///
-  /// In en, this message translates to:
-  /// **'Create'**
-  String get commonCreate;
-
-  /// No description provided for @commonDelete.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get commonDelete;
-
-  /// No description provided for @commonEdit.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit'**
-  String get commonEdit;
-
-  /// No description provided for @commonImageLoadFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load image'**
-  String get commonImageLoadFailed;
-
-  /// No description provided for @commonLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading…'**
-  String get commonLoading;
 
   /// No description provided for @commonRetry.
   ///
@@ -386,947 +110,1577 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get commonRetry;
 
-  /// No description provided for @commonSave.
+  /// No description provided for @commonClose.
   ///
   /// In en, this message translates to:
-  /// **'Save'**
-  String get commonSave;
+  /// **'Close'**
+  String get commonClose;
 
-  /// No description provided for @commonShare.
+  /// No description provided for @toastChangeLanguage.
   ///
   /// In en, this message translates to:
-  /// **'Share'**
-  String get commonShare;
+  /// **'Change language'**
+  String get toastChangeLanguage;
 
-  /// No description provided for @commonSignOut.
+  /// No description provided for @toastTermsPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & Policy'**
+  String get toastTermsPolicy;
+
+  /// No description provided for @toastInfoSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Info saved'**
+  String get toastInfoSaved;
+
+  /// No description provided for @toastPasswordCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Password created'**
+  String get toastPasswordCreated;
+
+  /// No description provided for @toastPasswordChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed'**
+  String get toastPasswordChanged;
+
+  /// No description provided for @toastUpgradeComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan upgrade — coming soon'**
+  String get toastUpgradeComingSoon;
+
+  /// No description provided for @toastPendingDossierConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'You still have a dossier submitted to the marketplace, please confirm again'**
+  String get toastPendingDossierConfirm;
+
+  /// No description provided for @toastCopiedShareLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Share link copied'**
+  String get toastCopiedShareLink;
+
+  /// No description provided for @toastShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t share, try again later'**
+  String get toastShareFailed;
+
+  /// No description provided for @toastDownloadingVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading video'**
+  String get toastDownloadingVideo;
+
+  /// No description provided for @toastVideoDownloadedCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Video downloaded and path copied'**
+  String get toastVideoDownloadedCopied;
+
+  /// No description provided for @toastVideoDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t download video, try again later'**
+  String get toastVideoDownloadFailed;
+
+  /// No description provided for @toastPhotoQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo attached — added to the upload queue'**
+  String get toastPhotoQueued;
+
+  /// No description provided for @toastInvitePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a shop invitation'**
+  String get toastInvitePending;
+
+  /// No description provided for @toastInviteSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation sent'**
+  String get toastInviteSent;
+
+  /// No description provided for @toastMemberAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Member added'**
+  String get toastMemberAdded;
+
+  /// No description provided for @toastDossierLinkCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier link created'**
+  String get toastDossierLinkCreated;
+
+  /// No description provided for @toastDossierLinkRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier link revoked'**
+  String get toastDossierLinkRevoked;
+
+  /// No description provided for @toastVideoPlayFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t play video'**
+  String get toastVideoPlayFailed;
+
+  /// No description provided for @toastShopCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'New shop created'**
+  String get toastShopCreated;
+
+  /// No description provided for @toastVideoQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Video saved — added to the upload queue'**
+  String get toastVideoQueued;
+
+  /// No description provided for @toastVideoNoPlayLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Video has no playback link yet'**
+  String get toastVideoNoPlayLink;
+
+  /// No description provided for @toastVideoNoDownloadLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Video has no download link yet'**
+  String get toastVideoNoDownloadLink;
+
+  /// No description provided for @toastVideoDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Video deleted'**
+  String get toastVideoDeleted;
+
+  /// No description provided for @toastVideoTypeSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Video type saved'**
+  String get toastVideoTypeSaved;
+
+  /// No description provided for @toastVideoTypeDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Video type deleted'**
+  String get toastVideoTypeDeleted;
+
+  /// No description provided for @toastNoVideoTypeToDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'No video type to delete'**
+  String get toastNoVideoTypeToDelete;
+
+  /// No description provided for @toastRoleChangedManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Role changed: Shop manager'**
+  String get toastRoleChangedManager;
+
+  /// No description provided for @toastRoleChangedStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Role changed: Staff'**
+  String get toastRoleChangedStaff;
+
+  /// No description provided for @toastNoMemberToUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'No member to update'**
+  String get toastNoMemberToUpdate;
+
+  /// No description provided for @toastMemberRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from shop (recorded videos still finish uploading)'**
+  String get toastMemberRemoved;
+
+  /// No description provided for @copiedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied {label}'**
+  String copiedLabel(String label);
+
+  /// No description provided for @labelTrackingCode.
+  ///
+  /// In en, this message translates to:
+  /// **'tracking code'**
+  String get labelTrackingCode;
+
+  /// No description provided for @labelDossierLink.
+  ///
+  /// In en, this message translates to:
+  /// **'dossier link'**
+  String get labelDossierLink;
+
+  /// No description provided for @resolutionChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolution: {value}'**
+  String resolutionChanged(String value);
+
+  /// No description provided for @dossierShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'Complaint dossier {tracking}'**
+  String dossierShareText(String tracking);
+
+  /// No description provided for @accountNoName.
+  ///
+  /// In en, this message translates to:
+  /// **'No name yet'**
+  String get accountNoName;
+
+  /// No description provided for @accountNoShop.
+  ///
+  /// In en, this message translates to:
+  /// **'No shop selected'**
+  String get accountNoShop;
+
+  /// No description provided for @accountCreatePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Create password'**
+  String get accountCreatePassword;
+
+  /// No description provided for @accountChangePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get accountChangePassword;
+
+  /// No description provided for @accountLinkedMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} linked'**
+  String accountLinkedMethods(int count);
+
+  /// No description provided for @roleOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get roleOwner;
+
+  /// No description provided for @roleManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager'**
+  String get roleManager;
+
+  /// No description provided for @roleStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get roleStaff;
+
+  /// No description provided for @roleOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get roleOther;
+
+  /// No description provided for @roleUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get roleUnknown;
+
+  /// No description provided for @memberFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get memberFallbackName;
+
+  /// No description provided for @uploadStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded'**
+  String get uploadStatusDone;
+
+  /// No description provided for @uploadStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to upload'**
+  String get uploadStatusPending;
+
+  /// No description provided for @uploadStatusQuotaHold.
+  ///
+  /// In en, this message translates to:
+  /// **'On hold (quota)'**
+  String get uploadStatusQuotaHold;
+
+  /// No description provided for @uploadStatusDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get uploadStatusDeleted;
+
+  /// No description provided for @kindPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached photo'**
+  String get kindPhoto;
+
+  /// No description provided for @kindVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get kindVideo;
+
+  /// No description provided for @recordedByFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Current account'**
+  String get recordedByFallback;
+
+  /// No description provided for @deviceUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown device'**
+  String get deviceUnknown;
+
+  /// No description provided for @orderNoEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'No evidence yet'**
+  String get orderNoEvidence;
+
+  /// No description provided for @errorGenericRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong, please try again.'**
+  String get errorGenericRetry;
+
+  /// No description provided for @errorPendingDossier.
+  ///
+  /// In en, this message translates to:
+  /// **'You still have a dossier submitted to the marketplace, please handle it before continuing.'**
+  String get errorPendingDossier;
+
+  /// No description provided for @errorSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session has expired, please sign in again.'**
+  String get errorSessionExpired;
+
+  /// No description provided for @errorNoNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'No network connection, please try again.'**
+  String get errorNoNetwork;
+
+  /// No description provided for @errorNoPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have permission to perform this action.'**
+  String get errorNoPermission;
+
+  /// No description provided for @errorServerBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'The system is busy, please try again later.'**
+  String get errorServerBusy;
+
+  /// No description provided for @errorSessionInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid session, please sign in again.'**
+  String get errorSessionInvalid;
+
+  /// No description provided for @errorVideoTypeInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t delete a video type that already has videos. Please review the videos using this type first.'**
+  String get errorVideoTypeInUse;
+
+  /// No description provided for @errorBuiltinVideoTypeLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'The 3 built-in video types can\'t be edited or deleted.'**
+  String get errorBuiltinVideoTypeLocked;
+
+  /// No description provided for @errorVideoTypeNameExists.
+  ///
+  /// In en, this message translates to:
+  /// **'That video type name already exists in the shop.'**
+  String get errorVideoTypeNameExists;
+
+  /// No description provided for @errorCheckNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your network or try again later.'**
+  String get errorCheckNetwork;
+
+  /// No description provided for @errorLoadShopList.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the shop list'**
+  String get errorLoadShopList;
+
+  /// No description provided for @errorLoadShopMgmt.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load shop management'**
+  String get errorLoadShopMgmt;
+
+  /// No description provided for @errorLoadShopDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load shop details'**
+  String get errorLoadShopDetail;
+
+  /// No description provided for @errorLoadOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load orders'**
+  String get errorLoadOrders;
+
+  /// No description provided for @errorLoadOrderDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load order details'**
+  String get errorLoadOrderDetail;
+
+  /// No description provided for @noShopSelectedOrdersDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a shop before viewing orders.'**
+  String get noShopSelectedOrdersDetail;
+
+  /// No description provided for @noShopSelectedRecordDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a shop before recording.'**
+  String get noShopSelectedRecordDetail;
+
+  /// No description provided for @noShopSelectedManageDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a shop to manage.'**
+  String get noShopSelectedManageDetail;
+
+  /// No description provided for @noOrdersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders yet'**
+  String get noOrdersTitle;
+
+  /// No description provided for @noOrdersDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose an order from the list.'**
+  String get noOrdersDetail;
+
+  /// No description provided for @noVideoDataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No video data'**
+  String get noVideoDataTitle;
+
+  /// No description provided for @cannotOpenVideoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open video'**
+  String get cannotOpenVideoTitle;
+
+  /// No description provided for @cannotOpenVideoDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Video has no playback link yet.'**
+  String get cannotOpenVideoDetail;
+
+  /// No description provided for @createOrderDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new order?'**
+  String get createOrderDialogTitle;
+
+  /// No description provided for @createOrderDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{code} doesn\'t match any tracking code in the current shop. Re-check the code or confirm creating a new order.'**
+  String createOrderDialogBody(String code);
+
+  /// No description provided for @createOrderConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new order'**
+  String get createOrderConfirm;
+
+  /// No description provided for @statOrdersToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders today'**
+  String get statOrdersToday;
+
+  /// No description provided for @statVideosRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos recorded'**
+  String get statVideosRecorded;
+
+  /// No description provided for @statPendingUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending upload'**
+  String get statPendingUpload;
+
+  /// No description provided for @accountPlanQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan & Quota'**
+  String get accountPlanQuota;
+
+  /// No description provided for @accountSectionApp.
+  ///
+  /// In en, this message translates to:
+  /// **'PLAN & APP'**
+  String get accountSectionApp;
+
+  /// No description provided for @accountLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get accountLanguage;
+
+  /// No description provided for @accountSectionSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'SECURITY & SIGN-IN'**
+  String get accountSectionSecurity;
+
+  /// No description provided for @accountLoginMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in method'**
+  String get accountLoginMethods;
+
+  /// No description provided for @accountSignOut.
   ///
   /// In en, this message translates to:
   /// **'Sign out'**
-  String get commonSignOut;
+  String get accountSignOut;
 
-  /// No description provided for @homeAppBarTitle.
+  /// No description provided for @accountDeleteAccount.
   ///
   /// In en, this message translates to:
-  /// **'Home'**
-  String get homeAppBarTitle;
+  /// **'Delete account'**
+  String get accountDeleteAccount;
 
-  /// No description provided for @homeViewAllBookmarks.
+  /// No description provided for @accountShopMgmtHint.
   ///
   /// In en, this message translates to:
-  /// **'View all'**
-  String get homeViewAllBookmarks;
+  /// **'Manage shop/members: tap back on the header to return to the Shop layer'**
+  String get accountShopMgmtHint;
 
-  /// No description provided for @homeNoDescription.
+  /// No description provided for @accountInfoTitle.
   ///
   /// In en, this message translates to:
-  /// **'No description'**
-  String get homeNoDescription;
+  /// **'Account info'**
+  String get accountInfoTitle;
 
-  /// No description provided for @homeRecentBookmarks.
+  /// No description provided for @accountFullName.
   ///
   /// In en, this message translates to:
-  /// **'Recent Bookmarks'**
-  String get homeRecentBookmarks;
+  /// **'Full name'**
+  String get accountFullName;
 
-  /// No description provided for @homeNoBookmarks.
+  /// No description provided for @accountFullNameHint.
   ///
   /// In en, this message translates to:
-  /// **'No bookmarks yet. Tap + to add one.'**
-  String get homeNoBookmarks;
+  /// **'Enter your full name'**
+  String get accountFullNameHint;
 
-  /// Section title above the home dashboard bookmark search field.
+  /// No description provided for @accountFullNameRequired.
   ///
   /// In en, this message translates to:
-  /// **'Search'**
-  String get homeSearchTitle;
+  /// **'Please enter your full name'**
+  String get accountFullNameRequired;
 
-  /// Supporting text below the home dashboard search title.
+  /// No description provided for @phoneLabel.
   ///
   /// In en, this message translates to:
-  /// **'Find your saved articles, tools, and inspirations instantly.'**
-  String get homeSearchSubtitle;
+  /// **'Phone number'**
+  String get phoneLabel;
 
-  /// Placeholder text in the home dashboard bookmark search field.
+  /// No description provided for @phoneHint.
   ///
   /// In en, this message translates to:
-  /// **'Search bookmarks...'**
-  String get homeSearchHint;
+  /// **'Enter phone number'**
+  String get phoneHint;
 
-  /// Label for the quick action that opens the new bookmark form.
+  /// No description provided for @phoneRequired.
   ///
   /// In en, this message translates to:
-  /// **'Add Link'**
-  String get homeQuickAdd;
+  /// **'Please enter your phone number'**
+  String get phoneRequired;
 
-  /// Label for the quick action that opens the full bookmarks library.
+  /// No description provided for @phoneInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Library'**
-  String get homeQuickLibrary;
+  /// **'Invalid phone number'**
+  String get phoneInvalid;
 
-  /// Label for the quick action that opens bookmark tag-related content.
+  /// No description provided for @accountSaveChanges.
   ///
   /// In en, this message translates to:
-  /// **'Tags'**
-  String get homeQuickTags;
+  /// **'Save changes'**
+  String get accountSaveChanges;
 
-  /// Filter chip label for showing all recent bookmarks.
+  /// No description provided for @phoneAddTitle.
   ///
   /// In en, this message translates to:
-  /// **'All'**
-  String get homeFilterAll;
+  /// **'Add phone number'**
+  String get phoneAddTitle;
 
-  /// Filter chip and fallback collection label for design-related bookmarks.
+  /// No description provided for @phoneAddBody.
   ///
   /// In en, this message translates to:
-  /// **'Design'**
-  String get homeFilterDesign;
+  /// **'Your Apple/Google account has no phone number yet. Please enter a phone number to continue.'**
+  String get phoneAddBody;
 
-  /// Filter chip and fallback collection label for article or blog bookmarks.
+  /// No description provided for @commonContinue.
   ///
   /// In en, this message translates to:
-  /// **'Articles'**
-  String get homeFilterArticles;
+  /// **'Continue'**
+  String get commonContinue;
 
-  /// Filter chip label for inspiration-related bookmarks.
+  /// No description provided for @languageNameVietnamese.
   ///
   /// In en, this message translates to:
-  /// **'Inspiration'**
-  String get homeFilterInspiration;
+  /// **'Vietnamese'**
+  String get languageNameVietnamese;
 
-  /// Filter chip and fallback collection label for tool-related bookmarks.
+  /// No description provided for @languageNameEnglish.
   ///
   /// In en, this message translates to:
-  /// **'Tools'**
-  String get homeFilterTools;
+  /// **'English'**
+  String get languageNameEnglish;
 
-  /// Section title for suggested bookmark cards on the home dashboard.
+  /// No description provided for @languageChangeAppliesNote.
   ///
   /// In en, this message translates to:
-  /// **'Suggested for You'**
-  String get homeSuggestedTitle;
+  /// **'Changes apply instantly across the whole app'**
+  String get languageChangeAppliesNote;
 
-  /// Section title for featured bookmark collection cards on the home dashboard.
+  /// No description provided for @linkLinked.
   ///
   /// In en, this message translates to:
-  /// **'Featured Collections'**
-  String get homeFeaturedCollections;
+  /// **'Linked'**
+  String get linkLinked;
 
-  /// Section title for the weekly digest panel on the home dashboard.
+  /// No description provided for @linkNotLinked.
   ///
   /// In en, this message translates to:
-  /// **'Weekly Digest'**
-  String get homeWeeklyDigestTitle;
+  /// **'Not linked'**
+  String get linkNotLinked;
 
-  /// Short eyebrow label displayed above the weekly digest headline.
+  /// No description provided for @loginMethodsEmailNote.
   ///
   /// In en, this message translates to:
-  /// **'Most Read'**
-  String get homeWeeklyDigestEyebrow;
+  /// **'Email is your account identifier — it can\'t be removed. Link Google/Apple to sign in quickly with the same account.'**
+  String get loginMethodsEmailNote;
 
-  /// Headline text inside the weekly digest panel on the home dashboard.
+  /// No description provided for @loginMethodIdentity.
   ///
   /// In en, this message translates to:
-  /// **'Your saved knowledge catch-up'**
-  String get homeWeeklyDigestHeadline;
+  /// **'Identifier'**
+  String get loginMethodIdentity;
 
-  /// Body text inside the weekly digest panel. The count is the number of bookmarks saved in the recent window.
+  /// No description provided for @linkAction.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{You have no recent bookmarks. Review saved highlights when you add one.} =1{You saved 1 bookmark recently. Review the highlight and keep your reading flow moving.} other{You saved {count} bookmarks recently. Review the highlights and keep your reading flow moving.}}'**
-  String homeWeeklyDigestBody(int count);
+  /// **'Link'**
+  String get linkAction;
 
-  /// Call-to-action button label in the weekly digest panel.
+  /// No description provided for @linkUnlink.
   ///
   /// In en, this message translates to:
-  /// **'Read Digest'**
-  String get homeReadDigest;
+  /// **'Unlink'**
+  String get linkUnlink;
 
-  /// Empty-state message shown when active search or filters hide all recent bookmarks.
+  /// No description provided for @quotaScreenTitle.
   ///
   /// In en, this message translates to:
-  /// **'No bookmarks match this view.'**
-  String get homeNoMatches;
+  /// **'Reports & Quota'**
+  String get quotaScreenTitle;
 
-  /// Short fallback label shown on bookmark artwork when a bookmark has no tags.
+  /// No description provided for @quotaCurrentPlan.
   ///
   /// In en, this message translates to:
-  /// **'Recent'**
-  String get homeBookmarkVisualFallback;
+  /// **'Current plan'**
+  String get quotaCurrentPlan;
 
-  /// No description provided for @profileAppBarTitle.
+  /// No description provided for @quotaRemainingThisMonth.
   ///
   /// In en, this message translates to:
-  /// **'Profile'**
-  String get profileAppBarTitle;
+  /// **'Remaining this month'**
+  String get quotaRemainingThisMonth;
 
-  /// No description provided for @profileSectionAppearance.
+  /// No description provided for @quotaStorage.
   ///
   /// In en, this message translates to:
-  /// **'Appearance'**
-  String get profileSectionAppearance;
+  /// **'Storage'**
+  String get quotaStorage;
 
-  /// No description provided for @profileSectionAccount.
+  /// No description provided for @quotaUpgradePlan.
   ///
   /// In en, this message translates to:
-  /// **'Account'**
-  String get profileSectionAccount;
+  /// **'Upgrade plan'**
+  String get quotaUpgradePlan;
 
-  /// No description provided for @profileChangePassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Change Password'**
-  String get profileChangePassword;
-
-  /// No description provided for @profileDeleteAccount.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Account'**
-  String get profileDeleteAccount;
-
-  /// No description provided for @profileDeleteAccountDialogTitle.
+  /// No description provided for @deleteAccountTitleStep1.
   ///
   /// In en, this message translates to:
   /// **'Delete account?'**
-  String get profileDeleteAccountDialogTitle;
+  String get deleteAccountTitleStep1;
 
-  /// No description provided for @profileDeleteAccountDialogMessage.
+  /// No description provided for @deleteAccountTitleStep2.
   ///
   /// In en, this message translates to:
-  /// **'This permanently removes your account and all of its data. This action cannot be undone.'**
-  String get profileDeleteAccountDialogMessage;
+  /// **'Confirm permanent deletion?'**
+  String get deleteAccountTitleStep2;
 
-  /// No description provided for @profileDeleteAccountConfirmLabel.
+  /// No description provided for @deleteAccountBodyStep1.
   ///
   /// In en, this message translates to:
-  /// **'Type \"{username}\" to confirm'**
-  String profileDeleteAccountConfirmLabel(String username);
+  /// **'All your videos, orders and dossiers will be permanently deleted. This action cannot be undone.'**
+  String get deleteAccountBodyStep1;
 
-  /// No description provided for @profileDeleteAccountSuccess.
+  /// No description provided for @deleteAccountBodyStep2.
   ///
   /// In en, this message translates to:
-  /// **'Your account has been deleted.'**
-  String get profileDeleteAccountSuccess;
+  /// **'This is the final confirmation step. After deletion, you\'ll be signed out of the app immediately.'**
+  String get deleteAccountBodyStep2;
 
-  /// No description provided for @profileDeleteAccountError.
+  /// No description provided for @deleteConfirmPermanent.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t delete your account. Please try again.'**
-  String get profileDeleteAccountError;
+  /// **'Delete permanently'**
+  String get deleteConfirmPermanent;
 
-  /// No description provided for @changePasswordAppBarTitle.
+  /// No description provided for @deleteStep1Hint.
   ///
   /// In en, this message translates to:
-  /// **'Change Password'**
-  String get changePasswordAppBarTitle;
+  /// **'Step 1/2 — will ask for confirmation again · then sign out'**
+  String get deleteStep1Hint;
 
-  /// No description provided for @changePasswordCurrentLabel.
+  /// No description provided for @deleteStep2Hint.
   ///
   /// In en, this message translates to:
-  /// **'Current Password'**
-  String get changePasswordCurrentLabel;
+  /// **'Step 2/2 — this action cannot be undone'**
+  String get deleteStep2Hint;
 
-  /// No description provided for @changePasswordNewLabel.
+  /// No description provided for @passwordCurrentLabel.
   ///
   /// In en, this message translates to:
-  /// **'New Password'**
-  String get changePasswordNewLabel;
+  /// **'Current password'**
+  String get passwordCurrentLabel;
 
-  /// No description provided for @changePasswordConfirmLabel.
+  /// No description provided for @passwordCurrentRequired.
   ///
   /// In en, this message translates to:
-  /// **'Confirm New Password'**
-  String get changePasswordConfirmLabel;
+  /// **'Please enter your current password'**
+  String get passwordCurrentRequired;
 
-  /// No description provided for @changePasswordSubmit.
+  /// No description provided for @passwordNewLabel.
   ///
   /// In en, this message translates to:
-  /// **'Update Password'**
-  String get changePasswordSubmit;
+  /// **'New password'**
+  String get passwordNewLabel;
 
-  /// No description provided for @changePasswordSuccessMessage.
+  /// No description provided for @passwordMinHint.
   ///
   /// In en, this message translates to:
-  /// **'Password updated successfully.'**
-  String get changePasswordSuccessMessage;
+  /// **'At least 8 characters'**
+  String get passwordMinHint;
 
-  /// No description provided for @changePasswordMismatchError.
+  /// No description provided for @passwordNewRequired.
   ///
   /// In en, this message translates to:
-  /// **'New passwords do not match.'**
-  String get changePasswordMismatchError;
+  /// **'Please enter a new password'**
+  String get passwordNewRequired;
 
-  /// No description provided for @profileSectionAbout.
+  /// No description provided for @passwordMin8Error.
   ///
   /// In en, this message translates to:
-  /// **'About'**
-  String get profileSectionAbout;
+  /// **'Password must be at least 8 characters'**
+  String get passwordMin8Error;
 
-  /// No description provided for @profileUserIdCopied.
+  /// No description provided for @passwordConfirmLabel.
   ///
   /// In en, this message translates to:
-  /// **'User ID copied'**
-  String get profileUserIdCopied;
+  /// **'Re-enter new password'**
+  String get passwordConfirmLabel;
 
-  /// No description provided for @profileAppearanceThemeLabel.
+  /// No description provided for @passwordMismatch.
   ///
   /// In en, this message translates to:
-  /// **'Theme'**
-  String get profileAppearanceThemeLabel;
+  /// **'Passwords don\'t match'**
+  String get passwordMismatch;
 
-  /// No description provided for @profileAppearanceColorLabel.
+  /// No description provided for @passwordSave.
   ///
   /// In en, this message translates to:
-  /// **'Accent color'**
-  String get profileAppearanceColorLabel;
+  /// **'Save password'**
+  String get passwordSave;
 
-  /// No description provided for @profileThemeSystemDefault.
+  /// No description provided for @passwordChangeLogoutNote.
   ///
   /// In en, this message translates to:
-  /// **'System default'**
-  String get profileThemeSystemDefault;
+  /// **'(You\'ll be signed out of other devices after changing)'**
+  String get passwordChangeLogoutNote;
 
-  /// No description provided for @profileThemeLight.
+  /// No description provided for @navOrders.
   ///
   /// In en, this message translates to:
-  /// **'Light'**
-  String get profileThemeLight;
+  /// **'Orders'**
+  String get navOrders;
 
-  /// No description provided for @profileThemeDark.
+  /// No description provided for @navRecord.
   ///
   /// In en, this message translates to:
-  /// **'Dark'**
-  String get profileThemeDark;
+  /// **'Record'**
+  String get navRecord;
 
-  /// No description provided for @profileAppVersionBuild.
+  /// No description provided for @navAccount.
   ///
   /// In en, this message translates to:
-  /// **'Version {version} (build {buildNumber})'**
-  String profileAppVersionBuild(String version, String buildNumber);
+  /// **'Account'**
+  String get navAccount;
 
-  /// No description provided for @profileSignOutConfirmMessage.
+  /// No description provided for @changeAvatar.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to sign out?'**
-  String get profileSignOutConfirmMessage;
+  /// **'Change profile photo'**
+  String get changeAvatar;
 
-  /// No description provided for @bookmarksAppBarTitle.
+  /// No description provided for @quotaVideosRatio.
   ///
   /// In en, this message translates to:
-  /// **'Bookmarks'**
-  String get bookmarksAppBarTitle;
+  /// **'{remaining} / {total} videos'**
+  String quotaVideosRatio(int remaining, int total);
 
-  /// No description provided for @bookmarksSearchHint.
+  /// No description provided for @quotaUsedPercent.
   ///
   /// In en, this message translates to:
-  /// **'Search title, URL, or tag'**
-  String get bookmarksSearchHint;
+  /// **'Used {percent}%'**
+  String quotaUsedPercent(int percent);
 
-  /// No description provided for @bookmarksNoMatchesTitle.
+  /// No description provided for @quotaRetentionDays.
   ///
   /// In en, this message translates to:
-  /// **'No matches'**
-  String get bookmarksNoMatchesTitle;
+  /// **'{days} days'**
+  String quotaRetentionDays(int days);
 
-  /// No description provided for @bookmarksNoMatchesMessage.
+  /// No description provided for @deletePendingProfilesWarning.
   ///
   /// In en, this message translates to:
-  /// **'No bookmarks match your search.'**
-  String get bookmarksNoMatchesMessage;
+  /// **'You still have {count} \"submitted to marketplace\" dossiers — their share links will stop working'**
+  String deletePendingProfilesWarning(int count);
 
-  /// No description provided for @bookmarksEmptyTitle.
+  /// No description provided for @detailRecordedTime.
   ///
   /// In en, this message translates to:
-  /// **'No bookmarks yet'**
-  String get bookmarksEmptyTitle;
+  /// **'Recording time'**
+  String get detailRecordedTime;
 
-  /// No description provided for @bookmarksEmptyMessage.
+  /// No description provided for @detailRecordedBy.
   ///
   /// In en, this message translates to:
-  /// **'Tap + to add your first bookmark.'**
-  String get bookmarksEmptyMessage;
+  /// **'Recorded by'**
+  String get detailRecordedBy;
 
-  /// No description provided for @bookmarksNotYetSynced.
+  /// No description provided for @detailDevice.
   ///
   /// In en, this message translates to:
-  /// **'Not yet synced'**
-  String get bookmarksNotYetSynced;
+  /// **'Device'**
+  String get detailDevice;
 
-  /// No description provided for @bookmarksSyncFailedRetryTooltip.
+  /// No description provided for @detailSize.
   ///
   /// In en, this message translates to:
-  /// **'Sync failed - tap to retry'**
-  String get bookmarksSyncFailedRetryTooltip;
+  /// **'Size'**
+  String get detailSize;
 
-  /// No description provided for @bookmarksAddTooltip.
+  /// No description provided for @detailUploadStatus.
   ///
   /// In en, this message translates to:
-  /// **'Add bookmark'**
-  String get bookmarksAddTooltip;
+  /// **'Upload status'**
+  String get detailUploadStatus;
 
-  /// No description provided for @bookmarksSearchClear.
+  /// No description provided for @detailPlayVideo.
   ///
   /// In en, this message translates to:
-  /// **'Clear search'**
-  String get bookmarksSearchClear;
+  /// **'Play video'**
+  String get detailPlayVideo;
 
-  /// No description provided for @bookmarksSortTooltip.
+  /// No description provided for @detailDownloadVideo.
   ///
   /// In en, this message translates to:
-  /// **'Sort bookmarks'**
-  String get bookmarksSortTooltip;
+  /// **'Download video'**
+  String get detailDownloadVideo;
 
-  /// No description provided for @bookmarksSortMenuLabel.
+  /// No description provided for @detailDownloadNote.
   ///
   /// In en, this message translates to:
-  /// **'Sort Menu'**
-  String get bookmarksSortMenuLabel;
+  /// **'Account owner / shop manager only — to attach a marketplace complaint form'**
+  String get detailDownloadNote;
 
-  /// No description provided for @bookmarksSortNewest.
+  /// No description provided for @attachPhotoToOrder.
   ///
   /// In en, this message translates to:
-  /// **'Newest first'**
-  String get bookmarksSortNewest;
+  /// **'Attach photo to order'**
+  String get attachPhotoToOrder;
 
-  /// No description provided for @bookmarksSortOldest.
+  /// No description provided for @createDossierLink.
   ///
   /// In en, this message translates to:
-  /// **'Oldest first'**
-  String get bookmarksSortOldest;
+  /// **'Create complaint dossier link'**
+  String get createDossierLink;
 
-  /// No description provided for @bookmarksSortTitleAz.
+  /// No description provided for @dossierLinkLabel.
   ///
   /// In en, this message translates to:
-  /// **'Title (A–Z)'**
-  String get bookmarksSortTitleAz;
+  /// **'Complaint dossier link'**
+  String get dossierLinkLabel;
 
-  /// No description provided for @bookmarksTabAll.
+  /// No description provided for @revoke.
   ///
   /// In en, this message translates to:
-  /// **'All'**
-  String get bookmarksTabAll;
+  /// **'Revoke'**
+  String get revoke;
 
-  /// No description provided for @bookmarksTabRecent.
+  /// No description provided for @deleteVideoAction.
   ///
   /// In en, this message translates to:
-  /// **'Recent'**
-  String get bookmarksTabRecent;
+  /// **'Delete video'**
+  String get deleteVideoAction;
 
-  /// No description provided for @bookmarksTabCollections.
+  /// No description provided for @deleteVideoNote.
   ///
   /// In en, this message translates to:
-  /// **'Collections'**
-  String get bookmarksTabCollections;
+  /// **'Account owner / shop manager only · 2-step confirmation · permanent'**
+  String get deleteVideoNote;
 
-  /// No description provided for @bookmarksRecentEmptyTitle.
+  /// No description provided for @ordersErrorCount.
   ///
   /// In en, this message translates to:
-  /// **'Nothing recent'**
-  String get bookmarksRecentEmptyTitle;
+  /// **'· {count} errors'**
+  String ordersErrorCount(int count);
 
-  /// No description provided for @bookmarksRecentEmptyMessage.
+  /// No description provided for @ordersPendingEvidenceWarning.
   ///
   /// In en, this message translates to:
-  /// **'Bookmarks you add this week show up here.'**
-  String get bookmarksRecentEmptyMessage;
+  /// **'{count} evidence not uploaded — the dossier will be incomplete'**
+  String ordersPendingEvidenceWarning(int count);
 
-  /// No description provided for @bookmarksCollectionsComingSoonTitle.
+  /// No description provided for @captureFramePrompt.
   ///
   /// In en, this message translates to:
-  /// **'Collections coming soon'**
-  String get bookmarksCollectionsComingSoonTitle;
+  /// **'Place the bill in the frame to start'**
+  String get captureFramePrompt;
 
-  /// No description provided for @bookmarksCollectionsComingSoonMessage.
+  /// No description provided for @captureCameraDownHint.
   ///
   /// In en, this message translates to:
-  /// **'Group related bookmarks into collections in a future update.'**
-  String get bookmarksCollectionsComingSoonMessage;
+  /// **'Camera facing down at the table'**
+  String get captureCameraDownHint;
 
-  /// No description provided for @bookmarkMoreActions.
+  /// No description provided for @tooltipBack.
   ///
   /// In en, this message translates to:
-  /// **'More actions'**
-  String get bookmarkMoreActions;
+  /// **'Back'**
+  String get tooltipBack;
 
-  /// No description provided for @bookmarkAppBarTitle.
+  /// No description provided for @tooltipSwitchCamera.
   ///
   /// In en, this message translates to:
-  /// **'Bookmark Details'**
-  String get bookmarkAppBarTitle;
+  /// **'Switch camera'**
+  String get tooltipSwitchCamera;
 
-  /// No description provided for @bookmarkSourceLabel.
+  /// No description provided for @tooltipEnterTracking.
   ///
   /// In en, this message translates to:
-  /// **'Source'**
-  String get bookmarkSourceLabel;
+  /// **'Enter tracking code'**
+  String get tooltipEnterTracking;
 
-  /// No description provided for @bookmarkVisitWebsite.
+  /// No description provided for @tooltipZoomIn.
   ///
   /// In en, this message translates to:
-  /// **'Visit Website'**
-  String get bookmarkVisitWebsite;
+  /// **'Zoom in'**
+  String get tooltipZoomIn;
 
-  /// No description provided for @bookmarkDetailsLabel.
+  /// No description provided for @tooltipZoomOut.
   ///
   /// In en, this message translates to:
-  /// **'Details'**
-  String get bookmarkDetailsLabel;
+  /// **'Zoom out'**
+  String get tooltipZoomOut;
 
-  /// No description provided for @bookmarkDateCreatedLabel.
+  /// No description provided for @captureResolution.
   ///
   /// In en, this message translates to:
-  /// **'Date Created'**
-  String get bookmarkDateCreatedLabel;
+  /// **'Resolution'**
+  String get captureResolution;
 
-  /// No description provided for @bookmarkLastModifiedLabel.
+  /// No description provided for @stopRecording.
   ///
   /// In en, this message translates to:
-  /// **'Last Modified'**
-  String get bookmarkLastModifiedLabel;
+  /// **'Stop recording'**
+  String get stopRecording;
 
-  /// No description provided for @bookmarkMediaLabel.
+  /// No description provided for @videoTypeSettings.
   ///
   /// In en, this message translates to:
-  /// **'Media'**
-  String get bookmarkMediaLabel;
+  /// **'Video type settings'**
+  String get videoTypeSettings;
 
-  /// No description provided for @bookmarkOpenInBrowser.
+  /// No description provided for @uploadQueueTitle.
   ///
   /// In en, this message translates to:
-  /// **'Open in Browser'**
-  String get bookmarkOpenInBrowser;
+  /// **'Upload queue'**
+  String get uploadQueueTitle;
 
-  /// No description provided for @bookmarkNotFound.
+  /// No description provided for @quotaExhaustedNote.
   ///
   /// In en, this message translates to:
-  /// **'Bookmark not found.'**
-  String get bookmarkNotFound;
+  /// **'Out of quota this month — videos will wait for quota'**
+  String get quotaExhaustedNote;
 
-  /// No description provided for @bookmarkDeleteDialogTitle.
+  /// No description provided for @upgradePlanShort.
   ///
   /// In en, this message translates to:
-  /// **'Delete bookmark?'**
-  String get bookmarkDeleteDialogTitle;
+  /// **'Upgrade'**
+  String get upgradePlanShort;
 
-  /// No description provided for @bookmarkDeleteDialogBody.
+  /// No description provided for @queueEmpty.
   ///
   /// In en, this message translates to:
-  /// **'This action cannot be undone.\nThe bookmark will be permanently removed from your collection.'**
-  String get bookmarkDeleteDialogBody;
+  /// **'No videos in the queue yet'**
+  String get queueEmpty;
 
-  /// No description provided for @bookmarkDeleteDialogMessage.
+  /// No description provided for @queueAutoUploadNote.
   ///
   /// In en, this message translates to:
-  /// **'\"{title}\" will be removed.'**
-  String bookmarkDeleteDialogMessage(String title);
+  /// **'Upload happens automatically when you\'re online'**
+  String get queueAutoUploadNote;
 
-  /// No description provided for @bookmarkOpenUrl.
+  /// No description provided for @waitingUpload.
   ///
   /// In en, this message translates to:
-  /// **'Open URL'**
-  String get bookmarkOpenUrl;
+  /// **'Waiting to upload'**
+  String get waitingUpload;
 
-  /// No description provided for @bookmarkAttachedVideo.
+  /// No description provided for @uploaded.
   ///
   /// In en, this message translates to:
-  /// **'Attached video'**
-  String get bookmarkAttachedVideo;
+  /// **'Uploaded'**
+  String get uploaded;
 
-  /// No description provided for @bookmarkInvalidUrl.
+  /// No description provided for @waitingQuota.
   ///
   /// In en, this message translates to:
-  /// **'Invalid URL'**
-  String get bookmarkInvalidUrl;
+  /// **'Waiting for quota'**
+  String get waitingQuota;
 
-  /// No description provided for @bookmarkCouldNotOpenUrl.
+  /// No description provided for @manualTrackingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Could not open URL'**
-  String get bookmarkCouldNotOpenUrl;
+  /// **'Enter tracking code manually'**
+  String get manualTrackingTitle;
 
-  /// No description provided for @bookmarkFormEditTitle.
+  /// No description provided for @manualTrackingNote.
   ///
   /// In en, this message translates to:
-  /// **'Edit bookmark'**
-  String get bookmarkFormEditTitle;
+  /// **'Use when the bill is blurry — no more than 10 seconds'**
+  String get manualTrackingNote;
 
-  /// No description provided for @bookmarkFormNewTitle.
+  /// No description provided for @startRecording.
   ///
   /// In en, this message translates to:
-  /// **'New bookmark'**
-  String get bookmarkFormNewTitle;
+  /// **'Start recording'**
+  String get startRecording;
 
-  /// No description provided for @bookmarkFormLoadFailed.
+  /// No description provided for @returnCodeMismatch.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load bookmark.'**
-  String get bookmarkFormLoadFailed;
+  /// **'Return code doesn\'t match'**
+  String get returnCodeMismatch;
 
-  /// No description provided for @bookmarkTitleLabel.
+  /// No description provided for @enterCodeManually.
   ///
   /// In en, this message translates to:
-  /// **'Title'**
-  String get bookmarkTitleLabel;
+  /// **'Enter code manually'**
+  String get enterCodeManually;
 
-  /// No description provided for @bookmarkUrlLabel.
+  /// No description provided for @videoTypeLabel.
   ///
   /// In en, this message translates to:
-  /// **'URL'**
-  String get bookmarkUrlLabel;
+  /// **'Video type'**
+  String get videoTypeLabel;
 
-  /// No description provided for @bookmarkDescriptionLabel.
+  /// No description provided for @videoTypeSelectNote.
   ///
   /// In en, this message translates to:
-  /// **'Description (optional)'**
-  String get bookmarkDescriptionLabel;
+  /// **'Choose a type for this recording session — add/edit/delete in Shop details'**
+  String get videoTypeSelectNote;
 
-  /// No description provided for @bookmarkTagsLabel.
+  /// No description provided for @manageVideoTypesNote.
   ///
   /// In en, this message translates to:
-  /// **'Tags'**
-  String get bookmarkTagsLabel;
+  /// **'Manage video types — open Shop details'**
+  String get manageVideoTypesNote;
 
-  /// No description provided for @bookmarkTagsHint.
+  /// No description provided for @queueFilterAll.
   ///
   /// In en, this message translates to:
-  /// **'comma, separated, values'**
-  String get bookmarkTagsHint;
+  /// **'All · {count}'**
+  String queueFilterAll(int count);
 
-  /// Short label shown in the bookmark form preview placeholder.
+  /// No description provided for @queueFilterUploading.
   ///
   /// In en, this message translates to:
-  /// **'Bookmark'**
-  String get bookmarkPreviewLabel;
+  /// **'Uploading · {count}'**
+  String queueFilterUploading(int count);
 
-  /// No description provided for @bookmarkTitleRequired.
+  /// No description provided for @queueFilterErrored.
   ///
   /// In en, this message translates to:
-  /// **'Title is required'**
-  String get bookmarkTitleRequired;
+  /// **'Errors · {count}'**
+  String queueFilterErrored(int count);
 
-  /// No description provided for @bookmarkUrlRequired.
+  /// No description provided for @uploadingProgress.
   ///
   /// In en, this message translates to:
-  /// **'URL is required'**
-  String get bookmarkUrlRequired;
+  /// **'Uploading {percent}%'**
+  String uploadingProgress(int percent);
 
-  /// No description provided for @bookmarkUrlInvalid.
+  /// No description provided for @errorRetryCount.
   ///
   /// In en, this message translates to:
-  /// **'Enter a valid URL (https://…)'**
-  String get bookmarkUrlInvalid;
+  /// **'Error · Retry ({count})'**
+  String errorRetryCount(int count);
 
-  /// No description provided for @errorPermissionDenied.
+  /// No description provided for @returnCodeMismatchBody.
   ///
   /// In en, this message translates to:
-  /// **'Permission denied.'**
-  String get errorPermissionDenied;
+  /// **'{returnCode} doesn\'t match any order in {shopName}. Re-check the code, enter it manually, or confirm creating a new order.'**
+  String returnCodeMismatchBody(String returnCode, String shopName);
 
-  /// No description provided for @errorGalleryPermissionRequired.
+  /// No description provided for @onboardingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Photo gallery access is required to attach images.'**
-  String get errorGalleryPermissionRequired;
+  /// **'Record packing-evidence videos for e-commerce sellers'**
+  String get onboardingSubtitle;
 
-  /// No description provided for @errorCameraPermissionRequired.
+  /// No description provided for @onboardingStart.
   ///
   /// In en, this message translates to:
-  /// **'Camera access is required to take photos.'**
-  String get errorCameraPermissionRequired;
+  /// **'Get started'**
+  String get onboardingStart;
 
-  /// No description provided for @navHome.
+  /// No description provided for @authSignIn.
   ///
   /// In en, this message translates to:
-  /// **'Home'**
-  String get navHome;
+  /// **'Sign in'**
+  String get authSignIn;
 
-  /// No description provided for @navBookmarks.
+  /// No description provided for @authChooseMethod.
   ///
   /// In en, this message translates to:
-  /// **'Bookmarks'**
-  String get navBookmarks;
+  /// **'Choose a sign-in method'**
+  String get authChooseMethod;
 
-  /// No description provided for @navProfile.
+  /// No description provided for @authEmailRequired.
   ///
   /// In en, this message translates to:
-  /// **'Profile'**
-  String get navProfile;
+  /// **'Please enter your email'**
+  String get authEmailRequired;
 
-  /// No description provided for @navSettings.
+  /// No description provided for @authEmailInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Settings'**
-  String get navSettings;
+  /// **'Invalid email'**
+  String get authEmailInvalid;
 
-  /// No description provided for @settingsAppBarTitle.
+  /// No description provided for @authPassword.
   ///
   /// In en, this message translates to:
-  /// **'Settings'**
-  String get settingsAppBarTitle;
+  /// **'Password'**
+  String get authPassword;
 
-  /// No description provided for @bookmarksDetailPlaceholder.
+  /// No description provided for @authPasswordRequired.
   ///
   /// In en, this message translates to:
-  /// **'Select a bookmark to view its details'**
-  String get bookmarksDetailPlaceholder;
+  /// **'Please enter your password'**
+  String get authPasswordRequired;
 
-  /// Accessibility label for a bookmark's attached image.
+  /// No description provided for @authForgotPassword.
   ///
   /// In en, this message translates to:
-  /// **'Image for {title}'**
-  String bookmarkImageLabel(String title);
+  /// **'Forgot password?'**
+  String get authForgotPassword;
 
-  /// No description provided for @bookmarkAttachedImageLabel.
+  /// No description provided for @authSignInGoogle.
   ///
   /// In en, this message translates to:
-  /// **'Attached image'**
-  String get bookmarkAttachedImageLabel;
+  /// **'Sign in with Google'**
+  String get authSignInGoogle;
 
-  /// No description provided for @bookmarkRemoveImageLabel.
+  /// No description provided for @authSignInApple.
   ///
   /// In en, this message translates to:
-  /// **'Remove image'**
-  String get bookmarkRemoveImageLabel;
+  /// **'Sign in with Apple'**
+  String get authSignInApple;
 
-  /// No description provided for @navNotifications.
+  /// No description provided for @authNoAccountPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Notifications'**
-  String get navNotifications;
+  /// **'Don\'t have an account? '**
+  String get authNoAccountPrompt;
 
-  /// No description provided for @notificationsAppBarTitle.
+  /// No description provided for @authRegister.
   ///
   /// In en, this message translates to:
-  /// **'Notifications'**
-  String get notificationsAppBarTitle;
+  /// **'Register'**
+  String get authRegister;
 
-  /// No description provided for @notificationsActivitySection.
+  /// No description provided for @authOr.
   ///
   /// In en, this message translates to:
-  /// **'Your activity'**
-  String get notificationsActivitySection;
+  /// **'or'**
+  String get authOr;
 
-  /// No description provided for @notificationsSection.
+  /// No description provided for @registerTitle.
   ///
   /// In en, this message translates to:
-  /// **'Notifications'**
-  String get notificationsSection;
+  /// **'Create a new account'**
+  String get registerTitle;
 
-  /// No description provided for @notificationsSectionNew.
+  /// No description provided for @registerConfirmPassword.
   ///
   /// In en, this message translates to:
-  /// **'New'**
-  String get notificationsSectionNew;
+  /// **'Re-enter password'**
+  String get registerConfirmPassword;
 
-  /// No description provided for @notificationsSectionEarlier.
+  /// No description provided for @registerAgreePolicy.
   ///
   /// In en, this message translates to:
-  /// **'Earlier'**
-  String get notificationsSectionEarlier;
+  /// **'I agree to the policy '**
+  String get registerAgreePolicy;
 
-  /// No description provided for @notificationsEmptyTitle.
+  /// No description provided for @registerViewPolicy.
   ///
   /// In en, this message translates to:
-  /// **'Nothing here yet'**
-  String get notificationsEmptyTitle;
+  /// **'View policy'**
+  String get registerViewPolicy;
 
-  /// No description provided for @notificationsEmptyMessage.
+  /// No description provided for @registerCreateAccount.
   ///
   /// In en, this message translates to:
-  /// **'Your notifications and recent activity will appear here.'**
-  String get notificationsEmptyMessage;
+  /// **'Create account'**
+  String get registerCreateAccount;
 
-  /// No description provided for @notificationsNoNotifications.
+  /// No description provided for @registerSameEmailNote.
   ///
   /// In en, this message translates to:
-  /// **'No notifications yet.'**
-  String get notificationsNoNotifications;
+  /// **'The same email will automatically link to one account'**
+  String get registerSameEmailNote;
 
-  /// No description provided for @notificationsLoadError.
+  /// No description provided for @registerHaveAccountPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t load your notifications. Pull to refresh or try again.'**
-  String get notificationsLoadError;
+  /// **'Already have an account? '**
+  String get registerHaveAccountPrompt;
 
-  /// No description provided for @notificationsUnreadCount.
+  /// No description provided for @forgotPasswordTitle.
   ///
   /// In en, this message translates to:
-  /// **'{count} unread'**
-  String notificationsUnreadCount(int count);
+  /// **'Forgot password'**
+  String get forgotPasswordTitle;
 
-  /// No description provided for @timeJustNow.
+  /// No description provided for @forgotPasswordSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Just now'**
-  String get timeJustNow;
+  /// **'Enter your email to receive a password reset link'**
+  String get forgotPasswordSubtitle;
 
-  /// No description provided for @timeMinutesAgo.
+  /// No description provided for @forgotPasswordSubmit.
   ///
   /// In en, this message translates to:
-  /// **'{minutes}m ago'**
-  String timeMinutesAgo(int minutes);
+  /// **'Send reset link'**
+  String get forgotPasswordSubmit;
 
-  /// No description provided for @timeHoursAgo.
+  /// No description provided for @forgotPasswordSent.
   ///
   /// In en, this message translates to:
-  /// **'{hours}h ago'**
-  String timeHoursAgo(int hours);
+  /// **'Sent — check your inbox (including spam)'**
+  String get forgotPasswordSent;
 
-  /// No description provided for @timeDaysAgo.
+  /// No description provided for @forgotPasswordRememberPrompt.
   ///
   /// In en, this message translates to:
-  /// **'{days}d ago'**
-  String timeDaysAgo(int days);
+  /// **'Remember your password? '**
+  String get forgotPasswordRememberPrompt;
 
-  /// No description provided for @collectionsTitle.
+  /// No description provided for @shopYourShops.
   ///
   /// In en, this message translates to:
-  /// **'Collections'**
-  String get collectionsTitle;
+  /// **'Your shops'**
+  String get shopYourShops;
 
-  /// No description provided for @collectionsEmptyTitle.
+  /// No description provided for @shopTapToClockIn.
   ///
   /// In en, this message translates to:
-  /// **'No collections yet'**
-  String get collectionsEmptyTitle;
+  /// **'Tap a shop to clock in · manage right here'**
+  String get shopTapToClockIn;
 
-  /// No description provided for @collectionsEmptyMessage.
+  /// No description provided for @shopLastOpenedNote.
   ///
   /// In en, this message translates to:
-  /// **'Group related bookmarks into collections.'**
-  String get collectionsEmptyMessage;
+  /// **'The most recently opened shop will open directly next time'**
+  String get shopLastOpenedNote;
 
-  /// No description provided for @collectionsLoadError.
+  /// No description provided for @shopManageStore.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t load your collections. Pull to refresh or try again.'**
-  String get collectionsLoadError;
+  /// **'Manage store'**
+  String get shopManageStore;
 
-  /// No description provided for @collectionsCreate.
+  /// No description provided for @shopManageVisibilityNote.
   ///
   /// In en, this message translates to:
-  /// **'New collection'**
-  String get collectionsCreate;
+  /// **'Only visible to the account owner / shop manager'**
+  String get shopManageVisibilityNote;
 
-  /// No description provided for @collectionsCreateTitle.
+  /// No description provided for @shopEmpty.
   ///
   /// In en, this message translates to:
-  /// **'New collection'**
-  String get collectionsCreateTitle;
+  /// **'No shops yet'**
+  String get shopEmpty;
 
-  /// No description provided for @collectionsEditTitle.
+  /// No description provided for @shopEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Edit collection'**
-  String get collectionsEditTitle;
+  /// **'Your account doesn\'t belong to any shop yet. Create a new shop to get started, or wait for an invitation from a shop owner.'**
+  String get shopEmptyBody;
 
-  /// No description provided for @collectionNameLabel.
+  /// No description provided for @shopCreateNew.
   ///
   /// In en, this message translates to:
-  /// **'Name'**
-  String get collectionNameLabel;
+  /// **'Create new shop (name + platform)'**
+  String get shopCreateNew;
 
-  /// No description provided for @collectionNameHint.
+  /// No description provided for @shopInvitesHere.
   ///
   /// In en, this message translates to:
-  /// **'e.g. Design inspiration'**
-  String get collectionNameHint;
+  /// **'Shop invitations will appear here'**
+  String get shopInvitesHere;
 
-  /// No description provided for @collectionNameRequired.
+  /// No description provided for @shopCreateTitle.
   ///
   /// In en, this message translates to:
-  /// **'Name is required'**
-  String get collectionNameRequired;
+  /// **'Create shop'**
+  String get shopCreateTitle;
 
-  /// No description provided for @collectionAppearanceLabel.
+  /// No description provided for @shopNameLabel.
   ///
   /// In en, this message translates to:
-  /// **'Icon & color'**
-  String get collectionAppearanceLabel;
+  /// **'Shop name'**
+  String get shopNameLabel;
 
-  /// No description provided for @collectionSave.
+  /// No description provided for @shopNameRequired.
   ///
   /// In en, this message translates to:
-  /// **'Save'**
-  String get collectionSave;
+  /// **'Please enter a shop name'**
+  String get shopNameRequired;
 
-  /// No description provided for @collectionDeleteAction.
+  /// No description provided for @shopPlatform.
   ///
   /// In en, this message translates to:
-  /// **'Delete collection'**
-  String get collectionDeleteAction;
+  /// **'Marketplace'**
+  String get shopPlatform;
 
-  /// No description provided for @collectionDeleteDialogTitle.
+  /// No description provided for @shopCreateOwnerNote.
   ///
   /// In en, this message translates to:
-  /// **'Delete collection?'**
-  String get collectionDeleteDialogTitle;
+  /// **'You\'ll be the shop owner — add members later in Manage store'**
+  String get shopCreateOwnerNote;
 
-  /// No description provided for @collectionDeleteDialogMessage.
+  /// No description provided for @shopMgmtVisibilityNote.
   ///
   /// In en, this message translates to:
-  /// **'\"{name}\" will be removed. Your bookmarks stay.'**
-  String collectionDeleteDialogMessage(String name);
+  /// **'Staff don\'t see this screen · shop managers only see shops they manage'**
+  String get shopMgmtVisibilityNote;
 
-  /// No description provided for @collectionNotFound.
+  /// No description provided for @shopAddNew.
   ///
   /// In en, this message translates to:
-  /// **'Collection not found.'**
-  String get collectionNotFound;
+  /// **'Add new shop (name + platform)'**
+  String get shopAddNew;
 
-  /// No description provided for @collectionItemsCount.
+  /// No description provided for @sectionMembers.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No bookmarks} =1{1 bookmark} other{{count} bookmarks}}'**
-  String collectionItemsCount(int count);
+  /// **'MEMBERS'**
+  String get sectionMembers;
 
-  /// No description provided for @collectionAddBookmarks.
+  /// No description provided for @sectionShopSettings.
   ///
   /// In en, this message translates to:
-  /// **'Add bookmarks'**
-  String get collectionAddBookmarks;
+  /// **'SHOP SETTINGS'**
+  String get sectionShopSettings;
 
-  /// No description provided for @collectionRemoveBookmark.
+  /// No description provided for @sectionVideoTypes.
   ///
   /// In en, this message translates to:
-  /// **'Remove from collection'**
-  String get collectionRemoveBookmark;
+  /// **'VIDEO TYPES'**
+  String get sectionVideoTypes;
 
-  /// No description provided for @collectionEmptyBookmarks.
+  /// No description provided for @videoTypesLockedNote.
   ///
   /// In en, this message translates to:
-  /// **'No bookmarks in this collection yet.'**
-  String get collectionEmptyBookmarks;
+  /// **'3 built-in types are locked — can\'t be edited/deleted'**
+  String get videoTypesLockedNote;
 
-  /// No description provided for @collectionPickerEmpty.
+  /// No description provided for @addMemberByContact.
   ///
   /// In en, this message translates to:
-  /// **'All your bookmarks are already in this collection.'**
-  String get collectionPickerEmpty;
+  /// **'Add member by email/phone'**
+  String get addMemberByContact;
 
-  /// No description provided for @collectionPickerAddCount.
+  /// No description provided for @recordResolution.
   ///
   /// In en, this message translates to:
-  /// **'Add {count}'**
-  String collectionPickerAddCount(int count);
+  /// **'Recording resolution'**
+  String get recordResolution;
 
-  /// No description provided for @addToCollectionTitle.
+  /// No description provided for @addVideoType.
   ///
   /// In en, this message translates to:
-  /// **'Add to collection'**
-  String get addToCollectionTitle;
+  /// **'Add type (enter name)'**
+  String get addVideoType;
 
-  /// No description provided for @addToCollectionEmpty.
+  /// No description provided for @createVideoTypeTitle.
   ///
   /// In en, this message translates to:
-  /// **'You haven\'t created any collections yet.'**
-  String get addToCollectionEmpty;
+  /// **'Create video type'**
+  String get createVideoTypeTitle;
 
-  /// No description provided for @homeCreateCollection.
+  /// No description provided for @videoTypeName.
   ///
   /// In en, this message translates to:
-  /// **'Create collection'**
-  String get homeCreateCollection;
+  /// **'Video type name'**
+  String get videoTypeName;
+
+  /// No description provided for @videoTypeNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Weighing'**
+  String get videoTypeNameHint;
+
+  /// No description provided for @createVideoType.
+  ///
+  /// In en, this message translates to:
+  /// **'Create type'**
+  String get createVideoType;
+
+  /// No description provided for @deleteVideoTypeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Can only be deleted while this type has no videos. If it has videos, the system blocks deletion to avoid disrupting evidence filters and stats.'**
+  String get deleteVideoTypeBody;
+
+  /// No description provided for @deleteVideoTypeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete type'**
+  String get deleteVideoTypeConfirm;
+
+  /// No description provided for @deleteVideoTypeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'(Only deletable while the type has no videos)'**
+  String get deleteVideoTypeNote;
+
+  /// No description provided for @addMemberTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add member'**
+  String get addMemberTitle;
+
+  /// No description provided for @addMemberBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the email or phone number of a registered account to add them to the shop.'**
+  String get addMemberBody;
+
+  /// No description provided for @emailOrPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or phone number'**
+  String get emailOrPhone;
+
+  /// No description provided for @addMemberSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addMemberSubmit;
+
+  /// No description provided for @setAsManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Set as shop manager'**
+  String get setAsManager;
+
+  /// No description provided for @setAsStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Set as staff'**
+  String get setAsStaff;
+
+  /// No description provided for @removeFromShop.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from shop'**
+  String get removeFromShop;
+
+  /// No description provided for @resolutionAppliesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to the shop\'s newly recorded videos'**
+  String get resolutionAppliesNote;
+
+  /// No description provided for @resolutionDefaultOption.
+  ///
+  /// In en, this message translates to:
+  /// **'720p (default)'**
+  String get resolutionDefaultOption;
+
+  /// No description provided for @ordersNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders found'**
+  String get ordersNotFound;
+
+  /// No description provided for @deleteVideoTypeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete type \"{typeName}\"?'**
+  String deleteVideoTypeTitle(String typeName);
+
+  /// No description provided for @memberCurrentRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Current role: {role}'**
+  String memberCurrentRole(String role);
 }
 
 class _AppLocalizationsDelegate

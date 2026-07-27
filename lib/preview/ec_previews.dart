@@ -20,20 +20,20 @@ Widget _framed(Widget child) => MaterialApp(
 @Preview(name: 'Splash')
 Widget splashPreview() => _framed(const EcSplashScreen());
 
-@Preview(name: 'Đơn hàng — search + filter')
+@Preview(name: 'Vận đơn — search + filter')
 Widget homeOrdersPreview() => _framed(
   const EcHomeOrdersScreen(
-    shopName: 'Shop ABC',
+    shopName: 'Shop',
     queueCount: 4,
     orders: [
       EcOrderRow(
-        code: 'SPXVN024567890',
+        code: 'TRACKING-001',
         time: '10:23',
         type: 'Đóng hàng đi',
         videoCount: 3,
       ),
       EcOrderRow(
-        code: 'SPXVN044556677',
+        code: 'TRACKING-002',
         time: '10:55',
         type: 'Trả hàng',
         videoCount: 1,

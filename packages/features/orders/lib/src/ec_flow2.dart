@@ -1,4 +1,4 @@
-/// EvidenceCam Flow 2 screens — "Tab Đơn hàng & Hồ sơ": the order list, a
+/// EvidenceCam Flow 2 screens — "Tab Vận đơn & Hồ sơ": the order list, a
 /// per-order evidence timeline, and the video detail bottom sheet. Built
 /// pixel-perfect from
 /// `specs/projects/evidencecam/design-spec/pencil-new.pen`.
@@ -13,7 +13,7 @@ import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart'
     show CupertinoPageScaffold, CupertinoTextField;
 import 'package:flutter/material.dart';
-
+import 'package:localization/localization.dart';
 
 // Shared text style (Inter is inherited from AppTheme's textTheme).
 TextStyle _t(double size, FontWeight weight, Color color) =>
@@ -48,7 +48,7 @@ class EcOrderListStat {
   /// The headline number, e.g. `24`.
   final String value;
 
-  /// The caption below the number, e.g. `Đơn hôm nay`.
+  /// The caption below the number, e.g. `Vận đơn hôm nay`.
   final String label;
 }
 
@@ -63,7 +63,7 @@ class EcOrderRow {
     this.errorCount = 0,
   });
 
-  /// Shipment/tracking code, e.g. `SPXVN024567890`.
+  /// Shipment/tracking code.
   final String code;
 
   /// Time of the latest video, e.g. `10:23`.
@@ -85,16 +85,30 @@ class EcTimelineVideo {
   const EcTimelineVideo({
     required this.time,
     required this.label,
+    this.id,
+    this.recordedAt,
+    this.recordedBy,
+    this.device,
+    this.uploadStatus,
+    this.mediaUrl,
     this.type = EcEvidenceType.video,
     this.statusText,
     this.statusIcon,
   });
+
+  final String? id;
 
   /// Time the evidence was captured, e.g. `10:23`.
   final String time;
 
   /// Video/photo type label, e.g. `Đóng hàng đi`.
   final String label;
+
+  final String? recordedAt;
+  final String? recordedBy;
+  final String? device;
+  final String? uploadStatus;
+  final String? mediaUrl;
 
   /// Evidence kind, driving the leading icon.
   final EcEvidenceType type;
@@ -128,6 +142,7 @@ class EcVideoDetail {
     required this.device,
     required this.uploadStatus,
     this.fileSize,
+    this.mediaUrl,
     this.type = EcEvidenceType.video,
   });
 
@@ -152,21 +167,25 @@ class EcVideoDetail {
   /// Human-readable file size, e.g. `48,2 MB`; `null` hides the row.
   final String? fileSize;
 
+  /// Public, authenticated-safe media URL exposed by the API for playback and
+  /// sharing once upload is complete.
+  final String? mediaUrl;
+
   /// Evidence kind, driving the leading icon.
   final EcEvidenceType type;
 }
 
-/// Order list — "Đơn hàng" tab: shop header, stats, search, filters and the
+/// Order list — "Vận đơn" tab: shop header, stats, search, filters and the
 /// list of orders with their evidence video counts.
 class EcOrderListScreen extends StatelessWidget {
   const EcOrderListScreen({
     required this.orders,
-    this.shopName = 'Shop ABC',
+    this.shopName = 'Shop',
     this.queueCount = 3,
     this.stats = const [
-      EcOrderListStat(value: '24', label: 'Đơn hôm nay'),
-      EcOrderListStat(value: '38', label: 'Video đã quay'),
-      EcOrderListStat(value: '4', label: 'Chờ tải'),
+      EcOrderListStat(value: '0', label: 'Vận đơn hôm nay'),
+      EcOrderListStat(value: '0', label: 'Video đã quay'),
+      EcOrderListStat(value: '0', label: 'Chờ tải'),
     ],
     this.filters = const ['Tất cả', 'Hôm nay', 'Loại video'],
     this.searchController,
@@ -214,7 +233,7 @@ class EcOrderListScreen extends StatelessWidget {
   /// Called with the tapped order row.
   final ValueChanged<EcOrderRow>? onOrderTap;
 
-  /// Called when the "Đơn hàng" tab is tapped.
+  /// Called when the "Vận đơn" tab is tapped.
   final VoidCallback? onNavOrders;
 
   /// Called when the "Ghi hình" tab is tapped.
@@ -315,8 +334,10 @@ class EcOrderTimelineScreen extends StatelessWidget {
     this.onVideoTap,
     this.onVideoMenu,
     this.onAttachPhoto,
+    this.onCreateDossier,
     this.onCopyLink,
     this.onShareLink,
+    this.onRevokeDossier,
     super.key,
   });
 
@@ -351,11 +372,17 @@ class EcOrderTimelineScreen extends StatelessWidget {
   /// Called when "Đính kèm ảnh vào đơn" is tapped.
   final VoidCallback? onAttachPhoto;
 
+  /// Called when "Tạo link hồ sơ khiếu nại" is tapped.
+  final VoidCallback? onCreateDossier;
+
   /// Called when the dossier link's copy icon is tapped.
   final VoidCallback? onCopyLink;
 
   /// Called when the dossier link's share icon is tapped.
   final VoidCallback? onShareLink;
+
+  /// Called when the dossier link's revoke action is tapped.
+  final VoidCallback? onRevokeDossier;
 
   @override
   Widget build(BuildContext context) {
@@ -414,12 +441,17 @@ class EcOrderTimelineScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           _EcAttachPhotoRow(onTap: onAttachPhoto),
-                          if (dossierUrl != null) ...[
+                          if (dossierUrl == null &&
+                              onCreateDossier != null) ...[
+                            const SizedBox(height: 12),
+                            _EcCreateDossierRow(onTap: onCreateDossier),
+                          ] else if (dossierUrl != null) ...[
                             const SizedBox(height: 12),
                             _EcDossierLinkBox(
                               url: dossierUrl!,
                               onCopy: onCopyLink,
                               onShare: onShareLink,
+                              onRevoke: onRevokeDossier,
                             ),
                           ],
                         ],
@@ -543,34 +575,33 @@ class EcVideoDetailScreen extends StatelessWidget {
                       ),
                     ),
                     _EcDetailInfoRow(
-                      label: 'Giờ quay',
+                      label: context.l10n.detailRecordedTime,
                       value: video.recordedAt,
                     ),
                     _EcDetailInfoRow(
-                      label: 'Người quay',
+                      label: context.l10n.detailRecordedBy,
                       value: video.recordedBy,
                     ),
-                    _EcDetailInfoRow(label: 'Thiết bị', value: video.device),
+                    _EcDetailInfoRow(label: context.l10n.detailDevice, value: video.device),
                     if (video.fileSize != null)
                       _EcDetailInfoRow(
-                        label: 'Dung lượng',
+                        label: context.l10n.detailSize,
                         value: video.fileSize!,
                       ),
                     _EcDetailInfoRow(
-                      label: 'Trạng thái upload',
+                      label: context.l10n.detailUploadStatus,
                       value: video.uploadStatus,
                     ),
                     _EcDetailActionRow(
                       icon: Icons.play_arrow,
-                      label: 'Phát video',
+                      label: context.l10n.detailPlayVideo,
                       onTap: onPlay,
                     ),
                     _EcDetailActionRow(
                       icon: Icons.download_outlined,
-                      label: 'Tải video về máy',
+                      label: context.l10n.detailDownloadVideo,
                       subLabel:
-                          'Chỉ Chủ tài khoản / QL shop — để đính kèm form '
-                          'khiếu nại sàn',
+                          context.l10n.detailDownloadNote,
                       onTap: onDownload,
                     ),
                     const SizedBox(height: 4),
@@ -830,7 +861,7 @@ class _EcOrderRowTile extends StatelessWidget {
               if (order.errorCount > 0) ...[
                 const SizedBox(width: 4),
                 Text(
-                  '· ${order.errorCount} lỗi',
+                  context.l10n.ordersErrorCount(order.errorCount),
                   style: _t(11, FontWeight.w600, BrandColors.rec),
                 ),
               ],
@@ -865,7 +896,7 @@ class _EcBottomNav extends StatelessWidget {
             Expanded(
               child: _EcNavTab(
                 icon: Icons.inventory_2_outlined,
-                label: 'Đơn hàng',
+                label: context.l10n.navOrders,
                 active: true,
                 onTap: onOrders,
               ),
@@ -873,14 +904,14 @@ class _EcBottomNav extends StatelessWidget {
             Expanded(
               child: _EcNavTab(
                 icon: Icons.camera_alt_outlined,
-                label: 'Ghi hình',
+                label: context.l10n.navRecord,
                 onTap: onRecord,
               ),
             ),
             Expanded(
               child: _EcNavTab(
                 icon: Icons.person_outline,
-                label: 'Tài khoản',
+                label: context.l10n.navAccount,
                 onTap: onAccount,
               ),
             ),
@@ -998,7 +1029,7 @@ class _EcUploadWarnBanner extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '$pendingCount bằng chứng chưa upload — hồ sơ sẽ thiếu',
+              context.l10n.ordersPendingEvidenceWarning(pendingCount),
               style: _t(13, FontWeight.w500, BrandColors.ink),
             ),
           ),
@@ -1006,7 +1037,7 @@ class _EcUploadWarnBanner extends StatelessWidget {
           EcTap(
             onTap: onRetry,
             child: Text(
-              'Thử lại',
+              context.l10n.commonRetry,
               style: _t(13, FontWeight.w600, BrandColors.ink),
             ),
           ),
@@ -1166,7 +1197,7 @@ class _EcAttachPhotoRow extends StatelessWidget {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  'Đính kèm ảnh vào đơn',
+                  context.l10n.attachPhotoToOrder,
                   overflow: TextOverflow.ellipsis,
                   style: _t(16, FontWeight.w500, BrandColors.ink),
                 ),
@@ -1179,12 +1210,60 @@ class _EcAttachPhotoRow extends StatelessWidget {
   }
 }
 
+class _EcCreateDossierRow extends StatelessWidget {
+  const _EcCreateDossierRow({this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return EcTap(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: ecSquircleDecoration(
+          radius: 10,
+          color: BrandColors.soft,
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.link_outlined,
+              size: 18,
+              color: BrandColors.ink,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                context.l10n.createDossierLink,
+                style: _t(14, FontWeight.w600, BrandColors.ink),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: BrandColors.mut,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _EcDossierLinkBox extends StatelessWidget {
-  const _EcDossierLinkBox({required this.url, this.onCopy, this.onShare});
+  const _EcDossierLinkBox({
+    required this.url,
+    this.onCopy,
+    this.onShare,
+    this.onRevoke,
+  });
 
   final String url;
   final VoidCallback? onCopy;
   final VoidCallback? onShare;
+  final VoidCallback? onRevoke;
 
   @override
   Widget build(BuildContext context) {
@@ -1202,7 +1281,7 @@ class _EcDossierLinkBox extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Link hồ sơ khiếu nại',
+                  context.l10n.dossierLinkLabel,
                   style: _t(12, FontWeight.w600, BrandColors.ink),
                 ),
                 const SizedBox(height: 2),
@@ -1238,6 +1317,22 @@ class _EcDossierLinkBox extends StatelessWidget {
               ),
             ),
           ),
+          if (onRevoke != null) ...[
+            const SizedBox(width: 8),
+            EcTap(
+              onTap: onRevoke,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 5,
+                ),
+                child: Text(
+                  context.l10n.revoke,
+                  style: _t(12, FontWeight.w600, BrandColors.rec),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1364,13 +1459,12 @@ class _EcDetailDeleteRow extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Xóa video',
+                      context.l10n.deleteVideoAction,
                       style: _t(16, FontWeight.w500, BrandColors.ink),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Chỉ Chủ tài khoản / QL shop · xác nhận 2 bước · mất '
-                      'vĩnh viễn',
+                      context.l10n.deleteVideoNote,
                       style: _t(13, FontWeight.w400, BrandColors.mut),
                     ),
                   ],

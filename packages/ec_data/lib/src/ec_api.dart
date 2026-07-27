@@ -7,8 +7,8 @@ import 'ec_models.dart';
 /// (via the network package's `AuthTokenProvider`, Core-4) and the base URL —
 /// so this class stays free of auth/config concerns.
 ///
-/// Presentational screens keep working on sample data today; wiring a screen to
-/// live data is just calling the matching method here once the Worker URL is set.
+/// Presentational screens wire to live data by calling the matching method here
+/// once the Worker URL is set.
 class EcApi {
   const EcApi(this._dio);
 
@@ -67,11 +67,84 @@ class EcApi {
     return ShopDto.fromJson(res.data!);
   }
 
+  Future<ShopDto> updateShop(
+    String shopId, {
+    String? name,
+    String? platform,
+    String? resolution,
+  }) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/api/shops/$shopId',
+      data: {
+        'name': ?name,
+        'platform': ?platform,
+        'resolution': ?resolution,
+      },
+    );
+    return ShopDto.fromJson(res.data!);
+  }
+
   Future<List<MemberDto>> listMembers(String shopId) =>
       _getList('/api/shops/$shopId/members', MemberDto.fromJson);
 
+  Future<void> addMember(
+    String shopId, {
+    required String accountUid,
+    required String role,
+  }) => _dio.post<void>(
+    '/api/shops/$shopId/members',
+    data: {'account_uid': accountUid, 'role': role},
+  );
+
+  Future<ShopInviteDto> sendShopInvite(
+    String shopId, {
+    required String contact,
+    required String role,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/shops/$shopId/invites',
+      data: {'contact': contact, 'role': role},
+    );
+    return ShopInviteDto.fromJson(res.data!);
+  }
+
+  Future<void> updateMemberRole(
+    String shopId, {
+    required String accountUid,
+    required String role,
+  }) => _dio.patch<void>(
+    '/api/shops/$shopId/members/$accountUid',
+    data: {'role': role},
+  );
+
+  Future<void> removeMember(String shopId, String accountUid) =>
+      _dio.delete<void>('/api/shops/$shopId/members/$accountUid');
+
   Future<List<VideoTypeDto>> listVideoTypes(String shopId) =>
       _getList('/api/shops/$shopId/video-types', VideoTypeDto.fromJson);
+
+  Future<VideoTypeDto> addVideoType(String shopId, String name) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/shops/$shopId/video-types',
+      data: {'name': name},
+    );
+    return VideoTypeDto.fromJson(res.data!);
+  }
+
+  Future<VideoTypeDto> renameVideoType(
+    String shopId,
+    String typeId,
+    String name,
+  ) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/api/shops/$shopId/video-types/$typeId',
+      data: {'name': name},
+    );
+    return VideoTypeDto.fromJson(res.data!);
+  }
+
+  Future<void> deleteVideoType(String shopId, String typeId) =>
+      _dio.delete<void>('/api/shops/$shopId/video-types/$typeId');
 
   // --- orders / search (FR-04, FR-01) ---
   Future<List<OrderSummaryDto>> listOrders(String shopId, {int? before}) =>
@@ -88,10 +161,14 @@ class EcApi {
         query: {'q': query},
       );
 
-  Future<OrderDto> findOrCreateOrder(String shopId, String tracking) async {
+  Future<OrderDto> findOrCreateOrder(
+    String shopId,
+    String tracking, {
+    int? capturedAt,
+  }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/orders',
-      data: {'tracking': tracking},
+      data: {'tracking': tracking, 'capturedAt': ?capturedAt},
     );
     return OrderDto.fromJson(res.data!);
   }
@@ -120,6 +197,43 @@ class EcApi {
     return PresignDto.fromJson(res.data!);
   }
 
+  Future<MultipartUploadDto> createMultipartUpload(
+    String shopId,
+    String orderId, {
+    required String kind,
+    required int capturedAt,
+    String? videoTypeId,
+    String? device,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/shops/$shopId/orders/$orderId/uploads/multipart',
+      data: {
+        'kind': kind,
+        'capturedAt': capturedAt,
+        'videoTypeId': ?videoTypeId,
+        'device': ?device,
+      },
+    );
+    return MultipartUploadDto.fromJson(res.data!);
+  }
+
+  Future<List<MultipartPartUrlDto>> presignMultipartParts(
+    String shopId,
+    String orderId,
+    String evidenceId, {
+    required String uploadId,
+    required List<int> partNumbers,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/shops/$shopId/orders/$orderId/uploads/$evidenceId/multipart/parts',
+      data: {'uploadId': uploadId, 'partNumbers': partNumbers},
+    );
+    final parts = res.data!['parts'] as List<dynamic>;
+    return parts
+        .map((e) => MultipartPartUrlDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<String> completeUpload(
     String shopId,
     String orderId,
@@ -131,7 +245,51 @@ class EcApi {
     return res.data!['status'] as String;
   }
 
+  Future<String> completeMultipartUpload(
+    String shopId,
+    String orderId,
+    String evidenceId, {
+    required String uploadId,
+    required List<UploadedPartDto> parts,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/shops/$shopId/orders/$orderId/uploads/$evidenceId/multipart/complete',
+      data: {
+        'uploadId': uploadId,
+        'parts': parts.map((p) => p.toJson()).toList(),
+      },
+    );
+    return res.data!['status'] as String;
+  }
+
+  Future<void> abortMultipartUpload(
+    String shopId,
+    String orderId,
+    String evidenceId, {
+    required String uploadId,
+  }) => _dio.post<void>(
+    '/api/shops/$shopId/orders/$orderId/uploads/$evidenceId/multipart/abort',
+    data: {'uploadId': uploadId},
+  );
+
+  Future<void> deleteEvidence(
+    String shopId,
+    String orderId,
+    String evidenceId,
+  ) => _dio.delete<void>(
+    '/api/shops/$shopId/orders/$orderId/evidence/$evidenceId',
+  );
+
   // --- dossier (FR-07) ---
+  Future<DossierDto?> getDossier(String shopId, String orderId) async {
+    final res = await _dio.get<Map<String, dynamic>?>(
+      '/api/shops/$shopId/orders/$orderId/dossier',
+      queryParameters: null,
+    );
+    final data = res.data;
+    return data == null ? null : DossierDto.fromJson(data);
+  }
+
   Future<DossierDto> createDossier(String shopId, String orderId) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/orders/$orderId/dossier',
@@ -141,4 +299,59 @@ class EcApi {
 
   Future<void> revokeDossier(String shopId, String orderId) =>
       _dio.delete<void>('/api/shops/$shopId/orders/$orderId/dossier');
+
+  Future<List<DossierDto>> listDossiers(String shopId, {String? status}) =>
+      _getList(
+        '/api/shops/$shopId/dossiers',
+        DossierDto.fromJson,
+        query: status == null ? null : {'status': status},
+      );
+
+  Future<DossierDto> updateDossier(
+    String shopId,
+    String orderId, {
+    String? status,
+    int? orderValue,
+    String? note,
+  }) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/api/shops/$shopId/orders/$orderId/dossier',
+      data: {
+        'status': ?status,
+        'order_value': ?orderValue,
+        'note': ?note,
+      },
+    );
+    return DossierDto.fromJson(res.data!);
+  }
+
+  Future<DashboardDto> getDashboard(
+    String shopId, {
+    int? from,
+    int? to,
+  }) => _get(
+    '/api/shops/$shopId/dashboard',
+    DashboardDto.fromJson,
+    query: {
+      'from': ?from,
+      'to': ?to,
+    },
+  );
+
+  Future<String> exportCsv(String shopId, {int? from, int? to}) async {
+    final res = await _dio.get<String>(
+      '/api/shops/$shopId/export',
+      queryParameters: {
+        'from': ?from,
+        'to': ?to,
+      },
+    );
+    return res.data!;
+  }
+
+  Future<void> deleteAccount({bool force = false, bool dryRun = false}) =>
+      _dio.delete<void>(
+        '/api/me',
+        queryParameters: {'force': force, 'dry_run': dryRun},
+      );
 }

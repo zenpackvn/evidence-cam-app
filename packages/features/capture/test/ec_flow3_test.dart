@@ -15,7 +15,13 @@ void main() {
     testWidgets('shows idle hint, shop header and camera rail', (
       tester,
     ) async {
-      await _pump(tester, const EcWaitBill2Screen());
+      await _pump(
+        tester,
+        EcWaitBill2Screen(
+          onResolution: () {},
+          onManualEntry: () {},
+        ),
+      );
       expect(find.text('Shop ABC'), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
       expect(find.text('Đưa bill vào khung để bắt đầu'), findsOneWidget);
@@ -71,7 +77,7 @@ void main() {
       tester,
     ) async {
       await _pump(tester, const EcCutoverBScreen());
-      expect(find.text('Đã chốt đơn A (02:45)'), findsOneWidget);
+      expect(find.text('Đã chốt mã vận đơn A (02:45)'), findsOneWidget);
       expect(find.text('Âm báo + rung khi chuyển đơn'), findsOneWidget);
       expect(find.text('SPXVN098765432'), findsOneWidget);
       expect(find.text('00:01'), findsOneWidget);
@@ -104,7 +110,7 @@ void main() {
       await _pump(tester, const EcReturnRecScreen());
       expect(find.text('SPXVN088877766 (hoàn)'), findsOneWidget);
       expect(find.text('00:32'), findsOneWidget);
-      expect(find.text('Tự liên kết về hồ sơ đơn gốc'), findsOneWidget);
+      expect(find.text('Tự liên kết về hồ sơ mã vận đơn gốc'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -113,7 +119,10 @@ void main() {
     testWidgets('renders the queue list and every status variant', (
       tester,
     ) async {
-      await _pump(tester, const EcUploadQueueScreen());
+      await _pump(
+        tester,
+        const EcUploadQueueScreen(items: ecDefaultUploadItems),
+      );
       expect(find.text('Hàng đợi upload'), findsOneWidget);
       expect(find.text('Tất cả · 5'), findsOneWidget);
       expect(find.text('Đang tải 72%'), findsOneWidget);
@@ -130,6 +139,7 @@ void main() {
       await _pump(
         tester,
         EcUploadQueueScreen(
+          items: ecDefaultUploadItems,
           onTabSelected: (index) => selectedTab = index,
           onUpgrade: () => upgraded = true,
         ),
@@ -184,7 +194,7 @@ void main() {
       expect(find.text('Mã hoàn không khớp'), findsOneWidget);
       expect(find.textContaining('SPXVN099988877'), findsOneWidget);
       expect(find.text('Nhập tay mã'), findsOneWidget);
-      expect(find.text('Tạo đơn mới'), findsOneWidget);
+      expect(find.text('Tạo vận đơn mới'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -194,13 +204,13 @@ void main() {
         tester,
         EcNoMatchScreen(onCreateNew: () => created = true),
       );
-      await tester.tap(find.text('Tạo đơn mới'));
+      await tester.tap(find.text('Tạo vận đơn mới'));
       expect(created, isTrue);
     });
   });
 
   group('EcTypeSheetScreen', () {
-    testWidgets('shows all 5 types, 3 locked, with current selection', (
+    testWidgets('shows all built-in types locked, with current selection', (
       tester,
     ) async {
       await _pump(tester, const EcTypeSheetScreen());
@@ -208,8 +218,6 @@ void main() {
       expect(find.text('Đóng hàng'), findsOneWidget);
       expect(find.text('ĐV vận chuyển'), findsOneWidget);
       expect(find.text('Trả hàng'), findsOneWidget);
-      expect(find.text('Cân hàng'), findsOneWidget);
-      expect(find.text('Kiểm đếm sản phẩm'), findsOneWidget);
       expect(find.byIcon(Icons.lock_outline), findsNWidgets(3));
       expect(find.byIcon(Icons.check), findsOneWidget);
       expect(
@@ -227,6 +235,10 @@ void main() {
       await _pump(
         tester,
         EcTypeSheetScreen(
+          types: const [
+            ...ecDefaultVideoTypes,
+            EcVideoType(label: 'Cân hàng', icon: Icons.scale_outlined),
+          ],
           onSelectType: (label) => selected = label,
           onManageTypes: () => managed = true,
         ),

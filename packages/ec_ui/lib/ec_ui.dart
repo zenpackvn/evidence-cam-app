@@ -121,11 +121,20 @@ void ecToast(
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) return;
   late final OverlayEntry entry;
+  var removed = false;
+  void dismiss() {
+    if (removed) return;
+    removed = true;
+    entry
+      ..remove()
+      ..dispose();
+  }
+
   entry = OverlayEntry(
     builder: (_) => _EcToast(
       message: message,
       duration: duration,
-      onDismissed: entry.remove,
+      onDismissed: dismiss,
     ),
   );
   overlay.insert(entry);

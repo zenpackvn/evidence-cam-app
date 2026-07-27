@@ -26,8 +26,8 @@ void main() {
       expect(find.text('Nhập lại mật khẩu'), findsOneWidget);
       expect(find.text('Xem chính sách'), findsOneWidget);
       expect(find.text('Tạo tài khoản'), findsOneWidget);
-      expect(find.text('Google'), findsOneWidget);
-      expect(find.text('Apple'), findsOneWidget);
+      expect(find.text('Đăng nhập với Google'), findsOneWidget);
+      expect(find.text('Đăng nhập với Apple'), findsOneWidget);
       expect(find.text('Đăng nhập'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -55,7 +55,14 @@ void main() {
       await tester.enterText(fields.at(3), 'matkhau123');
       await tester.enterText(fields.at(4), 'matkhau123');
       await tester.pump();
+      await tester.ensureVisible(find.text('Tạo tài khoản'));
       await tester.tap(find.text('Tạo tài khoản'));
+      await tester.dragUntilVisible(
+        find.text('Đăng nhập'),
+        find.byType(CustomScrollView),
+        const Offset(0, -100),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Đăng nhập'));
       expect(registered, isTrue);
       expect(loggedIn, isTrue);
@@ -166,7 +173,7 @@ void main() {
     ) async {
       await _pump(tester, const EcCreateShopScreen());
       expect(find.text('Tạo shop'), findsNWidgets(2));
-      expect(find.text('Tên shop'), findsOneWidget);
+      expect(find.text('Tên shop'), findsNWidgets(2));
       expect(find.text('Sàn thương mại'), findsOneWidget);
       expect(find.text('Shopee'), findsOneWidget);
       expect(find.text('TikTok Shop'), findsOneWidget);
@@ -318,8 +325,8 @@ void main() {
       await _pump(tester, const EcConfirmDeleteScreen());
       expect(find.text('Xóa loại “Cân hàng”?'), findsOneWidget);
       expect(find.text('Hủy'), findsOneWidget);
-      expect(find.text('Ngừng sử dụng'), findsOneWidget);
-      expect(find.text('(Video cũ vẫn giữ nguyên)'), findsOneWidget);
+      expect(find.text('Xóa loại'), findsOneWidget);
+      expect(find.text('(Chỉ xóa khi loại chưa có video nào)'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -334,7 +341,7 @@ void main() {
         ),
       );
       await tester.tap(find.text('Hủy'));
-      await tester.tap(find.text('Ngừng sử dụng'));
+      await tester.tap(find.text('Xóa loại'));
       expect(cancelled, isTrue);
       expect(confirmed, isTrue);
     });
@@ -365,11 +372,11 @@ void main() {
         const EcHomeOrdersScreen(shopName: 'Shop ABC', orders: orders),
       );
       expect(find.text('Shop ABC'), findsOneWidget);
-      expect(find.text('Đơn hôm nay'), findsOneWidget);
+      expect(find.text('Vận đơn hôm nay'), findsOneWidget);
       expect(find.text('SPXVN024567890'), findsOneWidget);
       expect(find.text('SPXVN044556677'), findsOneWidget);
       expect(find.text('· 1 lỗi'), findsOneWidget);
-      expect(find.text('Đơn hàng'), findsOneWidget);
+      expect(find.text('Vận đơn'), findsOneWidget);
       expect(find.text('Ghi hình'), findsOneWidget);
       expect(find.text('Tài khoản'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -408,6 +415,27 @@ void main() {
       // Only the matching order remains.
       expect(find.text('SPXVN024567890'), findsOneWidget);
       expect(find.text('SPXVN044556677'), findsNothing);
+    });
+
+    testWidgets('search field delegates to server callback when wired', (
+      tester,
+    ) async {
+      final searches = <String>[];
+      await _pump(
+        tester,
+        EcHomeOrdersScreen(
+          shopName: 'Shop ABC',
+          orders: orders,
+          onSearchChanged: searches.add,
+        ),
+      );
+
+      await tester.enterText(find.byType(EditableText), 'ZZZ');
+      await tester.pump();
+
+      expect(searches, ['ZZZ']);
+      expect(find.text('SPXVN024567890'), findsOneWidget);
+      expect(find.text('SPXVN044556677'), findsOneWidget);
     });
 
     testWidgets('filter chips are real dropdown selects', (tester) async {

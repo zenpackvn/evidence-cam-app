@@ -17,7 +17,9 @@ import 'package:flutter/cupertino.dart'
         CupertinoTextField,
         showCupertinoModalPopup;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:localization/localization.dart';
 
 // Shared text style (Inter is inherited from the CupertinoApp text theme).
 TextStyle _t(double size, FontWeight weight, Color color) =>
@@ -227,7 +229,9 @@ class _FieldState extends State<_Field> {
     // On obscured fields the eye is a live reveal toggle; otherwise decorative.
     final icon = widget.obscure
         ? Icon(
-            _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            _obscure
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
             size: 18,
             color: BrandColors.mut,
           )
@@ -254,7 +258,7 @@ class _OrDivider extends StatelessWidget {
         const Expanded(child: Divider(color: BrandColors.line, height: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text('hoặc', style: _t(12, FontWeight.w400, BrandColors.mut)),
+          child: Text(context.l10n.authOr, style: _t(12, FontWeight.w400, BrandColors.mut)),
         ),
         const Expanded(child: Divider(color: BrandColors.line, height: 1)),
       ],
@@ -269,7 +273,6 @@ class _SocialButton extends StatelessWidget {
     required this.borderColor,
     required this.foreground,
     required this.icon,
-    required this.iconColor,
     this.onPressed,
   });
 
@@ -277,8 +280,7 @@ class _SocialButton extends StatelessWidget {
   final Color background;
   final Color borderColor;
   final Color foreground;
-  final IconData icon;
-  final Color iconColor;
+  final Widget icon;
   final VoidCallback? onPressed;
 
   @override
@@ -295,7 +297,7 @@ class _SocialButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: iconColor),
+            icon,
             const SizedBox(width: 10),
             Flexible(
               child: Text(
@@ -310,6 +312,26 @@ class _SocialButton extends StatelessWidget {
     );
   }
 }
+
+/// Google's 4-color "G" mark, verbatim from the `GoogleG` paths in
+/// pencil-new.pen (viewBox 48x48), replacing the single-color material glyph.
+// ponytail: duplicated from ec_screens.dart; promote to a shared file if a
+// third screen needs it.
+class _GoogleLogo extends StatelessWidget {
+  const _GoogleLogo();
+
+  @override
+  Widget build(BuildContext context) =>
+      SvgPicture.string(_googleGSvg, width: 18, height: 18);
+}
+
+const _googleGSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+<path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+<path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+<path fill="#FBBC05" d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/>
+<path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+</svg>''';
 
 /// Small caps section header used inside settings-style screens (e.g.
 /// "THÀNH VIÊN", "CÀI ĐẶT SHOP").
@@ -413,7 +435,7 @@ class _ShopHeader extends StatelessWidget {
   }
 }
 
-/// Bottom tab bar (`C/Nav3`): Đơn hàng / Ghi hình / Tài khoản.
+/// Bottom tab bar (`C/Nav3`): Vận đơn / Ghi hình / Tài khoản.
 class _Nav3Bar extends StatelessWidget {
   const _Nav3Bar({
     required this.activeIndex,
@@ -440,7 +462,7 @@ class _Nav3Bar extends StatelessWidget {
           Expanded(
             child: _NavItem(
               icon: Icons.receipt_long_outlined,
-              label: 'Đơn hàng',
+              label: context.l10n.navOrders,
               active: activeIndex == 0,
               onTap: onOrders,
             ),
@@ -448,7 +470,7 @@ class _Nav3Bar extends StatelessWidget {
           Expanded(
             child: _NavItem(
               icon: Icons.videocam_outlined,
-              label: 'Ghi hình',
+              label: context.l10n.navRecord,
               active: activeIndex == 1,
               onTap: onRecord,
             ),
@@ -456,7 +478,7 @@ class _Nav3Bar extends StatelessWidget {
           Expanded(
             child: _NavItem(
               icon: Icons.person_outline,
-              label: 'Tài khoản',
+              label: context.l10n.navAccount,
               active: activeIndex == 2,
               onTap: onAccount,
             ),
@@ -627,12 +649,12 @@ class EcRegisterScreen extends StatelessWidget {
                         child: Column(
                           children: [
                             Text(
-                              'Đăng ký',
+                              context.l10n.authRegister,
                               style: _t(24, FontWeight.w700, BrandColors.ink),
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Tạo tài khoản mới',
+                              context.l10n.registerTitle,
                               style: _t(13, FontWeight.w400, BrandColors.mut),
                             ),
                           ],
@@ -640,11 +662,11 @@ class EcRegisterScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       _Field(
-                        label: 'Họ tên',
+                        label: context.l10n.accountFullName,
                         hint: 'Nguyễn Văn A',
                         controller: nameController,
                         validator: FormBuilderValidators.required(
-                          errorText: 'Vui lòng nhập họ tên',
+                          errorText: context.l10n.accountFullNameRequired,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -655,57 +677,57 @@ class EcRegisterScreen extends StatelessWidget {
                         keyboardType: TextInputType.emailAddress,
                         validator: FormBuilderValidators.compose([
                           FormBuilderValidators.required(
-                            errorText: 'Vui lòng nhập email',
+                            errorText: context.l10n.authEmailRequired,
                           ),
                           FormBuilderValidators.email(
-                            errorText: 'Email không hợp lệ',
+                            errorText: context.l10n.authEmailInvalid,
                           ),
                         ]),
                       ),
                       const SizedBox(height: 10),
                       _Field(
-                        label: 'Số điện thoại',
+                        label: context.l10n.phoneLabel,
                         hint: '090 123 4567',
                         controller: phoneController,
                         keyboardType: TextInputType.phone,
                         validator: FormBuilderValidators.compose([
                           FormBuilderValidators.required(
-                            errorText: 'Vui lòng nhập số điện thoại',
+                            errorText: context.l10n.phoneRequired,
                           ),
                           // ponytail: library's general phone check; swap for a
                           // strict VN 9–11 digit rule if it proves too loose.
                           FormBuilderValidators.phoneNumber(
-                            errorText: 'Số điện thoại không hợp lệ',
+                            errorText: context.l10n.phoneInvalid,
                           ),
                         ]),
                       ),
                       const SizedBox(height: 10),
                       _Field(
-                        label: 'Mật khẩu',
-                        hint: 'Tối thiểu 8 ký tự',
+                        label: context.l10n.authPassword,
+                        hint: context.l10n.passwordMinHint,
                         controller: passwordController,
                         obscure: true,
                         trailing: Icons.visibility_outlined,
                         validator: FormBuilderValidators.compose([
                           FormBuilderValidators.required(
-                            errorText: 'Vui lòng nhập mật khẩu',
+                            errorText: context.l10n.authPasswordRequired,
                           ),
                           FormBuilderValidators.minLength(
                             8,
-                            errorText: 'Mật khẩu tối thiểu 8 ký tự',
+                            errorText: context.l10n.passwordMin8Error,
                           ),
                         ]),
                       ),
                       const SizedBox(height: 10),
                       _Field(
-                        label: 'Nhập lại mật khẩu',
+                        label: context.l10n.registerConfirmPassword,
                         hint: '••••••••',
                         controller: confirmPasswordController,
                         obscure: true,
                         trailing: Icons.visibility_outlined,
                         validator: (value) => value == passwordController?.text
                             ? null
-                            : 'Mật khẩu nhập lại không khớp',
+                            : context.l10n.passwordMismatch,
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -720,7 +742,7 @@ class EcRegisterScreen extends StatelessWidget {
                               crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
-                                  'Tôi đồng ý chính sách ',
+                                  context.l10n.registerAgreePolicy,
                                   style: _t(
                                     12,
                                     FontWeight.w400,
@@ -730,7 +752,7 @@ class EcRegisterScreen extends StatelessWidget {
                                 GestureDetector(
                                   onTap: onViewPolicy,
                                   child: Text(
-                                    'Xem chính sách',
+                                    context.l10n.registerViewPolicy,
                                     style: _t(
                                       12,
                                       FontWeight.w600,
@@ -745,14 +767,36 @@ class EcRegisterScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       _ValidatedPrimaryButton(
-                        label: 'Tạo tài khoản',
+                        label: context.l10n.registerCreateAccount,
                         onValid: onRegister,
                       ),
                       const SizedBox(height: 10),
                       const _OrDivider(),
                       const SizedBox(height: 10),
+                      _SocialButton(
+                        label: context.l10n.authSignInGoogle,
+                        background: Colors.white,
+                        borderColor: const Color(0xFFDADCE0),
+                        foreground: const Color(0xFF3C4043),
+                        icon: const _GoogleLogo(),
+                        onPressed: onGoogle,
+                      ),
+                      const SizedBox(height: 10),
+                      _SocialButton(
+                        label: context.l10n.authSignInApple,
+                        background: Colors.black,
+                        borderColor: Colors.black,
+                        foreground: Colors.white,
+                        icon: const Icon(
+                          Icons.apple,
+                          size: 20,
+                          color: Colors.white,
+                        ),
+                        onPressed: onApple,
+                      ),
+                      const SizedBox(height: 10),
                       Text(
-                        'Cùng email sẽ tự liên kết về một tài khoản',
+                        context.l10n.registerSameEmailNote,
                         textAlign: TextAlign.center,
                         style: _t(11, FontWeight.w400, BrandColors.mut),
                       ),
@@ -763,42 +807,14 @@ class EcRegisterScreen extends StatelessWidget {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
-                            'Đã có tài khoản? ',
+                            context.l10n.registerHaveAccountPrompt,
                             style: _t(13, FontWeight.w400, BrandColors.mut),
                           ),
                           GestureDetector(
                             onTap: onLogin,
                             child: Text(
-                              'Đăng nhập',
+                              context.l10n.authSignIn,
                               style: _t(13, FontWeight.w600, BrandColors.ink),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _SocialButton(
-                              label: 'Google',
-                              background: Colors.white,
-                              borderColor: const Color(0xFFDADCE0),
-                              foreground: const Color(0xFF3C4043),
-                              icon: Icons.g_mobiledata,
-                              iconColor: const Color(0xFF4285F4),
-                              onPressed: onGoogle,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _SocialButton(
-                              label: 'Apple',
-                              background: Colors.black,
-                              borderColor: Colors.black,
-                              foreground: Colors.white,
-                              icon: Icons.apple,
-                              iconColor: Colors.white,
-                              onPressed: onApple,
                             ),
                           ),
                         ],
@@ -896,12 +912,12 @@ class EcForgotPasswordScreen extends StatelessWidget {
                         child: Column(
                           children: [
                             Text(
-                              'Quên mật khẩu',
+                              context.l10n.forgotPasswordTitle,
                               style: _t(24, FontWeight.w700, BrandColors.ink),
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Nhập email để nhận link đặt lại mật khẩu',
+                              context.l10n.forgotPasswordSubtitle,
                               textAlign: TextAlign.center,
                               style: _t(13, FontWeight.w400, BrandColors.mut),
                             ),
@@ -916,16 +932,16 @@ class EcForgotPasswordScreen extends StatelessWidget {
                         keyboardType: TextInputType.emailAddress,
                         validator: FormBuilderValidators.compose([
                           FormBuilderValidators.required(
-                            errorText: 'Vui lòng nhập email',
+                            errorText: context.l10n.authEmailRequired,
                           ),
                           FormBuilderValidators.email(
-                            errorText: 'Email không hợp lệ',
+                            errorText: context.l10n.authEmailInvalid,
                           ),
                         ]),
                       ),
                       const SizedBox(height: 14),
                       _ValidatedPrimaryButton(
-                        label: 'Gửi link đặt lại',
+                        label: context.l10n.forgotPasswordSubmit,
                         onValid: onSend,
                       ),
                       if (sent) ...[
@@ -947,7 +963,7 @@ class EcForgotPasswordScreen extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Đã gửi — kiểm tra hộp thư (kể cả mục spam)',
+                                  context.l10n.forgotPasswordSent,
                                   style: _t(
                                     12,
                                     FontWeight.w400,
@@ -966,13 +982,13 @@ class EcForgotPasswordScreen extends StatelessWidget {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
-                            'Nhớ mật khẩu rồi? ',
+                            context.l10n.forgotPasswordRememberPrompt,
                             style: _t(13, FontWeight.w400, BrandColors.mut),
                           ),
                           GestureDetector(
                             onTap: onLogin,
                             child: Text(
-                              'Đăng nhập',
+                              context.l10n.authSignIn,
                               style: _t(13, FontWeight.w600, BrandColors.ink),
                             ),
                           ),
@@ -1008,7 +1024,7 @@ class EcShopSummary {
   /// Backend shop id (used to fetch that shop's orders). Empty for design mocks.
   final String id;
 
-  /// Display name, e.g. "Shop ABC".
+  /// Display name.
   final String name;
 
   /// Marketplace id understood by [BrandColors.platform] (`shopee`,
@@ -1072,12 +1088,12 @@ class EcChooseShopScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Shop của bạn',
+                      context.l10n.shopYourShops,
                       style: _t(22, FontWeight.w700, BrandColors.ink),
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Chạm shop để vào ca · quản lý ngay tại đây',
+                      context.l10n.shopTapToClockIn,
                       style: _t(13, FontWeight.w400, BrandColors.mut),
                     ),
                     const SizedBox(height: 12),
@@ -1106,7 +1122,7 @@ class EcChooseShopScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Đăng xuất',
+                              context.l10n.accountSignOut,
                               style: _t(13, FontWeight.w500, BrandColors.ink),
                             ),
                           ],
@@ -1115,7 +1131,7 @@ class EcChooseShopScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Shop vào gần nhất sẽ được mở thẳng ở lần sau',
+                      context.l10n.shopLastOpenedNote,
                       textAlign: TextAlign.center,
                       style: _t(12, FontWeight.w400, BrandColors.mut),
                     ),
@@ -1216,12 +1232,12 @@ class _ManageRow extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Quản lý cửa hàng',
+                      context.l10n.shopManageStore,
                       style: _t(16, FontWeight.w600, BrandColors.ink),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Chỉ hiện với Chủ tài khoản / Quản lý shop',
+                      context.l10n.shopManageVisibilityNote,
                       style: _t(13, FontWeight.w400, BrandColors.mut),
                     ),
                   ],
@@ -1273,22 +1289,21 @@ class EcNoShopScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                'Chưa có shop nào',
+                context.l10n.shopEmpty,
                 style: _t(18, FontWeight.w700, BrandColors.ink),
               ),
               const SizedBox(height: 14),
               SizedBox(
                 width: 280,
                 child: Text(
-                  'Tài khoản của bạn chưa thuộc shop nào. Tạo shop mới để bắt '
-                  'đầu, hoặc chờ lời mời từ chủ shop.',
+                  context.l10n.shopEmptyBody,
                   textAlign: TextAlign.center,
                   style: _t(13, FontWeight.w400, BrandColors.mut),
                 ),
               ),
               const SizedBox(height: 14),
               _EcPrimaryButton(
-                label: 'Tạo shop mới (tên + sàn)',
+                label: context.l10n.shopCreateNew,
                 onPressed: onCreate,
               ),
               const SizedBox(height: 14),
@@ -1311,7 +1326,7 @@ class EcNoShopScreen extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Lời mời vào shop sẽ hiện ở đây',
+                          context.l10n.shopInvitesHere,
                           style: _t(12, FontWeight.w400, BrandColors.mut),
                         ),
                       ),
@@ -1354,7 +1369,7 @@ class EcCreateShopScreen extends StatelessWidget {
     ('tiktok', 'TikTok Shop'),
     ('lazada', 'Lazada'),
     ('tiki', 'Tiki'),
-    ('khac', 'Khác'),
+    ('other', 'Khác'),
   ];
 
   @override
@@ -1365,7 +1380,7 @@ class EcCreateShopScreen extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              _SimpleHeader(title: 'Tạo shop', onBack: onBack),
+              _SimpleHeader(title: context.l10n.shopCreateTitle, onBack: onBack),
               Expanded(
                 child: CustomScrollView(
                   slivers: [
@@ -1377,16 +1392,16 @@ class EcCreateShopScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _Field(
-                              label: 'Tên shop',
-                              hint: 'Ví dụ: Shop ABC',
+                              label: context.l10n.shopNameLabel,
+                              hint: context.l10n.shopNameLabel,
                               controller: nameController,
                               validator: FormBuilderValidators.required(
-                                errorText: 'Vui lòng nhập tên shop',
+                                errorText: context.l10n.shopNameRequired,
                               ),
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Sàn thương mại',
+                              context.l10n.shopPlatform,
                               style: _t(13, FontWeight.w500, BrandColors.ink),
                             ),
                             const SizedBox(height: 8),
@@ -1423,8 +1438,7 @@ class EcCreateShopScreen extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      'Bạn sẽ là Chủ shop — thêm thành viên sau '
-                                      'trong Quản lý cửa hàng',
+                                      context.l10n.shopCreateOwnerNote,
                                       style: _t(
                                         12,
                                         FontWeight.w400,
@@ -1438,7 +1452,7 @@ class EcCreateShopScreen extends StatelessWidget {
                             const Spacer(),
                             const SizedBox(height: 16),
                             _ValidatedPrimaryButton(
-                              label: 'Tạo shop',
+                              label: context.l10n.shopCreateTitle,
                               onValid: onCreate,
                             ),
                           ],
@@ -1509,13 +1523,25 @@ class _PlatformPill extends StatelessWidget {
 
 /// A shop entry as listed on the ShopMgmt screen.
 class EcShopMgmtEntry {
-  const EcShopMgmtEntry({required this.name, required this.meta});
+  const EcShopMgmtEntry({
+    required this.name,
+    required this.meta,
+    this.id,
+    this.platform,
+    this.resolution,
+    this.role,
+  });
 
-  /// Display name, e.g. "Shop ABC".
+  /// Display name.
   final String name;
 
   /// Preformatted meta line, e.g. "Shopee · 3 thành viên".
   final String meta;
+
+  final String? id;
+  final String? platform;
+  final String? resolution;
+  final String? role;
 }
 
 /// ShopMgmt — "Quản lý cửa hàng": list of shops with a logo placeholder,
@@ -1541,7 +1567,7 @@ class EcShopMgmtScreen extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            _SimpleHeader(title: 'Quản lý cửa hàng', onBack: onBack),
+            _SimpleHeader(title: context.l10n.shopManageStore, onBack: onBack),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -1562,8 +1588,7 @@ class EcShopMgmtScreen extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        'Nhân viên không thấy màn này · QL shop chỉ thấy shop '
-                        'mình quản',
+                        context.l10n.shopMgmtVisibilityNote,
                         style: _t(11, FontWeight.w400, BrandColors.mut),
                       ),
                     ),
@@ -1655,7 +1680,7 @@ class _AddShopRow extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Thêm shop mới (tên + sàn)',
+                  context.l10n.shopAddNew,
                   style: _t(14, FontWeight.w500, BrandColors.ink),
                 ),
               ),
@@ -1673,9 +1698,16 @@ class _AddShopRow extends StatelessWidget {
 
 /// A shop member as listed on the ShopDetail screen.
 class EcShopMember {
-  const EcShopMember({required this.name, required this.role});
+  const EcShopMember({
+    required this.name,
+    required this.role,
+    this.accountUid,
+    this.roleCode,
+  });
   final String name;
   final String role;
+  final String? accountUid;
+  final String? roleCode;
 }
 
 /// A configurable video type on the ShopDetail screen. The three built-in
@@ -1684,11 +1716,13 @@ class EcShopMember {
 class EcVideoType {
   const EcVideoType({
     required this.name,
+    this.id,
     this.locked = false,
     this.icon = Icons.videocam_outlined,
   });
 
   final String name;
+  final String? id;
   final bool locked;
   final IconData icon;
 }
@@ -1728,16 +1762,16 @@ class EcShopDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sections = <Widget>[
-      const _SectionLabel('THÀNH VIÊN'),
+      _SectionLabel(context.l10n.sectionMembers),
       for (final member in members)
         _MemberRow(
           member: member,
           onMore: onMemberMore == null ? null : () => onMemberMore!(member),
         ),
       _InviteMemberRow(onTap: onInviteMember),
-      const Padding(
-        padding: EdgeInsets.only(top: 14),
-        child: _SectionLabel('CÀI ĐẶT SHOP'),
+      Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: _SectionLabel(context.l10n.sectionShopSettings),
       ),
       _ResolutionRow(resolution: resolution, onTap: onTapResolution),
       Padding(
@@ -1745,10 +1779,10 @@ class EcShopDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _SectionLabel('LOẠI VIDEO'),
+            _SectionLabel(context.l10n.sectionVideoTypes),
             const SizedBox(height: 2),
             Text(
-              '3 loại có sẵn bị khóa — không sửa/xóa được',
+              context.l10n.videoTypesLockedNote,
               style: _t(11, FontWeight.w400, BrandColors.mut),
             ),
           ],
@@ -1868,7 +1902,7 @@ class _InviteMemberRow extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Mời thành viên (chưa có tài khoản → gửi lời mời)',
+                context.l10n.addMemberByContact,
                 style: _t(15, FontWeight.w500, BrandColors.ink),
               ),
             ),
@@ -1905,7 +1939,7 @@ class _ResolutionRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Độ phân giải quay',
+                    context.l10n.recordResolution,
                     overflow: TextOverflow.ellipsis,
                     style: _t(16, FontWeight.w400, BrandColors.ink),
                   ),
@@ -2014,7 +2048,7 @@ class _AddTypeRow extends StatelessWidget {
             const Icon(Icons.add, size: 20, color: BrandColors.ink),
             const SizedBox(width: 10),
             Text(
-              'Thêm loại (nhập tên)',
+              context.l10n.addVideoType,
               style: _t(15, FontWeight.w500, BrandColors.ink),
             ),
           ],
@@ -2045,20 +2079,20 @@ class EcCreateTypeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return _EcDialogFrame(
       children: [
-        Text('Tạo loại video', style: _t(16, FontWeight.w700, BrandColors.ink)),
+        Text(context.l10n.createVideoTypeTitle, style: _t(16, FontWeight.w700, BrandColors.ink)),
         _Field(
-          label: 'Tên loại video',
-          hint: 'Ví dụ: Cân hàng',
+          label: context.l10n.videoTypeName,
+          hint: context.l10n.videoTypeNameHint,
           controller: nameController,
         ),
         Row(
           children: [
             Expanded(
-              child: _EcOutlineButton(label: 'Hủy', onPressed: onCancel),
+              child: _EcOutlineButton(label: context.l10n.commonCancel, onPressed: onCancel),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _EcPrimaryButton(label: 'Tạo loại', onPressed: onCreate),
+              child: _EcPrimaryButton(label: context.l10n.createVideoType, onPressed: onCreate),
             ),
           ],
         ),
@@ -2072,7 +2106,7 @@ class EcCreateTypeScreen extends StatelessWidget {
 // ============================================================================
 
 /// ConfirmDelete — dialog confirming that a custom video type should stop
-/// being offered for new videos (old videos keep the type).
+/// being offered for new videos. Backend blocks deletion once videos use it.
 class EcConfirmDeleteScreen extends StatelessWidget {
   const EcConfirmDeleteScreen({
     this.typeName = 'Cân hàng',
@@ -2090,30 +2124,29 @@ class EcConfirmDeleteScreen extends StatelessWidget {
     return _EcDialogFrame(
       children: [
         Text(
-          'Xóa loại “$typeName”?',
+          context.l10n.deleteVideoTypeTitle(typeName),
           style: _t(16, FontWeight.w700, BrandColors.ink),
         ),
         Text(
-          'Loại này đã được dùng trong các video. Các video cũ vẫn được giữ '
-          'nguyên nhưng người dùng sẽ không thể chọn loại này cho video mới.',
+          context.l10n.deleteVideoTypeBody,
           style: _t(13, FontWeight.w400, BrandColors.mut),
         ),
         Row(
           children: [
             Expanded(
-              child: _EcOutlineButton(label: 'Hủy', onPressed: onCancel),
+              child: _EcOutlineButton(label: context.l10n.commonCancel, onPressed: onCancel),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: _EcPrimaryButton(
-                label: 'Ngừng sử dụng',
+                label: context.l10n.deleteVideoTypeConfirm,
                 onPressed: onConfirm,
               ),
             ),
           ],
         ),
         Text(
-          '(Video cũ vẫn giữ nguyên)',
+          context.l10n.deleteVideoTypeNote,
           textAlign: TextAlign.center,
           style: _t(11, FontWeight.w400, BrandColors.mut),
         ),
@@ -2127,8 +2160,8 @@ class EcConfirmDeleteScreen extends StatelessWidget {
 // — wireframe-backlog screens for Chi tiết shop (Flow 1·9).
 // ============================================================================
 
-/// InviteMember — dialog to invite a user to the shop by email/phone with a
-/// role. Fills the "Mời thành viên" control that previously had no destination.
+/// InviteMember — dialog to add an existing user to the shop by email/phone
+/// with a role. Fills the member control that previously had no destination.
 class EcInviteMemberScreen extends StatefulWidget {
   const EcInviteMemberScreen({
     this.contactController,
@@ -2140,8 +2173,8 @@ class EcInviteMemberScreen extends StatefulWidget {
   final TextEditingController? contactController;
   final VoidCallback? onCancel;
 
-  /// Fires with the chosen role ('Nhân viên' | 'Quản lý shop').
-  final ValueChanged<String>? onInvite;
+  /// Fires with the entered contact and chosen role.
+  final ValueChanged<EcMemberInvite>? onInvite;
 
   @override
   State<EcInviteMemberScreen> createState() => _EcInviteMemberScreenState();
@@ -2154,14 +2187,16 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
   Widget build(BuildContext context) {
     return _EcDialogFrame(
       children: [
-        Text('Mời thành viên', style: _t(16, FontWeight.w700, BrandColors.ink)),
         Text(
-          'Nhập email hoặc số điện thoại — người chưa có tài khoản sẽ nhận lời '
-          'mời để đăng ký vào shop.',
+          context.l10n.addMemberTitle,
+          style: _t(16, FontWeight.w700, BrandColors.ink),
+        ),
+        Text(
+          context.l10n.addMemberBody,
           style: _t(13, FontWeight.w400, BrandColors.mut),
         ),
         _Field(
-          label: 'Email hoặc số điện thoại',
+          label: context.l10n.emailOrPhone,
           hint: 'ban@email.com',
           controller: widget.contactController,
         ),
@@ -2181,13 +2216,17 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
         Row(
           children: [
             Expanded(
-              child: _EcOutlineButton(label: 'Hủy', onPressed: widget.onCancel),
+              child: _EcOutlineButton(label: context.l10n.commonCancel, onPressed: widget.onCancel),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: _EcPrimaryButton(
-                label: 'Gửi lời mời',
-                onPressed: () => widget.onInvite?.call(_role),
+                label: context.l10n.addMemberSubmit,
+                onPressed: () {
+                  final contact = widget.contactController?.text.trim() ?? '';
+                  if (contact.isEmpty) return;
+                  widget.onInvite?.call(EcMemberInvite(contact, _role));
+                },
               ),
             ),
           ],
@@ -2195,6 +2234,13 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
       ],
     );
   }
+}
+
+class EcMemberInvite {
+  const EcMemberInvite(this.contact, this.role);
+
+  final String contact;
+  final String role;
 }
 
 class _RoleOption extends StatelessWidget {
@@ -2274,23 +2320,23 @@ class EcMemberActionsScreen extends StatelessWidget {
     final isManager = member.role.contains('Quản lý');
     return _EcSheetFrame(
       title: member.name,
-      subtitle: 'Vai trò hiện tại: ${member.role}',
+      subtitle: context.l10n.memberCurrentRole(member.role),
       children: [
         _EcSheetActionRow(
           icon: Icons.shield_outlined,
-          label: 'Đặt làm Quản lý shop',
+          label: context.l10n.setAsManager,
           selected: isManager,
           onTap: onSetManager,
         ),
         _EcSheetActionRow(
           icon: Icons.person_outline,
-          label: 'Đặt làm Nhân viên',
+          label: context.l10n.setAsStaff,
           selected: !isManager,
           onTap: onSetStaff,
         ),
         _EcSheetActionRow(
           icon: Icons.person_remove_outlined,
-          label: 'Gỡ khỏi shop',
+          label: context.l10n.removeFromShop,
           destructive: true,
           onTap: onRemove,
         ),
@@ -2315,13 +2361,13 @@ class EcResolutionSheetScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _EcSheetFrame(
-      title: 'Độ phân giải quay',
-      subtitle: 'Áp dụng cho video quay mới của shop',
+      title: context.l10n.recordResolution,
+      subtitle: context.l10n.resolutionAppliesNote,
       children: [
         for (final r in _options)
           _EcSheetActionRow(
             icon: Icons.videocam_outlined,
-            label: r == '720p' ? '720p (mặc định)' : r,
+            label: r == '720p' ? context.l10n.resolutionDefaultOption : r,
             selected: r == selected,
             onTap: () => onSelect?.call(r),
           ),
@@ -2464,7 +2510,7 @@ class _EcSheetActionRow extends StatelessWidget {
 // HomeOrders
 // ============================================================================
 
-/// A quick stat shown at the top of HomeOrders (e.g. "24" / "Đơn hôm nay").
+/// A quick stat shown at the top of HomeOrders (e.g. "24" / "Vận đơn hôm nay").
 class EcHomeStat {
   const EcHomeStat({required this.value, required this.label});
   final String value;
@@ -2481,7 +2527,7 @@ class EcOrderRow {
     this.errorCount = 0,
   });
 
-  /// Tracking code, e.g. "SPXVN024567890".
+  /// Tracking code.
   final String code;
 
   /// Time label, e.g. "10:23".
@@ -2493,11 +2539,11 @@ class EcOrderRow {
   final int errorCount;
 }
 
-/// HomeOrders — the main "Đơn hàng" tab: shop header with upload queue,
+/// HomeOrders — the main "Vận đơn" tab: shop header with upload queue,
 /// quick stats, a tracking-code search box, filter chips, the order list and
-/// the bottom tab bar (Đơn hàng active).
+/// the bottom tab bar (Vận đơn active).
 /// Label of the type-filter chip — the only chip backed by real order data
-/// today. `ponytail:` status/date chips are select-only until orders carry
+/// today. Status/date chips are select-only until orders carry
 /// those fields; wire their predicates here once the backend supplies them.
 const _typeFilterLabel = 'Loại video';
 
@@ -2507,9 +2553,9 @@ class EcHomeOrdersScreen extends StatefulWidget {
     required this.orders,
     this.queueCount = 0,
     this.stats = const [
-      EcHomeStat(value: '24', label: 'Đơn hôm nay'),
-      EcHomeStat(value: '38', label: 'Video đã quay'),
-      EcHomeStat(value: '4', label: 'Chờ tải'),
+      EcHomeStat(value: '0', label: 'Vận đơn hôm nay'),
+      EcHomeStat(value: '0', label: 'Video đã quay'),
+      EcHomeStat(value: '0', label: 'Chờ tải'),
     ],
     this.filters = const ['Tất cả', 'Hôm nay', 'Loại video'],
     this.searchHint = 'Nhập mã vận đơn',
@@ -2517,6 +2563,7 @@ class EcHomeOrdersScreen extends StatefulWidget {
     this.onBack,
     this.onQueueTap,
     this.onScan,
+    this.onSearchChanged,
     this.onFilterTap,
     this.onOrderTap,
     this.onRefresh,
@@ -2544,6 +2591,9 @@ class EcHomeOrdersScreen extends StatefulWidget {
 
   /// Opens the barcode scanner; the returned code fills the search box.
   final Future<String?> Function()? onScan;
+
+  /// Fired when the tracking-code search query changes.
+  final ValueChanged<String>? onSearchChanged;
 
   /// Fired with the chosen value whenever a filter chip's selection changes.
   final ValueChanged<String>? onFilterTap;
@@ -2595,11 +2645,15 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
     return [label];
   }
 
-  /// Orders after applying the search query and the type filter.
+  /// Orders after applying local filters. When `onSearchChanged` is wired, the
+  /// parent supplies server-filtered rows, so this widget does not hide rows
+  /// while the async search is still in flight.
   List<EcOrderRow> get _visibleOrders {
     final query = _query.trim().toLowerCase();
     return widget.orders.where((order) {
-      if (query.isNotEmpty && !order.code.toLowerCase().contains(query)) {
+      if (widget.onSearchChanged == null &&
+          query.isNotEmpty &&
+          !order.code.toLowerCase().contains(query)) {
         return false;
       }
       for (final entry in _selected.entries) {
@@ -2625,6 +2679,7 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
     if (code == null || !mounted) return;
     _search.text = code;
     setState(() => _query = code);
+    widget.onSearchChanged?.call(code);
   }
 
   /// Triggers [EcHomeOrdersScreen.onLoadMore] when the user scrolls within
@@ -2694,7 +2749,10 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                               Expanded(
                                 child: CupertinoTextField(
                                   controller: _search,
-                                  onChanged: (v) => setState(() => _query = v),
+                                  onChanged: (v) {
+                                    setState(() => _query = v);
+                                    widget.onSearchChanged?.call(v);
+                                  },
                                   textInputAction: TextInputAction.search,
                                   style: _t(
                                     16,
@@ -2748,7 +2806,7 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                         if (widget.orders.isEmpty)
                           _OrdersEmpty(text: widget.emptyText)
                         else if (visible.isEmpty)
-                          const _OrdersEmpty(text: 'Không tìm thấy đơn hàng')
+                          _OrdersEmpty(text: context.l10n.ordersNotFound)
                         else
                           for (final order in visible) ...[
                             _OrderTile(
@@ -2865,7 +2923,7 @@ class _FilterChip extends StatelessWidget {
         ],
         cancelButton: CupertinoActionSheetAction(
           onPressed: () => Navigator.of(sheetContext).pop(),
-          child: Text('Hủy', style: _t(16, FontWeight.w600, BrandColors.ink)),
+          child: Text(context.l10n.commonCancel, style: _t(16, FontWeight.w600, BrandColors.ink)),
         ),
       ),
     );
@@ -2967,7 +3025,7 @@ class _OrderTile extends StatelessWidget {
                 if (order.errorCount > 0) ...[
                   const SizedBox(width: 3),
                   Text(
-                    '· ${order.errorCount} lỗi',
+                    context.l10n.ordersErrorCount(order.errorCount),
                     style: _t(13, FontWeight.w600, BrandColors.rec),
                   ),
                 ],

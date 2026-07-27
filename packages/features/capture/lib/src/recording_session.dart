@@ -50,9 +50,15 @@ RecordingFrameAction recordingFrameAction(
 }) {
   if (code == null || code.isEmpty) return RecordingFrameAction.ignore;
   if (code == endQr) return RecordingFrameAction.endSession;
-  if (code != current) return RecordingFrameAction.cutover;
+  if (normalizeTrackingCode(code) != normalizeTrackingCode(current)) {
+    return RecordingFrameAction.cutover;
+  }
   return RecordingFrameAction.ignore;
 }
+
+/// FR-01.7: tracking-code comparison key shared by scan and manual flows.
+String normalizeTrackingCode(String raw) =>
+    raw.trim().replaceAll(RegExp(r'\s+'), '').toLowerCase();
 
 /// Explicit recording-session status. Illegal flag combinations that the old
 /// bools allowed (e.g. starting && recording) are now unrepresentable.
@@ -290,7 +296,9 @@ class RecordingSessionBloc
     RecordingInitRequested event,
     Emitter<RecordingSessionState> emit,
   ) async {
-    emit(state.copyWith(status: RecordingStatus.initializing, clearError: true));
+    emit(
+      state.copyWith(status: RecordingStatus.initializing, clearError: true),
+    );
     try {
       await _serialized(() async {
         final cameras = await _camera.getAvailableCameras();
@@ -390,12 +398,12 @@ class RecordingSessionBloc
   Future<void> _onManualCodeSubmitted(
     RecordingManualCodeSubmitted event,
     Emitter<RecordingSessionState> emit,
-  ) => _beginRecording(event.code, emit);
+  ) => _beginRecording(event.code.trim(), emit);
 
   Future<void> _onCodeScanned(
     RecordingCodeScanned event,
     Emitter<RecordingSessionState> emit,
-  ) => _beginRecording(event.code, emit);
+  ) => _beginRecording(event.code.trim(), emit);
 
   Future<void> _beginRecording(
     String code,
@@ -471,7 +479,7 @@ class RecordingSessionBloc
       case RecordingFrameAction.endSession:
         await _finalize(emit, next: null);
       case RecordingFrameAction.cutover:
-        await _finalize(emit, next: event.code);
+        await _finalize(emit, next: event.code.trim());
       case RecordingFrameAction.ignore:
         break;
     }
@@ -621,7 +629,7 @@ class RecordingSessionBloc
     RecordingTypeChanged event,
     Emitter<RecordingSessionState> emit,
   ) {
-    if (event.type.isEmpty) return;
+    if (state.isRecording || event.type.isEmpty) return;
     emit(state.copyWith(typeLabel: event.type));
   }
 

@@ -66,6 +66,13 @@ class EcAuthException implements Exception {
   String toString() => 'EcAuthException: $message';
 }
 
+/// Thrown when the user backs out of a federated sign-in (taps cancel/back on
+/// the Google/Apple sheet). Carries no message — the UI ignores it silently
+/// rather than showing a spurious error toast.
+class EcAuthCancelled implements Exception {
+  const EcAuthCancelled();
+}
+
 abstract interface class EcAuth {
   /// Current user as a listenable so screens react to profile / link changes.
   ValueListenable<EcUser?> get user;
@@ -91,6 +98,9 @@ abstract interface class EcAuth {
     required String currentPassword,
     required String newPassword,
   });
+
+  /// Add the first email/password credential to a social-only account.
+  Future<EcUser> createPassword({required String newPassword});
 
   /// Link a federated provider to the current account.
   Future<EcUser> linkProvider(EcAuthProvider provider);
@@ -189,6 +199,19 @@ class FakeEcAuth implements EcAuth {
       throw const EcAuthException('Mật khẩu hiện tại không đúng');
     }
     _password = newPassword;
+  }
+
+  @override
+  Future<EcUser> createPassword({required String newPassword}) async {
+    final u = _require();
+    if (u.email == null) {
+      throw const EcAuthException('Tài khoản không có email để tạo mật khẩu');
+    }
+    if (u.hasPassword) {
+      throw const EcAuthException('Tài khoản đã có mật khẩu');
+    }
+    _password = newPassword;
+    return _user.value = u.copyWith(providers: [...u.providers, 'password']);
   }
 
   @override

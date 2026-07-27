@@ -24,7 +24,9 @@ class _FakeUploader implements EcEvidenceUploader {
     _calls++;
     final result = _results[index];
     if (result is String) return result;
-    throw result as Exception;
+    if (result is Exception) throw result;
+    if (result is Error) throw result;
+    throw StateError('Unexpected upload result: $result');
   }
 }
 
@@ -45,7 +47,11 @@ void main() {
       directory: dir,
     );
 
-    await queue.enqueue(tracking: 'SPX1', type: 'Đóng hàng', filePath: clip.path);
+    await queue.enqueue(
+      tracking: 'SPX1',
+      type: 'Đóng hàng',
+      filePath: clip.path,
+    );
     // Let the async processor run to completion.
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
@@ -65,7 +71,11 @@ void main() {
       directory: dir,
     );
 
-    await queue.enqueue(tracking: 'SPX2', type: 'Trả hàng', filePath: clip.path);
+    await queue.enqueue(
+      tracking: 'SPX2',
+      type: 'Trả hàng',
+      filePath: clip.path,
+    );
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
     expect(queue.tasks.single.state, EcUploadState.error);
@@ -77,11 +87,40 @@ void main() {
     expect(queue.tasks.single.state, EcUploadState.done);
   });
 
+  test('quota failures wait for quota and retry can resume upload', () async {
+    final queue = EcUploadQueue(
+      uploader: _FakeUploader([
+        StateError('quota_exceeded'),
+        'https://cdn/x.mp4',
+      ]),
+      directory: dir,
+    );
+
+    await queue.enqueue(
+      tracking: 'SPXQ',
+      type: 'Đóng hàng',
+      filePath: clip.path,
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    expect(queue.tasks.single.state, EcUploadState.quotaWait);
+    expect(queue.tasks.single.retryCount, 0);
+
+    await queue.retry(queue.tasks.single.id);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    expect(queue.tasks.single.state, EcUploadState.done);
+  });
+
   test('without an uploader clips persist and wait', () async {
     final store = InMemoryEvidenceClipStore();
     final queue = EcUploadQueue(directory: dir, store: store);
 
-    await queue.enqueue(tracking: 'SPX3', type: 'Đóng hàng', filePath: clip.path);
+    await queue.enqueue(
+      tracking: 'SPX3',
+      type: 'Đóng hàng',
+      filePath: clip.path,
+    );
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
     expect(queue.tasks.single.state, EcUploadState.waiting);

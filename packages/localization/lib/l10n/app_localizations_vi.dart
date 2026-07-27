@@ -9,678 +9,865 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
-  String get appTitle => 'Flutter Starter';
-
-  @override
-  String get loginAppBarTitle => 'Đăng nhập';
-
-  @override
-  String get loginHeadline => 'Chào mừng trở lại';
-
-  @override
-  String get loginSubtitle => 'Đăng nhập để sắp xếp không gian số của bạn.';
-
-  @override
-  String get loginUsernameLabel => 'Địa chỉ email';
-
-  @override
-  String get loginUsernameHint => 'hello@example.com';
-
-  @override
-  String get loginPasswordLabel => 'Mật khẩu';
-
-  @override
-  String get loginPasswordHint => '••••••••';
-
-  @override
-  String get loginShowPassword => 'Hiện mật khẩu';
-
-  @override
-  String get loginHidePassword => 'Ẩn mật khẩu';
-
-  @override
-  String get loginForgotPassword => 'Quên?';
-
-  @override
-  String get loginSubmit => 'Đăng nhập';
-
-  @override
-  String get loginDividerLabel => 'HOẶC TIẾP TỤC VỚI';
-
-  @override
-  String get loginGoogle => 'Google';
-
-  @override
-  String get loginApple => 'Apple';
-
-  @override
-  String get loginRegisterPrompt => 'Mới dùng Flutter Starter? ';
-
-  @override
-  String get loginNavigateToRegister => 'Tạo tài khoản';
-
-  @override
-  String get loginPasswordRecoveryUnavailable =>
-      'Khôi phục mật khẩu chưa được cấu hình.';
-
-  @override
-  String get loginSocialUnavailable =>
-      'Đăng nhập mạng xã hội chưa được cấu hình.';
-
-  @override
-  String get registerAppBarTitle => 'Đăng ký';
-
-  @override
-  String get registerHeadline => 'Tham gia Flutter Starter';
-
-  @override
-  String get registerSubtitle =>
-      'Tạo tài khoản để bắt đầu sắp xếp cuộc sống số của bạn thật rõ ràng và dễ dàng.';
-
-  @override
-  String get registerEmailLabel => 'Địa chỉ email';
-
-  @override
-  String get registerEmailHint => 'jane@example.com';
-
-  @override
-  String get registerInvalidEmail => 'Nhập địa chỉ email hợp lệ.';
-
-  @override
-  String get registerUsernameLabel => 'Tên đăng nhập';
-
-  @override
-  String get registerPasswordLabel => 'Mật khẩu';
-
-  @override
-  String get registerPasswordHint => '••••••••';
-
-  @override
-  String get registerPasswordHelp => 'Mật khẩu phải có ít nhất 8 ký tự.';
-
-  @override
-  String get registerPasswordMinLengthError =>
-      'Mật khẩu cần có ít nhất 8 ký tự.';
-
-  @override
-  String get registerShowPassword => 'Hiện mật khẩu';
-
-  @override
-  String get registerHidePassword => 'Ẩn mật khẩu';
-
-  @override
-  String get registerConfirmPasswordLabel => 'Xác nhận mật khẩu';
-
-  @override
-  String get registerSubmit => 'Tham gia Flutter Starter';
-
-  @override
-  String get registerLoginPrompt => 'Bạn đã có tài khoản? ';
-
-  @override
-  String get registerNavigateToLogin => 'Đăng nhập';
-
-  @override
-  String get errorPasswordsDoNotMatch => 'Mật khẩu không khớp.';
-
-  @override
-  String get fieldRequired => 'Bắt buộc';
-
-  @override
-  String get errorInvalidCredentials =>
-      'Vui lòng nhập tên đăng nhập và mật khẩu.';
-
-  @override
-  String get errorInvalidInput => 'Dữ liệu không hợp lệ.';
-
-  @override
-  String get errorUnknown => 'Đã xảy ra lỗi.';
-
-  @override
   String get commonCancel => 'Hủy';
-
-  @override
-  String get commonCreate => 'Tạo';
-
-  @override
-  String get commonDelete => 'Xóa';
-
-  @override
-  String get commonEdit => 'Chỉnh sửa';
-
-  @override
-  String get commonImageLoadFailed => 'Không tải được hình ảnh';
-
-  @override
-  String get commonLoading => 'Đang tải…';
 
   @override
   String get commonRetry => 'Thử lại';
 
   @override
-  String get commonSave => 'Lưu';
+  String get commonClose => 'Đóng';
 
   @override
-  String get commonShare => 'Chia sẻ';
+  String get toastChangeLanguage => 'Đổi ngôn ngữ';
 
   @override
-  String get commonSignOut => 'Đăng xuất';
+  String get toastTermsPolicy => 'Điều khoản & Chính sách';
 
   @override
-  String get homeAppBarTitle => 'Trang chủ';
+  String get toastInfoSaved => 'Đã lưu thông tin';
 
   @override
-  String get homeViewAllBookmarks => 'Xem tất cả';
+  String get toastPasswordCreated => 'Đã tạo mật khẩu';
 
   @override
-  String get homeNoDescription => 'Không có mô tả';
+  String get toastPasswordChanged => 'Đã đổi mật khẩu';
 
   @override
-  String get homeRecentBookmarks => 'Bookmark gần đây';
+  String get toastUpgradeComingSoon => 'Nâng cấp gói — sắp ra mắt';
 
   @override
-  String get homeNoBookmarks => 'Chưa có bookmark nào. Nhấn + để thêm.';
+  String get toastPendingDossierConfirm =>
+      'Bạn còn hồ sơ đã gửi sàn, vui lòng xác nhận lại';
 
   @override
-  String get homeSearchTitle => 'Tìm kiếm';
+  String get toastCopiedShareLink => 'Đã sao chép link để chia sẻ';
 
   @override
-  String get homeSearchSubtitle =>
-      'Tìm nhanh bài viết, công cụ và nguồn cảm hứng đã lưu.';
+  String get toastShareFailed => 'Không chia sẻ được, thử lại sau';
 
   @override
-  String get homeSearchHint => 'Tìm bookmark...';
+  String get toastDownloadingVideo => 'Đang tải video';
 
   @override
-  String get homeQuickAdd => 'Thêm liên kết';
+  String get toastVideoDownloadedCopied => 'Đã tải video và sao chép đường dẫn';
 
   @override
-  String get homeQuickLibrary => 'Thư viện';
+  String get toastVideoDownloadFailed => 'Không tải được video, thử lại sau';
 
   @override
-  String get homeQuickTags => 'Thẻ';
+  String get toastPhotoQueued => 'Đã đính kèm ảnh — đưa vào hàng chờ tải';
 
   @override
-  String get homeFilterAll => 'Tất cả';
+  String get toastInvitePending => 'Chờ lời mời vào shop';
 
   @override
-  String get homeFilterDesign => 'Thiết kế';
+  String get toastInviteSent => 'Đã gửi lời mời';
 
   @override
-  String get homeFilterArticles => 'Bài viết';
+  String get toastMemberAdded => 'Đã thêm thành viên';
 
   @override
-  String get homeFilterInspiration => 'Cảm hứng';
+  String get toastDossierLinkCreated => 'Đã tạo link hồ sơ';
 
   @override
-  String get homeFilterTools => 'Công cụ';
+  String get toastDossierLinkRevoked => 'Đã thu hồi link hồ sơ';
 
   @override
-  String get homeSuggestedTitle => 'Gợi ý cho bạn';
+  String get toastVideoPlayFailed => 'Không phát được video';
 
   @override
-  String get homeFeaturedCollections => 'Bộ sưu tập nổi bật';
+  String get toastShopCreated => 'Đã tạo shop mới';
 
   @override
-  String get homeWeeklyDigestTitle => 'Tóm tắt tuần';
+  String get toastVideoQueued => 'Đã lưu video — đưa vào hàng chờ tải';
 
   @override
-  String get homeWeeklyDigestEyebrow => 'Đọc nhiều nhất';
+  String get toastVideoNoPlayLink => 'Video chưa có link phát';
 
   @override
-  String get homeWeeklyDigestHeadline => 'Điểm lại kho tri thức đã lưu';
+  String get toastVideoNoDownloadLink => 'Video chưa có link tải';
 
   @override
-  String homeWeeklyDigestBody(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          'Gần đây bạn đã lưu $count bookmark. Xem lại các điểm nổi bật để tiếp tục mạch đọc.',
-      zero:
-          'Gần đây bạn chưa lưu bookmark nào. Hãy quay lại khi có nội dung mới.',
-    );
-    return '$_temp0';
+  String get toastVideoDeleted => 'Đã xóa video';
+
+  @override
+  String get toastVideoTypeSaved => 'Đã lưu loại video';
+
+  @override
+  String get toastVideoTypeDeleted => 'Đã xóa loại video';
+
+  @override
+  String get toastNoVideoTypeToDelete => 'Không có loại video để xóa';
+
+  @override
+  String get toastRoleChangedManager => 'Đã đổi vai trò: Quản lý shop';
+
+  @override
+  String get toastRoleChangedStaff => 'Đã đổi vai trò: Nhân viên';
+
+  @override
+  String get toastNoMemberToUpdate => 'Không có thành viên để cập nhật';
+
+  @override
+  String get toastMemberRemoved =>
+      'Đã gỡ khỏi shop (video đã quay vẫn upload nốt)';
+
+  @override
+  String copiedLabel(String label) {
+    return 'Đã sao chép $label';
   }
 
   @override
-  String get homeReadDigest => 'Đọc tóm tắt';
+  String get labelTrackingCode => 'mã vận đơn';
 
   @override
-  String get homeNoMatches => 'Không có bookmark nào khớp với chế độ xem này.';
+  String get labelDossierLink => 'link hồ sơ';
 
   @override
-  String get homeBookmarkVisualFallback => 'Gần đây';
-
-  @override
-  String get profileAppBarTitle => 'Hồ sơ';
-
-  @override
-  String get profileSectionAppearance => 'Giao diện';
-
-  @override
-  String get profileSectionAccount => 'Tài khoản';
-
-  @override
-  String get profileChangePassword => 'Đổi mật khẩu';
-
-  @override
-  String get profileDeleteAccount => 'Xóa tài khoản';
-
-  @override
-  String get profileDeleteAccountDialogTitle => 'Xóa tài khoản?';
-
-  @override
-  String get profileDeleteAccountDialogMessage =>
-      'Thao tác này sẽ xóa vĩnh viễn tài khoản và toàn bộ dữ liệu của bạn. Không thể hoàn tác.';
-
-  @override
-  String profileDeleteAccountConfirmLabel(String username) {
-    return 'Nhập \"$username\" để xác nhận';
+  String resolutionChanged(String value) {
+    return 'Độ phân giải: $value';
   }
 
   @override
-  String get profileDeleteAccountSuccess => 'Tài khoản của bạn đã được xóa.';
-
-  @override
-  String get profileDeleteAccountError =>
-      'Không thể xóa tài khoản. Vui lòng thử lại.';
-
-  @override
-  String get changePasswordAppBarTitle => 'Đổi mật khẩu';
-
-  @override
-  String get changePasswordCurrentLabel => 'Mật khẩu hiện tại';
-
-  @override
-  String get changePasswordNewLabel => 'Mật khẩu mới';
-
-  @override
-  String get changePasswordConfirmLabel => 'Xác nhận mật khẩu mới';
-
-  @override
-  String get changePasswordSubmit => 'Cập nhật mật khẩu';
-
-  @override
-  String get changePasswordSuccessMessage => 'Cập nhật mật khẩu thành công.';
-
-  @override
-  String get changePasswordMismatchError => 'Mật khẩu mới không khớp.';
-
-  @override
-  String get profileSectionAbout => 'Giới thiệu';
-
-  @override
-  String get profileUserIdCopied => 'Đã sao chép ID người dùng';
-
-  @override
-  String get profileAppearanceThemeLabel => 'Chủ đề';
-
-  @override
-  String get profileAppearanceColorLabel => 'Màu nhấn';
-
-  @override
-  String get profileThemeSystemDefault => 'Mặc định hệ thống';
-
-  @override
-  String get profileThemeLight => 'Sáng';
-
-  @override
-  String get profileThemeDark => 'Tối';
-
-  @override
-  String profileAppVersionBuild(String version, String buildNumber) {
-    return 'Phiên bản $version (bản dựng $buildNumber)';
+  String dossierShareText(String tracking) {
+    return 'Hồ sơ khiếu nại $tracking';
   }
 
   @override
-  String get profileSignOutConfirmMessage =>
-      'Bạn có chắc muốn đăng xuất không?';
+  String get accountNoName => 'Chưa đặt tên';
 
   @override
-  String get bookmarksAppBarTitle => 'Bookmarks';
+  String get accountNoShop => 'Chưa chọn shop';
 
   @override
-  String get bookmarksSearchHint => 'Tìm tiêu đề, URL hoặc thẻ';
+  String get accountCreatePassword => 'Tạo mật khẩu';
 
   @override
-  String get bookmarksNoMatchesTitle => 'Không có kết quả';
+  String get accountChangePassword => 'Đổi mật khẩu';
 
   @override
-  String get bookmarksNoMatchesMessage =>
-      'Không có bookmark nào khớp với tìm kiếm.';
-
-  @override
-  String get bookmarksEmptyTitle => 'Chưa có bookmark nào';
-
-  @override
-  String get bookmarksEmptyMessage => 'Nhấn + để thêm bookmark đầu tiên.';
-
-  @override
-  String get bookmarksNotYetSynced => 'Chưa đồng bộ';
-
-  @override
-  String get bookmarksSyncFailedRetryTooltip =>
-      'Đồng bộ thất bại - nhấn để thử lại';
-
-  @override
-  String get bookmarksAddTooltip => 'Thêm bookmark';
-
-  @override
-  String get bookmarksSearchClear => 'Xóa tìm kiếm';
-
-  @override
-  String get bookmarksSortTooltip => 'Sắp xếp bookmark';
-
-  @override
-  String get bookmarksSortMenuLabel => 'Menu sắp xếp';
-
-  @override
-  String get bookmarksSortNewest => 'Mới nhất trước';
-
-  @override
-  String get bookmarksSortOldest => 'Cũ nhất trước';
-
-  @override
-  String get bookmarksSortTitleAz => 'Tiêu đề (A–Z)';
-
-  @override
-  String get bookmarksTabAll => 'Tất cả';
-
-  @override
-  String get bookmarksTabRecent => 'Gần đây';
-
-  @override
-  String get bookmarksTabCollections => 'Bộ sưu tập';
-
-  @override
-  String get bookmarksRecentEmptyTitle => 'Chưa có gì gần đây';
-
-  @override
-  String get bookmarksRecentEmptyMessage =>
-      'Các dấu trang bạn thêm trong tuần này sẽ xuất hiện ở đây.';
-
-  @override
-  String get bookmarksCollectionsComingSoonTitle => 'Bộ sưu tập sắp ra mắt';
-
-  @override
-  String get bookmarksCollectionsComingSoonMessage =>
-      'Nhóm các dấu trang liên quan vào bộ sưu tập trong bản cập nhật sắp tới.';
-
-  @override
-  String get bookmarkMoreActions => 'Thêm thao tác';
-
-  @override
-  String get bookmarkAppBarTitle => 'Chi tiết Bookmark';
-
-  @override
-  String get bookmarkSourceLabel => 'Nguồn';
-
-  @override
-  String get bookmarkVisitWebsite => 'Mở trang web';
-
-  @override
-  String get bookmarkDetailsLabel => 'Chi tiết';
-
-  @override
-  String get bookmarkDateCreatedLabel => 'Ngày tạo';
-
-  @override
-  String get bookmarkLastModifiedLabel => 'Cập nhật lần cuối';
-
-  @override
-  String get bookmarkMediaLabel => 'Phương tiện';
-
-  @override
-  String get bookmarkOpenInBrowser => 'Mở trong trình duyệt';
-
-  @override
-  String get bookmarkNotFound => 'Không tìm thấy bookmark.';
-
-  @override
-  String get bookmarkDeleteDialogTitle => 'Xóa bookmark?';
-
-  @override
-  String get bookmarkDeleteDialogBody =>
-      'Không thể hoàn tác hành động này.\nBookmark sẽ bị xóa vĩnh viễn khỏi bộ sưu tập của bạn.';
-
-  @override
-  String bookmarkDeleteDialogMessage(String title) {
-    return '\"$title\" sẽ bị xóa.';
+  String accountLinkedMethods(int count) {
+    return '$count liên kết';
   }
 
   @override
-  String get bookmarkOpenUrl => 'Mở URL';
+  String get roleOwner => 'Chủ shop';
 
   @override
-  String get bookmarkAttachedVideo => 'Video đính kèm';
+  String get roleManager => 'Quản lý';
 
   @override
-  String get bookmarkInvalidUrl => 'URL không hợp lệ';
+  String get roleStaff => 'Nhân viên';
 
   @override
-  String get bookmarkCouldNotOpenUrl => 'Không thể mở URL';
+  String get roleOther => 'Khác';
 
   @override
-  String get bookmarkFormEditTitle => 'Chỉnh sửa bookmark';
+  String get roleUnknown => 'Không rõ';
 
   @override
-  String get bookmarkFormNewTitle => 'Bookmark mới';
+  String get memberFallbackName => 'Thành viên';
 
   @override
-  String get bookmarkFormLoadFailed => 'Không tải được bookmark.';
+  String get uploadStatusDone => 'Đã tải lên';
 
   @override
-  String get bookmarkTitleLabel => 'Tiêu đề';
+  String get uploadStatusPending => 'Đang chờ tải';
 
   @override
-  String get bookmarkUrlLabel => 'URL';
+  String get uploadStatusQuotaHold => 'Tạm giữ do quota';
 
   @override
-  String get bookmarkDescriptionLabel => 'Mô tả (tùy chọn)';
+  String get uploadStatusDeleted => 'Đã xóa';
 
   @override
-  String get bookmarkTagsLabel => 'Thẻ';
+  String get kindPhoto => 'Ảnh đính kèm';
 
   @override
-  String get bookmarkTagsHint => 'các, giá trị, phân tách, bằng, dấu phẩy';
+  String get kindVideo => 'Video';
 
   @override
-  String get bookmarkPreviewLabel => 'Bookmark';
+  String get recordedByFallback => 'Tài khoản hiện tại';
 
   @override
-  String get bookmarkTitleRequired => 'Bắt buộc nhập tiêu đề';
+  String get deviceUnknown => 'Không rõ thiết bị';
 
   @override
-  String get bookmarkUrlRequired => 'Bắt buộc nhập URL';
+  String get orderNoEvidence => 'Chưa có bằng chứng';
 
   @override
-  String get bookmarkUrlInvalid => 'Nhập URL hợp lệ (https://…)';
+  String get errorGenericRetry => 'Không thực hiện được, vui lòng thử lại.';
 
   @override
-  String get errorPermissionDenied => 'Quyền truy cập bị từ chối.';
+  String get errorPendingDossier =>
+      'Bạn còn hồ sơ đã gửi sàn, vui lòng xử lý trước khi tiếp tục.';
 
   @override
-  String get errorGalleryPermissionRequired =>
-      'Cần có quyền truy cập thư viện ảnh để đính kèm hình ảnh.';
+  String get errorSessionExpired =>
+      'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.';
 
   @override
-  String get errorCameraPermissionRequired =>
-      'Cần có quyền truy cập máy ảnh để chụp ảnh.';
+  String get errorNoNetwork => 'Không có kết nối mạng, vui lòng thử lại.';
 
   @override
-  String get navHome => 'Trang chủ';
+  String get errorNoPermission => 'Bạn không có quyền thực hiện thao tác này.';
 
   @override
-  String get navBookmarks => 'Bookmark';
+  String get errorServerBusy => 'Hệ thống đang bận, vui lòng thử lại sau.';
 
   @override
-  String get navProfile => 'Hồ sơ';
+  String get errorSessionInvalid =>
+      'Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại.';
 
   @override
-  String get navSettings => 'Cài đặt';
+  String get errorVideoTypeInUse =>
+      'Không thể xóa loại video đã có video. Vui lòng xem các video đang dùng loại này trước.';
 
   @override
-  String get settingsAppBarTitle => 'Cài đặt';
+  String get errorBuiltinVideoTypeLocked =>
+      '3 loại video có sẵn không thể sửa hoặc xóa.';
 
   @override
-  String get bookmarksDetailPlaceholder => 'Chọn một bookmark để xem chi tiết';
+  String get errorVideoTypeNameExists =>
+      'Tên loại video đã tồn tại trong shop.';
 
   @override
-  String bookmarkImageLabel(String title) {
-    return 'Hình ảnh của $title';
+  String get errorCheckNetwork => 'Kiểm tra mạng hoặc thử lại sau.';
+
+  @override
+  String get errorLoadShopList => 'Không tải được danh sách shop';
+
+  @override
+  String get errorLoadShopMgmt => 'Không tải được quản lý shop';
+
+  @override
+  String get errorLoadShopDetail => 'Không tải được chi tiết shop';
+
+  @override
+  String get errorLoadOrders => 'Không tải được đơn hàng';
+
+  @override
+  String get errorLoadOrderDetail => 'Không tải được chi tiết đơn';
+
+  @override
+  String get noShopSelectedOrdersDetail =>
+      'Vui lòng chọn shop trước khi xem đơn hàng.';
+
+  @override
+  String get noShopSelectedRecordDetail =>
+      'Vui lòng chọn shop trước khi ghi hình.';
+
+  @override
+  String get noShopSelectedManageDetail => 'Vui lòng chọn shop để quản lý.';
+
+  @override
+  String get noOrdersTitle => 'Chưa có đơn hàng';
+
+  @override
+  String get noOrdersDetail => 'Vui lòng chọn một đơn hàng từ danh sách.';
+
+  @override
+  String get noVideoDataTitle => 'Không có dữ liệu video';
+
+  @override
+  String get cannotOpenVideoTitle => 'Không mở được video';
+
+  @override
+  String get cannotOpenVideoDetail => 'Video chưa có link phát.';
+
+  @override
+  String get createOrderDialogTitle => 'Tạo vận đơn mới?';
+
+  @override
+  String createOrderDialogBody(String code) {
+    return '$code không khớp mã vận đơn nào trong shop hiện tại. Kiểm tra lại mã hoặc xác nhận tạo vận đơn mới.';
   }
 
   @override
-  String get bookmarkAttachedImageLabel => 'Hình ảnh đính kèm';
+  String get createOrderConfirm => 'Tạo vận đơn mới';
 
   @override
-  String get bookmarkRemoveImageLabel => 'Xóa hình ảnh';
+  String get statOrdersToday => 'Vận đơn hôm nay';
 
   @override
-  String get navNotifications => 'Thông báo';
+  String get statVideosRecorded => 'Video đã quay';
 
   @override
-  String get notificationsAppBarTitle => 'Thông báo';
+  String get statPendingUpload => 'Chờ tải';
 
   @override
-  String get notificationsActivitySection => 'Hoạt động của bạn';
+  String get accountPlanQuota => 'Gói cước & Quota';
 
   @override
-  String get notificationsSection => 'Thông báo';
+  String get accountSectionApp => 'GÓI & ỨNG DỤNG';
 
   @override
-  String get notificationsSectionNew => 'Mới';
+  String get accountLanguage => 'Ngôn ngữ';
 
   @override
-  String get notificationsSectionEarlier => 'Trước đó';
+  String get accountSectionSecurity => 'BẢO MẬT & ĐĂNG NHẬP';
 
   @override
-  String get notificationsEmptyTitle => 'Chưa có gì ở đây';
+  String get accountLoginMethods => 'Phương thức đăng nhập';
 
   @override
-  String get notificationsEmptyMessage =>
-      'Thông báo và hoạt động gần đây của bạn sẽ hiển thị ở đây.';
+  String get accountSignOut => 'Đăng xuất';
 
   @override
-  String get notificationsNoNotifications => 'Chưa có thông báo nào.';
+  String get accountDeleteAccount => 'Xóa tài khoản';
 
   @override
-  String get notificationsLoadError =>
-      'Không tải được thông báo. Hãy kéo để làm mới hoặc thử lại.';
+  String get accountShopMgmtHint =>
+      'Quản lý shop/thành viên: bấm back trên header để về lớp Shop';
 
   @override
-  String notificationsUnreadCount(int count) {
-    return '$count chưa đọc';
+  String get accountInfoTitle => 'Thông tin tài khoản';
+
+  @override
+  String get accountFullName => 'Họ tên';
+
+  @override
+  String get accountFullNameHint => 'Nhập họ tên';
+
+  @override
+  String get accountFullNameRequired => 'Vui lòng nhập họ tên';
+
+  @override
+  String get phoneLabel => 'Số điện thoại';
+
+  @override
+  String get phoneHint => 'Nhập số điện thoại';
+
+  @override
+  String get phoneRequired => 'Vui lòng nhập số điện thoại';
+
+  @override
+  String get phoneInvalid => 'Số điện thoại không hợp lệ';
+
+  @override
+  String get accountSaveChanges => 'Lưu thay đổi';
+
+  @override
+  String get phoneAddTitle => 'Thêm số điện thoại';
+
+  @override
+  String get phoneAddBody =>
+      'Tài khoản đăng nhập bằng Apple/Google chưa có số điện thoại. Vui lòng nhập số điện thoại để tiếp tục.';
+
+  @override
+  String get commonContinue => 'Tiếp tục';
+
+  @override
+  String get languageNameVietnamese => 'Tiếng Việt';
+
+  @override
+  String get languageNameEnglish => 'Tiếng Anh';
+
+  @override
+  String get languageChangeAppliesNote =>
+      'Thay đổi áp dụng ngay trên toàn bộ app';
+
+  @override
+  String get linkLinked => 'Đã liên kết';
+
+  @override
+  String get linkNotLinked => 'Chưa liên kết';
+
+  @override
+  String get loginMethodsEmailNote =>
+      'Email là định danh tài khoản — không thể gỡ. Liên kết Google/Apple để đăng nhập nhanh cùng một tài khoản.';
+
+  @override
+  String get loginMethodIdentity => 'Định danh';
+
+  @override
+  String get linkAction => 'Liên kết';
+
+  @override
+  String get linkUnlink => 'Hủy liên kết';
+
+  @override
+  String get quotaScreenTitle => 'Báo cáo & Quota';
+
+  @override
+  String get quotaCurrentPlan => 'Gói hiện tại';
+
+  @override
+  String get quotaRemainingThisMonth => 'Còn lại trong tháng';
+
+  @override
+  String get quotaStorage => 'Lưu trữ';
+
+  @override
+  String get quotaUpgradePlan => 'Nâng cấp gói';
+
+  @override
+  String get deleteAccountTitleStep1 => 'Xóa tài khoản?';
+
+  @override
+  String get deleteAccountTitleStep2 => 'Xác nhận xóa vĩnh viễn?';
+
+  @override
+  String get deleteAccountBodyStep1 =>
+      'Toàn bộ video, đơn hàng và hồ sơ của bạn sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.';
+
+  @override
+  String get deleteAccountBodyStep2 =>
+      'Đây là bước xác nhận cuối cùng. Sau khi xóa, bạn sẽ được đăng xuất khỏi ứng dụng ngay lập tức.';
+
+  @override
+  String get deleteConfirmPermanent => 'Xóa vĩnh viễn';
+
+  @override
+  String get deleteStep1Hint =>
+      'Bước 1/2 — sẽ yêu cầu xác nhận lại · xong đăng xuất ngay';
+
+  @override
+  String get deleteStep2Hint => 'Bước 2/2 — hành động này không thể hoàn tác';
+
+  @override
+  String get passwordCurrentLabel => 'Mật khẩu hiện tại';
+
+  @override
+  String get passwordCurrentRequired => 'Vui lòng nhập mật khẩu hiện tại';
+
+  @override
+  String get passwordNewLabel => 'Mật khẩu mới';
+
+  @override
+  String get passwordMinHint => 'Tối thiểu 8 ký tự';
+
+  @override
+  String get passwordNewRequired => 'Vui lòng nhập mật khẩu mới';
+
+  @override
+  String get passwordMin8Error => 'Mật khẩu tối thiểu 8 ký tự';
+
+  @override
+  String get passwordConfirmLabel => 'Nhập lại mật khẩu mới';
+
+  @override
+  String get passwordMismatch => 'Mật khẩu nhập lại không khớp';
+
+  @override
+  String get passwordSave => 'Lưu mật khẩu';
+
+  @override
+  String get passwordChangeLogoutNote =>
+      '(Đổi xong sẽ đăng xuất khỏi các thiết bị khác)';
+
+  @override
+  String get navOrders => 'Vận đơn';
+
+  @override
+  String get navRecord => 'Ghi hình';
+
+  @override
+  String get navAccount => 'Tài khoản';
+
+  @override
+  String get changeAvatar => 'Đổi ảnh đại diện';
+
+  @override
+  String quotaVideosRatio(int remaining, int total) {
+    return '$remaining / $total video';
   }
 
   @override
-  String get timeJustNow => 'Vừa xong';
-
-  @override
-  String timeMinutesAgo(int minutes) {
-    return '$minutes phút trước';
+  String quotaUsedPercent(int percent) {
+    return 'Đã dùng $percent%';
   }
 
   @override
-  String timeHoursAgo(int hours) {
-    return '$hours giờ trước';
+  String quotaRetentionDays(int days) {
+    return '$days ngày';
   }
 
   @override
-  String timeDaysAgo(int days) {
-    return '$days ngày trước';
+  String deletePendingProfilesWarning(int count) {
+    return 'Bạn còn $count hồ sơ \"đã gửi sàn\" — link chia sẻ sẽ ngừng hoạt động';
   }
 
   @override
-  String get collectionsTitle => 'Bộ sưu tập';
+  String get detailRecordedTime => 'Giờ quay';
 
   @override
-  String get collectionsEmptyTitle => 'Chưa có bộ sưu tập';
+  String get detailRecordedBy => 'Người quay';
 
   @override
-  String get collectionsEmptyMessage =>
-      'Nhóm các dấu trang liên quan vào bộ sưu tập.';
+  String get detailDevice => 'Thiết bị';
 
   @override
-  String get collectionsLoadError =>
-      'Không tải được bộ sưu tập. Kéo để làm mới hoặc thử lại.';
+  String get detailSize => 'Dung lượng';
 
   @override
-  String get collectionsCreate => 'Bộ sưu tập mới';
+  String get detailUploadStatus => 'Trạng thái upload';
 
   @override
-  String get collectionsCreateTitle => 'Bộ sưu tập mới';
+  String get detailPlayVideo => 'Phát video';
 
   @override
-  String get collectionsEditTitle => 'Sửa bộ sưu tập';
+  String get detailDownloadVideo => 'Tải video về máy';
 
   @override
-  String get collectionNameLabel => 'Tên';
+  String get detailDownloadNote =>
+      'Chỉ Chủ tài khoản / QL shop — để đính kèm form khiếu nại sàn';
 
   @override
-  String get collectionNameHint => 'ví dụ: Cảm hứng thiết kế';
+  String get attachPhotoToOrder => 'Đính kèm ảnh vào đơn';
 
   @override
-  String get collectionNameRequired => 'Vui lòng nhập tên';
+  String get createDossierLink => 'Tạo link hồ sơ khiếu nại';
 
   @override
-  String get collectionAppearanceLabel => 'Biểu tượng & màu sắc';
+  String get dossierLinkLabel => 'Link hồ sơ khiếu nại';
 
   @override
-  String get collectionSave => 'Lưu';
+  String get revoke => 'Thu hồi';
 
   @override
-  String get collectionDeleteAction => 'Xóa bộ sưu tập';
+  String get deleteVideoAction => 'Xóa video';
 
   @override
-  String get collectionDeleteDialogTitle => 'Xóa bộ sưu tập?';
+  String get deleteVideoNote =>
+      'Chỉ Chủ tài khoản / QL shop · xác nhận 2 bước · mất vĩnh viễn';
 
   @override
-  String collectionDeleteDialogMessage(String name) {
-    return '\"$name\" sẽ bị xóa. Các dấu trang của bạn vẫn được giữ lại.';
+  String ordersErrorCount(int count) {
+    return '· $count lỗi';
   }
 
   @override
-  String get collectionNotFound => 'Không tìm thấy bộ sưu tập.';
-
-  @override
-  String collectionItemsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count dấu trang',
-      one: '1 dấu trang',
-      zero: 'Chưa có dấu trang',
-    );
-    return '$_temp0';
+  String ordersPendingEvidenceWarning(int count) {
+    return '$count bằng chứng chưa upload — hồ sơ sẽ thiếu';
   }
 
   @override
-  String get collectionAddBookmarks => 'Thêm dấu trang';
+  String get captureFramePrompt => 'Đưa bill vào khung để bắt đầu';
 
   @override
-  String get collectionRemoveBookmark => 'Xóa khỏi bộ sưu tập';
+  String get captureCameraDownHint => 'Camera nhìn xuống bàn';
 
   @override
-  String get collectionEmptyBookmarks =>
-      'Bộ sưu tập này chưa có dấu trang nào.';
+  String get tooltipBack => 'Quay lại';
 
   @override
-  String get collectionPickerEmpty =>
-      'Tất cả dấu trang đã có trong bộ sưu tập này.';
+  String get tooltipSwitchCamera => 'Đổi camera';
 
   @override
-  String collectionPickerAddCount(int count) {
-    return 'Thêm $count';
+  String get tooltipEnterTracking => 'Nhập mã vận đơn';
+
+  @override
+  String get tooltipZoomIn => 'Phóng to';
+
+  @override
+  String get tooltipZoomOut => 'Thu nhỏ';
+
+  @override
+  String get captureResolution => 'Độ phân giải';
+
+  @override
+  String get stopRecording => 'Dừng quay';
+
+  @override
+  String get videoTypeSettings => 'Cài đặt loại video';
+
+  @override
+  String get uploadQueueTitle => 'Hàng đợi upload';
+
+  @override
+  String get quotaExhaustedNote => 'Hết quota tháng này — video sẽ chờ quota';
+
+  @override
+  String get upgradePlanShort => 'Nâng gói';
+
+  @override
+  String get queueEmpty => 'Chưa có video trong hàng đợi';
+
+  @override
+  String get queueAutoUploadNote =>
+      'Upload khi có mạng sẽ được tự động thực hiện';
+
+  @override
+  String get waitingUpload => 'Chờ upload';
+
+  @override
+  String get uploaded => 'Đã upload';
+
+  @override
+  String get waitingQuota => 'Chờ quota';
+
+  @override
+  String get manualTrackingTitle => 'Nhập tay mã vận đơn';
+
+  @override
+  String get manualTrackingNote => 'Dùng khi bill mờ — không quá 10 giây';
+
+  @override
+  String get startRecording => 'Bắt đầu quay';
+
+  @override
+  String get returnCodeMismatch => 'Mã hoàn không khớp';
+
+  @override
+  String get enterCodeManually => 'Nhập tay mã';
+
+  @override
+  String get videoTypeLabel => 'Loại video';
+
+  @override
+  String get videoTypeSelectNote =>
+      'Chọn loại cho phiên quay — thêm/sửa/xóa trong Chi tiết shop';
+
+  @override
+  String get manageVideoTypesNote => 'Quản lý loại video — mở Chi tiết shop';
+
+  @override
+  String queueFilterAll(int count) {
+    return 'Tất cả · $count';
   }
 
   @override
-  String get addToCollectionTitle => 'Thêm vào bộ sưu tập';
+  String queueFilterUploading(int count) {
+    return 'Đang tải · $count';
+  }
 
   @override
-  String get addToCollectionEmpty => 'Bạn chưa tạo bộ sưu tập nào.';
+  String queueFilterErrored(int count) {
+    return 'Lỗi · $count';
+  }
 
   @override
-  String get homeCreateCollection => 'Tạo bộ sưu tập';
+  String uploadingProgress(int percent) {
+    return 'Đang tải $percent%';
+  }
+
+  @override
+  String errorRetryCount(int count) {
+    return 'Lỗi · Thử lại ($count)';
+  }
+
+  @override
+  String returnCodeMismatchBody(String returnCode, String shopName) {
+    return '$returnCode không khớp vận đơn nào trong $shopName. Kiểm tra lại mã, nhập tay hoặc xác nhận tạo vận đơn mới.';
+  }
+
+  @override
+  String get onboardingSubtitle =>
+      'Quay video bằng chứng đóng hàng cho seller TMĐT';
+
+  @override
+  String get onboardingStart => 'Bắt đầu';
+
+  @override
+  String get authSignIn => 'Đăng nhập';
+
+  @override
+  String get authChooseMethod => 'Chọn phương thức đăng nhập';
+
+  @override
+  String get authEmailRequired => 'Vui lòng nhập email';
+
+  @override
+  String get authEmailInvalid => 'Email không hợp lệ';
+
+  @override
+  String get authPassword => 'Mật khẩu';
+
+  @override
+  String get authPasswordRequired => 'Vui lòng nhập mật khẩu';
+
+  @override
+  String get authForgotPassword => 'Quên mật khẩu?';
+
+  @override
+  String get authSignInGoogle => 'Đăng nhập với Google';
+
+  @override
+  String get authSignInApple => 'Đăng nhập với Apple';
+
+  @override
+  String get authNoAccountPrompt => 'Bạn chưa có tài khoản? ';
+
+  @override
+  String get authRegister => 'Đăng ký';
+
+  @override
+  String get authOr => 'hoặc';
+
+  @override
+  String get registerTitle => 'Tạo tài khoản mới';
+
+  @override
+  String get registerConfirmPassword => 'Nhập lại mật khẩu';
+
+  @override
+  String get registerAgreePolicy => 'Tôi đồng ý chính sách ';
+
+  @override
+  String get registerViewPolicy => 'Xem chính sách';
+
+  @override
+  String get registerCreateAccount => 'Tạo tài khoản';
+
+  @override
+  String get registerSameEmailNote =>
+      'Cùng email sẽ tự liên kết về một tài khoản';
+
+  @override
+  String get registerHaveAccountPrompt => 'Đã có tài khoản? ';
+
+  @override
+  String get forgotPasswordTitle => 'Quên mật khẩu';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'Nhập email để nhận link đặt lại mật khẩu';
+
+  @override
+  String get forgotPasswordSubmit => 'Gửi link đặt lại';
+
+  @override
+  String get forgotPasswordSent => 'Đã gửi — kiểm tra hộp thư (kể cả mục spam)';
+
+  @override
+  String get forgotPasswordRememberPrompt => 'Nhớ mật khẩu rồi? ';
+
+  @override
+  String get shopYourShops => 'Shop của bạn';
+
+  @override
+  String get shopTapToClockIn => 'Chạm shop để vào ca · quản lý ngay tại đây';
+
+  @override
+  String get shopLastOpenedNote =>
+      'Shop vào gần nhất sẽ được mở thẳng ở lần sau';
+
+  @override
+  String get shopManageStore => 'Quản lý cửa hàng';
+
+  @override
+  String get shopManageVisibilityNote =>
+      'Chỉ hiện với Chủ tài khoản / Quản lý shop';
+
+  @override
+  String get shopEmpty => 'Chưa có shop nào';
+
+  @override
+  String get shopEmptyBody =>
+      'Tài khoản của bạn chưa thuộc shop nào. Tạo shop mới để bắt đầu, hoặc chờ lời mời từ chủ shop.';
+
+  @override
+  String get shopCreateNew => 'Tạo shop mới (tên + sàn)';
+
+  @override
+  String get shopInvitesHere => 'Lời mời vào shop sẽ hiện ở đây';
+
+  @override
+  String get shopCreateTitle => 'Tạo shop';
+
+  @override
+  String get shopNameLabel => 'Tên shop';
+
+  @override
+  String get shopNameRequired => 'Vui lòng nhập tên shop';
+
+  @override
+  String get shopPlatform => 'Sàn thương mại';
+
+  @override
+  String get shopCreateOwnerNote =>
+      'Bạn sẽ là Chủ shop — thêm thành viên sau trong Quản lý cửa hàng';
+
+  @override
+  String get shopMgmtVisibilityNote =>
+      'Nhân viên không thấy màn này · QL shop chỉ thấy shop mình quản';
+
+  @override
+  String get shopAddNew => 'Thêm shop mới (tên + sàn)';
+
+  @override
+  String get sectionMembers => 'THÀNH VIÊN';
+
+  @override
+  String get sectionShopSettings => 'CÀI ĐẶT SHOP';
+
+  @override
+  String get sectionVideoTypes => 'LOẠI VIDEO';
+
+  @override
+  String get videoTypesLockedNote =>
+      '3 loại có sẵn bị khóa — không sửa/xóa được';
+
+  @override
+  String get addMemberByContact => 'Thêm thành viên bằng email/SĐT';
+
+  @override
+  String get recordResolution => 'Độ phân giải quay';
+
+  @override
+  String get addVideoType => 'Thêm loại (nhập tên)';
+
+  @override
+  String get createVideoTypeTitle => 'Tạo loại video';
+
+  @override
+  String get videoTypeName => 'Tên loại video';
+
+  @override
+  String get videoTypeNameHint => 'Ví dụ: Cân hàng';
+
+  @override
+  String get createVideoType => 'Tạo loại';
+
+  @override
+  String get deleteVideoTypeBody =>
+      'Chỉ xóa được khi loại này chưa có video nào. Nếu đã có video, hệ thống sẽ chặn để tránh làm rối bộ lọc và thống kê bằng chứng.';
+
+  @override
+  String get deleteVideoTypeConfirm => 'Xóa loại';
+
+  @override
+  String get deleteVideoTypeNote => '(Chỉ xóa khi loại chưa có video nào)';
+
+  @override
+  String get addMemberTitle => 'Thêm thành viên';
+
+  @override
+  String get addMemberBody =>
+      'Nhập email hoặc số điện thoại của tài khoản đã đăng ký để thêm vào shop.';
+
+  @override
+  String get emailOrPhone => 'Email hoặc số điện thoại';
+
+  @override
+  String get addMemberSubmit => 'Thêm';
+
+  @override
+  String get setAsManager => 'Đặt làm Quản lý shop';
+
+  @override
+  String get setAsStaff => 'Đặt làm Nhân viên';
+
+  @override
+  String get removeFromShop => 'Gỡ khỏi shop';
+
+  @override
+  String get resolutionAppliesNote => 'Áp dụng cho video quay mới của shop';
+
+  @override
+  String get resolutionDefaultOption => '720p (mặc định)';
+
+  @override
+  String get ordersNotFound => 'Không tìm thấy đơn hàng';
+
+  @override
+  String deleteVideoTypeTitle(String typeName) {
+    return 'Xóa loại \"$typeName\"?';
+  }
+
+  @override
+  String memberCurrentRole(String role) {
+    return 'Vai trò hiện tại: $role';
+  }
 }

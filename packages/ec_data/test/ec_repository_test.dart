@@ -8,11 +8,14 @@ void main() {
   group('FakeEcRepository', () {
     const repo = FakeEcRepository();
 
-    test('returns sample shops and orders (app runs offline)', () async {
-      expect(await repo.shops(), isNotEmpty);
-      final orders = await repo.orders('s1');
-      expect(orders.first.tracking, startsWith('SPXVN'));
-    });
+    test(
+      'returns empty offline data instead of demo business records',
+      () async {
+        expect(await repo.shops(), isEmpty);
+        expect(await repo.orders('s1'), isEmpty);
+        expect(await repo.videoTypes('s1'), isEmpty);
+      },
+    );
   });
 
   group('RemoteEcRepository', () {
@@ -48,6 +51,41 @@ void main() {
       final order = await repo.createOrder('s1', 'SPXVN9');
       expect(order.id, 'o9');
       verify(() => api.findOrCreateOrder('s1', 'SPXVN9')).called(1);
+    });
+
+    test('delegates searchOrders() to the API', () async {
+      when(() => api.searchOrders('s1', 'SPXVN9')).thenAnswer(
+        (_) async => const [
+          OrderSummaryDto(
+            id: 'o9',
+            tracking: 'SPXVN9',
+            createdAt: 0,
+            evidenceCount: 2,
+          ),
+        ],
+      );
+      final orders = await repo.searchOrders('s1', 'SPXVN9');
+      expect(orders.single.id, 'o9');
+      verify(() => api.searchOrders('s1', 'SPXVN9')).called(1);
+    });
+
+    test('delegates revokeDossier() to the API', () async {
+      when(() => api.revokeDossier('s1', 'o9')).thenAnswer((_) async {});
+      await repo.revokeDossier('s1', 'o9');
+      verify(() => api.revokeDossier('s1', 'o9')).called(1);
+    });
+
+    test('delegates getDossier() to the API', () async {
+      when(() => api.getDossier('s1', 'o9')).thenAnswer(
+        (_) async => const DossierDto(
+          shareToken: 'tok',
+          revoked: false,
+          status: 'draft',
+        ),
+      );
+      final dossier = await repo.getDossier('s1', 'o9');
+      expect(dossier?.shareToken, 'tok');
+      verify(() => api.getDossier('s1', 'o9')).called(1);
     });
   });
 }

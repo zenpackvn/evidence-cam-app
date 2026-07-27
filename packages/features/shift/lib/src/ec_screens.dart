@@ -13,6 +13,7 @@ import 'package:flutter/cupertino.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:localization/localization.dart';
 
 // Shared text styles (Inter is inherited from the CupertinoApp text theme).
 TextStyle _t(double size, FontWeight weight, Color color) =>
@@ -57,7 +58,7 @@ class EcSplashScreen extends StatelessWidget {
                     SizedBox(
                       width: 260,
                       child: Text(
-                        'Quay video bằng chứng đóng hàng cho seller TMĐT',
+                        context.l10n.onboardingSubtitle,
                         textAlign: TextAlign.center,
                         style: _t(14, FontWeight.w400, BrandColors.mut),
                       ),
@@ -66,7 +67,7 @@ class EcSplashScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              _EcPrimaryButton(label: 'Bắt đầu', onPressed: onStart),
+              _EcPrimaryButton(label: context.l10n.onboardingStart, onPressed: onStart),
               const SizedBox(height: 16),
               Text(version, style: _t(11, FontWeight.w400, BrandColors.mut)),
             ],
@@ -126,12 +127,12 @@ class EcLoginScreen extends StatelessWidget {
                         child: Column(
                           children: [
                             Text(
-                              'Đăng nhập',
+                              context.l10n.authSignIn,
                               style: _t(24, FontWeight.w700, BrandColors.ink),
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Chọn phương thức đăng nhập',
+                              context.l10n.authChooseMethod,
                               style: _t(13, FontWeight.w400, BrandColors.mut),
                             ),
                           ],
@@ -145,22 +146,22 @@ class EcLoginScreen extends StatelessWidget {
                         keyboardType: TextInputType.emailAddress,
                         validator: FormBuilderValidators.compose([
                           FormBuilderValidators.required(
-                            errorText: 'Vui lòng nhập email',
+                            errorText: context.l10n.authEmailRequired,
                           ),
                           FormBuilderValidators.email(
-                            errorText: 'Email không hợp lệ',
+                            errorText: context.l10n.authEmailInvalid,
                           ),
                         ]),
                       ),
                       const SizedBox(height: 12),
                       _Field(
-                        label: 'Mật khẩu',
+                        label: context.l10n.authPassword,
                         hint: '••••••••',
                         controller: passwordController,
                         obscure: true,
                         trailing: Icons.visibility_outlined,
                         validator: FormBuilderValidators.required(
-                          errorText: 'Vui lòng nhập mật khẩu',
+                          errorText: context.l10n.authPasswordRequired,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -169,21 +170,21 @@ class EcLoginScreen extends StatelessWidget {
                         child: EcTap(
                           onTap: onForgot,
                           child: Text(
-                            'Quên mật khẩu?',
+                            context.l10n.authForgotPassword,
                             style: _t(13, FontWeight.w500, BrandColors.ink),
                           ),
                         ),
                       ),
                       const SizedBox(height: 12),
                       _ValidatedPrimaryButton(
-                        label: 'Đăng nhập',
+                        label: context.l10n.authSignIn,
                         onValid: onLogin,
                       ),
                       const SizedBox(height: 12),
                       const _OrDivider(),
                       const SizedBox(height: 12),
                       _SocialButton(
-                        label: 'Đăng nhập với Google',
+                        label: context.l10n.authSignInGoogle,
                         background: Colors.white,
                         borderColor: const Color(0xFFDADCE0),
                         foreground: const Color(0xFF3C4043),
@@ -192,7 +193,7 @@ class EcLoginScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       _SocialButton(
-                        label: 'Đăng nhập với Apple',
+                        label: context.l10n.authSignInApple,
                         background: Colors.black,
                         borderColor: Colors.black,
                         foreground: Colors.white,
@@ -210,13 +211,13 @@ class EcLoginScreen extends StatelessWidget {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
-                            'Bạn chưa có tài khoản? ',
+                            context.l10n.authNoAccountPrompt,
                             style: _t(13, FontWeight.w400, BrandColors.mut),
                           ),
                           EcTap(
                             onTap: onRegister,
                             child: Text(
-                              'Đăng ký',
+                              context.l10n.authRegister,
                               style: _t(13, FontWeight.w600, BrandColors.ink),
                             ),
                           ),
@@ -426,7 +427,7 @@ class _OrDivider extends StatelessWidget {
         const Expanded(child: Divider(color: BrandColors.line, height: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text('hoặc', style: _t(12, FontWeight.w400, BrandColors.mut)),
+          child: Text(context.l10n.authOr, style: _t(12, FontWeight.w400, BrandColors.mut)),
         ),
         const Expanded(child: Divider(color: BrandColors.line, height: 1)),
       ],

@@ -12,6 +12,7 @@ import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:localization/localization.dart';
 
 // Renders each screen at iPhone size and writes a PNG so the design can be
 // eyeballed (run with --update-goldens). Not a pass/fail assertion of pixels.
@@ -21,7 +22,15 @@ Future<void> _cap(WidgetTester t, String name, Widget screen) async {
   t.view.physicalSize = const Size(414, 896);
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);
-  await t.pumpWidget(MaterialApp(theme: AppTheme.light(), home: screen));
+  await t.pumpWidget(
+    MaterialApp(
+      theme: AppTheme.light(),
+      locale: const Locale('vi'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: screen,
+    ),
+  );
   await t.pumpAndSettle();
   await expectLater(
     find.byType(MaterialApp),
@@ -144,7 +153,11 @@ void main() {
   );
   testWidgets(
     'uploadqueue',
-    (t) => _cap(t, 'uploadqueue', const EcUploadQueueScreen()),
+    (t) => _cap(
+      t,
+      'uploadqueue',
+      const EcUploadQueueScreen(items: ecDefaultUploadItems),
+    ),
   );
   testWidgets('account', (t) => _cap(t, 'account', const EcAccountTabScreen()));
   testWidgets('quota', (t) => _cap(t, 'quota', const EcQuotaScreen()));

@@ -1,370 +1,310 @@
 {
   "@@locale": "en",
-  "appTitle": "Flutter Starter",
-  "loginAppBarTitle": "Sign in",
-  "loginHeadline": "Welcome Back",
-  "loginSubtitle": "Sign in to organize your digital space.",
-  "loginUsernameLabel": "Email Address",
-  "loginUsernameHint": "hello@example.com",
-  "loginPasswordLabel": "Password",
-  "loginPasswordHint": "••••••••",
-  "loginShowPassword": "Show password",
-  "loginHidePassword": "Hide password",
-  "loginForgotPassword": "Forgot?",
-  "loginSubmit": "Log In",
-  "loginDividerLabel": "OR CONTINUE WITH",
-  "loginGoogle": "Google",
-  "loginApple": "Apple",
-  "loginRegisterPrompt": "New to Flutter Starter? ",
-  "loginNavigateToRegister": "Create an account",
-  "loginPasswordRecoveryUnavailable": "Password recovery isn't configured yet.",
-  "loginSocialUnavailable": "Social sign-in isn't configured yet.",
-  "registerAppBarTitle": "Register",
-  "registerHeadline": "Join Flutter Starter",
-  "registerSubtitle": "Create an account to start organizing your digital life with clarity and ease.",
-  "registerEmailLabel": "Email Address",
-  "registerEmailHint": "jane@example.com",
-  "registerInvalidEmail": "Enter a valid email address.",
-  "registerUsernameLabel": "Username",
-  "registerPasswordLabel": "Password",
-  "registerPasswordHint": "••••••••",
-  "registerPasswordHelp": "Must be at least 8 characters.",
-  "registerPasswordMinLengthError": "Password must be at least 8 characters.",
-  "registerShowPassword": "Show password",
-  "registerHidePassword": "Hide password",
-  "registerConfirmPasswordLabel": "Confirm Password",
-  "registerSubmit": "Join Flutter Starter",
-  "registerLoginPrompt": "Already have an account? ",
-  "registerNavigateToLogin": "Log in",
-  "errorPasswordsDoNotMatch": "Passwords do not match.",
-  "fieldRequired": "Required",
-  "errorInvalidCredentials": "Please enter a username and password.",
-  "errorInvalidInput": "Invalid input.",
-  "errorUnknown": "Something went wrong.",
+
   "commonCancel": "Cancel",
-  "commonCreate": "Create",
-  "commonDelete": "Delete",
-  "commonEdit": "Edit",
-  "commonImageLoadFailed": "Failed to load image",
-  "commonLoading": "Loading…",
   "commonRetry": "Retry",
-  "commonSave": "Save",
-  "commonShare": "Share",
-  "commonSignOut": "Sign out",
-  "homeAppBarTitle": "Home",
-  "homeViewAllBookmarks": "View all",
-  "homeNoDescription": "No description",
-  "homeRecentBookmarks": "Recent Bookmarks",
-  "homeNoBookmarks": "No bookmarks yet. Tap + to add one.",
-  "homeSearchTitle": "Search",
-  "@homeSearchTitle": {
-    "description": "Section title above the home dashboard bookmark search field."
+  "commonClose": "Close",
+
+  "toastChangeLanguage": "Change language",
+  "toastTermsPolicy": "Terms & Policy",
+  "toastInfoSaved": "Info saved",
+  "toastPasswordCreated": "Password created",
+  "toastPasswordChanged": "Password changed",
+  "toastUpgradeComingSoon": "Plan upgrade — coming soon",
+  "toastPendingDossierConfirm": "You still have a dossier submitted to the marketplace, please confirm again",
+  "toastCopiedShareLink": "Share link copied",
+  "toastShareFailed": "Couldn't share, try again later",
+  "toastDownloadingVideo": "Downloading video",
+  "toastVideoDownloadedCopied": "Video downloaded and path copied",
+  "toastVideoDownloadFailed": "Couldn't download video, try again later",
+  "toastPhotoQueued": "Photo attached — added to the upload queue",
+  "toastInvitePending": "Waiting for a shop invitation",
+  "toastInviteSent": "Invitation sent",
+  "toastMemberAdded": "Member added",
+  "toastDossierLinkCreated": "Dossier link created",
+  "toastDossierLinkRevoked": "Dossier link revoked",
+  "toastVideoPlayFailed": "Couldn't play video",
+  "toastShopCreated": "New shop created",
+  "toastVideoQueued": "Video saved — added to the upload queue",
+  "toastVideoNoPlayLink": "Video has no playback link yet",
+  "toastVideoNoDownloadLink": "Video has no download link yet",
+  "toastVideoDeleted": "Video deleted",
+  "toastVideoTypeSaved": "Video type saved",
+  "toastVideoTypeDeleted": "Video type deleted",
+  "toastNoVideoTypeToDelete": "No video type to delete",
+  "toastRoleChangedManager": "Role changed: Shop manager",
+  "toastRoleChangedStaff": "Role changed: Staff",
+  "toastNoMemberToUpdate": "No member to update",
+  "toastMemberRemoved": "Removed from shop (recorded videos still finish uploading)",
+
+  "copiedLabel": "Copied {label}",
+  "@copiedLabel": {
+    "placeholders": { "label": { "type": "String", "example": "tracking code" } }
   },
-  "homeSearchSubtitle": "Find your saved articles, tools, and inspirations instantly.",
-  "@homeSearchSubtitle": {
-    "description": "Supporting text below the home dashboard search title."
+  "labelTrackingCode": "tracking code",
+  "labelDossierLink": "dossier link",
+  "resolutionChanged": "Resolution: {value}",
+  "@resolutionChanged": {
+    "placeholders": { "value": { "type": "String", "example": "720p" } }
   },
-  "homeSearchHint": "Search bookmarks...",
-  "@homeSearchHint": {
-    "description": "Placeholder text in the home dashboard bookmark search field."
+  "dossierShareText": "Complaint dossier {tracking}",
+  "@dossierShareText": {
+    "placeholders": { "tracking": { "type": "String", "example": "SPX123" } }
   },
-  "homeQuickAdd": "Add Link",
-  "@homeQuickAdd": {
-    "description": "Label for the quick action that opens the new bookmark form."
+
+  "accountNoName": "No name yet",
+  "accountNoShop": "No shop selected",
+  "accountCreatePassword": "Create password",
+  "accountChangePassword": "Change password",
+  "accountLinkedMethods": "{count} linked",
+  "@accountLinkedMethods": {
+    "placeholders": { "count": { "type": "int", "example": "2" } }
   },
-  "homeQuickLibrary": "Library",
-  "@homeQuickLibrary": {
-    "description": "Label for the quick action that opens the full bookmarks library."
+
+  "roleOwner": "Owner",
+  "roleManager": "Manager",
+  "roleStaff": "Staff",
+  "roleOther": "Other",
+  "roleUnknown": "Unknown",
+  "memberFallbackName": "Member",
+
+  "uploadStatusDone": "Uploaded",
+  "uploadStatusPending": "Waiting to upload",
+  "uploadStatusQuotaHold": "On hold (quota)",
+  "uploadStatusDeleted": "Deleted",
+
+  "kindPhoto": "Attached photo",
+  "kindVideo": "Video",
+
+  "recordedByFallback": "Current account",
+  "deviceUnknown": "Unknown device",
+  "orderNoEvidence": "No evidence yet",
+
+  "errorGenericRetry": "Something went wrong, please try again.",
+  "errorPendingDossier": "You still have a dossier submitted to the marketplace, please handle it before continuing.",
+  "errorSessionExpired": "Your session has expired, please sign in again.",
+  "errorNoNetwork": "No network connection, please try again.",
+  "errorNoPermission": "You don't have permission to perform this action.",
+  "errorServerBusy": "The system is busy, please try again later.",
+  "errorSessionInvalid": "Invalid session, please sign in again.",
+  "errorVideoTypeInUse": "Can't delete a video type that already has videos. Please review the videos using this type first.",
+  "errorBuiltinVideoTypeLocked": "The 3 built-in video types can't be edited or deleted.",
+  "errorVideoTypeNameExists": "That video type name already exists in the shop.",
+  "errorCheckNetwork": "Check your network or try again later.",
+
+  "errorLoadShopList": "Couldn't load the shop list",
+  "errorLoadShopMgmt": "Couldn't load shop management",
+  "errorLoadShopDetail": "Couldn't load shop details",
+  "errorLoadOrders": "Couldn't load orders",
+  "errorLoadOrderDetail": "Couldn't load order details",
+
+  "noShopSelectedOrdersDetail": "Please choose a shop before viewing orders.",
+  "noShopSelectedRecordDetail": "Please choose a shop before recording.",
+  "noShopSelectedManageDetail": "Please choose a shop to manage.",
+  "noOrdersTitle": "No orders yet",
+  "noOrdersDetail": "Please choose an order from the list.",
+  "noVideoDataTitle": "No video data",
+  "cannotOpenVideoTitle": "Couldn't open video",
+  "cannotOpenVideoDetail": "Video has no playback link yet.",
+
+  "createOrderDialogTitle": "Create a new order?",
+  "createOrderDialogBody": "{code} doesn't match any tracking code in the current shop. Re-check the code or confirm creating a new order.",
+  "@createOrderDialogBody": {
+    "placeholders": { "code": { "type": "String", "example": "SPX123" } }
   },
-  "homeQuickTags": "Tags",
-  "@homeQuickTags": {
-    "description": "Label for the quick action that opens bookmark tag-related content."
-  },
-  "homeFilterAll": "All",
-  "@homeFilterAll": {
-    "description": "Filter chip label for showing all recent bookmarks."
-  },
-  "homeFilterDesign": "Design",
-  "@homeFilterDesign": {
-    "description": "Filter chip and fallback collection label for design-related bookmarks."
-  },
-  "homeFilterArticles": "Articles",
-  "@homeFilterArticles": {
-    "description": "Filter chip and fallback collection label for article or blog bookmarks."
-  },
-  "homeFilterInspiration": "Inspiration",
-  "@homeFilterInspiration": {
-    "description": "Filter chip label for inspiration-related bookmarks."
-  },
-  "homeFilterTools": "Tools",
-  "@homeFilterTools": {
-    "description": "Filter chip and fallback collection label for tool-related bookmarks."
-  },
-  "homeSuggestedTitle": "Suggested for You",
-  "@homeSuggestedTitle": {
-    "description": "Section title for suggested bookmark cards on the home dashboard."
-  },
-  "homeFeaturedCollections": "Featured Collections",
-  "@homeFeaturedCollections": {
-    "description": "Section title for featured bookmark collection cards on the home dashboard."
-  },
-  "homeWeeklyDigestTitle": "Weekly Digest",
-  "@homeWeeklyDigestTitle": {
-    "description": "Section title for the weekly digest panel on the home dashboard."
-  },
-  "homeWeeklyDigestEyebrow": "Most Read",
-  "@homeWeeklyDigestEyebrow": {
-    "description": "Short eyebrow label displayed above the weekly digest headline."
-  },
-  "homeWeeklyDigestHeadline": "Your saved knowledge catch-up",
-  "@homeWeeklyDigestHeadline": {
-    "description": "Headline text inside the weekly digest panel on the home dashboard."
-  },
-  "homeWeeklyDigestBody": "{count, plural, =0{You have no recent bookmarks. Review saved highlights when you add one.} =1{You saved 1 bookmark recently. Review the highlight and keep your reading flow moving.} other{You saved {count} bookmarks recently. Review the highlights and keep your reading flow moving.}}",
-  "@homeWeeklyDigestBody": {
-    "description": "Body text inside the weekly digest panel. The count is the number of bookmarks saved in the recent window.",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "12",
-        "description": "Number of bookmarks saved recently."
-      }
-    }
-  },
-  "homeReadDigest": "Read Digest",
-  "@homeReadDigest": {
-    "description": "Call-to-action button label in the weekly digest panel."
-  },
-  "homeNoMatches": "No bookmarks match this view.",
-  "@homeNoMatches": {
-    "description": "Empty-state message shown when active search or filters hide all recent bookmarks."
-  },
-  "homeBookmarkVisualFallback": "Recent",
-  "@homeBookmarkVisualFallback": {
-    "description": "Short fallback label shown on bookmark artwork when a bookmark has no tags."
-  },
-  "profileAppBarTitle": "Profile",
-  "profileSectionAppearance": "Appearance",
-  "profileSectionAccount": "Account",
-  "profileChangePassword": "Change Password",
-  "profileDeleteAccount": "Delete Account",
-  "profileDeleteAccountDialogTitle": "Delete account?",
-  "profileDeleteAccountDialogMessage": "This permanently removes your account and all of its data. This action cannot be undone.",
-  "profileDeleteAccountConfirmLabel": "Type \"{username}\" to confirm",
-  "@profileDeleteAccountConfirmLabel": {
-    "placeholders": {
-      "username": {
-        "type": "String",
-        "example": "alice"
-      }
-    }
-  },
-  "profileDeleteAccountSuccess": "Your account has been deleted.",
-  "profileDeleteAccountError": "Couldn't delete your account. Please try again.",
-  "changePasswordAppBarTitle": "Change Password",
-  "changePasswordCurrentLabel": "Current Password",
-  "changePasswordNewLabel": "New Password",
-  "changePasswordConfirmLabel": "Confirm New Password",
-  "changePasswordSubmit": "Update Password",
-  "changePasswordSuccessMessage": "Password updated successfully.",
-  "changePasswordMismatchError": "New passwords do not match.",
-  "profileSectionAbout": "About",
-  "profileUserIdCopied": "User ID copied",
-  "profileAppearanceThemeLabel": "Theme",
-  "profileAppearanceColorLabel": "Accent color",
-  "profileThemeSystemDefault": "System default",
-  "profileThemeLight": "Light",
-  "profileThemeDark": "Dark",
-  "profileAppVersionBuild": "Version {version} (build {buildNumber})",
-  "@profileAppVersionBuild": {
-    "placeholders": {
-      "version": {
-        "type": "String",
-        "example": "1.0.0"
-      },
-      "buildNumber": {
-        "type": "String",
-        "example": "42"
-      }
-    }
-  },
-  "profileSignOutConfirmMessage": "Are you sure you want to sign out?",
-  "bookmarksAppBarTitle": "Bookmarks",
-  "bookmarksSearchHint": "Search title, URL, or tag",
-  "bookmarksNoMatchesTitle": "No matches",
-  "bookmarksNoMatchesMessage": "No bookmarks match your search.",
-  "bookmarksEmptyTitle": "No bookmarks yet",
-  "bookmarksEmptyMessage": "Tap + to add your first bookmark.",
-  "bookmarksNotYetSynced": "Not yet synced",
-  "bookmarksSyncFailedRetryTooltip": "Sync failed - tap to retry",
-  "bookmarksAddTooltip": "Add bookmark",
-  "bookmarksSearchClear": "Clear search",
-  "bookmarksSortTooltip": "Sort bookmarks",
-  "bookmarksSortMenuLabel": "Sort Menu",
-  "bookmarksSortNewest": "Newest first",
-  "bookmarksSortOldest": "Oldest first",
-  "bookmarksSortTitleAz": "Title (A–Z)",
-  "bookmarksTabAll": "All",
-  "bookmarksTabRecent": "Recent",
-  "bookmarksTabCollections": "Collections",
-  "bookmarksRecentEmptyTitle": "Nothing recent",
-  "bookmarksRecentEmptyMessage": "Bookmarks you add this week show up here.",
-  "bookmarksCollectionsComingSoonTitle": "Collections coming soon",
-  "bookmarksCollectionsComingSoonMessage": "Group related bookmarks into collections in a future update.",
-  "bookmarkMoreActions": "More actions",
-  "bookmarkAppBarTitle": "Bookmark Details",
-  "bookmarkSourceLabel": "Source",
-  "bookmarkVisitWebsite": "Visit Website",
-  "bookmarkDetailsLabel": "Details",
-  "bookmarkDateCreatedLabel": "Date Created",
-  "bookmarkLastModifiedLabel": "Last Modified",
-  "bookmarkMediaLabel": "Media",
-  "bookmarkOpenInBrowser": "Open in Browser",
-  "bookmarkNotFound": "Bookmark not found.",
-  "bookmarkDeleteDialogTitle": "Delete bookmark?",
-  "bookmarkDeleteDialogBody": "This action cannot be undone.\nThe bookmark will be permanently removed from your collection.",
-  "bookmarkDeleteDialogMessage": "\"{title}\" will be removed.",
-  "@bookmarkDeleteDialogMessage": {
-    "placeholders": {
-      "title": {
-        "type": "String",
-        "example": "Flutter docs"
-      }
-    }
-  },
-  "bookmarkOpenUrl": "Open URL",
-  "bookmarkAttachedVideo": "Attached video",
-  "bookmarkInvalidUrl": "Invalid URL",
-  "bookmarkCouldNotOpenUrl": "Could not open URL",
-  "bookmarkFormEditTitle": "Edit bookmark",
-  "bookmarkFormNewTitle": "New bookmark",
-  "bookmarkFormLoadFailed": "Failed to load bookmark.",
-  "bookmarkTitleLabel": "Title",
-  "bookmarkUrlLabel": "URL",
-  "bookmarkDescriptionLabel": "Description (optional)",
-  "bookmarkTagsLabel": "Tags",
-  "bookmarkTagsHint": "comma, separated, values",
-  "bookmarkPreviewLabel": "Bookmark",
-  "@bookmarkPreviewLabel": {
-    "description": "Short label shown in the bookmark form preview placeholder."
-  },
-  "bookmarkTitleRequired": "Title is required",
-  "bookmarkUrlRequired": "URL is required",
-  "bookmarkUrlInvalid": "Enter a valid URL (https://…)",
-  "errorPermissionDenied": "Permission denied.",
-  "errorGalleryPermissionRequired": "Photo gallery access is required to attach images.",
-  "errorCameraPermissionRequired": "Camera access is required to take photos.",
-  "navHome": "Home",
-  "navBookmarks": "Bookmarks",
-  "navProfile": "Profile",
-  "navSettings": "Settings",
-  "settingsAppBarTitle": "Settings",
-  "bookmarksDetailPlaceholder": "Select a bookmark to view its details",
-  "bookmarkImageLabel": "Image for {title}",
-  "@bookmarkImageLabel": {
-    "description": "Accessibility label for a bookmark's attached image.",
-    "placeholders": {
-      "title": {
-        "type": "String"
-      }
-    }
-  },
-  "bookmarkAttachedImageLabel": "Attached image",
-  "bookmarkRemoveImageLabel": "Remove image",
-  "navNotifications": "Notifications",
-  "notificationsAppBarTitle": "Notifications",
-  "notificationsActivitySection": "Your activity",
-  "notificationsSection": "Notifications",
-  "notificationsSectionNew": "New",
-  "notificationsSectionEarlier": "Earlier",
-  "notificationsEmptyTitle": "Nothing here yet",
-  "notificationsEmptyMessage": "Your notifications and recent activity will appear here.",
-  "notificationsNoNotifications": "No notifications yet.",
-  "notificationsLoadError": "Couldn't load your notifications. Pull to refresh or try again.",
-  "notificationsUnreadCount": "{count} unread",
-  "@notificationsUnreadCount": {
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
-  "timeJustNow": "Just now",
-  "timeMinutesAgo": "{minutes}m ago",
-  "@timeMinutesAgo": {
-    "placeholders": {
-      "minutes": {
-        "type": "int",
-        "example": "5"
-      }
-    }
-  },
-  "timeHoursAgo": "{hours}h ago",
-  "@timeHoursAgo": {
-    "placeholders": {
-      "hours": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
-  "timeDaysAgo": "{days}d ago",
-  "@timeDaysAgo": {
-    "placeholders": {
-      "days": {
-        "type": "int",
-        "example": "2"
-      }
-    }
-  },
-  "collectionsTitle": "Collections",
-  "collectionsEmptyTitle": "No collections yet",
-  "collectionsEmptyMessage": "Group related bookmarks into collections.",
-  "collectionsLoadError": "Couldn't load your collections. Pull to refresh or try again.",
-  "collectionsCreate": "New collection",
-  "collectionsCreateTitle": "New collection",
-  "collectionsEditTitle": "Edit collection",
-  "collectionNameLabel": "Name",
-  "collectionNameHint": "e.g. Design inspiration",
-  "collectionNameRequired": "Name is required",
-  "collectionAppearanceLabel": "Icon & color",
-  "collectionSave": "Save",
-  "collectionDeleteAction": "Delete collection",
-  "collectionDeleteDialogTitle": "Delete collection?",
-  "collectionDeleteDialogMessage": "\"{name}\" will be removed. Your bookmarks stay.",
-  "@collectionDeleteDialogMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "Design inspiration"
-      }
-    }
-  },
-  "collectionNotFound": "Collection not found.",
-  "collectionItemsCount": "{count, plural, =0{No bookmarks} =1{1 bookmark} other{{count} bookmarks}}",
-  "@collectionItemsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
-  "collectionAddBookmarks": "Add bookmarks",
-  "collectionRemoveBookmark": "Remove from collection",
-  "collectionEmptyBookmarks": "No bookmarks in this collection yet.",
-  "collectionPickerEmpty": "All your bookmarks are already in this collection.",
-  "collectionPickerAddCount": "Add {count}",
-  "@collectionPickerAddCount": {
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "2"
-      }
-    }
-  },
-  "addToCollectionTitle": "Add to collection",
-  "addToCollectionEmpty": "You haven't created any collections yet.",
-  "homeCreateCollection": "Create collection"
+  "createOrderConfirm": "Create new order",
+
+  "statOrdersToday": "Orders today",
+  "statVideosRecorded": "Videos recorded",
+  "statPendingUpload": "Pending upload",
+
+  "accountPlanQuota": "Plan & Quota",
+  "accountSectionApp": "PLAN & APP",
+  "accountLanguage": "Language",
+  "accountSectionSecurity": "SECURITY & SIGN-IN",
+  "accountLoginMethods": "Sign-in method",
+  "accountSignOut": "Sign out",
+  "accountDeleteAccount": "Delete account",
+  "accountShopMgmtHint": "Manage shop/members: tap back on the header to return to the Shop layer",
+  "accountInfoTitle": "Account info",
+  "accountFullName": "Full name",
+  "accountFullNameHint": "Enter your full name",
+  "accountFullNameRequired": "Please enter your full name",
+  "phoneLabel": "Phone number",
+  "phoneHint": "Enter phone number",
+  "phoneRequired": "Please enter your phone number",
+  "phoneInvalid": "Invalid phone number",
+  "accountSaveChanges": "Save changes",
+  "phoneAddTitle": "Add phone number",
+  "phoneAddBody": "Your Apple/Google account has no phone number yet. Please enter a phone number to continue.",
+  "commonContinue": "Continue",
+  "languageNameVietnamese": "Vietnamese",
+  "languageNameEnglish": "English",
+  "languageChangeAppliesNote": "Changes apply instantly across the whole app",
+  "linkLinked": "Linked",
+  "linkNotLinked": "Not linked",
+  "loginMethodsEmailNote": "Email is your account identifier — it can't be removed. Link Google/Apple to sign in quickly with the same account.",
+  "loginMethodIdentity": "Identifier",
+  "linkAction": "Link",
+  "linkUnlink": "Unlink",
+  "quotaScreenTitle": "Reports & Quota",
+  "quotaCurrentPlan": "Current plan",
+  "quotaRemainingThisMonth": "Remaining this month",
+  "quotaStorage": "Storage",
+  "quotaUpgradePlan": "Upgrade plan",
+  "deleteAccountTitleStep1": "Delete account?",
+  "deleteAccountTitleStep2": "Confirm permanent deletion?",
+  "deleteAccountBodyStep1": "All your videos, orders and dossiers will be permanently deleted. This action cannot be undone.",
+  "deleteAccountBodyStep2": "This is the final confirmation step. After deletion, you'll be signed out of the app immediately.",
+  "deleteConfirmPermanent": "Delete permanently",
+  "deleteStep1Hint": "Step 1/2 — will ask for confirmation again · then sign out",
+  "deleteStep2Hint": "Step 2/2 — this action cannot be undone",
+  "passwordCurrentLabel": "Current password",
+  "passwordCurrentRequired": "Please enter your current password",
+  "passwordNewLabel": "New password",
+  "passwordMinHint": "At least 8 characters",
+  "passwordNewRequired": "Please enter a new password",
+  "passwordMin8Error": "Password must be at least 8 characters",
+  "passwordConfirmLabel": "Re-enter new password",
+  "passwordMismatch": "Passwords don't match",
+  "passwordSave": "Save password",
+  "passwordChangeLogoutNote": "(You'll be signed out of other devices after changing)",
+  "navOrders": "Orders",
+  "navRecord": "Record",
+  "navAccount": "Account",
+  "changeAvatar": "Change profile photo",
+  "quotaVideosRatio": "{remaining} / {total} videos",
+  "@quotaVideosRatio": { "placeholders": { "remaining": { "type": "int" }, "total": { "type": "int" } } },
+  "quotaUsedPercent": "Used {percent}%",
+  "@quotaUsedPercent": { "placeholders": { "percent": { "type": "int" } } },
+  "quotaRetentionDays": "{days} days",
+  "@quotaRetentionDays": { "placeholders": { "days": { "type": "int" } } },
+  "deletePendingProfilesWarning": "You still have {count} \"submitted to marketplace\" dossiers — their share links will stop working",
+  "@deletePendingProfilesWarning": { "placeholders": { "count": { "type": "int" } } },
+  "detailRecordedTime": "Recording time",
+  "detailRecordedBy": "Recorded by",
+  "detailDevice": "Device",
+  "detailSize": "Size",
+  "detailUploadStatus": "Upload status",
+  "detailPlayVideo": "Play video",
+  "detailDownloadVideo": "Download video",
+  "detailDownloadNote": "Account owner / shop manager only — to attach a marketplace complaint form",
+  "attachPhotoToOrder": "Attach photo to order",
+  "createDossierLink": "Create complaint dossier link",
+  "dossierLinkLabel": "Complaint dossier link",
+  "revoke": "Revoke",
+  "deleteVideoAction": "Delete video",
+  "deleteVideoNote": "Account owner / shop manager only · 2-step confirmation · permanent",
+  "ordersErrorCount": "· {count} errors",
+  "@ordersErrorCount": { "placeholders": { "count": { "type": "int" } } },
+  "ordersPendingEvidenceWarning": "{count} evidence not uploaded — the dossier will be incomplete",
+  "@ordersPendingEvidenceWarning": { "placeholders": { "count": { "type": "int" } } },
+  "captureFramePrompt": "Place the bill in the frame to start",
+  "captureCameraDownHint": "Camera facing down at the table",
+  "tooltipBack": "Back",
+  "tooltipSwitchCamera": "Switch camera",
+  "tooltipEnterTracking": "Enter tracking code",
+  "tooltipZoomIn": "Zoom in",
+  "tooltipZoomOut": "Zoom out",
+  "captureResolution": "Resolution",
+  "stopRecording": "Stop recording",
+  "videoTypeSettings": "Video type settings",
+  "uploadQueueTitle": "Upload queue",
+  "quotaExhaustedNote": "Out of quota this month — videos will wait for quota",
+  "upgradePlanShort": "Upgrade",
+  "queueEmpty": "No videos in the queue yet",
+  "queueAutoUploadNote": "Upload happens automatically when you're online",
+  "waitingUpload": "Waiting to upload",
+  "uploaded": "Uploaded",
+  "waitingQuota": "Waiting for quota",
+  "manualTrackingTitle": "Enter tracking code manually",
+  "manualTrackingNote": "Use when the bill is blurry — no more than 10 seconds",
+  "startRecording": "Start recording",
+  "returnCodeMismatch": "Return code doesn't match",
+  "enterCodeManually": "Enter code manually",
+  "videoTypeLabel": "Video type",
+  "videoTypeSelectNote": "Choose a type for this recording session — add/edit/delete in Shop details",
+  "manageVideoTypesNote": "Manage video types — open Shop details",
+  "queueFilterAll": "All · {count}",
+  "@queueFilterAll": { "placeholders": { "count": { "type": "int" } } },
+  "queueFilterUploading": "Uploading · {count}",
+  "@queueFilterUploading": { "placeholders": { "count": { "type": "int" } } },
+  "queueFilterErrored": "Errors · {count}",
+  "@queueFilterErrored": { "placeholders": { "count": { "type": "int" } } },
+  "uploadingProgress": "Uploading {percent}%",
+  "@uploadingProgress": { "placeholders": { "percent": { "type": "int" } } },
+  "errorRetryCount": "Error · Retry ({count})",
+  "@errorRetryCount": { "placeholders": { "count": { "type": "int" } } },
+  "returnCodeMismatchBody": "{returnCode} doesn't match any order in {shopName}. Re-check the code, enter it manually, or confirm creating a new order.",
+  "@returnCodeMismatchBody": { "placeholders": { "returnCode": { "type": "String" }, "shopName": { "type": "String" } } },
+  "onboardingSubtitle": "Record packing-evidence videos for e-commerce sellers",
+  "onboardingStart": "Get started",
+  "authSignIn": "Sign in",
+  "authChooseMethod": "Choose a sign-in method",
+  "authEmailRequired": "Please enter your email",
+  "authEmailInvalid": "Invalid email",
+  "authPassword": "Password",
+  "authPasswordRequired": "Please enter your password",
+  "authForgotPassword": "Forgot password?",
+  "authSignInGoogle": "Sign in with Google",
+  "authSignInApple": "Sign in with Apple",
+  "authNoAccountPrompt": "Don't have an account? ",
+  "authRegister": "Register",
+  "authOr": "or",
+  "registerTitle": "Create a new account",
+  "registerConfirmPassword": "Re-enter password",
+  "registerAgreePolicy": "I agree to the policy ",
+  "registerViewPolicy": "View policy",
+  "registerCreateAccount": "Create account",
+  "registerSameEmailNote": "The same email will automatically link to one account",
+  "registerHaveAccountPrompt": "Already have an account? ",
+  "forgotPasswordTitle": "Forgot password",
+  "forgotPasswordSubtitle": "Enter your email to receive a password reset link",
+  "forgotPasswordSubmit": "Send reset link",
+  "forgotPasswordSent": "Sent — check your inbox (including spam)",
+  "forgotPasswordRememberPrompt": "Remember your password? ",
+  "shopYourShops": "Your shops",
+  "shopTapToClockIn": "Tap a shop to clock in · manage right here",
+  "shopLastOpenedNote": "The most recently opened shop will open directly next time",
+  "shopManageStore": "Manage store",
+  "shopManageVisibilityNote": "Only visible to the account owner / shop manager",
+  "shopEmpty": "No shops yet",
+  "shopEmptyBody": "Your account doesn't belong to any shop yet. Create a new shop to get started, or wait for an invitation from a shop owner.",
+  "shopCreateNew": "Create new shop (name + platform)",
+  "shopInvitesHere": "Shop invitations will appear here",
+  "shopCreateTitle": "Create shop",
+  "shopNameLabel": "Shop name",
+  "shopNameRequired": "Please enter a shop name",
+  "shopPlatform": "Marketplace",
+  "shopCreateOwnerNote": "You'll be the shop owner — add members later in Manage store",
+  "shopMgmtVisibilityNote": "Staff don't see this screen · shop managers only see shops they manage",
+  "shopAddNew": "Add new shop (name + platform)",
+  "sectionMembers": "MEMBERS",
+  "sectionShopSettings": "SHOP SETTINGS",
+  "sectionVideoTypes": "VIDEO TYPES",
+  "videoTypesLockedNote": "3 built-in types are locked — can't be edited/deleted",
+  "addMemberByContact": "Add member by email/phone",
+  "recordResolution": "Recording resolution",
+  "addVideoType": "Add type (enter name)",
+  "createVideoTypeTitle": "Create video type",
+  "videoTypeName": "Video type name",
+  "videoTypeNameHint": "e.g. Weighing",
+  "createVideoType": "Create type",
+  "deleteVideoTypeBody": "Can only be deleted while this type has no videos. If it has videos, the system blocks deletion to avoid disrupting evidence filters and stats.",
+  "deleteVideoTypeConfirm": "Delete type",
+  "deleteVideoTypeNote": "(Only deletable while the type has no videos)",
+  "addMemberTitle": "Add member",
+  "addMemberBody": "Enter the email or phone number of a registered account to add them to the shop.",
+  "emailOrPhone": "Email or phone number",
+  "addMemberSubmit": "Add",
+  "setAsManager": "Set as shop manager",
+  "setAsStaff": "Set as staff",
+  "removeFromShop": "Remove from shop",
+  "resolutionAppliesNote": "Applies to the shop's newly recorded videos",
+  "resolutionDefaultOption": "720p (default)",
+  "ordersNotFound": "No orders found",
+  "deleteVideoTypeTitle": "Delete type \"{typeName}\"?",
+  "@deleteVideoTypeTitle": { "placeholders": { "typeName": { "type": "String" } } },
+  "memberCurrentRole": "Current role: {role}",
+  "@memberCurrentRole": { "placeholders": { "role": { "type": "String" } } }
 }

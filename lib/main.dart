@@ -70,7 +70,7 @@ Future<void> main() async {
         // reporting, notifications, Firebase). Firebase is initialised via
         // FirebaseService when kFirebaseEnabled, so bind the real Firebase auth
         // then; otherwise fall back to the fake so the journey still runs. The
-        // repository comes from the EC_API_URL define (sample data when unset).
+        // repository comes from EC_API_URL/API_BASE_URL (empty offline seam when unset).
         final ecAuth = kFirebaseEnabled ? FirebaseEcAuth() : FakeEcAuth();
         // Evidence clips persist in ObjectBox (opened by the @preResolve store
         // module during configureDependencies), so the upload queue survives
@@ -78,7 +78,7 @@ Future<void> main() async {
         runApp(
           EcApp(
             auth: ecAuth,
-            repo: buildRepository(),
+            repo: buildRepository(auth: ecAuth),
             evidenceStore: ObjectBoxEvidenceClipStore(getIt<Store>()),
           ),
         );

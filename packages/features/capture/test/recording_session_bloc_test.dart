@@ -12,7 +12,9 @@ void main() {
     saved = <String>[];
   });
 
-  RecordingSessionBloc build({Duration maxRecording = const Duration(minutes: 15)}) {
+  RecordingSessionBloc build({
+    Duration maxRecording = const Duration(minutes: 15),
+  }) {
     return RecordingSessionBloc(
       camera: camera,
       scanner: _FakeScanner(),
@@ -182,6 +184,20 @@ void main() {
     wait: const Duration(milliseconds: 40),
     verify: (bloc) => expect(bloc.state.typeLabel, 'Trả hàng'),
   );
+
+  blocTest<RecordingSessionBloc, RecordingSessionState>(
+    'ignores video type changes while recording',
+    build: build,
+    act: (bloc) async {
+      bloc.add(const RecordingInitRequested());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      bloc.add(const RecordingManualCodeSubmitted('SPX1'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      bloc.add(const RecordingTypeChanged('Trả hàng'));
+    },
+    wait: const Duration(milliseconds: 40),
+    verify: (bloc) => expect(bloc.state.typeLabel, 'Đóng hàng'),
+  );
 }
 
 /// A [CameraService] with no hardware — tracks recording/streaming/dispose so
@@ -249,7 +265,9 @@ class _FakeCamera extends CameraService {
   }
 
   @override
-  Future<void> startVideoRecording({onLatestImageAvailable? onAvailable}) async {
+  Future<void> startVideoRecording({
+    onLatestImageAvailable? onAvailable,
+  }) async {
     if (onAvailable != null && failStartWithScan) {
       throw Exception('no concurrent stream+record');
     }

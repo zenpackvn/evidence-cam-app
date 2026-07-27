@@ -15,6 +15,7 @@ dependencies:
 
   app_ui: ^0.1.0
   ec_ui: ^0.1.0
+  localization: ^0.1.0
 
   # Renders the multi-color Google "G" mark on the sign-in button (design uses
   # the 4-color logo, not a single-color glyph).

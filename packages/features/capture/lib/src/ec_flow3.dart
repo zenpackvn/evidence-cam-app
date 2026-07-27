@@ -15,7 +15,7 @@ import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart'
     show CupertinoPageScaffold, CupertinoTextField;
 import 'package:flutter/material.dart';
-
+import 'package:localization/localization.dart';
 
 // Shared text style helper (Inter is inherited from AppTheme's textTheme).
 TextStyle _t(double size, FontWeight weight, Color color) =>
@@ -91,12 +91,12 @@ class EcWaitBill2Screen extends StatelessWidget {
             const Icon(Icons.add, size: 28, color: BrandColors.mut),
             const SizedBox(height: 10),
             Text(
-              'Đưa bill vào khung để bắt đầu',
+              context.l10n.captureFramePrompt,
               style: _t(14, FontWeight.w500, BrandColors.ink),
             ),
             const SizedBox(height: 10),
             Text(
-              'Camera nhìn xuống bàn',
+              context.l10n.captureCameraDownHint,
               style: _t(12, FontWeight.w400, BrandColors.mut),
             ),
           ],
@@ -200,7 +200,7 @@ class EcCutoverBScreen extends StatelessWidget {
   const EcCutoverBScreen({
     this.shopName = 'Shop ABC',
     this.queueCount = 3,
-    this.closedSummary = 'Đã chốt đơn A (02:45)',
+    this.closedSummary = 'Đã chốt mã vận đơn A (02:45)',
     this.signalText = 'Âm báo + rung khi chuyển đơn',
     this.newCode = 'SPXVN098765432',
     this.newDuration = '00:01',
@@ -422,7 +422,7 @@ class EcReturnRecScreen extends StatelessWidget {
     this.queueCount = 3,
     this.code = 'SPXVN088877766 (hoàn)',
     this.duration = '00:32',
-    this.linkNote = 'Tự liên kết về hồ sơ đơn gốc',
+    this.linkNote = 'Tự liên kết về hồ sơ mã vận đơn gốc',
     this.typeLabel = 'Trả hàng',
     this.zoomLabel = '1x',
     this.resolutionLabel = '720p',
@@ -638,7 +638,7 @@ class _CamHeader extends StatelessWidget {
         children: [
           _Tap(
             onTap: onBack,
-            tooltip: 'Quay lại',
+            tooltip: context.l10n.tooltipBack,
             child: const Icon(
               Icons.chevron_left,
               size: 20,
@@ -755,19 +755,24 @@ class _CamRail extends StatelessWidget {
           onZoomOut: onZoomOut,
         ),
         const SizedBox(height: 10),
-        _RailPill(label: resolutionLabel, onTap: onResolution),
-        const SizedBox(height: 10),
-        _RailIconButton(
-          icon: Icons.flip_camera_ios_outlined,
-          tooltip: 'Đổi camera',
-          onTap: onFlipCamera,
-        ),
-        const SizedBox(height: 10),
-        _RailIconButton(
-          icon: Icons.keyboard_outlined,
-          tooltip: 'Nhập mã vận đơn',
-          onTap: onManualEntry,
-        ),
+        if (onResolution != null) ...[
+          _RailPill(label: resolutionLabel, onTap: onResolution),
+          const SizedBox(height: 10),
+        ],
+        if (onFlipCamera != null) ...[
+          _RailIconButton(
+            icon: Icons.flip_camera_ios_outlined,
+            tooltip: context.l10n.tooltipSwitchCamera,
+            onTap: onFlipCamera,
+          ),
+          const SizedBox(height: 10),
+        ],
+        if (onManualEntry != null)
+          _RailIconButton(
+            icon: Icons.keyboard_outlined,
+            tooltip: context.l10n.tooltipEnterTracking,
+            onTap: onManualEntry,
+          ),
       ],
     );
   }
@@ -792,7 +797,7 @@ class _ZoomControl extends StatelessWidget {
         children: [
           _Tap(
             onTap: onZoomIn,
-            tooltip: 'Phóng to',
+            tooltip: context.l10n.tooltipZoomIn,
             child: const Icon(Icons.add, size: 14, color: BrandColors.ink),
           ),
           const SizedBox(height: 12),
@@ -800,7 +805,7 @@ class _ZoomControl extends StatelessWidget {
           const SizedBox(height: 12),
           _Tap(
             onTap: onZoomOut,
-            tooltip: 'Thu nhỏ',
+            tooltip: context.l10n.tooltipZoomOut,
             child: const Icon(Icons.remove, size: 14, color: BrandColors.ink),
           ),
         ],
@@ -817,7 +822,7 @@ class _RailPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'Độ phân giải',
+      message: context.l10n.captureResolution,
       child: EcTap(
         onTap: onTap,
         child: Container(
@@ -871,7 +876,7 @@ class _StopButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'Dừng quay',
+      message: context.l10n.stopRecording,
       child: EcTap(
         onTap: onTap,
         child: Container(
@@ -935,28 +940,30 @@ class _TypeChipRow extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        Tooltip(
-          message: 'Cài đặt loại video',
-          child: EcTap(
-            onTap: onSettings,
-            child: Container(
-              decoration: ecSquircleDecoration(
-                radius: 999,
-                color: BrandColors.bg,
-                side: const BorderSide(color: BrandColors.line),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                child: Icon(
-                  Icons.settings_outlined,
-                  size: 14,
-                  color: BrandColors.ink,
+        if (onSettings != null) ...[
+          const SizedBox(width: 8),
+          Tooltip(
+            message: context.l10n.videoTypeSettings,
+            child: EcTap(
+              onTap: onSettings,
+              child: Container(
+                decoration: ecSquircleDecoration(
+                  radius: 999,
+                  color: BrandColors.bg,
+                  side: const BorderSide(color: BrandColors.line),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                  child: Icon(
+                    Icons.settings_outlined,
+                    size: 14,
+                    color: BrandColors.ink,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -984,25 +991,25 @@ class _BottomNav extends StatelessWidget {
               // the pixel-perfect design (unlike a padded tap wrapper).
               child: EcTap(
                 onTap: onOrders,
-                child: const _NavItem(
+                child: _NavItem(
                   icon: Icons.inventory_2_outlined,
-                  label: 'Đơn hàng',
+                  label: context.l10n.navOrders,
                 ),
               ),
             ),
-            const Expanded(
+            Expanded(
               child: _NavItem(
                 icon: Icons.camera_alt_outlined,
-                label: 'Ghi hình',
+                label: context.l10n.navRecord,
                 active: true,
               ),
             ),
             Expanded(
               child: EcTap(
                 onTap: onAccount,
-                child: const _NavItem(
+                child: _NavItem(
                   icon: Icons.person_outline,
-                  label: 'Tài khoản',
+                  label: context.l10n.navAccount,
                 ),
               ),
             ),
@@ -1090,8 +1097,7 @@ class EcUploadItem {
     this.retryCount,
   });
 
-  /// Stable id used to route retry actions back to the queue; `null` for the
-  /// static sample data.
+  /// Stable id used to route retry actions back to the queue.
   final String? id;
 
   final String code;
@@ -1102,7 +1108,7 @@ class EcUploadItem {
   final int? retryCount;
 }
 
-/// Sample queue matching the design mock 1:1.
+/// Sample queue for previews/tests; production callers pass live queue data.
 const List<EcUploadItem> ecDefaultUploadItems = [
   EcUploadItem(
     code: 'SPXVN024567890',
@@ -1141,7 +1147,7 @@ const List<EcUploadItem> ecDefaultUploadItems = [
 /// The upload queue list — quota banner, status tabs and per-video status.
 class EcUploadQueueScreen extends StatelessWidget {
   const EcUploadQueueScreen({
-    this.items = ecDefaultUploadItems,
+    this.items = const [],
     this.selectedTabIndex = 0,
     this.onBack,
     this.onUpgrade,
@@ -1172,21 +1178,21 @@ class EcUploadQueueScreen extends StatelessWidget {
     _ => items,
   };
 
-  List<String> get _tabs {
+  List<String> _tabs(BuildContext context) {
     final uploading = items
         .where((i) => i.status == EcUploadStatus.uploading)
         .length;
     final errored = items.where((i) => i.status == EcUploadStatus.error).length;
     return [
-      'Tất cả · ${items.length}',
-      'Đang tải · $uploading',
-      'Lỗi · $errored',
+      context.l10n.queueFilterAll(items.length),
+      context.l10n.queueFilterUploading(uploading),
+      context.l10n.queueFilterErrored(errored),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    final tabs = _tabs;
+    final tabs = _tabs(context);
     final visible = _visibleItems;
     return CupertinoPageScaffold(
       backgroundColor: BrandColors.bg,
@@ -1207,7 +1213,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Hàng đợi upload',
+                    context.l10n.uploadQueueTitle,
                     style: _t(17, FontWeight.w600, BrandColors.ink),
                   ),
                 ],
@@ -1229,7 +1235,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              'Hết quota tháng này — video sẽ chờ quota',
+                              context.l10n.quotaExhaustedNote,
                               style: _t(12, FontWeight.w400, BrandColors.ink),
                             ),
                           ),
@@ -1237,7 +1243,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                           GestureDetector(
                             onTap: onUpgrade,
                             child: Text(
-                              'Nâng gói',
+                              context.l10n.upgradePlanShort,
                               style: _t(12, FontWeight.w600, BrandColors.ink),
                             ),
                           ),
@@ -1266,7 +1272,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                       child: visible.isEmpty
                           ? Center(
                               child: Text(
-                                'Chưa có video trong hàng đợi',
+                                context.l10n.queueEmpty,
                                 style: _t(13, FontWeight.w400, BrandColors.mut),
                               ),
                             )
@@ -1283,7 +1289,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     Center(
                       child: Text(
-                        'Upload khi có mạng sẽ được tự động thực hiện',
+                        context.l10n.queueAutoUploadNote,
                         style: _t(12, FontWeight.w400, BrandColors.mut),
                       ),
                     ),
@@ -1407,7 +1413,7 @@ class _UploadStatusView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            'Đang tải ${item.progressPercent}%',
+            context.l10n.uploadingProgress(item.progressPercent ?? 0),
             style: _t(11, FontWeight.w500, BrandColors.ink),
           ),
           const SizedBox(height: 4),
@@ -1432,7 +1438,7 @@ class _UploadStatusView extends StatelessWidget {
         ],
       ),
       EcUploadStatus.waiting => Text(
-        'Chờ upload',
+        context.l10n.waitingUpload,
         style: _t(11, FontWeight.w400, BrandColors.mut),
       ),
       EcUploadStatus.done => Row(
@@ -1440,7 +1446,7 @@ class _UploadStatusView extends StatelessWidget {
         children: [
           const Icon(Icons.check, size: 12, color: BrandColors.ink),
           const SizedBox(width: 4),
-          Text('Đã upload', style: _t(11, FontWeight.w400, BrandColors.ink)),
+          Text(context.l10n.uploaded, style: _t(11, FontWeight.w400, BrandColors.ink)),
         ],
       ),
       EcUploadStatus.error => Row(
@@ -1449,13 +1455,13 @@ class _UploadStatusView extends StatelessWidget {
           const Icon(Icons.replay, size: 12, color: BrandColors.ink),
           const SizedBox(width: 4),
           Text(
-            'Lỗi · Thử lại (${item.retryCount})',
+            context.l10n.errorRetryCount(item.retryCount ?? 0),
             style: _t(11, FontWeight.w500, BrandColors.ink),
           ),
         ],
       ),
       EcUploadStatus.quotaWait => Text(
-        'Chờ quota',
+        context.l10n.waitingQuota,
         style: _t(11, FontWeight.w400, BrandColors.mut),
       ),
     };
@@ -1531,12 +1537,12 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
                       const _SheetHandle(),
                       const SizedBox(height: 12),
                       Text(
-                        'Nhập tay mã vận đơn',
+                        context.l10n.manualTrackingTitle,
                         style: _t(16, FontWeight.w600, BrandColors.ink),
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Dùng khi bill mờ — không quá 10 giây',
+                        context.l10n.manualTrackingNote,
                         style: _t(12, FontWeight.w400, BrandColors.mut),
                       ),
                       const SizedBox(height: 12),
@@ -1567,14 +1573,14 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
                         children: [
                           Expanded(
                             child: _OutlineButton(
-                              label: 'Hủy',
+                              label: context.l10n.commonCancel,
                               onPressed: widget.onCancel,
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: _PrimaryButton(
-                              label: 'Bắt đầu quay',
+                              label: context.l10n.startRecording,
                               onPressed: () =>
                                   widget.onManualSubmit?.call(_controller.text),
                             ),
@@ -1639,13 +1645,12 @@ class EcNoMatchScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Mã hoàn không khớp',
+                        context.l10n.returnCodeMismatch,
                         style: _t(16, FontWeight.w700, BrandColors.ink),
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        '$returnCode không khớp đơn nào trong $shopName. '
-                        'Kiểm tra lại mã, nhập tay hoặc xác nhận tạo đơn mới.',
+                        context.l10n.returnCodeMismatchBody(returnCode, shopName),
                         style: _t(13, FontWeight.w400, BrandColors.mut),
                       ),
                       const SizedBox(height: 12),
@@ -1653,14 +1658,14 @@ class EcNoMatchScreen extends StatelessWidget {
                         children: [
                           Expanded(
                             child: _OutlineButton(
-                              label: 'Nhập tay mã',
+                              label: context.l10n.enterCodeManually,
                               onPressed: onEnterManually,
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: _PrimaryButton(
-                              label: 'Tạo đơn mới',
+                              label: context.l10n.createOrderConfirm,
                               onPressed: onCreateNew,
                             ),
                           ),
@@ -1696,8 +1701,7 @@ class EcVideoType {
   final bool locked;
 }
 
-/// The 5 default video types shown in the design mock (3 locked defaults +
-/// 2 shop-manageable ones).
+/// Built-in video types; production callers append live custom types by shop.
 const List<EcVideoType> ecDefaultVideoTypes = [
   EcVideoType(
     label: 'Đóng hàng',
@@ -1710,11 +1714,6 @@ const List<EcVideoType> ecDefaultVideoTypes = [
     locked: true,
   ),
   EcVideoType(label: 'Trả hàng', icon: Icons.replay, locked: true),
-  EcVideoType(label: 'Cân hàng', icon: Icons.monitor_weight_outlined),
-  EcVideoType(
-    label: 'Kiểm đếm sản phẩm',
-    icon: Icons.fact_check_outlined,
-  ),
 ];
 
 /// The "Loại video" bottom sheet used to pick the type for a recording
@@ -1776,13 +1775,12 @@ class EcTypeSheetScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Loại video',
+                              context.l10n.videoTypeLabel,
                               style: _t(16, FontWeight.w600, BrandColors.ink),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Chọn loại cho phiên quay — thêm/sửa/xóa trong '
-                              'Chi tiết shop',
+                              context.l10n.videoTypeSelectNote,
                               style: _t(11, FontWeight.w400, BrandColors.mut),
                             ),
                           ],
@@ -1910,7 +1908,7 @@ class _ManageRow extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Quản lý loại video — mở Chi tiết shop',
+                  context.l10n.manageVideoTypesNote,
                   overflow: TextOverflow.ellipsis,
                   style: _t(14, FontWeight.w500, BrandColors.ink),
                 ),

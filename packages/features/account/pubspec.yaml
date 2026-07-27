@@ -15,6 +15,7 @@ dependencies:
 
   app_ui: ^0.1.0
   ec_ui: ^0.1.0
+  localization: ^0.1.0
 
   # Declarative form-field validators (required/minLength/compose) used by the
   # profile + password forms; plugs into standard Form/FormField validators.

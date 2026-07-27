@@ -13,6 +13,13 @@ void main() {
       expect(recordingFrameAction('B', 'A'), RecordingFrameAction.cutover);
     });
 
+    test('ignores the same bill when case or whitespace differs', () {
+      expect(
+        recordingFrameAction(' spxvn12345 ', 'SPXVN 12345'),
+        RecordingFrameAction.ignore,
+      );
+    });
+
     test('ends the session on the printed end-QR', () {
       expect(
         recordingFrameAction(kEndSessionQr, 'A'),

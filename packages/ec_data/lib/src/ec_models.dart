@@ -6,6 +6,7 @@ library;
 
 int _int(Object? v) => (v as num?)?.toInt() ?? 0;
 int? _intN(Object? v) => (v as num?)?.toInt();
+double? _doubleN(Object? v) => (v as num?)?.toDouble();
 
 class AccountDto {
   const AccountDto({
@@ -78,6 +79,33 @@ class MemberDto {
   final String? email;
 }
 
+class ShopInviteDto {
+  const ShopInviteDto({
+    required this.id,
+    required this.shopId,
+    required this.contact,
+    required this.role,
+    required this.status,
+    required this.inviteToken,
+  });
+
+  factory ShopInviteDto.fromJson(Map<String, dynamic> j) => ShopInviteDto(
+    id: j['id'] as String,
+    shopId: j['shop_id'] as String,
+    contact: j['contact'] as String,
+    role: j['role'] as String,
+    status: j['status'] as String,
+    inviteToken: j['invite_token'] as String,
+  );
+
+  final String id;
+  final String shopId;
+  final String contact;
+  final String role;
+  final String status;
+  final String inviteToken;
+}
+
 class OrderDto {
   const OrderDto({
     required this.id,
@@ -103,6 +131,8 @@ class OrderSummaryDto {
     required this.createdAt,
     required this.evidenceCount,
     this.lastCapturedAt,
+    this.latestType,
+    this.errorCount = 0,
   });
 
   factory OrderSummaryDto.fromJson(Map<String, dynamic> j) => OrderSummaryDto(
@@ -111,6 +141,8 @@ class OrderSummaryDto {
     createdAt: _int(j['created_at']),
     evidenceCount: _int(j['evidence_count']),
     lastCapturedAt: _intN(j['last_captured_at']),
+    latestType: j['latest_type'] as String?,
+    errorCount: _int(j['error_count']),
   );
 
   final String id;
@@ -118,6 +150,8 @@ class OrderSummaryDto {
   final int createdAt;
   final int evidenceCount;
   final int? lastCapturedAt;
+  final String? latestType;
+  final int errorCount;
 }
 
 class EvidenceDto {
@@ -127,7 +161,10 @@ class EvidenceDto {
     required this.capturedAt,
     required this.uploadStatus,
     this.videoTypeId,
+    this.createdByUid,
+    this.device,
     this.r2Key,
+    this.url,
   });
 
   factory EvidenceDto.fromJson(Map<String, dynamic> j) => EvidenceDto(
@@ -136,7 +173,10 @@ class EvidenceDto {
     capturedAt: _int(j['captured_at']),
     uploadStatus: j['upload_status'] as String,
     videoTypeId: j['video_type_id'] as String?,
+    createdByUid: j['created_by_uid'] as String?,
+    device: j['device'] as String?,
     r2Key: j['r2_key'] as String?,
+    url: j['url'] as String?,
   );
 
   final String id;
@@ -144,7 +184,10 @@ class EvidenceDto {
   final int capturedAt;
   final String uploadStatus;
   final String? videoTypeId;
+  final String? createdByUid;
+  final String? device;
   final String? r2Key;
+  final String? url;
 }
 
 class OrderDetailDto {
@@ -163,23 +206,26 @@ class OrderDetailDto {
 
 class QuotaDto {
   const QuotaDto({
-    required this.used,
-    required this.cap,
-    required this.remaining,
-    required this.periodEnd,
+    required this.planCode,
+    required this.usedBytes,
+    required this.capBytes,
+    required this.remainingBytes,
+    this.retentionDays = 20,
   });
 
   factory QuotaDto.fromJson(Map<String, dynamic> j) => QuotaDto(
-    used: _int(j['used']),
-    cap: _int(j['cap']),
-    remaining: _int(j['remaining']),
-    periodEnd: _int(j['period_end']),
+    planCode: (j['plan_code'] as String?) ?? 'free',
+    usedBytes: _int(j['used_bytes']),
+    capBytes: _int(j['cap_bytes']),
+    remainingBytes: _int(j['remaining_bytes']),
+    retentionDays: _intN(j['retention_days']) ?? 20,
   );
 
-  final int used;
-  final int cap;
-  final int remaining;
-  final int periodEnd;
+  final String planCode;
+  final int usedBytes;
+  final int capBytes;
+  final int remainingBytes;
+  final int retentionDays;
 }
 
 class DossierDto {
@@ -187,17 +233,26 @@ class DossierDto {
     required this.shareToken,
     required this.revoked,
     required this.status,
+    this.tracking,
+    this.orderValue,
+    this.note,
   });
 
   factory DossierDto.fromJson(Map<String, dynamic> j) => DossierDto(
     shareToken: j['share_token'] as String,
     revoked: _int(j['revoked']) == 1,
     status: (j['status'] as String?) ?? 'draft',
+    tracking: j['tracking_raw'] as String?,
+    orderValue: _intN(j['order_value']),
+    note: j['note'] as String?,
   );
 
   final String shareToken;
   final bool revoked;
   final String status;
+  final String? tracking;
+  final int? orderValue;
+  final String? note;
 }
 
 class PresignDto {
@@ -218,6 +273,50 @@ class PresignDto {
   final String uploadUrl;
 }
 
+class MultipartUploadDto {
+  const MultipartUploadDto({
+    required this.evidenceId,
+    required this.key,
+    required this.uploadId,
+  });
+
+  factory MultipartUploadDto.fromJson(Map<String, dynamic> j) =>
+      MultipartUploadDto(
+        evidenceId: j['evidenceId'] as String,
+        key: j['key'] as String,
+        uploadId: j['uploadId'] as String,
+      );
+
+  final String evidenceId;
+  final String key;
+  final String uploadId;
+}
+
+class MultipartPartUrlDto {
+  const MultipartPartUrlDto({
+    required this.partNumber,
+    required this.uploadUrl,
+  });
+
+  factory MultipartPartUrlDto.fromJson(Map<String, dynamic> j) =>
+      MultipartPartUrlDto(
+        partNumber: _int(j['partNumber']),
+        uploadUrl: j['uploadUrl'] as String,
+      );
+
+  final int partNumber;
+  final String uploadUrl;
+}
+
+class UploadedPartDto {
+  const UploadedPartDto({required this.partNumber, required this.etag});
+
+  Map<String, dynamic> toJson() => {'partNumber': partNumber, 'etag': etag};
+
+  final int partNumber;
+  final String etag;
+}
+
 class VideoTypeDto {
   const VideoTypeDto({
     required this.id,
@@ -234,4 +333,32 @@ class VideoTypeDto {
   final String id;
   final String name;
   final bool isDefault;
+}
+
+class DashboardDto {
+  const DashboardDto({
+    required this.counts,
+    required this.won,
+    required this.lost,
+    required this.savedAmount,
+    this.winRate,
+  });
+
+  factory DashboardDto.fromJson(Map<String, dynamic> j) => DashboardDto(
+    counts: Map<String, int>.from(
+      (j['counts'] as Map<String, dynamic>).map(
+        (key, value) => MapEntry(key, _int(value)),
+      ),
+    ),
+    won: _int(j['won']),
+    lost: _int(j['lost']),
+    winRate: _doubleN(j['win_rate']),
+    savedAmount: _int(j['saved_amount']),
+  );
+
+  final Map<String, int> counts;
+  final int won;
+  final int lost;
+  final double? winRate;
+  final int savedAmount;
 }

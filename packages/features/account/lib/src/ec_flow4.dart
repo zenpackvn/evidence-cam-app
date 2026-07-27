@@ -14,6 +14,7 @@ import 'package:flutter/cupertino.dart'
     show CupertinoPageScaffold, CupertinoTextField;
 import 'package:flutter/material.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:localization/localization.dart';
 
 // Shared text style (Inter is inherited from AppTheme's textTheme).
 TextStyle _t(double size, FontWeight weight, Color color) =>
@@ -30,6 +31,7 @@ class EcAccountTabScreen extends StatelessWidget {
     this.planLabel = 'Pro 500',
     this.languageLabel = 'Tiếng Việt',
     this.loginMethodsLabel = '3 liên kết',
+    this.passwordActionLabel = 'Đổi mật khẩu',
     this.onBack,
     this.onProfileTap,
     this.onQuotaTap,
@@ -50,6 +52,7 @@ class EcAccountTabScreen extends StatelessWidget {
   final String planLabel;
   final String languageLabel;
   final String loginMethodsLabel;
+  final String passwordActionLabel;
   final VoidCallback? onBack;
   final VoidCallback? onProfileTap;
   final VoidCallback? onQuotaTap;
@@ -84,46 +87,45 @@ class EcAccountTabScreen extends StatelessWidget {
                       email: userEmail,
                       onTap: onProfileTap,
                     ),
-                    const _SectionHeader('GÓI & ỨNG DỤNG'),
+                    _SectionHeader(context.l10n.accountSectionApp),
                     _SettingsRow(
                       icon: Icons.credit_card_outlined,
-                      label: 'Gói cước & Quota',
+                      label: context.l10n.accountPlanQuota,
                       value: planLabel,
                       onTap: onQuotaTap,
                     ),
                     _SettingsRow(
                       icon: Icons.language,
-                      label: 'Ngôn ngữ',
+                      label: context.l10n.accountLanguage,
                       value: languageLabel,
                       onTap: onLanguageTap,
                     ),
-                    const _SectionHeader('BẢO MẬT & ĐĂNG NHẬP'),
+                    _SectionHeader(context.l10n.accountSectionSecurity),
                     _SettingsRow(
                       icon: Icons.lock_outline,
-                      label: 'Đổi mật khẩu',
+                      label: passwordActionLabel,
                       onTap: onChangePasswordTap,
                     ),
                     _SettingsRow(
                       icon: Icons.vpn_key_outlined,
-                      label: 'Phương thức đăng nhập',
+                      label: context.l10n.accountLoginMethods,
                       value: loginMethodsLabel,
                       onTap: onLoginMethodsTap,
                     ),
                     _SettingsRow(
                       icon: Icons.logout,
-                      label: 'Đăng xuất',
+                      label: context.l10n.accountSignOut,
                       onTap: onLogout,
                     ),
                     _SettingsRow(
                       icon: Icons.delete_outline,
-                      label: 'Xóa tài khoản',
+                      label: context.l10n.accountDeleteAccount,
                       onTap: onDeleteAccount,
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       child: Text(
-                        'Quản lý shop/thành viên: bấm back trên header '
-                        'để về lớp Shop',
+                        context.l10n.accountShopMgmtHint,
                         style: _t(11, FontWeight.w400, BrandColors.mut),
                       ),
                     ),
@@ -174,7 +176,7 @@ class EcEditProfileScreen extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              _SimpleHeader(title: 'Thông tin tài khoản', onBack: onBack),
+              _SimpleHeader(title: context.l10n.accountInfoTitle, onBack: onBack),
               Expanded(
                 child: CustomScrollView(
                   slivers: [
@@ -193,17 +195,17 @@ class EcEditProfileScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 14),
                             _Field(
-                              label: 'Họ tên',
-                              hint: 'Nhập họ tên',
+                              label: context.l10n.accountFullName,
+                              hint: context.l10n.accountFullNameHint,
                               controller: nameController,
                               validator: FormBuilderValidators.required(
-                                errorText: 'Vui lòng nhập họ tên',
+                                errorText: context.l10n.accountFullNameRequired,
                               ),
                             ),
                             const SizedBox(height: 14),
                             _Field(
-                              label: 'Số điện thoại',
-                              hint: 'Nhập số điện thoại',
+                              label: context.l10n.phoneLabel,
+                              hint: context.l10n.phoneHint,
                               controller: phoneController,
                               keyboardType: TextInputType.phone,
                               // Phone is optional here, but must be well-formed
@@ -212,7 +214,7 @@ class EcEditProfileScreen extends StatelessWidget {
                                   (value == null || value.trim().isEmpty)
                                   ? null
                                   : FormBuilderValidators.phoneNumber(
-                                      errorText: 'Số điện thoại không hợp lệ',
+                                      errorText: context.l10n.phoneInvalid,
                                     )(value),
                             ),
                             const SizedBox(height: 14),
@@ -220,7 +222,7 @@ class EcEditProfileScreen extends StatelessWidget {
                             const Spacer(),
                             const SizedBox(height: 14),
                             _ValidatedPrimaryButton(
-                              label: 'Lưu thay đổi',
+                              label: context.l10n.accountSaveChanges,
                               onValid: onSave,
                             ),
                           ],
@@ -263,33 +265,32 @@ class EcPhoneSetupScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: 24),
                   Text(
-                    'Thêm số điện thoại',
+                    context.l10n.phoneAddTitle,
                     style: _t(22, FontWeight.w700, BrandColors.ink),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Tài khoản đăng nhập bằng Apple/Google chưa có số điện thoại. '
-                    'Vui lòng nhập số điện thoại để tiếp tục.',
+                    context.l10n.phoneAddBody,
                     style: _t(14, FontWeight.w400, BrandColors.mut),
                   ),
                   const SizedBox(height: 24),
                   _Field(
-                    label: 'Số điện thoại',
-                    hint: 'Nhập số điện thoại',
+                    label: context.l10n.phoneLabel,
+                    hint: context.l10n.phoneHint,
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
                     validator: FormBuilderValidators.compose([
                       FormBuilderValidators.required(
-                        errorText: 'Vui lòng nhập số điện thoại',
+                        errorText: context.l10n.phoneRequired,
                       ),
                       FormBuilderValidators.phoneNumber(
-                        errorText: 'Số điện thoại không hợp lệ',
+                        errorText: context.l10n.phoneInvalid,
                       ),
                     ]),
                   ),
                   const Spacer(),
                   _ValidatedPrimaryButton(
-                    label: 'Tiếp tục',
+                    label: context.l10n.commonContinue,
                     onValid: onContinue,
                   ),
                 ],
@@ -331,7 +332,7 @@ class EcLanguageScreen extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            _SimpleHeader(title: 'Ngôn ngữ', onBack: onBack),
+            _SimpleHeader(title: context.l10n.accountLanguage, onBack: onBack),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -340,21 +341,21 @@ class EcLanguageScreen extends StatelessWidget {
                   children: [
                     _LanguageOption(
                       title: 'Tiếng Việt',
-                      subtitle: 'Vietnamese',
+                      subtitle: context.l10n.languageNameVietnamese,
                       selected: selected == EcAppLanguage.vi,
                       onTap: () => onSelect?.call(EcAppLanguage.vi),
                     ),
                     const SizedBox(height: 10),
                     _LanguageOption(
                       title: 'English',
-                      subtitle: 'Tiếng Anh',
+                      subtitle: context.l10n.languageNameEnglish,
                       selected: selected == EcAppLanguage.en,
                       onTap: () => onSelect?.call(EcAppLanguage.en),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Text(
-                        'Thay đổi áp dụng ngay trên toàn bộ app',
+                        context.l10n.languageChangeAppliesNote,
                         style: _t(11, FontWeight.w400, BrandColors.mut),
                       ),
                     ),
@@ -396,7 +397,7 @@ class EcLoginMethodsScreen extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            _SimpleHeader(title: 'Phương thức đăng nhập', onBack: onBack),
+            _SimpleHeader(title: context.l10n.accountLoginMethods, onBack: onBack),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -414,7 +415,7 @@ class EcLoginMethodsScreen extends StatelessWidget {
                     _LoginMethodRow(
                       icon: Icons.g_mobiledata,
                       name: 'Google',
-                      detail: googleLinked ? 'Đã liên kết' : 'Chưa liên kết',
+                      detail: googleLinked ? context.l10n.linkLinked : context.l10n.linkNotLinked,
                       linked: googleLinked,
                       onToggle: onToggleGoogle,
                     ),
@@ -422,15 +423,14 @@ class EcLoginMethodsScreen extends StatelessWidget {
                     _LoginMethodRow(
                       icon: Icons.apple,
                       name: 'Apple',
-                      detail: appleLinked ? 'Đã liên kết' : 'Chưa liên kết',
+                      detail: appleLinked ? context.l10n.linkLinked : context.l10n.linkNotLinked,
                       linked: appleLinked,
                       onToggle: onToggleApple,
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
-                        'Email là định danh tài khoản — không thể gỡ. Liên kết '
-                        'Google/Apple để đăng nhập nhanh cùng một tài khoản.',
+                        context.l10n.loginMethodsEmailNote,
                         style: _t(12, FontWeight.w400, BrandColors.mut),
                       ),
                     ),
@@ -485,12 +485,12 @@ class _LoginMethodRow extends StatelessWidget {
             ),
           ),
           if (isIdentity)
-            Text('Định danh', style: _t(13, FontWeight.w500, BrandColors.mut))
+            Text(context.l10n.loginMethodIdentity, style: _t(13, FontWeight.w500, BrandColors.mut))
           else
             EcTap(
               onTap: onToggle,
               child: Text(
-                linked ? 'Hủy liên kết' : 'Liên kết',
+                linked ? context.l10n.linkUnlink : context.l10n.linkAction,
                 style: _t(
                   14,
                   FontWeight.w600,
@@ -504,37 +504,56 @@ class _LoginMethodRow extends StatelessWidget {
   }
 }
 
-/// Quota — current plan, monthly video quota w/ progress bar, retention,
+/// Formats a byte count as a compact GB/MB/KB label (e.g. `60 GB`, `500 MB`).
+String ecHumanBytes(int b) {
+  const gb = 1024 * 1024 * 1024;
+  const mb = 1024 * 1024;
+  if (b >= gb) {
+    return '${(b / gb).toStringAsFixed(b % gb == 0 ? 0 : 1)} GB';
+  }
+  if (b >= mb) return '${(b / mb).round()} MB';
+  return '${(b / 1024).round()} KB';
+}
+
+/// Quota — current plan, storage usage (GB) w/ progress bar, retention,
 /// and an upgrade CTA.
 class EcQuotaScreen extends StatelessWidget {
   const EcQuotaScreen({
-    this.planLabel = 'Pro 500 (P1)',
-    this.usedVideos = 263,
-    this.totalVideos = 500,
-    this.retentionUsedDays = 45,
-    this.retentionTotalDays = 90,
+    this.planLabel = '500 MB',
+    this.usedBytes = 0,
+    this.remainingBytes,
+    this.capBytes = 500 * 1024 * 1024,
+    this.retentionTotalDays = 20,
     this.onBack,
     this.onUpgrade,
     super.key,
   });
 
   final String planLabel;
-  final int usedVideos;
-  final int totalVideos;
-  final int retentionUsedDays;
+  final int usedBytes;
+  final int? remainingBytes;
+  final int capBytes;
   final int retentionTotalDays;
   final VoidCallback? onBack;
   final VoidCallback? onUpgrade;
 
   int get _usedPercent {
-    if (totalVideos <= 0) return 0;
-    final pct = (usedVideos / totalVideos * 100).floor();
+    if (capBytes <= 0) return 0;
+    final pct = (usedBytes / capBytes * 100).floor();
     if (pct < 0) return 0;
     if (pct > 100) return 100;
     return pct;
   }
 
   double get _usedFraction => _usedPercent / 100;
+  int get _remainingBytes {
+    final explicit = remainingBytes;
+    if (explicit != null) return explicit;
+    final calculated = capBytes - usedBytes;
+    if (calculated < 0) return 0;
+    if (calculated > capBytes) return capBytes;
+    return calculated;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -543,7 +562,7 @@ class EcQuotaScreen extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            _SimpleHeader(title: 'Báo cáo & Quota', onBack: onBack),
+            _SimpleHeader(title: context.l10n.quotaScreenTitle, onBack: onBack),
             Expanded(
               child: CustomScrollView(
                 slivers: [
@@ -557,7 +576,7 @@ class EcQuotaScreen extends StatelessWidget {
                           _InfoCard(
                             children: [
                               Text(
-                                'Gói hiện tại',
+                                context.l10n.quotaCurrentPlan,
                                 style: _t(12, FontWeight.w400, BrandColors.mut),
                               ),
                               const SizedBox(height: 4),
@@ -571,12 +590,12 @@ class EcQuotaScreen extends StatelessWidget {
                           _InfoCard(
                             children: [
                               Text(
-                                'Còn lại trong tháng',
+                                context.l10n.quotaRemainingThisMonth,
                                 style: _t(12, FontWeight.w400, BrandColors.mut),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '$usedVideos / $totalVideos video',
+                                '${ecHumanBytes(_remainingBytes)} / ${ecHumanBytes(capBytes)}',
                                 style: _t(20, FontWeight.w700, BrandColors.ink),
                               ),
                               const SizedBox(height: 8),
@@ -608,7 +627,7 @@ class EcQuotaScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Đã dùng $_usedPercent%',
+                                context.l10n.quotaUsedPercent(_usedPercent),
                                 style: _t(11, FontWeight.w400, BrandColors.mut),
                               ),
                             ],
@@ -618,13 +637,12 @@ class EcQuotaScreen extends StatelessWidget {
                             row: true,
                             children: [
                               Text(
-                                'Lưu trữ',
+                                context.l10n.quotaStorage,
                                 style: _t(14, FontWeight.w400, BrandColors.ink),
                               ),
                               const Spacer(),
                               Text(
-                                '$retentionUsedDays / $retentionTotalDays '
-                                'ngày',
+                                context.l10n.quotaRetentionDays(retentionTotalDays),
                                 style: _t(14, FontWeight.w600, BrandColors.ink),
                               ),
                             ],
@@ -632,7 +650,7 @@ class EcQuotaScreen extends StatelessWidget {
                           const Spacer(),
                           const SizedBox(height: 14),
                           _EcPrimaryButton(
-                            label: 'Nâng cấp gói',
+                            label: context.l10n.quotaUpgradePlan,
                             onPressed: onUpgrade,
                           ),
                         ],
@@ -744,18 +762,14 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
       onDismiss: _handleCancel,
       children: [
         Text(
-          isFirstStep ? 'Xóa tài khoản?' : 'Xác nhận xóa vĩnh viễn?',
+          isFirstStep ? context.l10n.deleteAccountTitleStep1 : context.l10n.deleteAccountTitleStep2,
           style: _t(16, FontWeight.w700, BrandColors.ink),
         ),
         const SizedBox(height: 12),
         Text(
           isFirstStep
-              ? 'Toàn bộ video, đơn hàng và hồ sơ của bạn sẽ bị '
-                    'xóa vĩnh viễn. Hành động này không thể hoàn '
-                    'tác.'
-              : 'Đây là bước xác nhận cuối cùng. Sau khi xóa, '
-                    'bạn sẽ được đăng xuất khỏi ứng dụng ngay '
-                    'lập tức.',
+              ? context.l10n.deleteAccountBodyStep1
+              : context.l10n.deleteAccountBodyStep2,
           style: _t(13, FontWeight.w400, BrandColors.mut),
         ),
         if (isFirstStep && widget.pendingSharedProfilesCount > 0) ...[
@@ -777,9 +791,7 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Bạn còn ${widget.pendingSharedProfilesCount} '
-                    'hồ sơ "đã gửi sàn" — link chia sẻ sẽ ngừng '
-                    'hoạt động',
+                    context.l10n.deletePendingProfilesWarning(widget.pendingSharedProfilesCount),
                     style: _t(12, FontWeight.w400, BrandColors.ink),
                   ),
                 ),
@@ -792,14 +804,14 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
           children: [
             Expanded(
               child: _EcSecondaryButton(
-                label: 'Hủy',
+                label: context.l10n.commonCancel,
                 onPressed: _handleCancel,
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: _EcPrimaryButton(
-                label: 'Xóa vĩnh viễn',
+                label: context.l10n.deleteConfirmPermanent,
                 fontSize: 14,
                 onPressed: _handlePrimary,
               ),
@@ -810,9 +822,8 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
         Center(
           child: Text(
             isFirstStep
-                ? 'Bước 1/2 — sẽ yêu cầu xác nhận lại · xong đăng '
-                      'xuất ngay'
-                : 'Bước 2/2 — hành động này không thể hoàn tác',
+                ? context.l10n.deleteStep1Hint
+                : context.l10n.deleteStep2Hint,
             textAlign: TextAlign.center,
             style: _t(11, FontWeight.w400, BrandColors.mut),
           ),
@@ -850,57 +861,57 @@ class EcChangePasswordScreen extends StatelessWidget {
         onDismiss: onCancel,
         children: [
           Text(
-            hasExistingPassword ? 'Đổi mật khẩu' : 'Tạo mật khẩu',
+            hasExistingPassword ? context.l10n.accountChangePassword : context.l10n.accountCreatePassword,
             style: _t(16, FontWeight.w700, BrandColors.ink),
           ),
           const SizedBox(height: 12),
           if (hasExistingPassword) ...[
             _PasswordField(
-              label: 'Mật khẩu hiện tại',
+              label: context.l10n.passwordCurrentLabel,
               hint: '••••••••',
               controller: currentPasswordController,
               validator: FormBuilderValidators.required(
-                errorText: 'Vui lòng nhập mật khẩu hiện tại',
+                errorText: context.l10n.passwordCurrentRequired,
               ),
             ),
             const SizedBox(height: 12),
           ],
           _PasswordField(
-            label: 'Mật khẩu mới',
-            hint: 'Tối thiểu 8 ký tự',
+            label: context.l10n.passwordNewLabel,
+            hint: context.l10n.passwordMinHint,
             controller: newPasswordController,
             validator: FormBuilderValidators.compose([
               FormBuilderValidators.required(
-                errorText: 'Vui lòng nhập mật khẩu mới',
+                errorText: context.l10n.passwordNewRequired,
               ),
               FormBuilderValidators.minLength(
                 8,
-                errorText: 'Mật khẩu tối thiểu 8 ký tự',
+                errorText: context.l10n.passwordMin8Error,
               ),
             ]),
           ),
           const SizedBox(height: 12),
           _PasswordField(
-            label: 'Nhập lại mật khẩu mới',
+            label: context.l10n.passwordConfirmLabel,
             hint: '••••••••',
             controller: confirmPasswordController,
             validator: (value) => value == newPasswordController?.text
                 ? null
-                : 'Mật khẩu nhập lại không khớp',
+                : context.l10n.passwordMismatch,
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: _EcSecondaryButton(
-                  label: 'Hủy',
+                  label: context.l10n.commonCancel,
                   onPressed: onCancel,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _ValidatedPrimaryButton(
-                  label: hasExistingPassword ? 'Lưu mật khẩu' : 'Tạo mật khẩu',
+                  label: hasExistingPassword ? context.l10n.passwordSave : context.l10n.accountCreatePassword,
                   onValid: onSave,
                 ),
               ),
@@ -910,7 +921,7 @@ class EcChangePasswordScreen extends StatelessWidget {
             const SizedBox(height: 12),
             Center(
               child: Text(
-                '(Đổi xong sẽ đăng xuất khỏi các thiết bị khác)',
+                context.l10n.passwordChangeLogoutNote,
                 textAlign: TextAlign.center,
                 style: _t(11, FontWeight.w400, BrandColors.mut),
               ),
@@ -1244,7 +1255,7 @@ class _BottomNav extends StatelessWidget {
           Expanded(
             child: _NavItem(
               icon: Icons.inventory_2_outlined,
-              label: 'Đơn hàng',
+              label: context.l10n.navOrders,
               active: active == _NavTab.orders,
               onTap: onOrders,
             ),
@@ -1252,7 +1263,7 @@ class _BottomNav extends StatelessWidget {
           Expanded(
             child: _NavItem(
               icon: Icons.camera_alt_outlined,
-              label: 'Ghi hình',
+              label: context.l10n.navRecord,
               active: active == _NavTab.capture,
               onTap: onCapture,
             ),
@@ -1260,7 +1271,7 @@ class _BottomNav extends StatelessWidget {
           Expanded(
             child: _NavItem(
               icon: Icons.person_outline,
-              label: 'Tài khoản',
+              label: context.l10n.navAccount,
               active: active == _NavTab.account,
             ),
           ),
@@ -1312,6 +1323,8 @@ class _AvatarPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final path = avatarPath;
+    final file = path == null ? null : File(path);
+    final hasLocalFile = file?.existsSync() ?? false;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1330,13 +1343,13 @@ class _AvatarPicker extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: BrandColors.line),
                 ),
-                child: path == null
+                child: path == null || !hasLocalFile
                     ? const Icon(
                         Icons.person_outline,
                         size: 40,
                         color: BrandColors.mut,
                       )
-                    : Image.file(File(path), fit: BoxFit.cover),
+                    : Image.file(file!, fit: BoxFit.cover),
               ),
               Positioned(
                 right: 0,
@@ -1366,7 +1379,7 @@ class _AvatarPicker extends StatelessWidget {
         EcTap(
           onTap: onChangeAvatar,
           child: Text(
-            'Đổi ảnh đại diện',
+            context.l10n.changeAvatar,
             style: _t(12, FontWeight.w500, BrandColors.ink),
           ),
         ),

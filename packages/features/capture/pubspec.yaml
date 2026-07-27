@@ -20,6 +20,7 @@ dependencies:
   app_platform: ^0.1.0
   app_ui: ^0.1.0
   ec_ui: ^0.1.0
+  localization: ^0.1.0
   database: ^0.1.0
 
   # Third-party.

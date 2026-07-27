@@ -30,7 +30,7 @@ void main() {
       expect(find.text('3 liên kết'), findsOneWidget);
       expect(find.text('Đăng xuất'), findsOneWidget);
       expect(find.text('Xóa tài khoản'), findsOneWidget);
-      expect(find.text('Đơn hàng'), findsOneWidget);
+      expect(find.text('Vận đơn'), findsOneWidget);
       expect(find.text('Ghi hình'), findsOneWidget);
       expect(find.text('Tài khoản'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -106,10 +106,10 @@ void main() {
       expect(find.text('Báo cáo & Quota'), findsOneWidget);
       expect(find.text('Gói hiện tại'), findsOneWidget);
       expect(find.text('Pro 500 (P1)'), findsOneWidget);
-      expect(find.text('263 / 500 video'), findsOneWidget);
+      expect(find.text('237 / 500 video'), findsOneWidget);
       expect(find.text('Đã dùng 52%'), findsOneWidget);
       expect(find.text('Lưu trữ'), findsOneWidget);
-      expect(find.text('45 / 90 ngày'), findsOneWidget);
+      expect(find.text('90 ngày'), findsOneWidget);
       expect(find.text('Nâng cấp gói'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

@@ -28,6 +28,7 @@ class EcRecordRoute extends StatefulWidget {
   const EcRecordRoute({
     this.onBack,
     this.onRequestCode,
+    this.onConfirmManualCode,
     this.onRequestType,
     this.onNavOrders,
     this.onNavAccount,
@@ -35,6 +36,7 @@ class EcRecordRoute extends StatefulWidget {
     this.onSaved,
     this.initialType = 'Đóng hàng',
     this.queueCount = 0,
+    this.shopName = 'Shop',
     this.initialResolution = '720p',
     this.camera,
     super.key,
@@ -47,7 +49,11 @@ class EcRecordRoute extends StatefulWidget {
   /// recording is gated on a non-empty result.
   final Future<String?> Function()? onRequestCode;
 
-  /// Called when the "Đơn hàng" tab is tapped.
+  /// Confirms that a manually typed code may start recording. The app shell
+  /// uses this to find an existing shipment or ask before creating a new one.
+  final Future<bool> Function(String code)? onConfirmManualCode;
+
+  /// Called when the "Vận đơn" tab is tapped.
   final VoidCallback? onNavOrders;
 
   /// Called when the "Tài khoản" tab is tapped.
@@ -70,6 +76,9 @@ class EcRecordRoute extends StatefulWidget {
   /// Pending upload count shown in the header (☁ n) — fed live from the queue.
   final int queueCount;
 
+  /// Shop currently clocked into at the app layer.
+  final String shopName;
+
   /// Recording resolution from the shop's setting (`240p` / `480p` / `720p`);
   /// the rail pill cycles it while idle.
   final String initialResolution;
@@ -85,6 +94,8 @@ class EcRecordRoute extends StatefulWidget {
 
 class _EcRecordRouteState extends State<EcRecordRoute>
     with WidgetsBindingObserver {
+  bool _leaving = false;
+
   late final RecordingSessionBloc _bloc = RecordingSessionBloc(
     camera: widget.camera ?? CameraService(),
     scanner: BillScanner(),
@@ -123,6 +134,8 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   Future<void> _manualEntry() async {
     final code = (await widget.onRequestCode?.call())?.trim();
     if (code != null && code.isNotEmpty) {
+      final allowed = await widget.onConfirmManualCode?.call(code) ?? true;
+      if (!allowed) return;
       _bloc.add(RecordingManualCodeSubmitted(code));
     }
   }
@@ -130,6 +143,26 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   Future<void> _pickType() async {
     final type = await widget.onRequestType?.call();
     if (type != null && type.isNotEmpty) _bloc.add(RecordingTypeChanged(type));
+  }
+
+  Future<void> _leaveAfterFinalizing(VoidCallback? action) async {
+    if (_leaving) return;
+    _leaving = true;
+    try {
+      if (_bloc.state.isRecording) {
+        final stopped = _bloc.stream.firstWhere((s) => !s.isRecording);
+        _bloc.add(const RecordingStopRequested());
+        await stopped.timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            return _bloc.state;
+          },
+        );
+      }
+      action?.call();
+    } finally {
+      _leaving = false;
+    }
   }
 
   Widget _buildPreview(RecordingSessionState state) {
@@ -167,6 +200,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         if (state.isRecording) {
           if (state.elapsed >= _warnAt) {
             return EcNearLimitScreen(
+              shopName: widget.shopName,
               queueCount: widget.queueCount,
               code: state.code,
               duration: _formatElapsed(state.elapsed),
@@ -174,17 +208,20 @@ class _EcRecordRouteState extends State<EcRecordRoute>
               zoomLabel: zoomLabel,
               resolutionLabel: state.resolutionLabel,
               preview: preview,
-              onBack: widget.onBack,
-              onPickType: _pickType,
-              onSettings: widget.onSettings,
+              onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
+              onPickType: null,
+              onSettings: null,
               onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
               onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
-              onNavOrders: widget.onNavOrders,
-              onNavAccount: widget.onNavAccount,
+              onNavOrders: () =>
+                  unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
+              onNavAccount: () =>
+                  unawaited(_leaveAfterFinalizing(widget.onNavAccount)),
               onStop: () => _bloc.add(const RecordingStopRequested()),
             );
           }
           return EcRecording2Screen(
+            shopName: widget.shopName,
             queueCount: widget.queueCount,
             code: state.code,
             duration: _formatElapsed(state.elapsed),
@@ -192,18 +229,21 @@ class _EcRecordRouteState extends State<EcRecordRoute>
             zoomLabel: zoomLabel,
             resolutionLabel: state.resolutionLabel,
             preview: preview,
-            onBack: widget.onBack,
-            onPickType: _pickType,
-            onSettings: widget.onSettings,
+            onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
+            onPickType: null,
+            onSettings: null,
             onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
             onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
-            onNavOrders: widget.onNavOrders,
-            onNavAccount: widget.onNavAccount,
+            onNavOrders: () =>
+                unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
+            onNavAccount: () =>
+                unawaited(_leaveAfterFinalizing(widget.onNavAccount)),
             onStop: () => _bloc.add(const RecordingStopRequested()),
           );
         }
 
         return EcWaitBill2Screen(
+          shopName: widget.shopName,
           queueCount: widget.queueCount,
           typeLabel: state.typeLabel,
           zoomLabel: zoomLabel,
@@ -211,11 +251,13 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           preview: preview,
           onBack: widget.onBack,
           onPickType: _pickType,
-          onSettings: widget.onSettings,
+          onSettings: _pickType,
           onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
           onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
           onResolution: () => _bloc.add(const RecordingResolutionCycled()),
-          onFlipCamera: () => _bloc.add(const RecordingCameraFlipped()),
+          onFlipCamera: state.hasMultipleCameras
+              ? () => _bloc.add(const RecordingCameraFlipped())
+              : null,
           onManualEntry: _manualEntry,
           onNavOrders: widget.onNavOrders,
           onNavAccount: widget.onNavAccount,

@@ -6,56 +6,78 @@ void main() {
     late FakeEcAuth auth;
     setUp(() => auth = FakeEcAuth());
 
-    test('updatePassword rejects wrong current then rotates the password',
-        () async {
-      await auth.signInWithEmail('a@b.com', 'old12345');
+    test(
+      'updatePassword rejects wrong current then rotates the password',
+      () async {
+        await auth.signInWithEmail('a@b.com', 'old12345');
 
-      await expectLater(
-        auth.updatePassword(currentPassword: 'nope', newPassword: 'new12345'),
-        throwsA(isA<EcAuthException>()),
-      );
+        await expectLater(
+          auth.updatePassword(currentPassword: 'nope', newPassword: 'new12345'),
+          throwsA(isA<EcAuthException>()),
+        );
 
-      await auth.updatePassword(
-        currentPassword: 'old12345',
-        newPassword: 'new12345',
-      );
+        await auth.updatePassword(
+          currentPassword: 'old12345',
+          newPassword: 'new12345',
+        );
 
-      // Old password no longer valid after rotation.
-      await expectLater(
-        auth.updatePassword(currentPassword: 'old12345', newPassword: 'x'),
-        throwsA(isA<EcAuthException>()),
-      );
-    });
+        // Old password no longer valid after rotation.
+        await expectLater(
+          auth.updatePassword(currentPassword: 'old12345', newPassword: 'x'),
+          throwsA(isA<EcAuthException>()),
+        );
+      },
+    );
 
-    test('link/unlink toggles providers and blocks removing the last',
-        () async {
-      await auth.signInWithGoogle(); // providers: [google.com]
-      expect(auth.currentUser!.hasProvider(EcAuthProvider.google), isTrue);
+    test(
+      'createPassword links password credential for social accounts',
+      () async {
+        await auth.signInWithGoogle();
+        expect(auth.currentUser!.hasPassword, isFalse);
 
-      await auth.linkProvider(EcAuthProvider.apple);
-      expect(auth.currentUser!.hasProvider(EcAuthProvider.apple), isTrue);
+        await auth.createPassword(newPassword: 'new12345');
 
-      await auth.unlinkProvider(EcAuthProvider.google);
-      expect(auth.currentUser!.hasProvider(EcAuthProvider.google), isFalse);
+        expect(auth.currentUser!.hasPassword, isTrue);
+        await auth.updatePassword(
+          currentPassword: 'new12345',
+          newPassword: 'next12345',
+        );
+      },
+    );
 
-      // Only apple remains — cannot unlink the last credential.
-      await expectLater(
-        auth.unlinkProvider(EcAuthProvider.apple),
-        throwsA(isA<EcAuthException>()),
-      );
-    });
+    test(
+      'link/unlink toggles providers and blocks removing the last',
+      () async {
+        await auth.signInWithGoogle(); // providers: [google.com]
+        expect(auth.currentUser!.hasProvider(EcAuthProvider.google), isTrue);
 
-    test('updateProfile updates name/phone; deleteAccount clears the user',
-        () async {
-      await auth.signInWithEmail('a@b.com', 'pw123456');
+        await auth.linkProvider(EcAuthProvider.apple);
+        expect(auth.currentUser!.hasProvider(EcAuthProvider.apple), isTrue);
 
-      await auth.updateProfile(name: 'Bảo', phone: '0900000000');
-      expect(auth.currentUser!.displayName, 'Bảo');
-      expect(auth.currentUser!.phone, '0900000000');
+        await auth.unlinkProvider(EcAuthProvider.google);
+        expect(auth.currentUser!.hasProvider(EcAuthProvider.google), isFalse);
 
-      await auth.deleteAccount();
-      expect(auth.currentUser, isNull);
-    });
+        // Only apple remains — cannot unlink the last credential.
+        await expectLater(
+          auth.unlinkProvider(EcAuthProvider.apple),
+          throwsA(isA<EcAuthException>()),
+        );
+      },
+    );
+
+    test(
+      'updateProfile updates name/phone; deleteAccount clears the user',
+      () async {
+        await auth.signInWithEmail('a@b.com', 'pw123456');
+
+        await auth.updateProfile(name: 'Bảo', phone: '0900000000');
+        expect(auth.currentUser!.displayName, 'Bảo');
+        expect(auth.currentUser!.phone, '0900000000');
+
+        await auth.deleteAccount();
+        expect(auth.currentUser, isNull);
+      },
+    );
 
     test('user listenable notifies on sign-in and sign-out', () async {
       var notifications = 0;

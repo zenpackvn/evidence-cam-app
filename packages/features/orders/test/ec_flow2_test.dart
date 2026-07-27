@@ -70,12 +70,24 @@ const _videoDetail = EcVideoDetail(
 void main() {
   group('EcOrderListScreen', () {
     testWidgets('shows header, stats, search and order rows', (tester) async {
-      await _pump(tester, const EcOrderListScreen(orders: _orders));
+      await _pump(
+        tester,
+        const EcOrderListScreen(
+          shopName: 'Shop ABC',
+          orders: _orders,
+          stats: [
+            EcOrderListStat(value: '11', label: 'Vận đơn hôm nay'),
+            EcOrderListStat(value: '12', label: 'Video đã quay'),
+            EcOrderListStat(value: '13', label: 'Chờ tải'),
+          ],
+        ),
+      );
 
       expect(find.text('Shop ABC'), findsOneWidget);
-      expect(find.text('3'), findsOneWidget);
-      expect(find.text('24'), findsOneWidget);
-      expect(find.text('38'), findsOneWidget);
+      expect(find.text('11'), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
+      expect(find.text('13'), findsOneWidget);
+      expect(find.text('Vận đơn hôm nay'), findsOneWidget);
       expect(find.text('Nhập mã vận đơn'), findsOneWidget);
       expect(find.text('Tất cả'), findsOneWidget);
       expect(find.text('SPXVN024567890'), findsOneWidget);
@@ -157,6 +169,43 @@ void main() {
 
       expect(find.textContaining('bằng chứng chưa upload'), findsNothing);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('create dossier link callback fires when no link exists', (
+      tester,
+    ) async {
+      var created = false;
+      await _pump(
+        tester,
+        EcOrderTimelineScreen(
+          orderCode: 'SPXVN024567890',
+          days: _days,
+          onCreateDossier: () => created = true,
+        ),
+      );
+
+      await tester.tap(find.text('Tạo link hồ sơ khiếu nại'));
+
+      expect(created, isTrue);
+    });
+
+    testWidgets('revoke dossier link callback fires when a link exists', (
+      tester,
+    ) async {
+      var revoked = false;
+      await _pump(
+        tester,
+        EcOrderTimelineScreen(
+          orderCode: 'SPXVN024567890',
+          days: _days,
+          dossierUrl: 'evidencecam.vn/r/abc123',
+          onRevokeDossier: () => revoked = true,
+        ),
+      );
+
+      await tester.tap(find.text('Thu hồi'));
+
+      expect(revoked, isTrue);
     });
 
     testWidgets('retry banner and video play callbacks fire', (tester) async {

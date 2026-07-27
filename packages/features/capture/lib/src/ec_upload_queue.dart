@@ -21,7 +21,7 @@ import 'package:path_provider/path_provider.dart';
 import 'ec_evidence_store.dart';
 import 'ec_evidence_uploader.dart';
 
-enum EcUploadState { waiting, uploading, done, error }
+enum EcUploadState { waiting, uploading, done, error, quotaWait }
 
 /// One queued clip and its upload progress.
 class UploadTask {
@@ -185,10 +185,16 @@ class EcUploadQueue extends ChangeNotifier {
             ..state = EcUploadState.done
             ..progress = 1
             ..remoteUrl = url;
-        } on Object {
-          task
-            ..state = EcUploadState.error
-            ..retryCount += 1;
+        } on Object catch (error) {
+          if (_isQuotaWait(error)) {
+            task
+              ..state = EcUploadState.quotaWait
+              ..progress = 0;
+          } else {
+            task
+              ..state = EcUploadState.error
+              ..retryCount += 1;
+          }
         }
         await _store.save(task);
         notifyListeners();
@@ -249,4 +255,12 @@ class EcUploadQueue extends ChangeNotifier {
     final slash = path.lastIndexOf('/');
     return dot > slash ? path.substring(dot) : '.mp4';
   }
+}
+
+bool _isQuotaWait(Object error) {
+  final text = error.toString().toLowerCase();
+  return text.contains('quota_exceeded') ||
+      text.contains('quota exceeded') ||
+      text.contains('quota limit') ||
+      text.contains('monthly quota');
 }

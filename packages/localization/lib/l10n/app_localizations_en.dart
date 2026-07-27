@@ -9,677 +9,870 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Flutter Starter';
-
-  @override
-  String get loginAppBarTitle => 'Sign in';
-
-  @override
-  String get loginHeadline => 'Welcome Back';
-
-  @override
-  String get loginSubtitle => 'Sign in to organize your digital space.';
-
-  @override
-  String get loginUsernameLabel => 'Email Address';
-
-  @override
-  String get loginUsernameHint => 'hello@example.com';
-
-  @override
-  String get loginPasswordLabel => 'Password';
-
-  @override
-  String get loginPasswordHint => '••••••••';
-
-  @override
-  String get loginShowPassword => 'Show password';
-
-  @override
-  String get loginHidePassword => 'Hide password';
-
-  @override
-  String get loginForgotPassword => 'Forgot?';
-
-  @override
-  String get loginSubmit => 'Log In';
-
-  @override
-  String get loginDividerLabel => 'OR CONTINUE WITH';
-
-  @override
-  String get loginGoogle => 'Google';
-
-  @override
-  String get loginApple => 'Apple';
-
-  @override
-  String get loginRegisterPrompt => 'New to Flutter Starter? ';
-
-  @override
-  String get loginNavigateToRegister => 'Create an account';
-
-  @override
-  String get loginPasswordRecoveryUnavailable =>
-      'Password recovery isn\'t configured yet.';
-
-  @override
-  String get loginSocialUnavailable => 'Social sign-in isn\'t configured yet.';
-
-  @override
-  String get registerAppBarTitle => 'Register';
-
-  @override
-  String get registerHeadline => 'Join Flutter Starter';
-
-  @override
-  String get registerSubtitle =>
-      'Create an account to start organizing your digital life with clarity and ease.';
-
-  @override
-  String get registerEmailLabel => 'Email Address';
-
-  @override
-  String get registerEmailHint => 'jane@example.com';
-
-  @override
-  String get registerInvalidEmail => 'Enter a valid email address.';
-
-  @override
-  String get registerUsernameLabel => 'Username';
-
-  @override
-  String get registerPasswordLabel => 'Password';
-
-  @override
-  String get registerPasswordHint => '••••••••';
-
-  @override
-  String get registerPasswordHelp => 'Must be at least 8 characters.';
-
-  @override
-  String get registerPasswordMinLengthError =>
-      'Password must be at least 8 characters.';
-
-  @override
-  String get registerShowPassword => 'Show password';
-
-  @override
-  String get registerHidePassword => 'Hide password';
-
-  @override
-  String get registerConfirmPasswordLabel => 'Confirm Password';
-
-  @override
-  String get registerSubmit => 'Join Flutter Starter';
-
-  @override
-  String get registerLoginPrompt => 'Already have an account? ';
-
-  @override
-  String get registerNavigateToLogin => 'Log in';
-
-  @override
-  String get errorPasswordsDoNotMatch => 'Passwords do not match.';
-
-  @override
-  String get fieldRequired => 'Required';
-
-  @override
-  String get errorInvalidCredentials => 'Please enter a username and password.';
-
-  @override
-  String get errorInvalidInput => 'Invalid input.';
-
-  @override
-  String get errorUnknown => 'Something went wrong.';
-
-  @override
   String get commonCancel => 'Cancel';
-
-  @override
-  String get commonCreate => 'Create';
-
-  @override
-  String get commonDelete => 'Delete';
-
-  @override
-  String get commonEdit => 'Edit';
-
-  @override
-  String get commonImageLoadFailed => 'Failed to load image';
-
-  @override
-  String get commonLoading => 'Loading…';
 
   @override
   String get commonRetry => 'Retry';
 
   @override
-  String get commonSave => 'Save';
+  String get commonClose => 'Close';
 
   @override
-  String get commonShare => 'Share';
+  String get toastChangeLanguage => 'Change language';
 
   @override
-  String get commonSignOut => 'Sign out';
+  String get toastTermsPolicy => 'Terms & Policy';
 
   @override
-  String get homeAppBarTitle => 'Home';
+  String get toastInfoSaved => 'Info saved';
 
   @override
-  String get homeViewAllBookmarks => 'View all';
+  String get toastPasswordCreated => 'Password created';
 
   @override
-  String get homeNoDescription => 'No description';
+  String get toastPasswordChanged => 'Password changed';
 
   @override
-  String get homeRecentBookmarks => 'Recent Bookmarks';
+  String get toastUpgradeComingSoon => 'Plan upgrade — coming soon';
 
   @override
-  String get homeNoBookmarks => 'No bookmarks yet. Tap + to add one.';
+  String get toastPendingDossierConfirm =>
+      'You still have a dossier submitted to the marketplace, please confirm again';
 
   @override
-  String get homeSearchTitle => 'Search';
+  String get toastCopiedShareLink => 'Share link copied';
 
   @override
-  String get homeSearchSubtitle =>
-      'Find your saved articles, tools, and inspirations instantly.';
+  String get toastShareFailed => 'Couldn\'t share, try again later';
 
   @override
-  String get homeSearchHint => 'Search bookmarks...';
+  String get toastDownloadingVideo => 'Downloading video';
 
   @override
-  String get homeQuickAdd => 'Add Link';
+  String get toastVideoDownloadedCopied => 'Video downloaded and path copied';
 
   @override
-  String get homeQuickLibrary => 'Library';
+  String get toastVideoDownloadFailed =>
+      'Couldn\'t download video, try again later';
 
   @override
-  String get homeQuickTags => 'Tags';
+  String get toastPhotoQueued => 'Photo attached — added to the upload queue';
 
   @override
-  String get homeFilterAll => 'All';
+  String get toastInvitePending => 'Waiting for a shop invitation';
 
   @override
-  String get homeFilterDesign => 'Design';
+  String get toastInviteSent => 'Invitation sent';
 
   @override
-  String get homeFilterArticles => 'Articles';
+  String get toastMemberAdded => 'Member added';
 
   @override
-  String get homeFilterInspiration => 'Inspiration';
+  String get toastDossierLinkCreated => 'Dossier link created';
 
   @override
-  String get homeFilterTools => 'Tools';
+  String get toastDossierLinkRevoked => 'Dossier link revoked';
 
   @override
-  String get homeSuggestedTitle => 'Suggested for You';
+  String get toastVideoPlayFailed => 'Couldn\'t play video';
 
   @override
-  String get homeFeaturedCollections => 'Featured Collections';
+  String get toastShopCreated => 'New shop created';
 
   @override
-  String get homeWeeklyDigestTitle => 'Weekly Digest';
+  String get toastVideoQueued => 'Video saved — added to the upload queue';
 
   @override
-  String get homeWeeklyDigestEyebrow => 'Most Read';
+  String get toastVideoNoPlayLink => 'Video has no playback link yet';
 
   @override
-  String get homeWeeklyDigestHeadline => 'Your saved knowledge catch-up';
+  String get toastVideoNoDownloadLink => 'Video has no download link yet';
 
   @override
-  String homeWeeklyDigestBody(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          'You saved $count bookmarks recently. Review the highlights and keep your reading flow moving.',
-      one:
-          'You saved 1 bookmark recently. Review the highlight and keep your reading flow moving.',
-      zero:
-          'You have no recent bookmarks. Review saved highlights when you add one.',
-    );
-    return '$_temp0';
+  String get toastVideoDeleted => 'Video deleted';
+
+  @override
+  String get toastVideoTypeSaved => 'Video type saved';
+
+  @override
+  String get toastVideoTypeDeleted => 'Video type deleted';
+
+  @override
+  String get toastNoVideoTypeToDelete => 'No video type to delete';
+
+  @override
+  String get toastRoleChangedManager => 'Role changed: Shop manager';
+
+  @override
+  String get toastRoleChangedStaff => 'Role changed: Staff';
+
+  @override
+  String get toastNoMemberToUpdate => 'No member to update';
+
+  @override
+  String get toastMemberRemoved =>
+      'Removed from shop (recorded videos still finish uploading)';
+
+  @override
+  String copiedLabel(String label) {
+    return 'Copied $label';
   }
 
   @override
-  String get homeReadDigest => 'Read Digest';
+  String get labelTrackingCode => 'tracking code';
 
   @override
-  String get homeNoMatches => 'No bookmarks match this view.';
+  String get labelDossierLink => 'dossier link';
 
   @override
-  String get homeBookmarkVisualFallback => 'Recent';
-
-  @override
-  String get profileAppBarTitle => 'Profile';
-
-  @override
-  String get profileSectionAppearance => 'Appearance';
-
-  @override
-  String get profileSectionAccount => 'Account';
-
-  @override
-  String get profileChangePassword => 'Change Password';
-
-  @override
-  String get profileDeleteAccount => 'Delete Account';
-
-  @override
-  String get profileDeleteAccountDialogTitle => 'Delete account?';
-
-  @override
-  String get profileDeleteAccountDialogMessage =>
-      'This permanently removes your account and all of its data. This action cannot be undone.';
-
-  @override
-  String profileDeleteAccountConfirmLabel(String username) {
-    return 'Type \"$username\" to confirm';
+  String resolutionChanged(String value) {
+    return 'Resolution: $value';
   }
 
   @override
-  String get profileDeleteAccountSuccess => 'Your account has been deleted.';
-
-  @override
-  String get profileDeleteAccountError =>
-      'Couldn\'t delete your account. Please try again.';
-
-  @override
-  String get changePasswordAppBarTitle => 'Change Password';
-
-  @override
-  String get changePasswordCurrentLabel => 'Current Password';
-
-  @override
-  String get changePasswordNewLabel => 'New Password';
-
-  @override
-  String get changePasswordConfirmLabel => 'Confirm New Password';
-
-  @override
-  String get changePasswordSubmit => 'Update Password';
-
-  @override
-  String get changePasswordSuccessMessage => 'Password updated successfully.';
-
-  @override
-  String get changePasswordMismatchError => 'New passwords do not match.';
-
-  @override
-  String get profileSectionAbout => 'About';
-
-  @override
-  String get profileUserIdCopied => 'User ID copied';
-
-  @override
-  String get profileAppearanceThemeLabel => 'Theme';
-
-  @override
-  String get profileAppearanceColorLabel => 'Accent color';
-
-  @override
-  String get profileThemeSystemDefault => 'System default';
-
-  @override
-  String get profileThemeLight => 'Light';
-
-  @override
-  String get profileThemeDark => 'Dark';
-
-  @override
-  String profileAppVersionBuild(String version, String buildNumber) {
-    return 'Version $version (build $buildNumber)';
+  String dossierShareText(String tracking) {
+    return 'Complaint dossier $tracking';
   }
 
   @override
-  String get profileSignOutConfirmMessage =>
-      'Are you sure you want to sign out?';
+  String get accountNoName => 'No name yet';
 
   @override
-  String get bookmarksAppBarTitle => 'Bookmarks';
+  String get accountNoShop => 'No shop selected';
 
   @override
-  String get bookmarksSearchHint => 'Search title, URL, or tag';
+  String get accountCreatePassword => 'Create password';
 
   @override
-  String get bookmarksNoMatchesTitle => 'No matches';
+  String get accountChangePassword => 'Change password';
 
   @override
-  String get bookmarksNoMatchesMessage => 'No bookmarks match your search.';
-
-  @override
-  String get bookmarksEmptyTitle => 'No bookmarks yet';
-
-  @override
-  String get bookmarksEmptyMessage => 'Tap + to add your first bookmark.';
-
-  @override
-  String get bookmarksNotYetSynced => 'Not yet synced';
-
-  @override
-  String get bookmarksSyncFailedRetryTooltip => 'Sync failed - tap to retry';
-
-  @override
-  String get bookmarksAddTooltip => 'Add bookmark';
-
-  @override
-  String get bookmarksSearchClear => 'Clear search';
-
-  @override
-  String get bookmarksSortTooltip => 'Sort bookmarks';
-
-  @override
-  String get bookmarksSortMenuLabel => 'Sort Menu';
-
-  @override
-  String get bookmarksSortNewest => 'Newest first';
-
-  @override
-  String get bookmarksSortOldest => 'Oldest first';
-
-  @override
-  String get bookmarksSortTitleAz => 'Title (A–Z)';
-
-  @override
-  String get bookmarksTabAll => 'All';
-
-  @override
-  String get bookmarksTabRecent => 'Recent';
-
-  @override
-  String get bookmarksTabCollections => 'Collections';
-
-  @override
-  String get bookmarksRecentEmptyTitle => 'Nothing recent';
-
-  @override
-  String get bookmarksRecentEmptyMessage =>
-      'Bookmarks you add this week show up here.';
-
-  @override
-  String get bookmarksCollectionsComingSoonTitle => 'Collections coming soon';
-
-  @override
-  String get bookmarksCollectionsComingSoonMessage =>
-      'Group related bookmarks into collections in a future update.';
-
-  @override
-  String get bookmarkMoreActions => 'More actions';
-
-  @override
-  String get bookmarkAppBarTitle => 'Bookmark Details';
-
-  @override
-  String get bookmarkSourceLabel => 'Source';
-
-  @override
-  String get bookmarkVisitWebsite => 'Visit Website';
-
-  @override
-  String get bookmarkDetailsLabel => 'Details';
-
-  @override
-  String get bookmarkDateCreatedLabel => 'Date Created';
-
-  @override
-  String get bookmarkLastModifiedLabel => 'Last Modified';
-
-  @override
-  String get bookmarkMediaLabel => 'Media';
-
-  @override
-  String get bookmarkOpenInBrowser => 'Open in Browser';
-
-  @override
-  String get bookmarkNotFound => 'Bookmark not found.';
-
-  @override
-  String get bookmarkDeleteDialogTitle => 'Delete bookmark?';
-
-  @override
-  String get bookmarkDeleteDialogBody =>
-      'This action cannot be undone.\nThe bookmark will be permanently removed from your collection.';
-
-  @override
-  String bookmarkDeleteDialogMessage(String title) {
-    return '\"$title\" will be removed.';
+  String accountLinkedMethods(int count) {
+    return '$count linked';
   }
 
   @override
-  String get bookmarkOpenUrl => 'Open URL';
+  String get roleOwner => 'Owner';
 
   @override
-  String get bookmarkAttachedVideo => 'Attached video';
+  String get roleManager => 'Manager';
 
   @override
-  String get bookmarkInvalidUrl => 'Invalid URL';
+  String get roleStaff => 'Staff';
 
   @override
-  String get bookmarkCouldNotOpenUrl => 'Could not open URL';
+  String get roleOther => 'Other';
 
   @override
-  String get bookmarkFormEditTitle => 'Edit bookmark';
+  String get roleUnknown => 'Unknown';
 
   @override
-  String get bookmarkFormNewTitle => 'New bookmark';
+  String get memberFallbackName => 'Member';
 
   @override
-  String get bookmarkFormLoadFailed => 'Failed to load bookmark.';
+  String get uploadStatusDone => 'Uploaded';
 
   @override
-  String get bookmarkTitleLabel => 'Title';
+  String get uploadStatusPending => 'Waiting to upload';
 
   @override
-  String get bookmarkUrlLabel => 'URL';
+  String get uploadStatusQuotaHold => 'On hold (quota)';
 
   @override
-  String get bookmarkDescriptionLabel => 'Description (optional)';
+  String get uploadStatusDeleted => 'Deleted';
 
   @override
-  String get bookmarkTagsLabel => 'Tags';
+  String get kindPhoto => 'Attached photo';
 
   @override
-  String get bookmarkTagsHint => 'comma, separated, values';
+  String get kindVideo => 'Video';
 
   @override
-  String get bookmarkPreviewLabel => 'Bookmark';
+  String get recordedByFallback => 'Current account';
 
   @override
-  String get bookmarkTitleRequired => 'Title is required';
+  String get deviceUnknown => 'Unknown device';
 
   @override
-  String get bookmarkUrlRequired => 'URL is required';
+  String get orderNoEvidence => 'No evidence yet';
 
   @override
-  String get bookmarkUrlInvalid => 'Enter a valid URL (https://…)';
+  String get errorGenericRetry => 'Something went wrong, please try again.';
 
   @override
-  String get errorPermissionDenied => 'Permission denied.';
+  String get errorPendingDossier =>
+      'You still have a dossier submitted to the marketplace, please handle it before continuing.';
 
   @override
-  String get errorGalleryPermissionRequired =>
-      'Photo gallery access is required to attach images.';
+  String get errorSessionExpired =>
+      'Your session has expired, please sign in again.';
 
   @override
-  String get errorCameraPermissionRequired =>
-      'Camera access is required to take photos.';
+  String get errorNoNetwork => 'No network connection, please try again.';
 
   @override
-  String get navHome => 'Home';
+  String get errorNoPermission =>
+      'You don\'t have permission to perform this action.';
 
   @override
-  String get navBookmarks => 'Bookmarks';
+  String get errorServerBusy => 'The system is busy, please try again later.';
 
   @override
-  String get navProfile => 'Profile';
+  String get errorSessionInvalid => 'Invalid session, please sign in again.';
 
   @override
-  String get navSettings => 'Settings';
+  String get errorVideoTypeInUse =>
+      'Can\'t delete a video type that already has videos. Please review the videos using this type first.';
 
   @override
-  String get settingsAppBarTitle => 'Settings';
+  String get errorBuiltinVideoTypeLocked =>
+      'The 3 built-in video types can\'t be edited or deleted.';
 
   @override
-  String get bookmarksDetailPlaceholder =>
-      'Select a bookmark to view its details';
+  String get errorVideoTypeNameExists =>
+      'That video type name already exists in the shop.';
 
   @override
-  String bookmarkImageLabel(String title) {
-    return 'Image for $title';
+  String get errorCheckNetwork => 'Check your network or try again later.';
+
+  @override
+  String get errorLoadShopList => 'Couldn\'t load the shop list';
+
+  @override
+  String get errorLoadShopMgmt => 'Couldn\'t load shop management';
+
+  @override
+  String get errorLoadShopDetail => 'Couldn\'t load shop details';
+
+  @override
+  String get errorLoadOrders => 'Couldn\'t load orders';
+
+  @override
+  String get errorLoadOrderDetail => 'Couldn\'t load order details';
+
+  @override
+  String get noShopSelectedOrdersDetail =>
+      'Please choose a shop before viewing orders.';
+
+  @override
+  String get noShopSelectedRecordDetail =>
+      'Please choose a shop before recording.';
+
+  @override
+  String get noShopSelectedManageDetail => 'Please choose a shop to manage.';
+
+  @override
+  String get noOrdersTitle => 'No orders yet';
+
+  @override
+  String get noOrdersDetail => 'Please choose an order from the list.';
+
+  @override
+  String get noVideoDataTitle => 'No video data';
+
+  @override
+  String get cannotOpenVideoTitle => 'Couldn\'t open video';
+
+  @override
+  String get cannotOpenVideoDetail => 'Video has no playback link yet.';
+
+  @override
+  String get createOrderDialogTitle => 'Create a new order?';
+
+  @override
+  String createOrderDialogBody(String code) {
+    return '$code doesn\'t match any tracking code in the current shop. Re-check the code or confirm creating a new order.';
   }
 
   @override
-  String get bookmarkAttachedImageLabel => 'Attached image';
+  String get createOrderConfirm => 'Create new order';
 
   @override
-  String get bookmarkRemoveImageLabel => 'Remove image';
+  String get statOrdersToday => 'Orders today';
 
   @override
-  String get navNotifications => 'Notifications';
+  String get statVideosRecorded => 'Videos recorded';
 
   @override
-  String get notificationsAppBarTitle => 'Notifications';
+  String get statPendingUpload => 'Pending upload';
 
   @override
-  String get notificationsActivitySection => 'Your activity';
+  String get accountPlanQuota => 'Plan & Quota';
 
   @override
-  String get notificationsSection => 'Notifications';
+  String get accountSectionApp => 'PLAN & APP';
 
   @override
-  String get notificationsSectionNew => 'New';
+  String get accountLanguage => 'Language';
 
   @override
-  String get notificationsSectionEarlier => 'Earlier';
+  String get accountSectionSecurity => 'SECURITY & SIGN-IN';
 
   @override
-  String get notificationsEmptyTitle => 'Nothing here yet';
+  String get accountLoginMethods => 'Sign-in method';
 
   @override
-  String get notificationsEmptyMessage =>
-      'Your notifications and recent activity will appear here.';
+  String get accountSignOut => 'Sign out';
 
   @override
-  String get notificationsNoNotifications => 'No notifications yet.';
+  String get accountDeleteAccount => 'Delete account';
 
   @override
-  String get notificationsLoadError =>
-      'Couldn\'t load your notifications. Pull to refresh or try again.';
+  String get accountShopMgmtHint =>
+      'Manage shop/members: tap back on the header to return to the Shop layer';
 
   @override
-  String notificationsUnreadCount(int count) {
-    return '$count unread';
+  String get accountInfoTitle => 'Account info';
+
+  @override
+  String get accountFullName => 'Full name';
+
+  @override
+  String get accountFullNameHint => 'Enter your full name';
+
+  @override
+  String get accountFullNameRequired => 'Please enter your full name';
+
+  @override
+  String get phoneLabel => 'Phone number';
+
+  @override
+  String get phoneHint => 'Enter phone number';
+
+  @override
+  String get phoneRequired => 'Please enter your phone number';
+
+  @override
+  String get phoneInvalid => 'Invalid phone number';
+
+  @override
+  String get accountSaveChanges => 'Save changes';
+
+  @override
+  String get phoneAddTitle => 'Add phone number';
+
+  @override
+  String get phoneAddBody =>
+      'Your Apple/Google account has no phone number yet. Please enter a phone number to continue.';
+
+  @override
+  String get commonContinue => 'Continue';
+
+  @override
+  String get languageNameVietnamese => 'Vietnamese';
+
+  @override
+  String get languageNameEnglish => 'English';
+
+  @override
+  String get languageChangeAppliesNote =>
+      'Changes apply instantly across the whole app';
+
+  @override
+  String get linkLinked => 'Linked';
+
+  @override
+  String get linkNotLinked => 'Not linked';
+
+  @override
+  String get loginMethodsEmailNote =>
+      'Email is your account identifier — it can\'t be removed. Link Google/Apple to sign in quickly with the same account.';
+
+  @override
+  String get loginMethodIdentity => 'Identifier';
+
+  @override
+  String get linkAction => 'Link';
+
+  @override
+  String get linkUnlink => 'Unlink';
+
+  @override
+  String get quotaScreenTitle => 'Reports & Quota';
+
+  @override
+  String get quotaCurrentPlan => 'Current plan';
+
+  @override
+  String get quotaRemainingThisMonth => 'Remaining this month';
+
+  @override
+  String get quotaStorage => 'Storage';
+
+  @override
+  String get quotaUpgradePlan => 'Upgrade plan';
+
+  @override
+  String get deleteAccountTitleStep1 => 'Delete account?';
+
+  @override
+  String get deleteAccountTitleStep2 => 'Confirm permanent deletion?';
+
+  @override
+  String get deleteAccountBodyStep1 =>
+      'All your videos, orders and dossiers will be permanently deleted. This action cannot be undone.';
+
+  @override
+  String get deleteAccountBodyStep2 =>
+      'This is the final confirmation step. After deletion, you\'ll be signed out of the app immediately.';
+
+  @override
+  String get deleteConfirmPermanent => 'Delete permanently';
+
+  @override
+  String get deleteStep1Hint =>
+      'Step 1/2 — will ask for confirmation again · then sign out';
+
+  @override
+  String get deleteStep2Hint => 'Step 2/2 — this action cannot be undone';
+
+  @override
+  String get passwordCurrentLabel => 'Current password';
+
+  @override
+  String get passwordCurrentRequired => 'Please enter your current password';
+
+  @override
+  String get passwordNewLabel => 'New password';
+
+  @override
+  String get passwordMinHint => 'At least 8 characters';
+
+  @override
+  String get passwordNewRequired => 'Please enter a new password';
+
+  @override
+  String get passwordMin8Error => 'Password must be at least 8 characters';
+
+  @override
+  String get passwordConfirmLabel => 'Re-enter new password';
+
+  @override
+  String get passwordMismatch => 'Passwords don\'t match';
+
+  @override
+  String get passwordSave => 'Save password';
+
+  @override
+  String get passwordChangeLogoutNote =>
+      '(You\'ll be signed out of other devices after changing)';
+
+  @override
+  String get navOrders => 'Orders';
+
+  @override
+  String get navRecord => 'Record';
+
+  @override
+  String get navAccount => 'Account';
+
+  @override
+  String get changeAvatar => 'Change profile photo';
+
+  @override
+  String quotaVideosRatio(int remaining, int total) {
+    return '$remaining / $total videos';
   }
 
   @override
-  String get timeJustNow => 'Just now';
-
-  @override
-  String timeMinutesAgo(int minutes) {
-    return '${minutes}m ago';
+  String quotaUsedPercent(int percent) {
+    return 'Used $percent%';
   }
 
   @override
-  String timeHoursAgo(int hours) {
-    return '${hours}h ago';
+  String quotaRetentionDays(int days) {
+    return '$days days';
   }
 
   @override
-  String timeDaysAgo(int days) {
-    return '${days}d ago';
+  String deletePendingProfilesWarning(int count) {
+    return 'You still have $count \"submitted to marketplace\" dossiers — their share links will stop working';
   }
 
   @override
-  String get collectionsTitle => 'Collections';
+  String get detailRecordedTime => 'Recording time';
 
   @override
-  String get collectionsEmptyTitle => 'No collections yet';
+  String get detailRecordedBy => 'Recorded by';
 
   @override
-  String get collectionsEmptyMessage =>
-      'Group related bookmarks into collections.';
+  String get detailDevice => 'Device';
 
   @override
-  String get collectionsLoadError =>
-      'Couldn\'t load your collections. Pull to refresh or try again.';
+  String get detailSize => 'Size';
 
   @override
-  String get collectionsCreate => 'New collection';
+  String get detailUploadStatus => 'Upload status';
 
   @override
-  String get collectionsCreateTitle => 'New collection';
+  String get detailPlayVideo => 'Play video';
 
   @override
-  String get collectionsEditTitle => 'Edit collection';
+  String get detailDownloadVideo => 'Download video';
 
   @override
-  String get collectionNameLabel => 'Name';
+  String get detailDownloadNote =>
+      'Account owner / shop manager only — to attach a marketplace complaint form';
 
   @override
-  String get collectionNameHint => 'e.g. Design inspiration';
+  String get attachPhotoToOrder => 'Attach photo to order';
 
   @override
-  String get collectionNameRequired => 'Name is required';
+  String get createDossierLink => 'Create complaint dossier link';
 
   @override
-  String get collectionAppearanceLabel => 'Icon & color';
+  String get dossierLinkLabel => 'Complaint dossier link';
 
   @override
-  String get collectionSave => 'Save';
+  String get revoke => 'Revoke';
 
   @override
-  String get collectionDeleteAction => 'Delete collection';
+  String get deleteVideoAction => 'Delete video';
 
   @override
-  String get collectionDeleteDialogTitle => 'Delete collection?';
+  String get deleteVideoNote =>
+      'Account owner / shop manager only · 2-step confirmation · permanent';
 
   @override
-  String collectionDeleteDialogMessage(String name) {
-    return '\"$name\" will be removed. Your bookmarks stay.';
+  String ordersErrorCount(int count) {
+    return '· $count errors';
   }
 
   @override
-  String get collectionNotFound => 'Collection not found.';
-
-  @override
-  String collectionItemsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count bookmarks',
-      one: '1 bookmark',
-      zero: 'No bookmarks',
-    );
-    return '$_temp0';
+  String ordersPendingEvidenceWarning(int count) {
+    return '$count evidence not uploaded — the dossier will be incomplete';
   }
 
   @override
-  String get collectionAddBookmarks => 'Add bookmarks';
+  String get captureFramePrompt => 'Place the bill in the frame to start';
 
   @override
-  String get collectionRemoveBookmark => 'Remove from collection';
+  String get captureCameraDownHint => 'Camera facing down at the table';
 
   @override
-  String get collectionEmptyBookmarks => 'No bookmarks in this collection yet.';
+  String get tooltipBack => 'Back';
 
   @override
-  String get collectionPickerEmpty =>
-      'All your bookmarks are already in this collection.';
+  String get tooltipSwitchCamera => 'Switch camera';
 
   @override
-  String collectionPickerAddCount(int count) {
-    return 'Add $count';
+  String get tooltipEnterTracking => 'Enter tracking code';
+
+  @override
+  String get tooltipZoomIn => 'Zoom in';
+
+  @override
+  String get tooltipZoomOut => 'Zoom out';
+
+  @override
+  String get captureResolution => 'Resolution';
+
+  @override
+  String get stopRecording => 'Stop recording';
+
+  @override
+  String get videoTypeSettings => 'Video type settings';
+
+  @override
+  String get uploadQueueTitle => 'Upload queue';
+
+  @override
+  String get quotaExhaustedNote =>
+      'Out of quota this month — videos will wait for quota';
+
+  @override
+  String get upgradePlanShort => 'Upgrade';
+
+  @override
+  String get queueEmpty => 'No videos in the queue yet';
+
+  @override
+  String get queueAutoUploadNote =>
+      'Upload happens automatically when you\'re online';
+
+  @override
+  String get waitingUpload => 'Waiting to upload';
+
+  @override
+  String get uploaded => 'Uploaded';
+
+  @override
+  String get waitingQuota => 'Waiting for quota';
+
+  @override
+  String get manualTrackingTitle => 'Enter tracking code manually';
+
+  @override
+  String get manualTrackingNote =>
+      'Use when the bill is blurry — no more than 10 seconds';
+
+  @override
+  String get startRecording => 'Start recording';
+
+  @override
+  String get returnCodeMismatch => 'Return code doesn\'t match';
+
+  @override
+  String get enterCodeManually => 'Enter code manually';
+
+  @override
+  String get videoTypeLabel => 'Video type';
+
+  @override
+  String get videoTypeSelectNote =>
+      'Choose a type for this recording session — add/edit/delete in Shop details';
+
+  @override
+  String get manageVideoTypesNote => 'Manage video types — open Shop details';
+
+  @override
+  String queueFilterAll(int count) {
+    return 'All · $count';
   }
 
   @override
-  String get addToCollectionTitle => 'Add to collection';
+  String queueFilterUploading(int count) {
+    return 'Uploading · $count';
+  }
 
   @override
-  String get addToCollectionEmpty =>
-      'You haven\'t created any collections yet.';
+  String queueFilterErrored(int count) {
+    return 'Errors · $count';
+  }
 
   @override
-  String get homeCreateCollection => 'Create collection';
+  String uploadingProgress(int percent) {
+    return 'Uploading $percent%';
+  }
+
+  @override
+  String errorRetryCount(int count) {
+    return 'Error · Retry ($count)';
+  }
+
+  @override
+  String returnCodeMismatchBody(String returnCode, String shopName) {
+    return '$returnCode doesn\'t match any order in $shopName. Re-check the code, enter it manually, or confirm creating a new order.';
+  }
+
+  @override
+  String get onboardingSubtitle =>
+      'Record packing-evidence videos for e-commerce sellers';
+
+  @override
+  String get onboardingStart => 'Get started';
+
+  @override
+  String get authSignIn => 'Sign in';
+
+  @override
+  String get authChooseMethod => 'Choose a sign-in method';
+
+  @override
+  String get authEmailRequired => 'Please enter your email';
+
+  @override
+  String get authEmailInvalid => 'Invalid email';
+
+  @override
+  String get authPassword => 'Password';
+
+  @override
+  String get authPasswordRequired => 'Please enter your password';
+
+  @override
+  String get authForgotPassword => 'Forgot password?';
+
+  @override
+  String get authSignInGoogle => 'Sign in with Google';
+
+  @override
+  String get authSignInApple => 'Sign in with Apple';
+
+  @override
+  String get authNoAccountPrompt => 'Don\'t have an account? ';
+
+  @override
+  String get authRegister => 'Register';
+
+  @override
+  String get authOr => 'or';
+
+  @override
+  String get registerTitle => 'Create a new account';
+
+  @override
+  String get registerConfirmPassword => 'Re-enter password';
+
+  @override
+  String get registerAgreePolicy => 'I agree to the policy ';
+
+  @override
+  String get registerViewPolicy => 'View policy';
+
+  @override
+  String get registerCreateAccount => 'Create account';
+
+  @override
+  String get registerSameEmailNote =>
+      'The same email will automatically link to one account';
+
+  @override
+  String get registerHaveAccountPrompt => 'Already have an account? ';
+
+  @override
+  String get forgotPasswordTitle => 'Forgot password';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'Enter your email to receive a password reset link';
+
+  @override
+  String get forgotPasswordSubmit => 'Send reset link';
+
+  @override
+  String get forgotPasswordSent => 'Sent — check your inbox (including spam)';
+
+  @override
+  String get forgotPasswordRememberPrompt => 'Remember your password? ';
+
+  @override
+  String get shopYourShops => 'Your shops';
+
+  @override
+  String get shopTapToClockIn => 'Tap a shop to clock in · manage right here';
+
+  @override
+  String get shopLastOpenedNote =>
+      'The most recently opened shop will open directly next time';
+
+  @override
+  String get shopManageStore => 'Manage store';
+
+  @override
+  String get shopManageVisibilityNote =>
+      'Only visible to the account owner / shop manager';
+
+  @override
+  String get shopEmpty => 'No shops yet';
+
+  @override
+  String get shopEmptyBody =>
+      'Your account doesn\'t belong to any shop yet. Create a new shop to get started, or wait for an invitation from a shop owner.';
+
+  @override
+  String get shopCreateNew => 'Create new shop (name + platform)';
+
+  @override
+  String get shopInvitesHere => 'Shop invitations will appear here';
+
+  @override
+  String get shopCreateTitle => 'Create shop';
+
+  @override
+  String get shopNameLabel => 'Shop name';
+
+  @override
+  String get shopNameRequired => 'Please enter a shop name';
+
+  @override
+  String get shopPlatform => 'Marketplace';
+
+  @override
+  String get shopCreateOwnerNote =>
+      'You\'ll be the shop owner — add members later in Manage store';
+
+  @override
+  String get shopMgmtVisibilityNote =>
+      'Staff don\'t see this screen · shop managers only see shops they manage';
+
+  @override
+  String get shopAddNew => 'Add new shop (name + platform)';
+
+  @override
+  String get sectionMembers => 'MEMBERS';
+
+  @override
+  String get sectionShopSettings => 'SHOP SETTINGS';
+
+  @override
+  String get sectionVideoTypes => 'VIDEO TYPES';
+
+  @override
+  String get videoTypesLockedNote =>
+      '3 built-in types are locked — can\'t be edited/deleted';
+
+  @override
+  String get addMemberByContact => 'Add member by email/phone';
+
+  @override
+  String get recordResolution => 'Recording resolution';
+
+  @override
+  String get addVideoType => 'Add type (enter name)';
+
+  @override
+  String get createVideoTypeTitle => 'Create video type';
+
+  @override
+  String get videoTypeName => 'Video type name';
+
+  @override
+  String get videoTypeNameHint => 'e.g. Weighing';
+
+  @override
+  String get createVideoType => 'Create type';
+
+  @override
+  String get deleteVideoTypeBody =>
+      'Can only be deleted while this type has no videos. If it has videos, the system blocks deletion to avoid disrupting evidence filters and stats.';
+
+  @override
+  String get deleteVideoTypeConfirm => 'Delete type';
+
+  @override
+  String get deleteVideoTypeNote =>
+      '(Only deletable while the type has no videos)';
+
+  @override
+  String get addMemberTitle => 'Add member';
+
+  @override
+  String get addMemberBody =>
+      'Enter the email or phone number of a registered account to add them to the shop.';
+
+  @override
+  String get emailOrPhone => 'Email or phone number';
+
+  @override
+  String get addMemberSubmit => 'Add';
+
+  @override
+  String get setAsManager => 'Set as shop manager';
+
+  @override
+  String get setAsStaff => 'Set as staff';
+
+  @override
+  String get removeFromShop => 'Remove from shop';
+
+  @override
+  String get resolutionAppliesNote =>
+      'Applies to the shop\'s newly recorded videos';
+
+  @override
+  String get resolutionDefaultOption => '720p (default)';
+
+  @override
+  String get ordersNotFound => 'No orders found';
+
+  @override
+  String deleteVideoTypeTitle(String typeName) {
+    return 'Delete type \"$typeName\"?';
+  }
+
+  @override
+  String memberCurrentRole(String role) {
+    return 'Current role: $role';
+  }
 }
