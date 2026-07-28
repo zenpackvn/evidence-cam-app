@@ -24,3 +24,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  # Widget tests install the localization delegates so `context.l10n` resolves.
+  flutter_localizations:
+    sdk: flutter

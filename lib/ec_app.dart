@@ -1794,10 +1794,12 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   static const _pageSize = 20;
 
   List<OrderSummaryDto> _orders = const [];
+  List<EcVideoTypeOption> _videoTypes = const [];
   bool _loading = true;
   bool _loadingMore = false;
   bool _hasMore = false;
   String _query = '';
+  EcOrderFilters _filters = const EcOrderFilters();
   var _searchGeneration = 0;
   Object? _loadError;
 
@@ -1805,6 +1807,32 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   void initState() {
     super.initState();
     _loadFirst();
+    _loadVideoTypes();
+  }
+
+  /// Options for the "Loại video" filter. Best-effort: the list still works
+  /// without them, that chip just has nothing but its "all types" entry.
+  Future<void> _loadVideoTypes() async {
+    try {
+      final types = await widget.repo.videoTypes(widget.shopId);
+      if (!mounted) return;
+      setState(() {
+        _videoTypes = [
+          for (final type in types)
+            EcVideoTypeOption(id: type.id, name: type.name),
+        ];
+      });
+    } on Object {
+      /* leave the chip with just "all types" */
+    }
+  }
+
+  /// Re-queries with the new filter set. Filters and search are exclusive on
+  /// the backend (a `q` search ignores them), so picking a filter clears the
+  /// search box's query rather than silently dropping one of the two.
+  Future<void> _applyFilters(EcOrderFilters filters) async {
+    _filters = filters;
+    await _loadFirst();
   }
 
   Future<void> _loadFirst({bool showSpinner = false}) async {
@@ -1817,7 +1845,12 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       });
     }
     try {
-      final page = await widget.repo.orders(widget.shopId);
+      final page = await widget.repo.orders(
+        widget.shopId,
+        uploadState: _filters.uploadState,
+        fromTs: _filters.fromTs,
+        videoTypeId: _filters.videoTypeId,
+      );
       if (!mounted || queryGeneration != _searchGeneration) return;
       setState(() {
         _orders = page;
@@ -1841,7 +1874,12 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     final trimmed = _query.trim();
     try {
       final page = trimmed.isEmpty
-          ? await widget.repo.orders(widget.shopId)
+          ? await widget.repo.orders(
+              widget.shopId,
+              uploadState: _filters.uploadState,
+              fromTs: _filters.fromTs,
+              videoTypeId: _filters.videoTypeId,
+            )
           : await widget.repo.searchOrders(widget.shopId, trimmed);
       if (!mounted) return;
       setState(() {
@@ -1860,7 +1898,12 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     _query = trimmed;
     try {
       final page = trimmed.isEmpty
-          ? await widget.repo.orders(widget.shopId)
+          ? await widget.repo.orders(
+              widget.shopId,
+              uploadState: _filters.uploadState,
+              fromTs: _filters.fromTs,
+              videoTypeId: _filters.videoTypeId,
+            )
           : await widget.repo.searchOrders(widget.shopId, trimmed);
       if (!mounted || queryGeneration != _searchGeneration) return;
       setState(() {
@@ -1884,6 +1927,9 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       final page = await widget.repo.orders(
         widget.shopId,
         before: _orders.last.createdAt,
+        uploadState: _filters.uploadState,
+        fromTs: _filters.fromTs,
+        videoTypeId: _filters.videoTypeId,
       );
       if (!mounted) return;
       setState(() {
@@ -1965,6 +2011,8 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         onNavOrders: () {},
         onScan: widget.onScan,
         onSearchChanged: _search,
+        videoTypes: _videoTypes,
+        onFiltersChanged: _applyFilters,
         onRefresh: _refresh,
         onLoadMore: _loadMore,
         isLoadingMore: _loadingMore,

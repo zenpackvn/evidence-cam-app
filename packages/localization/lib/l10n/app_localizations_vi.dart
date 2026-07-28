@@ -868,6 +868,42 @@ class AppLocalizationsVi extends AppLocalizations {
   String get ordersNotFound => 'Không tìm thấy đơn hàng';
 
   @override
+  String get filterStatusLabel => 'Trạng thái upload';
+
+  @override
+  String get filterStatusAll => 'Tất cả';
+
+  @override
+  String get filterStatusPending => 'Chờ upload';
+
+  @override
+  String get filterStatusError => 'Có lỗi tải';
+
+  @override
+  String get filterStatusDone => 'Đã tải xong';
+
+  @override
+  String get filterTimeLabel => 'Thời gian';
+
+  @override
+  String get filterTimeAll => 'Mọi lúc';
+
+  @override
+  String get filterTimeToday => 'Hôm nay';
+
+  @override
+  String get filterTime7d => '7 ngày qua';
+
+  @override
+  String get filterTime30d => '30 ngày qua';
+
+  @override
+  String get filterTypeLabel => 'Loại video';
+
+  @override
+  String get filterTypeAll => 'Loại video';
+
+  @override
   String deleteVideoTypeTitle(String typeName) {
     return 'Xóa loại \"$typeName\"?';
   }

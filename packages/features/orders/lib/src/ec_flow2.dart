@@ -187,7 +187,7 @@ class EcOrderListScreen extends StatelessWidget {
       EcOrderListStat(value: '0', label: 'Video đã quay'),
       EcOrderListStat(value: '0', label: 'Chờ tải'),
     ],
-    this.filters = const ['Tất cả', 'Hôm nay', 'Loại video'],
+    this.filters = const ['Tất cả', 'Mọi lúc', 'Mọi loại video'],
     this.searchController,
     this.searchHint = 'Nhập mã vận đơn',
     this.onBack,
@@ -212,7 +212,10 @@ class EcOrderListScreen extends StatelessWidget {
   /// The three summary tiles above the search box.
   final List<EcOrderListStat> stats;
 
-  /// Filter chip labels.
+  /// Filter chip labels — the three of Flow 2·1 (upload status, time, video
+  /// type), each showing its "no filter" value. The live screen is
+  /// `EcHomeOrdersScreen`, which drives the same three against the backend;
+  /// this one is the static design-spec rendering.
   final List<String> filters;
 
   /// Controller for the "Nhập mã vận đơn" search field.

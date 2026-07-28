@@ -2,8 +2,14 @@ import 'package:app_ui/app_ui.dart';
 import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/cupertino.dart' show CupertinoTextField;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:localization/localization.dart';
 
+/// These screens read their copy through `context.l10n`, so the harness has to
+/// install the delegates — without them `AppLocalizations.of` returns null and
+/// every screen in this file throws on build. Pinned to `vi`, which is what
+/// the expectations below are written against.
 Future<void> _pump(WidgetTester tester, Widget screen) {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1.0;
@@ -15,7 +21,20 @@ Future<void> _pump(WidgetTester tester, Widget screen) {
       ..clearLiveImages();
     tester.view.reset();
   });
-  return tester.pumpWidget(MaterialApp(theme: AppTheme.light(), home: screen));
+  return tester.pumpWidget(
+    MaterialApp(
+      theme: AppTheme.light(),
+      locale: const Locale('vi'),
+      supportedLocales: const [Locale('vi'), Locale('en')],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: screen,
+    ),
+  );
 }
 
 void main() {

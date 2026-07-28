@@ -2539,14 +2539,44 @@ class EcOrderRow {
   final int errorCount;
 }
 
-/// HomeOrders — the main "Vận đơn" tab: shop header with upload queue,
-/// quick stats, a tracking-code search box, filter chips, the order list and
-/// the bottom tab bar (Vận đơn active).
-/// Label of the type-filter chip — the only chip backed by real order data
-/// today. Status/date chips are select-only until orders carry
-/// those fields; wire their predicates here once the backend supplies them.
-const _typeFilterLabel = 'Loại video';
+/// One selectable video type in the "Loại video" filter.
+@immutable
+class EcVideoTypeOption {
+  const EcVideoTypeOption({required this.id, required this.name});
 
+  /// Backend id, sent as the `video_type_id` query param.
+  final String id;
+
+  /// User-authored name — shop data, so never translated.
+  final String name;
+}
+
+/// The "Vận đơn" tab's three filters (Flow 2·1), as currently selected. A null
+/// field means that filter is off.
+///
+/// These are applied by the backend, not by the widget: the list is paged, so
+/// a client-side filter would only ever narrow the rows already loaded and
+/// would silently hide matches sitting on the next page.
+@immutable
+class EcOrderFilters {
+  const EcOrderFilters({this.uploadState, this.fromTs, this.videoTypeId});
+
+  /// `pending` | `error` | `done` — the backend's `upload_state` param.
+  final String? uploadState;
+
+  /// Epoch ms lower bound on the order's creation time (`from`).
+  final int? fromTs;
+
+  /// Restricts to orders holding at least one clip of this type.
+  final String? videoTypeId;
+
+  bool get isEmpty =>
+      uploadState == null && fromTs == null && videoTypeId == null;
+}
+
+/// HomeOrders — the main "Vận đơn" tab: shop header with upload queue,
+/// quick stats, a tracking-code search box, the three filter chips, the order
+/// list and the bottom tab bar (Vận đơn active).
 class EcHomeOrdersScreen extends StatefulWidget {
   const EcHomeOrdersScreen({
     required this.shopName,
@@ -2557,14 +2587,14 @@ class EcHomeOrdersScreen extends StatefulWidget {
       EcHomeStat(value: '0', label: 'Video đã quay'),
       EcHomeStat(value: '0', label: 'Chờ tải'),
     ],
-    this.filters = const ['Tất cả', 'Hôm nay', 'Loại video'],
+    this.videoTypes = const [],
     this.searchHint = 'Nhập mã vận đơn',
     this.emptyText = 'Shop chưa có đơn nào',
     this.onBack,
     this.onQueueTap,
     this.onScan,
     this.onSearchChanged,
-    this.onFilterTap,
+    this.onFiltersChanged,
     this.onOrderTap,
     this.onRefresh,
     this.onLoadMore,
@@ -2580,7 +2610,10 @@ class EcHomeOrdersScreen extends StatefulWidget {
   final List<EcOrderRow> orders;
   final int queueCount;
   final List<EcHomeStat> stats;
-  final List<String> filters;
+
+  /// Options for the "Loại video" chip — the shop's video types. An empty list
+  /// leaves the chip with only its "all types" entry.
+  final List<EcVideoTypeOption> videoTypes;
   final String searchHint;
 
   /// Shown when the shop genuinely has no orders (distinct from a search that
@@ -2595,8 +2628,9 @@ class EcHomeOrdersScreen extends StatefulWidget {
   /// Fired when the tracking-code search query changes.
   final ValueChanged<String>? onSearchChanged;
 
-  /// Fired with the chosen value whenever a filter chip's selection changes.
-  final ValueChanged<String>? onFilterTap;
+  /// Fired with the whole selection whenever any filter chip changes, so the
+  /// parent can re-query the backend with all three applied at once.
+  final ValueChanged<EcOrderFilters>? onFiltersChanged;
   final ValueChanged<EcOrderRow>? onOrderTap;
 
   /// Pull-to-refresh — reloads the first page.
@@ -2618,12 +2652,24 @@ class EcHomeOrdersScreen extends StatefulWidget {
   State<EcHomeOrdersScreen> createState() => _EcHomeOrdersScreenState();
 }
 
+/// One option inside a filter chip's action sheet: the value handed back to
+/// the parent, plus the label shown for it.
+@immutable
+class _FilterOption {
+  const _FilterOption(this.value, this.label);
+
+  /// `null` is the "no filter" entry — every chip's first option.
+  final String? value;
+  final String label;
+}
+
 class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
   final _search = TextEditingController();
   String _query = '';
 
-  /// Selected value per chip index; defaults to the chip's own label (= "all").
-  final _selected = <int, String>{};
+  String? _uploadState;
+  String? _timeWindow;
+  String? _videoTypeId;
 
   @override
   void dispose() {
@@ -2631,46 +2677,60 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
     super.dispose();
   }
 
-  String _selectionFor(int i) => _selected[i] ?? widget.filters[i];
-
-  /// Menu options for chip [i]. The type chip is populated from the distinct
-  /// order types actually present; the others get a small static set so they
-  /// still function as selects.
-  List<String> _optionsFor(int i) {
-    final label = widget.filters[i];
-    if (label == _typeFilterLabel) {
-      final types = {for (final o in widget.orders) o.type};
-      return [label, ...types];
-    }
-    return [label];
+  /// Midnight-today / rolling 7 or 30 days, as an epoch-ms lower bound. Today
+  /// starts at local midnight rather than "24h ago" so it means the same thing
+  /// as the date the rows are grouped under.
+  static int? _fromTsFor(String? window) {
+    final now = DateTime.now();
+    return switch (window) {
+      'today' => DateTime(now.year, now.month, now.day).millisecondsSinceEpoch,
+      '7d' => now.subtract(const Duration(days: 7)).millisecondsSinceEpoch,
+      '30d' => now.subtract(const Duration(days: 30)).millisecondsSinceEpoch,
+      _ => null,
+    };
   }
 
-  /// Orders after applying local filters. When `onSearchChanged` is wired, the
-  /// parent supplies server-filtered rows, so this widget does not hide rows
-  /// while the async search is still in flight.
+  EcOrderFilters get _filters => EcOrderFilters(
+    uploadState: _uploadState,
+    fromTs: _fromTsFor(_timeWindow),
+    videoTypeId: _videoTypeId,
+  );
+
+  List<_FilterOption> _statusOptions(AppLocalizations l10n) => [
+    _FilterOption(null, l10n.filterStatusAll),
+    _FilterOption('pending', l10n.filterStatusPending),
+    _FilterOption('error', l10n.filterStatusError),
+    _FilterOption('done', l10n.filterStatusDone),
+  ];
+
+  List<_FilterOption> _timeOptions(AppLocalizations l10n) => [
+    _FilterOption(null, l10n.filterTimeAll),
+    _FilterOption('today', l10n.filterTimeToday),
+    _FilterOption('7d', l10n.filterTime7d),
+    _FilterOption('30d', l10n.filterTime30d),
+  ];
+
+  List<_FilterOption> _typeOptions(AppLocalizations l10n) => [
+    _FilterOption(null, l10n.filterTypeAll),
+    // Shop-authored names — data, not chrome, so they are never translated.
+    for (final type in widget.videoTypes) _FilterOption(type.id, type.name),
+  ];
+
+  /// Orders as handed in. Filtering is the backend's job (see
+  /// [EcOrderFilters]); the only local narrowing left is the search box, and
+  /// only while the parent isn't running the search server-side itself.
   List<EcOrderRow> get _visibleOrders {
+    if (widget.onSearchChanged != null) return widget.orders;
     final query = _query.trim().toLowerCase();
-    return widget.orders.where((order) {
-      if (widget.onSearchChanged == null &&
-          query.isNotEmpty &&
-          !order.code.toLowerCase().contains(query)) {
-        return false;
-      }
-      for (final entry in _selected.entries) {
-        final label = widget.filters[entry.key];
-        if (label == _typeFilterLabel &&
-            entry.value != label &&
-            order.type != entry.value) {
-          return false;
-        }
-      }
-      return true;
-    }).toList();
+    if (query.isEmpty) return widget.orders;
+    return widget.orders
+        .where((order) => order.code.toLowerCase().contains(query))
+        .toList();
   }
 
-  void _onFilterSelected(int i, String value) {
-    setState(() => _selected[i] = value);
-    widget.onFilterTap?.call(value);
+  void _select(void Function(String?) apply, String? value) {
+    setState(() => apply(value));
+    widget.onFiltersChanged?.call(_filters);
   }
 
   /// Opens the scanner and, if a code comes back, drops it into the search box.
@@ -2787,26 +2847,43 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                           scrollDirection: Axis.horizontal,
                           child: Row(
                             children: [
-                              for (
-                                var i = 0;
-                                i < widget.filters.length;
-                                i++
-                              ) ...[
-                                if (i > 0) const SizedBox(width: 8),
-                                _FilterChip(
-                                  label: _selectionFor(i),
-                                  options: _optionsFor(i),
-                                  onSelected: (v) => _onFilterSelected(i, v),
-                                ),
-                              ],
+                              _FilterChip(
+                                name: context.l10n.filterStatusLabel,
+                                options: _statusOptions(context.l10n),
+                                selected: _uploadState,
+                                onSelected: (v) =>
+                                    _select((x) => _uploadState = x, v),
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                name: context.l10n.filterTimeLabel,
+                                options: _timeOptions(context.l10n),
+                                selected: _timeWindow,
+                                onSelected: (v) =>
+                                    _select((x) => _timeWindow = x, v),
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                name: context.l10n.filterTypeLabel,
+                                options: _typeOptions(context.l10n),
+                                selected: _videoTypeId,
+                                onSelected: (v) =>
+                                    _select((x) => _videoTypeId = x, v),
+                              ),
                             ],
                           ),
                         ),
                         const SizedBox(height: 16),
-                        if (widget.orders.isEmpty)
-                          _OrdersEmpty(text: widget.emptyText)
-                        else if (visible.isEmpty)
-                          _OrdersEmpty(text: context.l10n.ordersNotFound)
+                        // With the filters applied server-side, an empty list
+                        // no longer means "this shop has no orders" — say
+                        // which of the two it is.
+                        if (visible.isEmpty)
+                          _OrdersEmpty(
+                            text:
+                                _filters.isEmpty && _query.trim().isEmpty
+                                ? widget.emptyText
+                                : context.l10n.ordersNotFound,
+                          )
                         else
                           for (final order in visible) ...[
                             _OrderTile(
@@ -2896,28 +2973,51 @@ class _StatBox extends StatelessWidget {
   }
 }
 
+/// A filter pill that opens an action sheet of [options] and shows the chosen
+/// one. [name] is the filter's dimension ("Thời gian"), used as the sheet title
+/// and the semantics label — all three pills read some flavour of "all" until
+/// touched, so without it they are indistinguishable to a screen reader.
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
-    required this.label,
+    required this.name,
     required this.options,
+    required this.selected,
     this.onSelected,
   });
-  final String label;
-  final List<String> options;
-  final ValueChanged<String>? onSelected;
+  final String name;
+  final List<_FilterOption> options;
+
+  /// Value of the current selection, or null when this filter is off.
+  final String? selected;
+  final ValueChanged<String?>? onSelected;
+
+  _FilterOption get _current =>
+      options.firstWhere((o) => o.value == selected, orElse: () => options.first);
+
+  bool get _isActive => selected != null;
 
   Future<void> _pick(BuildContext context) async {
-    final choice = await showCupertinoModalPopup<String>(
+    // The sheet pops the chosen option's index rather than its value, so the
+    // "all" entry (value null) is distinguishable from a dismissed sheet.
+    final index = await showCupertinoModalPopup<int>(
       context: context,
       builder: (sheetContext) => CupertinoActionSheet(
-        title: Text(label, style: _t(13, FontWeight.w500, BrandColors.mut)),
+        title: Text(name, style: _t(13, FontWeight.w500, BrandColors.mut)),
         actions: [
-          for (final option in options)
+          for (var i = 0; i < options.length; i++)
             CupertinoActionSheetAction(
-              onPressed: () => Navigator.of(sheetContext).pop(option),
+              onPressed: () => Navigator.of(sheetContext).pop(i),
               child: Text(
-                option,
-                style: _t(16, FontWeight.w500, BrandColors.ink),
+                options[i].label,
+                style: _t(
+                  16,
+                  options[i].value == selected
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                  options[i].value == selected
+                      ? BrandColors.dark
+                      : BrandColors.ink,
+                ),
               ),
             ),
         ],
@@ -2927,32 +3027,48 @@ class _FilterChip extends StatelessWidget {
         ),
       ),
     );
-    if (choice != null) onSelected?.call(choice);
+    if (index != null) onSelected?.call(options[index].value);
   }
 
   @override
   Widget build(BuildContext context) {
-    return EcTap(
-      onTap: () => _pick(context),
-      child: DecoratedBox(
-        decoration: ecSquircleDecoration(
-          radius: 999,
-          color: BrandColors.bg,
-          side: const BorderSide(color: BrandColors.line),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(label, style: _t(15, FontWeight.w500, BrandColors.ink)),
-              const SizedBox(width: 6),
-              const Icon(
-                Icons.keyboard_arrow_down,
-                size: 16,
-                color: BrandColors.mut,
-              ),
-            ],
+    return Semantics(
+      label: name,
+      value: _current.label,
+      button: true,
+      child: EcTap(
+        onTap: () => _pick(context),
+        child: DecoratedBox(
+          // An active filter is narrowing the list — make that visible, so an
+          // empty list reads as "filtered" rather than "no data".
+          decoration: ecSquircleDecoration(
+            radius: 999,
+            color: _isActive ? BrandColors.soft : BrandColors.bg,
+            side: BorderSide(
+              color: _isActive ? BrandColors.dark : BrandColors.line,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _current.label,
+                  style: _t(
+                    15,
+                    _isActive ? FontWeight.w600 : FontWeight.w500,
+                    _isActive ? BrandColors.dark : BrandColors.ink,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 16,
+                  color: _isActive ? BrandColors.dark : BrandColors.mut,
+                ),
+              ],
+            ),
           ),
         ),
       ),

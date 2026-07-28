@@ -873,6 +873,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ordersNotFound => 'No orders found';
 
   @override
+  String get filterStatusLabel => 'Upload status';
+
+  @override
+  String get filterStatusAll => 'All';
+
+  @override
+  String get filterStatusPending => 'Awaiting upload';
+
+  @override
+  String get filterStatusError => 'Upload errors';
+
+  @override
+  String get filterStatusDone => 'Fully uploaded';
+
+  @override
+  String get filterTimeLabel => 'Time';
+
+  @override
+  String get filterTimeAll => 'Any time';
+
+  @override
+  String get filterTimeToday => 'Today';
+
+  @override
+  String get filterTime7d => 'Last 7 days';
+
+  @override
+  String get filterTime30d => 'Last 30 days';
+
+  @override
+  String get filterTypeLabel => 'Video type';
+
+  @override
+  String get filterTypeAll => 'Video type';
+
+  @override
   String deleteVideoTypeTitle(String typeName) {
     return 'Delete type \"$typeName\"?';
   }

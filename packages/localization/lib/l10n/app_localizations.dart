@@ -1682,6 +1682,78 @@ abstract class AppLocalizations {
   /// **'No orders found'**
   String get ordersNotFound;
 
+  /// No description provided for @filterStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload status'**
+  String get filterStatusLabel;
+
+  /// No description provided for @filterStatusAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterStatusAll;
+
+  /// No description provided for @filterStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting upload'**
+  String get filterStatusPending;
+
+  /// No description provided for @filterStatusError.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload errors'**
+  String get filterStatusError;
+
+  /// No description provided for @filterStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Fully uploaded'**
+  String get filterStatusDone;
+
+  /// No description provided for @filterTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get filterTimeLabel;
+
+  /// No description provided for @filterTimeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Any time'**
+  String get filterTimeAll;
+
+  /// No description provided for @filterTimeToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get filterTimeToday;
+
+  /// No description provided for @filterTime7d.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get filterTime7d;
+
+  /// No description provided for @filterTime30d.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get filterTime30d;
+
+  /// No description provided for @filterTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Video type'**
+  String get filterTypeLabel;
+
+  /// No description provided for @filterTypeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Video type'**
+  String get filterTypeAll;
+
   /// No description provided for @deleteVideoTypeTitle.
   ///
   /// In en, this message translates to:
