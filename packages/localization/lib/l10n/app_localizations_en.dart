@@ -37,7 +37,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toastPendingDossierConfirm =>
-      'You still have a dossier submitted to the marketplace, please confirm again';
+      'You still have an open claim dossier, please confirm again';
 
   @override
   String get toastCopiedShareLink => 'Share link copied';
@@ -52,8 +52,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toastVideoDownloadedCopied => 'Video downloaded and path copied';
 
   @override
+  String get toastVideoSavedToGallery => 'Video saved to your device gallery';
+
+  @override
   String get toastVideoDownloadFailed =>
       'Couldn\'t download video, try again later';
+
+  @override
+  String get toastVideoDeleteUnavailable => 'This video can\'t be deleted';
 
   @override
   String get toastPhotoQueued => 'Photo attached — added to the upload queue';
@@ -201,7 +207,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorPendingDossier =>
-      'You still have a dossier submitted to the marketplace, please handle it before continuing.';
+      'You still have an open claim dossier, please handle it before continuing.';
 
   @override
   String get errorSessionExpired =>
@@ -486,7 +492,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deletePendingProfilesWarning(int count) {
-    return 'You still have $count \"submitted to marketplace\" dossiers — their share links will stop working';
+    return 'You still have $count open claim dossiers — their share links will stop working';
   }
 
   @override

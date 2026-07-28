@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:ec_data/ec_data.dart';
 import 'package:feature_capture/feature_capture.dart';
-import 'package:network/network.dart' show Dio, Headers, Options;
+import 'package:network/network.dart'
+    show BaseOptions, Dio, Headers, Options;
 
 /// Real backend uploader following the EvidenceCam presigned-R2 flow:
 ///
@@ -17,7 +18,19 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     Dio? r2Dio,
     this.multipartThresholdBytes = 8 * 1024 * 1024,
     this.multipartPartSizeBytes = 5 * 1024 * 1024,
-  }) : _r2 = r2Dio ?? Dio();
+  }) : _r2 =
+           r2Dio ??
+           Dio(
+             BaseOptions(
+               // Sending the clip's bytes can legitimately take minutes on a
+               // slow connection, so only the connect/response legs get a
+               // tight bound — a dead connection would otherwise hang this
+               // PUT (and every queued clip behind it) forever with no error.
+               connectTimeout: const Duration(seconds: 15),
+               sendTimeout: const Duration(minutes: 5),
+               receiveTimeout: const Duration(seconds: 30),
+             ),
+           );
 
   final EcApi _api;
   final Dio _r2;

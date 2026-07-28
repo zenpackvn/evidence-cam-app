@@ -35,7 +35,16 @@ EcApi buildApi({
     defaultValue: String.fromEnvironment('API_BASE_URL'),
   ),
 }) {
-  final dio = Dio(BaseOptions(baseUrl: url));
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: url,
+      // Without these, a dead connection hangs forever — the upload queue
+      // is strictly serial, so one stuck request blocks every clip behind
+      // it with no error ever surfacing.
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 20),
+    ),
+  );
   if (auth != null) dio.interceptors.add(_BearerTokenInterceptor(auth));
   return EcApi(dio);
 }

@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:injectable/injectable.dart';
 
 typedef AvailableCamerasLoader = Future<List<CameraDescription>> Function();
@@ -113,6 +114,11 @@ class CameraService {
 
     _controller = controller;
     await controller.initialize();
+    // Without this, CameraX keeps the capture orientation tracking the
+    // device's live sensor orientation, so a brief landscape tilt while
+    // framing a shot leaves the preview (and recorded clip) sideways even
+    // though the rest of the UI stays portrait-only.
+    await controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
   }
 
   /// Disposes of the active [CameraController], releasing the camera hardware resource.

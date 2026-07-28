@@ -1,6 +1,10 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:app_platform/app_platform.dart'
     show
         AppVideoPlayerController,
+        GallerySaveService,
         ImagePicker,
         ImageSource,
         ShareService,
@@ -23,6 +27,7 @@ import 'package:feature_orders/feature_orders.dart'
     show
         EcEvidenceType,
         EcOrderTimelineScreen,
+        EcPhotoDetailScreen,
         EcTimelineDay,
         EcTimelineVideo,
         EcVideoDetail,
@@ -190,6 +195,13 @@ class _EcAppState extends State<EcApp> {
           ),
         ),
         routerConfig: _router,
+        // Tapping anywhere outside the focused field (e.g. a text field)
+        // dismisses the keyboard app-wide.
+        builder: (context, child) => GestureDetector(
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          behavior: HitTestBehavior.opaque,
+          child: child,
+        ),
       ),
     );
   }
@@ -587,10 +599,14 @@ class _AccountRouteState extends State<_AccountRoute> {
             passwordActionLabel: user?.hasPassword == false
                 ? context.l10n.accountCreatePassword
                 : context.l10n.accountChangePassword,
+            avatarPath: _appMemory()?.getString(_avatarPathKey(user?.uid)),
             onBack: () => context.go('/shops', extra: 'back'),
             onNavOrders: () => context.go('/home'),
             onNavCapture: () => context.go('/record'),
-            onProfileTap: () => context.push('/edit-profile'),
+            onProfileTap: () async {
+              await context.push('/edit-profile');
+              if (mounted) setState(() {});
+            },
             onQuotaTap: () => context.push('/quota'),
             onLanguageTap: () => context.push('/language'),
             onChangePasswordTap: () => context.push('/change-password'),
@@ -631,6 +647,30 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
   String? _avatarPath;
 
   @override
+  void initState() {
+    super.initState();
+    _avatarPath = _appMemory()?.getString(
+      _avatarPathKey(widget.auth.currentUser?.uid),
+    );
+    _loadSavedPhone();
+  }
+
+  // The business phone lives in D1, not Firebase Auth (see
+  // `_accountNeedsPhone` above), so the field seeded from `auth.currentUser`
+  // is only a placeholder until this resolves.
+  Future<void> _loadSavedPhone() async {
+    final seed = _phone.text;
+    try {
+      final account = await widget.repo.account();
+      final phone = account.phone;
+      if (!mounted || _phone.text != seed) return;
+      if (phone != null && phone.isNotEmpty) _phone.text = phone;
+    } on Object {
+      // Keep the Firebase-seeded value; the field stays editable either way.
+    }
+  }
+
+  @override
   void dispose() {
     _name.dispose();
     _phone.dispose();
@@ -645,13 +685,21 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
   Future<void> _save() async {
     // The screen's inline Form guarantees a non-empty name before this fires.
     final name = _name.text.trim();
+    final phone = _phone.text.trim();
     try {
-      await widget.auth.updateProfile(name: name, phone: _phone.text.trim());
+      await widget.auth.updateProfile(name: name, phone: phone);
       await widget.repo.updateProfile(
         name: name,
-        phone: _phone.text.trim(),
+        phone: phone,
         avatarUrl: _avatarPath,
       );
+      final avatarPath = _avatarPath;
+      if (avatarPath != null) {
+        await _appMemory()?.setString(
+          _avatarPathKey(widget.auth.currentUser?.uid),
+          avatarPath,
+        );
+      }
       if (!mounted) return;
       context.pop();
       _toast(context, context.l10n.toastInfoSaved);
@@ -917,6 +965,7 @@ Future<void> _downloadAndShareVideo(
   BuildContext context,
   Dio dio,
   ShareService? share,
+  GallerySaveService? gallery,
   EcVideoDetail video,
 ) async {
   final url = video.mediaUrl;
@@ -928,6 +977,16 @@ Future<void> _downloadAndShareVideo(
     final path = '${dir.path}/$filename';
     await dio.download(url, path);
     if (!context.mounted) return;
+    if (gallery != null) {
+      // "Tải về máy" means the clip should land in the device's own gallery,
+      // not the app's private sandbox — save there and clean up the copy.
+      await gallery.saveVideo(path);
+      unawaited(File(path).delete());
+      if (context.mounted) {
+        _toast(context, context.l10n.toastVideoSavedToGallery);
+      }
+      return;
+    }
     if (share == null) {
       await Clipboard.setData(ClipboardData(text: path));
       if (context.mounted) {
@@ -1042,6 +1101,10 @@ EcShopSummary? _selected(ValueNotifier<EcShopSummary?> selectedShop) =>
 
 KeyValueStore? _appMemory() =>
     getIt.isRegistered<KeyValueStore>() ? getIt<KeyValueStore>() : null;
+
+/// Device-local avatar image path, keyed per account since the avatar isn't
+/// uploaded/served from the backend yet (see `_EditProfileRouteState`).
+String _avatarPathKey(String? uid) => 'profile.avatar_path.${uid ?? ''}';
 
 /// Keychain-backed store for the remembered login email + password. Null in
 /// tests/pumps that skip DI, so every credential read/write there is a no-op.
@@ -1411,12 +1474,12 @@ class _ShopDetailRoute extends StatefulWidget {
   final EcRepository repo;
   final EcShopSummary shop;
   final VoidCallback? onBack;
-  final ValueChanged<EcShopMember>? onMemberMore;
-  final VoidCallback? onInviteMember;
+  final Future<void> Function(EcShopMember member)? onMemberMore;
+  final Future<void> Function()? onInviteMember;
   final VoidCallback? onTapResolution;
-  final ValueChanged<EcVideoType>? onEditType;
-  final ValueChanged<EcVideoType>? onDeleteType;
-  final VoidCallback? onAddType;
+  final Future<void> Function(EcVideoType type)? onEditType;
+  final Future<void> Function(EcVideoType type)? onDeleteType;
+  final Future<void> Function()? onAddType;
 
   @override
   State<_ShopDetailRoute> createState() => _ShopDetailRouteState();
@@ -1437,7 +1500,9 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
     );
   }
 
-  void _retry() => setState(() => _detail = _load());
+  void _retry() => setState(() {
+    _detail = _load();
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1465,12 +1530,32 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
           members: detail.members,
           videoTypes: detail.videoTypes,
           onBack: widget.onBack,
-          onMemberMore: widget.onMemberMore,
-          onInviteMember: widget.onInviteMember,
+          onMemberMore: widget.onMemberMore == null
+              ? null
+              : (member) => widget.onMemberMore!(member).then((_) {
+                  if (mounted) _retry();
+                }),
+          onInviteMember: widget.onInviteMember == null
+              ? null
+              : () => widget.onInviteMember!().then((_) {
+                  if (mounted) _retry();
+                }),
           onTapResolution: widget.onTapResolution,
-          onEditType: widget.onEditType,
-          onDeleteType: widget.onDeleteType,
-          onAddType: widget.onAddType,
+          onEditType: widget.onEditType == null
+              ? null
+              : (type) => widget.onEditType!(type).then((_) {
+                  if (mounted) _retry();
+                }),
+          onDeleteType: widget.onDeleteType == null
+              ? null
+              : (type) => widget.onDeleteType!(type).then((_) {
+                  if (mounted) _retry();
+                }),
+          onAddType: widget.onAddType == null
+              ? null
+              : () => widget.onAddType!().then((_) {
+                  if (mounted) _retry();
+                }),
         );
       },
     );
@@ -2452,6 +2537,7 @@ GoRouter _buildRouter(
   final share = shareService ?? _maybeGetIt<ShareService>();
   final videoPlayer = videoPlayerService ?? _maybeGetIt<VideoPlayerService>();
   final downloader = downloadDio ?? Dio();
+  final gallery = _maybeGetIt<GallerySaveService>();
   return GoRouter(
     // Override the start route for screenshot/QA via --dart-define=EC_START=/home.
     initialLocation: const String.fromEnvironment(
@@ -2611,31 +2697,38 @@ GoRouter _buildRouter(
                                 repo: repo,
                                 shop: shop,
                                 onBack: rootNavigator.maybePop,
-                                onMemberMore: (member) => router.push(
-                                  '/member-actions',
-                                  extra: _MemberActionExtra(
-                                    shopId: shop.id,
-                                    member: member,
-                                  ),
-                                ),
-                                onInviteMember: () => router.push(
-                                  '/invite-member',
-                                  extra: shop.id,
-                                ),
+                                onMemberMore: (member) => router
+                                    .push(
+                                      '/member-actions',
+                                      extra: _MemberActionExtra(
+                                        shopId: shop.id,
+                                        member: member,
+                                      ),
+                                    )
+                                    .then((_) {}),
+                                onInviteMember: () => router
+                                    .push('/invite-member', extra: shop.id)
+                                    .then((_) {}),
                                 onTapResolution: () =>
                                     router.push('/resolution', extra: shop.id),
-                                onEditType: (type) => router.push(
-                                  '/create-type',
-                                  extra: (shop.id, type),
-                                ),
-                                onDeleteType: (type) => router.push(
-                                  '/confirm-delete',
-                                  extra: (shop.id, type),
-                                ),
-                                onAddType: () => router.push(
-                                  '/create-type',
-                                  extra: (shop.id, null),
-                                ),
+                                onEditType: (type) => router
+                                    .push(
+                                      '/create-type',
+                                      extra: (shop.id, type),
+                                    )
+                                    .then((_) {}),
+                                onDeleteType: (type) => router
+                                    .push(
+                                      '/confirm-delete',
+                                      extra: (shop.id, type),
+                                    )
+                                    .then((_) {}),
+                                onAddType: () => router
+                                    .push(
+                                      '/create-type',
+                                      extra: (shop.id, null),
+                                    )
+                                    .then((_) {}),
                               ),
                             ),
                           );
@@ -2702,7 +2795,10 @@ GoRouter _buildRouter(
             order: order,
             shareService: share,
             onBack: () => _back(c, '/home'),
-            onOpenVideo: (extra) => c.push('/video', extra: extra),
+            onOpenVideo: (extra) => c.push(
+              extra.video.type == EcEvidenceType.image ? '/photo' : '/video',
+              extra: extra,
+            ),
           );
         },
       ),
@@ -2747,12 +2843,12 @@ GoRouter _buildRouter(
                   _toast(c, c.l10n.toastVideoNoDownloadLink);
                   return;
                 }
-                _downloadAndShareVideo(c, downloader, share, video!);
+                _downloadAndShareVideo(c, downloader, share, gallery, video!);
               },
               onDelete: () {
                 final evidenceId = extra?.evidenceId;
                 if (extra == null || evidenceId == null) {
-                  c.pop();
+                  _toast(c, c.l10n.toastVideoDeleteUnavailable);
                   return;
                 }
                 repo
@@ -2767,6 +2863,29 @@ GoRouter _buildRouter(
                       if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
                     });
               },
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/photo',
+        pageBuilder: (c, s) {
+          final extra = s.extra is _VideoRouteExtra
+              ? s.extra! as _VideoRouteExtra
+              : null;
+          return _modalPage(
+            EcPhotoDetailScreen(
+              photo:
+                  extra?.video ??
+                  EcVideoDetail(
+                    title: c.l10n.noVideoDataTitle,
+                    duration: '—',
+                    recordedAt: '—',
+                    recordedBy: '—',
+                    device: '—',
+                    uploadStatus: '—',
+                  ),
+              onClose: () => c.pop(),
             ),
           );
         },
@@ -2874,14 +2993,17 @@ GoRouter _buildRouter(
             onMemberMore: (member) => c.push(
               '/member-actions',
               extra: _MemberActionExtra(shopId: shop.id, member: member),
-            ),
-            onInviteMember: () => c.push('/invite-member', extra: shop.id),
+            ).then((_) {}),
+            onInviteMember: () =>
+                c.push('/invite-member', extra: shop.id).then((_) {}),
             onTapResolution: () => c.push('/resolution', extra: shop.id),
             onEditType: (type) =>
-                c.push('/create-type', extra: (shop.id, type)),
-            onDeleteType: (type) =>
-                c.push('/confirm-delete', extra: (shop.id, type)),
-            onAddType: () => c.push('/create-type', extra: (shop.id, null)),
+                c.push('/create-type', extra: (shop.id, type)).then((_) {}),
+            onDeleteType: (type) => c
+                .push('/confirm-delete', extra: (shop.id, type))
+                .then((_) {}),
+            onAddType: () =>
+                c.push('/create-type', extra: (shop.id, null)).then((_) {}),
           );
         },
       ),

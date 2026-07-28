@@ -15,6 +15,10 @@ class GallerySaveService {
   /// (e.g. permission denied) so the caller can show an error.
   Future<void> savePng(Uint8List bytes) => Gal.putImageBytes(bytes);
 
+  /// Writes the video file at [path] to the gallery. Throws [GalException] on
+  /// failure (e.g. permission denied) so the caller can show an error.
+  Future<void> saveVideo(String path) => Gal.putVideo(path);
+
   /// Whether the app has (or can request) permission to add to the gallery.
   Future<bool> hasAccess() => Gal.hasAccess(toAlbum: true);
 

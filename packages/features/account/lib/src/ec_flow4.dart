@@ -32,6 +32,7 @@ class EcAccountTabScreen extends StatelessWidget {
     this.languageLabel = 'Tiếng Việt',
     this.loginMethodsLabel = '3 liên kết',
     this.passwordActionLabel = 'Đổi mật khẩu',
+    this.avatarPath,
     this.onBack,
     this.onProfileTap,
     this.onQuotaTap,
@@ -53,6 +54,7 @@ class EcAccountTabScreen extends StatelessWidget {
   final String languageLabel;
   final String loginMethodsLabel;
   final String passwordActionLabel;
+  final String? avatarPath;
   final VoidCallback? onBack;
   final VoidCallback? onProfileTap;
   final VoidCallback? onQuotaTap;
@@ -85,6 +87,7 @@ class EcAccountTabScreen extends StatelessWidget {
                     _UserRow(
                       name: userName,
                       email: userEmail,
+                      avatarPath: avatarPath,
                       onTap: onProfileTap,
                     ),
                     _SectionHeader(context.l10n.accountSectionApp),
@@ -1112,14 +1115,23 @@ class _SimpleHeader extends StatelessWidget {
 }
 
 class _UserRow extends StatelessWidget {
-  const _UserRow({required this.name, required this.email, this.onTap});
+  const _UserRow({
+    required this.name,
+    required this.email,
+    this.avatarPath,
+    this.onTap,
+  });
 
   final String name;
   final String email;
+  final String? avatarPath;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final path = avatarPath;
+    final file = path == null ? null : File(path);
+    final hasLocalFile = file?.existsSync() ?? false;
     return EcTap(
       onTap: onTap,
       child: DecoratedBox(
@@ -1131,15 +1143,18 @@ class _UserRow extends StatelessWidget {
               Container(
                 width: 60,
                 height: 60,
+                clipBehavior: Clip.antiAlias,
                 decoration: const BoxDecoration(
                   color: BrandColors.soft,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.person_outline,
-                  size: 28,
-                  color: BrandColors.mut,
-                ),
+                child: !hasLocalFile
+                    ? const Icon(
+                        Icons.person_outline,
+                        size: 28,
+                        color: BrandColors.mut,
+                      )
+                    : Image.file(file!, fit: BoxFit.cover),
               ),
               const SizedBox(width: 14),
               Expanded(

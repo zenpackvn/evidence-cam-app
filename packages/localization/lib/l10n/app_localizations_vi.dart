@@ -37,7 +37,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get toastPendingDossierConfirm =>
-      'Bạn còn hồ sơ đã gửi sàn, vui lòng xác nhận lại';
+      'Bạn còn hồ sơ khiếu nại đang mở, vui lòng xác nhận lại';
 
   @override
   String get toastCopiedShareLink => 'Đã sao chép link để chia sẻ';
@@ -52,7 +52,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get toastVideoDownloadedCopied => 'Đã tải video và sao chép đường dẫn';
 
   @override
+  String get toastVideoSavedToGallery => 'Đã lưu video vào thư viện trên máy';
+
+  @override
   String get toastVideoDownloadFailed => 'Không tải được video, thử lại sau';
+
+  @override
+  String get toastVideoDeleteUnavailable => 'Không thể xóa video này';
 
   @override
   String get toastPhotoQueued => 'Đã đính kèm ảnh — đưa vào hàng chờ tải';
@@ -200,7 +206,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get errorPendingDossier =>
-      'Bạn còn hồ sơ đã gửi sàn, vui lòng xử lý trước khi tiếp tục.';
+      'Bạn còn hồ sơ khiếu nại đang mở, vui lòng xử lý trước khi tiếp tục.';
 
   @override
   String get errorSessionExpired =>
@@ -485,7 +491,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String deletePendingProfilesWarning(int count) {
-    return 'Bạn còn $count hồ sơ \"đã gửi sàn\" — link chia sẻ sẽ ngừng hoạt động';
+    return 'Bạn còn $count hồ sơ khiếu nại đang mở — link chia sẻ sẽ ngừng hoạt động';
   }
 
   @override

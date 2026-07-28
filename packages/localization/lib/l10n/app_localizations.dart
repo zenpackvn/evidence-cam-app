@@ -155,7 +155,7 @@ abstract class AppLocalizations {
   /// No description provided for @toastPendingDossierConfirm.
   ///
   /// In en, this message translates to:
-  /// **'You still have a dossier submitted to the marketplace, please confirm again'**
+  /// **'You still have an open claim dossier, please confirm again'**
   String get toastPendingDossierConfirm;
 
   /// No description provided for @toastCopiedShareLink.
@@ -182,11 +182,23 @@ abstract class AppLocalizations {
   /// **'Video downloaded and path copied'**
   String get toastVideoDownloadedCopied;
 
+  /// No description provided for @toastVideoSavedToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Video saved to your device gallery'**
+  String get toastVideoSavedToGallery;
+
   /// No description provided for @toastVideoDownloadFailed.
   ///
   /// In en, this message translates to:
   /// **'Couldn\'t download video, try again later'**
   String get toastVideoDownloadFailed;
+
+  /// No description provided for @toastVideoDeleteUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This video can\'t be deleted'**
+  String get toastVideoDeleteUnavailable;
 
   /// No description provided for @toastPhotoQueued.
   ///
@@ -461,7 +473,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorPendingDossier.
   ///
   /// In en, this message translates to:
-  /// **'You still have a dossier submitted to the marketplace, please handle it before continuing.'**
+  /// **'You still have an open claim dossier, please handle it before continuing.'**
   String get errorPendingDossier;
 
   /// No description provided for @errorSessionExpired.
@@ -983,7 +995,7 @@ abstract class AppLocalizations {
   /// No description provided for @deletePendingProfilesWarning.
   ///
   /// In en, this message translates to:
-  /// **'You still have {count} \"submitted to marketplace\" dossiers — their share links will stop working'**
+  /// **'You still have {count} open claim dossiers — their share links will stop working'**
   String deletePendingProfilesWarning(int count);
 
   /// No description provided for @detailRecordedTime.

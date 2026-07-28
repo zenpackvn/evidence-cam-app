@@ -567,10 +567,6 @@ class EcVideoDetailScreen extends StatelessWidget {
                               style: _t(16, FontWeight.w600, BrandColors.ink),
                             ),
                           ),
-                          Text(
-                            video.duration,
-                            style: _t(13, FontWeight.w500, BrandColors.mut),
-                          ),
                         ],
                       ),
                     ),
@@ -606,6 +602,140 @@ class EcVideoDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     if (canDelete) _EcDetailDeleteRow(onTap: onDelete),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Photo detail — bottom-sheet-style "Chi tiết ảnh": the photo itself, plus
+/// when and who captured it.
+class EcPhotoDetailScreen extends StatelessWidget {
+  const EcPhotoDetailScreen({required this.photo, this.onClose, super.key});
+
+  /// The photo whose details are shown.
+  final EcVideoDetail photo;
+
+  /// Called when the dimmed area above the sheet is tapped.
+  final VoidCallback? onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.transparent,
+      child: Column(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onClose,
+            ),
+          ),
+          DecoratedBox(
+            decoration: ShapeDecoration(
+              color: BrandColors.bg,
+              shape: SmoothRectangleBorder(
+                smoothness: ecCornerSmoothing,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: BrandColors.line,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: BrandColors.soft,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Icon(
+                              photo.type.icon,
+                              size: 16,
+                              color: BrandColors.mut,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              photo.title,
+                              overflow: TextOverflow.ellipsis,
+                              style: _t(16, FontWeight.w600, BrandColors.ink),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: photo.mediaUrl == null
+                            ? const ColoredBox(
+                                color: BrandColors.soft,
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  size: 40,
+                                  color: BrandColors.mut,
+                                ),
+                              )
+                            : Image.network(
+                                photo.mediaUrl!,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, progress) {
+                                  if (progress == null) return child;
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const ColoredBox(
+                                      color: BrandColors.soft,
+                                      child: Icon(
+                                        Icons.broken_image_outlined,
+                                        size: 40,
+                                        color: BrandColors.mut,
+                                      ),
+                                    ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _EcDetailInfoRow(
+                      label: context.l10n.detailRecordedTime,
+                      value: photo.recordedAt,
+                    ),
+                    _EcDetailInfoRow(
+                      label: context.l10n.detailRecordedBy,
+                      value: photo.recordedBy,
+                    ),
                   ],
                 ),
               ),
