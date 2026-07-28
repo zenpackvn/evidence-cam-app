@@ -350,7 +350,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.deleteForces, [false]);
-      expect(find.textContaining('hồ sơ "đã gửi sàn"'), findsOneWidget);
+      // Copy comes from the ARB: the dossier "đã gửi sàn" state was cut on
+      // 2026-07-28 (a dossier is only đang mở / đã thu hồi now). Matched on
+      // the tail, which is unique to the screen's warning — the toast opens
+      // with the same "hồ sơ khiếu nại đang mở" phrase.
+      expect(
+        find.textContaining('link chia sẻ sẽ ngừng hoạt động'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Xóa vĩnh viễn'));
       await tester.pumpAndSettle();
@@ -386,7 +393,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.deleteForces, [false]);
-      expect(find.textContaining('hồ sơ "đã gửi sàn"'), findsOneWidget);
+      // Copy comes from the ARB: the dossier "đã gửi sàn" state was cut on
+      // 2026-07-28 (a dossier is only đang mở / đã thu hồi now). Matched on
+      // the tail, which is unique to the screen's warning — the toast opens
+      // with the same "hồ sơ khiếu nại đang mở" phrase.
+      expect(
+        find.textContaining('link chia sẻ sẽ ngừng hoạt động'),
+        findsOneWidget,
+      );
 
       // Let the confirmation toast dismiss itself so its overlay doesn't leak.
       await tester.pump(const Duration(seconds: 2));
@@ -677,7 +691,13 @@ class _OrderLoadFailingRepository extends FakeEcRepository {
   ];
 
   @override
-  Future<List<OrderSummaryDto>> orders(String shopId, {int? before}) async {
+  Future<List<OrderSummaryDto>> orders(
+    String shopId, {
+    int? before,
+    String? uploadState,
+    int? fromTs,
+    String? videoTypeId,
+  }) async {
     ordersShopId = shopId;
     throw Exception('orders unavailable');
   }
@@ -879,8 +899,13 @@ class _DemoRepository extends FakeEcRepository {
   ];
 
   @override
-  Future<List<OrderSummaryDto>> orders(String shopId, {int? before}) async =>
-      const [
+  Future<List<OrderSummaryDto>> orders(
+    String shopId, {
+    int? before,
+    String? uploadState,
+    int? fromTs,
+    String? videoTypeId,
+  }) async => const [
         OrderSummaryDto(
           id: 'o1',
           tracking: 'SPXVN024567890',

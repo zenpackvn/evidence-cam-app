@@ -29,6 +29,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  # Widget tests install the localization delegates so `context.l10n` resolves.
+  flutter_localizations:
+    sdk: flutter
+
 flutter:
   # The splash logo, referenced as a bare `assets/icons/logo.png`. Bundled here
   # so the package's own tests resolve it; the host app also declares it, so the

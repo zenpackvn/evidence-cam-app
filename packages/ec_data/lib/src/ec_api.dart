@@ -147,12 +147,29 @@ class EcApi {
       _dio.delete<void>('/api/shops/$shopId/video-types/$typeId');
 
   // --- orders / search (FR-04, FR-01) ---
-  Future<List<OrderSummaryDto>> listOrders(String shopId, {int? before}) =>
-      _getList(
-        '/api/shops/$shopId/orders',
-        OrderSummaryDto.fromJson,
-        query: before == null ? null : {'before': before},
-      );
+  /// Lists a page of orders, newest first.
+  ///
+  /// [uploadState] (`pending` | `error` | `done`), [fromTs] and [videoTypeId]
+  /// map onto the backend's `upload_state` / `from` / `video_type_id` query
+  /// params. Filtering has to happen server-side: the list is paged, so
+  /// filtering only the loaded page would quietly hide matches still on the
+  /// next one.
+  Future<List<OrderSummaryDto>> listOrders(
+    String shopId, {
+    int? before,
+    String? uploadState,
+    int? fromTs,
+    String? videoTypeId,
+  }) => _getList(
+    '/api/shops/$shopId/orders',
+    OrderSummaryDto.fromJson,
+    query: {
+      'before': ?before,
+      'upload_state': ?uploadState,
+      'from': ?fromTs,
+      'video_type_id': ?videoTypeId,
+    },
+  );
 
   Future<List<OrderSummaryDto>> searchOrders(String shopId, String query) =>
       _getList(

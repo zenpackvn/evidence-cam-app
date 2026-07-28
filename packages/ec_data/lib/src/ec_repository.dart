@@ -53,7 +53,17 @@ abstract interface class EcRepository {
   );
   Future<void> deleteVideoType(String shopId, String typeId);
   Future<QuotaDto> quota();
-  Future<List<OrderSummaryDto>> orders(String shopId, {int? before});
+  /// A page of orders, newest first. [uploadState] / [fromTs] / [videoTypeId]
+  /// are the "Vận đơn" tab's three filters; they are applied by the backend
+  /// because the list is paged and a client-side filter would only ever see
+  /// the rows already loaded.
+  Future<List<OrderSummaryDto>> orders(
+    String shopId, {
+    int? before,
+    String? uploadState,
+    int? fromTs,
+    String? videoTypeId,
+  });
   Future<List<OrderSummaryDto>> searchOrders(String shopId, String query);
   Future<OrderDto> createOrder(String shopId, String tracking);
   Future<OrderDetailDto> order(String shopId, String orderId);
@@ -154,8 +164,19 @@ class RemoteEcRepository implements EcRepository {
   Future<QuotaDto> quota() => _api.getQuota();
 
   @override
-  Future<List<OrderSummaryDto>> orders(String shopId, {int? before}) =>
-      _api.listOrders(shopId, before: before);
+  Future<List<OrderSummaryDto>> orders(
+    String shopId, {
+    int? before,
+    String? uploadState,
+    int? fromTs,
+    String? videoTypeId,
+  }) => _api.listOrders(
+    shopId,
+    before: before,
+    uploadState: uploadState,
+    fromTs: fromTs,
+    videoTypeId: videoTypeId,
+  );
 
   @override
   Future<List<OrderSummaryDto>> searchOrders(String shopId, String query) =>
@@ -308,7 +329,13 @@ class FakeEcRepository implements EcRepository {
   );
 
   @override
-  Future<List<OrderSummaryDto>> orders(String shopId, {int? before}) async {
+  Future<List<OrderSummaryDto>> orders(
+    String shopId, {
+    int? before,
+    String? uploadState,
+    int? fromTs,
+    String? videoTypeId,
+  }) async {
     return const [];
   }
 

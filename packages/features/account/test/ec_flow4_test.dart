@@ -2,13 +2,32 @@ import 'package:app_ui/app_ui.dart';
 import 'package:feature_account/feature_account.dart';
 import 'package:flutter/cupertino.dart' show CupertinoTextField;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:localization/localization.dart';
 
+/// These screens read their copy through `context.l10n`, so the harness has to
+/// install the delegates — without them `AppLocalizations.of` returns null and
+/// every screen in this file throws on build. Pinned to `vi`, which is what
+/// the expectations below are written against.
 Future<void> _pump(WidgetTester tester, Widget screen) {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  return tester.pumpWidget(MaterialApp(theme: AppTheme.light(), home: screen));
+  return tester.pumpWidget(
+    MaterialApp(
+      theme: AppTheme.light(),
+      locale: const Locale('vi'),
+      supportedLocales: const [Locale('vi'), Locale('en')],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: screen,
+    ),
+  );
 }
 
 void main() {
@@ -79,8 +98,9 @@ void main() {
     ) async {
       await _pump(tester, const EcLanguageScreen());
       expect(find.text('Ngôn ngữ'), findsOneWidget);
-      expect(find.text('Tiếng Việt'), findsOneWidget);
-      expect(find.text('Vietnamese'), findsOneWidget);
+      // Each row is titled in its own language and subtitled in the current
+      // one, so under `vi` the Vietnamese row reads "Tiếng Việt" twice.
+      expect(find.text('Tiếng Việt'), findsNWidgets(2));
       expect(find.text('English'), findsOneWidget);
       expect(find.text('Tiếng Anh'), findsOneWidget);
       expect(find.byIcon(Icons.check), findsOneWidget);
@@ -102,12 +122,24 @@ void main() {
 
   group('EcQuotaScreen', () {
     testWidgets('shows plan, quota usage and retention', (tester) async {
-      await _pump(tester, const EcQuotaScreen());
+      // Quota is measured in stored bytes, not a video count — the old
+      // "237 / 500 video" plan model was replaced by the storage plans.
+      const gb = 1024 * 1024 * 1024;
+      await _pump(
+        tester,
+        const EcQuotaScreen(
+          planLabel: 'Tiết kiệm',
+          usedBytes: 12 * gb,
+          capBytes: 60 * gb,
+          retentionTotalDays: 90,
+        ),
+      );
       expect(find.text('Báo cáo & Quota'), findsOneWidget);
       expect(find.text('Gói hiện tại'), findsOneWidget);
-      expect(find.text('Pro 500 (P1)'), findsOneWidget);
-      expect(find.text('237 / 500 video'), findsOneWidget);
-      expect(find.text('Đã dùng 52%'), findsOneWidget);
+      expect(find.text('Tiết kiệm'), findsOneWidget);
+      // Remaining / cap, and the matching used percentage.
+      expect(find.text('48 GB / 60 GB'), findsOneWidget);
+      expect(find.text('Đã dùng 20%'), findsOneWidget);
       expect(find.text('Lưu trữ'), findsOneWidget);
       expect(find.text('90 ngày'), findsOneWidget);
       expect(find.text('Nâng cấp gói'), findsOneWidget);
@@ -126,7 +158,14 @@ void main() {
     testWidgets('step 1 shows warning and note', (tester) async {
       await _pump(tester, const EcDeleteAccountScreen());
       expect(find.text('Xóa tài khoản?'), findsOneWidget);
-      expect(find.textContaining('hồ sơ "đã gửi sàn"'), findsOneWidget);
+      // Copy comes from the ARB: the dossier "đã gửi sàn" state was cut on
+      // 2026-07-28 (a dossier is only đang mở / đã thu hồi now). Matched on
+      // the tail, which is unique to the screen's warning — the toast opens
+      // with the same "hồ sơ khiếu nại đang mở" phrase.
+      expect(
+        find.textContaining('link chia sẻ sẽ ngừng hoạt động'),
+        findsOneWidget,
+      );
       expect(find.text('Hủy'), findsOneWidget);
       expect(find.text('Xóa vĩnh viễn'), findsOneWidget);
       expect(find.textContaining('Bước 1/2'), findsOneWidget);

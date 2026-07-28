@@ -37,7 +37,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toastPendingDossierConfirm =>
-      'You still have a dossier submitted to the marketplace, please confirm again';
+      'You still have an open claim dossier, please confirm again';
 
   @override
   String get toastCopiedShareLink => 'Share link copied';
@@ -201,7 +201,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorPendingDossier =>
-      'You still have a dossier submitted to the marketplace, please handle it before continuing.';
+      'You still have an open claim dossier, please handle it before continuing.';
 
   @override
   String get errorSessionExpired =>
@@ -486,7 +486,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deletePendingProfilesWarning(int count) {
-    return 'You still have $count \"submitted to marketplace\" dossiers — their share links will stop working';
+    return 'You still have $count open claim dossiers — their share links will stop working';
   }
 
   @override
@@ -865,6 +865,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ordersNotFound => 'No orders found';
+
+  @override
+  String get filterStatusLabel => 'Upload status';
+
+  @override
+  String get filterStatusAll => 'All';
+
+  @override
+  String get filterStatusPending => 'Awaiting upload';
+
+  @override
+  String get filterStatusError => 'Upload errors';
+
+  @override
+  String get filterStatusDone => 'Fully uploaded';
+
+  @override
+  String get filterTimeLabel => 'Time';
+
+  @override
+  String get filterTimeAll => 'Any time';
+
+  @override
+  String get filterTimeToday => 'Today';
+
+  @override
+  String get filterTime7d => 'Last 7 days';
+
+  @override
+  String get filterTime30d => 'Last 30 days';
+
+  @override
+  String get filterTypeLabel => 'Video type';
+
+  @override
+  String get filterTypeAll => 'Video type';
 
   @override
   String deleteVideoTypeTitle(String typeName) {

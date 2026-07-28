@@ -3,13 +3,32 @@ import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/cupertino.dart'
     show CupertinoActionSheet, CupertinoTextField;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:localization/localization.dart';
 
+/// These screens read their copy through `context.l10n`, so the harness has to
+/// install the delegates — without them `AppLocalizations.of` returns null and
+/// every screen in this file throws on build. Pinned to `vi`, which is what
+/// the expectations below are written against.
 Future<void> _pump(WidgetTester tester, Widget screen) {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  return tester.pumpWidget(MaterialApp(theme: AppTheme.light(), home: screen));
+  return tester.pumpWidget(
+    MaterialApp(
+      theme: AppTheme.light(),
+      locale: const Locale('vi'),
+      supportedLocales: const [Locale('vi'), Locale('en')],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: screen,
+    ),
+  );
 }
 
 void main() {
@@ -323,7 +342,9 @@ void main() {
   group('EcConfirmDeleteScreen', () {
     testWidgets('renders dialog copy without overflow', (tester) async {
       await _pump(tester, const EcConfirmDeleteScreen());
-      expect(find.text('Xóa loại “Cân hàng”?'), findsOneWidget);
+      // Straight quotes: the copy comes from `deleteVideoTypeTitle` in the ARB,
+      // which the curly-quoted literal here predates.
+      expect(find.text('Xóa loại "Cân hàng"?'), findsOneWidget);
       expect(find.text('Hủy'), findsOneWidget);
       expect(find.text('Xóa loại'), findsOneWidget);
       expect(find.text('(Chỉ xóa khi loại chưa có video nào)'), findsOneWidget);
@@ -438,22 +459,146 @@ void main() {
       expect(find.text('SPXVN044556677'), findsOneWidget);
     });
 
-    testWidgets('filter chips are real dropdown selects', (tester) async {
+    testWidgets('the three filter chips start unfiltered', (tester) async {
       await _pump(
         tester,
         const EcHomeOrdersScreen(shopName: 'Shop ABC', orders: orders),
       );
-      // Each of the three filter chips is a working select, not a dead button:
-      // three chevron-down chips that open (and dismiss) a Cupertino action
-      // sheet on tap.
+      // Three chevron-down chips, each showing its own "no filter" value —
+      // they used to be three chips whose sheets offered a single option
+      // (themselves), which made two of the three dead controls.
       expect(find.byIcon(Icons.keyboard_arrow_down), findsNWidgets(3));
+      expect(find.text('Tất cả'), findsOneWidget);
+      expect(find.text('Mọi lúc'), findsOneWidget);
       expect(find.text('Loại video'), findsOneWidget);
+    });
+
+    testWidgets('status chip offers every upload state and reports the pick', (
+      tester,
+    ) async {
+      final picked = <EcOrderFilters>[];
+      await _pump(
+        tester,
+        EcHomeOrdersScreen(
+          shopName: 'Shop ABC',
+          orders: orders,
+          onFiltersChanged: picked.add,
+        ),
+      );
+
+      await tester.tap(find.text('Tất cả'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CupertinoActionSheet), findsOneWidget);
+      // A real option set, not just the chip's own label back at it.
+      expect(find.text('Chờ upload'), findsOneWidget);
+      expect(find.text('Có lỗi tải'), findsOneWidget);
+      expect(find.text('Đã tải xong'), findsOneWidget);
+
+      await tester.tap(find.text('Có lỗi tải'));
+      await tester.pumpAndSettle();
+
+      // The backend's `upload_state` value goes out, and the chip now shows
+      // the selection instead of "Tất cả".
+      expect(picked.single.uploadState, 'error');
+      expect(picked.single.videoTypeId, isNull);
+      expect(find.text('Có lỗi tải'), findsOneWidget);
+      expect(find.text('Tất cả'), findsNothing);
+    });
+
+    testWidgets('time chip maps "Hôm nay" to local midnight', (tester) async {
+      final picked = <EcOrderFilters>[];
+      await _pump(
+        tester,
+        EcHomeOrdersScreen(
+          shopName: 'Shop ABC',
+          orders: orders,
+          onFiltersChanged: picked.add,
+        ),
+      );
+
+      await tester.tap(find.text('Mọi lúc'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hôm nay'));
+      await tester.pumpAndSettle();
+
+      final now = DateTime.now();
+      expect(
+        picked.single.fromTs,
+        DateTime(now.year, now.month, now.day).millisecondsSinceEpoch,
+      );
+    });
+
+    testWidgets('type chip lists the shop video types, not the loaded rows', (
+      tester,
+    ) async {
+      final picked = <EcOrderFilters>[];
+      await _pump(
+        tester,
+        EcHomeOrdersScreen(
+          shopName: 'Shop ABC',
+          orders: orders,
+          // Deliberately a type no loaded order uses: the options come from the
+          // shop's types, so a filter can reach rows on a later page.
+          videoTypes: const [EcVideoTypeOption(id: 'vt-9', name: 'Cân hàng')],
+          onFiltersChanged: picked.add,
+        ),
+      );
+
       await tester.ensureVisible(find.text('Loại video'));
       await tester.tap(find.text('Loại video'));
       await tester.pumpAndSettle();
-      expect(find.byType(CupertinoActionSheet), findsOneWidget);
-      await tester.tap(find.text('Hủy'));
+      expect(find.text('Cân hàng'), findsOneWidget);
+
+      await tester.tap(find.text('Cân hàng'));
       await tester.pumpAndSettle();
+
+      expect(picked.single.videoTypeId, 'vt-9');
+    });
+
+    testWidgets('picking a filter never hides rows locally', (tester) async {
+      // Filters are applied by the backend, so the widget must keep showing
+      // whatever it was handed until the parent supplies a new page.
+      await _pump(
+        tester,
+        EcHomeOrdersScreen(
+          shopName: 'Shop ABC',
+          orders: orders,
+          videoTypes: const [EcVideoTypeOption(id: 'vt-9', name: 'Cân hàng')],
+          onFiltersChanged: (_) {},
+        ),
+      );
+
+      await tester.ensureVisible(find.text('Loại video'));
+      await tester.tap(find.text('Loại video'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cân hàng'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('SPXVN024567890'), findsOneWidget);
+      expect(find.text('SPXVN044556677'), findsOneWidget);
+    });
+
+    testWidgets('an empty filtered list says "not found", not "no orders"', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        EcHomeOrdersScreen(
+          shopName: 'Shop ABC',
+          orders: const [],
+          emptyText: 'Shop chưa có đơn nào',
+          onFiltersChanged: (_) {},
+        ),
+      );
+      expect(find.text('Shop chưa có đơn nào'), findsOneWidget);
+
+      await tester.tap(find.text('Tất cả'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Chờ upload'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Shop chưa có đơn nào'), findsNothing);
+      expect(find.text('Không tìm thấy đơn hàng'), findsOneWidget);
     });
   });
 }

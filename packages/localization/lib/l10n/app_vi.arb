@@ -276,6 +276,18 @@
   "resolutionAppliesNote": "Áp dụng cho video quay mới của shop",
   "resolutionDefaultOption": "720p (mặc định)",
   "ordersNotFound": "Không tìm thấy đơn hàng",
+  "filterStatusLabel": "Trạng thái upload",
+  "filterStatusAll": "Tất cả",
+  "filterStatusPending": "Chờ upload",
+  "filterStatusError": "Có lỗi tải",
+  "filterStatusDone": "Đã tải xong",
+  "filterTimeLabel": "Thời gian",
+  "filterTimeAll": "Mọi lúc",
+  "filterTimeToday": "Hôm nay",
+  "filterTime7d": "7 ngày qua",
+  "filterTime30d": "30 ngày qua",
+  "filterTypeLabel": "Loại video",
+  "filterTypeAll": "Loại video",
   "deleteVideoTypeTitle": "Xóa loại \"{typeName}\"?",
   "memberCurrentRole": "Vai trò hiện tại: {role}"
 }
