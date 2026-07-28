@@ -15,8 +15,11 @@ void main() {
       expect(env.isProd, isFalse);
     });
 
-    test('defaults the base URL to localhost', () {
-      expect(env.apiBaseUrl, 'http://localhost:8080');
+    test('defaults the base URL to the production API', () {
+      // A build with no env file must still reach a real backend — the old
+      // localhost default silently shipped an app that could only talk to the
+      // machine it was built on.
+      expect(env.apiBaseUrl, 'https://api.zenpack.vn');
     });
 
     test('defaults the API timeout to 10 seconds', () {

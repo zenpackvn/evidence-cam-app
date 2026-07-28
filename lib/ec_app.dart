@@ -129,10 +129,7 @@ class _EcAppState extends State<EcApp> {
         : ApiEvidenceUploader(buildApi(auth: _auth, url: _apiUrl)),
     store: widget.evidenceStore,
   );
-  static const _apiUrl = String.fromEnvironment(
-    'EC_API_URL',
-    defaultValue: String.fromEnvironment('API_BASE_URL'),
-  );
+  static const String _apiUrl = kApiBaseUrl;
 
   // The shop clocked into at the shop layer (FR-05). Its id drives which orders
   // load, its resolution seeds the camera, and its role gates evidence deletion
@@ -1310,10 +1307,7 @@ String _planDisplayName(AppLocalizations l10n, String planCode) =>
     };
 
 String _dossierUrl(String token) {
-  const apiUrl = String.fromEnvironment(
-    'EC_API_URL',
-    defaultValue: String.fromEnvironment('API_BASE_URL'),
-  );
+  const apiUrl = kApiBaseUrl;
   final base = apiUrl.endsWith('/')
       ? apiUrl.substring(0, apiUrl.length - 1)
       : apiUrl;

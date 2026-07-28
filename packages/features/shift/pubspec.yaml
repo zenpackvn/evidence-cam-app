@@ -17,6 +17,9 @@ dependencies:
   ec_ui: ^0.1.0
   localization: ^0.1.0
 
+  # Luật mật khẩu dùng chung với feature còn lại (đăng ký vs đổi mật khẩu).
+  shared_contracts: ^0.1.0
+
   # Renders the multi-color Google "G" mark on the sign-in button (design uses
   # the 4-color logo, not a single-color glyph).
   flutter_svg: ^2.3.0

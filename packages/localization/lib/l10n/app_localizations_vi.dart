@@ -465,13 +465,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get passwordNewLabel => 'Mật khẩu mới';
 
   @override
-  String get passwordMinHint => 'Tối thiểu 8 ký tự';
+  String get passwordMinHint => 'Tối thiểu 8 ký tự, có cả chữ và số';
 
   @override
   String get passwordNewRequired => 'Vui lòng nhập mật khẩu mới';
 
   @override
   String get passwordMin8Error => 'Mật khẩu tối thiểu 8 ký tự';
+
+  @override
+  String get passwordNeedsLetterDigit => 'Mật khẩu cần có cả chữ và số';
+
+  @override
+  String get passwordTooCommon =>
+      'Mật khẩu quá dễ đoán, hãy chọn mật khẩu khác';
 
   @override
   String get passwordConfirmLabel => 'Nhập lại mật khẩu mới';

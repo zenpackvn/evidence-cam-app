@@ -467,13 +467,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordNewLabel => 'New password';
 
   @override
-  String get passwordMinHint => 'At least 8 characters';
+  String get passwordMinHint =>
+      'At least 8 characters, with letters and numbers';
 
   @override
   String get passwordNewRequired => 'Please enter a new password';
 
   @override
   String get passwordMin8Error => 'Password must be at least 8 characters';
+
+  @override
+  String get passwordNeedsLetterDigit =>
+      'Password needs both letters and numbers';
+
+  @override
+  String get passwordTooCommon =>
+      'That password is too easy to guess — pick another';
 
   @override
   String get passwordConfirmLabel => 'Re-enter new password';

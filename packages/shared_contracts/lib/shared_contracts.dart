@@ -9,4 +9,5 @@ export 'src/bookmark_stats.dart';
 export 'src/bookmark_summaries.dart';
 export 'src/collections.dart';
 export 'src/di.module.dart' show SharedContractsPackageModule;
+export 'src/password_policy.dart';
 export 'src/session.dart';

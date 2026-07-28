@@ -15,7 +15,7 @@ These configuration files are injected into the Flutter application at compile/r
 | Key | Type | Description |
 | --- | --- | --- |
 | `FLAVOR` | string | One of `dev`, `staging`, `prod`. Backs `EnvConfig.isDev/isStaging/isProd`. |
-| `API_BASE_URL` | string | Base URL for the HTTP client. |
+| `API_BASE_URL` | string | Base URL for the HTTP client. Defaults to the production API (`https://api.zenpack.vn`) when no env file is passed — see `kApiBaseUrl` in `packages/ec_data/lib/src/ec_env.dart`. |
 | `API_TIMEOUT_SECONDS` | int | Connect/receive timeout for Dio, in seconds. Defaults to 10 if omitted. |
 
 ## Usage
