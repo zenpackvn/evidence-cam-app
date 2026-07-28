@@ -326,36 +326,8 @@ void main() {
   });
 
   test(
-    'dossier management, dashboard, export and account deletion endpoints',
+    'dossier read/revoke, export and account deletion endpoints',
     () async {
-      when(
-        () => dio.get<List<dynamic>>(
-          '/api/shops/s1/dossiers',
-          queryParameters: any(named: 'queryParameters'),
-        ),
-      ).thenAnswer(
-        (_) async => _res('/api/shops/s1/dossiers', <dynamic>[
-          {
-            'share_token': 'tok',
-            'revoked': 0,
-            'status': 'sent',
-            'tracking_raw': 'SPXVN1',
-          },
-        ]),
-      );
-      when(
-        () => dio.patch<Map<String, dynamic>>(
-          '/api/shops/s1/orders/o1/dossier',
-          data: any(named: 'data'),
-        ),
-      ).thenAnswer(
-        (_) async => _res('/api/shops/s1/orders/o1/dossier', {
-          'share_token': 'tok',
-          'revoked': 0,
-          'status': 'won',
-          'order_value': 125000,
-        }),
-      );
       when(
         () => dio.get<Map<String, dynamic>?>(
           '/api/shops/s1/orders/o1/dossier',
@@ -365,21 +337,6 @@ void main() {
         (_) async => _res('/api/shops/s1/orders/o1/dossier', {
           'share_token': 'tok',
           'revoked': 0,
-          'status': 'draft',
-        }),
-      );
-      when(
-        () => dio.get<Map<String, dynamic>>(
-          '/api/shops/s1/dashboard',
-          queryParameters: any(named: 'queryParameters'),
-        ),
-      ).thenAnswer(
-        (_) async => _res('/api/shops/s1/dashboard', {
-          'counts': {'draft': 0, 'sent': 0, 'won': 1, 'lost': 0},
-          'won': 1,
-          'lost': 0,
-          'win_rate': 1.0,
-          'saved_amount': 125000,
         }),
       );
       when(
@@ -404,21 +361,7 @@ void main() {
         () => dio.delete<void>('/api/shops/s1/orders/o1/dossier'),
       ).thenAnswer((_) async => _res('/api/shops/s1/orders/o1/dossier', null));
 
-      expect(
-        (await api.listDossiers('s1', status: 'sent')).single.status,
-        'sent',
-      );
-      expect(
-        (await api.updateDossier(
-          's1',
-          'o1',
-          status: 'won',
-          orderValue: 125000,
-        )).status,
-        'won',
-      );
       expect((await api.getDossier('s1', 'o1'))?.shareToken, 'tok');
-      expect((await api.getDashboard('s1')).savedAmount, 125000);
       expect(await api.exportCsv('s1'), 'tracking\n');
       await api.revokeDossier('s1', 'o1');
       await api.deleteAccount(force: true);

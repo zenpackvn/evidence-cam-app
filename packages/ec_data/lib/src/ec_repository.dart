@@ -339,7 +339,6 @@ class FakeEcRepository implements EcRepository {
       const DossierDto(
         shareToken: '',
         revoked: false,
-        status: 'draft',
       );
 
   @override

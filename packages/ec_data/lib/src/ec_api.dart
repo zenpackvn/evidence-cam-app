@@ -300,44 +300,6 @@ class EcApi {
   Future<void> revokeDossier(String shopId, String orderId) =>
       _dio.delete<void>('/api/shops/$shopId/orders/$orderId/dossier');
 
-  Future<List<DossierDto>> listDossiers(String shopId, {String? status}) =>
-      _getList(
-        '/api/shops/$shopId/dossiers',
-        DossierDto.fromJson,
-        query: status == null ? null : {'status': status},
-      );
-
-  Future<DossierDto> updateDossier(
-    String shopId,
-    String orderId, {
-    String? status,
-    int? orderValue,
-    String? note,
-  }) async {
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '/api/shops/$shopId/orders/$orderId/dossier',
-      data: {
-        'status': ?status,
-        'order_value': ?orderValue,
-        'note': ?note,
-      },
-    );
-    return DossierDto.fromJson(res.data!);
-  }
-
-  Future<DashboardDto> getDashboard(
-    String shopId, {
-    int? from,
-    int? to,
-  }) => _get(
-    '/api/shops/$shopId/dashboard',
-    DashboardDto.fromJson,
-    query: {
-      'from': ?from,
-      'to': ?to,
-    },
-  );
-
   Future<String> exportCsv(String shopId, {int? from, int? to}) async {
     final res = await _dio.get<String>(
       '/api/shops/$shopId/export',

@@ -504,7 +504,7 @@ String? _apiErrorCode(Object error) {
 String? _apiErrorText(AppLocalizations l10n, Object error) {
   if (error is! DioException) return null;
   switch (_apiErrorCode(error)) {
-    case 'sent_dossiers_exist':
+    case 'open_dossiers_exist':
       return l10n.errorPendingDossier;
     case 'invalid_token':
     case 'missing_bearer_token':
@@ -832,7 +832,7 @@ class _DeleteAccountRoute extends StatefulWidget {
 }
 
 class _DeleteAccountRouteState extends State<_DeleteAccountRoute> {
-  var _sentWarningShown = false;
+  var _openDossierWarningShown = false;
   var _screenKey = 0;
   var _deleting = false;
 
@@ -841,7 +841,7 @@ class _DeleteAccountRouteState extends State<_DeleteAccountRoute> {
     setState(() => _deleting = true);
     try {
       await widget.repo.deleteAccount(
-        force: _sentWarningShown,
+        force: _openDossierWarningShown,
         dryRun: true,
       );
       await widget.auth.deleteAccount();
@@ -851,10 +851,10 @@ class _DeleteAccountRouteState extends State<_DeleteAccountRoute> {
       await _credentials()?.clear();
       if (mounted) context.go('/login', extra: 'back');
     } on Object catch (error) {
-      if (_isSentDossierConflict(error)) {
+      if (_isOpenDossierConflict(error)) {
         if (!mounted) return;
         setState(() {
-          _sentWarningShown = true;
+          _openDossierWarningShown = true;
           _screenKey++;
         });
         _toast(context, context.l10n.toastPendingDossierConfirm);
@@ -869,15 +869,15 @@ class _DeleteAccountRouteState extends State<_DeleteAccountRoute> {
   @override
   Widget build(BuildContext context) => EcDeleteAccountScreen(
     key: ValueKey(_screenKey),
-    pendingSharedProfilesCount: _sentWarningShown ? 1 : 0,
+    pendingSharedProfilesCount: _openDossierWarningShown ? 1 : 0,
     onCancel: () => context.pop(),
     onConfirmDelete: _confirmDelete,
   );
 }
 
-bool _isSentDossierConflict(Object error) =>
-    _apiErrorCode(error) == 'sent_dossiers_exist' ||
-    error.toString().contains('sent_dossiers_exist');
+bool _isOpenDossierConflict(Object error) =>
+    _apiErrorCode(error) == 'open_dossiers_exist' ||
+    error.toString().contains('open_dossiers_exist');
 
 /// Presents a sheet/dialog screen as a modal OVER the previous screen: the
 /// route is transparent (opaque:false) so the screen behind shows through a

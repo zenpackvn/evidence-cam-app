@@ -6,7 +6,6 @@ library;
 
 int _int(Object? v) => (v as num?)?.toInt() ?? 0;
 int? _intN(Object? v) => (v as num?)?.toInt();
-double? _doubleN(Object? v) => (v as num?)?.toDouble();
 
 class AccountDto {
   const AccountDto({
@@ -232,27 +231,18 @@ class DossierDto {
   const DossierDto({
     required this.shareToken,
     required this.revoked,
-    required this.status,
     this.tracking,
-    this.orderValue,
-    this.note,
   });
 
   factory DossierDto.fromJson(Map<String, dynamic> j) => DossierDto(
     shareToken: j['share_token'] as String,
     revoked: _int(j['revoked']) == 1,
-    status: (j['status'] as String?) ?? 'draft',
     tracking: j['tracking_raw'] as String?,
-    orderValue: _intN(j['order_value']),
-    note: j['note'] as String?,
   );
 
   final String shareToken;
   final bool revoked;
-  final String status;
   final String? tracking;
-  final int? orderValue;
-  final String? note;
 }
 
 class PresignDto {
@@ -333,32 +323,4 @@ class VideoTypeDto {
   final String id;
   final String name;
   final bool isDefault;
-}
-
-class DashboardDto {
-  const DashboardDto({
-    required this.counts,
-    required this.won,
-    required this.lost,
-    required this.savedAmount,
-    this.winRate,
-  });
-
-  factory DashboardDto.fromJson(Map<String, dynamic> j) => DashboardDto(
-    counts: Map<String, int>.from(
-      (j['counts'] as Map<String, dynamic>).map(
-        (key, value) => MapEntry(key, _int(value)),
-      ),
-    ),
-    won: _int(j['won']),
-    lost: _int(j['lost']),
-    winRate: _doubleN(j['win_rate']),
-    savedAmount: _int(j['saved_amount']),
-  );
-
-  final Map<String, int> counts;
-  final int won;
-  final int lost;
-  final double? winRate;
-  final int savedAmount;
 }

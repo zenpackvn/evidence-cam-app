@@ -752,7 +752,7 @@ class _DeleteConflictRepository extends _DemoRepository {
   @override
   Future<void> deleteAccount({bool force = false, bool dryRun = false}) async {
     deleteForces.add(force);
-    if (!force) throw StateError('sent_dossiers_exist');
+    if (!force) throw StateError('open_dossiers_exist');
     if (dryRun) return;
   }
 }
@@ -772,7 +772,7 @@ class _DioConflictRepository extends _DemoRepository {
         response: Response<Map<String, dynamic>>(
           requestOptions: RequestOptions(path: '/api/me'),
           statusCode: 409,
-          data: const {'error': 'sent_dossiers_exist'},
+          data: const {'error': 'open_dossiers_exist'},
         ),
       );
     }
@@ -930,7 +930,6 @@ class _DossierRepository extends _DemoRepository {
     return dossier = const DossierDto(
       shareToken: 'tok-explicit',
       revoked: false,
-      status: 'draft',
     );
   }
 

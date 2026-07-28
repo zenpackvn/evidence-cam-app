@@ -80,7 +80,6 @@ void main() {
         (_) async => const DossierDto(
           shareToken: 'tok',
           revoked: false,
-          status: 'draft',
         ),
       );
       final dossier = await repo.getDossier('s1', 'o9');
