@@ -18,6 +18,9 @@ abstract interface class EvidenceClipStore {
 
   /// Upserts [task] by its id.
   Future<void> save(UploadTask task);
+
+  /// Deletes the persisted clip with this id, if any.
+  Future<void> remove(String id);
 }
 
 /// ObjectBox-backed store — the production single source of truth.
@@ -34,6 +37,16 @@ class ObjectBoxEvidenceClipStore implements EvidenceClipStore {
 
   @override
   Future<void> save(UploadTask task) async => _box.put(entityFromTask(task));
+
+  @override
+  Future<void> remove(String id) async {
+    final query = _box.query(EvidenceClipEntity_.taskId.equals(id)).build();
+    try {
+      query.remove();
+    } finally {
+      query.close();
+    }
+  }
 }
 
 /// In-memory store for tests (and a safe default when no DB is wired). Stores
@@ -48,6 +61,9 @@ class InMemoryEvidenceClipStore implements EvidenceClipStore {
   @override
   Future<void> save(UploadTask task) async =>
       _byId[task.id] = taskFromEntity(entityFromTask(task));
+
+  @override
+  Future<void> remove(String id) async => _byId.remove(id);
 }
 
 /// Maps a persisted row to the UI/queue model.

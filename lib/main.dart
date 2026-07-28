@@ -7,6 +7,7 @@ import 'package:database/database.dart';
 import 'package:ec_data/ec_data.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:storage/storage.dart';
 
@@ -24,6 +25,14 @@ Future<void> main() async {
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+
+      // Portrait-only by default (matches iOS's Info.plist restriction and
+      // the rest of the app's portrait-only design); the record screen lifts
+      // this itself so the camera can follow however the phone is held.
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
 
       try {
         await configureDependencies();

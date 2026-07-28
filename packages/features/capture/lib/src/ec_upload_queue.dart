@@ -21,7 +21,7 @@ import 'package:path_provider/path_provider.dart';
 import 'ec_evidence_store.dart';
 import 'ec_evidence_uploader.dart';
 
-enum EcUploadState { waiting, uploading, done, error, quotaWait }
+enum EcUploadState { waiting, uploading, done, error, quotaWait, paused }
 
 /// One queued clip and its upload progress.
 class UploadTask {
@@ -157,6 +157,47 @@ class EcUploadQueue extends ChangeNotifier {
     unawaited(_process());
   }
 
+  /// Takes a not-yet-uploading task out of the queue's rotation. A currently
+  /// uploading task can't be interrupted mid-request, so pausing it is a
+  /// no-op until it finishes.
+  Future<void> pause(String id) async {
+    final task = _byId(id);
+    if (task == null || task.state == EcUploadState.uploading) return;
+    task.state = EcUploadState.paused;
+    await _store.save(task);
+    notifyListeners();
+  }
+
+  /// Puts a paused task back in the queue and kicks the processor.
+  Future<void> resume(String id) async {
+    final task = _byId(id);
+    if (task == null || task.state != EcUploadState.paused) return;
+    task.state = EcUploadState.waiting;
+    await _store.save(task);
+    notifyListeners();
+    unawaited(_process());
+  }
+
+  /// Removes a task from the queue entirely and deletes its local copy. Safe
+  /// to call on an in-flight upload — [_process] checks the task is still
+  /// present before writing its result back.
+  Future<void> delete(String id) async {
+    final task = _byId(id);
+    if (task == null) return;
+    _tasks.remove(task);
+    await _store.remove(id);
+    notifyListeners();
+    unawaited(_deleteLocalCopyQuietly(task.filePath));
+  }
+
+  Future<void> _deleteLocalCopyQuietly(String path) async {
+    try {
+      await File(path).delete();
+    } on Object {
+      // Already gone, or never existed — nothing left to clean up.
+    }
+  }
+
   Future<void> _process() async {
     if (_processing || _uploader == null) return;
     _processing = true;
@@ -169,7 +210,14 @@ class EcUploadQueue extends ChangeNotifier {
           ..progress = 0;
         await _store.save(task);
         notifyListeners();
+        var succeeded = false;
         try {
+          // Dio reports progress per ~64KB chunk — tens of calls/second for a
+          // typical clip. Only notifying on an actual percent change (the
+          // finest granularity the UI shows anyway) keeps every screen
+          // listening to this queue (account tab, orders, the record screen
+          // itself) from rebuilding many times a second during an upload.
+          var lastPercent = -1;
           final url = await _uploader.upload(
             File(task.filePath),
             tracking: task.tracking,
@@ -178,6 +226,9 @@ class EcUploadQueue extends ChangeNotifier {
             capturedAt: task.createdAt.millisecondsSinceEpoch,
             onProgress: (p) {
               task.progress = p;
+              final percent = (p * 100).round();
+              if (percent == lastPercent) return;
+              lastPercent = percent;
               notifyListeners();
             },
           );
@@ -185,6 +236,7 @@ class EcUploadQueue extends ChangeNotifier {
             ..state = EcUploadState.done
             ..progress = 1
             ..remoteUrl = url;
+          succeeded = true;
         } on Object catch (error) {
           if (_isQuotaWait(error)) {
             task
@@ -196,7 +248,18 @@ class EcUploadQueue extends ChangeNotifier {
               ..retryCount += 1;
           }
         }
-        await _store.save(task);
+        // Deleted mid-upload — don't resurrect it in the store/list.
+        if (!_tasks.contains(task)) continue;
+        if (succeeded) {
+          // Done means it's fully uploaded — it now lives on the order's
+          // evidence timeline (Vận đơn), so drop it from this queue instead
+          // of leaving a permanent "done" entry here.
+          _tasks.remove(task);
+          await _store.remove(task.id);
+          unawaited(_deleteLocalCopyQuietly(task.filePath));
+        } else {
+          await _store.save(task);
+        }
         notifyListeners();
       }
     } finally {

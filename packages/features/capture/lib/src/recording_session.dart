@@ -17,6 +17,7 @@ import 'dart:async';
 import 'package:app_platform/app_platform.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'ec_bill_scanner.dart';
@@ -381,7 +382,13 @@ class RecordingSessionBloc
     }
     _idleScanBusy = true;
     try {
-      final code = await _scanner.scan(image, _cameras[_cameraIndex]);
+      final code = await _scanner.scan(
+        image,
+        _cameras[_cameraIndex],
+        deviceOrientation:
+            _camera.controller?.value.deviceOrientation ??
+            DeviceOrientation.portraitUp,
+      );
       // An end-QR left on the table means nothing while idle — don't record it.
       if (code != null &&
           code.isNotEmpty &&
@@ -461,7 +468,13 @@ class RecordingSessionBloc
     }
     _recScanBusy = true;
     try {
-      final code = await _scanner.scan(image, _cameras[_cameraIndex]);
+      final code = await _scanner.scan(
+        image,
+        _cameras[_cameraIndex],
+        deviceOrientation:
+            _camera.controller?.value.deviceOrientation ??
+            DeviceOrientation.portraitUp,
+      );
       if (code != null && code.isNotEmpty && !isClosed) {
         add(RecordingFrameScanned(code));
       }

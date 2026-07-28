@@ -9,6 +9,7 @@ import 'dart:io';
 import 'dart:ui' show Size;
 
 import 'package:app_platform/app_platform.dart';
+import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
 class BillScanner {
@@ -24,11 +25,20 @@ class BillScanner {
 
   /// Returns the first barcode value found in [image], or `null` when there is
   /// none, the frame can't be converted, or a previous frame is still in flight.
-  Future<String?> scan(CameraImage image, CameraDescription camera) async {
+  ///
+  /// [deviceOrientation] is the phone's current physical orientation — the
+  /// record screen now follows however it's held (see `ec_record_route.dart`),
+  /// so the sensor orientation alone is no longer enough to compute the
+  /// correct frame rotation for MLKit.
+  Future<String?> scan(
+    CameraImage image,
+    CameraDescription camera, {
+    DeviceOrientation deviceOrientation = DeviceOrientation.portraitUp,
+  }) async {
     if (_busy) return null;
     _busy = true;
     try {
-      final input = _toInputImage(image, camera);
+      final input = _toInputImage(image, camera, deviceOrientation);
       if (input == null) return null;
       final barcodes = await _scanner.processImage(input);
       for (final barcode in barcodes) {
@@ -45,12 +55,13 @@ class BillScanner {
 
   Future<void> dispose() => _scanner.close();
 
-  InputImage? _toInputImage(CameraImage image, CameraDescription camera) {
-    // ponytail: use the sensor orientation directly — correct for the fixed
-    // portrait "camera looks down at the packing table" UI. Add full
-    // device-orientation mapping only if landscape recording is ever needed.
+  InputImage? _toInputImage(
+    CameraImage image,
+    CameraDescription camera,
+    DeviceOrientation deviceOrientation,
+  ) {
     final rotation = InputImageRotationValue.fromRawValue(
-      camera.sensorOrientation,
+      _rotationDegrees(camera, deviceOrientation),
     );
     final rawFormat = image.format.raw;
     if (rawFormat is! int) return null;
@@ -67,5 +78,24 @@ class BillScanner {
         bytesPerRow: plane.bytesPerRow,
       ),
     );
+  }
+
+  /// The rotation MLKit needs to read the frame upright, combining the
+  /// camera's fixed sensor mounting with how the phone is held right now —
+  /// the standard MLKit `camera` example formula.
+  static int _rotationDegrees(
+    CameraDescription camera,
+    DeviceOrientation deviceOrientation,
+  ) {
+    const angleByOrientation = {
+      DeviceOrientation.portraitUp: 0,
+      DeviceOrientation.landscapeLeft: 90,
+      DeviceOrientation.portraitDown: 180,
+      DeviceOrientation.landscapeRight: 270,
+    };
+    final deviceAngle = angleByOrientation[deviceOrientation] ?? 0;
+    return camera.lensDirection == CameraLensDirection.front
+        ? (camera.sensorOrientation + deviceAngle) % 360
+        : (camera.sensorOrientation - deviceAngle + 360) % 360;
   }
 }
