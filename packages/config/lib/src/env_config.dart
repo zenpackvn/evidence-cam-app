@@ -7,9 +7,13 @@ class EnvConfig {
   String get flavor =>
       const String.fromEnvironment('FLAVOR', defaultValue: 'dev');
 
+  /// Production API origin is the default so a bare `flutter build` (no
+  /// `--dart-define-from-file`) ships a working app rather than one pointing at
+  /// a localhost that only exists on a developer's machine. Point it elsewhere
+  /// with `env/dev.json` when running against a local Worker.
   String get apiBaseUrl => const String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8080',
+    defaultValue: 'https://api.zenpack.vn',
   );
 
   /// HTTP connect/receive timeout, configurable per flavor via the

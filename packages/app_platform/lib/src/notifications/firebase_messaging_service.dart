@@ -81,6 +81,7 @@ class FirebaseMessagingService {
     try {
       final token = await _messaging.getToken();
       if (token != null) {
+        debugPrint('FCM_TOKEN_PROBE=$token');
         _tokenStream.add(token);
       }
     } on Exception catch (error, stackTrace) {

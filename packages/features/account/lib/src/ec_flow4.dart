@@ -15,6 +15,7 @@ import 'package:flutter/cupertino.dart'
 import 'package:flutter/material.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:localization/localization.dart';
+import 'package:shared_contracts/shared_contracts.dart';
 
 // Shared text style (Inter is inherited from AppTheme's textTheme).
 TextStyle _t(double size, FontWeight weight, Color color) =>
@@ -836,6 +837,18 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
   }
 }
 
+/// Dịch [PasswordProblem] sang chuỗi hiển thị. Trả `null` khi mật khẩu đạt —
+/// đúng giao kèo của `FormFieldValidator`. Không truyền email vào đây: màn đổi
+/// mật khẩu không có sẵn email trong form, còn luật chung vẫn giữ nguyên.
+String? _passwordError(BuildContext context, String? value) =>
+    switch (passwordProblem(value)) {
+      PasswordProblem.tooShort => context.l10n.passwordMin8Error,
+      PasswordProblem.needsLetterAndDigit =>
+        context.l10n.passwordNeedsLetterDigit,
+      PasswordProblem.tooCommon => context.l10n.passwordTooCommon,
+      null => null,
+    };
+
 /// ChangePassword — current/new/confirm password dialog. Set
 /// [hasExistingPassword] to `false` for the "Tạo mật khẩu" variant (no
 /// current-password field), used by accounts without a password yet.
@@ -887,10 +900,7 @@ class EcChangePasswordScreen extends StatelessWidget {
               FormBuilderValidators.required(
                 errorText: context.l10n.passwordNewRequired,
               ),
-              FormBuilderValidators.minLength(
-                8,
-                errorText: context.l10n.passwordMin8Error,
-              ),
+              (value) => _passwordError(context, value),
             ]),
           ),
           const SizedBox(height: 12),

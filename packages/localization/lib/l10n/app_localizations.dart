@@ -911,7 +911,7 @@ abstract class AppLocalizations {
   /// No description provided for @passwordMinHint.
   ///
   /// In en, this message translates to:
-  /// **'At least 8 characters'**
+  /// **'At least 8 characters, with letters and numbers'**
   String get passwordMinHint;
 
   /// No description provided for @passwordNewRequired.
@@ -925,6 +925,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Password must be at least 8 characters'**
   String get passwordMin8Error;
+
+  /// No description provided for @passwordNeedsLetterDigit.
+  ///
+  /// In en, this message translates to:
+  /// **'Password needs both letters and numbers'**
+  String get passwordNeedsLetterDigit;
+
+  /// No description provided for @passwordTooCommon.
+  ///
+  /// In en, this message translates to:
+  /// **'That password is too easy to guess — pick another'**
+  String get passwordTooCommon;
 
   /// No description provided for @passwordConfirmLabel.
   ///

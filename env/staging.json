@@ -1,5 +1,5 @@
 {
   "FLAVOR": "staging",
-  "API_BASE_URL": "https://evidencecam-api.thuannguyen7438.workers.dev",
+  "API_BASE_URL": "https://api.zenpack.vn",
   "API_TIMEOUT_SECONDS": 20
 }

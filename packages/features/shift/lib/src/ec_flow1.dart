@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:localization/localization.dart';
+import 'package:shared_contracts/shared_contracts.dart';
 
 // Shared text style (Inter is inherited from the CupertinoApp text theme).
 TextStyle _t(double size, FontWeight weight, Color color) =>
@@ -580,6 +581,17 @@ class _EcDialogFrame extends StatelessWidget {
 // Register
 // ============================================================================
 
+/// Dịch [PasswordProblem] sang chuỗi hiển thị. Trả `null` khi mật khẩu đạt —
+/// đúng giao kèo của `FormFieldValidator`.
+String? _passwordError(BuildContext context, String? value, String? email) =>
+    switch (passwordProblem(value, email: email)) {
+      PasswordProblem.tooShort => context.l10n.passwordMin8Error,
+      PasswordProblem.needsLetterAndDigit =>
+        context.l10n.passwordNeedsLetterDigit,
+      PasswordProblem.tooCommon => context.l10n.passwordTooCommon,
+      null => null,
+    };
+
 /// Register — same chrome as Login (lang chip, title) plus name/email/phone/
 /// password/confirm fields, a policy checkbox, primary "Tạo tài khoản"
 /// button, an email-merge note, a login footer link and Google/Apple buttons.
@@ -712,9 +724,10 @@ class EcRegisterScreen extends StatelessWidget {
                           FormBuilderValidators.required(
                             errorText: context.l10n.authPasswordRequired,
                           ),
-                          FormBuilderValidators.minLength(
-                            8,
-                            errorText: context.l10n.passwordMin8Error,
+                          (value) => _passwordError(
+                            context,
+                            value,
+                            emailController?.text,
                           ),
                         ]),
                       ),

@@ -10,31 +10,39 @@ import 'ec_api.dart';
 import 'ec_auth.dart';
 import 'ec_repository.dart';
 
+/// Production API origin — where a build lands when no dart-define points it
+/// anywhere else.
+const kDefaultApiBaseUrl = 'https://api.zenpack.vn';
+
+/// The backend origin this build talks to, resolved at compile time:
+/// `EC_API_URL` override → `API_BASE_URL` from the dart-define env file →
+/// [kDefaultApiBaseUrl].
+///
+/// The default is a real origin, not the empty string: an empty URL selects the
+/// offline [FakeEcRepository] below, so a plain `flutter build` used to ship an
+/// app that showed empty lists forever. Pass `--dart-define=EC_API_URL=` (empty)
+/// to ask for that offline build deliberately.
+const kApiBaseUrl = String.fromEnvironment(
+  'EC_API_URL',
+  defaultValue: String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: kDefaultApiBaseUrl,
+  ),
+);
+
 /// Builds the data source.
 ///
-/// With a backend URL (the `EC_API_URL` override, else `API_BASE_URL` from the
-/// dart-define env file) it returns the live [RemoteEcRepository] whose Dio
-/// attaches [auth]'s Firebase ID token to every request. Without a URL it falls
-/// back to the empty [FakeEcRepository] (tests / offline).
-EcRepository buildRepository({
-  EcAuth? auth,
-  String url = const String.fromEnvironment(
-    'EC_API_URL',
-    defaultValue: String.fromEnvironment('API_BASE_URL'),
-  ),
-}) {
+/// With a backend URL (see [kApiBaseUrl]) it returns the live
+/// [RemoteEcRepository] whose Dio attaches [auth]'s Firebase ID token to every
+/// request. With an empty URL it falls back to the empty [FakeEcRepository]
+/// (tests / offline).
+EcRepository buildRepository({EcAuth? auth, String url = kApiBaseUrl}) {
   if (url.isEmpty) return const FakeEcRepository();
   return RemoteEcRepository(buildApi(auth: auth, url: url));
 }
 
 /// Builds the authenticated API client used by both repositories and uploaders.
-EcApi buildApi({
-  EcAuth? auth,
-  String url = const String.fromEnvironment(
-    'EC_API_URL',
-    defaultValue: String.fromEnvironment('API_BASE_URL'),
-  ),
-}) {
+EcApi buildApi({EcAuth? auth, String url = kApiBaseUrl}) {
   final dio = Dio(
     BaseOptions(
       baseUrl: url,

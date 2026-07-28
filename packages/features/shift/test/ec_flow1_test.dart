@@ -71,8 +71,10 @@ void main() {
       await tester.enterText(fields.at(0), 'Nguyễn Văn A');
       await tester.enterText(fields.at(1), 'a@b.com');
       await tester.enterText(fields.at(2), '0901234567');
-      await tester.enterText(fields.at(3), 'matkhau123');
-      await tester.enterText(fields.at(4), 'matkhau123');
+      // Phải đạt chính sách mật khẩu (shared_contracts/password_policy.dart):
+      // ≥8 ký tự, có chữ và số, không nằm trong danh sách phổ biến.
+      await tester.enterText(fields.at(3), 'dongGoi2026');
+      await tester.enterText(fields.at(4), 'dongGoi2026');
       await tester.pump();
       await tester.ensureVisible(find.text('Tạo tài khoản'));
       await tester.tap(find.text('Tạo tài khoản'));
@@ -85,6 +87,34 @@ void main() {
       await tester.tap(find.text('Đăng nhập'));
       expect(registered, isTrue);
       expect(loggedIn, isTrue);
+    });
+
+    testWidgets('mật khẩu yếu chặn đăng ký và hiện lỗi', (tester) async {
+      var registered = false;
+      await _pump(
+        tester,
+        EcRegisterScreen(
+          nameController: TextEditingController(),
+          emailController: TextEditingController(),
+          phoneController: TextEditingController(),
+          passwordController: TextEditingController(),
+          confirmPasswordController: TextEditingController(),
+          onRegister: () => registered = true,
+        ),
+      );
+      final fields = find.byType(CupertinoTextField);
+      await tester.enterText(fields.at(0), 'Nguyễn Văn A');
+      await tester.enterText(fields.at(1), 'a@b.com');
+      await tester.enterText(fields.at(2), '0901234567');
+      // Đủ 8 ký tự nhưng toàn chữ — phải bị từ chối.
+      await tester.enterText(fields.at(3), 'matkhaudai');
+      await tester.enterText(fields.at(4), 'matkhaudai');
+      await tester.pump();
+      await tester.ensureVisible(find.text('Tạo tài khoản'));
+      await tester.tap(find.text('Tạo tài khoản'));
+      await tester.pump();
+      expect(registered, isFalse);
+      expect(find.text('Mật khẩu cần có cả chữ và số'), findsOneWidget);
     });
   });
 
