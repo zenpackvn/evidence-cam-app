@@ -1375,7 +1375,9 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
     return shops.map(_shopFromDto).toList();
   }
 
-  void _retry() => setState(() => _shops = _loadShops());
+  void _retry() => setState(() {
+    _shops = _loadShops();
+  });
 
   void _autoSelectIfNeeded(List<EcShopSummary> shops) {
     if (_autoSelected || !widget.autoEnter || widget.onSelect == null) return;
@@ -1465,7 +1467,9 @@ class _ShopMgmtRouteState extends State<_ShopMgmtRoute> {
         .toList();
   }
 
-  void _retry() => setState(() => _shops = _load());
+  void _retry() => setState(() {
+    _shops = _load();
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2128,7 +2132,7 @@ class _OrderRoute extends StatefulWidget {
   final OrderSummaryDto order;
   final ShareService? shareService;
   final VoidCallback? onBack;
-  final ValueChanged<_VideoRouteExtra>? onOpenVideo;
+  final Future<void> Function(_VideoRouteExtra extra)? onOpenVideo;
 
   @override
   State<_OrderRoute> createState() => _OrderRouteState();
@@ -2158,7 +2162,9 @@ class _OrderRouteState extends State<_OrderRoute> {
     );
   }
 
-  void _retry() => setState(() => _detail = _load());
+  void _retry() => setState(() {
+    _detail = _load();
+  });
 
   void _setDossier(_OrderDetailData data, DossierDto? dossier) {
     setState(() {
@@ -2238,24 +2244,32 @@ class _OrderRouteState extends State<_OrderRoute> {
             pendingUploadCount: _pendingCount,
             dossierUrl: dossierUrl,
             onBack: widget.onBack,
-            onVideoTap: (video) => widget.onOpenVideo?.call(
-              _VideoRouteExtra(
-                shopId: widget.shop.id,
-                orderId: widget.order.id,
-                evidenceId: video.id,
-                canDelete: widget.shop.role != 'staff',
-                video: _videoDetail(context.l10n, video),
-              ),
-            ),
-            onVideoMenu: (video) => widget.onOpenVideo?.call(
-              _VideoRouteExtra(
-                shopId: widget.shop.id,
-                orderId: widget.order.id,
-                evidenceId: video.id,
-                canDelete: widget.shop.role != 'staff',
-                video: _videoDetail(context.l10n, video),
-              ),
-            ),
+            onVideoTap: (video) => widget.onOpenVideo
+                ?.call(
+                  _VideoRouteExtra(
+                    shopId: widget.shop.id,
+                    orderId: widget.order.id,
+                    evidenceId: video.id,
+                    canDelete: widget.shop.role != 'staff',
+                    video: _videoDetail(context.l10n, video),
+                  ),
+                )
+                .then((_) {
+                  if (mounted) _retry();
+                }),
+            onVideoMenu: (video) => widget.onOpenVideo
+                ?.call(
+                  _VideoRouteExtra(
+                    shopId: widget.shop.id,
+                    orderId: widget.order.id,
+                    evidenceId: video.id,
+                    canDelete: widget.shop.role != 'staff',
+                    video: _videoDetail(context.l10n, video),
+                  ),
+                )
+                .then((_) {
+                  if (mounted) _retry();
+                }),
             onCopyCode: () =>
                 _copyText(context, data.detail.order.tracking, context.l10n.labelTrackingCode),
             onCopyLink: dossierUrl == null
@@ -3001,81 +3015,103 @@ GoRouter _buildRouter(
               ? s.extra! as _VideoRouteExtra
               : null;
           return _modalPage(
-            EcVideoDetailScreen(
-              video:
-                  extra?.video ??
-                  EcVideoDetail(
-                    title: c.l10n.noVideoDataTitle,
-                    duration: '—',
-                    recordedAt: '—',
-                    recordedBy: '—',
-                    device: '—',
-                    uploadStatus: '—',
-                  ),
-              canDelete: extra?.canDelete ?? false,
-              onClose: () => c.pop(),
-              onPlay: () {
-                final url = extra?.video.mediaUrl;
-                if (url == null || videoPlayer == null) {
-                  _toast(c, c.l10n.toastVideoNoPlayLink);
-                  return;
-                }
-                c.push(
-                  '/video-player',
-                  extra: _VideoPlayerRouteExtra(
-                    title: extra!.video.title,
-                    url: url,
-                    videoPlayerService: videoPlayer,
-                  ),
-                );
-              },
-              onDownload: () {
-                final video = extra?.video;
-                if (video?.mediaUrl == null) {
-                  _toast(c, c.l10n.toastVideoNoDownloadLink);
-                  return;
-                }
-                _downloadAndShareVideo(c, downloader, share, gallery, video!);
-              },
-              onDelete: () async {
-                final evidenceId = extra?.evidenceId;
-                if (extra == null || evidenceId == null) {
-                  _toast(c, c.l10n.toastVideoDeleteUnavailable);
-                  return;
-                }
-                final confirmed = await showCupertinoDialog<bool>(
-                  context: c,
-                  builder: (dialogContext) => CupertinoAlertDialog(
-                    title: Text(c.l10n.deleteVideoAction),
-                    content: Text(c.l10n.deleteVideoNote),
-                    actions: [
-                      CupertinoDialogAction(
-                        onPressed: () => Navigator.of(dialogContext).pop(false),
-                        child: Text(c.l10n.commonCancel),
-                      ),
-                      CupertinoDialogAction(
-                        isDestructiveAction: true,
-                        onPressed: () => Navigator.of(dialogContext).pop(true),
-                        child: Text(c.l10n.deleteVideoAction),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirmed != true || !c.mounted) return;
-                unawaited(
-                  repo
-                      .deleteEvidence(extra.shopId, extra.orderId, evidenceId)
-                      .then((_) {
-                        if (c.mounted) {
-                          c.pop();
-                          _toast(c, c.l10n.toastVideoDeleted);
-                        }
-                      })
-                      .catchError((Object error) {
-                        if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
-                      }),
-                );
-              },
+            // showCupertinoDialog needs a context that is a descendant of a
+            // Navigator. The `c` this pageBuilder receives sits above the
+            // page this builds, so it has no Navigator ancestor yet — a
+            // Builder gives onDelete a context from inside the built page.
+            Builder(
+              builder: (pageContext) => EcVideoDetailScreen(
+                video:
+                    extra?.video ??
+                    EcVideoDetail(
+                      title: c.l10n.noVideoDataTitle,
+                      duration: '—',
+                      recordedAt: '—',
+                      recordedBy: '—',
+                      device: '—',
+                      uploadStatus: '—',
+                    ),
+                canDelete: extra?.canDelete ?? false,
+                onClose: () => c.pop(),
+                onPlay: () {
+                  final url = extra?.video.mediaUrl;
+                  if (url == null || videoPlayer == null) {
+                    _toast(pageContext, c.l10n.toastVideoNoPlayLink);
+                    return;
+                  }
+                  c.push(
+                    '/video-player',
+                    extra: _VideoPlayerRouteExtra(
+                      title: extra!.video.title,
+                      url: url,
+                      videoPlayerService: videoPlayer,
+                    ),
+                  );
+                },
+                onDownload: () {
+                  final video = extra?.video;
+                  if (video?.mediaUrl == null) {
+                    _toast(pageContext, c.l10n.toastVideoNoDownloadLink);
+                    return;
+                  }
+                  _downloadAndShareVideo(
+                    pageContext,
+                    downloader,
+                    share,
+                    gallery,
+                    video!,
+                  );
+                },
+                onDelete: () async {
+                  final evidenceId = extra?.evidenceId;
+                  if (extra == null || evidenceId == null) {
+                    _toast(pageContext, c.l10n.toastVideoDeleteUnavailable);
+                    return;
+                  }
+                  final confirmed = await showCupertinoDialog<bool>(
+                    context: pageContext,
+                    builder: (dialogContext) => CupertinoAlertDialog(
+                      title: Text(c.l10n.deleteVideoAction),
+                      content: Text(c.l10n.deleteVideoNote),
+                      actions: [
+                        CupertinoDialogAction(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(false),
+                          child: Text(c.l10n.commonCancel),
+                        ),
+                        CupertinoDialogAction(
+                          isDestructiveAction: true,
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(true),
+                          child: Text(c.l10n.deleteVideoAction),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed != true || !pageContext.mounted) return;
+                  unawaited(
+                    repo
+                        .deleteEvidence(extra.shopId, extra.orderId, evidenceId)
+                        .then((_) {
+                          // Toast first: it lands in the root Overlay, which
+                          // outlives this page, so it must be requested while
+                          // pageContext is still mounted — after c.pop() this
+                          // page (and pageContext) is already gone.
+                          if (pageContext.mounted) {
+                            _toast(pageContext, c.l10n.toastVideoDeleted);
+                          }
+                          if (c.mounted) {
+                            c.pop();
+                          }
+                        })
+                        .catchError((Object error) {
+                          if (pageContext.mounted) {
+                            _toast(pageContext, _dataErrorText(c.l10n, error));
+                          }
+                        }),
+                  );
+                },
+              ),
             ),
           );
         },
@@ -3087,23 +3123,33 @@ GoRouter _buildRouter(
               ? s.extra! as _VideoRouteExtra
               : null;
           return _modalPage(
-            EcPhotoDetailScreen(
-              photo:
-                  extra?.video ??
-                  EcVideoDetail(
-                    title: c.l10n.noVideoDataTitle,
-                    duration: '—',
-                    recordedAt: '—',
-                    recordedBy: '—',
-                    device: '—',
-                    uploadStatus: '—',
-                  ),
-              onClose: () => c.pop(),
-              onDownload: () {
-                final photo = extra?.video;
-                if (photo == null) return;
-                _downloadAndSavePhoto(c, downloader, share, gallery, photo);
-              },
+            // See the /video route above: onDownload's toasts need a context
+            // inside the built page, not the pageBuilder's own `c`.
+            Builder(
+              builder: (pageContext) => EcPhotoDetailScreen(
+                photo:
+                    extra?.video ??
+                    EcVideoDetail(
+                      title: c.l10n.noVideoDataTitle,
+                      duration: '—',
+                      recordedAt: '—',
+                      recordedBy: '—',
+                      device: '—',
+                      uploadStatus: '—',
+                    ),
+                onClose: () => c.pop(),
+                onDownload: () {
+                  final photo = extra?.video;
+                  if (photo == null) return;
+                  _downloadAndSavePhoto(
+                    pageContext,
+                    downloader,
+                    share,
+                    gallery,
+                    photo,
+                  );
+                },
+              ),
             ),
           );
         },
