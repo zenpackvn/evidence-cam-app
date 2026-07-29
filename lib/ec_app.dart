@@ -11,7 +11,8 @@ import 'package:app_platform/app_platform.dart'
         ShareService,
         VideoPlayer,
         VideoPlayerService,
-        VideoPlayerValue;
+        VideoPlayerValue,
+        VoiceAnnouncerService;
 import 'package:app_ui/app_ui.dart';
 import 'package:architecture/architecture.dart' show UnawaitedFutureExtension;
 import 'package:ec_data/ec_data.dart';
@@ -132,6 +133,10 @@ class _EcAppState extends State<EcApp> {
     store: widget.evidenceStore,
     analytics: _analytics(),
   );
+
+  // Built once for the app's lifetime rather than per record-screen visit —
+  // see the doc comment on EcRecordRoute.voiceAnnouncer.
+  final VoiceAnnouncerService _voiceAnnouncer = VoiceAnnouncerService();
   static const String _apiUrl = kApiBaseUrl;
 
   // The shop clocked into at the shop layer (FR-05). Its id drives which orders
@@ -151,6 +156,7 @@ class _EcAppState extends State<EcApp> {
     shareService: widget.shareService,
     videoPlayerService: widget.videoPlayerService,
     downloadDio: widget.downloadDio,
+    voiceAnnouncer: _voiceAnnouncer,
   );
 
   @override
@@ -616,6 +622,7 @@ class _AccountRouteState extends State<_AccountRoute> {
             },
             onQuotaTap: () => context.push('/quota'),
             onLanguageTap: () => context.push('/language'),
+            onStopCodeTap: () => context.push('/stop-code'),
             onChangePasswordTap: () => context.push('/change-password'),
             onDeleteAccount: () => context.push('/delete-account'),
             onLoginMethodsTap: () => context.push('/login-methods'),
@@ -1227,6 +1234,30 @@ Future<void> _rememberShop(EcShopSummary shop) async {
 
 Future<void> _forgetRememberedShop() async {
   await _appMemory()?.remove(_lastShopIdKey);
+}
+
+/// For a "Trả hàng" clip: does [code] match a tracking code the shop already
+/// has saved (from an earlier "Đóng hàng" clip)? Unlike manual entry, there is
+/// no "create a new order" fallback — a return that doesn't match anything is
+/// just wrong, and the user is warned and told to rescan.
+Future<bool> _verifyReturnCode(
+  BuildContext context,
+  EcRepository repo,
+  String shopId,
+  String code,
+) async {
+  final key = normalizeTrackingCode(code);
+  try {
+    final matches = await repo.searchOrders(shopId, code);
+    final exists = matches.any((o) => normalizeTrackingCode(o.tracking) == key);
+    if (!exists && context.mounted) {
+      _toast(context, context.l10n.returnCodeMismatch);
+    }
+    return exists;
+  } on Object catch (error) {
+    if (context.mounted) _toast(context, _dataErrorText(context.l10n, error));
+    return false;
+  }
 }
 
 Future<bool> _confirmManualTracking(
@@ -2033,6 +2064,34 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     }
   }
 
+  /// A scanned barcode/QR is a full, exact tracking code — unlike typed
+  /// search (which narrows as the user types and reasonably shows every
+  /// partial match), a scan should show exactly the one order it names, not
+  /// every order the backend's substring search happens to also match.
+  Future<void> _searchScannedCode(String code) async {
+    final trimmed = code.trim();
+    final queryGeneration = ++_searchGeneration;
+    _query = trimmed;
+    try {
+      final matches = await widget.repo.searchOrders(widget.shopId, trimmed);
+      if (!mounted || queryGeneration != _searchGeneration) return;
+      final key = normalizeTrackingCode(trimmed);
+      final exact = matches
+          .where((o) => normalizeTrackingCode(o.tracking) == key)
+          .toList();
+      setState(() {
+        _orders = exact;
+        _hasMore = false;
+        _loadError = null;
+      });
+      if (exact.isEmpty) _toast(context, context.l10n.scannedCodeNotFound);
+    } on Object catch (error) {
+      if (mounted && queryGeneration == _searchGeneration) {
+        _toast(context, _dataErrorText(context.l10n, error));
+      }
+    }
+  }
+
   Future<void> _loadMore() async {
     if (_query.isNotEmpty || _loadingMore || !_hasMore || _orders.isEmpty) {
       return;
@@ -2125,6 +2184,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
               },
         onNavOrders: () {},
         onScan: widget.onScan,
+        onScanResult: _searchScannedCode,
         onSearchChanged: _search,
         videoTypes: _videoTypes,
         onFiltersChanged: _applyFilters,
@@ -2765,10 +2825,16 @@ GoRouter _buildRouter(
   ShareService? shareService,
   VideoPlayerService? videoPlayerService,
   Dio? downloadDio,
+  VoiceAnnouncerService? voiceAnnouncer,
 }) {
   final share = shareService ?? _maybeGetIt<ShareService>();
   final videoPlayer = videoPlayerService ?? _maybeGetIt<VideoPlayerService>();
   final downloader = downloadDio ?? Dio();
+  // Built once for the app's lifetime (see the `voiceAnnouncer` param) rather
+  // than per record-screen visit — flutter_tts's engine has a real cold-start
+  // cost, and recreating it on every navigation delayed the very first
+  // announcement each time.
+  final voice = voiceAnnouncer ?? _maybeGetIt<VoiceAnnouncerService>();
   final gallery = _maybeGetIt<GallerySaveService>();
   return GoRouter(
     // Override the start route for screenshot/QA via --dart-define=EC_START=/home.
@@ -2910,6 +2976,9 @@ GoRouter _buildRouter(
                       onRequestCode: () => c.push<String>('/manual'),
                       onConfirmManualCode: (code) =>
                           _confirmManualTracking(c, repo, shop.id, code),
+                      verifyReturnCode: (code) =>
+                          _verifyReturnCode(c, repo, shop.id, code),
+                      voiceAnnouncer: voice,
                       onRequestType: () async {
                         final router = GoRouter.of(c);
                         final rootNavigator = Navigator.of(
@@ -3482,6 +3551,10 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/change-password',
         pageBuilder: (c, s) => _modalPage(_ChangePasswordRoute(auth: auth)),
+      ),
+      GoRoute(
+        path: '/stop-code',
+        builder: (c, s) => EcStopCodeScreen(onBack: () => c.pop()),
       ),
       GoRoute(
         path: '/edit-profile',

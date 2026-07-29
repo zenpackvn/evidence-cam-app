@@ -219,6 +219,7 @@
   "captureCameraDownHint": "Camera facing down at the table",
   "tooltipBack": "Back",
   "tooltipSwitchCamera": "Switch camera",
+  "tooltipToggleOrientation": "Toggle portrait/landscape",
   "tooltipEnterTracking": "Enter tracking code",
   "tooltipZoomIn": "Zoom in",
   "tooltipZoomOut": "Zoom out",
@@ -341,5 +342,8 @@
   "deleteVideoTypeTitle": "Delete type \"{typeName}\"?",
   "@deleteVideoTypeTitle": { "placeholders": { "typeName": { "type": "String" } } },
   "memberCurrentRole": "Current role: {role}",
-  "@memberCurrentRole": { "placeholders": { "role": { "type": "String" } } }
+  "@memberCurrentRole": { "placeholders": { "role": { "type": "String" } } },
+  "stopCodeTitle": "Stop-recording QR code",
+  "stopCodeInstructions": "Print this and stick it at the packing table. Show it to the camera while recording to stop automatically.",
+  "scannedCodeNotFound": "No order matches the scanned code"
 }

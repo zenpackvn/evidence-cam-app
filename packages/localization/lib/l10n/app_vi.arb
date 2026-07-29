@@ -198,6 +198,7 @@
   "captureCameraDownHint": "Camera nhìn xuống bàn",
   "tooltipBack": "Quay lại",
   "tooltipSwitchCamera": "Đổi camera",
+  "tooltipToggleOrientation": "Quay ngang/dọc",
   "tooltipEnterTracking": "Nhập mã vận đơn",
   "tooltipZoomIn": "Phóng to",
   "tooltipZoomOut": "Thu nhỏ",
@@ -312,5 +313,8 @@
   "filterTypeLabel": "Loại video",
   "filterTypeAll": "Loại video",
   "deleteVideoTypeTitle": "Xóa loại \"{typeName}\"?",
-  "memberCurrentRole": "Vai trò hiện tại: {role}"
+  "memberCurrentRole": "Vai trò hiện tại: {role}",
+  "stopCodeTitle": "Mã QR dừng quay",
+  "stopCodeInstructions": "In mã này ra và dán ở bàn đóng hàng. Đưa mã vào khung hình camera khi đang quay để tự động dừng quay.",
+  "scannedCodeNotFound": "Không tìm thấy vận đơn khớp mã đã quét"
 }

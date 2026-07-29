@@ -34,6 +34,8 @@ class EcRecordRoute extends StatefulWidget {
     this.onNavAccount,
     this.onSettings,
     this.onSaved,
+    this.verifyReturnCode,
+    this.voiceAnnouncer,
     this.initialType = 'Đóng hàng',
     this.queueCount = 0,
     this.shopName = 'Shop',
@@ -70,6 +72,18 @@ class EcRecordRoute extends StatefulWidget {
   /// tracking code and video type it belongs to.
   final void Function(String path, String tracking, String type)? onSaved;
 
+  /// For a "Trả hàng" clip, checks a scanned code against the shop's saved
+  /// orders before recording starts. Returns `false` to reject the code (the
+  /// user is warned and stays on the scan screen) — unlike manual entry,
+  /// there's no "create a new order" fallback for a return.
+  final Future<bool> Function(String code)? verifyReturnCode;
+
+  /// Speaks recording start/stop/wrong-code announcements. Built once for the
+  /// app's lifetime by the caller — flutter_tts's engine has a real
+  /// cold-start cost, so a fresh instance per visit delayed the very first
+  /// announcement each time.
+  final VoiceAnnouncerService? voiceAnnouncer;
+
   /// Video type shown before the user picks one.
   final String initialType;
 
@@ -101,6 +115,8 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     scanner: BillScanner(),
     onClipSaved: (path, tracking, type) =>
         widget.onSaved?.call(path, tracking, type),
+    verifyReturnCode: widget.verifyReturnCode,
+    voiceAnnouncer: widget.voiceAnnouncer,
     initialType: widget.initialType,
     initialResolution: widget.initialResolution,
   );
@@ -263,6 +279,8 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           onFlipCamera: state.hasMultipleCameras
               ? () => _bloc.add(const RecordingCameraFlipped())
               : null,
+          onToggleOrientation: () =>
+              _bloc.add(const RecordingOrientationToggled()),
           onManualEntry: _manualEntry,
           onNavOrders: widget.onNavOrders,
           onNavAccount: widget.onNavAccount,

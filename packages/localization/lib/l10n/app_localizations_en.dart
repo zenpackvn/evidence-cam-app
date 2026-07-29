@@ -608,6 +608,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tooltipSwitchCamera => 'Switch camera';
 
   @override
+  String get tooltipToggleOrientation => 'Toggle portrait/landscape';
+
+  @override
   String get tooltipEnterTracking => 'Enter tracking code';
 
   @override
@@ -985,4 +988,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String memberCurrentRole(String role) {
     return 'Current role: $role';
   }
+
+  @override
+  String get stopCodeTitle => 'Stop-recording QR code';
+
+  @override
+  String get stopCodeInstructions =>
+      'Print this and stick it at the packing table. Show it to the camera while recording to stop automatically.';
+
+  @override
+  String get scannedCodeNotFound => 'No order matches the scanned code';
 }

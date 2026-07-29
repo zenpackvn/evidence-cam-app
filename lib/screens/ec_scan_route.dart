@@ -10,6 +10,7 @@ import 'dart:async';
 import 'package:app_platform/app_platform.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show DeviceOrientation;
 
 class EcBarcodeScanRoute extends StatefulWidget {
   const EcBarcodeScanRoute({
@@ -93,7 +94,16 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
     // ponytail: skip every other frame to throttle ML detection (30fps → 15fps)
     _frameCount++;
     if (_frameCount % 2 != 0) return;
-    final code = await _scanner.scan(image, _cameras[_index]);
+    // A 1D barcode's scan line has to roughly line up with the bars — unlike
+    // a QR code's finder patterns, which read fine at any rotation — so this
+    // needs the phone's live orientation, not a fixed portraitUp assumption.
+    final code = await _scanner.scan(
+      image,
+      _cameras[_index],
+      deviceOrientation:
+          _camera.controller?.value.deviceOrientation ??
+          DeviceOrientation.portraitUp,
+    );
     if (code == null || _done || !mounted) return;
     _done = true;
     widget.onDetected(code);

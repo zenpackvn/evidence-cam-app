@@ -604,6 +604,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get tooltipSwitchCamera => 'Đổi camera';
 
   @override
+  String get tooltipToggleOrientation => 'Quay ngang/dọc';
+
+  @override
   String get tooltipEnterTracking => 'Nhập mã vận đơn';
 
   @override
@@ -977,4 +980,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String memberCurrentRole(String role) {
     return 'Vai trò hiện tại: $role';
   }
+
+  @override
+  String get stopCodeTitle => 'Mã QR dừng quay';
+
+  @override
+  String get stopCodeInstructions =>
+      'In mã này ra và dán ở bàn đóng hàng. Đưa mã vào khung hình camera khi đang quay để tự động dừng quay.';
+
+  @override
+  String get scannedCodeNotFound => 'Không tìm thấy vận đơn khớp mã đã quét';
 }

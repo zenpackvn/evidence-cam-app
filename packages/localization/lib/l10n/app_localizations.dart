@@ -1202,6 +1202,12 @@ abstract class AppLocalizations {
   /// **'Switch camera'**
   String get tooltipSwitchCamera;
 
+  /// No description provided for @tooltipToggleOrientation.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle portrait/landscape'**
+  String get tooltipToggleOrientation;
+
   /// No description provided for @tooltipEnterTracking.
   ///
   /// In en, this message translates to:
@@ -1891,6 +1897,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Current role: {role}'**
   String memberCurrentRole(String role);
+
+  /// No description provided for @stopCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop-recording QR code'**
+  String get stopCodeTitle;
+
+  /// No description provided for @stopCodeInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Print this and stick it at the packing table. Show it to the camera while recording to stop automatically.'**
+  String get stopCodeInstructions;
+
+  /// No description provided for @scannedCodeNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No order matches the scanned code'**
+  String get scannedCodeNotFound;
 }
 
 class _AppLocalizationsDelegate

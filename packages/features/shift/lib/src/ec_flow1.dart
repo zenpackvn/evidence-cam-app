@@ -2606,6 +2606,7 @@ class EcHomeOrdersScreen extends StatefulWidget {
     this.onBack,
     this.onQueueTap,
     this.onScan,
+    this.onScanResult,
     this.onSearchChanged,
     this.onFiltersChanged,
     this.onOrderTap,
@@ -2637,6 +2638,12 @@ class EcHomeOrdersScreen extends StatefulWidget {
 
   /// Opens the barcode scanner; the returned code fills the search box.
   final Future<String?> Function()? onScan;
+
+  /// Fired with a scanned (not typed) code — a full, exact tracking number,
+  /// so the parent should show just that one order rather than every
+  /// partial match [onSearchChanged] would. Falls back to [onSearchChanged]
+  /// when unset.
+  final ValueChanged<String>? onScanResult;
 
   /// Fired when the tracking-code search query changes.
   final ValueChanged<String>? onSearchChanged;
@@ -2752,7 +2759,11 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
     if (code == null || !mounted) return;
     _search.text = code;
     setState(() => _query = code);
-    widget.onSearchChanged?.call(code);
+    if (widget.onScanResult != null) {
+      widget.onScanResult!(code);
+    } else {
+      widget.onSearchChanged?.call(code);
+    }
   }
 
   /// Triggers [EcHomeOrdersScreen.onLoadMore] when the user scrolls within
