@@ -10,5 +10,6 @@ export 'src/ec_bill_scanner.dart';
 export 'src/ec_evidence_store.dart';
 export 'src/ec_evidence_uploader.dart';
 export 'src/ec_flow3.dart';
+export 'src/ec_stop_code_screen.dart';
 export 'src/ec_upload_queue.dart';
 export 'src/recording_session.dart';

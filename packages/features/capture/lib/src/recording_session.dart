@@ -78,6 +78,7 @@ class RecordingSessionState {
     this.maxZoom = 1,
     this.cameraCount = 0,
     this.cameraGeneration = 0,
+    this.isLandscape = false,
     this.errorMessage,
   });
 
@@ -90,6 +91,11 @@ class RecordingSessionState {
   final double minZoom;
   final double maxZoom;
   final int cameraCount;
+
+  /// Locked recording orientation, toggled manually — the camera stays
+  /// pinned to this regardless of how the phone is physically held or
+  /// placed (see [RecordingSessionBloc._initCamera]).
+  final bool isLandscape;
 
   /// Bumped on every (re)initialize so the view rebuilds its camera preview
   /// even when [status] is unchanged (resolution cycle / camera flip).
@@ -110,6 +116,7 @@ class RecordingSessionState {
     double? maxZoom,
     int? cameraCount,
     int? cameraGeneration,
+    bool? isLandscape,
     String? errorMessage,
     bool clearError = false,
   }) {
@@ -124,6 +131,7 @@ class RecordingSessionState {
       maxZoom: maxZoom ?? this.maxZoom,
       cameraCount: cameraCount ?? this.cameraCount,
       cameraGeneration: cameraGeneration ?? this.cameraGeneration,
+      isLandscape: isLandscape ?? this.isLandscape,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
@@ -141,6 +149,7 @@ class RecordingSessionState {
       other.maxZoom == maxZoom &&
       other.cameraCount == cameraCount &&
       other.cameraGeneration == cameraGeneration &&
+      other.isLandscape == isLandscape &&
       other.errorMessage == errorMessage;
 
   @override
@@ -155,6 +164,7 @@ class RecordingSessionState {
     maxZoom,
     cameraCount,
     cameraGeneration,
+    isLandscape,
     errorMessage,
   );
 }
@@ -219,6 +229,12 @@ class RecordingTypeChanged extends RecordingSessionEvent {
   final String type;
 }
 
+/// Manually flips the locked recording orientation between portrait and
+/// landscape (see [RecordingSessionState.isLandscape]).
+class RecordingOrientationToggled extends RecordingSessionEvent {
+  const RecordingOrientationToggled();
+}
+
 /// Owns the camera + scanner and drives the recording session. Every
 /// camera-mutating operation runs through [_serialized], so cross-event races
 /// (a stop landing mid-cut-over, two frames both starting a clip) can't happen.
@@ -229,6 +245,8 @@ class RecordingSessionBloc
     required BillScanner scanner,
     required void Function(String path, String tracking, String type)
     onClipSaved,
+    VoiceAnnouncerService? voiceAnnouncer,
+    Future<bool> Function(String code)? verifyReturnCode,
     String initialType = 'Đóng hàng',
     String initialResolution = '720p',
     String endQr = kEndSessionQr,
@@ -236,6 +254,8 @@ class RecordingSessionBloc
   }) : _camera = camera,
        _scanner = scanner,
        _onClipSaved = onClipSaved,
+       _voice = voiceAnnouncer ?? VoiceAnnouncerService(),
+       _verifyReturnCode = verifyReturnCode,
        _endQr = endQr,
        _maxRecording = maxRecording,
        super(
@@ -257,11 +277,14 @@ class RecordingSessionBloc
     on<RecordingCameraFlipped>(_onCameraFlipped);
     on<RecordingZoomAdjusted>(_onZoomAdjusted);
     on<RecordingTypeChanged>(_onTypeChanged);
+    on<RecordingOrientationToggled>(_onOrientationToggled);
   }
 
   final CameraService _camera;
   final BillScanner _scanner;
   final void Function(String, String, String) _onClipSaved;
+  final VoiceAnnouncerService _voice;
+  final Future<bool> Function(String code)? _verifyReturnCode;
   final String _endQr;
   final Duration _maxRecording;
 
@@ -273,17 +296,15 @@ class RecordingSessionBloc
   bool _recScanBusy = false;
   DateTime? _lastRecScanAt;
   DateTime? _lastIdleScanAt;
+  String? _lastRejectedReturnCode;
 
   // ML Kit's per-frame scan is expensive enough to visibly stutter the video
-  // encoder if run on every delivered frame during recording — the end-QR
-  // only needs to be caught within about a second of being shown, so a
-  // cooldown between attempts trades a little detection latency for a
-  // recording that stays smooth.
-  static const _recScanCooldown = Duration(seconds: 5);
-
-  // Matches how scanner apps normally behave — recognition settles over a
-  // couple of seconds rather than firing the instant a code enters frame.
-  static const _idleScanCooldown = Duration(seconds: 3);
+  // encoder if run on every delivered frame, and instant recognition isn't
+  // how scanner apps normally behave anyway — recognition settles over a
+  // few seconds rather than firing on the very first frame a code appears
+  // in. One shared cooldown covers both idle (waiting for a bill) and
+  // in-recording (watching for the end-QR) scanning.
+  static const _scanCooldown = Duration(seconds: 2);
 
   // Async mutex chaining all camera-mutating ops. ponytail: a single global
   // lock — fine here because there's exactly one camera; nothing to parallelize.
@@ -368,6 +389,23 @@ class RecordingSessionBloc
       resolutionPreset: _presetFor(state.resolutionLabel),
       imageFormatGroup: BillScanner.imageFormatGroup,
     );
+    try {
+      // The phone sits propped up looking down at the packing table for this
+      // flow — it isn't handheld — so the orientation sensor can misread a
+      // near-flat resting angle as landscape right at the instant recording
+      // starts. Locking here removes the sensor from that decision (see
+      // CameraService.lockCaptureOrientation). Re-applies the user's current
+      // portrait/landscape choice across resolution/lens changes, which
+      // re-run this same init.
+      await _camera.lockCaptureOrientation(
+        state.isLandscape
+            ? DeviceOrientation.landscapeLeft
+            : DeviceOrientation.portraitUp,
+      );
+    } on Object {
+      // Best-effort — unsupported on some hardware/platforms; the app-wide
+      // portrait lock still keeps the window itself from rotating.
+    }
     final minZoom = await _camera.getMinZoomLevel();
     final maxZoom = await _camera.getMaxZoomLevel();
     return (minZoom, maxZoom);
@@ -395,7 +433,7 @@ class RecordingSessionBloc
     }
     final lastScan = _lastIdleScanAt;
     if (lastScan != null &&
-        DateTime.now().difference(lastScan) < _idleScanCooldown) {
+        DateTime.now().difference(lastScan) < _scanCooldown) {
       return;
     }
     _idleScanBusy = true;
@@ -429,7 +467,29 @@ class RecordingSessionBloc
   Future<void> _onCodeScanned(
     RecordingCodeScanned event,
     Emitter<RecordingSessionState> emit,
-  ) => _beginRecording(event.code.trim(), emit);
+  ) async {
+    final code = event.code.trim();
+    // A return clip must reference a tracking code that already has a saved
+    // order (from an earlier "Đóng hàng" clip) — unlike a fresh pack, there's
+    // no legitimate case for creating a new order off an unrecognized return
+    // code, so this only warns and keeps scanning instead of offering to
+    // create one.
+    if (state.typeLabel == 'Trả hàng' && _verifyReturnCode != null) {
+      final known = await _verifyReturnCode(code);
+      if (!known) {
+        // The rejected code often stays framed for a while after the seller
+        // hears the warning — without this, it re-triggers (and re-speaks)
+        // every scan cooldown for as long as it's still in view.
+        if (_lastRejectedReturnCode != code) {
+          _lastRejectedReturnCode = code;
+          unawaited(_voice.speak('Sai mã'));
+        }
+        return;
+      }
+      _lastRejectedReturnCode = null;
+    }
+    await _beginRecording(code, emit);
+  }
 
   Future<void> _beginRecording(
     String code,
@@ -439,6 +499,11 @@ class RecordingSessionBloc
     try {
       await _serialized(() async {
         if (!_camera.isInitialized || _camera.isRecordingVideo) return;
+        // Spoken the instant the decision to record is made, not after the
+        // camera call below finishes — starting a capture session can itself
+        // take a few real seconds, and waiting for that made the
+        // announcement feel badly out of sync with the code being scanned.
+        unawaited(_voice.speak('Đã bắt đầu quay'));
         if (_camera.isStreamingImages) await _camera.stopImageStream();
         await _startVideoWithScan();
         if (isClosed) return;
@@ -487,7 +552,7 @@ class RecordingSessionBloc
     }
     final lastScan = _lastRecScanAt;
     if (lastScan != null &&
-        DateTime.now().difference(lastScan) < _recScanCooldown) {
+        DateTime.now().difference(lastScan) < _scanCooldown) {
       return;
     }
     _recScanBusy = true;
@@ -538,6 +603,13 @@ class RecordingSessionBloc
     try {
       await _serialized(() async {
         _cancelTimer();
+        // Spoken the instant the decision is made — stopVideoRecording below
+        // (muxing the clip) can itself take a real moment, and waiting for
+        // it made the announcement feel out of sync with the stop-QR/cap
+        // that triggered it.
+        unawaited(
+          _voice.speak(next != null ? 'Đã bắt đầu quay' : 'Đã dừng quay'),
+        );
         if (_camera.isRecordingVideo) {
           final file = await _camera.stopVideoRecording();
           _onClipSaved(file.path, state.code, state.typeLabel);
@@ -629,12 +701,24 @@ class RecordingSessionBloc
   }) async {
     try {
       await _serialized(() async {
-        // The new resolution must be in state before _initCamera reads it.
-        if (!isClosed) emit(state.copyWith(resolutionLabel: resolutionLabel));
+        // Switches the view away from CameraPreview (see _buildPreview)
+        // before _initCamera disposes the old controller below — otherwise
+        // the still-mounted preview can get one more rebuild against the
+        // now-disposed controller and throw (a benign race; see
+        // installGlobalErrorHandlers for why it's harmless when it does).
+        if (!isClosed) {
+          emit(
+            state.copyWith(
+              status: RecordingStatus.initializing,
+              resolutionLabel: resolutionLabel,
+            ),
+          );
+        }
         final (minZoom, maxZoom) = await _initCamera();
         if (isClosed) return;
         emit(
           state.copyWith(
+            status: RecordingStatus.idle,
             cameraGeneration: state.cameraGeneration + 1,
             zoom: minZoom,
             minZoom: minZoom,
@@ -644,7 +728,14 @@ class RecordingSessionBloc
       });
       await _startIdleScan();
     } on Object catch (e) {
-      if (!isClosed) emit(state.copyWith(errorMessage: 'Đổi camera lỗi: $e'));
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            status: RecordingStatus.idle,
+            errorMessage: 'Đổi camera lỗi: $e',
+          ),
+        );
+      }
     }
   }
 
@@ -669,6 +760,22 @@ class RecordingSessionBloc
   ) {
     if (state.isRecording || event.type.isEmpty) return;
     emit(state.copyWith(typeLabel: event.type));
+  }
+
+  Future<void> _onOrientationToggled(
+    RecordingOrientationToggled event,
+    Emitter<RecordingSessionState> emit,
+  ) async {
+    if (state.isRecording || !_camera.isInitialized) return;
+    final landscape = !state.isLandscape;
+    try {
+      await _camera.lockCaptureOrientation(
+        landscape ? DeviceOrientation.landscapeLeft : DeviceOrientation.portraitUp,
+      );
+    } on Object {
+      // Best-effort, same as the initial lock in _initCamera.
+    }
+    if (!isClosed) emit(state.copyWith(isLandscape: landscape));
   }
 
   void _startTimer() {

@@ -38,6 +38,7 @@ class EcAccountTabScreen extends StatelessWidget {
     this.onProfileTap,
     this.onQuotaTap,
     this.onLanguageTap,
+    this.onStopCodeTap,
     this.onChangePasswordTap,
     this.onLoginMethodsTap,
     this.onLogout,
@@ -60,6 +61,7 @@ class EcAccountTabScreen extends StatelessWidget {
   final VoidCallback? onProfileTap;
   final VoidCallback? onQuotaTap;
   final VoidCallback? onLanguageTap;
+  final VoidCallback? onStopCodeTap;
   final VoidCallback? onChangePasswordTap;
   final VoidCallback? onLoginMethodsTap;
   final VoidCallback? onLogout;
@@ -103,6 +105,11 @@ class EcAccountTabScreen extends StatelessWidget {
                       label: context.l10n.accountLanguage,
                       value: languageLabel,
                       onTap: onLanguageTap,
+                    ),
+                    _SettingsRow(
+                      icon: Icons.qr_code_2,
+                      label: context.l10n.stopCodeTitle,
+                      onTap: onStopCodeTap,
                     ),
                     _SectionHeader(context.l10n.accountSectionSecurity),
                     _SettingsRow(

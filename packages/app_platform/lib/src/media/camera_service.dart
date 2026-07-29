@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:injectable/injectable.dart';
 
 typedef AvailableCamerasLoader = Future<List<CameraDescription>> Function();
@@ -232,6 +233,25 @@ class CameraService {
   Future<void> setVideoStabilizationMode(VideoStabilizationMode mode) async {
     final activeController = _ensureInitialized();
     await activeController.setVideoStabilizationMode(mode);
+  }
+
+  /// Pins the capture orientation to [orientation] regardless of the live
+  /// sensor reading.
+  ///
+  /// This matters beyond the recorded file's rotation: `CameraController`
+  /// computes `recordingOrientation` — what `CameraPreview` rotates by while
+  /// `isRecordingVideo` is true — from `lockedCaptureOrientation` if set,
+  /// otherwise from the current `deviceOrientation` at the exact instant
+  /// `startVideoRecording()` is called. A phone resting flat gives a noisy,
+  /// sometimes-landscape sensor reading at that instant, so an unlocked
+  /// camera can visibly snap to landscape right as recording starts even
+  /// though it was sitting still. Locking beforehand removes the sensor from
+  /// that decision entirely.
+  ///
+  /// Throws a [CameraNotInitializedException] if the controller is not initialized.
+  Future<void> lockCaptureOrientation(DeviceOrientation orientation) async {
+    final activeController = _ensureInitialized();
+    await activeController.lockCaptureOrientation(orientation);
   }
 
   CameraController _ensureInitialized() {
