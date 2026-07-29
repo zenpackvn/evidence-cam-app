@@ -1,9 +1,10 @@
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:ec_data/ec_data.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:network/network.dart'
-    show BaseOptions, Dio, Headers, Options;
+    show BaseOptions, Dio, Headers, LogInterceptor, Options;
 
 /// TEMPORARY (per shop owner request while the backend's quota rollout is
 /// still being tuned): treat a `quota_hold` response as success instead of
@@ -37,6 +38,12 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
                connectTimeout: const Duration(seconds: 15),
                sendTimeout: const Duration(minutes: 5),
                receiveTimeout: const Duration(seconds: 30),
+             ),
+           )..interceptors.add(
+             LogInterceptor(
+               requestBody: false,
+               responseBody: true,
+               logPrint: (o) => developer.log(o.toString(), name: '[DEBUG-r2up]'),
              ),
            );
 

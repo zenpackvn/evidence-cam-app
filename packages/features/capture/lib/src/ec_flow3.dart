@@ -40,7 +40,6 @@ class EcWaitBill2Screen extends StatelessWidget {
     this.onFlipCamera,
     this.onManualEntry,
     this.onResolution,
-    this.onToggleOrientation,
     this.onNavOrders,
     this.onNavAccount,
     super.key,
@@ -63,10 +62,6 @@ class EcWaitBill2Screen extends StatelessWidget {
   final VoidCallback? onFlipCamera;
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
-
-  /// Manually flips the locked recording orientation between portrait and
-  /// landscape. Only offered while idle — matches [onResolution]/[onFlipCamera].
-  final VoidCallback? onToggleOrientation;
   final VoidCallback? onNavOrders;
   final VoidCallback? onNavAccount;
 
@@ -87,7 +82,6 @@ class EcWaitBill2Screen extends StatelessWidget {
       onFlipCamera: onFlipCamera,
       onManualEntry: onManualEntry,
       onResolution: onResolution,
-      onToggleOrientation: onToggleOrientation,
       onNavOrders: onNavOrders,
       onNavAccount: onNavAccount,
       centerArea: Center(
@@ -515,7 +509,6 @@ class _CamScaffold extends StatelessWidget {
     this.onFlipCamera,
     this.onManualEntry,
     this.onResolution,
-    this.onToggleOrientation,
     this.onNavOrders,
     this.onNavAccount,
     this.showStopButton = false,
@@ -537,7 +530,6 @@ class _CamScaffold extends StatelessWidget {
   final VoidCallback? onFlipCamera;
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
-  final VoidCallback? onToggleOrientation;
   final VoidCallback? onNavOrders;
   final VoidCallback? onNavAccount;
   final bool showStopButton;
@@ -580,7 +572,6 @@ class _CamScaffold extends StatelessWidget {
                   onZoomOut: onZoomOut,
                   onResolution: onResolution,
                   onFlipCamera: onFlipCamera,
-                  onToggleOrientation: onToggleOrientation,
                   onManualEntry: onManualEntry,
                 ),
               ),
@@ -743,7 +734,6 @@ class _CamRail extends StatelessWidget {
     this.onResolution,
     this.onFlipCamera,
     this.onManualEntry,
-    this.onToggleOrientation,
   });
 
   final String zoomLabel;
@@ -753,7 +743,6 @@ class _CamRail extends StatelessWidget {
   final VoidCallback? onResolution;
   final VoidCallback? onFlipCamera;
   final VoidCallback? onManualEntry;
-  final VoidCallback? onToggleOrientation;
 
   @override
   Widget build(BuildContext context) {
@@ -775,14 +764,6 @@ class _CamRail extends StatelessWidget {
             icon: Icons.flip_camera_ios_outlined,
             tooltip: context.l10n.tooltipSwitchCamera,
             onTap: onFlipCamera,
-          ),
-          const SizedBox(height: 10),
-        ],
-        if (onToggleOrientation != null) ...[
-          _RailIconButton(
-            icon: Icons.screen_rotation_outlined,
-            tooltip: context.l10n.tooltipToggleOrientation,
-            onTap: onToggleOrientation,
           ),
           const SizedBox(height: 10),
         ],

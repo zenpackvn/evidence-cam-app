@@ -608,9 +608,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tooltipSwitchCamera => 'Switch camera';
 
   @override
-  String get tooltipToggleOrientation => 'Toggle portrait/landscape';
-
-  @override
   String get tooltipEnterTracking => 'Enter tracking code';
 
   @override

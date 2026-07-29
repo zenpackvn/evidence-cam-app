@@ -1202,12 +1202,6 @@ abstract class AppLocalizations {
   /// **'Switch camera'**
   String get tooltipSwitchCamera;
 
-  /// No description provided for @tooltipToggleOrientation.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle portrait/landscape'**
-  String get tooltipToggleOrientation;
-
   /// No description provided for @tooltipEnterTracking.
   ///
   /// In en, this message translates to:

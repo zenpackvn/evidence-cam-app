@@ -604,9 +604,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get tooltipSwitchCamera => 'Đổi camera';
 
   @override
-  String get tooltipToggleOrientation => 'Quay ngang/dọc';
-
-  @override
   String get tooltipEnterTracking => 'Nhập mã vận đơn';
 
   @override

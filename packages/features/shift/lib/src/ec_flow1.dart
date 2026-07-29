@@ -16,6 +16,8 @@ import 'package:flutter/cupertino.dart'
         CupertinoPageScaffold,
         CupertinoTextField,
         showCupertinoModalPopup;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -794,19 +796,21 @@ class EcRegisterScreen extends StatelessWidget {
                         icon: const _GoogleLogo(),
                         onPressed: onGoogle,
                       ),
-                      const SizedBox(height: 10),
-                      _SocialButton(
-                        label: context.l10n.authSignInApple,
-                        background: Colors.black,
-                        borderColor: Colors.black,
-                        foreground: Colors.white,
-                        icon: const Icon(
-                          Icons.apple,
-                          size: 20,
-                          color: Colors.white,
+                      if (defaultTargetPlatform != TargetPlatform.android) ...[
+                        const SizedBox(height: 10),
+                        _SocialButton(
+                          label: context.l10n.authSignInApple,
+                          background: Colors.black,
+                          borderColor: Colors.black,
+                          foreground: Colors.white,
+                          icon: const Icon(
+                            Icons.apple,
+                            size: 20,
+                            color: Colors.white,
+                          ),
+                          onPressed: onApple,
                         ),
-                        onPressed: onApple,
-                      ),
+                      ],
                       const SizedBox(height: 10),
                       Text(
                         context.l10n.registerSameEmailNote,

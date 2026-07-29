@@ -7,7 +7,8 @@ import 'package:database/database.dart';
 import 'package:ec_data/ec_data.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
+import 'package:flutter/services.dart'
+    show DeviceOrientation, SystemChrome, SystemUiMode;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:storage/storage.dart';
 
@@ -33,6 +34,9 @@ Future<void> main() async {
         DeviceOrientation.portraitUp,
         DeviceOrientation.portraitDown,
       ]);
+      // Hide the Android status/nav bar app-wide; a swipe from the edge
+      // reveals it briefly, then it re-hides (sticky immersive).
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
       try {
         await configureDependencies();

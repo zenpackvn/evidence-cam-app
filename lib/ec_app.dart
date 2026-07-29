@@ -1132,6 +1132,10 @@ CustomTransitionPage<void> _directionalPage(GoRouterState s, Widget child) {
   final enter = s.extra == 'back' ? const Offset(-1, 0) : const Offset(1, 0);
   return CustomTransitionPage<void>(
     key: s.pageKey,
+    // Page tự dựng không được go_router gán `name` như route dùng `builder:`,
+    // mà AnalyticsRouteObserver lấy tên màn từ `settings.name` — thiếu là màn
+    // này không bao giờ xuất hiện trong báo cáo.
+    name: s.uri.path,
     transitionDuration: const Duration(milliseconds: 260),
     reverseTransitionDuration: const Duration(milliseconds: 260),
     transitionsBuilder: (context, animation, secondaryAnimation, child) =>
@@ -1156,17 +1160,23 @@ CustomTransitionPage<void> _directionalPage(GoRouterState s, Widget child) {
   );
 }
 
-CustomTransitionPage<void> _modalPage(Widget child, {LocalKey? key}) =>
-    CustomTransitionPage<void>(
-      key: key,
-      opaque: false,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withValues(alpha: 0.4),
-      transitionDuration: const Duration(milliseconds: 200),
-      transitionsBuilder: (context, animation, _, child) =>
-          FadeTransition(opacity: animation, child: child),
-      child: child,
-    );
+CustomTransitionPage<void> _modalPage(
+  GoRouterState s,
+  Widget child, {
+  LocalKey? key,
+}) => CustomTransitionPage<void>(
+  key: key,
+  // Cùng lý do như _directionalPage: page tự dựng phải tự đặt `name`, nếu
+  // không AnalyticsRouteObserver bỏ qua và sheet này biến mất khỏi báo cáo.
+  name: s.uri.path,
+  opaque: false,
+  barrierDismissible: true,
+  barrierColor: Colors.black.withValues(alpha: 0.4),
+  transitionDuration: const Duration(milliseconds: 200),
+  transitionsBuilder: (context, animation, _, child) =>
+      FadeTransition(opacity: animation, child: child),
+  child: child,
+);
 
 Future<String?> _showTypeSheet(
   BuildContext context, {
@@ -1222,8 +1232,7 @@ String _avatarPathKey(String? uid) => 'profile.avatar_path.${uid ?? ''}';
 
 /// Keychain-backed store for the remembered login email + password. Null in
 /// tests/pumps that skip DI, so every credential read/write there is a no-op.
-CredentialStore? _credentials() =>
-    getIt.isRegistered<FlutterSecureStorage>()
+CredentialStore? _credentials() => getIt.isRegistered<FlutterSecureStorage>()
     ? CredentialStore(getIt<FlutterSecureStorage>())
     : null;
 
@@ -1313,8 +1322,10 @@ EcShopSummary _shopFromDto(ShopDto shop) => EcShopSummary(
   resolution: shop.resolution,
 );
 
-EcShopMgmtEntry _shopMgmtFromDto(AppLocalizations l10n, ShopDto shop) =>
-    EcShopMgmtEntry(
+EcShopMgmtEntry _shopMgmtFromDto(
+  AppLocalizations l10n,
+  ShopDto shop,
+) => EcShopMgmtEntry(
   id: shop.id,
   name: shop.name,
   platform: shop.platform,
@@ -1717,11 +1728,11 @@ class _ShopDetailData {
 
 EcShopMember _memberFromDto(AppLocalizations l10n, MemberDto member) =>
     EcShopMember(
-  accountUid: member.accountUid,
-  roleCode: member.role,
-  name: member.name ?? member.email ?? member.accountUid,
-  role: _roleDisplayName(l10n, member.role),
-);
+      accountUid: member.accountUid,
+      roleCode: member.role,
+      name: member.name ?? member.email ?? member.accountUid,
+      role: _roleDisplayName(l10n, member.role),
+    );
 
 EcVideoType _videoTypeFromDto(VideoTypeDto type) => EcVideoType(
   id: type.id,
@@ -1887,7 +1898,9 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
       context.pop();
       _toast(
         context,
-        result.status == 'pending' ? context.l10n.toastInviteSent : context.l10n.toastMemberAdded,
+        result.status == 'pending'
+            ? context.l10n.toastInviteSent
+            : context.l10n.toastMemberAdded,
       );
     } on Object catch (error) {
       if (mounted) _toast(context, _dataErrorText(context.l10n, error));
@@ -2143,8 +2156,14 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     );
     return [
       EcHomeStat(value: '$todayOrders', label: context.l10n.statOrdersToday),
-      EcHomeStat(value: '$evidenceCount', label: context.l10n.statVideosRecorded),
-      EcHomeStat(value: '${_pendingUploads(queue)}', label: context.l10n.statPendingUpload),
+      EcHomeStat(
+        value: '$evidenceCount',
+        label: context.l10n.statVideosRecorded,
+      ),
+      EcHomeStat(
+        value: '${_pendingUploads(queue)}',
+        label: context.l10n.statPendingUpload,
+      ),
     ];
   }
 
@@ -2314,7 +2333,11 @@ class _OrderRouteState extends State<_OrderRoute> {
           );
         }
         final data = snap.data!;
-        final days = _timelineDays(context.l10n, data.detail.evidence, data.videoTypes);
+        final days = _timelineDays(
+          context.l10n,
+          data.detail.evidence,
+          data.videoTypes,
+        );
         final dossier = data.dossier;
         final dossierUrl = dossier == null || dossier.revoked
             ? null
@@ -2353,13 +2376,20 @@ class _OrderRouteState extends State<_OrderRoute> {
                 .then((_) {
                   if (mounted) _retry();
                 }),
-            onCopyCode: () =>
-                _copyText(context, data.detail.order.tracking, context.l10n.labelTrackingCode),
+            onCopyCode: () => _copyText(
+              context,
+              data.detail.order.tracking,
+              context.l10n.labelTrackingCode,
+            ),
             onCopyLink: dossierUrl == null
                 ? null
                 : () {
                     _analytics()?.trackDossierLinkCopied();
-                    _copyText(context, dossierUrl, context.l10n.labelDossierLink);
+                    _copyText(
+                      context,
+                      dossierUrl,
+                      context.l10n.labelDossierLink,
+                    );
                   },
             onShareLink: dossierUrl == null
                 ? null
@@ -2621,15 +2651,15 @@ String _uploadStatusLabel(AppLocalizations l10n, String status) =>
 
 EcVideoDetail _videoDetail(AppLocalizations l10n, EcTimelineVideo video) =>
     EcVideoDetail(
-  title: video.label,
-  duration: '—',
-  recordedAt: video.recordedAt ?? video.time,
-  recordedBy: video.recordedBy ?? l10n.recordedByFallback,
-  device: video.device ?? l10n.deviceUnknown,
-  uploadStatus: video.uploadStatus ?? l10n.uploadStatusDone,
-  mediaUrl: video.mediaUrl,
-  type: video.type,
-);
+      title: video.label,
+      duration: '—',
+      recordedAt: video.recordedAt ?? video.time,
+      recordedBy: video.recordedBy ?? l10n.recordedByFallback,
+      device: video.device ?? l10n.deviceUnknown,
+      uploadStatus: video.uploadStatus ?? l10n.uploadStatusDone,
+      mediaUrl: video.mediaUrl,
+      type: video.type,
+    );
 
 String _dataErrorText(AppLocalizations l10n, Object error) {
   final text = error.toString();
@@ -2751,7 +2781,8 @@ class _QueueRouteState extends State<_QueueRoute> {
             final id = item.id;
             if (id != null) widget.queue.resume(id);
           },
-          onDelete: (item) => _confirmDeleteQueueItem(context, widget.queue, item),
+          onDelete: (item) =>
+              _confirmDeleteQueueItem(context, widget.queue, item),
         );
       },
     );
@@ -2836,7 +2867,12 @@ GoRouter _buildRouter(
   // announcement each time.
   final voice = voiceAnnouncer ?? _maybeGetIt<VoiceAnnouncerService>();
   final gallery = _maybeGetIt<GallerySaveService>();
+  // screen_view cho GA4/Firebase. Không có nó thì chỉ biết app được mở, không
+  // biết người dùng đi tới màn nào hay rơi ở bước nào. Null khi DI chưa dựng
+  // (widget test) — lúc đó danh sách rỗng, router vẫn chạy.
+  final analyticsObserver = _maybeGetIt<AnalyticsRouteObserver>();
   return GoRouter(
+    observers: [?analyticsObserver],
     // Override the start route for screenshot/QA via --dart-define=EC_START=/home.
     initialLocation: const String.fromEnvironment(
       'EC_START',
@@ -3111,6 +3147,7 @@ GoRouter _buildRouter(
               ? s.extra! as _VideoRouteExtra
               : null;
           return _modalPage(
+            s,
             // showCupertinoDialog needs a context that is a descendant of a
             // Navigator. The `c` this pageBuilder receives sits above the
             // page this builds, so it has no Navigator ancestor yet — a
@@ -3219,6 +3256,7 @@ GoRouter _buildRouter(
               ? s.extra! as _VideoRouteExtra
               : null;
           return _modalPage(
+            s,
             // See the /video route above: onDownload's toasts need a context
             // inside the built page, not the pageBuilder's own `c`.
             Builder(
@@ -3288,6 +3326,7 @@ GoRouter _buildRouter(
               ? s.extra! as String
               : recordingType.value;
           return _modalPage(
+            s,
             _TypeSheetRoute(
               repo: repo,
               shopId: shop?.id ?? '',
@@ -3309,6 +3348,7 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/manual',
         pageBuilder: (c, s) => _modalPage(
+          s,
           EcManualEntryScreen(
             onCancel: () => c.pop(),
             // Return the entered code to the record route, which starts recording
@@ -3350,18 +3390,19 @@ GoRouter _buildRouter(
             repo: repo,
             shop: shop,
             onBack: () => _back(c, '/shop-mgmt'),
-            onMemberMore: (member) => c.push(
-              '/member-actions',
-              extra: _MemberActionExtra(shopId: shop.id, member: member),
-            ).then((_) {}),
+            onMemberMore: (member) => c
+                .push(
+                  '/member-actions',
+                  extra: _MemberActionExtra(shopId: shop.id, member: member),
+                )
+                .then((_) {}),
             onInviteMember: () =>
                 c.push('/invite-member', extra: shop.id).then((_) {}),
             onTapResolution: () => c.push('/resolution', extra: shop.id),
             onEditType: (type) =>
                 c.push('/create-type', extra: (shop.id, type)).then((_) {}),
-            onDeleteType: (type) => c
-                .push('/confirm-delete', extra: (shop.id, type))
-                .then((_) {}),
+            onDeleteType: (type) =>
+                c.push('/confirm-delete', extra: (shop.id, type)).then((_) {}),
             onAddType: () =>
                 c.push('/create-type', extra: (shop.id, null)).then((_) {}),
           );
@@ -3370,6 +3411,7 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/create-type',
         pageBuilder: (c, s) => _modalPage(
+          s,
           _CreateTypeRoute(
             repo: repo,
             shopId: s.extra is (String, EcVideoType?)
@@ -3388,6 +3430,7 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/confirm-delete',
         pageBuilder: (c, s) => _modalPage(
+          s,
           EcConfirmDeleteScreen(
             onCancel: () => c.pop(),
             onConfirm: () {
@@ -3414,6 +3457,7 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/invite-member',
         pageBuilder: (c, s) => _modalPage(
+          s,
           _InviteMemberRoute(
             repo: repo,
             shopId: s.extra is String ? s.extra! as String : '',
@@ -3423,10 +3467,14 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/member-actions',
         pageBuilder: (c, s) => _modalPage(
+          s,
           EcMemberActionsScreen(
             member: s.extra is _MemberActionExtra
                 ? (s.extra! as _MemberActionExtra).member
-                : EcShopMember(name: c.l10n.memberFallbackName, role: c.l10n.roleUnknown),
+                : EcShopMember(
+                    name: c.l10n.memberFallbackName,
+                    role: c.l10n.roleUnknown,
+                  ),
             onSetManager: () async {
               final extra = s.extra;
               if (extra is _MemberActionExtra &&
@@ -3495,6 +3543,7 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/resolution',
         pageBuilder: (c, s) => _modalPage(
+          s,
           EcResolutionSheetScreen(
             selected: _selected(selectedShop)?.resolution ?? '720p',
             onSelect: (r) {
@@ -3550,7 +3599,7 @@ GoRouter _buildRouter(
       ),
       GoRoute(
         path: '/change-password',
-        pageBuilder: (c, s) => _modalPage(_ChangePasswordRoute(auth: auth)),
+        pageBuilder: (c, s) => _modalPage(s, _ChangePasswordRoute(auth: auth)),
       ),
       GoRoute(
         path: '/stop-code',
@@ -3567,6 +3616,7 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/delete-account',
         pageBuilder: (c, s) => _modalPage(
+          s,
           _DeleteAccountRoute(auth: auth, repo: repo),
         ),
       ),

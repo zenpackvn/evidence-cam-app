@@ -78,7 +78,6 @@ class RecordingSessionState {
     this.maxZoom = 1,
     this.cameraCount = 0,
     this.cameraGeneration = 0,
-    this.isLandscape = false,
     this.errorMessage,
   });
 
@@ -91,11 +90,6 @@ class RecordingSessionState {
   final double minZoom;
   final double maxZoom;
   final int cameraCount;
-
-  /// Locked recording orientation, toggled manually — the camera stays
-  /// pinned to this regardless of how the phone is physically held or
-  /// placed (see [RecordingSessionBloc._initCamera]).
-  final bool isLandscape;
 
   /// Bumped on every (re)initialize so the view rebuilds its camera preview
   /// even when [status] is unchanged (resolution cycle / camera flip).
@@ -116,7 +110,6 @@ class RecordingSessionState {
     double? maxZoom,
     int? cameraCount,
     int? cameraGeneration,
-    bool? isLandscape,
     String? errorMessage,
     bool clearError = false,
   }) {
@@ -131,7 +124,6 @@ class RecordingSessionState {
       maxZoom: maxZoom ?? this.maxZoom,
       cameraCount: cameraCount ?? this.cameraCount,
       cameraGeneration: cameraGeneration ?? this.cameraGeneration,
-      isLandscape: isLandscape ?? this.isLandscape,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
@@ -149,7 +141,6 @@ class RecordingSessionState {
       other.maxZoom == maxZoom &&
       other.cameraCount == cameraCount &&
       other.cameraGeneration == cameraGeneration &&
-      other.isLandscape == isLandscape &&
       other.errorMessage == errorMessage;
 
   @override
@@ -164,7 +155,6 @@ class RecordingSessionState {
     maxZoom,
     cameraCount,
     cameraGeneration,
-    isLandscape,
     errorMessage,
   );
 }
@@ -229,12 +219,6 @@ class RecordingTypeChanged extends RecordingSessionEvent {
   final String type;
 }
 
-/// Manually flips the locked recording orientation between portrait and
-/// landscape (see [RecordingSessionState.isLandscape]).
-class RecordingOrientationToggled extends RecordingSessionEvent {
-  const RecordingOrientationToggled();
-}
-
 /// Owns the camera + scanner and drives the recording session. Every
 /// camera-mutating operation runs through [_serialized], so cross-event races
 /// (a stop landing mid-cut-over, two frames both starting a clip) can't happen.
@@ -277,7 +261,6 @@ class RecordingSessionBloc
     on<RecordingCameraFlipped>(_onCameraFlipped);
     on<RecordingZoomAdjusted>(_onZoomAdjusted);
     on<RecordingTypeChanged>(_onTypeChanged);
-    on<RecordingOrientationToggled>(_onOrientationToggled);
   }
 
   final CameraService _camera;
@@ -394,14 +377,9 @@ class RecordingSessionBloc
       // flow — it isn't handheld — so the orientation sensor can misread a
       // near-flat resting angle as landscape right at the instant recording
       // starts. Locking here removes the sensor from that decision (see
-      // CameraService.lockCaptureOrientation). Re-applies the user's current
-      // portrait/landscape choice across resolution/lens changes, which
-      // re-run this same init.
-      await _camera.lockCaptureOrientation(
-        state.isLandscape
-            ? DeviceOrientation.landscapeLeft
-            : DeviceOrientation.portraitUp,
-      );
+      // CameraService.lockCaptureOrientation). Re-applied across
+      // resolution/lens changes, which re-run this same init.
+      await _camera.lockCaptureOrientation(DeviceOrientation.portraitUp);
     } on Object {
       // Best-effort — unsupported on some hardware/platforms; the app-wide
       // portrait lock still keeps the window itself from rotating.
@@ -760,22 +738,6 @@ class RecordingSessionBloc
   ) {
     if (state.isRecording || event.type.isEmpty) return;
     emit(state.copyWith(typeLabel: event.type));
-  }
-
-  Future<void> _onOrientationToggled(
-    RecordingOrientationToggled event,
-    Emitter<RecordingSessionState> emit,
-  ) async {
-    if (state.isRecording || !_camera.isInitialized) return;
-    final landscape = !state.isLandscape;
-    try {
-      await _camera.lockCaptureOrientation(
-        landscape ? DeviceOrientation.landscapeLeft : DeviceOrientation.portraitUp,
-      );
-    } on Object {
-      // Best-effort, same as the initial lock in _initCamera.
-    }
-    if (!isClosed) emit(state.copyWith(isLandscape: landscape));
   }
 
   void _startTimer() {

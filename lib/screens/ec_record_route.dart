@@ -279,8 +279,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           onFlipCamera: state.hasMultipleCameras
               ? () => _bloc.add(const RecordingCameraFlipped())
               : null,
-          onToggleOrientation: () =>
-              _bloc.add(const RecordingOrientationToggled()),
           onManualEntry: _manualEntry,
           onNavOrders: widget.onNavOrders,
           onNavAccount: widget.onNavAccount,

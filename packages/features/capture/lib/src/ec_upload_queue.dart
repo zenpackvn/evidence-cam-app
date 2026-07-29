@@ -13,6 +13,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:analytics/analytics.dart';
@@ -242,7 +243,13 @@ class EcUploadQueue extends ChangeNotifier {
             ..remoteUrl = url;
           succeeded = true;
           unawaited(_analytics?.trackUploadCompleted());
-        } on Object catch (error) {
+        } on Object catch (error, stack) {
+          developer.log(
+            'upload failed for task ${task.id}',
+            name: '[DEBUG-r2up]',
+            error: error,
+            stackTrace: stack,
+          );
           if (_isQuotaWait(error)) {
             task
               ..state = EcUploadState.quotaWait

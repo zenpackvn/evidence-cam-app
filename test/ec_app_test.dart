@@ -109,8 +109,10 @@ void main() {
       await tester.enterText(fields.at(0), 'Nguyễn Văn A');
       await tester.enterText(fields.at(1), 'a@b.com');
       await tester.enterText(fields.at(2), '0901234567');
-      await tester.enterText(fields.at(3), 'matkhau123');
-      await tester.enterText(fields.at(4), 'matkhau123');
+      // Phải đạt chính sách mật khẩu (shared_contracts/password_policy.dart):
+      // 'matkhau123' nằm trong danh sách phổ biến nên bị từ chối.
+      await tester.enterText(fields.at(3), 'dongGoi2026');
+      await tester.enterText(fields.at(4), 'dongGoi2026');
       await tester.tap(find.text('Tạo tài khoản'));
       await tester.pumpAndSettle();
 
@@ -432,8 +434,8 @@ void main() {
       await tester.tap(find.text('Tạo mật khẩu'));
       await tester.pumpAndSettle();
       final fields = find.byType(EditableText);
-      await tester.enterText(fields.at(0), 'matkhau123');
-      await tester.enterText(fields.at(1), 'matkhau123');
+      await tester.enterText(fields.at(0), 'dongGoi2026');
+      await tester.enterText(fields.at(1), 'dongGoi2026');
       await tester.tap(find.text('Tạo mật khẩu').last);
       await tester.pumpAndSettle();
 
