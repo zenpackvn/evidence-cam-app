@@ -848,6 +848,12 @@ abstract class AppLocalizations {
   /// **'Upgrade plan'**
   String get quotaUpgradePlan;
 
+  /// No description provided for @quotaOwnerOnlyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the account owner can change the plan'**
+  String get quotaOwnerOnlyNote;
+
   /// No description provided for @deleteAccountTitleStep1.
   ///
   /// In en, this message translates to:

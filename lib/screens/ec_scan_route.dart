@@ -42,6 +42,7 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
   String? _error;
   List<CameraDescription> _cameras = const [];
   int _index = 0;
+  int _frameCount = 0;
 
   @override
   void initState() {
@@ -69,7 +70,7 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
       if (index < 0) index = 0;
       await _camera.initialize(
         description: cameras[index],
-        resolutionPreset: ResolutionPreset.high,
+        resolutionPreset: ResolutionPreset.medium,
         imageFormatGroup: BillScanner.imageFormatGroup,
       );
       if (!mounted) {
@@ -89,6 +90,9 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
 
   Future<void> _onFrame(CameraImage image) async {
     if (_done || _cameras.isEmpty) return;
+    // ponytail: skip every other frame to throttle ML detection (30fps → 15fps)
+    _frameCount++;
+    if (_frameCount % 2 != 0) return;
     final code = await _scanner.scan(image, _cameras[_index]);
     if (code == null || _done || !mounted) return;
     _done = true;

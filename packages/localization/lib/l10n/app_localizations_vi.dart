@@ -408,6 +408,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get quotaUpgradePlan => 'Nâng cấp gói';
 
   @override
+  String get quotaOwnerOnlyNote => 'Chỉ chủ tài khoản mới đổi được gói cước';
+
+  @override
   String get deleteAccountTitleStep1 => 'Xóa tài khoản?';
 
   @override

@@ -154,6 +154,7 @@
   "quotaRemainingThisMonth": "Remaining this month",
   "quotaStorage": "Storage",
   "quotaUpgradePlan": "Upgrade plan",
+  "quotaOwnerOnlyNote": "Only the account owner can change the plan",
   "deleteAccountTitleStep1": "Delete account?",
   "deleteAccountTitleStep2": "Confirm permanent deletion?",
   "deleteAccountBodyStep1": "All your videos, orders and dossiers will be permanently deleted. This action cannot be undone.",

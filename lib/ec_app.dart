@@ -557,7 +557,9 @@ class _AccountRoute extends StatefulWidget {
 
 class _AccountRouteState extends State<_AccountRoute> {
   // Fetched once; stored so rebuilds (user/language changes) don't refetch.
-  late final Future<QuotaDto> _quota = widget.repo.quota();
+  late final Future<QuotaDto> _quota = widget.repo.quota(
+    shopId: widget.selectedShop.value?.id,
+  );
 
   Future<void> _logout() async {
     await widget.auth.signOut();
@@ -829,16 +831,21 @@ class _LoginMethodsRoute extends StatelessWidget {
 
 /// Quota — reads the real per-period figures from the repository.
 class _QuotaRoute extends StatefulWidget {
-  const _QuotaRoute({required this.repo});
+  const _QuotaRoute({required this.repo, this.shopId});
 
   final EcRepository repo;
+
+  /// Shop đang chọn. Gói cước gắn với tài khoản CHỦ shop, nên phải hỏi theo
+  /// shop thì quản lý/nhân viên mới thấy đúng gói đang chi phối ca làm của họ
+  /// (và `canManagePlan=false` để ẩn nút nâng gói).
+  final String? shopId;
 
   @override
   State<_QuotaRoute> createState() => _QuotaRouteState();
 }
 
 class _QuotaRouteState extends State<_QuotaRoute> {
-  late final Future<QuotaDto> _quota = widget.repo.quota();
+  late final Future<QuotaDto> _quota = widget.repo.quota(shopId: widget.shopId);
 
   @override
   Widget build(BuildContext context) {
@@ -858,6 +865,7 @@ class _QuotaRouteState extends State<_QuotaRoute> {
           remainingBytes: quota.remainingBytes,
           capBytes: quota.capBytes,
           retentionTotalDays: quota.retentionDays,
+          canManagePlan: quota.canManagePlan,
           onBack: () => _back(context, '/account'),
           onUpgrade: () => _toast(context, context.l10n.toastUpgradeComingSoon),
         );
@@ -3208,7 +3216,8 @@ GoRouter _buildRouter(
       // --- account sub-screens (pushed, back via pop) ---
       GoRoute(
         path: '/quota',
-        builder: (c, s) => _QuotaRoute(repo: repo),
+        builder: (c, s) =>
+            _QuotaRoute(repo: repo, shopId: _selected(selectedShop)?.id),
       ),
       GoRoute(
         path: '/language',

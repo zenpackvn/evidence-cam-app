@@ -139,6 +139,7 @@
   "quotaRemainingThisMonth": "Còn lại trong tháng",
   "quotaStorage": "Lưu trữ",
   "quotaUpgradePlan": "Nâng cấp gói",
+  "quotaOwnerOnlyNote": "Chỉ chủ tài khoản mới đổi được gói cước",
   "deleteAccountTitleStep1": "Xóa tài khoản?",
   "deleteAccountTitleStep2": "Xác nhận xóa vĩnh viễn?",
   "deleteAccountBodyStep1": "Toàn bộ video, đơn hàng và hồ sơ của bạn sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.",
