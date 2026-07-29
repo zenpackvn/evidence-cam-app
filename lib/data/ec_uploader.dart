@@ -5,6 +5,14 @@ import 'package:feature_capture/feature_capture.dart';
 import 'package:network/network.dart'
     show BaseOptions, Dio, Headers, Options;
 
+/// TEMPORARY (per shop owner request while the backend's quota rollout is
+/// still being tuned): treat a `quota_hold` response as success instead of
+/// failing the upload. The clip is still fully uploaded to R2 at this point —
+/// this only skips the app *reporting* the hold — but the backend may not
+/// actually keep/serve evidence it flagged as over-quota, so this must be
+/// flipped back to `false` once quota limits are ready to enforce again.
+const _ignoreQuotaHoldForTesting = true;
+
 /// Real backend uploader following the EvidenceCam presigned-R2 flow:
 ///
 /// 1. `findOrCreateOrder(shopId, tracking)` → the order id;
@@ -97,7 +105,9 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       order.id,
       presign.evidenceId,
     );
-    if (status == 'quota_hold') throw StateError('quota_exceeded');
+    if (status == 'quota_hold' && !_ignoreQuotaHoldForTesting) {
+      throw StateError('quota_exceeded');
+    }
     return presign.key;
   }
 
@@ -166,7 +176,9 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
         uploadId: created.uploadId,
         parts: uploaded,
       );
-      if (status == 'quota_hold') throw StateError('quota_exceeded');
+      if (status == 'quota_hold' && !_ignoreQuotaHoldForTesting) {
+        throw StateError('quota_exceeded');
+      }
       return created.key;
     } on Object {
       await _api.abortMultipartUpload(

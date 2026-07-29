@@ -61,6 +61,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String get toastVideoDeleteUnavailable => 'Không thể xóa video này';
 
   @override
+  String get toastDownloadingPhoto => 'Đang tải ảnh';
+
+  @override
+  String get toastPhotoSavedToGallery => 'Đã lưu ảnh vào thư viện trên máy';
+
+  @override
+  String get toastPhotoDownloadedCopied => 'Đã tải ảnh và sao chép đường dẫn';
+
+  @override
+  String get toastPhotoDownloadFailed => 'Không tải được ảnh, thử lại sau';
+
+  @override
+  String get toastPhotoNoDownloadLink => 'Ảnh chưa có link tải';
+
+  @override
   String get toastPhotoQueued => 'Đã đính kèm ảnh — đưa vào hàng chờ tải';
 
   @override
@@ -166,6 +181,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get roleStaff => 'Nhân viên';
 
   @override
+  String get planFree => 'Miễn phí';
+
+  @override
+  String get planBasic => 'Cơ bản';
+
+  @override
   String get roleOther => 'Khác';
 
   @override
@@ -185,6 +206,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get uploadStatusDeleted => 'Đã xóa';
+
+  @override
+  String get uploadStatusError => 'Lỗi xử lý phía máy chủ';
 
   @override
   String get kindPhoto => 'Ảnh đính kèm';
@@ -511,6 +535,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get detailRecordedBy => 'Người quay';
 
   @override
+  String get detailCapturedTime => 'Giờ chụp';
+
+  @override
+  String get detailCapturedBy => 'Người chụp';
+
+  @override
   String get detailDevice => 'Thiết bị';
 
   @override
@@ -528,6 +558,9 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get detailDownloadNote =>
       'Chỉ Chủ tài khoản / QL shop — để đính kèm form khiếu nại sàn';
+
+  @override
+  String get detailDownloadPhoto => 'Tải ảnh về máy';
 
   @override
   String get attachPhotoToOrder => 'Đính kèm ảnh vào đơn';
@@ -612,6 +645,28 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get waitingQuota => 'Chờ quota';
+
+  @override
+  String get pausedUpload => 'Đã tạm dừng';
+
+  @override
+  String get queuePauseAction => 'Tạm dừng';
+
+  @override
+  String get queueResumeAction => 'Tiếp tục';
+
+  @override
+  String get queueDeleteAction => 'Xóa';
+
+  @override
+  String get queueDeleteConfirmTitle => 'Xóa khỏi hàng đợi?';
+
+  @override
+  String get queueDeleteConfirmBody =>
+      'Video/ảnh này chưa được tải lên — xóa sẽ mất vĩnh viễn khỏi máy.';
+
+  @override
+  String get toastQueueItemDeleted => 'Đã xóa khỏi hàng đợi tải lên';
 
   @override
   String get manualTrackingTitle => 'Nhập tay mã vận đơn';

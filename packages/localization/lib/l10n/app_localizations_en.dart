@@ -62,6 +62,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toastVideoDeleteUnavailable => 'This video can\'t be deleted';
 
   @override
+  String get toastDownloadingPhoto => 'Downloading photo';
+
+  @override
+  String get toastPhotoSavedToGallery => 'Photo saved to your device gallery';
+
+  @override
+  String get toastPhotoDownloadedCopied => 'Photo downloaded and path copied';
+
+  @override
+  String get toastPhotoDownloadFailed =>
+      'Couldn\'t download photo, try again later';
+
+  @override
+  String get toastPhotoNoDownloadLink => 'Photo has no download link yet';
+
+  @override
   String get toastPhotoQueued => 'Photo attached — added to the upload queue';
 
   @override
@@ -167,6 +183,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roleStaff => 'Staff';
 
   @override
+  String get planFree => 'Free';
+
+  @override
+  String get planBasic => 'Basic';
+
+  @override
   String get roleOther => 'Other';
 
   @override
@@ -186,6 +208,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get uploadStatusDeleted => 'Deleted';
+
+  @override
+  String get uploadStatusError => 'Server-side processing error';
 
   @override
   String get kindPhoto => 'Attached photo';
@@ -514,6 +539,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailRecordedBy => 'Recorded by';
 
   @override
+  String get detailCapturedTime => 'Capture time';
+
+  @override
+  String get detailCapturedBy => 'Captured by';
+
+  @override
   String get detailDevice => 'Device';
 
   @override
@@ -531,6 +562,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get detailDownloadNote =>
       'Account owner / shop manager only — to attach a marketplace complaint form';
+
+  @override
+  String get detailDownloadPhoto => 'Download photo';
 
   @override
   String get attachPhotoToOrder => 'Attach photo to order';
@@ -616,6 +650,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waitingQuota => 'Waiting for quota';
+
+  @override
+  String get pausedUpload => 'Paused';
+
+  @override
+  String get queuePauseAction => 'Pause';
+
+  @override
+  String get queueResumeAction => 'Resume';
+
+  @override
+  String get queueDeleteAction => 'Remove';
+
+  @override
+  String get queueDeleteConfirmTitle => 'Remove from queue?';
+
+  @override
+  String get queueDeleteConfirmBody =>
+      'This clip hasn\'t been uploaded yet — removing it deletes it from your device permanently.';
+
+  @override
+  String get toastQueueItemDeleted => 'Removed from the upload queue';
 
   @override
   String get manualTrackingTitle => 'Enter tracking code manually';

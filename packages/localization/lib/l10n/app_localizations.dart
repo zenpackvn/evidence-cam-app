@@ -200,6 +200,36 @@ abstract class AppLocalizations {
   /// **'This video can\'t be deleted'**
   String get toastVideoDeleteUnavailable;
 
+  /// No description provided for @toastDownloadingPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading photo'**
+  String get toastDownloadingPhoto;
+
+  /// No description provided for @toastPhotoSavedToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo saved to your device gallery'**
+  String get toastPhotoSavedToGallery;
+
+  /// No description provided for @toastPhotoDownloadedCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo downloaded and path copied'**
+  String get toastPhotoDownloadedCopied;
+
+  /// No description provided for @toastPhotoDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t download photo, try again later'**
+  String get toastPhotoDownloadFailed;
+
+  /// No description provided for @toastPhotoNoDownloadLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo has no download link yet'**
+  String get toastPhotoNoDownloadLink;
+
   /// No description provided for @toastPhotoQueued.
   ///
   /// In en, this message translates to:
@@ -392,6 +422,18 @@ abstract class AppLocalizations {
   /// **'Staff'**
   String get roleStaff;
 
+  /// No description provided for @planFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get planFree;
+
+  /// No description provided for @planBasic.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic'**
+  String get planBasic;
+
   /// No description provided for @roleOther.
   ///
   /// In en, this message translates to:
@@ -433,6 +475,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deleted'**
   String get uploadStatusDeleted;
+
+  /// No description provided for @uploadStatusError.
+  ///
+  /// In en, this message translates to:
+  /// **'Server-side processing error'**
+  String get uploadStatusError;
 
   /// No description provided for @kindPhoto.
   ///
@@ -1028,6 +1076,18 @@ abstract class AppLocalizations {
   /// **'Recorded by'**
   String get detailRecordedBy;
 
+  /// No description provided for @detailCapturedTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture time'**
+  String get detailCapturedTime;
+
+  /// No description provided for @detailCapturedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Captured by'**
+  String get detailCapturedBy;
+
   /// No description provided for @detailDevice.
   ///
   /// In en, this message translates to:
@@ -1063,6 +1123,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account owner / shop manager only — to attach a marketplace complaint form'**
   String get detailDownloadNote;
+
+  /// No description provided for @detailDownloadPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Download photo'**
+  String get detailDownloadPhoto;
 
   /// No description provided for @attachPhotoToOrder.
   ///
@@ -1219,6 +1285,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for quota'**
   String get waitingQuota;
+
+  /// No description provided for @pausedUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get pausedUpload;
+
+  /// No description provided for @queuePauseAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get queuePauseAction;
+
+  /// No description provided for @queueResumeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get queueResumeAction;
+
+  /// No description provided for @queueDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get queueDeleteAction;
+
+  /// No description provided for @queueDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from queue?'**
+  String get queueDeleteConfirmTitle;
+
+  /// No description provided for @queueDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This clip hasn\'t been uploaded yet — removing it deletes it from your device permanently.'**
+  String get queueDeleteConfirmBody;
+
+  /// No description provided for @toastQueueItemDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from the upload queue'**
+  String get toastQueueItemDeleted;
 
   /// No description provided for @manualTrackingTitle.
   ///

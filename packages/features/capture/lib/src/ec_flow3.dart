@@ -1083,6 +1083,9 @@ enum EcUploadStatus {
 
   /// Waiting for the monthly upload quota to free up.
   quotaWait,
+
+  /// Paused by the user — excluded from the upload rotation until resumed.
+  paused,
 }
 
 /// A single row of the upload queue list.
@@ -1153,6 +1156,9 @@ class EcUploadQueueScreen extends StatelessWidget {
     this.onUpgrade,
     this.onTabSelected,
     this.onRetry,
+    this.onPause,
+    this.onResume,
+    this.onDelete,
     super.key,
   });
 
@@ -1164,6 +1170,15 @@ class EcUploadQueueScreen extends StatelessWidget {
 
   /// Called with an errored item when its "Thử lại" affordance is tapped.
   final ValueChanged<EcUploadItem>? onRetry;
+
+  /// Called with an item when its "Tạm dừng" affordance is tapped.
+  final ValueChanged<EcUploadItem>? onPause;
+
+  /// Called with a paused item when its "Tiếp tục" affordance is tapped.
+  final ValueChanged<EcUploadItem>? onResume;
+
+  /// Called with an item when its remove affordance is tapped.
+  final ValueChanged<EcUploadItem>? onDelete;
 
   /// Items shown under the selected tab (0 = all, 1 = uploading, 2 = error).
   List<EcUploadItem> get _visibleItems => switch (selectedTabIndex) {
@@ -1283,6 +1298,9 @@ class EcUploadQueueScreen extends StatelessWidget {
                               itemBuilder: (context, index) => _UploadRow(
                                 item: visible[index],
                                 onRetry: onRetry,
+                                onPause: onPause,
+                                onResume: onResume,
+                                onDelete: onDelete,
                               ),
                             ),
                     ),
@@ -1343,12 +1361,34 @@ class _UploadTab extends StatelessWidget {
 }
 
 class _UploadRow extends StatelessWidget {
-  const _UploadRow({required this.item, this.onRetry});
+  const _UploadRow({
+    required this.item,
+    this.onRetry,
+    this.onPause,
+    this.onResume,
+    this.onDelete,
+  });
   final EcUploadItem item;
   final ValueChanged<EcUploadItem>? onRetry;
 
+  /// Called when "Tạm dừng" is tapped — only offered for a not-yet-uploading
+  /// item (waiting/error/quota-wait).
+  final ValueChanged<EcUploadItem>? onPause;
+
+  /// Called when "Tiếp tục" is tapped on a paused item.
+  final ValueChanged<EcUploadItem>? onResume;
+
+  /// Called when the item's remove icon is tapped.
+  final ValueChanged<EcUploadItem>? onDelete;
+
   @override
   Widget build(BuildContext context) {
+    final canPause =
+        onPause != null &&
+        (item.status == EcUploadStatus.waiting ||
+            item.status == EcUploadStatus.error ||
+            item.status == EcUploadStatus.quotaWait);
+    final canResume = onResume != null && item.status == EcUploadStatus.paused;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: ecSquircleDecoration(
@@ -1388,7 +1428,7 @@ class _UploadRow extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: item.status == EcUploadStatus.error && onRetry != null
@@ -1396,7 +1436,52 @@ class _UploadRow extends StatelessWidget {
                 : null,
             child: _UploadStatusView(item: item),
           ),
+          if (canPause)
+            _RowIconButton(
+              icon: Icons.pause_circle_outline,
+              tooltip: context.l10n.queuePauseAction,
+              onTap: () => onPause!(item),
+            ),
+          if (canResume)
+            _RowIconButton(
+              icon: Icons.play_circle_outline,
+              tooltip: context.l10n.queueResumeAction,
+              onTap: () => onResume!(item),
+            ),
+          if (onDelete != null)
+            _RowIconButton(
+              icon: Icons.delete_outline,
+              tooltip: context.l10n.queueDeleteAction,
+              onTap: () => onDelete!(item),
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _RowIconButton extends StatelessWidget {
+  const _RowIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: EcTap(
+        onTap: onTap,
+        child: Semantics(
+          label: tooltip,
+          button: true,
+          child: Icon(icon, size: 20, color: BrandColors.mut),
+        ),
       ),
     );
   }
@@ -1464,6 +1549,10 @@ class _UploadStatusView extends StatelessWidget {
         context.l10n.waitingQuota,
         style: _t(11, FontWeight.w400, BrandColors.mut),
       ),
+      EcUploadStatus.paused => Text(
+        context.l10n.pausedUpload,
+        style: _t(11, FontWeight.w400, BrandColors.mut),
+      ),
     };
   }
 }
@@ -1518,76 +1607,85 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
             bottom: 0,
             child: SafeArea(
               top: false,
-              child: DecoratedBox(
-                decoration: ShapeDecoration(
-                  color: BrandColors.bg,
-                  shape: SmoothRectangleBorder(
-                    smoothness: ecCornerSmoothing,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(20),
+              // The keyboard covers this sheet otherwise — it's a bare
+              // Positioned/Stack overlay (see `_modalPage`), not a Scaffold,
+              // so nothing else shifts it above the keyboard when the field
+              // is focused.
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 100),
+                padding: EdgeInsets.only(bottom: context.bottomInset),
+                child: DecoratedBox(
+                  decoration: ShapeDecoration(
+                    color: BrandColors.bg,
+                    shape: SmoothRectangleBorder(
+                      smoothness: ecCornerSmoothing,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
                     ),
                   ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const _SheetHandle(),
-                      const SizedBox(height: 12),
-                      Text(
-                        context.l10n.manualTrackingTitle,
-                        style: _t(16, FontWeight.w600, BrandColors.ink),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        context.l10n.manualTrackingNote,
-                        style: _t(12, FontWeight.w400, BrandColors.mut),
-                      ),
-                      const SizedBox(height: 12),
-                      DecoratedBox(
-                        decoration: ecSquircleDecoration(
-                          radius: 12,
-                          color: BrandColors.bg,
-                          side: const BorderSide(color: BrandColors.line),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const _SheetHandle(),
+                        const SizedBox(height: 12),
+                        Text(
+                          context.l10n.manualTrackingTitle,
+                          style: _t(16, FontWeight.w600, BrandColors.ink),
                         ),
-                        child: CupertinoTextField(
-                          controller: _controller,
-                          style: _t(15, FontWeight.w400, BrandColors.ink),
-                          placeholder: 'SPXVN…',
-                          placeholderStyle: _t(
-                            15,
-                            FontWeight.w400,
-                            BrandColors.mut,
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 15,
-                          ),
-                          decoration: const BoxDecoration(),
+                        const SizedBox(height: 12),
+                        Text(
+                          context.l10n.manualTrackingNote,
+                          style: _t(12, FontWeight.w400, BrandColors.mut),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _OutlineButton(
-                              label: context.l10n.commonCancel,
-                              onPressed: widget.onCancel,
-                            ),
+                        const SizedBox(height: 12),
+                        DecoratedBox(
+                          decoration: ecSquircleDecoration(
+                            radius: 12,
+                            color: BrandColors.bg,
+                            side: const BorderSide(color: BrandColors.line),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _PrimaryButton(
-                              label: context.l10n.startRecording,
-                              onPressed: () =>
-                                  widget.onManualSubmit?.call(_controller.text),
+                          child: CupertinoTextField(
+                            controller: _controller,
+                            style: _t(15, FontWeight.w400, BrandColors.ink),
+                            placeholder: 'SPXVN…',
+                            placeholderStyle: _t(
+                              15,
+                              FontWeight.w400,
+                              BrandColors.mut,
                             ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 15,
+                            ),
+                            decoration: const BoxDecoration(),
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _OutlineButton(
+                                label: context.l10n.commonCancel,
+                                onPressed: widget.onCancel,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _PrimaryButton(
+                                label: context.l10n.startRecording,
+                                onPressed: () => widget.onManualSubmit?.call(
+                                  _controller.text,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

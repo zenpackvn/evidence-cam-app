@@ -109,6 +109,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // The phone sits propped up looking down at the packing table for this
+    // flow — it isn't handheld — so free rotation just lets the orientation
+    // sensor flicker to landscape at that near-flat resting angle (observed
+    // right as recording starts, with the phone never actually moved).
+    // Stay on the app-wide portrait lock set in main.dart.
     _bloc.add(const RecordingInitRequested());
   }
 

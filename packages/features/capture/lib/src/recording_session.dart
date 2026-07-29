@@ -17,6 +17,7 @@ import 'dart:async';
 import 'package:app_platform/app_platform.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'ec_bill_scanner.dart';
@@ -270,6 +271,19 @@ class RecordingSessionBloc
   Timer? _timer;
   bool _idleScanBusy = false;
   bool _recScanBusy = false;
+  DateTime? _lastRecScanAt;
+  DateTime? _lastIdleScanAt;
+
+  // ML Kit's per-frame scan is expensive enough to visibly stutter the video
+  // encoder if run on every delivered frame during recording — the end-QR
+  // only needs to be caught within about a second of being shown, so a
+  // cooldown between attempts trades a little detection latency for a
+  // recording that stays smooth.
+  static const _recScanCooldown = Duration(seconds: 5);
+
+  // Matches how scanner apps normally behave — recognition settles over a
+  // couple of seconds rather than firing the instant a code enters frame.
+  static const _idleScanCooldown = Duration(seconds: 3);
 
   // Async mutex chaining all camera-mutating ops. ponytail: a single global
   // lock — fine here because there's exactly one camera; nothing to parallelize.
@@ -379,9 +393,21 @@ class RecordingSessionBloc
         _cameras.isEmpty) {
       return;
     }
+    final lastScan = _lastIdleScanAt;
+    if (lastScan != null &&
+        DateTime.now().difference(lastScan) < _idleScanCooldown) {
+      return;
+    }
     _idleScanBusy = true;
+    _lastIdleScanAt = DateTime.now();
     try {
-      final code = await _scanner.scan(image, _cameras[_cameraIndex]);
+      final code = await _scanner.scan(
+        image,
+        _cameras[_cameraIndex],
+        deviceOrientation:
+            _camera.controller?.value.deviceOrientation ??
+            DeviceOrientation.portraitUp,
+      );
       // An end-QR left on the table means nothing while idle — don't record it.
       if (code != null &&
           code.isNotEmpty &&
@@ -459,9 +485,21 @@ class RecordingSessionBloc
         _cameras.isEmpty) {
       return;
     }
+    final lastScan = _lastRecScanAt;
+    if (lastScan != null &&
+        DateTime.now().difference(lastScan) < _recScanCooldown) {
+      return;
+    }
     _recScanBusy = true;
+    _lastRecScanAt = DateTime.now();
     try {
-      final code = await _scanner.scan(image, _cameras[_cameraIndex]);
+      final code = await _scanner.scan(
+        image,
+        _cameras[_cameraIndex],
+        deviceOrientation:
+            _camera.controller?.value.deviceOrientation ??
+            DeviceOrientation.portraitUp,
+      );
       if (code != null && code.isNotEmpty && !isClosed) {
         add(RecordingFrameScanned(code));
       }
