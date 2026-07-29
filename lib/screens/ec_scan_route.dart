@@ -43,6 +43,7 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
   String? _error;
   List<CameraDescription> _cameras = const [];
   int _index = 0;
+  int _frameCount = 0;
 
   @override
   void initState() {
@@ -70,7 +71,7 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
       if (index < 0) index = 0;
       await _camera.initialize(
         description: cameras[index],
-        resolutionPreset: ResolutionPreset.high,
+        resolutionPreset: ResolutionPreset.medium,
         imageFormatGroup: BillScanner.imageFormatGroup,
       );
       if (!mounted) {
@@ -90,6 +91,9 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
 
   Future<void> _onFrame(CameraImage image) async {
     if (_done || _cameras.isEmpty) return;
+    // ponytail: skip every other frame to throttle ML detection (30fps → 15fps)
+    _frameCount++;
+    if (_frameCount % 2 != 0) return;
     // A 1D barcode's scan line has to roughly line up with the bars — unlike
     // a QR code's finder patterns, which read fine at any rotation — so this
     // needs the phone's live orientation, not a fixed portraitUp assumption.

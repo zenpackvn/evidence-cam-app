@@ -50,7 +50,14 @@ class EcApi {
     return AccountDto.fromJson(res.data!);
   }
 
-  Future<QuotaDto> getQuota() => _get('/api/quota', QuotaDto.fromJson);
+  /// Có [shopId] → backend trả gói của CHỦ shop đó kèm `can_manage_plan=false`
+  /// cho quản lý/nhân viên. Không truyền → gói của chính tài khoản đang đăng nhập.
+  Future<QuotaDto> getQuota({String? shopId}) => _get(
+    shopId == null
+        ? '/api/quota'
+        : '/api/quota?shop_id=${Uri.encodeQueryComponent(shopId)}',
+    QuotaDto.fromJson,
+  );
 
   // --- shops / members (FR-05) ---
   Future<List<ShopDto>> listShops() => _getList('/api/shops', ShopDto.fromJson);

@@ -52,7 +52,7 @@ abstract interface class EcRepository {
     String name,
   );
   Future<void> deleteVideoType(String shopId, String typeId);
-  Future<QuotaDto> quota();
+  Future<QuotaDto> quota({String? shopId});
   /// A page of orders, newest first. [uploadState] / [fromTs] / [videoTypeId]
   /// are the "Vận đơn" tab's three filters; they are applied by the backend
   /// because the list is paged and a client-side filter would only ever see
@@ -161,7 +161,7 @@ class RemoteEcRepository implements EcRepository {
       _api.deleteVideoType(shopId, typeId);
 
   @override
-  Future<QuotaDto> quota() => _api.getQuota();
+  Future<QuotaDto> quota({String? shopId}) => _api.getQuota(shopId: shopId);
 
   @override
   Future<List<OrderSummaryDto>> orders(
@@ -320,7 +320,7 @@ class FakeEcRepository implements EcRepository {
   Future<void> deleteVideoType(String shopId, String typeId) async {}
 
   @override
-  Future<QuotaDto> quota() async => const QuotaDto(
+  Future<QuotaDto> quota({String? shopId}) async => const QuotaDto(
     planCode: 'basic',
     usedBytes: 12 * 1024 * 1024 * 1024,
     capBytes: 60 * 1024 * 1024 * 1024,

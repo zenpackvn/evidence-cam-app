@@ -210,6 +210,7 @@ class QuotaDto {
     required this.capBytes,
     required this.remainingBytes,
     this.retentionDays = 20,
+    this.canManagePlan = true,
   });
 
   factory QuotaDto.fromJson(Map<String, dynamic> j) => QuotaDto(
@@ -218,6 +219,7 @@ class QuotaDto {
     capBytes: _int(j['cap_bytes']),
     remainingBytes: _int(j['remaining_bytes']),
     retentionDays: _intN(j['retention_days']) ?? 20,
+    canManagePlan: (j['can_manage_plan'] as bool?) ?? true,
   );
 
   final String planCode;
@@ -225,6 +227,10 @@ class QuotaDto {
   final int capBytes;
   final int remainingBytes;
   final int retentionDays;
+
+  /// Chỉ chủ shop mới đổi được gói — gói cước gắn với tài khoản trả tiền.
+  /// Quản lý/nhân viên xem được gói đang chi phối ca làm nhưng không mua.
+  final bool canManagePlan;
 }
 
 class DossierDto {

@@ -152,6 +152,18 @@ void main() {
       await tester.tap(find.text('Nâng cấp gói'));
       expect(upgraded, isTrue);
     });
+
+    testWidgets('nhân viên: không có nút nâng gói, chỉ dòng giải thích', (
+      tester,
+    ) async {
+      await _pump(tester, const EcQuotaScreen(canManagePlan: false));
+      expect(find.text('Nâng cấp gói'), findsNothing);
+      expect(
+        find.text('Chỉ chủ tài khoản mới đổi được gói cước'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('EcDeleteAccountScreen', () {

@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "725879677565",
+    "project_id": "zenpack-e42d1",
+    "storage_bucket": "zenpack-e42d1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:725879677565:android:f384298ae30a98546ac714",
+        "android_client_info": {
+          "package_name": "com.aktechvn.zenpack"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "725879677565-43dq1g4huurha9v5e39fcm4k5ugllsrv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aktechvn.zenpack",
+            "certificate_hash": "57ea05b01c69d38ee19a4452f28f54734f5901e0"
+          }
+        },
+        {
+          "client_id": "725879677565-lv5qvcu8rgsknvvrpmdoe17gmousts7d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aktechvn.zenpack",
+            "certificate_hash": "5531b9ca3bb54a97bd288b800d7ac50316ca216b"
+          }
+        },
+        {
+          "client_id": "725879677565-aal47v5gbns7oqtbutamvqlvtfb1irl2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDC9tWiVw_Qc_NdRAGFYnkcsxfrdXONyYE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "725879677565-aal47v5gbns7oqtbutamvqlvtfb1irl2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "725879677565-vutnghoj6rdku415matc4vn4krjc18aj.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.aktechvn.zenpack"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

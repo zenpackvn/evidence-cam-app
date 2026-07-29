@@ -537,6 +537,7 @@ class EcQuotaScreen extends StatelessWidget {
     this.retentionTotalDays = 20,
     this.onBack,
     this.onUpgrade,
+    this.canManagePlan = true,
     super.key,
   });
 
@@ -547,6 +548,11 @@ class EcQuotaScreen extends StatelessWidget {
   final int retentionTotalDays;
   final VoidCallback? onBack;
   final VoidCallback? onUpgrade;
+
+  /// Gói cước gắn với tài khoản CHỦ shop. Quản lý/nhân viên vẫn thấy gói đang
+  /// chi phối ca làm (giới hạn quay, retention) nhưng không có đường nâng gói —
+  /// thay nút bằng một dòng giải thích để họ biết hỏi ai.
+  final bool canManagePlan;
 
   int get _usedPercent {
     if (capBytes <= 0) return 0;
@@ -660,10 +666,17 @@ class EcQuotaScreen extends StatelessWidget {
                           ),
                           const Spacer(),
                           const SizedBox(height: 14),
-                          _EcPrimaryButton(
-                            label: context.l10n.quotaUpgradePlan,
-                            onPressed: onUpgrade,
-                          ),
+                          if (canManagePlan)
+                            _EcPrimaryButton(
+                              label: context.l10n.quotaUpgradePlan,
+                              onPressed: onUpgrade,
+                            )
+                          else
+                            Text(
+                              context.l10n.quotaOwnerOnlyNote,
+                              textAlign: TextAlign.center,
+                              style: _t(13, FontWeight.w400, BrandColors.mut),
+                            ),
                         ],
                       ),
                     ),

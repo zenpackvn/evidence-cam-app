@@ -757,7 +757,7 @@ class _ProfileRepository extends _DemoRepository {
 
 class _QuotaRepository extends _DemoRepository {
   @override
-  Future<QuotaDto> quota() async => const QuotaDto(
+  Future<QuotaDto> quota({String? shopId}) async => const QuotaDto(
     planCode: 'basic',
     usedBytes: 48 * 1024 * 1024 * 1024,
     capBytes: 60 * 1024 * 1024 * 1024,

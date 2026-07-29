@@ -434,6 +434,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaUpgradePlan => 'Upgrade plan';
 
   @override
+  String get quotaOwnerOnlyNote => 'Only the account owner can change the plan';
+
+  @override
   String get deleteAccountTitleStep1 => 'Delete account?';
 
   @override
