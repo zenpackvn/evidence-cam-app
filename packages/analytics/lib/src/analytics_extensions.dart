@@ -169,6 +169,37 @@ extension ProfileAnalytics on AnalyticsService {
   }
 }
 
+extension EvidenceCamAnalytics on AnalyticsService {
+  Future<void> trackClipRecorded({required String recordingType}) {
+    return logEvent(
+      AnalyticsEvents.clipRecorded,
+      parameters: {AnalyticsParams.recordingType: recordingType},
+    );
+  }
+
+  Future<void> trackUploadCompleted() =>
+      logEvent(AnalyticsEvents.uploadCompleted);
+
+  Future<void> trackUploadFailed() =>
+      logEvent(AnalyticsEvents.uploadFailed);
+
+  Future<void> trackDossierCreated() =>
+      logEvent(AnalyticsEvents.dossierCreated);
+
+  Future<void> trackDossierLinkCopied() =>
+      logEvent(AnalyticsEvents.dossierLinkCopied);
+
+  Future<void> trackPaywallViewed() =>
+      logEvent(AnalyticsEvents.paywallViewed);
+
+  Future<void> trackPurchaseStarted({required String planCode}) {
+    return logEvent(
+      AnalyticsEvents.purchaseStarted,
+      parameters: {AnalyticsParams.planCode: planCode},
+    );
+  }
+}
+
 Map<String, Object> _bookmarkParams({
   required String bookmarkId,
   required int tagCount,

@@ -15,6 +15,13 @@ abstract final class AnalyticsEvents {
   static const bookmarkSyncRetried = 'bookmark_sync_retried';
   static const notificationOpened = 'notification_opened';
   static const userIdCopied = 'user_id_copied';
+  static const clipRecorded = 'clip_recorded';
+  static const uploadCompleted = 'upload_completed';
+  static const uploadFailed = 'upload_failed';
+  static const dossierCreated = 'dossier_created';
+  static const dossierLinkCopied = 'dossier_link_copied';
+  static const paywallViewed = 'paywall_viewed';
+  static const purchaseStarted = 'purchase_started';
 }
 
 abstract final class AnalyticsParams {
@@ -29,6 +36,8 @@ abstract final class AnalyticsParams {
   static const tagCount = 'tag_count';
   static const themeMode = 'theme_mode';
   static const themeScheme = 'theme_scheme';
+  static const recordingType = 'recording_type';
+  static const planCode = 'plan_code';
 }
 
 abstract final class AnalyticsSources {
