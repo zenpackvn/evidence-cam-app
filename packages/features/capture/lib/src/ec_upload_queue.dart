@@ -13,10 +13,10 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:analytics/analytics.dart';
+import 'package:app_platform/app_platform.dart' show CrashReporter;
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -77,15 +77,18 @@ class EcUploadQueue extends ChangeNotifier {
     EcEvidenceUploader? uploader,
     EvidenceClipStore? store,
     AnalyticsService? analytics,
+    CrashReporter? crashReporter,
     @visibleForTesting Directory? directory,
   }) : _uploader = uploader,
        _store = store ?? InMemoryEvidenceClipStore(),
        _analytics = analytics,
+       _crashReporter = crashReporter,
        _dir = directory;
 
   final EcEvidenceUploader? _uploader;
   final EvidenceClipStore _store;
   final AnalyticsService? _analytics;
+  final CrashReporter? _crashReporter;
   final List<UploadTask> _tasks = [];
   bool _processing = false;
   Directory? _dir;
@@ -244,11 +247,16 @@ class EcUploadQueue extends ChangeNotifier {
           succeeded = true;
           unawaited(_analytics?.trackUploadCompleted());
         } on Object catch (error, stack) {
-          developer.log(
-            'upload failed for task ${task.id}',
-            name: '[DEBUG-r2up]',
-            error: error,
-            stackTrace: stack,
+          // Non-fatal: the task stays queued and retries, but the *reason*
+          // must reach Crashlytics — this is the only path a real-world
+          // upload failure (bad network, expired presign, R2 error) is
+          // observable at all; nothing else in this flow logs it.
+          unawaited(
+            _crashReporter?.recordError(
+              error,
+              stack,
+              reason: 'upload_failed: ${task.type}',
+            ),
           );
           if (_isQuotaWait(error)) {
             task

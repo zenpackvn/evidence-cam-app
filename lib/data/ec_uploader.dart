@@ -1,10 +1,16 @@
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:ec_data/ec_data.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:network/network.dart'
-    show BaseOptions, Dio, Headers, LogInterceptor, Options;
+    show
+        BaseOptions,
+        Dio,
+        DioException,
+        DioExceptionType,
+        Headers,
+        Options,
+        Response;
 
 /// TEMPORARY (per shop owner request while the backend's quota rollout is
 /// still being tuned): treat a `quota_hold` response as success instead of
@@ -38,12 +44,6 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
                connectTimeout: const Duration(seconds: 15),
                sendTimeout: const Duration(minutes: 5),
                receiveTimeout: const Duration(seconds: 30),
-             ),
-           )..interceptors.add(
-             LogInterceptor(
-               requestBody: false,
-               responseBody: true,
-               logPrint: (o) => developer.log(o.toString(), name: '[DEBUG-r2up]'),
              ),
            );
 
@@ -94,18 +94,20 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       capturedAt: captureTime,
       videoTypeId: videoTypeId,
     );
-    await _r2.put<void>(
-      presign.uploadUrl,
-      data: file.openRead(),
-      options: Options(
-        headers: {
-          Headers.contentLengthHeader: length,
-          Headers.contentTypeHeader: _contentTypeFor(file, isPhoto: isPhoto),
+    await _putWithRetry(
+      () => _r2.put<void>(
+        presign.uploadUrl,
+        data: file.openRead(),
+        options: Options(
+          headers: {
+            Headers.contentLengthHeader: length,
+            Headers.contentTypeHeader: _contentTypeFor(file, isPhoto: isPhoto),
+          },
+        ),
+        onSendProgress: (sent, total) {
+          if (total > 0) onProgress?.call(sent / total);
         },
       ),
-      onSendProgress: (sent, total) {
-        if (total > 0) onProgress?.call(sent / total);
-      },
     );
     final status = await _api.completeUpload(
       shopId,
@@ -148,30 +150,34 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
         partNumbers: partNumbers,
       );
       final uploaded = <UploadedPartDto>[];
-      var sentTotal = 0;
+      // Bytes from parts that have *fully* succeeded — the base every
+      // in-flight part's progress is added to. Kept separate from the
+      // current part's own sent-bytes so a retried part (fresh stream,
+      // sent count restarts at 0) can't double-count or go backwards.
+      var completedBytes = 0;
       for (final part in urls) {
         final start = (part.partNumber - 1) * partSize;
         final end = start + partSize > length ? length : start + partSize;
         final partLength = end - start;
-        var previousPartSent = 0;
-        final res = await _r2.put<void>(
-          part.uploadUrl,
-          data: file.openRead(start, end),
-          options: Options(
-            headers: {
-              Headers.contentLengthHeader: partLength,
-              Headers.contentTypeHeader: _contentTypeFor(
-                file,
-                isPhoto: isPhoto,
-              ),
-            },
+        final partBase = completedBytes;
+        final res = await _putWithRetry(
+          () => _r2.put<void>(
+            part.uploadUrl,
+            data: file.openRead(start, end),
+            options: Options(
+              headers: {
+                Headers.contentLengthHeader: partLength,
+                Headers.contentTypeHeader: _contentTypeFor(
+                  file,
+                  isPhoto: isPhoto,
+                ),
+              },
+            ),
+            onSendProgress: (sent, _) =>
+                onProgress?.call((partBase + sent) / length),
           ),
-          onSendProgress: (sent, _) {
-            sentTotal += sent - previousPartSent;
-            previousPartSent = sent;
-            onProgress?.call(sentTotal / length);
-          },
         );
+        completedBytes += partLength;
         final etag = res.headers.value('etag');
         if (etag == null || etag.isEmpty) throw StateError('missing_part_etag');
         uploaded.add(UploadedPartDto(partNumber: part.partNumber, etag: etag));
@@ -212,6 +218,49 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     return null;
   }
 }
+
+/// Retries a single R2 PUT (whole file or one multipart part) on transient
+/// network/server failures. [attempt] must open a *fresh* byte stream each
+/// call — [File.openRead] does, but a re-dispatched `DioException` wouldn't
+/// (its stream is already consumed), which is why this can't just be a Dio
+/// `Interceptor` like the main API client's `RetryInterceptor`: a PUT body is
+/// a one-shot file stream, not a replayable JSON payload.
+Future<Response<void>> _putWithRetry(
+  Future<Response<void>> Function() attempt,
+) async {
+  const maxAttempts = 4;
+  for (var attemptNumber = 1; ; attemptNumber++) {
+    try {
+      return await attempt();
+    } on DioException catch (e) {
+      if (attemptNumber >= maxAttempts || !_isRetryablePutError(e)) rethrow;
+      await Future<void>.delayed(_backoffFor(attemptNumber));
+    }
+  }
+}
+
+bool _isRetryablePutError(DioException e) {
+  switch (e.type) {
+    case DioExceptionType.connectionTimeout:
+    case DioExceptionType.sendTimeout:
+    case DioExceptionType.receiveTimeout:
+    case DioExceptionType.connectionError:
+      return true;
+    case DioExceptionType.badResponse:
+      final status = e.response?.statusCode;
+      return status != null && (status == 429 || status >= 500);
+    case DioExceptionType.cancel:
+    case DioExceptionType.badCertificate:
+    case DioExceptionType.unknown:
+      return false;
+  }
+}
+
+/// Exponential backoff (300ms, 600ms, 1200ms, ...), matching the app's main
+/// `RetryInterceptor` without the jitter — a single client retrying its own
+/// PUT doesn't need jitter to avoid a thundering herd.
+Duration _backoffFor(int attemptNumber) =>
+    Duration(milliseconds: 300 * (1 << (attemptNumber - 1)));
 
 String _normalizeName(String raw) =>
     raw.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();

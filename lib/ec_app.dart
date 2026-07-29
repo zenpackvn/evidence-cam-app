@@ -5,6 +5,7 @@ import 'package:analytics/analytics.dart';
 import 'package:app_platform/app_platform.dart'
     show
         AppVideoPlayerController,
+        CrashReporter,
         GallerySaveService,
         ImagePicker,
         ImageSource,
@@ -132,6 +133,7 @@ class _EcAppState extends State<EcApp> {
         : ApiEvidenceUploader(buildApi(auth: _auth, url: _apiUrl)),
     store: widget.evidenceStore,
     analytics: _analytics(),
+    crashReporter: _crashReporter(),
   );
 
   // Built once for the app's lifetime rather than per record-screen visit —
@@ -971,6 +973,8 @@ T? _maybeGetIt<T extends Object>() =>
     getIt.isRegistered<T>() ? getIt<T>() : null;
 
 AnalyticsService? _analytics() => _maybeGetIt<AnalyticsService>();
+
+CrashReporter? _crashReporter() => _maybeGetIt<CrashReporter>();
 
 Future<void> _copyText(BuildContext context, String text, String label) async {
   await Clipboard.setData(ClipboardData(text: text));

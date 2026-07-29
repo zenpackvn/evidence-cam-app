@@ -5,7 +5,15 @@ import 'package:ec_data/ec_data.dart';
 import 'package:evidence_cam/data/ec_uploader.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:network/network.dart'
-    show Dio, Headers, HttpClientAdapter, RequestOptions, ResponseBody;
+    show
+        Dio,
+        DioException,
+        DioExceptionType,
+        Headers,
+        HttpClientAdapter,
+        RequestOptions,
+        Response,
+        ResponseBody;
 
 /// Canned Dio adapter: records each request and returns a scripted body.
 class _StubAdapter implements HttpClientAdapter {
@@ -296,6 +304,175 @@ void main() {
           ),
         ),
       );
+    },
+  );
+
+  test(
+    'ApiEvidenceUploader retries a transient R2 PUT failure and succeeds',
+    () async {
+      final apiDio = Dio()
+        ..httpClientAdapter = _StubAdapter((o) {
+          if (o.path.endsWith('/uploads/presign')) {
+            return _json(
+              '{"evidenceId":"ev1","key":"r2/ev1.mp4",'
+              '"uploadUrl":"https://r2.example/put?sig=1"}',
+            );
+          }
+          if (o.path.endsWith('/complete')) return _json('{"status":"stored"}');
+          return _json('{"id":"ord1","tracking_raw":"SPX1","created_at":0}');
+        });
+      var putAttempts = 0;
+      final r2Dio = Dio()
+        ..httpClientAdapter = _StubAdapter((o) {
+          putAttempts++;
+          // First attempt drops mid-request (dead wifi handoff, etc.) — the
+          // regression this guards: before the fix, one blip failed the
+          // whole clip instead of retrying.
+          if (putAttempts == 1) {
+            throw DioException(
+              requestOptions: o,
+              type: DioExceptionType.connectionError,
+            );
+          }
+          return ResponseBody.fromString('', 200);
+        });
+
+      final dir = Directory.systemTemp.createTempSync('ec_uploader_retry');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final clip = File('${dir.path}/clip.mp4')
+        ..writeAsStringSync('video-bytes');
+
+      final uploader = ApiEvidenceUploader(EcApi(apiDio), r2Dio: r2Dio);
+      final key = await uploader.upload(
+        clip,
+        tracking: 'SPX1',
+        type: 'Đóng hàng',
+        shopId: 's1',
+      );
+
+      expect(key, 'r2/ev1.mp4');
+      expect(putAttempts, 2);
+    },
+  );
+
+  test(
+    'ApiEvidenceUploader does not retry a non-transient R2 rejection',
+    () async {
+      final apiDio = Dio()
+        ..httpClientAdapter = _StubAdapter((o) {
+          if (o.path.endsWith('/uploads/presign')) {
+            return _json(
+              '{"evidenceId":"ev1","key":"r2/ev1.mp4",'
+              '"uploadUrl":"https://r2.example/put?sig=1"}',
+            );
+          }
+          return _json('{"id":"ord1","tracking_raw":"SPX1","created_at":0}');
+        });
+      var putAttempts = 0;
+      final r2Dio = Dio()
+        ..httpClientAdapter = _StubAdapter((o) {
+          putAttempts++;
+          // Expired/invalid signature — retrying identically can never
+          // succeed, so it should fail fast instead of burning 4 attempts.
+          throw DioException(
+            requestOptions: o,
+            type: DioExceptionType.badResponse,
+            response: Response<void>(requestOptions: o, statusCode: 403),
+          );
+        });
+
+      final dir = Directory.systemTemp.createTempSync(
+        'ec_uploader_no_retry',
+      );
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final clip = File('${dir.path}/clip.mp4')
+        ..writeAsStringSync('video-bytes');
+
+      final uploader = ApiEvidenceUploader(EcApi(apiDio), r2Dio: r2Dio);
+
+      await expectLater(
+        uploader.upload(
+          clip,
+          tracking: 'SPX1',
+          type: 'Đóng hàng',
+          shopId: 's1',
+        ),
+        throwsA(isA<DioException>()),
+      );
+      expect(putAttempts, 1);
+    },
+  );
+
+  test(
+    'ApiEvidenceUploader retries a single multipart part without redoing '
+    'the others',
+    () async {
+      final apiDio = Dio()
+        ..httpClientAdapter = _StubAdapter((o) {
+          if (o.path.endsWith('/uploads/multipart')) {
+            return _json(
+              '{"evidenceId":"evm","key":"r2/evm.mp4","uploadId":"up1"}',
+            );
+          }
+          if (o.path.endsWith('/multipart/parts')) {
+            return _json(
+              '{"parts":['
+              '{"partNumber":1,"uploadUrl":"https://r2.example/p1"},'
+              '{"partNumber":2,"uploadUrl":"https://r2.example/p2"}'
+              ']}',
+            );
+          }
+          if (o.path.endsWith('/multipart/complete')) {
+            return _json('{"status":"done"}');
+          }
+          return _json('{"id":"ord1","tracking_raw":"SPX1","created_at":0}');
+        });
+      final partAttempts = <String, int>{};
+      final r2Dio = Dio()
+        ..httpClientAdapter = _StubAdapter((o) {
+          final part = o.uri.pathSegments.last;
+          final attempt = (partAttempts[part] ?? 0) + 1;
+          partAttempts[part] = attempt;
+          // Only part 2's first attempt fails — part 1 must not be re-sent.
+          if (part == 'p2' && attempt == 1) {
+            throw DioException(
+              requestOptions: o,
+              type: DioExceptionType.sendTimeout,
+            );
+          }
+          return ResponseBody.fromString(
+            '',
+            200,
+            headers: {
+              'etag': ['etag-$part'],
+            },
+          );
+        });
+
+      final dir = Directory.systemTemp.createTempSync(
+        'ec_uploader_multipart_retry',
+      );
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final clip = File('${dir.path}/clip.mp4')
+        ..writeAsBytesSync(List<int>.generate(8, (i) => i));
+
+      final uploader = ApiEvidenceUploader(
+        EcApi(apiDio),
+        r2Dio: r2Dio,
+        multipartThresholdBytes: 6,
+        multipartPartSizeBytes: 4,
+      );
+
+      final key = await uploader.upload(
+        clip,
+        tracking: 'SPX1',
+        type: 'Đóng hàng',
+        shopId: 's1',
+        capturedAt: 123,
+      );
+
+      expect(key, 'r2/evm.mp4');
+      expect(partAttempts, {'p1': 1, 'p2': 2});
     },
   );
 }
