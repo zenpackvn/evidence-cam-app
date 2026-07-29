@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:analytics/analytics.dart';
 import 'package:app_platform/app_platform.dart'
     show
         AppVideoPlayerController,
@@ -12,6 +13,7 @@ import 'package:app_platform/app_platform.dart'
         VideoPlayerService,
         VideoPlayerValue;
 import 'package:app_ui/app_ui.dart';
+import 'package:architecture/architecture.dart' show UnawaitedFutureExtension;
 import 'package:ec_data/ec_data.dart';
 import 'package:ec_ui/ec_ui.dart';
 import 'package:feature_account/feature_account.dart';
@@ -128,6 +130,7 @@ class _EcAppState extends State<EcApp> {
         ? null
         : ApiEvidenceUploader(buildApi(auth: _auth, url: _apiUrl)),
     store: widget.evidenceStore,
+    analytics: _analytics(),
   );
   static const String _apiUrl = kApiBaseUrl;
 
@@ -853,6 +856,12 @@ class _QuotaRouteState extends State<_QuotaRoute> {
   late final Future<QuotaDto> _quota = widget.repo.quota(shopId: widget.shopId);
 
   @override
+  void initState() {
+    super.initState();
+    _analytics()?.trackPaywallViewed();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<QuotaDto>(
       future: _quota,
@@ -875,7 +884,10 @@ class _QuotaRouteState extends State<_QuotaRoute> {
           retentionTotalDays: quota.retentionDays,
           canManagePlan: quota.canManagePlan,
           onBack: () => _back(context, '/account'),
-          onUpgrade: () => _toast(context, context.l10n.toastUpgradeComingSoon),
+          onUpgrade: () {
+            _analytics()?.trackPurchaseStarted(planCode: quota.planCode);
+            _toast(context, context.l10n.toastUpgradeComingSoon);
+          },
         );
       },
     );
@@ -950,6 +962,8 @@ void _toast(BuildContext c, String msg) => ecToast(c, msg);
 
 T? _maybeGetIt<T extends Object>() =>
     getIt.isRegistered<T>() ? getIt<T>() : null;
+
+AnalyticsService? _analytics() => _maybeGetIt<AnalyticsService>();
 
 Future<void> _copyText(BuildContext context, String text, String label) async {
   await Clipboard.setData(ClipboardData(text: text));
@@ -2194,6 +2208,7 @@ class _OrderRouteState extends State<_OrderRoute> {
       );
       if (!mounted) return;
       _setDossier(data, dossier);
+      _analytics()?.trackDossierCreated().fire();
       _toast(context, context.l10n.toastDossierLinkCreated);
     } on Object catch (error) {
       if (mounted) _toast(context, _dataErrorText(context.l10n, error));
@@ -2282,7 +2297,10 @@ class _OrderRouteState extends State<_OrderRoute> {
                 _copyText(context, data.detail.order.tracking, context.l10n.labelTrackingCode),
             onCopyLink: dossierUrl == null
                 ? null
-                : () => _copyText(context, dossierUrl, context.l10n.labelDossierLink),
+                : () {
+                    _analytics()?.trackDossierLinkCopied();
+                    _copyText(context, dossierUrl, context.l10n.labelDossierLink);
+                  },
             onShareLink: dossierUrl == null
                 ? null
                 : () => _shareText(
@@ -2963,6 +2981,7 @@ GoRouter _buildRouter(
                           filePath: path,
                           shopId: shop.id,
                         );
+                        _analytics()?.trackClipRecorded(recordingType: type);
                         _toast(c, c.l10n.toastVideoQueued);
                       },
                     );

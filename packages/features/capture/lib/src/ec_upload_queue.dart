@@ -15,6 +15,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:analytics/analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -74,13 +75,16 @@ class EcUploadQueue extends ChangeNotifier {
   EcUploadQueue({
     EcEvidenceUploader? uploader,
     EvidenceClipStore? store,
+    AnalyticsService? analytics,
     @visibleForTesting Directory? directory,
   }) : _uploader = uploader,
        _store = store ?? InMemoryEvidenceClipStore(),
+       _analytics = analytics,
        _dir = directory;
 
   final EcEvidenceUploader? _uploader;
   final EvidenceClipStore _store;
+  final AnalyticsService? _analytics;
   final List<UploadTask> _tasks = [];
   bool _processing = false;
   Directory? _dir;
@@ -237,6 +241,7 @@ class EcUploadQueue extends ChangeNotifier {
             ..progress = 1
             ..remoteUrl = url;
           succeeded = true;
+          unawaited(_analytics?.trackUploadCompleted());
         } on Object catch (error) {
           if (_isQuotaWait(error)) {
             task
@@ -246,6 +251,7 @@ class EcUploadQueue extends ChangeNotifier {
             task
               ..state = EcUploadState.error
               ..retryCount += 1;
+            unawaited(_analytics?.trackUploadFailed());
           }
         }
         // Deleted mid-upload — don't resurrect it in the store/list.
