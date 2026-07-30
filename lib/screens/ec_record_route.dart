@@ -14,6 +14,7 @@ import 'dart:async';
 import 'package:app_platform/app_platform.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -41,6 +42,7 @@ class EcRecordRoute extends StatefulWidget {
     this.shopName = 'Shop',
     this.initialResolution = '720p',
     this.camera,
+    this.isActive,
     super.key,
   });
 
@@ -102,6 +104,17 @@ class EcRecordRoute extends StatefulWidget {
   @visibleForTesting
   final CameraService? camera;
 
+  /// Whether the "Ghi hình" tab is the one currently on screen.
+  ///
+  /// The 3-tab shell keeps every branch mounted (an `IndexedStack`, so
+  /// switching tabs doesn't lose state), which otherwise leaves this screen's
+  /// camera streaming frames — and hands-free auto-starting a recording on a
+  /// scanned bill — even while the user is looking at Vận đơn or Tài khoản.
+  /// The app shell flips this to reflect the active tab; a `false` releases
+  /// the camera the same way backgrounding the app does, and a `true` brings
+  /// it back.
+  final ValueListenable<bool>? isActive;
+
   @override
   State<EcRecordRoute> createState() => _EcRecordRouteState();
 }
@@ -125,19 +138,36 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    widget.isActive?.addListener(_onActiveChanged);
     // The phone sits propped up looking down at the packing table for this
     // flow — it isn't handheld — so free rotation just lets the orientation
     // sensor flicker to landscape at that near-flat resting angle (observed
     // right as recording starts, with the phone never actually moved).
     // Stay on the app-wide portrait lock set in main.dart.
-    _bloc.add(const RecordingInitRequested());
+    if (widget.isActive?.value ?? true) {
+      _bloc.add(const RecordingInitRequested());
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    widget.isActive?.removeListener(_onActiveChanged);
     unawaited(_bloc.close());
     super.dispose();
+  }
+
+  /// Mirrors [didChangeAppLifecycleState]'s backgrounding/resume handling,
+  /// but keyed off tab visibility instead of the whole app's lifecycle.
+  void _onActiveChanged() {
+    if (widget.isActive!.value) {
+      if (_bloc.state.status != RecordingStatus.idle &&
+          _bloc.state.status != RecordingStatus.recording) {
+        _bloc.add(const RecordingInitRequested());
+      }
+    } else {
+      _bloc.add(const RecordingBackgrounded());
+    }
   }
 
   @override
@@ -212,15 +242,42 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RecordingSessionBloc, RecordingSessionState>(
-      bloc: _bloc,
-      builder: (context, state) {
-        final preview = _buildPreview(state);
-        final zoomLabel = '${state.zoom.toStringAsFixed(1)}x';
+    // The system back gesture (left-edge swipe on Android) would otherwise
+    // pop this route out from under an in-progress recording — the header's
+    // back chevron is the only way out, since it finalizes the clip first
+    // via _leaveAfterFinalizing.
+    return PopScope(
+      canPop: false,
+      child: BlocBuilder<RecordingSessionBloc, RecordingSessionState>(
+        bloc: _bloc,
+        builder: (context, state) {
+          final preview = _buildPreview(state);
+          final zoomLabel = '${state.zoom.toStringAsFixed(1)}x';
 
-        if (state.isRecording) {
-          if (state.elapsed >= _warnAt) {
-            return EcNearLimitScreen(
+          if (state.isRecording) {
+            if (state.elapsed >= _warnAt) {
+              return EcNearLimitScreen(
+                shopName: widget.shopName,
+                queueCount: widget.queueCount,
+                code: state.code,
+                duration: _formatElapsed(state.elapsed),
+                typeLabel: state.typeLabel,
+                zoomLabel: zoomLabel,
+                resolutionLabel: state.resolutionLabel,
+                preview: preview,
+                onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
+                onPickType: null,
+                onSettings: null,
+                onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
+                onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
+                onNavOrders: () =>
+                    unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
+                onNavAccount: () =>
+                    unawaited(_leaveAfterFinalizing(widget.onNavAccount)),
+                onStop: () => _bloc.add(const RecordingStopRequested()),
+              );
+            }
+            return EcRecording2Screen(
               shopName: widget.shopName,
               queueCount: widget.queueCount,
               code: state.code,
@@ -241,49 +298,29 @@ class _EcRecordRouteState extends State<EcRecordRoute>
               onStop: () => _bloc.add(const RecordingStopRequested()),
             );
           }
-          return EcRecording2Screen(
+
+          return EcWaitBill2Screen(
             shopName: widget.shopName,
             queueCount: widget.queueCount,
-            code: state.code,
-            duration: _formatElapsed(state.elapsed),
             typeLabel: state.typeLabel,
             zoomLabel: zoomLabel,
             resolutionLabel: state.resolutionLabel,
             preview: preview,
-            onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
-            onPickType: null,
-            onSettings: null,
+            onBack: widget.onBack,
+            onPickType: _pickType,
+            onSettings: _pickType,
             onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
             onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
-            onNavOrders: () =>
-                unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
-            onNavAccount: () =>
-                unawaited(_leaveAfterFinalizing(widget.onNavAccount)),
-            onStop: () => _bloc.add(const RecordingStopRequested()),
+            onResolution: () => _bloc.add(const RecordingResolutionCycled()),
+            onFlipCamera: state.hasMultipleCameras
+                ? () => _bloc.add(const RecordingCameraFlipped())
+                : null,
+            onManualEntry: _manualEntry,
+            onNavOrders: widget.onNavOrders,
+            onNavAccount: widget.onNavAccount,
           );
-        }
-
-        return EcWaitBill2Screen(
-          shopName: widget.shopName,
-          queueCount: widget.queueCount,
-          typeLabel: state.typeLabel,
-          zoomLabel: zoomLabel,
-          resolutionLabel: state.resolutionLabel,
-          preview: preview,
-          onBack: widget.onBack,
-          onPickType: _pickType,
-          onSettings: _pickType,
-          onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
-          onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
-          onResolution: () => _bloc.add(const RecordingResolutionCycled()),
-          onFlipCamera: state.hasMultipleCameras
-              ? () => _bloc.add(const RecordingCameraFlipped())
-              : null,
-          onManualEntry: _manualEntry,
-          onNavOrders: widget.onNavOrders,
-          onNavAccount: widget.onNavAccount,
-        );
-      },
+        },
+      ),
     );
   }
 }

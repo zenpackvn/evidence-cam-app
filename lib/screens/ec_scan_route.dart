@@ -45,6 +45,15 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
   int _index = 0;
   int _frameCount = 0;
 
+  /// Side length of the square scan frame, in logical pixels.
+  static const _frameSize = 260.0;
+
+  /// Screen width as of the last build — used to translate [_frameSize] into
+  /// the fraction of the camera frame [BillScanner] should require a code's
+  /// center to fall within. Set from `build()`, since `_onFrame` (the image
+  /// stream callback) has no `BuildContext` of its own.
+  double _screenWidth = 1;
+
   @override
   void initState() {
     super.initState();
@@ -103,6 +112,7 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
       deviceOrientation:
           _camera.controller?.value.deviceOrientation ??
           DeviceOrientation.portraitUp,
+      centerRegionFraction: _frameSize / _screenWidth,
     );
     if (code == null || _done || !mounted) return;
     _done = true;
@@ -122,6 +132,7 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
   Widget build(BuildContext context) {
     final controller = _camera.controller;
     final ready = !_initializing && controller != null && _error == null;
+    _screenWidth = MediaQuery.sizeOf(context).width;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -148,14 +159,37 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
                 ),
               ),
             )
-          else
-            const Align(
-              alignment: Alignment(0, 0.4),
-              child: Text(
-                'Đưa mã vận đơn vào khung',
-                style: TextStyle(color: Colors.white, fontSize: 15),
+          else ...[
+            // Dims everything outside the center square so it's visually
+            // clear that only a code inside the frame will be accepted —
+            // matches the center-region gate passed to BillScanner.scan.
+            const Positioned.fill(
+              child: CustomPaint(
+                painter: _ScanMaskPainter(frameSize: _frameSize),
               ),
             ),
+            Center(
+              child: Container(
+                width: _frameSize,
+                height: _frameSize,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white, width: 2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 64,
+              child: Center(
+                child: Text(
+                  'Đưa mã vận đơn vào khung',
+                  style: TextStyle(color: Colors.white, fontSize: 15),
+                ),
+              ),
+            ),
+          ],
           SafeArea(
             child: Align(
               alignment: Alignment.topLeft,
@@ -169,4 +203,30 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
       ),
     );
   }
+}
+
+/// Paints a translucent overlay covering the full scan screen except for a
+/// centered square hole, so only the framed area reads as "active".
+class _ScanMaskPainter extends CustomPainter {
+  const _ScanMaskPainter({required this.frameSize});
+
+  final double frameSize;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final hole = Rect.fromCenter(
+      center: size.center(Offset.zero),
+      width: frameSize,
+      height: frameSize,
+    );
+    final path = Path()
+      ..addRect(Offset.zero & size)
+      ..addRRect(RRect.fromRectAndRadius(hole, const Radius.circular(16)))
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(path, Paint()..color = Colors.black.withValues(alpha: 0.6));
+  }
+
+  @override
+  bool shouldRepaint(covariant _ScanMaskPainter oldDelegate) =>
+      oldDelegate.frameSize != frameSize;
 }

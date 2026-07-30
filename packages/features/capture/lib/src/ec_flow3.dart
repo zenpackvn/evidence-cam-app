@@ -10,6 +10,8 @@
 /// camera preview.
 library;
 
+import 'dart:async';
+
 import 'package:app_ui/app_ui.dart';
 import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart'
@@ -551,10 +553,16 @@ class _CamScaffold extends StatelessWidget {
             right: 0,
             child: SafeArea(
               bottom: false,
-              child: _CamHeader(
-                shopName: shopName,
-                queueCount: queueCount,
-                onBack: onBack,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _CamHeader(
+                    shopName: shopName,
+                    queueCount: queueCount,
+                    onBack: onBack,
+                  ),
+                  const _LiveClock(),
+                ],
               ),
             ),
           ),
@@ -656,6 +664,53 @@ class _CamHeader extends StatelessWidget {
           const SizedBox(width: 8),
           _QueueChip(count: queueCount),
         ],
+      ),
+    );
+  }
+}
+
+/// Live date/time readout under the header — lets the seller confirm the
+/// clip's timestamp without leaving the camera screen.
+class _LiveClock extends StatefulWidget {
+  const _LiveClock();
+
+  @override
+  State<_LiveClock> createState() => _LiveClockState();
+}
+
+class _LiveClockState extends State<_LiveClock> {
+  late Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  static String _two(int n) => n.toString().padLeft(2, '0');
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final date =
+        '${_two(now.day)}/${_two(now.month)}/${now.year}';
+    final time = '${_two(now.hour)}:${_two(now.minute)}:${_two(now.second)}';
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          '$date · $time',
+          style: _t(12, FontWeight.w500, BrandColors.mut),
+        ),
       ),
     );
   }
@@ -1209,6 +1264,7 @@ class EcUploadQueueScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final tabs = _tabs(context);
     final visible = _visibleItems;
+    final hasQuotaWait = items.any((i) => i.status == EcUploadStatus.quotaWait);
     return CupertinoPageScaffold(
       backgroundColor: BrandColors.bg,
       child: SafeArea(
@@ -1240,32 +1296,37 @@ class EcUploadQueueScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: BrandColors.soft,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              context.l10n.quotaExhaustedNote,
-                              style: _t(12, FontWeight.w400, BrandColors.ink),
+                    // Only real when something is actually waiting on quota —
+                    // this used to render unconditionally, showing "out of
+                    // quota" even when nothing was quota-blocked.
+                    if (hasQuotaWait)
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: BrandColors.soft,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                context.l10n.quotaExhaustedNote,
+                                style: _t(12, FontWeight.w400, BrandColors.ink),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: onUpgrade,
-                            child: Text(
-                              context.l10n.upgradePlanShort,
-                              style: _t(12, FontWeight.w600, BrandColors.ink),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: onUpgrade,
+                              child: Text(
+                                context.l10n.upgradePlanShort,
+                                style: _t(12, FontWeight.w600, BrandColors.ink),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
+                    if (hasQuotaWait)
+                      const SizedBox(height: 12),
                     SizedBox(
                       height: 32,
                       child: ListView.separated(

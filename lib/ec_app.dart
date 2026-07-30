@@ -146,6 +146,12 @@ class _EcAppState extends State<EcApp> {
   // and shop management. Null until a shop is picked.
   final ValueNotifier<EcShopSummary?> _selectedShop = ValueNotifier(null);
   final ValueNotifier<String> _recordingType = ValueNotifier('Đóng hàng');
+  // Whether the "Ghi hình" tab is the one on screen right now — the 3-tab
+  // shell keeps every branch mounted, so without this the camera keeps
+  // streaming (and hands-free auto-recording on a scanned bill) even while
+  // the user is on Vận đơn/Tài khoản. Flipped from the shell's own builder,
+  // read by EcRecordRoute to release/reacquire the camera accordingly.
+  final ValueNotifier<bool> _isRecordTabActive = ValueNotifier(false);
 
   late final GoRouter _router = _buildRouter(
     widget.repo,
@@ -159,6 +165,7 @@ class _EcAppState extends State<EcApp> {
     videoPlayerService: widget.videoPlayerService,
     downloadDio: widget.downloadDio,
     voiceAnnouncer: _voiceAnnouncer,
+    isRecordTabActive: _isRecordTabActive,
   );
 
   @override
@@ -1208,6 +1215,10 @@ Future<String?> _showTypeSheet(
 }
 
 const _manageVideoTypesResult = '__manage_video_types__';
+
+/// Index of the `/record` [StatefulShellBranch] within the 3-tab shell
+/// (home, record, account) — see `_buildRouter`'s `StatefulShellRoute`.
+const _recordBranchIndex = 1;
 
 /// Count of clips still genuinely in flight — the "n chờ/tải" badge shown in
 /// the shop header, account tab and orders stats. Done clips are dropped from
@@ -2458,6 +2469,14 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
   );
   late final Future<void> _ready = _initialize();
 
+  void _togglePlayPause() {
+    if (_controller.value.isPlaying) {
+      _controller.pause();
+    } else {
+      _controller.play();
+    }
+  }
+
   Future<void> _initialize() async {
     // A clip fetched moments after its own upload finishes can briefly 404 —
     // the backend's order-detail response already has the URL, but the R2
@@ -2545,11 +2564,37 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                 return Center(
                   child: ValueListenableBuilder<VideoPlayerValue>(
                     valueListenable: _controller.valueListenable,
-                    builder: (context, value, _) => AspectRatio(
-                      aspectRatio: value.aspectRatio == 0
-                          ? 16 / 9
-                          : value.aspectRatio,
-                      child: VideoPlayer(raw),
+                    builder: (context, value, _) => GestureDetector(
+                      onTap: _togglePlayPause,
+                      child: AspectRatio(
+                        aspectRatio: value.aspectRatio == 0
+                            ? 16 / 9
+                            : value.aspectRatio,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            VideoPlayer(raw),
+                            AnimatedOpacity(
+                              opacity: value.isPlaying ? 0 : 1,
+                              duration: const Duration(milliseconds: 150),
+                              child: const DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: Color(0x66000000),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Padding(
+                                  padding: EdgeInsets.all(14),
+                                  child: Icon(
+                                    Icons.play_arrow,
+                                    color: Colors.white,
+                                    size: 36,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 );
@@ -2605,6 +2650,10 @@ List<EcTimelineDay> _timelineDays(
   final typeNames = {for (final t in videoTypes) t.id: t.name};
   final groups = <String, List<EcTimelineVideo>>{};
   for (final item in evidence) {
+    // A deleted clip should vanish from the list entirely, not linger with a
+    // "Đã xóa" badge — deletion already happened server-side (deleteEvidence);
+    // showing it here was the actual bug, not a missing status label.
+    if (item.uploadStatus == 'deleted') continue;
     final captured = DateTime.fromMillisecondsSinceEpoch(item.capturedAt);
     final day = _dateLabel(captured);
     groups
@@ -2861,6 +2910,7 @@ GoRouter _buildRouter(
   VideoPlayerService? videoPlayerService,
   Dio? downloadDio,
   VoiceAnnouncerService? voiceAnnouncer,
+  ValueNotifier<bool>? isRecordTabActive,
 }) {
   final share = shareService ?? _maybeGetIt<ShareService>();
   final videoPlayer = videoPlayerService ?? _maybeGetIt<VideoPlayerService>();
@@ -2885,7 +2935,14 @@ GoRouter _buildRouter(
     routes: [
       GoRoute(
         path: '/',
-        builder: (c, s) => EcSplashScreen(onStart: () => c.go('/login')),
+        // Firebase Auth already persists the session on-device across app
+        // restarts — the bug was this screen ignoring that and always
+        // routing to /login. A still-signed-in user goes straight to shop
+        // selection, same destination a fresh login lands on.
+        builder: (c, s) => EcSplashScreen(
+          onStart: () =>
+              c.go(auth.currentUser != null ? '/shops' : '/login'),
+        ),
       ),
       GoRoute(
         path: '/login',
@@ -2959,7 +3016,25 @@ GoRouter _buildRouter(
       // tab keeps its own state. Detail pages stay top-level (below), so they push
       // on the root navigator and slide in over the tabs with the right direction.
       StatefulShellRoute.indexedStack(
-        builder: (c, s, navigationShell) => navigationShell,
+        // go_router's back-gesture handling (popRoute) checks the ROOT
+        // navigator before the active branch's own navigator, so a PopScope
+        // set only inside the /record branch (see EcRecordRoute) never even
+        // gets consulted when that branch has nothing left to pop into — the
+        // root navigator reports "can't pop" and Android exits the app
+        // instead. Blocking pop here, at the root-level shell page, while the
+        // record tab is active covers that case too.
+        builder: (c, s, navigationShell) {
+          // Assigned synchronously (not in a post-frame callback) so that
+          // when the record branch is built for the first time this same
+          // frame, its initState reads the correct up-to-date value instead
+          // of a stale one from before the switch.
+          isRecordTabActive?.value =
+              navigationShell.currentIndex == _recordBranchIndex;
+          return PopScope(
+            canPop: navigationShell.currentIndex != _recordBranchIndex,
+            child: navigationShell,
+          );
+        },
         branches: [
           StatefulShellBranch(
             routes: [
@@ -3012,6 +3087,7 @@ GoRouter _buildRouter(
                       shopName: shop.name,
                       initialType: recordingType.value,
                       initialResolution: shop.resolution,
+                      isActive: isRecordTabActive,
                       onBack: () => c.go('/home'),
                       onRequestCode: () => c.push<String>('/manual'),
                       onConfirmManualCode: (code) =>

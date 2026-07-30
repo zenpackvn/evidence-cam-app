@@ -6,7 +6,7 @@
 library;
 
 import 'dart:io';
-import 'dart:ui' show Size;
+import 'dart:ui' show Rect, Size;
 
 import 'package:app_platform/app_platform.dart';
 import 'package:flutter/services.dart' show DeviceOrientation;
@@ -30,10 +30,19 @@ class BillScanner {
   /// record screen now follows however it's held (see `ec_record_route.dart`),
   /// so the sensor orientation alone is no longer enough to compute the
   /// correct frame rotation for MLKit.
+  ///
+  /// [centerRegionFraction], when set, rejects a detected code whose bounding
+  /// box center falls outside the middle fraction of the frame (e.g. `0.55`
+  /// keeps only the center 55% along each axis) — for a screen showing a
+  /// centered on-screen scan frame over a `BoxFit.cover` preview, checking
+  /// this in raw *image* coordinates still lines up with that frame: a
+  /// centered cover-crop always maps the image's center to the screen's
+  /// center on both axes, regardless of the rotation applied for display.
   Future<String?> scan(
     CameraImage image,
     CameraDescription camera, {
     DeviceOrientation deviceOrientation = DeviceOrientation.portraitUp,
+    double? centerRegionFraction,
   }) async {
     if (_busy) return null;
     _busy = true;
@@ -43,7 +52,17 @@ class BillScanner {
       final barcodes = await _scanner.processImage(input);
       for (final barcode in barcodes) {
         final raw = barcode.rawValue?.trim();
-        if (raw != null && raw.isNotEmpty) return raw;
+        if (raw == null || raw.isEmpty) continue;
+        if (centerRegionFraction != null &&
+            !_isInCenterRegion(
+              barcode.boundingBox,
+              image.width,
+              image.height,
+              centerRegionFraction,
+            )) {
+          continue;
+        }
+        return raw;
       }
       return null;
     } on Object {
@@ -51,6 +70,22 @@ class BillScanner {
     } finally {
       _busy = false;
     }
+  }
+
+  static bool _isInCenterRegion(
+    Rect box,
+    int imageWidth,
+    int imageHeight,
+    double fraction,
+  ) {
+    final centerX = box.left + box.width / 2;
+    final centerY = box.top + box.height / 2;
+    final marginX = imageWidth * (1 - fraction) / 2;
+    final marginY = imageHeight * (1 - fraction) / 2;
+    return centerX >= marginX &&
+        centerX <= imageWidth - marginX &&
+        centerY >= marginY &&
+        centerY <= imageHeight - marginY;
   }
 
   Future<void> dispose() => _scanner.close();
