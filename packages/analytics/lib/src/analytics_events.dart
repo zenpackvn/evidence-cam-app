@@ -18,8 +18,6 @@ abstract final class AnalyticsEvents {
   static const clipRecorded = 'clip_recorded';
   static const uploadCompleted = 'upload_completed';
   static const uploadFailed = 'upload_failed';
-  static const dossierCreated = 'dossier_created';
-  static const dossierLinkCopied = 'dossier_link_copied';
   static const paywallViewed = 'paywall_viewed';
   static const purchaseStarted = 'purchase_started';
 }

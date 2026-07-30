@@ -1,6 +1,6 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:feature_orders/feature_orders.dart'
-    show EcVideoDetail, EcVideoDetailScreen;
+    show EcEvidenceType, EcVideoDetail, EcVideoDetailScreen;
 import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -125,6 +125,28 @@ void main() {
         const EcVideoDetailScreen(video: video, canDelete: false),
       );
       expect(find.text('Xóa video'), findsNothing);
+    });
+
+    testWidgets('shows the recorded clip duration for a video', (
+      tester,
+    ) async {
+      await _pump(tester, const EcVideoDetailScreen(video: video));
+      expect(find.text('Thời lượng'), findsOneWidget);
+      expect(find.text('00:42'), findsOneWidget);
+    });
+
+    testWidgets('hides the duration row for a photo', (tester) async {
+      const photo = EcVideoDetail(
+        title: 'Ảnh đính kèm',
+        duration: '—',
+        recordedAt: '24 Th7 · 10:23',
+        recordedBy: 'Trần Thị B (Nhân viên)',
+        device: 'iPhone 13',
+        uploadStatus: 'Đã tải lên',
+        type: EcEvidenceType.image,
+      );
+      await _pump(tester, const EcVideoDetailScreen(video: photo));
+      expect(find.text('Thời lượng'), findsNothing);
     });
   });
 }

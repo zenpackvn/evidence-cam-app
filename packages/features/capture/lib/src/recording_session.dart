@@ -80,6 +80,9 @@ class RecordingSessionState {
     this.cameraCount = 0,
     this.cameraGeneration = 0,
     this.errorMessage,
+    this.cutoverFromCode,
+    this.cutoverFromDuration,
+    this.lowStorageWarning = false,
   });
 
   final RecordingStatus status;
@@ -97,6 +100,19 @@ class RecordingSessionState {
   final int cameraGeneration;
   final String? errorMessage;
 
+  /// The just-closed order's code and final duration, set for a few seconds
+  /// right after an A→B cutover so the view can show a confirmation moment
+  /// before settling into the new clip's normal recording screen. Null
+  /// otherwise.
+  final String? cutoverFromCode;
+  final Duration? cutoverFromDuration;
+
+  /// True once, right after init, when free device storage was below
+  /// [kLowStorageThresholdMb] — cleared by [RecordingLowStorageDismissed]
+  /// once the seller has acknowledged it. FR-09: warn before recording, not
+  /// mid-clip.
+  final bool lowStorageWarning;
+
   bool get isRecording => status == RecordingStatus.recording;
   bool get hasMultipleCameras => cameraCount > 1;
 
@@ -113,6 +129,10 @@ class RecordingSessionState {
     int? cameraGeneration,
     String? errorMessage,
     bool clearError = false,
+    String? cutoverFromCode,
+    Duration? cutoverFromDuration,
+    bool clearCutover = false,
+    bool? lowStorageWarning,
   }) {
     return RecordingSessionState(
       status: status ?? this.status,
@@ -126,6 +146,13 @@ class RecordingSessionState {
       cameraCount: cameraCount ?? this.cameraCount,
       cameraGeneration: cameraGeneration ?? this.cameraGeneration,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      cutoverFromCode: clearCutover
+          ? null
+          : (cutoverFromCode ?? this.cutoverFromCode),
+      cutoverFromDuration: clearCutover
+          ? null
+          : (cutoverFromDuration ?? this.cutoverFromDuration),
+      lowStorageWarning: lowStorageWarning ?? this.lowStorageWarning,
     );
   }
 
@@ -142,7 +169,10 @@ class RecordingSessionState {
       other.maxZoom == maxZoom &&
       other.cameraCount == cameraCount &&
       other.cameraGeneration == cameraGeneration &&
-      other.errorMessage == errorMessage;
+      other.errorMessage == errorMessage &&
+      other.cutoverFromCode == cutoverFromCode &&
+      other.cutoverFromDuration == cutoverFromDuration &&
+      other.lowStorageWarning == lowStorageWarning;
 
   @override
   int get hashCode => Object.hash(
@@ -157,6 +187,9 @@ class RecordingSessionState {
     cameraCount,
     cameraGeneration,
     errorMessage,
+    cutoverFromCode,
+    cutoverFromDuration,
+    lowStorageWarning,
   );
 }
 
@@ -197,6 +230,17 @@ class RecordingTicked extends RecordingSessionEvent {
   const RecordingTicked();
 }
 
+/// Fired once the A→B cutover confirmation moment has been on screen long
+/// enough; clears [RecordingSessionState.cutoverFromCode].
+class RecordingCutoverExpired extends RecordingSessionEvent {
+  const RecordingCutoverExpired();
+}
+
+/// The seller acknowledged the low-storage warning shown after init.
+class RecordingLowStorageDismissed extends RecordingSessionEvent {
+  const RecordingLowStorageDismissed();
+}
+
 /// App backgrounded: finalize any in-progress clip, then release the camera.
 class RecordingBackgrounded extends RecordingSessionEvent {
   const RecordingBackgrounded();
@@ -228,11 +272,17 @@ class RecordingSessionBloc
   RecordingSessionBloc({
     required CameraService camera,
     required BillScanner scanner,
-    required void Function(String path, String tracking, String type)
+    required void Function(
+      String path,
+      String tracking,
+      String type,
+      int durationSeconds,
+    )
     onClipSaved,
     VoiceAnnouncerService? voiceAnnouncer,
     EcVideoStampService? videoStamp,
     Future<bool> Function(String code)? verifyReturnCode,
+    Future<double?> Function()? checkFreeDiskSpaceMb,
     String initialType = 'Đóng hàng',
     String initialResolution = '720p',
     String endQr = kEndSessionQr,
@@ -243,6 +293,7 @@ class RecordingSessionBloc
        _voice = voiceAnnouncer ?? VoiceAnnouncerService(),
        _videoStamp = videoStamp ?? EcVideoStampService(),
        _verifyReturnCode = verifyReturnCode,
+       _checkFreeDiskSpaceMb = checkFreeDiskSpaceMb ?? getFreeDiskSpaceMb,
        _endQr = endQr,
        _maxRecording = maxRecording,
        super(
@@ -259,18 +310,21 @@ class RecordingSessionBloc
     on<RecordingFrameScanned>(_onFrameScanned, transformer: droppable());
     on<RecordingStopRequested>(_onStopRequested);
     on<RecordingTicked>(_onTicked);
+    on<RecordingCutoverExpired>(_onCutoverExpired);
     on<RecordingBackgrounded>(_onBackgrounded);
     on<RecordingResolutionCycled>(_onResolutionCycled);
     on<RecordingCameraFlipped>(_onCameraFlipped);
     on<RecordingZoomAdjusted>(_onZoomAdjusted);
     on<RecordingTypeChanged>(_onTypeChanged);
+    on<RecordingLowStorageDismissed>(_onLowStorageDismissed);
   }
 
   final CameraService _camera;
   final BillScanner _scanner;
-  final void Function(String, String, String) _onClipSaved;
+  final void Function(String, String, String, int) _onClipSaved;
   final VoiceAnnouncerService _voice;
   final EcVideoStampService _videoStamp;
+  final Future<double?> Function() _checkFreeDiskSpaceMb;
   final Future<bool> Function(String code)? _verifyReturnCode;
   final String _endQr;
   final Duration _maxRecording;
@@ -279,6 +333,7 @@ class RecordingSessionBloc
   int _cameraIndex = 0;
   bool _liveScan = true;
   Timer? _timer;
+  Timer? _cutoverTimer;
   bool _idleScanBusy = false;
   bool _recScanBusy = false;
   DateTime? _lastRecScanAt;
@@ -358,6 +413,16 @@ class RecordingSessionBloc
         _cameraIndex = index;
         final (minZoom, maxZoom) = await _initCamera();
         if (isClosed) return;
+        // Best-effort: a platform that can't report free space (or a transient
+        // channel error) should never block opening the session — silence, not
+        // a false alarm, is the safe default (see [getFreeDiskSpaceMb]).
+        double? freeMb;
+        try {
+          freeMb = await _checkFreeDiskSpaceMb();
+        } on Object {
+          freeMb = null;
+        }
+        if (isClosed) return;
         emit(
           state.copyWith(
             status: RecordingStatus.idle,
@@ -367,6 +432,8 @@ class RecordingSessionBloc
             minZoom: minZoom,
             maxZoom: maxZoom,
             clearError: true,
+            lowStorageWarning:
+                freeMb != null && freeMb < kLowStorageThresholdMb,
           ),
         );
       });
@@ -464,21 +531,20 @@ class RecordingSessionBloc
     Emitter<RecordingSessionState> emit,
   ) async {
     final code = event.code.trim();
-    // A return clip must reference a tracking code that already has a saved
-    // order (from an earlier "Đóng hàng" clip) — unlike a fresh pack, there's
-    // no legitimate case for creating a new order off an unrecognized return
-    // code, so this only warns and keeps scanning instead of offering to
-    // create one.
+    // A return clip's tracking code is checked against the shop's saved
+    // orders first. [_verifyReturnCode] itself decides what "not found" means
+    // to the user — today that's a dialog offering manual entry or confirming
+    // a new order (mirrors the manual-entry find-or-create flow) — this bloc
+    // only needs to know whether recording may proceed for [code].
     if (state.typeLabel == 'Trả hàng' && _verifyReturnCode != null) {
+      // The rejected bill often stays framed for a while — without this, the
+      // dialog/announcement would re-fire every scan cooldown for as long as
+      // it's still in view.
+      if (_lastRejectedReturnCode == code) return;
       final known = await _verifyReturnCode(code);
       if (!known) {
-        // The rejected code often stays framed for a while after the seller
-        // hears the warning — without this, it re-triggers (and re-speaks)
-        // every scan cooldown for as long as it's still in view.
-        if (_lastRejectedReturnCode != code) {
-          _lastRejectedReturnCode = code;
-          unawaited(_voice.speak('Sai mã'));
-        }
+        _lastRejectedReturnCode = code;
+        unawaited(_voice.speak('Sai mã'));
         return;
       }
       _lastRejectedReturnCode = null;
@@ -545,6 +611,12 @@ class RecordingSessionBloc
     await _camera.startVideoRecording();
   }
 
+  /// Watches for the end-QR or a different order's bill while a clip records.
+  ///
+  /// Hardware that can't analyse and record at once simply never delivers
+  /// frames here (see [_startVideoWithScan]) — live cut-over quietly goes away
+  /// on those devices while the clip itself still records and the manual stop
+  /// button still works.
   Future<void> _onRecordingFrame(CameraImage image) async {
     if (state.status != RecordingStatus.recording ||
         _recScanBusy ||
@@ -601,6 +673,10 @@ class RecordingSessionBloc
     Emitter<RecordingSessionState> emit, {
     required String? next,
   }) async {
+    // Captured before any emit overwrites them — [EcCutoverBScreen] needs to
+    // show what just closed alongside what's now recording.
+    final closedCode = state.code;
+    final closedElapsed = state.elapsed;
     try {
       await _serialized(() async {
         _cancelTimer();
@@ -624,6 +700,7 @@ class RecordingSessionBloc
                 state.code,
                 state.typeLabel,
                 _recordingStartedAt ?? DateTime.now(),
+                closedElapsed.inSeconds,
               ),
             );
           }
@@ -641,9 +718,12 @@ class RecordingSessionBloc
               status: RecordingStatus.recording,
               code: next,
               elapsed: Duration.zero,
+              cutoverFromCode: closedCode,
+              cutoverFromDuration: closedElapsed,
             ),
           );
           _startTimer();
+          _startCutoverTimer();
         } else if (!isClosed) {
           emit(state.copyWith(status: RecordingStatus.idle));
         }
@@ -670,13 +750,14 @@ class RecordingSessionBloc
     String code,
     String typeLabel,
     DateTime startedAt,
+    int durationSeconds,
   ) async {
     final stamped = await _videoStamp.stamp(
       path,
       label: '$code · $typeLabel',
       recordedAt: startedAt,
     );
-    _onClipSaved(stamped, code, typeLabel);
+    _onClipSaved(stamped, code, typeLabel, durationSeconds);
   }
 
   void _onTicked(RecordingTicked event, Emitter<RecordingSessionState> emit) {
@@ -697,12 +778,18 @@ class RecordingSessionBloc
     // Skips the stamping step (unlike _finalize) — the OS can kill this
     // process shortly after backgrounding, and losing the clip entirely
     // while ffmpeg is mid-encode would be worse than saving it unstamped.
+    final elapsedAtBackground = state.elapsed;
     await _serialized(() async {
       _cancelTimer();
       if (_camera.isRecordingVideo) {
         try {
           final file = await _camera.stopVideoRecording();
-          _onClipSaved(file.path, state.code, state.typeLabel);
+          _onClipSaved(
+            file.path,
+            state.code,
+            state.typeLabel,
+            elapsedAtBackground.inSeconds,
+          );
         } on Object {
           // OS already tore the camera down mid-record; nothing recoverable.
         }
@@ -802,6 +889,20 @@ class RecordingSessionBloc
     emit(state.copyWith(typeLabel: event.type));
   }
 
+  void _onCutoverExpired(
+    RecordingCutoverExpired event,
+    Emitter<RecordingSessionState> emit,
+  ) {
+    if (!isClosed) emit(state.copyWith(clearCutover: true));
+  }
+
+  void _onLowStorageDismissed(
+    RecordingLowStorageDismissed event,
+    Emitter<RecordingSessionState> emit,
+  ) {
+    if (!isClosed) emit(state.copyWith(lowStorageWarning: false));
+  }
+
   void _startTimer() {
     _cancelTimer();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -814,10 +915,22 @@ class RecordingSessionBloc
     _timer = null;
   }
 
+  /// How long the A→B cutover confirmation moment stays on screen before the
+  /// view falls back to the normal recording screen for the new code.
+  static const _cutoverDisplayDuration = Duration(seconds: 2);
+
+  void _startCutoverTimer() {
+    _cutoverTimer?.cancel();
+    _cutoverTimer = Timer(_cutoverDisplayDuration, () {
+      if (!isClosed) add(const RecordingCutoverExpired());
+    });
+  }
+
   @override
   Future<void> close() async {
     _cancelTimer();
     previewTransitioning.dispose();
+    _cutoverTimer?.cancel();
     await _scanner.dispose();
     await _camera.dispose();
     return super.close();

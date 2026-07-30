@@ -26,6 +26,7 @@ class EvidenceClipEntity {
     this.retryCount = 0,
     this.remoteUrl,
     this.errorMessage,
+    this.durationSeconds,
   });
 
   /// ObjectBox primary key. Internal — never exposed to the UI. 0 means "new";
@@ -73,4 +74,7 @@ class EvidenceClipEntity {
   /// Human-readable reason the last upload attempt failed; null while
   /// waiting/uploading/done, or for rows persisted before this field existed.
   String? errorMessage;
+  /// Recorded clip length in seconds, captured at stop time. Null on older
+  /// rows persisted before this field existed.
+  int? durationSeconds;
 }

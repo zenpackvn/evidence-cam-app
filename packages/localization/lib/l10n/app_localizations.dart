@@ -254,18 +254,6 @@ abstract class AppLocalizations {
   /// **'Member added'**
   String get toastMemberAdded;
 
-  /// No description provided for @toastDossierLinkCreated.
-  ///
-  /// In en, this message translates to:
-  /// **'Dossier link created'**
-  String get toastDossierLinkCreated;
-
-  /// No description provided for @toastDossierLinkRevoked.
-  ///
-  /// In en, this message translates to:
-  /// **'Dossier link revoked'**
-  String get toastDossierLinkRevoked;
-
   /// No description provided for @toastVideoPlayFailed.
   ///
   /// In en, this message translates to:
@@ -356,23 +344,11 @@ abstract class AppLocalizations {
   /// **'tracking code'**
   String get labelTrackingCode;
 
-  /// No description provided for @labelDossierLink.
-  ///
-  /// In en, this message translates to:
-  /// **'dossier link'**
-  String get labelDossierLink;
-
   /// No description provided for @resolutionChanged.
   ///
   /// In en, this message translates to:
   /// **'Resolution: {value}'**
   String resolutionChanged(String value);
-
-  /// No description provided for @dossierShareText.
-  ///
-  /// In en, this message translates to:
-  /// **'Complaint dossier {tracking}'**
-  String dossierShareText(String tracking);
 
   /// No description provided for @accountNoName.
   ///
@@ -482,6 +458,18 @@ abstract class AppLocalizations {
   /// **'Server-side processing error'**
   String get uploadStatusError;
 
+  /// No description provided for @uploadStatusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage retention expired'**
+  String get uploadStatusExpired;
+
+  /// No description provided for @expiredOnDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage retention expired on {date}'**
+  String expiredOnDate(String date);
+
   /// No description provided for @kindPhoto.
   ///
   /// In en, this message translates to:
@@ -511,6 +499,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No evidence yet'**
   String get orderNoEvidence;
+
+  /// No description provided for @timelineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This shipment has no video or photo yet'**
+  String get timelineEmpty;
 
   /// No description provided for @errorGenericRetry.
   ///
@@ -1082,6 +1076,12 @@ abstract class AppLocalizations {
   /// **'Recording time'**
   String get detailRecordedTime;
 
+  /// No description provided for @detailDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get detailDuration;
+
   /// No description provided for @detailRecordedBy.
   ///
   /// In en, this message translates to:
@@ -1133,7 +1133,7 @@ abstract class AppLocalizations {
   /// No description provided for @detailDownloadNote.
   ///
   /// In en, this message translates to:
-  /// **'Account owner / shop manager only — to attach a marketplace complaint form'**
+  /// **'Download the video to attach to a marketplace complaint form'**
   String get detailDownloadNote;
 
   /// No description provided for @detailDownloadPhoto.
@@ -1148,24 +1148,6 @@ abstract class AppLocalizations {
   /// **'Attach photo to order'**
   String get attachPhotoToOrder;
 
-  /// No description provided for @createDossierLink.
-  ///
-  /// In en, this message translates to:
-  /// **'Create complaint dossier link'**
-  String get createDossierLink;
-
-  /// No description provided for @dossierLinkLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Complaint dossier link'**
-  String get dossierLinkLabel;
-
-  /// No description provided for @revoke.
-  ///
-  /// In en, this message translates to:
-  /// **'Revoke'**
-  String get revoke;
-
   /// No description provided for @deleteVideoAction.
   ///
   /// In en, this message translates to:
@@ -1175,8 +1157,26 @@ abstract class AppLocalizations {
   /// No description provided for @deleteVideoNote.
   ///
   /// In en, this message translates to:
-  /// **'Account owner / shop manager only · 2-step confirmation · permanent'**
+  /// **'Account owner / shop manager only · permanent, cannot be undone'**
   String get deleteVideoNote;
+
+  /// No description provided for @deleteVideoConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Final confirmation'**
+  String get deleteVideoConfirmTitle;
+
+  /// No description provided for @deleteVideoConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This evidence will be permanently deleted and cannot be recovered — delete anyway?'**
+  String get deleteVideoConfirmBody;
+
+  /// No description provided for @deleteVideoConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete permanently'**
+  String get deleteVideoConfirmAction;
 
   /// No description provided for @ordersErrorCount.
   ///
@@ -1184,10 +1184,16 @@ abstract class AppLocalizations {
   /// **'· {count} errors'**
   String ordersErrorCount(int count);
 
+  /// No description provided for @ordersPendingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'· {count} pending'**
+  String ordersPendingCount(int count);
+
   /// No description provided for @ordersPendingEvidenceWarning.
   ///
   /// In en, this message translates to:
-  /// **'{count} evidence not uploaded — the dossier will be incomplete'**
+  /// **'{count} evidence not uploaded'**
   String ordersPendingEvidenceWarning(int count);
 
   /// No description provided for @captureFramePrompt.
@@ -1201,6 +1207,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Camera facing down at the table'**
   String get captureCameraDownHint;
+
+  /// No description provided for @lowStorageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage almost full'**
+  String get lowStorageTitle;
+
+  /// No description provided for @lowStorageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This device is low on storage — an in-progress recording may not save fully. Free up some space before continuing to record.'**
+  String get lowStorageBody;
+
+  /// No description provided for @lowStorageAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get lowStorageAction;
+
+  /// No description provided for @cutoverClosedSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed tracking code {code} ({duration})'**
+  String cutoverClosedSummary(String code, String duration);
+
+  /// No description provided for @cutoverSignalText.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound + vibration on order handoff'**
+  String get cutoverSignalText;
 
   /// No description provided for @tooltipBack.
   ///
@@ -1819,6 +1855,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No orders found'**
   String get ordersNotFound;
+
+  /// No description provided for @ordersNotFoundHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Double-check the tracking code and try again'**
+  String get ordersNotFoundHint;
 
   /// No description provided for @filterStatusLabel.
   ///

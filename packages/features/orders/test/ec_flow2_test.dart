@@ -29,22 +29,6 @@ Future<void> _pump(WidgetTester tester, Widget screen) {
   );
 }
 
-const _orders = [
-  EcOrderRow(
-    code: 'SPXVN024567890',
-    time: '10:23',
-    videoType: 'Đóng hàng đi',
-    videoCount: 5,
-  ),
-  EcOrderRow(
-    code: 'SPXVN044556677',
-    time: '10:55',
-    videoType: 'Trả hàng',
-    videoCount: 2,
-    errorCount: 1,
-  ),
-];
-
 const _days = [
   EcTimelineDay(
     date: '23/07/2026',
@@ -87,71 +71,6 @@ const _videoDetail = EcVideoDetail(
 );
 
 void main() {
-  group('EcOrderListScreen', () {
-    testWidgets('shows header, stats, search and order rows', (tester) async {
-      await _pump(
-        tester,
-        const EcOrderListScreen(
-          shopName: 'Shop ABC',
-          orders: _orders,
-          stats: [
-            EcOrderListStat(value: '11', label: 'Vận đơn hôm nay'),
-            EcOrderListStat(value: '12', label: 'Video đã quay'),
-            EcOrderListStat(value: '13', label: 'Chờ tải'),
-          ],
-        ),
-      );
-
-      expect(find.text('Shop ABC'), findsOneWidget);
-      expect(find.text('11'), findsOneWidget);
-      expect(find.text('12'), findsOneWidget);
-      expect(find.text('13'), findsOneWidget);
-      expect(find.text('Vận đơn hôm nay'), findsOneWidget);
-      expect(find.text('Nhập mã vận đơn'), findsOneWidget);
-      expect(find.text('Tất cả'), findsOneWidget);
-      expect(find.text('SPXVN024567890'), findsOneWidget);
-      expect(find.textContaining('1 lỗi'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('order row tap fires callback with the tapped order', (
-      tester,
-    ) async {
-      EcOrderRow? tapped;
-      await _pump(
-        tester,
-        EcOrderListScreen(
-          orders: _orders,
-          onOrderTap: (order) => tapped = order,
-        ),
-      );
-
-      await tester.tap(find.text('SPXVN044556677'));
-      await tester.pump();
-
-      expect(tapped?.code, 'SPXVN044556677');
-    });
-
-    testWidgets('back and scan callbacks fire', (tester) async {
-      var backTapped = false;
-      var scanTapped = false;
-      await _pump(
-        tester,
-        EcOrderListScreen(
-          orders: _orders,
-          onBack: () => backTapped = true,
-          onScan: () => scanTapped = true,
-        ),
-      );
-
-      await tester.tap(find.byIcon(Icons.chevron_left));
-      await tester.tap(find.byIcon(Icons.qr_code_scanner_outlined));
-
-      expect(backTapped, isTrue);
-      expect(scanTapped, isTrue);
-    });
-  });
-
   group('EcOrderTimelineScreen', () {
     testWidgets('shows order code, warning banner, and grouped rows', (
       tester,
@@ -162,7 +81,6 @@ void main() {
           orderCode: 'SPXVN024567890',
           days: _days,
           pendingUploadCount: 4,
-          dossierUrl: 'evidencecam.vn/r/abc123…',
         ),
       );
 
@@ -173,7 +91,6 @@ void main() {
       expect(find.text('Đóng hàng đi'), findsOneWidget);
       expect(find.text('Đang tải 72%'), findsOneWidget);
       expect(find.text('Lỗi · Thử lại'), findsOneWidget);
-      expect(find.text('Link hồ sơ khiếu nại'), findsOneWidget);
       expect(find.text('Đính kèm ảnh vào đơn'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -190,41 +107,19 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('create dossier link callback fires when no link exists', (
+    testWidgets('shows an empty state when the shipment has no evidence', (
       tester,
     ) async {
-      var created = false;
       await _pump(
         tester,
-        EcOrderTimelineScreen(
-          orderCode: 'SPXVN024567890',
-          days: _days,
-          onCreateDossier: () => created = true,
-        ),
+        const EcOrderTimelineScreen(orderCode: 'SPXVN024567890', days: []),
       );
 
-      await tester.tap(find.text('Tạo link hồ sơ khiếu nại'));
-
-      expect(created, isTrue);
-    });
-
-    testWidgets('revoke dossier link callback fires when a link exists', (
-      tester,
-    ) async {
-      var revoked = false;
-      await _pump(
-        tester,
-        EcOrderTimelineScreen(
-          orderCode: 'SPXVN024567890',
-          days: _days,
-          dossierUrl: 'evidencecam.vn/r/abc123',
-          onRevokeDossier: () => revoked = true,
-        ),
+      expect(
+        find.text('Mã vận đơn này chưa có video hoặc ảnh nào'),
+        findsOneWidget,
       );
-
-      await tester.tap(find.text('Thu hồi'));
-
-      expect(revoked, isTrue);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('retry banner and video play callbacks fire', (tester) async {

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:app_platform/app_platform.dart';
+import 'package:background_downloader/background_downloader.dart';
 import 'package:config/config.dart';
 import 'package:database/database.dart';
 import 'package:ec_data/ec_data.dart';
@@ -47,6 +48,10 @@ Future<void> main() async {
 
         // Local notifications are not a Firebase service — always initialise.
         await getIt<NotificationsService>().init();
+
+        // Reconnects the upload transport to tasks the OS ran (or killed) while
+        // the app was suspended, so their outcome isn't lost on next launch.
+        await FileDownloader().start();
 
         if (kFirebaseEnabled) {
           await getIt<FirebaseService>().init();

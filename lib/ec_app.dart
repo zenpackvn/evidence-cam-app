@@ -15,7 +15,6 @@ import 'package:app_platform/app_platform.dart'
         VideoPlayerValue,
         VoiceAnnouncerService;
 import 'package:app_ui/app_ui.dart';
-import 'package:architecture/architecture.dart' show UnawaitedFutureExtension;
 import 'package:ec_data/ec_data.dart';
 import 'package:ec_ui/ec_ui.dart';
 import 'package:feature_account/feature_account.dart';
@@ -1017,24 +1016,6 @@ Future<void> _copyText(BuildContext context, String text, String label) async {
   if (context.mounted) _toast(context, context.l10n.copiedLabel(label));
 }
 
-Future<void> _shareText(
-  BuildContext context,
-  ShareService? share,
-  String text,
-  String subject,
-) async {
-  try {
-    if (share == null) {
-      await Clipboard.setData(ClipboardData(text: text));
-      if (context.mounted) _toast(context, context.l10n.toastCopiedShareLink);
-      return;
-    }
-    await share.share(text: text, subject: subject);
-  } on Object {
-    if (context.mounted) _toast(context, context.l10n.toastShareFailed);
-  }
-}
-
 Future<void> _downloadAndShareVideo(
   BuildContext context,
   Dio dio,
@@ -1326,16 +1307,36 @@ Future<bool> _verifyReturnCode(
   BuildContext context,
   EcRepository repo,
   String shopId,
+  String shopName,
   String code,
 ) async {
   final key = normalizeTrackingCode(code);
   try {
     final matches = await repo.searchOrders(shopId, code);
     final exists = matches.any((o) => normalizeTrackingCode(o.tracking) == key);
-    if (!exists && context.mounted) {
-      _toast(context, context.l10n.returnCodeMismatch);
+    if (exists || !context.mounted) return exists;
+
+    // No match: offer the same two ways out as manual entry — retype the
+    // code, or confirm creating a new order for it — instead of a dead-end
+    // toast the packer has no action to take on.
+    final createNew = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.transparent,
+      builder: (dialogContext) => EcNoMatchScreen(
+        returnCode: code,
+        shopName: shopName,
+        onEnterManually: () => Navigator.of(dialogContext).pop(false),
+        onCreateNew: () => Navigator.of(dialogContext).pop(true),
+      ),
+    );
+    if (createNew != true || !context.mounted) return false;
+    try {
+      await repo.createOrder(shopId, code);
+      return true;
+    } on Object catch (error) {
+      if (context.mounted) _toast(context, _dataErrorText(context.l10n, error));
+      return false;
     }
-    return exists;
   } on Object catch (error) {
     if (context.mounted) _toast(context, _dataErrorText(context.l10n, error));
     return false;
@@ -1442,14 +1443,6 @@ String _planDisplayName(AppLocalizations l10n, String planCode) =>
       'basic' => l10n.planBasic,
       _ => planCode,
     };
-
-String _dossierUrl(String token) {
-  const apiUrl = kApiBaseUrl;
-  final base = apiUrl.endsWith('/')
-      ? apiUrl.substring(0, apiUrl.length - 1)
-      : apiUrl;
-  return '$base/d/$token';
-}
 
 /// Picks one image from the gallery; returns its local file path, or null if
 /// the user cancelled.
@@ -2224,6 +2217,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       type: o.latestType ?? l10n.orderNoEvidence,
       videoCount: _evidenceCount(o),
       errorCount: _errorCount(o),
+      pendingCount: o.pendingCount,
     );
   }
 
@@ -2324,7 +2318,6 @@ class _OrderRoute extends StatefulWidget {
     required this.queue,
     required this.shop,
     required this.order,
-    this.shareService,
     this.evidenceCountOverrides,
     this.onBack,
     this.onOpenVideo,
@@ -2334,7 +2327,6 @@ class _OrderRoute extends StatefulWidget {
   final EcUploadQueue queue;
   final EcShopSummary shop;
   final OrderSummaryDto order;
-  final ShareService? shareService;
   final _EvidenceCountOverrides? evidenceCountOverrides;
   final VoidCallback? onBack;
   final Future<void> Function(_VideoRouteExtra extra)? onOpenVideo;
@@ -2361,17 +2353,6 @@ class _OrderRouteState extends State<_OrderRoute> {
       live.where((e) => e.uploadStatus == 'error').length,
     );
     final types = await widget.repo.videoTypes(widget.shop.id);
-    DossierDto? dossier;
-    if (widget.shop.role != 'staff') {
-      try {
-        dossier = await widget.repo.getDossier(
-          widget.shop.id,
-          widget.order.id,
-        );
-      } on Object {
-        dossier = null;
-      }
-    }
     // "Người quay" was showing the raw Firebase uid — resolve it to whoever
     // that account actually is (name, else email) so it reads like a person
     // instead of a token. Best-effort: an empty map just falls back to the
@@ -2389,7 +2370,6 @@ class _OrderRouteState extends State<_OrderRoute> {
     return _OrderDetailData(
       detail: detail,
       videoTypes: types,
-      dossier: dossier,
       memberNames: memberNames,
     );
   }
@@ -2397,45 +2377,6 @@ class _OrderRouteState extends State<_OrderRoute> {
   void _retry() => setState(() {
     _detail = _load();
   });
-
-  void _setDossier(_OrderDetailData data, DossierDto? dossier) {
-    setState(() {
-      _detail = Future.value(
-        _OrderDetailData(
-          detail: data.detail,
-          videoTypes: data.videoTypes,
-          dossier: dossier,
-          memberNames: data.memberNames,
-        ),
-      );
-    });
-  }
-
-  Future<void> _createDossier(_OrderDetailData data) async {
-    try {
-      final dossier = await widget.repo.shareDossier(
-        widget.shop.id,
-        widget.order.id,
-      );
-      if (!mounted) return;
-      _setDossier(data, dossier);
-      _analytics()?.trackDossierCreated().fire();
-      _toast(context, context.l10n.toastDossierLinkCreated);
-    } on Object catch (error) {
-      if (mounted) _toast(context, _dataErrorText(context.l10n, error));
-    }
-  }
-
-  Future<void> _revokeDossier(_OrderDetailData data) async {
-    try {
-      await widget.repo.revokeDossier(widget.shop.id, widget.order.id);
-      if (!mounted) return;
-      _setDossier(data, null);
-      _toast(context, context.l10n.toastDossierLinkRevoked);
-    } on Object catch (error) {
-      if (mounted) _toast(context, _dataErrorText(context.l10n, error));
-    }
-  }
 
   int get _pendingCount => widget.queue.tasks
       .where(
@@ -2471,17 +2412,12 @@ class _OrderRouteState extends State<_OrderRoute> {
           data.videoTypes,
           data.memberNames,
         );
-        final dossier = data.dossier;
-        final dossierUrl = dossier == null || dossier.revoked
-            ? null
-            : _dossierUrl(dossier.shareToken);
         return ListenableBuilder(
           listenable: widget.queue,
           builder: (context, _) => EcOrderTimelineScreen(
             orderCode: data.detail.order.tracking,
             days: days,
             pendingUploadCount: _pendingCount,
-            dossierUrl: dossierUrl,
             onBack: widget.onBack,
             onVideoTap: (video) => widget.onOpenVideo
                 ?.call(
@@ -2514,30 +2450,6 @@ class _OrderRouteState extends State<_OrderRoute> {
               data.detail.order.tracking,
               context.l10n.labelTrackingCode,
             ),
-            onCopyLink: dossierUrl == null
-                ? null
-                : () {
-                    _analytics()?.trackDossierLinkCopied();
-                    _copyText(
-                      context,
-                      dossierUrl,
-                      context.l10n.labelDossierLink,
-                    );
-                  },
-            onShareLink: dossierUrl == null
-                ? null
-                : () => _shareText(
-                    context,
-                    widget.shareService,
-                    dossierUrl,
-                    context.l10n.dossierShareText(data.detail.order.tracking),
-                  ),
-            onCreateDossier: widget.shop.role == 'staff' || dossierUrl != null
-                ? null
-                : () => _createDossier(data),
-            onRevokeDossier: widget.shop.role == 'staff' || dossierUrl == null
-                ? null
-                : () => _revokeDossier(data),
             onRetryUpload: _retry,
             onAttachPhoto: () => _attachPhoto(
               context,
@@ -2556,13 +2468,11 @@ class _OrderDetailData {
   const _OrderDetailData({
     required this.detail,
     required this.videoTypes,
-    required this.dossier,
     this.memberNames = const {},
   });
 
   final OrderDetailDto detail;
   final List<VideoTypeDto> videoTypes;
-  final DossierDto? dossier;
 
   /// Account uid -> display name (name, else email), for resolving
   /// [EvidenceDto.createdByUid] to something readable.
@@ -2934,8 +2844,14 @@ List<EcTimelineDay> _timelineDays(
                 : EcEvidenceType.video,
             statusText: item.uploadStatus == 'done'
                 ? null
+                : item.uploadStatus == 'expired'
+                ? _expiredLabel(l10n, item.retentionExpiresAt)
                 : _uploadStatusLabel(l10n, item.uploadStatus),
-            statusIcon: item.uploadStatus == 'error' ? Icons.refresh : null,
+            statusIcon: switch (item.uploadStatus) {
+              'error' => Icons.refresh,
+              'expired' => Icons.history_toggle_off,
+              _ => null,
+            },
             recordedAt: '${_dateLabel(captured)} · ${_hhmm(captured)}',
             recordedBy:
                 (item.createdByUid == null
@@ -2944,7 +2860,9 @@ List<EcTimelineDay> _timelineDays(
                 l10n.recordedByFallback,
             device: item.device ?? l10n.deviceUnknown,
             uploadStatus: _uploadStatusLabel(l10n, item.uploadStatus),
-            mediaUrl: item.url,
+            // The R2 object is gone once expired — nothing left to play/download.
+            mediaUrl: item.uploadStatus == 'expired' ? null : item.url,
+            durationSeconds: item.durationSeconds,
           ),
         );
   }
@@ -2969,13 +2887,24 @@ String _uploadStatusLabel(AppLocalizations l10n, String status) =>
       'quota_hold' => l10n.uploadStatusQuotaHold,
       'deleted' => l10n.uploadStatusDeleted,
       'error' => l10n.uploadStatusError,
+      'expired' => l10n.uploadStatusExpired,
       _ => status,
     };
+
+/// FR-08 placeholder text: "loại video, giờ quay, đã quá hạn lưu trữ ngày X".
+/// The label/time are already shown elsewhere in the row — this is just the
+/// "ngày X" part. Falls back to the generic label when the retention sweep
+/// (`retention.ts`) hasn't recorded a date for some reason.
+String _expiredLabel(AppLocalizations l10n, int? retentionExpiresAt) {
+  if (retentionExpiresAt == null) return l10n.uploadStatusExpired;
+  final expired = DateTime.fromMillisecondsSinceEpoch(retentionExpiresAt);
+  return l10n.expiredOnDate(_dateLabel(expired));
+}
 
 EcVideoDetail _videoDetail(AppLocalizations l10n, EcTimelineVideo video) =>
     EcVideoDetail(
       title: video.label,
-      duration: '—',
+      duration: _durationLabel(video.durationSeconds),
       recordedAt: video.recordedAt ?? video.time,
       recordedBy: video.recordedBy ?? l10n.recordedByFallback,
       device: video.device ?? l10n.deviceUnknown,
@@ -2983,6 +2912,14 @@ EcVideoDetail _videoDetail(AppLocalizations l10n, EcTimelineVideo video) =>
       mediaUrl: video.mediaUrl,
       type: video.type,
     );
+
+/// Formats a recorded clip length as `mm:ss`. Photos and evidence captured
+/// before this field existed have no duration — falls back to `—`.
+String _durationLabel(int? seconds) {
+  if (seconds == null) return '—';
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(seconds ~/ 60)}:${two(seconds % 60)}';
+}
 
 String _dataErrorText(AppLocalizations l10n, Object error) {
   final text = error.toString();
@@ -3366,7 +3303,7 @@ GoRouter _buildRouter(
                       onConfirmManualCode: (code) =>
                           _confirmManualTracking(c, repo, shop.id, code),
                       verifyReturnCode: (code) =>
-                          _verifyReturnCode(c, repo, shop.id, code),
+                          _verifyReturnCode(c, repo, shop.id, shop.name, code),
                       voiceAnnouncer: voice,
                       onRequestType: () async {
                         final router = GoRouter.of(c);
@@ -3432,12 +3369,13 @@ GoRouter _buildRouter(
                       onNavOrders: () => c.go('/home'),
                       onNavAccount: () => c.go('/account'),
                       onSettings: () => c.push('/type-sheet'),
-                      onSaved: (path, code, type) {
+                      onSaved: (path, code, type, durationSeconds) {
                         queue.enqueue(
                           tracking: code,
                           type: type,
                           filePath: path,
                           shopId: shop.id,
+                          durationSeconds: durationSeconds,
                         );
                         _analytics()?.trackClipRecorded(recordingType: type);
                         _toast(c, c.l10n.toastVideoQueued);
@@ -3484,7 +3422,6 @@ GoRouter _buildRouter(
             queue: queue,
             shop: shop,
             order: order,
-            shareService: share,
             evidenceCountOverrides: evidenceCountOverrides,
             onBack: () => _back(c, '/home'),
             onOpenVideo: (extra) => c.push(
@@ -3577,6 +3514,30 @@ GoRouter _buildRouter(
                     ),
                   );
                   if (confirmed != true || !pageContext.mounted) return;
+                  // Step 2 of 2: a distinct final warning, spelling out that
+                  // this specific evidence item is gone for good — the first
+                  // dialog only confirmed *intent* to delete.
+                  final confirmedFinal = await showCupertinoDialog<bool>(
+                    context: pageContext,
+                    builder: (dialogContext) => CupertinoAlertDialog(
+                      title: Text(c.l10n.deleteVideoConfirmTitle),
+                      content: Text(c.l10n.deleteVideoConfirmBody),
+                      actions: [
+                        CupertinoDialogAction(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(false),
+                          child: Text(c.l10n.commonCancel),
+                        ),
+                        CupertinoDialogAction(
+                          isDestructiveAction: true,
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(true),
+                          child: Text(c.l10n.deleteVideoConfirmAction),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmedFinal != true || !pageContext.mounted) return;
                   unawaited(
                     repo
                         .deleteEvidence(extra.shopId, extra.orderId, evidenceId)

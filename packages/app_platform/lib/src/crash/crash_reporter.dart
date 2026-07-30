@@ -1,4 +1,3 @@
-import 'package:camera/camera.dart' show CameraException;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 
@@ -88,21 +87,7 @@ class FirebaseCrashReporter implements CrashReporter {
 /// errors escaping asynchronous callbacks that bypass [PlatformDispatcher].
 void installGlobalErrorHandlers(CrashReporter reporter) {
   FlutterError.onError = (errorDetails) {
-    // Benign, self-healing race: a CameraPreview still watching a controller
-    // that a resolution/lens change just disposed gets one more rebuild
-    // before the bloc's next state swaps it out. It costs nothing beyond
-    // that stray frame, but presentError() renders it as a full-screen red
-    // error, which reads as a real crash — so this one exception is only
-    // reported, never presented.
-    final exception = errorDetails.exception;
-    final isDisposedCameraRace =
-        exception is CameraException &&
-        exception.code == 'Disposed CameraController';
-    if (!isDisposedCameraRace) {
-      // Still surface the red-screen / console dump in debug so developers
-      // see genuine errors.
-      FlutterError.presentError(errorDetails);
-    }
+    FlutterError.presentError(errorDetails);
     reporter.recordError(
       errorDetails.exception,
       errorDetails.stack ?? StackTrace.current,

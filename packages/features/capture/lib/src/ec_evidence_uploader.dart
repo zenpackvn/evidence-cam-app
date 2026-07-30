@@ -14,12 +14,15 @@ abstract interface class EcEvidenceUploader {
   ///
   /// [shopId] and [capturedAt] are needed by the real backend flow (they scope
   /// the evidence to a shop/order); the legacy multipart uploader ignores them.
+  /// [durationSeconds] is the recorded clip length, known at stop time; null
+  /// for photos.
   Future<String> upload(
     File file, {
     required String tracking,
     required String type,
     String? shopId,
     int? capturedAt,
+    int? durationSeconds,
     void Function(double progress)? onProgress,
   });
 }

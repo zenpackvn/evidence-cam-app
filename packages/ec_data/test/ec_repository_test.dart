@@ -68,23 +68,5 @@ void main() {
       expect(orders.single.id, 'o9');
       verify(() => api.searchOrders('s1', 'SPXVN9')).called(1);
     });
-
-    test('delegates revokeDossier() to the API', () async {
-      when(() => api.revokeDossier('s1', 'o9')).thenAnswer((_) async {});
-      await repo.revokeDossier('s1', 'o9');
-      verify(() => api.revokeDossier('s1', 'o9')).called(1);
-    });
-
-    test('delegates getDossier() to the API', () async {
-      when(() => api.getDossier('s1', 'o9')).thenAnswer(
-        (_) async => const DossierDto(
-          shareToken: 'tok',
-          revoked: false,
-        ),
-      );
-      final dossier = await repo.getDossier('s1', 'o9');
-      expect(dossier?.shareToken, 'tok');
-      verify(() => api.getDossier('s1', 'o9')).called(1);
-    });
   });
 }

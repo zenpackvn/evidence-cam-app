@@ -41,7 +41,8 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: EcRecordRoute(
             camera: camera,
-            onSaved: (path, tracking, type) => savedPath = path,
+            onSaved: (path, tracking, type, durationSeconds) =>
+                savedPath = path,
           ),
         ),
       );
@@ -81,7 +82,7 @@ void main() {
               requested = code == 'SPXVN999';
               return false;
             },
-            onSaved: (_, _, _) => saved = true,
+            onSaved: (_, _, _, _) => saved = true,
           ),
         ),
       );
@@ -117,7 +118,7 @@ void main() {
           camera: camera,
           onRequestCode: () async => 'SPXVN001',
           onBack: () => left = true,
-          onSaved: (path, tracking, _) {
+          onSaved: (path, tracking, _, _) {
             savedPath = path;
             savedTracking = tracking;
           },
@@ -130,6 +131,8 @@ void main() {
     await tester.tap(find.byTooltip('Nhập mã vận đơn'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('REC'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Quay lại'));

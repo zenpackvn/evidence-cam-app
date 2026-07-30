@@ -100,3 +100,25 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }
+
+// ponytail: camerawesome 2.5.0 (latest published, unmaintained 13mo) vendors
+// CameraX 1.4.2, which hits a known "Unable to establish connection on
+// channel: ...ProcessCameraProvider.getInstance" release-build-only failure on
+// some real devices (github.com/Apparence-io/CamerAwesome/issues/399,
+// github.com/flutter/flutter/issues/167790 — the latter's own reporter fixed
+// it by bumping their CameraX version). Forcing the newest stable CameraX
+// artifacts is an experiment to see if the same fix applies here; drop this
+// block if it doesn't help, or once camerawesome ships a version that bumps
+// CameraX itself.
+configurations.all {
+    resolutionStrategy {
+        force(
+            "androidx.camera:camera-core:1.6.1",
+            "androidx.camera:camera-camera2:1.6.1",
+            "androidx.camera:camera-lifecycle:1.6.1",
+            "androidx.camera:camera-video:1.6.1",
+            "androidx.camera:camera-view:1.6.1",
+            "androidx.camera:camera-extensions:1.6.1",
+        )
+    }
+}

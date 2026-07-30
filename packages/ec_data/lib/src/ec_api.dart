@@ -208,6 +208,7 @@ class EcApi {
     required int capturedAt,
     String? videoTypeId,
     String? device,
+    int? durationSeconds,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/orders/$orderId/uploads/presign',
@@ -216,6 +217,7 @@ class EcApi {
         'capturedAt': capturedAt,
         'videoTypeId': ?videoTypeId,
         'device': ?device,
+        'durationSeconds': ?durationSeconds,
       },
     );
     return PresignDto.fromJson(res.data!);
@@ -228,6 +230,7 @@ class EcApi {
     required int capturedAt,
     String? videoTypeId,
     String? device,
+    int? durationSeconds,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/orders/$orderId/uploads/multipart',
@@ -236,6 +239,7 @@ class EcApi {
         'capturedAt': capturedAt,
         'videoTypeId': ?videoTypeId,
         'device': ?device,
+        'durationSeconds': ?durationSeconds,
       },
     );
     return MultipartUploadDto.fromJson(res.data!);
@@ -311,26 +315,6 @@ class EcApi {
   ) => _dio.delete<void>(
     '/api/shops/$shopId/orders/$orderId/evidence/$evidenceId',
   );
-
-  // --- dossier (FR-07) ---
-  Future<DossierDto?> getDossier(String shopId, String orderId) async {
-    final res = await _dio.get<Map<String, dynamic>?>(
-      '/api/shops/$shopId/orders/$orderId/dossier',
-      queryParameters: null,
-    );
-    final data = res.data;
-    return data == null ? null : DossierDto.fromJson(data);
-  }
-
-  Future<DossierDto> createDossier(String shopId, String orderId) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      '/api/shops/$shopId/orders/$orderId/dossier',
-    );
-    return DossierDto.fromJson(res.data!);
-  }
-
-  Future<void> revokeDossier(String shopId, String orderId) =>
-      _dio.delete<void>('/api/shops/$shopId/orders/$orderId/dossier');
 
   Future<String> exportCsv(String shopId, {int? from, int? to}) async {
     final res = await _dio.get<String>(

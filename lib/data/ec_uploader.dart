@@ -1,17 +1,15 @@
 import 'dart:io';
 
+// Prefixed: this package and feature_capture both export an `UploadTask` —
+// there, the queued-clip domain record; here, one HTTP transfer.
+import 'package:background_downloader/background_downloader.dart' as bg;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:ec_data/ec_data.dart';
 import 'package:feature_capture/feature_capture.dart';
-import 'package:network/network.dart'
-    show
-        BaseOptions,
-        Dio,
-        DioException,
-        DioExceptionType,
-        Headers,
-        Options,
-        Response;
+// The R2 leg no longer goes through Dio (see [_backgroundPut]), but the
+// `_api` calls around it still do, so their failures still arrive as
+// [DioException]s that [_friendlyMessage] has to translate.
+import 'package:network/network.dart' show DioException, DioExceptionType;
 
 /// TEMPORARY (per shop owner request while the backend's quota rollout is
 /// still being tuned): treat a `quota_hold` response as success instead of
@@ -65,35 +63,106 @@ String _friendlyMessage(DioException error) {
   }
 }
 
+/// Same job as [_friendlyMessage] for the R2 leg, which no longer speaks Dio:
+/// a status the server actually returned is worth naming, a dropped transfer
+/// isn't.
+String _friendlyPutMessage(R2PutException error) {
+  final status = error.statusCode;
+  if (status == null) {
+    return 'Mất kết nối mạng khi tải lên — kiểm tra mạng rồi thử lại.';
+  }
+  return 'Máy chủ báo lỗi (mã $status) khi nhận video — thử lại sau.';
+}
+
+/// A byte slice of a clip, end-inclusive to match the HTTP `Range` header.
+typedef R2ByteRange = ({int start, int endInclusive});
+
+/// One PUT of a clip (or one [R2ByteRange] of it) to a presigned R2 URL,
+/// returning the response's `ETag` — multipart completion needs it.
+///
+/// A seam so tests can drive the R2 leg without a platform channel, and so the
+/// transport can be swapped without touching the multipart session logic.
+typedef R2Put =
+    Future<String?> Function(
+      String url,
+      File file, {
+      required String contentType,
+      R2ByteRange? range,
+      void Function(double progress)? onProgress,
+    });
+
+/// A failed presigned-R2 PUT.
+///
+/// [statusCode] is the server's HTTP status, or null when the request never got
+/// a response at all (dropped connection, timeout) — the distinction
+/// [_isRetryablePut] needs to tell a transient blip from a doomed request.
+class R2PutException implements Exception {
+  R2PutException(this.message, {this.statusCode});
+
+  final String message;
+  final int? statusCode;
+
+  @override
+  String toString() => 'R2PutException($statusCode): $message';
+}
+
+/// Uploads through `background_downloader`, so the bytes move on a native
+/// `URLSession` / `WorkManager` task that keeps running while the app is
+/// backgrounded — a plain foreground HTTP client stalls there instead.
+Future<String?> _backgroundPut(
+  String url,
+  File file, {
+  required String contentType,
+  R2ByteRange? range,
+  void Function(double progress)? onProgress,
+}) async {
+  final task = bg.UploadTask.fromFile(
+    file: file,
+    url: url,
+    httpRequestMethod: 'PUT',
+    post: 'binary',
+    mimeType: contentType,
+    headers: {
+      // Client-side slicing instruction only: every platform strips `Range`
+      // from an upload before sending, and reads just those bytes off disk.
+      if (range != null) 'Range': 'bytes=${range.start}-${range.endInclusive}',
+      // Empty string suppresses the header the plugin would otherwise invent;
+      // a presigned URL signs a fixed header set, so don't send extras.
+      'Content-Disposition': '',
+    },
+    updates: bg.Updates.statusAndProgress,
+    // Retry classification stays app-side (see [_isRetryablePut]): this package
+    // retries every failure alike, which would burn all four attempts on an
+    // expired presigned URL that can never succeed.
+    retries: 0,
+  );
+  final result = await bg.FileDownloader().upload(task, onProgress: onProgress);
+  if (result.status != bg.TaskStatus.complete) {
+    throw R2PutException(
+      result.exception?.description ?? 'upload ${result.status.name}',
+      statusCode: result.responseStatusCode,
+    );
+  }
+  return result.responseHeaders?['etag'];
+}
+
 /// Real backend uploader following the EvidenceCam presigned-R2 flow:
 ///
 /// 1. `findOrCreateOrder(shopId, tracking)` → the order id;
 /// 2. `presignUpload(...)` → a one-time R2 `uploadUrl` + `evidenceId`;
-/// 3. `PUT` the clip bytes straight to R2 (a separate token-less Dio, since the
-///    presigned URL carries its own signature);
+/// 3. `PUT` the clip bytes straight to R2 (no auth header — the presigned URL
+///    carries its own signature);
 /// 4. `completeUpload(...)` to mark the evidence stored.
 class ApiEvidenceUploader implements EcEvidenceUploader {
   ApiEvidenceUploader(
     this._api, {
-    Dio? r2Dio,
+    R2Put? put,
     this.multipartThresholdBytes = 8 * 1024 * 1024,
     this.multipartPartSizeBytes = 5 * 1024 * 1024,
-  }) : _r2 =
-           r2Dio ??
-           Dio(
-             BaseOptions(
-               // Sending the clip's bytes can legitimately take minutes on a
-               // slow connection, so only the connect/response legs get a
-               // tight bound — a dead connection would otherwise hang this
-               // PUT (and every queued clip behind it) forever with no error.
-               connectTimeout: const Duration(seconds: 15),
-               sendTimeout: const Duration(minutes: 5),
-               receiveTimeout: const Duration(seconds: 30),
-             ),
-           );
+  }) : _put = put ?? _backgroundPut;
 
   final EcApi _api;
-  final Dio _r2;
+  final R2Put _put;
   final int multipartThresholdBytes;
   final int multipartPartSizeBytes;
 
@@ -133,6 +202,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     required String type,
     String? shopId,
     int? capturedAt,
+    int? durationSeconds,
     void Function(double progress)? onProgress,
   }) async {
     try {
@@ -142,10 +212,19 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
         type: type,
         shopId: shopId,
         capturedAt: capturedAt,
+        durationSeconds: durationSeconds,
         onProgress: onProgress,
       );
     } on DioException catch (e, stack) {
-      Error.throwWithStackTrace(UploadFailureException(_friendlyMessage(e)), stack);
+      Error.throwWithStackTrace(
+        UploadFailureException(_friendlyMessage(e)),
+        stack,
+      );
+    } on R2PutException catch (e, stack) {
+      Error.throwWithStackTrace(
+        UploadFailureException(_friendlyPutMessage(e)),
+        stack,
+      );
     }
   }
 
@@ -155,6 +234,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     required String type,
     String? shopId,
     int? capturedAt,
+    int? durationSeconds,
     void Function(double progress)? onProgress,
   }) async {
     if (shopId == null || shopId.isEmpty) {
@@ -168,6 +248,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     );
     final isPhoto = _isPhotoEvidence(file, type);
     final videoTypeId = isPhoto ? null : await _videoTypeId(shopId, type);
+    final clipDuration = isPhoto ? null : durationSeconds;
     final length = await file.length();
     if (length > multipartThresholdBytes) {
       return _uploadMultipart(
@@ -177,6 +258,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
         kind: isPhoto ? 'photo' : 'video',
         capturedAt: captureTime,
         videoTypeId: videoTypeId,
+        durationSeconds: clipDuration,
         length: length,
         isPhoto: isPhoto,
         onProgress: onProgress,
@@ -190,6 +272,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       capturedAt: captureTime,
       videoTypeId: videoTypeId,
       device: await _readDeviceLabel(),
+      durationSeconds: clipDuration,
     );
     // presignUpload already created this evidence row server-side (needed to
     // hand back an evidenceId + presigned URL) — if the PUT itself fails, the
@@ -201,21 +284,11 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     // (which may have actually succeeded server-side) is never touched.
     try {
       await _putWithRetry(
-        () => _r2.put<void>(
+        () => _put(
           presign.uploadUrl,
-          data: file.openRead(),
-          options: Options(
-            headers: {
-              Headers.contentLengthHeader: length,
-              Headers.contentTypeHeader: _contentTypeFor(
-                file,
-                isPhoto: isPhoto,
-              ),
-            },
-          ),
-          onSendProgress: (sent, total) {
-            if (total > 0) onProgress?.call(sent / total);
-          },
+          file,
+          contentType: _contentTypeFor(file, isPhoto: isPhoto),
+          onProgress: onProgress,
         ),
       );
     } on Object {
@@ -243,6 +316,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     required int length,
     required bool isPhoto,
     String? videoTypeId,
+    int? durationSeconds,
     void Function(double progress)? onProgress,
   }) async {
     final partSize = multipartPartSizeBytes;
@@ -254,6 +328,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       capturedAt: capturedAt,
       videoTypeId: videoTypeId,
       device: await _readDeviceLabel(),
+      durationSeconds: durationSeconds,
     );
     // Aborting deletes the multipart upload on R2 — only safe while nothing
     // has been "completed" yet. Once completeMultipartUpload has actually
@@ -263,54 +338,54 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     // already-succeeded upload out from under itself.
     final uploaded = <UploadedPartDto>[];
     try {
-      final partNumbers = [for (var i = 1; i <= partCount; i++) i];
-      final urls = await _api.presignMultipartParts(
-        shopId,
-        orderId,
-        created.evidenceId,
-        uploadId: created.uploadId,
-        partNumbers: partNumbers,
-      );
       // Bytes from parts that have *fully* succeeded — the base every
       // in-flight part's progress is added to. Kept separate from the
       // current part's own sent-bytes so a retried part (fresh stream,
       // sent count restarts at 0) can't double-count or go backwards.
       var completedBytes = 0;
-      for (final part in urls) {
-        final start = (part.partNumber - 1) * partSize;
+      for (var partNumber = 1; partNumber <= partCount; partNumber++) {
+        final start = (partNumber - 1) * partSize;
         final end = start + partSize > length ? length : start + partSize;
         final partLength = end - start;
         final partBase = completedBytes;
-        final res = await _putWithRetry(
-          () => _r2.put<void>(
-            part.uploadUrl,
-            data: file.openRead(start, end),
-            options: Options(
-              headers: {
-                Headers.contentLengthHeader: partLength,
-                Headers.contentTypeHeader: _contentTypeFor(
-                  file,
-                  isPhoto: isPhoto,
-                ),
-              },
-            ),
-            onSendProgress: (sent, _) =>
-                onProgress?.call((partBase + sent) / length),
+        // Signed right before this part is sent, not for the whole file
+        // upfront: a large clip on a slow connection can take longer to
+        // upload than a presigned URL's TTL, and a URL signed minutes
+        // before its part is actually PUT would arrive expired (a
+        // non-retryable 403). Signing one part at a time keeps every URL's
+        // age at "one part's transfer + retries", regardless of how long
+        // earlier parts took.
+        final partUrl = await _api.presignMultipartParts(
+          shopId,
+          orderId,
+          created.evidenceId,
+          uploadId: created.uploadId,
+          partNumbers: [partNumber],
+        );
+        final etag = await _putWithRetry(
+          () => _put(
+            partUrl.single.uploadUrl,
+            file,
+            contentType: _contentTypeFor(file, isPhoto: isPhoto),
+            range: (start: start, endInclusive: end - 1),
+            onProgress: (fraction) =>
+                onProgress?.call((partBase + fraction * partLength) / length),
           ),
         );
         completedBytes += partLength;
-        final rawEtag = res.headers.value('etag');
-        if (rawEtag == null || rawEtag.isEmpty) {
-          throw StateError('missing_part_etag');
-        }
+        if (etag == null || etag.isEmpty) throw StateError('missing_part_etag');
         // R2's raw HTTP response quotes the ETag per the S3/HTTP convention
         // (e.g. `"9bb58f26..."`), but the Workers R2 binding's own
         // `complete()` call expects the bare hash it would have gotten back
         // from its own uploadPart() — passing the quoted form through
         // verbatim makes R2 reject the completion, which the backend was
         // surfacing as an unconditional 500 on every single attempt.
-        final etag = rawEtag.replaceAll('"', '');
-        uploaded.add(UploadedPartDto(partNumber: part.partNumber, etag: etag));
+        uploaded.add(
+          UploadedPartDto(
+            partNumber: partNumber,
+            etag: etag.replaceAll('"', ''),
+          ),
+        );
       }
     } on Object {
       await _api.abortMultipartUpload(
@@ -369,40 +444,31 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
 }
 
 /// Retries a single R2 PUT (whole file or one multipart part) on transient
-/// network/server failures. [attempt] must open a *fresh* byte stream each
-/// call — [File.openRead] does, but a re-dispatched `DioException` wouldn't
-/// (its stream is already consumed), which is why this can't just be a Dio
-/// `Interceptor` like the main API client's `RetryInterceptor`: a PUT body is
-/// a one-shot file stream, not a replayable JSON payload.
-Future<Response<void>> _putWithRetry(
-  Future<Response<void>> Function() attempt,
-) async {
+/// network/server failures.
+///
+/// Retrying stays here rather than being delegated to the transport because
+/// `background_downloader` retries every failure alike, which would burn all
+/// four attempts on an expired presigned URL that can never succeed.
+Future<String?> _putWithRetry(Future<String?> Function() attempt) async {
   const maxAttempts = 4;
   for (var attemptNumber = 1; ; attemptNumber++) {
     try {
       return await attempt();
-    } on DioException catch (e) {
-      if (attemptNumber >= maxAttempts || !_isRetryablePutError(e)) rethrow;
+    } on R2PutException catch (e) {
+      if (attemptNumber >= maxAttempts || !_isRetryablePut(e)) rethrow;
       await Future<void>.delayed(_backoffFor(attemptNumber));
     }
   }
 }
 
-bool _isRetryablePutError(DioException e) {
-  switch (e.type) {
-    case DioExceptionType.connectionTimeout:
-    case DioExceptionType.sendTimeout:
-    case DioExceptionType.receiveTimeout:
-    case DioExceptionType.connectionError:
-      return true;
-    case DioExceptionType.badResponse:
-      final status = e.response?.statusCode;
-      return status != null && (status == 429 || status >= 500);
-    case DioExceptionType.cancel:
-    case DioExceptionType.badCertificate:
-    case DioExceptionType.unknown:
-      return false;
-  }
+/// A dropped connection (no status at all) is worth another go; a rejection the
+/// server actually spelled out is only retried when it invites one — 429 or a
+/// 5xx. Notably *not* 403, the expired-signature case, where an identical retry
+/// can never succeed.
+bool _isRetryablePut(R2PutException e) {
+  final status = e.statusCode;
+  if (status == null) return true;
+  return status == 429 || status >= 500;
 }
 
 /// Exponential backoff (300ms, 600ms, 1200ms, ...), matching the app's main

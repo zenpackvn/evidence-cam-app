@@ -84,8 +84,6 @@ class EcWaitBill2Screen extends StatelessWidget {
       onFlipCamera: onFlipCamera,
       onManualEntry: onManualEntry,
       onResolution: onResolution,
-      onNavOrders: onNavOrders,
-      onNavAccount: onNavAccount,
       centerArea: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -175,8 +173,6 @@ class EcRecording2Screen extends StatelessWidget {
       onFlipCamera: onFlipCamera,
       onManualEntry: onManualEntry,
       onResolution: onResolution,
-      onNavOrders: onNavOrders,
-      onNavAccount: onNavAccount,
       showStopButton: true,
       onStop: onStop,
       centerArea: Center(
@@ -207,6 +203,7 @@ class EcCutoverBScreen extends StatelessWidget {
     this.typeLabel = 'Đóng hàng',
     this.zoomLabel = '1x',
     this.resolutionLabel = '720p',
+    this.preview,
     this.onBack,
     this.onPickType,
     this.onSettings,
@@ -227,6 +224,10 @@ class EcCutoverBScreen extends StatelessWidget {
   final String typeLabel;
   final String zoomLabel;
   final String resolutionLabel;
+
+  /// The live camera texture — recording keeps running underneath this
+  /// confirmation moment, so it must stay visible, not go black.
+  final Widget? preview;
   final VoidCallback? onBack;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
@@ -244,6 +245,7 @@ class EcCutoverBScreen extends StatelessWidget {
       typeLabel: typeLabel,
       zoomLabel: zoomLabel,
       resolutionLabel: resolutionLabel,
+      preview: preview,
       onBack: onBack,
       onPickType: onPickType,
       onSettings: onSettings,
@@ -353,8 +355,6 @@ class EcNearLimitScreen extends StatelessWidget {
       onFlipCamera: onFlipCamera,
       onManualEntry: onManualEntry,
       onResolution: onResolution,
-      onNavOrders: onNavOrders,
-      onNavAccount: onNavAccount,
       showStopButton: true,
       onStop: onStop,
       centerArea: Padding(
@@ -426,6 +426,7 @@ class EcReturnRecScreen extends StatelessWidget {
     this.typeLabel = 'Trả hàng',
     this.zoomLabel = '1x',
     this.resolutionLabel = '720p',
+    this.preview,
     this.onBack,
     this.onPickType,
     this.onSettings,
@@ -445,6 +446,7 @@ class EcReturnRecScreen extends StatelessWidget {
   final String typeLabel;
   final String zoomLabel;
   final String resolutionLabel;
+  final Widget? preview;
   final VoidCallback? onBack;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
@@ -462,6 +464,7 @@ class EcReturnRecScreen extends StatelessWidget {
       typeLabel: typeLabel,
       zoomLabel: zoomLabel,
       resolutionLabel: resolutionLabel,
+      preview: preview,
       onBack: onBack,
       onPickType: onPickType,
       onSettings: onSettings,
@@ -490,8 +493,8 @@ class EcReturnRecScreen extends StatelessWidget {
 // --- shared camera-screen chrome ---------------------------------------
 
 /// Full-bleed black preview + floating chrome shared by every Flow 3
-/// recording screen (header, right-hand rail, type chip, bottom nav and the
-/// optional stop button).
+/// recording screen (header, right-hand rail, type chip and the optional stop
+/// button).
 class _CamScaffold extends StatelessWidget {
   const _CamScaffold({
     required this.shopName,
@@ -509,8 +512,6 @@ class _CamScaffold extends StatelessWidget {
     this.onFlipCamera,
     this.onManualEntry,
     this.onResolution,
-    this.onNavOrders,
-    this.onNavAccount,
     this.showStopButton = false,
     this.onStop,
   });
@@ -530,8 +531,6 @@ class _CamScaffold extends StatelessWidget {
   final VoidCallback? onFlipCamera;
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
-  final VoidCallback? onNavOrders;
-  final VoidCallback? onNavAccount;
   final bool showStopButton;
   final VoidCallback? onStop;
 
@@ -583,12 +582,12 @@ class _CamScaffold extends StatelessWidget {
               ),
             ),
           ),
-          // Stop button — a fixed gap above the chip/nav cluster (responsive).
+          // Stop button — a fixed gap above the type chip (responsive).
           if (showStopButton)
             Positioned(
               left: 0,
               right: 0,
-              bottom: 120,
+              bottom: 68,
               child: Center(child: _StopButton(onTap: onStop)),
             ),
           Positioned(
@@ -610,10 +609,6 @@ class _CamScaffold extends StatelessWidget {
                         onSettings: onSettings,
                       ),
                     ),
-                  ),
-                  _BottomNav(
-                    onOrders: onNavOrders,
-                    onAccount: onNavAccount,
                   ),
                 ],
               ),
@@ -1012,84 +1007,6 @@ class _TypeChipRow extends StatelessWidget {
             ),
           ),
         ],
-      ],
-    );
-  }
-}
-
-class _BottomNav extends StatelessWidget {
-  const _BottomNav({this.onOrders, this.onAccount});
-
-  final VoidCallback? onOrders;
-  final VoidCallback? onAccount;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: BrandColors.bg,
-        border: Border(top: BorderSide(color: BrandColors.line)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        child: Row(
-          children: [
-            Expanded(
-              // Opaque so the whole cell is tappable, with no layout shift from
-              // the pixel-perfect design (unlike a padded tap wrapper).
-              child: EcTap(
-                onTap: onOrders,
-                child: _NavItem(
-                  icon: Icons.inventory_2_outlined,
-                  label: context.l10n.navOrders,
-                ),
-              ),
-            ),
-            Expanded(
-              child: _NavItem(
-                icon: Icons.camera_alt_outlined,
-                label: context.l10n.navRecord,
-                active: true,
-              ),
-            ),
-            Expanded(
-              child: EcTap(
-                onTap: onAccount,
-                child: _NavItem(
-                  icon: Icons.person_outline,
-                  label: context.l10n.navAccount,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.active = false,
-  });
-  final IconData icon;
-  final String label;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? BrandColors.ink : BrandColors.mut;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 24, color: color),
-        const SizedBox(height: 5),
-        Text(
-          label,
-          style: _t(12, active ? FontWeight.w600 : FontWeight.w400, color),
-        ),
       ],
     );
   }
@@ -1601,7 +1518,10 @@ class _UploadStatusView extends StatelessWidget {
         children: [
           const Icon(Icons.check, size: 12, color: BrandColors.ink),
           const SizedBox(width: 4),
-          Text(context.l10n.uploaded, style: _t(11, FontWeight.w400, BrandColors.ink)),
+          Text(
+            context.l10n.uploaded,
+            style: _t(11, FontWeight.w400, BrandColors.ink),
+          ),
         ],
       ),
       EcUploadStatus.error => Row(
@@ -1818,7 +1738,10 @@ class EcNoMatchScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        context.l10n.returnCodeMismatchBody(returnCode, shopName),
+                        context.l10n.returnCodeMismatchBody(
+                          returnCode,
+                          shopName,
+                        ),
                         style: _t(13, FontWeight.w400, BrandColors.mut),
                       ),
                       const SizedBox(height: 12),

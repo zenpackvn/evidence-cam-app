@@ -132,6 +132,7 @@ class OrderSummaryDto {
     this.lastCapturedAt,
     this.latestType,
     this.errorCount = 0,
+    this.pendingCount = 0,
   });
 
   factory OrderSummaryDto.fromJson(Map<String, dynamic> j) => OrderSummaryDto(
@@ -142,6 +143,7 @@ class OrderSummaryDto {
     lastCapturedAt: _intN(j['last_captured_at']),
     latestType: j['latest_type'] as String?,
     errorCount: _int(j['error_count']),
+    pendingCount: _int(j['pending_count']),
   );
 
   final String id;
@@ -151,6 +153,7 @@ class OrderSummaryDto {
   final int? lastCapturedAt;
   final String? latestType;
   final int errorCount;
+  final int pendingCount;
 }
 
 class EvidenceDto {
@@ -164,6 +167,8 @@ class EvidenceDto {
     this.device,
     this.r2Key,
     this.url,
+    this.retentionExpiresAt,
+    this.durationSeconds,
   });
 
   factory EvidenceDto.fromJson(Map<String, dynamic> j) => EvidenceDto(
@@ -176,6 +181,8 @@ class EvidenceDto {
     device: j['device'] as String?,
     r2Key: j['r2_key'] as String?,
     url: j['url'] as String?,
+    retentionExpiresAt: _intN(j['retention_expires_at']),
+    durationSeconds: _intN(j['duration_seconds']),
   );
 
   final String id;
@@ -185,8 +192,17 @@ class EvidenceDto {
   final String? videoTypeId;
   final String? createdByUid;
   final String? device;
+
+  /// When this evidence's R2 object is swept by the retention cron
+  /// (`retention.ts`), or when it's next eligible if not yet swept. Null while
+  /// retention hasn't been computed for it yet.
+  final int? retentionExpiresAt;
   final String? r2Key;
   final String? url;
+
+  /// Recorded clip length in seconds; null for photos and older evidence
+  /// captured before this field existed.
+  final int? durationSeconds;
 }
 
 class OrderDetailDto {
@@ -231,24 +247,6 @@ class QuotaDto {
   /// Chỉ chủ shop mới đổi được gói — gói cước gắn với tài khoản trả tiền.
   /// Quản lý/nhân viên xem được gói đang chi phối ca làm nhưng không mua.
   final bool canManagePlan;
-}
-
-class DossierDto {
-  const DossierDto({
-    required this.shareToken,
-    required this.revoked,
-    this.tracking,
-  });
-
-  factory DossierDto.fromJson(Map<String, dynamic> j) => DossierDto(
-    shareToken: j['share_token'] as String,
-    revoked: _int(j['revoked']) == 1,
-    tracking: j['tracking_raw'] as String?,
-  );
-
-  final String shareToken;
-  final bool revoked;
-  final String? tracking;
 }
 
 class PresignDto {

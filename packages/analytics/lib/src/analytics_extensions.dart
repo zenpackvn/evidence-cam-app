@@ -183,12 +183,6 @@ extension EvidenceCamAnalytics on AnalyticsService {
   Future<void> trackUploadFailed() =>
       logEvent(AnalyticsEvents.uploadFailed);
 
-  Future<void> trackDossierCreated() =>
-      logEvent(AnalyticsEvents.dossierCreated);
-
-  Future<void> trackDossierLinkCopied() =>
-      logEvent(AnalyticsEvents.dossierLinkCopied);
-
   Future<void> trackPaywallViewed() =>
       logEvent(AnalyticsEvents.paywallViewed);
 

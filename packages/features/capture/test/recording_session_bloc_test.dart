@@ -18,7 +18,7 @@ void main() {
     return RecordingSessionBloc(
       camera: camera,
       scanner: _FakeScanner(),
-      onClipSaved: (path, tracking, type) => saved.add(path),
+      onClipSaved: (path, tracking, type, durationSeconds) => saved.add(path),
       maxRecording: maxRecording,
     );
   }
@@ -48,7 +48,7 @@ void main() {
     build: () => RecordingSessionBloc(
       camera: _FakeCamera(cameras: const []),
       scanner: _FakeScanner(),
-      onClipSaved: (_, _, _) {},
+      onClipSaved: (_, _, _, _) {},
     ),
     act: (bloc) => bloc.add(const RecordingInitRequested()),
     wait: const Duration(milliseconds: 40),
@@ -170,7 +170,7 @@ void main() {
     build: () => RecordingSessionBloc(
       camera: _FakeCamera()..failStartWithScan = true,
       scanner: _FakeScanner(),
-      onClipSaved: (_, _, _) {},
+      onClipSaved: (_, _, _, _) {},
     ),
     act: initThen((b) => b.add(const RecordingManualCodeSubmitted('A'))),
     wait: const Duration(milliseconds: 40),

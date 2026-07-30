@@ -67,9 +67,6 @@ abstract interface class EcRepository {
   Future<List<OrderSummaryDto>> searchOrders(String shopId, String query);
   Future<OrderDto> createOrder(String shopId, String tracking);
   Future<OrderDetailDto> order(String shopId, String orderId);
-  Future<DossierDto?> getDossier(String shopId, String orderId);
-  Future<DossierDto> shareDossier(String shopId, String orderId);
-  Future<void> revokeDossier(String shopId, String orderId);
   Future<void> deleteEvidence(String shopId, String orderId, String evidenceId);
   Future<void> deleteAccount({bool force, bool dryRun});
 }
@@ -189,18 +186,6 @@ class RemoteEcRepository implements EcRepository {
   @override
   Future<OrderDetailDto> order(String shopId, String orderId) =>
       _api.getOrder(shopId, orderId);
-
-  @override
-  Future<DossierDto?> getDossier(String shopId, String orderId) =>
-      _api.getDossier(shopId, orderId);
-
-  @override
-  Future<DossierDto> shareDossier(String shopId, String orderId) =>
-      _api.createDossier(shopId, orderId);
-
-  @override
-  Future<void> revokeDossier(String shopId, String orderId) =>
-      _api.revokeDossier(shopId, orderId);
 
   @override
   Future<void> deleteEvidence(
@@ -357,19 +342,6 @@ class FakeEcRepository implements EcRepository {
         order: OrderDto(id: orderId, tracking: '', createdAt: 0),
         evidence: const [],
       );
-
-  @override
-  Future<DossierDto?> getDossier(String shopId, String orderId) async => null;
-
-  @override
-  Future<DossierDto> shareDossier(String shopId, String orderId) async =>
-      const DossierDto(
-        shareToken: '',
-        revoked: false,
-      );
-
-  @override
-  Future<void> revokeDossier(String shopId, String orderId) async {}
 
   @override
   Future<void> deleteEvidence(

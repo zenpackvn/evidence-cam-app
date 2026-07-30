@@ -90,12 +90,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toastMemberAdded => 'Member added';
 
   @override
-  String get toastDossierLinkCreated => 'Dossier link created';
-
-  @override
-  String get toastDossierLinkRevoked => 'Dossier link revoked';
-
-  @override
   String get toastVideoPlayFailed => 'Couldn\'t play video';
 
   @override
@@ -144,16 +138,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelTrackingCode => 'tracking code';
 
   @override
-  String get labelDossierLink => 'dossier link';
-
-  @override
   String resolutionChanged(String value) {
     return 'Resolution: $value';
-  }
-
-  @override
-  String dossierShareText(String tracking) {
-    return 'Complaint dossier $tracking';
   }
 
   @override
@@ -213,6 +199,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploadStatusError => 'Server-side processing error';
 
   @override
+  String get uploadStatusExpired => 'Storage retention expired';
+
+  @override
+  String expiredOnDate(String date) {
+    return 'Storage retention expired on $date';
+  }
+
+  @override
   String get kindPhoto => 'Attached photo';
 
   @override
@@ -226,6 +220,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderNoEvidence => 'No evidence yet';
+
+  @override
+  String get timelineEmpty => 'This shipment has no video or photo yet';
 
   @override
   String get errorGenericRetry => 'Something went wrong, please try again.';
@@ -543,6 +540,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailRecordedTime => 'Recording time';
 
   @override
+  String get detailDuration => 'Duration';
+
+  @override
   String get detailRecordedBy => 'Recorded by';
 
   @override
@@ -568,7 +568,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailDownloadNote =>
-      'Account owner / shop manager only — to attach a marketplace complaint form';
+      'Download the video to attach to a marketplace complaint form';
 
   @override
   String get detailDownloadPhoto => 'Download photo';
@@ -577,20 +577,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attachPhotoToOrder => 'Attach photo to order';
 
   @override
-  String get createDossierLink => 'Create complaint dossier link';
-
-  @override
-  String get dossierLinkLabel => 'Complaint dossier link';
-
-  @override
-  String get revoke => 'Revoke';
-
-  @override
   String get deleteVideoAction => 'Delete video';
 
   @override
   String get deleteVideoNote =>
-      'Account owner / shop manager only · 2-step confirmation · permanent';
+      'Account owner / shop manager only · permanent, cannot be undone';
+
+  @override
+  String get deleteVideoConfirmTitle => 'Final confirmation';
+
+  @override
+  String get deleteVideoConfirmBody =>
+      'This evidence will be permanently deleted and cannot be recovered — delete anyway?';
+
+  @override
+  String get deleteVideoConfirmAction => 'Delete permanently';
 
   @override
   String ordersErrorCount(int count) {
@@ -598,8 +599,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String ordersPendingCount(int count) {
+    return '· $count pending';
+  }
+
+  @override
   String ordersPendingEvidenceWarning(int count) {
-    return '$count evidence not uploaded — the dossier will be incomplete';
+    return '$count evidence not uploaded';
   }
 
   @override
@@ -607,6 +613,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get captureCameraDownHint => 'Camera facing down at the table';
+
+  @override
+  String get lowStorageTitle => 'Storage almost full';
+
+  @override
+  String get lowStorageBody =>
+      'This device is low on storage — an in-progress recording may not save fully. Free up some space before continuing to record.';
+
+  @override
+  String get lowStorageAction => 'Got it';
+
+  @override
+  String cutoverClosedSummary(String code, String duration) {
+    return 'Closed tracking code $code ($duration)';
+  }
+
+  @override
+  String get cutoverSignalText => 'Sound + vibration on order handoff';
 
   @override
   String get tooltipBack => 'Back';
@@ -946,6 +970,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ordersNotFound => 'No orders found';
+
+  @override
+  String get ordersNotFoundHint =>
+      'Double-check the tracking code and try again';
 
   @override
   String get filterStatusLabel => 'Upload status';

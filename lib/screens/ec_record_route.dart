@@ -14,11 +14,17 @@ import 'dart:ui' as ui;
 
 import 'package:app_platform/app_platform.dart';
 import 'package:feature_capture/feature_capture.dart';
-import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
+import 'package:flutter/cupertino.dart'
+    show
+        CupertinoActivityIndicator,
+        CupertinoAlertDialog,
+        CupertinoDialogAction,
+        showCupertinoDialog;
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:localization/localization.dart';
 
 /// In the final minute, the cap-warning screen replaces the recording screen
 /// (auto-close at 15').
@@ -72,9 +78,16 @@ class EcRecordRoute extends StatefulWidget {
   /// Called when the settings icon is tapped.
   final VoidCallback? onSettings;
 
-  /// Called after a recording stops with the saved clip's path plus the order
-  /// tracking code and video type it belongs to.
-  final void Function(String path, String tracking, String type)? onSaved;
+  /// Called after a recording stops with the saved clip's path, the order
+  /// tracking code and video type it belongs to, and its recorded length in
+  /// seconds.
+  final void Function(
+    String path,
+    String tracking,
+    String type,
+    int durationSeconds,
+  )?
+  onSaved;
 
   /// For a "Trả hàng" clip, checks a scanned code against the shop's saved
   /// orders before recording starts. Returns `false` to reject the code (the
@@ -128,8 +141,8 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   late final RecordingSessionBloc _bloc = RecordingSessionBloc(
     camera: widget.camera ?? CameraService(),
     scanner: BillScanner(),
-    onClipSaved: (path, tracking, type) =>
-        widget.onSaved?.call(path, tracking, type),
+    onClipSaved: (path, tracking, type, durationSeconds) =>
+        widget.onSaved?.call(path, tracking, type, durationSeconds),
     verifyReturnCode: widget.verifyReturnCode,
     voiceAnnouncer: widget.voiceAnnouncer,
     initialType: widget.initialType,
@@ -245,6 +258,23 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     return '${two(d.inMinutes)}:${two(d.inSeconds % 60)}';
   }
 
+  Future<void> _showLowStorageWarning(BuildContext context) async {
+    await showCupertinoDialog<void>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(context.l10n.lowStorageTitle),
+        content: Text(context.l10n.lowStorageBody),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(context.l10n.lowStorageAction),
+          ),
+        ],
+      ),
+    );
+    if (mounted) _bloc.add(const RecordingLowStorageDismissed());
+  }
+
   @override
   Widget build(BuildContext context) {
     // The system back gesture (left-edge swipe on Android) would otherwise
@@ -253,78 +283,122 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     // via _leaveAfterFinalizing.
     return PopScope(
       canPop: false,
-      child: BlocBuilder<RecordingSessionBloc, RecordingSessionState>(
+      child: BlocListener<RecordingSessionBloc, RecordingSessionState>(
         bloc: _bloc,
-        builder: (context, state) {
-          final preview = _buildPreview(state);
-          final zoomLabel = '${state.zoom.toStringAsFixed(1)}x';
-
-          if (state.isRecording) {
-            if (state.elapsed >= _warnAt) {
-              return EcNearLimitScreen(
-                shopName: widget.shopName,
-                queueCount: widget.queueCount,
-                code: state.code,
-                duration: _formatElapsed(state.elapsed),
-                typeLabel: state.typeLabel,
-                zoomLabel: zoomLabel,
-                resolutionLabel: state.resolutionLabel,
-                preview: preview,
-                onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
-                onPickType: null,
-                onSettings: null,
-                onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
-                onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
-                onNavOrders: () =>
-                    unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
-                onNavAccount: () =>
-                    unawaited(_leaveAfterFinalizing(widget.onNavAccount)),
-                onStop: () => _bloc.add(const RecordingStopRequested()),
-              );
-            }
-            return EcRecording2Screen(
-              shopName: widget.shopName,
-              queueCount: widget.queueCount,
-              code: state.code,
-              typeLabel: state.typeLabel,
-              zoomLabel: zoomLabel,
-              resolutionLabel: state.resolutionLabel,
-              preview: preview,
-              onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
-              onPickType: null,
-              onSettings: null,
-              onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
-              onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
-              onNavOrders: () =>
-                  unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
-              onNavAccount: () =>
-                  unawaited(_leaveAfterFinalizing(widget.onNavAccount)),
-              onStop: () => _bloc.add(const RecordingStopRequested()),
-            );
-          }
-
-          return EcWaitBill2Screen(
-            shopName: widget.shopName,
-            queueCount: widget.queueCount,
-            typeLabel: state.typeLabel,
-            zoomLabel: zoomLabel,
-            resolutionLabel: state.resolutionLabel,
-            preview: preview,
-            onBack: widget.onBack,
-            onPickType: _pickType,
-            onSettings: _pickType,
-            onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
-            onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
-            onResolution: () => _bloc.add(const RecordingResolutionCycled()),
-            onFlipCamera: state.hasMultipleCameras
-                ? () => _bloc.add(const RecordingCameraFlipped())
-                : null,
-            onManualEntry: _manualEntry,
-            onNavOrders: widget.onNavOrders,
-            onNavAccount: widget.onNavAccount,
-          );
-        },
+        listenWhen: (previous, current) =>
+            !previous.lowStorageWarning && current.lowStorageWarning,
+        listener: (context, state) => unawaited(_showLowStorageWarning(context)),
+        child: BlocBuilder<RecordingSessionBloc, RecordingSessionState>(
+          bloc: _bloc,
+          builder: (context, state) => _buildScreen(state),
+        ),
       ),
+    );
+  }
+
+  Widget _buildScreen(RecordingSessionState state) {
+    final preview = _buildPreview(state);
+    final zoomLabel = '${state.zoom.toStringAsFixed(1)}x';
+    final closedCode = state.cutoverFromCode;
+
+    if (state.isRecording && closedCode != null) {
+      return EcCutoverBScreen(
+        shopName: widget.shopName,
+        queueCount: widget.queueCount,
+        closedSummary: context.l10n.cutoverClosedSummary(
+          closedCode,
+          _formatElapsed(state.cutoverFromDuration ?? Duration.zero),
+        ),
+        signalText: context.l10n.cutoverSignalText,
+        newCode: state.code,
+        newDuration: _formatElapsed(state.elapsed),
+        typeLabel: state.typeLabel,
+        zoomLabel: zoomLabel,
+        resolutionLabel: state.resolutionLabel,
+        preview: preview,
+        onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
+        onStop: () => _bloc.add(const RecordingStopRequested()),
+      );
+    }
+
+    if (state.isRecording) {
+      if (state.elapsed >= _warnAt) {
+        return EcNearLimitScreen(
+          shopName: widget.shopName,
+          queueCount: widget.queueCount,
+          code: state.code,
+          duration: _formatElapsed(state.elapsed),
+          typeLabel: state.typeLabel,
+          zoomLabel: zoomLabel,
+          resolutionLabel: state.resolutionLabel,
+          preview: preview,
+          onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
+          onPickType: null,
+          onSettings: null,
+          onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
+          onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
+          onNavOrders: () =>
+              unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
+          onNavAccount: () =>
+              unawaited(_leaveAfterFinalizing(widget.onNavAccount)),
+          onStop: () => _bloc.add(const RecordingStopRequested()),
+        );
+      }
+      if (state.typeLabel == 'Trả hàng') {
+        return EcReturnRecScreen(
+          shopName: widget.shopName,
+          queueCount: widget.queueCount,
+          code: state.code,
+          duration: _formatElapsed(state.elapsed),
+          typeLabel: state.typeLabel,
+          zoomLabel: zoomLabel,
+          resolutionLabel: state.resolutionLabel,
+          preview: preview,
+          onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
+          onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
+          onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
+          onStop: () => _bloc.add(const RecordingStopRequested()),
+        );
+      }
+      return EcRecording2Screen(
+        shopName: widget.shopName,
+        queueCount: widget.queueCount,
+        code: state.code,
+        typeLabel: state.typeLabel,
+        zoomLabel: zoomLabel,
+        resolutionLabel: state.resolutionLabel,
+        preview: preview,
+        onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
+        onPickType: null,
+        onSettings: null,
+        onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
+        onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
+        onNavOrders: () => unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
+        onNavAccount: () =>
+            unawaited(_leaveAfterFinalizing(widget.onNavAccount)),
+        onStop: () => _bloc.add(const RecordingStopRequested()),
+      );
+    }
+
+    return EcWaitBill2Screen(
+      shopName: widget.shopName,
+      queueCount: widget.queueCount,
+      typeLabel: state.typeLabel,
+      zoomLabel: zoomLabel,
+      resolutionLabel: state.resolutionLabel,
+      preview: preview,
+      onBack: widget.onBack,
+      onPickType: _pickType,
+      onSettings: _pickType,
+      onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
+      onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
+      onResolution: () => _bloc.add(const RecordingResolutionCycled()),
+      onFlipCamera: state.hasMultipleCameras
+          ? () => _bloc.add(const RecordingCameraFlipped())
+          : null,
+      onManualEntry: _manualEntry,
+      onNavOrders: widget.onNavOrders,
+      onNavAccount: widget.onNavAccount,
     );
   }
 }

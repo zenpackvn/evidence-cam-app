@@ -2542,6 +2542,7 @@ class EcOrderRow {
     required this.type,
     required this.videoCount,
     this.errorCount = 0,
+    this.pendingCount = 0,
   });
 
   /// Tracking code.
@@ -2554,6 +2555,7 @@ class EcOrderRow {
   final String type;
   final int videoCount;
   final int errorCount;
+  final int pendingCount;
 }
 
 /// One selectable video type in the "Loại video" filter.
@@ -2911,6 +2913,9 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                                 _filters.isEmpty && _query.trim().isEmpty
                                 ? widget.emptyText
                                 : context.l10n.ordersNotFound,
+                            hint: _filters.isEmpty && _query.trim().isEmpty
+                                ? null
+                                : context.l10n.ordersNotFoundHint,
                           )
                         else
                           for (final order in visible) ...[
@@ -2947,8 +2952,13 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
 }
 
 class _OrdersEmpty extends StatelessWidget {
-  const _OrdersEmpty({required this.text});
+  const _OrdersEmpty({required this.text, this.hint});
   final String text;
+
+  /// Shown under [text] in a smaller, muted line — the "gợi ý kiểm tra lại
+  /// mã" suggestion for a search/filter that matched nothing. Omit for the
+  /// "this shop has no orders at all" case, where there's no code to recheck.
+  final String? hint;
 
   @override
   Widget build(BuildContext context) {
@@ -2967,6 +2977,14 @@ class _OrdersEmpty extends StatelessWidget {
             textAlign: TextAlign.center,
             style: _t(14, FontWeight.w400, BrandColors.mut),
           ),
+          if (hint != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              hint!,
+              textAlign: TextAlign.center,
+              style: _t(12, FontWeight.w400, BrandColors.mut),
+            ),
+          ],
         ],
       ),
     );
@@ -3171,6 +3189,13 @@ class _OrderTile extends StatelessWidget {
                   Text(
                     context.l10n.ordersErrorCount(order.errorCount),
                     style: _t(13, FontWeight.w600, BrandColors.rec),
+                  ),
+                ],
+                if (order.pendingCount > 0) ...[
+                  const SizedBox(width: 3),
+                  Text(
+                    context.l10n.ordersPendingCount(order.pendingCount),
+                    style: _t(13, FontWeight.w600, BrandColors.mut),
                   ),
                 ],
               ],

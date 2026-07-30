@@ -17,6 +17,7 @@ class _FakeUploader implements EcEvidenceUploader {
     required String type,
     String? shopId,
     int? capturedAt,
+    int? durationSeconds,
     void Function(double progress)? onProgress,
   }) async {
     onProgress?.call(1);

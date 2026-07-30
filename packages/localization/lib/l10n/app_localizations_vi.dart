@@ -88,12 +88,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get toastMemberAdded => 'Đã thêm thành viên';
 
   @override
-  String get toastDossierLinkCreated => 'Đã tạo link hồ sơ';
-
-  @override
-  String get toastDossierLinkRevoked => 'Đã thu hồi link hồ sơ';
-
-  @override
   String get toastVideoPlayFailed => 'Không phát được video';
 
   @override
@@ -142,16 +136,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get labelTrackingCode => 'mã vận đơn';
 
   @override
-  String get labelDossierLink => 'link hồ sơ';
-
-  @override
   String resolutionChanged(String value) {
     return 'Độ phân giải: $value';
-  }
-
-  @override
-  String dossierShareText(String tracking) {
-    return 'Hồ sơ khiếu nại $tracking';
   }
 
   @override
@@ -211,6 +197,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get uploadStatusError => 'Lỗi xử lý phía máy chủ';
 
   @override
+  String get uploadStatusExpired => 'Đã quá hạn lưu trữ';
+
+  @override
+  String expiredOnDate(String date) {
+    return 'Đã quá hạn lưu trữ ngày $date';
+  }
+
+  @override
   String get kindPhoto => 'Ảnh đính kèm';
 
   @override
@@ -224,6 +218,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get orderNoEvidence => 'Chưa có bằng chứng';
+
+  @override
+  String get timelineEmpty => 'Mã vận đơn này chưa có video hoặc ảnh nào';
 
   @override
   String get errorGenericRetry => 'Không thực hiện được, vui lòng thử lại.';
@@ -539,6 +536,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get detailRecordedTime => 'Giờ quay';
 
   @override
+  String get detailDuration => 'Thời lượng';
+
+  @override
   String get detailRecordedBy => 'Người quay';
 
   @override
@@ -564,7 +564,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get detailDownloadNote =>
-      'Chỉ Chủ tài khoản / QL shop — để đính kèm form khiếu nại sàn';
+      'Tải video về máy để đính kèm form khiếu nại sàn';
 
   @override
   String get detailDownloadPhoto => 'Tải ảnh về máy';
@@ -573,20 +573,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String get attachPhotoToOrder => 'Đính kèm ảnh vào đơn';
 
   @override
-  String get createDossierLink => 'Tạo link hồ sơ khiếu nại';
-
-  @override
-  String get dossierLinkLabel => 'Link hồ sơ khiếu nại';
-
-  @override
-  String get revoke => 'Thu hồi';
-
-  @override
   String get deleteVideoAction => 'Xóa video';
 
   @override
   String get deleteVideoNote =>
-      'Chỉ Chủ tài khoản / QL shop · xác nhận 2 bước · mất vĩnh viễn';
+      'Chỉ Chủ tài khoản / QL shop · mất vĩnh viễn, không khôi phục được';
+
+  @override
+  String get deleteVideoConfirmTitle => 'Xác nhận lần cuối';
+
+  @override
+  String get deleteVideoConfirmBody =>
+      'Bằng chứng sẽ mất vĩnh viễn, không thể khôi phục — vẫn xóa?';
+
+  @override
+  String get deleteVideoConfirmAction => 'Xóa vĩnh viễn';
 
   @override
   String ordersErrorCount(int count) {
@@ -594,8 +595,13 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String ordersPendingCount(int count) {
+    return '· $count chờ';
+  }
+
+  @override
   String ordersPendingEvidenceWarning(int count) {
-    return '$count bằng chứng chưa upload — hồ sơ sẽ thiếu';
+    return '$count bằng chứng chưa upload';
   }
 
   @override
@@ -603,6 +609,24 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get captureCameraDownHint => 'Camera nhìn xuống bàn';
+
+  @override
+  String get lowStorageTitle => 'Máy gần đầy bộ nhớ';
+
+  @override
+  String get lowStorageBody =>
+      'Máy còn ít bộ nhớ trống — video đang quay dở có thể không lưu được hết. Giải phóng bớt bộ nhớ trước khi tiếp tục quay.';
+
+  @override
+  String get lowStorageAction => 'Đã hiểu';
+
+  @override
+  String cutoverClosedSummary(String code, String duration) {
+    return 'Đã chốt mã vận đơn $code ($duration)';
+  }
+
+  @override
+  String get cutoverSignalText => 'Âm báo + rung khi chuyển đơn';
 
   @override
   String get tooltipBack => 'Quay lại';
@@ -938,6 +962,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get ordersNotFound => 'Không tìm thấy đơn hàng';
+
+  @override
+  String get ordersNotFoundHint => 'Kiểm tra lại mã vận đơn và thử lại';
 
   @override
   String get filterStatusLabel => 'Trạng thái upload';

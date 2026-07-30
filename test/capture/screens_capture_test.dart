@@ -7,7 +7,7 @@ library;
 import 'package:app_ui/app_ui.dart';
 import 'package:feature_account/feature_account.dart';
 import 'package:feature_capture/feature_capture.dart' hide EcVideoType;
-import 'package:feature_orders/feature_orders.dart' hide EcOrderRow;
+import 'package:feature_orders/feature_orders.dart';
 import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -130,7 +130,6 @@ void main() {
         orderCode: 'SPXVN024567890',
         days: _timeline,
         pendingUploadCount: 1,
-        dossierUrl: 'https://cdn.evidencecam.app/d/x',
       ),
     ),
   );

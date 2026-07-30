@@ -325,64 +325,29 @@ void main() {
     ).called(1);
   });
 
-  test(
-    'dossier read/revoke, export and account deletion endpoints',
-    () async {
-      when(
-        () => dio.get<Map<String, dynamic>?>(
-          '/api/shops/s1/orders/o1/dossier',
-          queryParameters: any(named: 'queryParameters'),
-        ),
-      ).thenAnswer(
-        (_) async => _res('/api/shops/s1/orders/o1/dossier', {
-          'share_token': 'tok',
-          'revoked': 0,
-        }),
-      );
-      when(
-        () => dio.get<String>(
-          '/api/shops/s1/export',
-          queryParameters: any(named: 'queryParameters'),
-        ),
-      ).thenAnswer((_) async => _res('/api/shops/s1/export', 'tracking\n'));
-      when(
-        () => dio.delete<void>(
-          '/api/me',
-          queryParameters: {'force': true, 'dry_run': false},
-        ),
-      ).thenAnswer((_) async => _res('/api/me', null));
-      when(
-        () => dio.delete<void>(
-          '/api/me',
-          queryParameters: {'force': true, 'dry_run': true},
-        ),
-      ).thenAnswer((_) async => _res('/api/me', null));
-      when(
-        () => dio.delete<void>('/api/shops/s1/orders/o1/dossier'),
-      ).thenAnswer((_) async => _res('/api/shops/s1/orders/o1/dossier', null));
-
-      expect((await api.getDossier('s1', 'o1'))?.shareToken, 'tok');
-      expect(await api.exportCsv('s1'), 'tracking\n');
-      await api.revokeDossier('s1', 'o1');
-      await api.deleteAccount(force: true);
-      await api.deleteAccount(force: true, dryRun: true);
-    },
-  );
-
-  test('getDossier returns null when the order has no dossier', () async {
+  test('export and account deletion endpoints', () async {
     when(
-      () => dio.get<Map<String, dynamic>?>(
-        '/api/shops/s1/orders/o2/dossier',
+      () => dio.get<String>(
+        '/api/shops/s1/export',
         queryParameters: any(named: 'queryParameters'),
       ),
-    ).thenAnswer(
-      (_) async => _res<Map<String, dynamic>?>(
-        '/api/shops/s1/orders/o2/dossier',
-        null,
+    ).thenAnswer((_) async => _res('/api/shops/s1/export', 'tracking\n'));
+    when(
+      () => dio.delete<void>(
+        '/api/me',
+        queryParameters: {'force': true, 'dry_run': false},
       ),
-    );
+    ).thenAnswer((_) async => _res('/api/me', null));
+    when(
+      () => dio.delete<void>(
+        '/api/me',
+        queryParameters: {'force': true, 'dry_run': true},
+      ),
+    ).thenAnswer((_) async => _res('/api/me', null));
 
-    expect(await api.getDossier('s1', 'o2'), isNull);
+    expect(await api.exportCsv('s1'), 'tracking\n');
+    await api.deleteAccount(force: true);
+    await api.deleteAccount(force: true, dryRun: true);
   });
 
   test('multipart upload endpoints are exposed', () async {

@@ -28,8 +28,6 @@
   "toastInvitePending": "Waiting for a shop invitation",
   "toastInviteSent": "Invitation sent",
   "toastMemberAdded": "Member added",
-  "toastDossierLinkCreated": "Dossier link created",
-  "toastDossierLinkRevoked": "Dossier link revoked",
   "toastVideoPlayFailed": "Couldn't play video",
   "toastShopCreated": "New shop created",
   "toastVideoQueued": "Video saved — added to the upload queue",
@@ -49,14 +47,9 @@
     "placeholders": { "label": { "type": "String", "example": "tracking code" } }
   },
   "labelTrackingCode": "tracking code",
-  "labelDossierLink": "dossier link",
   "resolutionChanged": "Resolution: {value}",
   "@resolutionChanged": {
     "placeholders": { "value": { "type": "String", "example": "720p" } }
-  },
-  "dossierShareText": "Complaint dossier {tracking}",
-  "@dossierShareText": {
-    "placeholders": { "tracking": { "type": "String", "example": "SPX123" } }
   },
 
   "accountNoName": "No name yet",
@@ -82,6 +75,11 @@
   "uploadStatusQuotaHold": "On hold (quota)",
   "uploadStatusDeleted": "Deleted",
   "uploadStatusError": "Server-side processing error",
+  "uploadStatusExpired": "Storage retention expired",
+  "expiredOnDate": "Storage retention expired on {date}",
+  "@expiredOnDate": {
+    "placeholders": { "date": { "type": "String", "example": "05/09/2026" } }
+  },
 
   "kindPhoto": "Attached photo",
   "kindVideo": "Video",
@@ -89,6 +87,7 @@
   "recordedByFallback": "Current account",
   "deviceUnknown": "Unknown device",
   "orderNoEvidence": "No evidence yet",
+  "timelineEmpty": "This shipment has no video or photo yet",
 
   "errorGenericRetry": "Something went wrong, please try again.",
   "errorPendingDossier": "You still have an open claim dossier, please handle it before continuing.",
@@ -197,6 +196,7 @@
   "deletePendingProfilesWarning": "You still have {count} open claim dossiers — their share links will stop working",
   "@deletePendingProfilesWarning": { "placeholders": { "count": { "type": "int" } } },
   "detailRecordedTime": "Recording time",
+  "detailDuration": "Duration",
   "detailRecordedBy": "Recorded by",
   "detailCapturedTime": "Capture time",
   "detailCapturedBy": "Captured by",
@@ -205,20 +205,33 @@
   "detailUploadStatus": "Upload status",
   "detailPlayVideo": "Play video",
   "detailDownloadVideo": "Download video",
-  "detailDownloadNote": "Account owner / shop manager only — to attach a marketplace complaint form",
+  "detailDownloadNote": "Download the video to attach to a marketplace complaint form",
   "detailDownloadPhoto": "Download photo",
   "attachPhotoToOrder": "Attach photo to order",
-  "createDossierLink": "Create complaint dossier link",
-  "dossierLinkLabel": "Complaint dossier link",
-  "revoke": "Revoke",
   "deleteVideoAction": "Delete video",
-  "deleteVideoNote": "Account owner / shop manager only · 2-step confirmation · permanent",
+  "deleteVideoNote": "Account owner / shop manager only · permanent, cannot be undone",
+  "deleteVideoConfirmTitle": "Final confirmation",
+  "deleteVideoConfirmBody": "This evidence will be permanently deleted and cannot be recovered — delete anyway?",
+  "deleteVideoConfirmAction": "Delete permanently",
   "ordersErrorCount": "· {count} errors",
   "@ordersErrorCount": { "placeholders": { "count": { "type": "int" } } },
-  "ordersPendingEvidenceWarning": "{count} evidence not uploaded — the dossier will be incomplete",
+  "ordersPendingCount": "· {count} pending",
+  "@ordersPendingCount": { "placeholders": { "count": { "type": "int" } } },
+  "ordersPendingEvidenceWarning": "{count} evidence not uploaded",
   "@ordersPendingEvidenceWarning": { "placeholders": { "count": { "type": "int" } } },
   "captureFramePrompt": "Place the bill in the frame to start",
   "captureCameraDownHint": "Camera facing down at the table",
+  "lowStorageTitle": "Storage almost full",
+  "lowStorageBody": "This device is low on storage — an in-progress recording may not save fully. Free up some space before continuing to record.",
+  "lowStorageAction": "Got it",
+  "cutoverClosedSummary": "Closed tracking code {code} ({duration})",
+  "@cutoverClosedSummary": {
+    "placeholders": {
+      "code": { "type": "String", "example": "SPXVN123" },
+      "duration": { "type": "String", "example": "02:45" }
+    }
+  },
+  "cutoverSignalText": "Sound + vibration on order handoff",
   "tooltipBack": "Back",
   "tooltipSwitchCamera": "Switch camera",
   "tooltipEnterTracking": "Enter tracking code",
@@ -328,6 +341,7 @@
   "resolutionAppliesNote": "Applies to the shop's newly recorded videos",
   "resolutionDefaultOption": "720p (default)",
   "ordersNotFound": "No orders found",
+  "ordersNotFoundHint": "Double-check the tracking code and try again",
   "filterStatusLabel": "Upload status",
   "filterStatusAll": "All",
   "filterStatusPending": "Awaiting upload",

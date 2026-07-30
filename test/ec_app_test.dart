@@ -559,44 +559,6 @@ void main() {
   );
 
   testWidgets(
-    'order detail creates and revokes dossier only from explicit user actions',
-    experimentalLeakTesting: LeakTesting.settings.withIgnored(
-      notDisposed: {
-        'ImageStreamCompleterHandle': 1,
-        'ValueNotifier<EcUser?>': 1,
-      },
-    ),
-    (tester) async {
-      final repo = _DossierRepository();
-      await pumpPhoneSizedApp(tester, EcApp(repo: repo));
-
-      await signInWithGoogleAndPhone(tester);
-      await tester.tap(find.text('SPXVN024567890'));
-      await tester.pumpAndSettle();
-
-      expect(repo.getCalls, 1);
-      expect(repo.shareCalls, 0);
-      expect(find.text('Tạo link hồ sơ khiếu nại'), findsOneWidget);
-      expect(find.text('Link hồ sơ khiếu nại'), findsNothing);
-
-      await tester.tap(find.text('Tạo link hồ sơ khiếu nại'));
-      await tester.pumpAndSettle();
-
-      expect(repo.shareCalls, 1);
-      expect(find.text('Link hồ sơ khiếu nại'), findsOneWidget);
-      expect(find.text('Thu hồi'), findsOneWidget);
-
-      await tester.tap(find.text('Thu hồi'));
-      await tester.pumpAndSettle();
-
-      expect(repo.revokeCalls, 1);
-      expect(find.text('Tạo link hồ sơ khiếu nại'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 2));
-      await tester.pumpAndSettle();
-    },
-  );
-
-  testWidgets(
     'record type sheet can select a type and open shop detail management',
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
       notDisposed: {
@@ -949,43 +911,4 @@ class _DemoRepository extends FakeEcRepository {
     ),
     VideoTypeDto(id: 'default-return', name: 'Trả hàng', isDefault: true),
   ];
-}
-
-class _DossierRepository extends _DemoRepository {
-  int getCalls = 0;
-  int shareCalls = 0;
-  int revokeCalls = 0;
-  DossierDto? dossier;
-
-  @override
-  Future<OrderDetailDto> order(String shopId, String orderId) async =>
-      const OrderDetailDto(
-        order: OrderDto(
-          id: 'o1',
-          tracking: 'SPXVN024567890',
-          createdAt: 3,
-        ),
-        evidence: [],
-      );
-
-  @override
-  Future<DossierDto?> getDossier(String shopId, String orderId) async {
-    getCalls++;
-    return dossier;
-  }
-
-  @override
-  Future<DossierDto> shareDossier(String shopId, String orderId) async {
-    shareCalls++;
-    return dossier = const DossierDto(
-      shareToken: 'tok-explicit',
-      revoked: false,
-    );
-  }
-
-  @override
-  Future<void> revokeDossier(String shopId, String orderId) async {
-    revokeCalls++;
-    dossier = null;
-  }
 }

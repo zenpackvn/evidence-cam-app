@@ -322,7 +322,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(6, 610114076402941823),
     name: 'EvidenceClipEntity',
-    lastPropertyId: const obx_int.IdUid(12, 8832645181416904060),
+    lastPropertyId: const obx_int.IdUid(13, 1404892107533783200),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -396,6 +396,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(12, 8832645181416904060),
         name: 'errorMessage',
         type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 1404892107533783200),
+        name: 'durationSeconds',
+        type: 6,
         flags: 0,
       ),
     ],
@@ -900,7 +906,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final errorMessageOffset = object.errorMessage == null
             ? null
             : fbb.writeString(object.errorMessage!);
-        fbb.startTable(13);
+        fbb.startTable(14);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, taskIdOffset);
         fbb.addOffset(2, trackingOffset);
@@ -913,6 +919,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(9, remoteUrlOffset);
         fbb.addOffset(10, shopIdOffset);
         fbb.addOffset(11, errorMessageOffset);
+        fbb.addInt64(12, object.durationSeconds);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -969,6 +976,11 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final errorMessageParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 26);
+        final durationSecondsParam = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          28,
+        );
         final object = EvidenceClipEntity(
           id: idParam,
           taskId: taskIdParam,
@@ -982,6 +994,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           retryCount: retryCountParam,
           remoteUrl: remoteUrlParam,
           errorMessage: errorMessageParam,
+          durationSeconds: durationSecondsParam,
         );
 
         return object;
@@ -1267,5 +1280,10 @@ class EvidenceClipEntity_ {
   /// See [EvidenceClipEntity.errorMessage].
   static final errorMessage = obx.QueryStringProperty<EvidenceClipEntity>(
     _entities[5].properties[11],
+  );
+
+  /// See [EvidenceClipEntity.durationSeconds].
+  static final durationSeconds = obx.QueryIntegerProperty<EvidenceClipEntity>(
+    _entities[5].properties[12],
   );
 }

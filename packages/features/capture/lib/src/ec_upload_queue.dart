@@ -39,6 +39,7 @@ class UploadTask {
     this.retryCount = 0,
     this.remoteUrl,
     this.errorMessage,
+    this.durationSeconds,
   });
 
   /// Parses a task from the legacy `queue.json` format, used only by the
@@ -73,6 +74,9 @@ class UploadTask {
   /// Human-readable reason the last attempt failed; only set alongside
   /// [EcUploadState.error]. Cleared on retry.
   String? errorMessage;
+  /// Recorded clip length in seconds, captured at stop time. Null for photos
+  /// and for older persisted tasks.
+  final int? durationSeconds;
 }
 
 class EcUploadQueue extends ChangeNotifier {
@@ -130,11 +134,14 @@ class EcUploadQueue extends ChangeNotifier {
 
   /// Copies [filePath] into the app-documents dir and enqueues it. [shopId]
   /// scopes the clip for the real backend uploader; omit it on the offline path.
+  /// [durationSeconds] is the recorded clip length, known at stop time; omit
+  /// for photos.
   Future<void> enqueue({
     required String tracking,
     required String type,
     required String filePath,
     String? shopId,
+    int? durationSeconds,
   }) async {
     final dir = await _evidenceDir();
     final id = DateTime.now().microsecondsSinceEpoch.toString();
@@ -151,6 +158,7 @@ class EcUploadQueue extends ChangeNotifier {
       filePath: stored,
       createdAt: DateTime.now(),
       shopId: shopId,
+      durationSeconds: durationSeconds,
     );
     _tasks.insert(0, task);
     await _store.save(task);
@@ -238,6 +246,7 @@ class EcUploadQueue extends ChangeNotifier {
             type: task.type,
             shopId: task.shopId,
             capturedAt: task.createdAt.millisecondsSinceEpoch,
+            durationSeconds: task.durationSeconds,
             onProgress: (p) {
               task.progress = p;
               final percent = (p * 100).round();

@@ -81,6 +81,11 @@ dependencies:
   # are copied here so OS temp cleanup never loses evidence — FR-08/FR-09).
   path_provider: ^2.1.0
 
+  # Evidence clips PUT to R2 on a native URLSession (iOS) / WorkManager
+  # (Android) task, so a transfer keeps running while the app is backgrounded
+  # instead of stalling with it (FR-08/FR-09).
+  background_downloader: ^9.5.7
+
   # On-device barcode scanning for hands-free bill detection (FR-01). Runs on
   # the recording camera's image stream (scan-to-start). MLKit requires iOS
   # 15.5, so ios/ deployment target was bumped 15.0 -> 15.5 (still >= Firebase's

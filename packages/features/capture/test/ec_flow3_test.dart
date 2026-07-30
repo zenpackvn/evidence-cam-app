@@ -2,12 +2,27 @@ import 'package:app_ui/app_ui.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:localization/localization.dart';
 
 Future<void> _pump(WidgetTester tester, Widget screen) {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  return tester.pumpWidget(MaterialApp(theme: AppTheme.light(), home: screen));
+  return tester.pumpWidget(
+    MaterialApp(
+      locale: const Locale('vi'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      theme: AppTheme.light(),
+      home: screen,
+    ),
+  );
+}
+
+void _expectCameraBottomTabsHidden() {
+  expect(find.text('Vận đơn'), findsNothing);
+  expect(find.text('Ghi hình'), findsNothing);
+  expect(find.text('Tài khoản'), findsNothing);
 }
 
 void main() {
@@ -32,6 +47,26 @@ void main() {
       expect(find.byIcon(Icons.keyboard_outlined), findsOneWidget);
       // Idle — no stop button yet.
       expect(find.byIcon(Icons.check), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('hides the bottom tab bar while inside camera screens', (
+      tester,
+    ) async {
+      await _pump(tester, const EcWaitBill2Screen());
+      _expectCameraBottomTabsHidden();
+
+      await _pump(tester, const EcRecording2Screen());
+      _expectCameraBottomTabsHidden();
+
+      await _pump(tester, const EcNearLimitScreen());
+      _expectCameraBottomTabsHidden();
+
+      await _pump(tester, const EcReturnRecScreen());
+      _expectCameraBottomTabsHidden();
+
+      await _pump(tester, const EcCutoverBScreen());
+      _expectCameraBottomTabsHidden();
       expect(tester.takeException(), isNull);
     });
 
