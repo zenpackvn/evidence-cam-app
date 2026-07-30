@@ -1,10 +1,8 @@
 {
   "@@locale": "en",
-
   "commonCancel": "Cancel",
   "commonRetry": "Retry",
   "commonClose": "Close",
-
   "toastChangeLanguage": "Change language",
   "toastTermsPolicy": "Terms & Policy",
   "toastInfoSaved": "Info saved",
@@ -41,26 +39,38 @@
   "toastRoleChangedStaff": "Role changed: Staff",
   "toastNoMemberToUpdate": "No member to update",
   "toastMemberRemoved": "Removed from shop (recorded videos still finish uploading)",
-
   "copiedLabel": "Copied {label}",
   "@copiedLabel": {
-    "placeholders": { "label": { "type": "String", "example": "tracking code" } }
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "tracking code"
+      }
+    }
   },
   "labelTrackingCode": "tracking code",
   "resolutionChanged": "Resolution: {value}",
   "@resolutionChanged": {
-    "placeholders": { "value": { "type": "String", "example": "720p" } }
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": "720p"
+      }
+    }
   },
-
   "accountNoName": "No name yet",
   "accountNoShop": "No shop selected",
   "accountCreatePassword": "Create password",
   "accountChangePassword": "Change password",
   "accountLinkedMethods": "{count} linked",
   "@accountLinkedMethods": {
-    "placeholders": { "count": { "type": "int", "example": "2" } }
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
   },
-
   "roleOwner": "Owner",
   "roleManager": "Manager",
   "roleStaff": "Staff",
@@ -69,7 +79,6 @@
   "roleOther": "Other",
   "roleUnknown": "Unknown",
   "memberFallbackName": "Member",
-
   "uploadStatusDone": "Uploaded",
   "uploadStatusPending": "Waiting to upload",
   "uploadStatusQuotaHold": "On hold (quota)",
@@ -78,17 +87,19 @@
   "uploadStatusExpired": "Storage retention expired",
   "expiredOnDate": "Storage retention expired on {date}",
   "@expiredOnDate": {
-    "placeholders": { "date": { "type": "String", "example": "05/09/2026" } }
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "05/09/2026"
+      }
+    }
   },
-
   "kindPhoto": "Attached photo",
   "kindVideo": "Video",
-
   "recordedByFallback": "Current account",
   "deviceUnknown": "Unknown device",
   "orderNoEvidence": "No evidence yet",
   "timelineEmpty": "This shipment has no video or photo yet",
-
   "errorGenericRetry": "Something went wrong, please try again.",
   "errorPendingDossier": "You still have an open claim dossier, please handle it before continuing.",
   "errorSessionExpired": "Your session has expired, please sign in again.",
@@ -100,13 +111,11 @@
   "errorBuiltinVideoTypeLocked": "The 3 built-in video types can't be edited or deleted.",
   "errorVideoTypeNameExists": "That video type name already exists in the shop.",
   "errorCheckNetwork": "Check your network or try again later.",
-
   "errorLoadShopList": "Couldn't load the shop list",
   "errorLoadShopMgmt": "Couldn't load shop management",
   "errorLoadShopDetail": "Couldn't load shop details",
   "errorLoadOrders": "Couldn't load orders",
   "errorLoadOrderDetail": "Couldn't load order details",
-
   "noShopSelectedOrdersDetail": "Please choose a shop before viewing orders.",
   "noShopSelectedRecordDetail": "Please choose a shop before recording.",
   "noShopSelectedManageDetail": "Please choose a shop to manage.",
@@ -115,18 +124,20 @@
   "noVideoDataTitle": "No video data",
   "cannotOpenVideoTitle": "Couldn't open video",
   "cannotOpenVideoDetail": "Video has no playback link yet.",
-
   "createOrderDialogTitle": "Create a new order?",
   "createOrderDialogBody": "{code} doesn't match any tracking code in the current shop. Re-check the code or confirm creating a new order.",
   "@createOrderDialogBody": {
-    "placeholders": { "code": { "type": "String", "example": "SPX123" } }
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "SPX123"
+      }
+    }
   },
   "createOrderConfirm": "Create new order",
-
   "statOrdersToday": "Orders today",
   "statVideosRecorded": "Videos recorded",
   "statPendingUpload": "Pending upload",
-
   "accountPlanQuota": "Plan & Quota",
   "accountSectionApp": "PLAN & APP",
   "accountLanguage": "Language",
@@ -188,13 +199,40 @@
   "navAccount": "Account",
   "changeAvatar": "Change profile photo",
   "quotaVideosRatio": "{remaining} / {total} videos",
-  "@quotaVideosRatio": { "placeholders": { "remaining": { "type": "int" }, "total": { "type": "int" } } },
+  "@quotaVideosRatio": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "quotaUsedPercent": "Used {percent}%",
-  "@quotaUsedPercent": { "placeholders": { "percent": { "type": "int" } } },
+  "@quotaUsedPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "quotaRetentionDays": "{days} days",
-  "@quotaRetentionDays": { "placeholders": { "days": { "type": "int" } } },
+  "@quotaRetentionDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "deletePendingProfilesWarning": "You still have {count} open claim dossiers — their share links will stop working",
-  "@deletePendingProfilesWarning": { "placeholders": { "count": { "type": "int" } } },
+  "@deletePendingProfilesWarning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "detailRecordedTime": "Recording time",
   "detailDuration": "Duration",
   "detailRecordedBy": "Recorded by",
@@ -214,11 +252,29 @@
   "deleteVideoConfirmBody": "This evidence will be permanently deleted and cannot be recovered — delete anyway?",
   "deleteVideoConfirmAction": "Delete permanently",
   "ordersErrorCount": "· {count} errors",
-  "@ordersErrorCount": { "placeholders": { "count": { "type": "int" } } },
+  "@ordersErrorCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "ordersPendingCount": "· {count} pending",
-  "@ordersPendingCount": { "placeholders": { "count": { "type": "int" } } },
+  "@ordersPendingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "ordersPendingEvidenceWarning": "{count} evidence not uploaded",
-  "@ordersPendingEvidenceWarning": { "placeholders": { "count": { "type": "int" } } },
+  "@ordersPendingEvidenceWarning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "captureFramePrompt": "Place the bill in the frame to start",
   "captureCameraDownHint": "Camera facing down at the table",
   "lowStorageTitle": "Storage almost full",
@@ -227,8 +283,14 @@
   "cutoverClosedSummary": "Closed tracking code {code} ({duration})",
   "@cutoverClosedSummary": {
     "placeholders": {
-      "code": { "type": "String", "example": "SPXVN123" },
-      "duration": { "type": "String", "example": "02:45" }
+      "code": {
+        "type": "String",
+        "example": "SPXVN123"
+      },
+      "duration": {
+        "type": "String",
+        "example": "02:45"
+      }
     }
   },
   "cutoverSignalText": "Sound + vibration on order handoff",
@@ -264,17 +326,56 @@
   "videoTypeSelectNote": "Choose a type for this recording session — add/edit/delete in Shop details",
   "manageVideoTypesNote": "Manage video types — open Shop details",
   "queueFilterAll": "All · {count}",
-  "@queueFilterAll": { "placeholders": { "count": { "type": "int" } } },
+  "@queueFilterAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "queueFilterUploading": "Uploading · {count}",
-  "@queueFilterUploading": { "placeholders": { "count": { "type": "int" } } },
+  "@queueFilterUploading": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "queueFilterErrored": "Errors · {count}",
-  "@queueFilterErrored": { "placeholders": { "count": { "type": "int" } } },
+  "@queueFilterErrored": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "uploadingProgress": "Uploading {percent}%",
-  "@uploadingProgress": { "placeholders": { "percent": { "type": "int" } } },
+  "@uploadingProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "errorRetryCount": "Error · Retry ({count})",
-  "@errorRetryCount": { "placeholders": { "count": { "type": "int" } } },
+  "@errorRetryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "returnCodeMismatchBody": "{returnCode} doesn't match any order in {shopName}. Re-check the code, enter it manually, or confirm creating a new order.",
-  "@returnCodeMismatchBody": { "placeholders": { "returnCode": { "type": "String" }, "shopName": { "type": "String" } } },
+  "@returnCodeMismatchBody": {
+    "placeholders": {
+      "returnCode": {
+        "type": "String"
+      },
+      "shopName": {
+        "type": "String"
+      }
+    }
+  },
   "onboardingSubtitle": "Record packing-evidence videos for e-commerce sellers",
   "onboardingStart": "Get started",
   "authSignIn": "Sign in",
@@ -316,7 +417,7 @@
   "shopPlatform": "Marketplace",
   "shopCreateOwnerNote": "You'll be the shop owner — add members later in Manage store",
   "shopMgmtVisibilityNote": "Staff don't see this screen · shop managers only see shops they manage",
-  "shopAddNew": "Add new shop (name + platform)",
+  "shopAddNew": "Add a new shop",
   "sectionMembers": "MEMBERS",
   "sectionShopSettings": "SHOP SETTINGS",
   "sectionVideoTypes": "VIDEO TYPES",
@@ -355,10 +456,207 @@
   "filterTypeLabel": "Video type",
   "filterTypeAll": "Video type",
   "deleteVideoTypeTitle": "Delete type \"{typeName}\"?",
-  "@deleteVideoTypeTitle": { "placeholders": { "typeName": { "type": "String" } } },
+  "@deleteVideoTypeTitle": {
+    "placeholders": {
+      "typeName": {
+        "type": "String"
+      }
+    }
+  },
   "memberCurrentRole": "Current role: {role}",
-  "@memberCurrentRole": { "placeholders": { "role": { "type": "String" } } },
+  "@memberCurrentRole": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
   "stopCodeTitle": "Stop-recording QR code",
   "stopCodeInstructions": "Print this and stick it at the packing table. Show it to the camera while recording to stop automatically.",
-  "scannedCodeNotFound": "No order matches the scanned code"
+  "scannedCodeNotFound": "No order matches the scanned code",
+  "onboardingTaglineOne": "Every parcel.",
+  "@onboardingTaglineOne": {
+    "description": "Splash tagline, line 1 of 3."
+  },
+  "onboardingTaglineTwo": "One proof.",
+  "@onboardingTaglineTwo": {
+    "description": "Splash tagline, line 2 of 3."
+  },
+  "onboardingTaglineThree": "Protecting your revenue.",
+  "@onboardingTaglineThree": {
+    "description": "Splash tagline, line 3 of 3."
+  },
+  "authEmailPlaceholder": "Enter your email",
+  "@authEmailPlaceholder": {
+    "description": "Placeholder inside the email field."
+  },
+  "authPasswordPlaceholder": "Enter your password",
+  "@authPasswordPlaceholder": {
+    "description": "Placeholder inside the password field."
+  },
+  "registerCreateAccountSubtitle": "Create a new account",
+  "@registerCreateAccountSubtitle": {
+    "description": "Register screen: registerCreateAccountSubtitle."
+  },
+  "registerFullName": "Full name",
+  "@registerFullName": {
+    "description": "Register screen: registerFullName."
+  },
+  "registerFullNameRequired": "Please enter your full name",
+  "@registerFullNameRequired": {
+    "description": "Register screen: registerFullNameRequired."
+  },
+  "registerPhone": "Phone number",
+  "@registerPhone": {
+    "description": "Register screen: registerPhone."
+  },
+  "registerAgreePrefix": "I agree to the",
+  "@registerAgreePrefix": {
+    "description": "Register screen: registerAgreePrefix."
+  },
+  "registerTermsOfUse": "Terms of Use",
+  "@registerTermsOfUse": {
+    "description": "Register screen: registerTermsOfUse."
+  },
+  "shopChooseTitle": "Choose a shop",
+  "@shopChooseTitle": {
+    "description": "Shop layer: shopChooseTitle."
+  },
+  "shopChooseSubtitle": "Pick a shop to continue",
+  "@shopChooseSubtitle": {
+    "description": "Shop layer: shopChooseSubtitle."
+  },
+  "shopManageTitle": "Manage shops",
+  "@shopManageTitle": {
+    "description": "Shop layer: shopManageTitle."
+  },
+  "shopManageOwnerOnly": "Visible to shop owners and managers only",
+  "@shopManageOwnerOnly": {
+    "description": "Shop layer: shopManageOwnerOnly."
+  },
+  "noShopTitle": "No shops yet",
+  "@noShopTitle": {
+    "description": "Shop layer: noShopTitle."
+  },
+  "noShopLineOne": "Your account does not belong to a shop yet.",
+  "@noShopLineOne": {
+    "description": "Shop layer: noShopLineOne."
+  },
+  "noShopLineTwo": "Create a shop to get started,",
+  "@noShopLineTwo": {
+    "description": "Shop layer: noShopLineTwo."
+  },
+  "noShopLineThree": "or wait for an invite from a shop owner.",
+  "@noShopLineThree": {
+    "description": "Shop layer: noShopLineThree."
+  },
+  "noShopCreateCta": "Create a shop (name + marketplace)",
+  "@noShopCreateCta": {
+    "description": "Shop layer: noShopCreateCta."
+  },
+  "noShopInviteHint": "Shop invites will appear here",
+  "@noShopInviteHint": {
+    "description": "Shop layer: noShopInviteHint."
+  },
+  "createShopTitle": "Create shop",
+  "@createShopTitle": {
+    "description": "Create-shop screen: createShopTitle."
+  },
+  "createShopNameLabel": "Shop name",
+  "@createShopNameLabel": {
+    "description": "Create-shop screen: createShopNameLabel."
+  },
+  "createShopNameHint": "e.g. Shop ABC",
+  "@createShopNameHint": {
+    "description": "Create-shop screen: createShopNameHint."
+  },
+  "createShopPlatformLabel": "Marketplace",
+  "@createShopPlatformLabel": {
+    "description": "Create-shop screen: createShopPlatformLabel."
+  },
+  "createShopOwnerNote": "You will be the shop owner — add members later under Manage shops",
+  "@createShopOwnerNote": {
+    "description": "Create-shop screen: createShopOwnerNote."
+  },
+  "createShopSubmit": "Create shop",
+  "@createShopSubmit": {
+    "description": "Create-shop screen: createShopSubmit."
+  },
+  "shopManageDescription": "View and manage the shops you administer.",
+  "@shopManageDescription": {
+    "description": "Shop management: shopManageDescription."
+  },
+  "shopManageAddCta": "Add a shop (name + marketplace)",
+  "@shopManageAddCta": {
+    "description": "Shop management: shopManageAddCta."
+  },
+  "shopManageStaffNote": "Staff cannot see this screen — owners and shop managers only.",
+  "@shopManageStaffNote": {
+    "description": "Shop management: shopManageStaffNote."
+  },
+  "shopDetailTitle": "Shop detail",
+  "@shopDetailTitle": {
+    "description": "Shop detail: shopDetailTitle."
+  },
+  "shopDetailResolution": "Recording resolution",
+  "@shopDetailResolution": {
+    "description": "Shop detail: shopDetailResolution."
+  },
+  "shopDetailAddType": "Add a type (enter a name)",
+  "@shopDetailAddType": {
+    "description": "Shop detail: shopDetailAddType."
+  },
+  "inviteMemberTitle": "Invite a member",
+  "@inviteMemberTitle": {
+    "description": "Shop detail: inviteMemberTitle."
+  },
+  "inviteMemberHint": "(no account yet → send an invite)",
+  "@inviteMemberHint": {
+    "description": "Shop detail: inviteMemberHint."
+  },
+  "videoTypeIcon": "Icon",
+  "@videoTypeIcon": {
+    "description": "Video type dialogs: videoTypeIcon."
+  },
+  "videoTypeColor": "Colour",
+  "@videoTypeColor": {
+    "description": "Video type dialogs: videoTypeColor."
+  },
+  "createVideoTypeSubmit": "Create type",
+  "@createVideoTypeSubmit": {
+    "description": "Video type dialogs: createVideoTypeSubmit."
+  },
+  "deleteVideoTypeSafeNote": "No evidence is lost",
+  "@deleteVideoTypeSafeNote": {
+    "description": "Video type dialogs: deleteVideoTypeSafeNote."
+  },
+  "commonConfirm": "Confirm",
+  "@commonConfirm": {
+    "description": "Generic confirm action."
+  },
+  "orderErrorCount": "{count} failed",
+  "@orderErrorCount": {
+    "description": "Badge on an order row whose uploads failed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "videoDetailSheetTitle": "Video detail",
+  "@videoDetailSheetTitle": {
+    "description": "Title of the video-detail sheet."
+  },
+  "tooltipStopRecording": "Stop recording",
+  "@tooltipStopRecording": {
+    "description": "Shutter button label while recording."
+  },
+  "dossierLinkTitle": "Dispute dossier link",
+  "@dossierLinkTitle": {
+    "description": "Shareable dossier link card."
+  },
+  "languageChangeScopeNote": "Every label, notification and dossier\nswitches to the language you pick.",
+  "@languageChangeScopeNote": {
+    "description": "Caption under the language screen illustration."
+  }
 }

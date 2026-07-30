@@ -84,23 +84,74 @@ class EcWaitBill2Screen extends StatelessWidget {
       onFlipCamera: onFlipCamera,
       onManualEntry: onManualEntry,
       onResolution: onResolution,
-      centerArea: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.add, size: 28, color: BrandColors.mut),
-            const SizedBox(height: 10),
-            Text(
-              context.l10n.captureFramePrompt,
-              style: _t(14, FontWeight.w500, BrandColors.ink),
+      centerArea: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 244,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PenText(
+                  context.l10n.captureFramePrompt,
+                  size: 16,
+                  color: PenColors.card,
+                  weight: FontWeight.w700,
+                  align: TextAlign.center,
+                ),
+                const SizedBox(height: 5),
+                PenText(
+                  context.l10n.captureCameraDownHint,
+                  size: 13,
+                  color: const Color(0x99FFFFFF),
+                  align: TextAlign.center,
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              context.l10n.captureCameraDownHint,
-              style: _t(12, FontWeight.w400, BrandColors.mut),
+          ),
+          const SizedBox(height: 42),
+          // Tooltip doubles as the accessible name for the pill — it is the
+          // only way into manual entry now that the rail is gone.
+          Tooltip(
+            message: context.l10n.tooltipEnterTracking,
+            child: EcTap(
+              onTap: onManualEntry,
+              child: PenBox(
+                width: 214,
+                height: 42,
+                fill: const Color(0xCC050505),
+                stroke: const Color(0x1AFFFFFF),
+                radius: 999,
+                axis: PenAxis.row,
+                gap: 9,
+                main: MainAxisAlignment.center,
+                cross: CrossAxisAlignment.center,
+                children: [
+                  const Icon(
+                    LucideIcons.keyboard,
+                    size: 18,
+                    color: PenColors.card,
+                  ),
+                  Flexible(
+                    child: PenText(
+                      context.l10n.tooltipEnterTracking,
+                      size: 14,
+                      color: PenColors.card,
+                      weight: FontWeight.w700,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const Icon(
+                    LucideIcons.chevronRight,
+                    size: 16,
+                    color: Color(0x99FFFFFF),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -116,6 +167,7 @@ class EcRecording2Screen extends StatelessWidget {
     this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.code = 'SPXVN024567890',
+    this.elapsed = '00:00',
     this.typeLabel = 'Đóng hàng',
     this.zoomLabel = '1x',
     this.resolutionLabel = '720p',
@@ -137,6 +189,9 @@ class EcRecording2Screen extends StatelessWidget {
   final String shopName;
   final int queueCount;
   final String code;
+
+  /// Running clip length shown next to REC, `mm:ss`.
+  final String elapsed;
   final String typeLabel;
   final String zoomLabel;
   final String resolutionLabel;
@@ -159,6 +214,7 @@ class EcRecording2Screen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
+      headerTitle: context.l10n.navRecord,
       shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
@@ -175,14 +231,20 @@ class EcRecording2Screen extends StatelessWidget {
       onResolution: onResolution,
       showStopButton: true,
       onStop: onStop,
-      centerArea: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _CamCodeBadge(code: code),
-            const SizedBox(height: 10),
-            const _RecRow(),
-          ],
+      // The design stacks the code and REC pills just under the header,
+      // not in the middle of the viewfinder.
+      centerArea: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 76),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _CamCodeBadge(code: code),
+              const SizedBox(height: 10),
+              _RecRow(elapsed: elapsed),
+            ],
+          ),
         ),
       ),
     );
@@ -240,6 +302,7 @@ class EcCutoverBScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
+      headerTitle: context.l10n.navRecord,
       shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
@@ -262,7 +325,7 @@ class EcCutoverBScreen extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.check, size: 16, color: BrandColors.ink),
+                const Icon(LucideIcons.check, size: 16, color: BrandColors.ink),
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
@@ -341,6 +404,7 @@ class EcNearLimitScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
+      headerTitle: context.l10n.navRecord,
       shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
@@ -459,6 +523,7 @@ class EcReturnRecScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
+      headerTitle: context.l10n.navRecord,
       shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
@@ -503,6 +568,7 @@ class _CamScaffold extends StatelessWidget {
     required this.zoomLabel,
     required this.resolutionLabel,
     required this.centerArea,
+    this.headerTitle,
     this.preview,
     this.onBack,
     this.onPickType,
@@ -522,6 +588,9 @@ class _CamScaffold extends StatelessWidget {
   final String zoomLabel;
   final String resolutionLabel;
   final Widget centerArea;
+
+  /// Overrides the header text; the recording states use it to read "Ghi hình".
+  final String? headerTitle;
   final Widget? preview;
   final VoidCallback? onBack;
   final VoidCallback? onPickType;
@@ -537,12 +606,18 @@ class _CamScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: PenColors.ink,
       child: Stack(
         children: [
           Positioned.fill(
-            child: preview ?? const ColoredBox(color: Colors.black),
+            child: preview ?? const ColoredBox(color: PenColors.ink),
           ),
+          // The design darkens the whole viewfinder so white chrome stays
+          // legible over any scene.
+          const Positioned.fill(
+            child: IgnorePointer(child: ColoredBox(color: Color(0x73161616))),
+          ),
+          const Positioned.fill(child: _FramingCorners()),
           Positioned.fill(child: centerArea),
           Positioned(
             top: 0,
@@ -550,68 +625,35 @@ class _CamScaffold extends StatelessWidget {
             right: 0,
             child: SafeArea(
               bottom: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _CamHeader(
-                    shopName: shopName,
-                    queueCount: queueCount,
-                    onBack: onBack,
-                  ),
-                  const _LiveClock(),
-                ],
+              child: _CamHeader(
+                title: headerTitle ?? shopName,
+                queueCount: queueCount,
+                onBack: onBack,
               ),
             ),
           ),
-          // Right rail — anchored to the right edge, lower-middle (responsive
-          // instead of a hardcoded top offset calibrated to an 844pt canvas).
-          Positioned.fill(
-            child: Align(
-              alignment: const Alignment(1, 0.25),
-              child: Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: _CamRail(
-                  zoomLabel: zoomLabel,
-                  resolutionLabel: resolutionLabel,
-                  onZoomIn: onZoomIn,
-                  onZoomOut: onZoomOut,
-                  onResolution: onResolution,
-                  onFlipCamera: onFlipCamera,
-                  onManualEntry: onManualEntry,
-                ),
-              ),
-            ),
-          ),
-          // Stop button — a fixed gap above the type chip (responsive).
+          // Shutter floats clear of the footer panel.
           if (showStopButton)
             Positioned(
               left: 0,
               right: 0,
-              bottom: 68,
+              bottom: 152,
               child: Center(child: _StopButton(onTap: onStop)),
             ),
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: _TypeChipRow(
-                        typeLabel: typeLabel,
-                        onPickType: onPickType,
-                        onSettings: onSettings,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            child: _CamFooter(
+              typeLabel: typeLabel,
+              zoomLabel: zoomLabel,
+              resolutionLabel: resolutionLabel,
+              onPickType: onPickType,
+              onSettings: onSettings,
+              onZoomIn: onZoomIn,
+              onZoomOut: onZoomOut,
+              onResolution: onResolution,
+              onFlipCamera: onFlipCamera,
             ),
           ),
         ],
@@ -620,41 +662,195 @@ class _CamScaffold extends StatelessWidget {
   }
 }
 
+/// The four white framing brackets the design draws around the bill area.
+class _FramingCorners extends StatelessWidget {
+  const _FramingCorners();
+
+  static const _topLeft = 'M2 34l0-26q0-6 6-6l26 0';
+  static const _topRight = 'M0 2l26 0q6 0 6 6l0 26';
+  static const _bottomLeft = 'M2 0l0 26q0 6 6 6l26 0';
+  static const _bottomRight = 'M0 32l26 0q6 0 6-6l0-26';
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // The design frames a 222x300 window centred a little above middle;
+          // keep that proportion instead of the artboard's absolute offsets.
+          final width = constraints.maxWidth;
+          final height = constraints.maxHeight;
+          const frameW = 222.0;
+          final left = (width - frameW) / 2;
+          final top = height * 0.253;
+          final bottom = height * 0.313;
+          return Stack(
+            children: [
+              Positioned(left: left, top: top, child: const _Corner(_topLeft)),
+              Positioned(
+                right: left,
+                top: top,
+                child: const _Corner(_topRight),
+              ),
+              Positioned(
+                left: left,
+                bottom: bottom,
+                child: const _Corner(_bottomLeft),
+              ),
+              Positioned(
+                right: left,
+                bottom: bottom,
+                child: const _Corner(_bottomRight),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _Corner extends StatelessWidget {
+  const _Corner(this.geometry);
+
+  final String geometry;
+
+  @override
+  Widget build(BuildContext context) => PenPath(
+    geometry,
+    viewBox: const [0, 0, 34, 36],
+    width: 32,
+    height: 36,
+    color: PenColors.card,
+    strokeWidth: 3,
+    roundCap: true,
+  );
+}
+
+/// The dark footer panel: resolution, zoom and flip on top, the video-type
+/// selector under it.
+class _CamFooter extends StatelessWidget {
+  const _CamFooter({
+    required this.typeLabel,
+    required this.zoomLabel,
+    required this.resolutionLabel,
+    this.onPickType,
+    this.onSettings,
+    this.onZoomIn,
+    this.onZoomOut,
+    this.onResolution,
+    this.onFlipCamera,
+  });
+
+  final String typeLabel;
+  final String zoomLabel;
+  final String resolutionLabel;
+  final VoidCallback? onPickType;
+  final VoidCallback? onSettings;
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
+  final VoidCallback? onResolution;
+  final VoidCallback? onFlipCamera;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Color(0xFF050505),
+        border: Border(top: BorderSide(color: Color(0x14FFFFFF))),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 34),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _RailPill(label: resolutionLabel, onTap: onResolution),
+                    _ZoomControl(
+                      label: zoomLabel,
+                      onZoomIn: onZoomIn,
+                      onZoomOut: onZoomOut,
+                    ),
+                    _RailIconButton(
+                      icon: LucideIcons.refreshCw,
+                      tooltip: context.l10n.tooltipSwitchCamera,
+                      onTap: onFlipCamera,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              _TypeChipRow(
+                typeLabel: typeLabel,
+                onPickType: onPickType,
+                onSettings: onSettings,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CamHeader extends StatelessWidget {
   const _CamHeader({
-    required this.shopName,
+    required this.title,
     required this.queueCount,
     this.onBack,
   });
 
-  final String shopName;
+  /// The shop name while idle; the design switches it to "Ghi hình" once a
+  /// clip is rolling, so the screen states read apart at a glance.
+  final String title;
   final int queueCount;
   final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 22, 16, 0),
       child: Row(
         children: [
           _Tap(
             onTap: onBack,
             tooltip: context.l10n.tooltipBack,
-            child: const Icon(
-              Icons.chevron_left,
-              size: 20,
-              color: BrandColors.ink,
+            child: PenBox(
+              width: 42,
+              height: 42,
+              fill: const Color(0xBF161616),
+              stroke: PenColors.mut,
+              radius: 999,
+              axis: PenAxis.row,
+              main: MainAxisAlignment.center,
+              cross: CrossAxisAlignment.center,
+              children: const [
+                Icon(
+                  LucideIcons.chevronLeft,
+                  size: 22,
+                  color: PenColors.card,
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              shopName,
+            child: PenText(
+              title,
+              size: 24,
+              color: PenColors.card,
+              weight: FontWeight.w800,
+              softWrap: false,
               overflow: TextOverflow.ellipsis,
-              style: _t(14, FontWeight.w600, BrandColors.ink),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           _QueueChip(count: queueCount),
         ],
       ),
@@ -710,20 +906,29 @@ class _QueueChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
-      decoration: BoxDecoration(
-        color: BrandColors.soft,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.cloud_outlined, size: 14, color: BrandColors.ink),
-          const SizedBox(width: 4),
-          Text('$count', style: _t(12, FontWeight.w600, BrandColors.ink)),
-        ],
-      ),
+    return PenBox(
+      fill: const Color(0xBF161616),
+      stroke: PenColors.mut,
+      radius: 999,
+      axis: PenAxis.row,
+      gap: 8,
+      cross: CrossAxisAlignment.center,
+      hugMain: true,
+      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 15),
+      children: [
+        const Icon(
+          LucideIcons.cloudUpload,
+          size: 19,
+          color: PenColors.card,
+        ),
+        PenText(
+          '$count',
+          size: 16,
+          color: PenColors.card,
+          weight: FontWeight.w700,
+          softWrap: false,
+        ),
+      ],
     );
   }
 }
@@ -734,35 +939,76 @@ class _CamCodeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 14),
-      decoration: BoxDecoration(
-        color: BrandColors.dark,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(code, style: _t(14, FontWeight.w600, Colors.white)),
+    return PenBox(
+      fill: PenColors.ink,
+      stroke: PenColors.mut,
+      radius: 999,
+      axis: PenAxis.row,
+      gap: 10,
+      cross: CrossAxisAlignment.center,
+      hugMain: true,
+      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 15),
+      children: [
+        const PenBox(
+          width: 22,
+          height: 22,
+          fill: PenColors.soft,
+          radius: 6,
+          axis: PenAxis.row,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          children: [
+            Icon(LucideIcons.package, size: 16, color: PenColors.ink),
+          ],
+        ),
+        Flexible(
+          child: PenText(
+            code,
+            size: 14,
+            color: PenColors.card,
+            weight: FontWeight.w700,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }
 
 class _RecRow extends StatelessWidget {
-  const _RecRow();
+  const _RecRow({this.elapsed = '00:00'});
+
+  /// Running clip length, `mm:ss`.
+  final String elapsed;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return PenBox(
+      fill: const Color(0xCC161616),
+      stroke: PenColors.mut,
+      radius: 999,
+      axis: PenAxis.row,
+      gap: 11,
+      cross: CrossAxisAlignment.center,
+      hugMain: true,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
       children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: const BoxDecoration(
-            color: BrandColors.rec,
-            shape: BoxShape.circle,
-          ),
+        const PenEllipse(width: 14, height: 14, color: PenColors.danger),
+        PenText(
+          'REC',
+          size: 18,
+          color: PenColors.card,
+          weight: FontWeight.w700,
+          softWrap: false,
         ),
-        const SizedBox(width: 6),
-        Text('REC', style: _t(12, FontWeight.w600, BrandColors.mut)),
+        PenText(
+          elapsed,
+          size: 18,
+          color: PenColors.card,
+          weight: FontWeight.w700,
+          softWrap: false,
+        ),
       ],
     );
   }
@@ -829,27 +1075,64 @@ class _ZoomControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-      decoration: BoxDecoration(
-        color: BrandColors.bg,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return PenBox(
+      fill: const Color(0xCC1C1C1E),
+      stroke: const Color(0x14FFFFFF),
+      radius: 999,
+      axis: PenAxis.row,
+      gap: 2,
+      cross: CrossAxisAlignment.center,
+      hugMain: true,
+      padding: const EdgeInsets.all(4),
+      children: [
+        _ZoomStep(label: '.5', selected: label == '.5', onTap: onZoomOut),
+        _ZoomStep(label: label, selected: true),
+        _ZoomStep(label: '2', selected: label == '2', onTap: onZoomIn),
+      ],
+    );
+  }
+}
+
+/// One step in the zoom pill. The chosen step is the only green thing on the
+/// camera chrome — the design uses `--chart-3` for it.
+class _ZoomStep extends StatelessWidget {
+  const _ZoomStep({
+    required this.label,
+    required this.selected,
+    this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Tap(
+      onTap: onTap,
+      tooltip: label,
+      child: PenBox(
+        width: 44,
+        height: 34,
+        fill: selected ? const Color(0x29FFFFFF) : null,
+        radius: 999,
+        axis: PenAxis.row,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
         children: [
-          _Tap(
-            onTap: onZoomIn,
-            tooltip: context.l10n.tooltipZoomIn,
-            child: const Icon(Icons.add, size: 14, color: BrandColors.ink),
-          ),
-          const SizedBox(height: 12),
-          Text(label, style: _t(12, FontWeight.w600, BrandColors.ink)),
-          const SizedBox(height: 12),
-          _Tap(
-            onTap: onZoomOut,
-            tooltip: context.l10n.tooltipZoomOut,
-            child: const Icon(Icons.remove, size: 14, color: BrandColors.ink),
+          // The current zoom can be longer than the design's ".5 / 1x / 2"
+          // (e.g. "1.0x"), so the step has to be able to shrink.
+          Flexible(
+            child: PenText(
+              label,
+              size: selected ? 14 : 13,
+              color: selected
+                  ? const Color(0xFF67BB75)
+                  : const Color(0xB3FFFFFF),
+              weight: FontWeight.w700,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -864,18 +1147,27 @@ class _RailPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: context.l10n.captureResolution,
-      child: EcTap(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 9),
-          decoration: BoxDecoration(
-            color: BrandColors.bg,
-            borderRadius: BorderRadius.circular(999),
+    return _Tap(
+      onTap: onTap,
+      tooltip: label,
+      child: PenBox(
+        width: 58,
+        height: 42,
+        fill: const Color(0xCC1C1C1E),
+        stroke: const Color(0x1AFFFFFF),
+        radius: 999,
+        axis: PenAxis.row,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
+        children: [
+          PenText(
+            label,
+            size: 13,
+            color: PenColors.card,
+            weight: FontWeight.w700,
+            softWrap: false,
           ),
-          child: Text(label, style: _t(12, FontWeight.w600, BrandColors.ink)),
-        ),
+        ],
       ),
     );
   }
@@ -893,20 +1185,19 @@ class _RailIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: EcTap(
-        onTap: onTap,
-        child: Container(
-          width: 36,
-          height: 36,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            color: BrandColors.bg,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 16, color: BrandColors.ink),
-        ),
+    return _Tap(
+      onTap: onTap,
+      tooltip: tooltip,
+      child: PenBox(
+        width: 58,
+        height: 42,
+        fill: const Color(0xCC1C1C1E),
+        stroke: const Color(0x1AFFFFFF),
+        radius: 999,
+        axis: PenAxis.row,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
+        children: [Icon(icon, size: 21, color: PenColors.card)],
       ),
     );
   }
@@ -918,30 +1209,21 @@ class _StopButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: context.l10n.stopRecording,
-      child: EcTap(
-        onTap: onTap,
-        child: Container(
-          width: 64,
-          height: 64,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            color: BrandColors.bg,
-            shape: BoxShape.circle,
-            border: Border.fromBorderSide(
-              BorderSide(color: BrandColors.line),
-            ),
-          ),
-          child: Container(
-            width: 22,
-            height: 22,
-            decoration: BoxDecoration(
-              color: BrandColors.rec,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ),
+    return _Tap(
+      onTap: onTap,
+      tooltip: context.l10n.tooltipStopRecording,
+      child: PenBox(
+        width: 86,
+        height: 86,
+        stroke: PenColors.card,
+        strokeWidth: 5,
+        radius: 999,
+        axis: PenAxis.row,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
+        children: const [
+          PenBox(width: 34, height: 34, fill: PenColors.danger, radius: 8),
+        ],
       ),
     );
   }
@@ -959,54 +1241,62 @@ class _TypeChipRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return PenBox(
+      fill: const Color(0xCC1C1C1E),
+      radius: 999,
+      axis: PenAxis.row,
+      gap: 2,
+      cross: CrossAxisAlignment.center,
+      hugMain: true,
+      padding: const EdgeInsets.all(4),
       children: [
         Flexible(
           child: EcTap(
             onTap: onPickType,
-            child: Container(
-              decoration: ecSquircleDecoration(
-                radius: 999,
-                color: BrandColors.dark,
+            child: PenBox(
+              fill: const Color(0x1FFFFFFF),
+              radius: 999,
+              axis: PenAxis.row,
+              hugMain: true,
+              padding: const EdgeInsets.symmetric(
+                vertical: 9,
+                horizontal: 16,
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 10,
+              children: [
+                Flexible(
+                  child: PenText(
+                    typeLabel,
+                    size: 15,
+                    color: const Color(0xFF67BB75),
+                    weight: FontWeight.w800,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                child: Text(
-                  typeLabel,
-                  overflow: TextOverflow.ellipsis,
-                  style: _t(12, FontWeight.w500, Colors.white),
-                ),
-              ),
+              ],
             ),
           ),
         ),
-        if (onSettings != null) ...[
-          const SizedBox(width: 8),
+        if (onSettings != null)
           Tooltip(
             message: context.l10n.videoTypeSettings,
             child: EcTap(
               onTap: onSettings,
-              child: Container(
-                decoration: ecSquircleDecoration(
-                  radius: 999,
-                  color: BrandColors.bg,
-                  side: const BorderSide(color: BrandColors.line),
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                  child: Icon(
-                    Icons.settings_outlined,
-                    size: 14,
-                    color: BrandColors.ink,
+              child: const PenBox(
+                radius: 999,
+                axis: PenAxis.row,
+                hugMain: true,
+                padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
+                children: [
+                  Icon(
+                    LucideIcons.settings,
+                    size: 16,
+                    color: Color(0x8CFFFFFF),
                   ),
-                ),
+                ],
               ),
             ),
           ),
-        ],
       ],
     );
   }
@@ -1241,8 +1531,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                    if (hasQuotaWait)
-                      const SizedBox(height: 12),
+                    if (hasQuotaWait) const SizedBox(height: 12),
                     SizedBox(
                       height: 32,
                       child: ListView.separated(
@@ -1516,7 +1805,7 @@ class _UploadStatusView extends StatelessWidget {
       EcUploadStatus.done => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check, size: 12, color: BrandColors.ink),
+          const Icon(LucideIcons.check, size: 12, color: BrandColors.ink),
           const SizedBox(width: 4),
           Text(
             context.l10n.uploaded,
@@ -1954,12 +2243,16 @@ class _TypeSheetRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (selected) ...[
-                    const Icon(Icons.check, size: 16, color: BrandColors.ink),
+                    const Icon(
+                      LucideIcons.check,
+                      size: 16,
+                      color: BrandColors.ink,
+                    ),
                     const SizedBox(width: 10),
                   ],
                   if (type.locked)
                     const Icon(
-                      Icons.lock_outline,
+                      LucideIcons.lock,
                       size: 14,
                       color: BrandColors.mut,
                     ),

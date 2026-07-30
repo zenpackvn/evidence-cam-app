@@ -1,10 +1,8 @@
 {
   "@@locale": "vi",
-
   "commonCancel": "Hủy",
   "commonRetry": "Thử lại",
   "commonClose": "Đóng",
-
   "toastChangeLanguage": "Đổi ngôn ngữ",
   "toastTermsPolicy": "Điều khoản & Chính sách",
   "toastInfoSaved": "Đã lưu thông tin",
@@ -41,17 +39,14 @@
   "toastRoleChangedStaff": "Đã đổi vai trò: Nhân viên",
   "toastNoMemberToUpdate": "Không có thành viên để cập nhật",
   "toastMemberRemoved": "Đã gỡ khỏi shop (video đã quay vẫn upload nốt)",
-
   "copiedLabel": "Đã sao chép {label}",
   "labelTrackingCode": "mã vận đơn",
   "resolutionChanged": "Độ phân giải: {value}",
-
   "accountNoName": "Chưa đặt tên",
   "accountNoShop": "Chưa chọn shop",
   "accountCreatePassword": "Tạo mật khẩu",
   "accountChangePassword": "Đổi mật khẩu",
   "accountLinkedMethods": "{count} liên kết",
-
   "roleOwner": "Chủ shop",
   "roleManager": "Quản lý",
   "roleStaff": "Nhân viên",
@@ -60,7 +55,6 @@
   "roleOther": "Khác",
   "roleUnknown": "Không rõ",
   "memberFallbackName": "Thành viên",
-
   "uploadStatusDone": "Đã tải lên",
   "uploadStatusPending": "Đang chờ tải",
   "uploadStatusQuotaHold": "Tạm giữ do quota",
@@ -68,15 +62,12 @@
   "uploadStatusError": "Lỗi xử lý phía máy chủ",
   "uploadStatusExpired": "Đã quá hạn lưu trữ",
   "expiredOnDate": "Đã quá hạn lưu trữ ngày {date}",
-
   "kindPhoto": "Ảnh đính kèm",
   "kindVideo": "Video",
-
   "recordedByFallback": "Tài khoản hiện tại",
   "deviceUnknown": "Không rõ thiết bị",
   "orderNoEvidence": "Chưa có bằng chứng",
   "timelineEmpty": "Mã vận đơn này chưa có video hoặc ảnh nào",
-
   "errorGenericRetry": "Không thực hiện được, vui lòng thử lại.",
   "errorPendingDossier": "Bạn còn hồ sơ khiếu nại đang mở, vui lòng xử lý trước khi tiếp tục.",
   "errorSessionExpired": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.",
@@ -88,13 +79,11 @@
   "errorBuiltinVideoTypeLocked": "3 loại video có sẵn không thể sửa hoặc xóa.",
   "errorVideoTypeNameExists": "Tên loại video đã tồn tại trong shop.",
   "errorCheckNetwork": "Kiểm tra mạng hoặc thử lại sau.",
-
   "errorLoadShopList": "Không tải được danh sách shop",
   "errorLoadShopMgmt": "Không tải được quản lý shop",
   "errorLoadShopDetail": "Không tải được chi tiết shop",
   "errorLoadOrders": "Không tải được đơn hàng",
   "errorLoadOrderDetail": "Không tải được chi tiết đơn",
-
   "noShopSelectedOrdersDetail": "Vui lòng chọn shop trước khi xem đơn hàng.",
   "noShopSelectedRecordDetail": "Vui lòng chọn shop trước khi ghi hình.",
   "noShopSelectedManageDetail": "Vui lòng chọn shop để quản lý.",
@@ -103,15 +92,12 @@
   "noVideoDataTitle": "Không có dữ liệu video",
   "cannotOpenVideoTitle": "Không mở được video",
   "cannotOpenVideoDetail": "Video chưa có link phát.",
-
   "createOrderDialogTitle": "Tạo vận đơn mới?",
   "createOrderDialogBody": "{code} không khớp mã vận đơn nào trong shop hiện tại. Kiểm tra lại mã hoặc xác nhận tạo vận đơn mới.",
   "createOrderConfirm": "Tạo vận đơn mới",
-
   "statOrdersToday": "Vận đơn hôm nay",
   "statVideosRecorded": "Video đã quay",
   "statPendingUpload": "Chờ tải",
-
   "accountPlanQuota": "Gói cước & Quota",
   "accountSectionApp": "GÓI & ỨNG DỤNG",
   "accountLanguage": "Ngôn ngữ",
@@ -282,7 +268,7 @@
   "shopPlatform": "Sàn thương mại",
   "shopCreateOwnerNote": "Bạn sẽ là Chủ shop — thêm thành viên sau trong Quản lý cửa hàng",
   "shopMgmtVisibilityNote": "Nhân viên không thấy màn này · QL shop chỉ thấy shop mình quản",
-  "shopAddNew": "Thêm shop mới (tên + sàn)",
+  "shopAddNew": "Thêm cửa hàng mới",
   "sectionMembers": "THÀNH VIÊN",
   "sectionShopSettings": "CÀI ĐẶT SHOP",
   "sectionVideoTypes": "LOẠI VIDEO",
@@ -324,5 +310,190 @@
   "memberCurrentRole": "Vai trò hiện tại: {role}",
   "stopCodeTitle": "Mã QR dừng quay",
   "stopCodeInstructions": "In mã này ra và dán ở bàn đóng hàng. Đưa mã vào khung hình camera khi đang quay để tự động dừng quay.",
-  "scannedCodeNotFound": "Không tìm thấy vận đơn khớp mã đã quét"
+  "scannedCodeNotFound": "Không tìm thấy vận đơn khớp mã đã quét",
+  "onboardingTaglineOne": "Mỗi kiện hàng.",
+  "@onboardingTaglineOne": {
+    "description": "Splash tagline, line 1 of 3."
+  },
+  "onboardingTaglineTwo": "Một bằng chứng.",
+  "@onboardingTaglineTwo": {
+    "description": "Splash tagline, line 2 of 3."
+  },
+  "onboardingTaglineThree": "Bảo vệ doanh thu của bạn.",
+  "@onboardingTaglineThree": {
+    "description": "Splash tagline, line 3 of 3."
+  },
+  "authEmailPlaceholder": "Nhập email của bạn",
+  "@authEmailPlaceholder": {
+    "description": "Placeholder inside the email field."
+  },
+  "authPasswordPlaceholder": "Nhập mật khẩu của bạn",
+  "@authPasswordPlaceholder": {
+    "description": "Placeholder inside the password field."
+  },
+  "registerCreateAccountSubtitle": "Tạo tài khoản mới",
+  "@registerCreateAccountSubtitle": {
+    "description": "Register screen: registerCreateAccountSubtitle."
+  },
+  "registerFullName": "Họ tên",
+  "@registerFullName": {
+    "description": "Register screen: registerFullName."
+  },
+  "registerFullNameRequired": "Vui lòng nhập họ tên",
+  "@registerFullNameRequired": {
+    "description": "Register screen: registerFullNameRequired."
+  },
+  "registerPhone": "Số điện thoại",
+  "@registerPhone": {
+    "description": "Register screen: registerPhone."
+  },
+  "registerAgreePrefix": "Tôi đồng ý với",
+  "@registerAgreePrefix": {
+    "description": "Register screen: registerAgreePrefix."
+  },
+  "registerTermsOfUse": "Điều khoản sử dụng",
+  "@registerTermsOfUse": {
+    "description": "Register screen: registerTermsOfUse."
+  },
+  "shopChooseTitle": "Chọn cửa hàng",
+  "@shopChooseTitle": {
+    "description": "Shop layer: shopChooseTitle."
+  },
+  "shopChooseSubtitle": "Chọn cửa hàng để tiếp tục",
+  "@shopChooseSubtitle": {
+    "description": "Shop layer: shopChooseSubtitle."
+  },
+  "shopManageTitle": "Quản lý cửa hàng",
+  "@shopManageTitle": {
+    "description": "Shop layer: shopManageTitle."
+  },
+  "shopManageOwnerOnly": "Chỉ hiển thị với Chủ tài khoản / Quản lý shop",
+  "@shopManageOwnerOnly": {
+    "description": "Shop layer: shopManageOwnerOnly."
+  },
+  "noShopTitle": "Chưa có shop nào",
+  "@noShopTitle": {
+    "description": "Shop layer: noShopTitle."
+  },
+  "noShopLineOne": "Tài khoản của bạn chưa thuộc shop nào.",
+  "@noShopLineOne": {
+    "description": "Shop layer: noShopLineOne."
+  },
+  "noShopLineTwo": "Tạo shop mới để bắt đầu,",
+  "@noShopLineTwo": {
+    "description": "Shop layer: noShopLineTwo."
+  },
+  "noShopLineThree": "hoặc chờ lời mời từ chủ shop.",
+  "@noShopLineThree": {
+    "description": "Shop layer: noShopLineThree."
+  },
+  "noShopCreateCta": "Tạo shop mới (tên + sàn)",
+  "@noShopCreateCta": {
+    "description": "Shop layer: noShopCreateCta."
+  },
+  "noShopInviteHint": "Lời mời vào shop sẽ hiện ở đây",
+  "@noShopInviteHint": {
+    "description": "Shop layer: noShopInviteHint."
+  },
+  "createShopTitle": "Tạo shop",
+  "@createShopTitle": {
+    "description": "Create-shop screen: createShopTitle."
+  },
+  "createShopNameLabel": "Tên shop",
+  "@createShopNameLabel": {
+    "description": "Create-shop screen: createShopNameLabel."
+  },
+  "createShopNameHint": "Ví dụ: Shop ABC",
+  "@createShopNameHint": {
+    "description": "Create-shop screen: createShopNameHint."
+  },
+  "createShopPlatformLabel": "Sàn thương mại",
+  "@createShopPlatformLabel": {
+    "description": "Create-shop screen: createShopPlatformLabel."
+  },
+  "createShopOwnerNote": "Bạn sẽ là chủ shop — thêm thành viên sau trong Quản lý cửa hàng",
+  "@createShopOwnerNote": {
+    "description": "Create-shop screen: createShopOwnerNote."
+  },
+  "createShopSubmit": "Tạo shop",
+  "@createShopSubmit": {
+    "description": "Create-shop screen: createShopSubmit."
+  },
+  "shopManageDescription": "Xem và quản lý danh sách các cửa hàng bạn có quyền quản lý.",
+  "@shopManageDescription": {
+    "description": "Shop management: shopManageDescription."
+  },
+  "shopManageAddCta": "Thêm shop mới (tên + sàn)",
+  "@shopManageAddCta": {
+    "description": "Shop management: shopManageAddCta."
+  },
+  "shopManageStaffNote": "Nhân viên không thấy màn này — chỉ chủ shop và quản lý shop mới xem được.",
+  "@shopManageStaffNote": {
+    "description": "Shop management: shopManageStaffNote."
+  },
+  "shopDetailTitle": "Chi tiết cửa hàng",
+  "@shopDetailTitle": {
+    "description": "Shop detail: shopDetailTitle."
+  },
+  "shopDetailResolution": "Độ phân giải quay",
+  "@shopDetailResolution": {
+    "description": "Shop detail: shopDetailResolution."
+  },
+  "shopDetailAddType": "Thêm loại (nhập tên)",
+  "@shopDetailAddType": {
+    "description": "Shop detail: shopDetailAddType."
+  },
+  "inviteMemberTitle": "Mời thành viên",
+  "@inviteMemberTitle": {
+    "description": "Shop detail: inviteMemberTitle."
+  },
+  "inviteMemberHint": "(chưa có tài khoản → gửi lời mời)",
+  "@inviteMemberHint": {
+    "description": "Shop detail: inviteMemberHint."
+  },
+  "videoTypeIcon": "Biểu tượng",
+  "@videoTypeIcon": {
+    "description": "Video type dialogs: videoTypeIcon."
+  },
+  "videoTypeColor": "Màu sắc",
+  "@videoTypeColor": {
+    "description": "Video type dialogs: videoTypeColor."
+  },
+  "createVideoTypeSubmit": "Tạo loại",
+  "@createVideoTypeSubmit": {
+    "description": "Video type dialogs: createVideoTypeSubmit."
+  },
+  "deleteVideoTypeSafeNote": "Không mất bằng chứng",
+  "@deleteVideoTypeSafeNote": {
+    "description": "Video type dialogs: deleteVideoTypeSafeNote."
+  },
+  "commonConfirm": "Xác nhận",
+  "@commonConfirm": {
+    "description": "Generic confirm action."
+  },
+  "orderErrorCount": "{count} lỗi",
+  "@orderErrorCount": {
+    "description": "Badge on an order row whose uploads failed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "videoDetailSheetTitle": "Chi tiết video",
+  "@videoDetailSheetTitle": {
+    "description": "Title of the video-detail sheet."
+  },
+  "tooltipStopRecording": "Dừng quay",
+  "@tooltipStopRecording": {
+    "description": "Shutter button label while recording."
+  },
+  "dossierLinkTitle": "Link hồ sơ khiếu nại",
+  "@dossierLinkTitle": {
+    "description": "Shareable dossier link card."
+  },
+  "languageChangeScopeNote": "Toàn bộ nhãn, thông báo và hồ sơ\nsẽ đổi sang ngôn ngữ bạn chọn.",
+  "@languageChangeScopeNote": {
+    "description": "Caption under the language screen illustration."
+  }
 }

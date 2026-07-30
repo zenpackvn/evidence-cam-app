@@ -1,4 +1,5 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:ec_ui/ec_ui.dart';
 import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/cupertino.dart' show CupertinoTextField;
 import 'package:flutter/material.dart';
@@ -42,7 +43,8 @@ void main() {
     testWidgets('shows brand, tagline and start button', (tester) async {
       await _pump(tester, const EcSplashScreen());
       expect(find.text('ZenPack'), findsOneWidget);
-      expect(find.textContaining('bằng chứng đóng hàng'), findsOneWidget);
+      expect(find.text('Mỗi kiện hàng.'), findsOneWidget);
+      expect(find.text('Bảo vệ doanh thu của bạn.'), findsOneWidget);
       expect(find.text('Bắt đầu'), findsOneWidget);
       expect(find.text('v1.0.0'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -97,14 +99,14 @@ void main() {
       // Starts hidden with the "reveal" eye; tapping shows the password and
       // swaps to the "hide" eye; tapping again hides it once more.
       expect(passwordObscured(), isTrue);
-      expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+      expect(find.byIcon(LucideIcons.eye), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.visibility_outlined));
+      await tester.tap(find.byIcon(LucideIcons.eye));
       await tester.pump();
       expect(passwordObscured(), isFalse);
-      expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+      expect(find.byIcon(LucideIcons.eyeOff), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.visibility_off_outlined));
+      await tester.tap(find.byIcon(LucideIcons.eyeOff));
       await tester.pump();
       expect(passwordObscured(), isTrue);
     });

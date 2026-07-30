@@ -1,7 +1,7 @@
 /// EvidenceCam Flow 2 screens — "Tab Vận đơn & Hồ sơ": the order list, a
 /// per-order evidence timeline, and the video detail bottom sheet. Built
 /// pixel-perfect from
-/// `specs/projects/evidencecam/design-spec/pencil-new.pen`.
+/// `specs/projects/evidencecam/design-spec/pencil-app-dna.pen`.
 ///
 /// These are presentational (data-in, callbacks-out) so they can be verified
 /// in isolation now and wired to data/routing as those land. Every dimension,
@@ -26,13 +26,13 @@ VoidCallback? _bind<T>(ValueChanged<T>? callback, T value) =>
 /// The kind of evidence captured by a video/photo entry, driving its icon.
 enum EcEvidenceType {
   /// A recorded video clip.
-  video(Icons.videocam_outlined),
+  video(LucideIcons.video),
 
   /// A still photo attached as evidence.
-  image(Icons.image_outlined),
+  image(LucideIcons.image),
 
   /// A weighing/scale reading.
-  scale(Icons.scale);
+  scale(LucideIcons.scale);
 
   const EcEvidenceType(this.icon);
 
@@ -153,6 +153,9 @@ class EcOrderTimelineScreen extends StatelessWidget {
     this.onVideoTap,
     this.onVideoMenu,
     this.onAttachPhoto,
+    this.dossierUrl,
+    this.onCopyDossierLink,
+    this.onShareDossierLink,
     super.key,
   });
 
@@ -184,72 +187,77 @@ class EcOrderTimelineScreen extends StatelessWidget {
   /// Called when "Đính kèm ảnh vào đơn" is tapped.
   final VoidCallback? onAttachPhoto;
 
+  /// Public dossier link for this order; `null` hides the link card (the
+  /// design only shows it once the order has a shareable profile).
+  final String? dossierUrl;
+  final VoidCallback? onCopyDossierLink;
+  final VoidCallback? onShareDossierLink;
+
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: BrandColors.bg,
-      child: SafeArea(
-        child: Column(
-          children: [
-            _EcOrderTimelineHeader(
+    final l10n = context.l10n;
+    return PenScreen(
+      scrollable: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
+            child: _EcOrderTimelineHeader(
               orderCode: orderCode,
               onBack: onBack,
               onCopyCode: onCopyCode,
             ),
-            Expanded(
-              child: CustomScrollView(
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    sliver: SliverToBoxAdapter(
-                      child: Column(
-                        children: [
-                          if (pendingUploadCount > 0) ...[
-                            _EcUploadWarnBanner(
-                              pendingCount: pendingUploadCount,
-                              onRetry: onRetryUpload,
-                            ),
-                            const SizedBox(height: 12),
-                          ],
-                          if (days.isEmpty)
-                            _EcTimelineEmpty(text: context.l10n.timelineEmpty),
-                          for (var d = 0; d < days.length; d++) ...[
-                            if (d > 0) const SizedBox(height: 22),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                days[d].date,
-                                style: _t(12, FontWeight.w600, BrandColors.mut),
-                              ),
-                            ),
-                            for (final video in days[d].videos) ...[
-                              const SizedBox(height: 12),
-                              _EcTimelineVideoRow(
-                                video: video,
-                                onPlay: _bind(onVideoTap, video),
-                                onMenu: _bind(onVideoMenu, video),
-                              ),
-                            ],
-                          ],
-                        ],
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (pendingUploadCount > 0) ...[
+                    _EcUploadWarnBanner(
+                      pendingCount: pendingUploadCount,
+                      onRetry: onRetryUpload,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  if (days.isEmpty) _EcTimelineEmpty(text: l10n.timelineEmpty),
+                  for (var d = 0; d < days.length; d++) ...[
+                    if (d > 0) const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 9),
+                      child: PenText(
+                        days[d].date,
+                        size: 16,
+                        color: PenColors.ink,
+                        weight: FontWeight.w700,
                       ),
                     ),
-                  ),
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [_EcAttachPhotoRow(onTap: onAttachPhoto)],
+                    for (var v = 0; v < days[d].videos.length; v++) ...[
+                      if (v > 0) const SizedBox(height: 9),
+                      _EcTimelineVideoRow(
+                        video: days[d].videos[v],
+                        onPlay: _bind(onVideoTap, days[d].videos[v]),
+                        onMenu: _bind(onVideoMenu, days[d].videos[v]),
                       ),
+                    ],
+                  ],
+                  const SizedBox(height: 16),
+                  _EcAttachPhotoRow(onTap: onAttachPhoto),
+                  if (dossierUrl != null) ...[
+                    const SizedBox(height: 11),
+                    _EcDossierLinkCard(
+                      url: dossierUrl!,
+                      onCopy: onCopyDossierLink,
+                      onShare: onShareDossierLink,
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -290,132 +298,116 @@ class EcVideoDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: Colors.transparent,
-      child: Column(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onClose,
+    final l10n = context.l10n;
+    return PenSheet(
+      onDismiss: onClose,
+      children: [
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            PenBox(
+              width: 48,
+              height: 48,
+              fill: PenColors.line,
+              radius: 14,
+              axis: PenAxis.row,
+              main: MainAxisAlignment.center,
+              cross: CrossAxisAlignment.center,
+              children: [
+                Icon(video.type.icon, size: 24, color: PenColors.ink),
+              ],
             ),
-          ),
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * 0.9,
-            ),
-            child: DecoratedBox(
-              decoration: ShapeDecoration(
-                color: BrandColors.bg,
-                shape: SmoothRectangleBorder(
-                  smoothness: ecCornerSmoothing,
-                  borderRadius: BorderRadius.zero,
-                ),
-              ),
-              child: SafeArea(
-                top: false,
-                // Title + up to 5 info rows + 3 action rows can be taller
-                // than the screen on smaller devices or with larger system
-                // font sizes — scroll instead of silently clipping
-                // Play/Download/Delete off-screen.
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          margin: const EdgeInsets.only(bottom: 8),
-                          decoration: BoxDecoration(
-                            color: BrandColors.line,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: BrandColors.soft,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Icon(
-                                video.type.icon,
-                                size: 16,
-                                color: BrandColors.mut,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                video.title,
-                                overflow: TextOverflow.ellipsis,
-                                style: _t(
-                                  16,
-                                  FontWeight.w600,
-                                  BrandColors.ink,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _EcDetailInfoRow(
-                        label: context.l10n.detailRecordedTime,
-                        value: video.recordedAt,
-                      ),
-                      if (video.type == EcEvidenceType.video)
-                        _EcDetailInfoRow(
-                          label: context.l10n.detailDuration,
-                          value: video.duration,
-                        ),
-                      _EcDetailInfoRow(
-                        label: context.l10n.detailRecordedBy,
-                        value: video.recordedBy,
-                      ),
-                      _EcDetailInfoRow(
-                        label: context.l10n.detailDevice,
-                        value: video.device,
-                      ),
-                      if (video.fileSize != null)
-                        _EcDetailInfoRow(
-                          label: context.l10n.detailSize,
-                          value: video.fileSize!,
-                        ),
-                      _EcDetailInfoRow(
-                        label: context.l10n.detailUploadStatus,
-                        value: video.uploadStatus,
-                      ),
-                      _EcDetailActionRow(
-                        icon: Icons.play_arrow,
-                        label: context.l10n.detailPlayVideo,
-                        onTap: onPlay,
-                      ),
-                      _EcDetailActionRow(
-                        icon: Icons.download_outlined,
-                        label: context.l10n.detailDownloadVideo,
-                        subLabel: context.l10n.detailDownloadNote,
-                        onTap: onDownload,
-                      ),
-                      const SizedBox(height: 4),
-                      if (canDelete) _EcDetailDeleteRow(onTap: onDelete),
-                    ],
-                  ),
-                ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: PenText(
+                l10n.videoDetailSheetTitle,
+                size: 24,
+                color: PenColors.ink,
+                weight: FontWeight.w800,
               ),
             ),
+            const SizedBox(width: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 170),
+              child: PenText(
+                '${video.title} · ${video.duration}',
+                size: 16,
+                color: PenColors.mut,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        _EcDetailInfoRow(
+          label: l10n.detailRecordedTime,
+          value: video.recordedAt,
+        ),
+        const _EcDetailDivider(),
+        _EcDetailInfoRow(
+          label: l10n.detailRecordedBy,
+          value: video.recordedBy,
+        ),
+        const _EcDetailDivider(),
+        _EcDetailInfoRow(label: l10n.detailDevice, value: video.device),
+        const _EcDetailDivider(),
+        _EcDetailInfoRow(
+          label: l10n.detailUploadStatus,
+          value: video.uploadStatus,
+          trailing: LucideIcons.check,
+        ),
+        if (video.fileSize != null) ...[
+          const _EcDetailDivider(),
+          _EcDetailInfoRow(
+            label: l10n.detailSize,
+            value: video.fileSize!,
           ),
         ],
-      ),
+        const SizedBox(height: 18),
+        PenCard(
+          axis: PenAxis.column,
+          clip: true,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          children: [
+            _EcDetailActionRow(
+              icon: LucideIcons.play,
+              title: l10n.detailPlayVideo,
+              onTap: onPlay,
+            ),
+            const _EcDetailDivider(),
+            _EcDetailActionRow(
+              icon: LucideIcons.download,
+              title: l10n.detailDownloadVideo,
+              subtitle: l10n.detailDownloadNote,
+              onTap: onDownload,
+            ),
+            if (canDelete) ...[
+              const _EcDetailDivider(),
+              _EcDetailActionRow(
+                icon: LucideIcons.trash2,
+                title: l10n.deleteVideoAction,
+                subtitle: l10n.deleteVideoNote,
+                danger: true,
+                onTap: onDelete,
+              ),
+            ],
+          ],
+        ),
+      ],
     );
   }
+}
+
+/// The hairline the design puts between rows inside a sheet or card.
+class _EcDetailDivider extends StatelessWidget {
+  const _EcDetailDivider();
+
+  @override
+  Widget build(BuildContext context) => const PenBox(
+    width: double.infinity,
+    height: 1,
+    fill: PenColors.line,
+  );
 }
 
 /// Photo detail — bottom-sheet-style "Chi tiết ảnh": the photo itself, plus
@@ -578,8 +570,8 @@ class EcPhotoDetailScreen extends StatelessWidget {
                         value: photo.recordedBy,
                       ),
                       _EcDetailActionRow(
-                        icon: Icons.download_outlined,
-                        label: context.l10n.detailDownloadPhoto,
+                        icon: LucideIcons.download,
+                        title: context.l10n.detailDownloadPhoto,
                         onTap: onDownload,
                       ),
                     ],
@@ -594,7 +586,65 @@ class EcPhotoDetailScreen extends StatelessWidget {
   }
 }
 
-// --- shared pieces (pixel specs from pencil-new.pen) ---
+/// "Link hồ sơ khiếu nại" — the shareable dossier URL with copy and share
+/// affordances, closing the evidence profile.
+class _EcDossierLinkCard extends StatelessWidget {
+  const _EcDossierLinkCard({required this.url, this.onCopy, this.onShare});
+
+  final String url;
+  final VoidCallback? onCopy;
+  final VoidCallback? onShare;
+
+  @override
+  Widget build(BuildContext context) {
+    return PenCard(
+      fill: PenColors.bg,
+      stroke: null,
+      lifted: false,
+      gap: 12,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PenText(
+                context.l10n.dossierLinkTitle,
+                size: 16,
+                color: PenColors.link,
+                weight: FontWeight.w600,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              PenText(
+                url,
+                size: 12,
+                color: PenColors.mut,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        EcTap(
+          onTap: onCopy,
+          child: const Icon(LucideIcons.copy, size: 21, color: PenColors.ink),
+        ),
+        EcTap(
+          onTap: onShare,
+          child: const Icon(
+            LucideIcons.share2,
+            size: 21,
+            color: PenColors.ink,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// --- shared pieces (pixel specs from pencil-app-dna.pen) ---
 
 class _EcOrderTimelineHeader extends StatelessWidget {
   const _EcOrderTimelineHeader({
@@ -609,42 +659,25 @@ class _EcOrderTimelineHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          EcTap(
-            onTap: onBack,
-            child: const Padding(
-              padding: EdgeInsets.all(2),
-              child: Icon(
-                Icons.chevron_left,
-                size: 24,
-                color: BrandColors.ink,
-              ),
-            ),
+    return Row(
+      children: [
+        PenBackButton(onTap: onBack),
+        const SizedBox(width: 12),
+        Expanded(
+          child: PenText(
+            orderCode,
+            size: 24,
+            color: PenColors.ink,
+            weight: FontWeight.w800,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              orderCode,
-              overflow: TextOverflow.ellipsis,
-              style: _t(20, FontWeight.w600, BrandColors.ink),
-            ),
-          ),
-          EcTap(
-            onTap: onCopyCode,
-            child: const Padding(
-              padding: EdgeInsets.all(6),
-              child: Icon(
-                Icons.copy_outlined,
-                size: 20,
-                color: BrandColors.mut,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 12),
+        EcTap(
+          onTap: onCopyCode,
+          child: const Icon(LucideIcons.copy, size: 24, color: PenColors.ink),
+        ),
+      ],
     );
   }
 }
@@ -657,33 +690,35 @@ class _EcUploadWarnBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final l10n = context.l10n;
+    return PenBox(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: ecSquircleDecoration(
-        radius: 12,
-        color: BrandColors.soft,
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.cloud_outlined, size: 18, color: BrandColors.ink),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              context.l10n.ordersPendingEvidenceWarning(pendingCount),
-              style: _t(14, FontWeight.w500, BrandColors.ink),
-            ),
+      fill: PenColors.bg,
+      radius: 14,
+      axis: PenAxis.row,
+      gap: 12,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Icon(LucideIcons.cloud, size: 22, color: PenColors.ink),
+        Expanded(
+          child: PenText(
+            l10n.ordersPendingEvidenceWarning(pendingCount),
+            size: 12,
+            color: PenColors.ink,
           ),
-          const SizedBox(width: 8),
-          EcTap(
-            onTap: onRetry,
-            child: Text(
-              context.l10n.commonRetry,
-              style: _t(14, FontWeight.w600, BrandColors.ink),
-            ),
+        ),
+        EcTap(
+          onTap: onRetry,
+          child: PenText(
+            l10n.commonRetry,
+            size: 12,
+            color: PenColors.link,
+            weight: FontWeight.w700,
+            softWrap: false,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -697,82 +732,80 @@ class _EcTimelineVideoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusText = video.statusText;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(
-          width: 44,
-          child: Text(
-            video.time,
-            style: _t(14, FontWeight.w400, BrandColors.mut),
+          width: 46,
+          child: PenText(video.time, size: 14, color: PenColors.mut),
+        ),
+        const SizedBox(
+          width: 22,
+          height: 58,
+          child: Center(
+            child: PenEllipse(width: 11, height: 11, color: PenColors.ink),
           ),
         ),
-        const SizedBox(width: 10),
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: ecSquircleDecoration(
-              radius: 12,
-              side: const BorderSide(color: BrandColors.line),
+          child: PenCard(
+            lifted: false,
+            gap: 12,
+            padding: const EdgeInsets.symmetric(
+              vertical: 10,
+              horizontal: 11,
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: BrandColors.soft,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    video.type.icon,
-                    size: 18,
-                    color: BrandColors.mut,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    video.label,
-                    overflow: TextOverflow.ellipsis,
-                    style: _t(14, FontWeight.w500, BrandColors.ink),
-                  ),
-                ),
-                if (statusText != null) ...[
-                  Flexible(
-                    child: _EcStatusBadge(
-                      text: statusText,
-                      icon: video.statusIcon,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
+            children: [
+              PenBox(
+                width: 42,
+                height: 42,
+                fill: PenColors.bg,
+                radius: 10,
+                axis: PenAxis.row,
+                main: MainAxisAlignment.center,
+                cross: CrossAxisAlignment.center,
+                children: [
+                  Icon(video.type.icon, size: 21, color: PenColors.ink),
                 ],
-                EcTap(
-                  onTap: onPlay,
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.play_arrow,
-                      size: 16,
-                      color: BrandColors.ink,
-                    ),
-                  ),
-                ),
-                EcTap(
-                  onTap: onMenu,
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.more_vert,
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PenText(
+                      video.label,
                       size: 14,
-                      color: BrandColors.mut,
+                      color: PenColors.ink,
+                      weight: FontWeight.w600,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                    if (video.statusText != null) ...[
+                      const SizedBox(height: 4),
+                      _EcStatusBadge(
+                        text: video.statusText!,
+                        icon: video.statusIcon,
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-            ),
+              ),
+              EcTap(
+                onTap: onPlay,
+                child: const Icon(
+                  LucideIcons.play,
+                  size: 20,
+                  color: PenColors.ink,
+                ),
+              ),
+              EcTap(
+                onTap: onMenu,
+                child: const Icon(
+                  LucideIcons.ellipsisVertical,
+                  size: 16,
+                  color: PenColors.ink,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -788,30 +821,51 @@ class _EcStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final leadingIcon = icon;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(
-        color: BrandColors.soft,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (leadingIcon != null) ...[
-            Icon(leadingIcon, size: 12, color: BrandColors.ink),
-            const SizedBox(width: 4),
-          ],
-          Flexible(
-            child: Text(
-              text,
-              overflow: TextOverflow.ellipsis,
-              style: _t(12, FontWeight.w600, BrandColors.ink),
-            ),
+    // The design colours the pill by what the status means: green done,
+    // blue in-flight, amber blocked, red failed — the fill stays grey except
+    // for the failure case, which gets a wash.
+    final (fill, ink) = _palette;
+    return PenBox(
+      fill: fill,
+      radius: 999,
+      axis: PenAxis.row,
+      gap: 5,
+      cross: CrossAxisAlignment.center,
+      hugMain: true,
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 9),
+      children: [
+        if (icon != null) Icon(icon, size: 12, color: ink),
+        Flexible(
+          child: PenText(
+            text,
+            size: 12,
+            color: ink,
+            weight: FontWeight.w500,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
           ),
-        ],
-      ),
+        ),
+      ],
     );
+  }
+
+  (Color, Color) get _palette {
+    final lower = text.toLowerCase();
+    if (lower.contains('lỗi') || lower.contains('fail')) {
+      return (const Color(0xFFF8E7E7), PenColors.danger);
+    }
+    if (lower.contains('quota')) {
+      return (PenColors.line, const Color(0xFFB6770B));
+    }
+    if (lower.contains('%') ||
+        lower.contains('tải') ||
+        lower.contains('load')) {
+      return (PenColors.line, PenColors.link);
+    }
+    if (lower.contains('chờ') || lower.contains('pending')) {
+      return (PenColors.line, PenColors.mut);
+    }
+    return (PenColors.soft, PenColors.success);
   }
 }
 
@@ -824,28 +878,29 @@ class _EcAttachPhotoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return EcTap(
       onTap: onTap,
-      child: Container(
-        decoration: ecSquircleDecoration(
-          radius: 10,
-          side: const BorderSide(color: BrandColors.line),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.add, size: 20, color: BrandColors.ink),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  context.l10n.attachPhotoToOrder,
-                  overflow: TextOverflow.ellipsis,
-                  style: _t(16, FontWeight.w500, BrandColors.ink),
-                ),
-              ),
-            ],
+      child: PenBox(
+        width: double.infinity,
+        height: 54,
+        fill: PenColors.card,
+        stroke: PenColors.line,
+        radius: 14,
+        axis: PenAxis.row,
+        gap: 12,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
+        children: [
+          const Icon(LucideIcons.plus, size: 21, color: PenColors.ink),
+          Flexible(
+            child: PenText(
+              context.l10n.attachPhotoToOrder,
+              size: 16,
+              color: PenColors.link,
+              weight: FontWeight.w600,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -881,34 +936,42 @@ class _EcTimelineEmpty extends StatelessWidget {
 }
 
 class _EcDetailInfoRow extends StatelessWidget {
-  const _EcDetailInfoRow({required this.label, required this.value});
+  const _EcDetailInfoRow({
+    required this.label,
+    required this.value,
+    this.trailing,
+  });
 
   final String label;
   final String value;
 
+  /// Optional glyph after the value, e.g. the upload-complete tick.
+  final IconData? trailing;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return PenBox(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: BrandColors.line)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: _t(14, FontWeight.w400, BrandColors.mut)),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              overflow: TextOverflow.ellipsis,
-              style: _t(14, FontWeight.w500, BrandColors.ink),
-            ),
+      axis: PenAxis.row,
+      gap: 10,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      children: [
+        PenText(label, size: 14, color: PenColors.mut, softWrap: false),
+        const Spacer(),
+        Flexible(
+          child: PenText(
+            value,
+            size: 14,
+            color: PenColors.ink,
+            weight: FontWeight.w500,
+            align: TextAlign.right,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
           ),
-        ],
-      ),
+        ),
+        if (trailing != null) Icon(trailing, size: 19, color: PenColors.ink),
+      ],
     );
   }
 }
@@ -916,55 +979,72 @@ class _EcDetailInfoRow extends StatelessWidget {
 class _EcDetailActionRow extends StatelessWidget {
   const _EcDetailActionRow({
     required this.icon,
-    required this.label,
-    this.subLabel,
+    required this.title,
+    this.subtitle,
+    this.danger = false,
     this.onTap,
   });
 
   final IconData icon;
-  final String label;
-  final String? subLabel;
+  final String title;
+  final String? subtitle;
+
+  /// Destructive actions take `--destructive` for the tile, label and chevron.
+  final bool danger;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final sub = subLabel;
+    final ink = danger ? PenColors.danger : PenColors.ink;
     return EcTap(
       onTap: onTap,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(icon, size: 22, color: BrandColors.ink),
-              const SizedBox(width: 14),
-              Expanded(
-                child: sub == null
-                    ? Text(
-                        label,
-                        style: _t(16, FontWeight.w500, BrandColors.ink),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            label,
-                            style: _t(16, FontWeight.w500, BrandColors.ink),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            sub,
-                            style: _t(14, FontWeight.w400, BrandColors.mut),
-                          ),
-                        ],
-                      ),
-              ),
-            ],
+      child: PenBox(
+        width: double.infinity,
+        axis: PenAxis.row,
+        gap: 14,
+        cross: CrossAxisAlignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        children: [
+          PenBox(
+            width: 44,
+            height: 44,
+            fill: danger ? const Color(0xFFFDECEC) : PenColors.bg,
+            radius: 10,
+            axis: PenAxis.row,
+            main: MainAxisAlignment.center,
+            cross: CrossAxisAlignment.center,
+            children: [Icon(icon, size: 22, color: ink)],
           ),
-        ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PenText(
+                  title,
+                  size: 16,
+                  color: ink,
+                  weight: FontWeight.w600,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 3),
+                  PenText(
+                    subtitle!,
+                    size: 12,
+                    color: PenColors.mut,
+                    lineHeight: 1.4,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Icon(
+            LucideIcons.chevronRight,
+            size: 19,
+            color: danger ? PenColors.danger : PenColors.mut,
+          ),
+        ],
       ),
     );
   }

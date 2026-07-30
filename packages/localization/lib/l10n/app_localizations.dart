@@ -1709,7 +1709,7 @@ abstract class AppLocalizations {
   /// No description provided for @shopAddNew.
   ///
   /// In en, this message translates to:
-  /// **'Add new shop (name + platform)'**
+  /// **'Add a new shop'**
   String get shopAddNew;
 
   /// No description provided for @sectionMembers.
@@ -1963,6 +1963,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No order matches the scanned code'**
   String get scannedCodeNotFound;
+
+  /// Splash tagline, line 1 of 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Every parcel.'**
+  String get onboardingTaglineOne;
+
+  /// Splash tagline, line 2 of 3.
+  ///
+  /// In en, this message translates to:
+  /// **'One proof.'**
+  String get onboardingTaglineTwo;
+
+  /// Splash tagline, line 3 of 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Protecting your revenue.'**
+  String get onboardingTaglineThree;
+
+  /// Placeholder inside the email field.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email'**
+  String get authEmailPlaceholder;
+
+  /// Placeholder inside the password field.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get authPasswordPlaceholder;
+
+  /// Register screen: registerCreateAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new account'**
+  String get registerCreateAccountSubtitle;
+
+  /// Register screen: registerFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get registerFullName;
+
+  /// Register screen: registerFullNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your full name'**
+  String get registerFullNameRequired;
+
+  /// Register screen: registerPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get registerPhone;
+
+  /// Register screen: registerAgreePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to the'**
+  String get registerAgreePrefix;
+
+  /// Register screen: registerTermsOfUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Use'**
+  String get registerTermsOfUse;
+
+  /// Shop layer: shopChooseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a shop'**
+  String get shopChooseTitle;
+
+  /// Shop layer: shopChooseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a shop to continue'**
+  String get shopChooseSubtitle;
+
+  /// Shop layer: shopManageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage shops'**
+  String get shopManageTitle;
+
+  /// Shop layer: shopManageOwnerOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible to shop owners and managers only'**
+  String get shopManageOwnerOnly;
+
+  /// Shop layer: noShopTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No shops yet'**
+  String get noShopTitle;
+
+  /// Shop layer: noShopLineOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account does not belong to a shop yet.'**
+  String get noShopLineOne;
+
+  /// Shop layer: noShopLineTwo.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a shop to get started,'**
+  String get noShopLineTwo;
+
+  /// Shop layer: noShopLineThree.
+  ///
+  /// In en, this message translates to:
+  /// **'or wait for an invite from a shop owner.'**
+  String get noShopLineThree;
+
+  /// Shop layer: noShopCreateCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a shop (name + marketplace)'**
+  String get noShopCreateCta;
+
+  /// Shop layer: noShopInviteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop invites will appear here'**
+  String get noShopInviteHint;
+
+  /// Create-shop screen: createShopTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create shop'**
+  String get createShopTitle;
+
+  /// Create-shop screen: createShopNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop name'**
+  String get createShopNameLabel;
+
+  /// Create-shop screen: createShopNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Shop ABC'**
+  String get createShopNameHint;
+
+  /// Create-shop screen: createShopPlatformLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Marketplace'**
+  String get createShopPlatformLabel;
+
+  /// Create-shop screen: createShopOwnerNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You will be the shop owner — add members later under Manage shops'**
+  String get createShopOwnerNote;
+
+  /// Create-shop screen: createShopSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Create shop'**
+  String get createShopSubmit;
+
+  /// Shop management: shopManageDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'View and manage the shops you administer.'**
+  String get shopManageDescription;
+
+  /// Shop management: shopManageAddCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a shop (name + marketplace)'**
+  String get shopManageAddCta;
+
+  /// Shop management: shopManageStaffNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff cannot see this screen — owners and shop managers only.'**
+  String get shopManageStaffNote;
+
+  /// Shop detail: shopDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop detail'**
+  String get shopDetailTitle;
+
+  /// Shop detail: shopDetailResolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording resolution'**
+  String get shopDetailResolution;
+
+  /// Shop detail: shopDetailAddType.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a type (enter a name)'**
+  String get shopDetailAddType;
+
+  /// Shop detail: inviteMemberTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite a member'**
+  String get inviteMemberTitle;
+
+  /// Shop detail: inviteMemberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'(no account yet → send an invite)'**
+  String get inviteMemberHint;
+
+  /// Video type dialogs: videoTypeIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon'**
+  String get videoTypeIcon;
+
+  /// Video type dialogs: videoTypeColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour'**
+  String get videoTypeColor;
+
+  /// Video type dialogs: createVideoTypeSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Create type'**
+  String get createVideoTypeSubmit;
+
+  /// Video type dialogs: deleteVideoTypeSafeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'No evidence is lost'**
+  String get deleteVideoTypeSafeNote;
+
+  /// Generic confirm action.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get commonConfirm;
+
+  /// Badge on an order row whose uploads failed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} failed'**
+  String orderErrorCount(int count);
+
+  /// Title of the video-detail sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Video detail'**
+  String get videoDetailSheetTitle;
+
+  /// Shutter button label while recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop recording'**
+  String get tooltipStopRecording;
+
+  /// Shareable dossier link card.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispute dossier link'**
+  String get dossierLinkTitle;
+
+  /// Caption under the language screen illustration.
+  ///
+  /// In en, this message translates to:
+  /// **'Every label, notification and dossier\nswitches to the language you pick.'**
+  String get languageChangeScopeNote;
 }
 
 class _AppLocalizationsDelegate

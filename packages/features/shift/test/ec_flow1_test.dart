@@ -1,4 +1,5 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:ec_ui/ec_ui.dart';
 import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/cupertino.dart'
     show CupertinoActionSheet, CupertinoTextField;
@@ -43,7 +44,7 @@ void main() {
       expect(find.text('Số điện thoại'), findsOneWidget);
       expect(find.text('Mật khẩu'), findsOneWidget);
       expect(find.text('Nhập lại mật khẩu'), findsOneWidget);
-      expect(find.text('Xem chính sách'), findsOneWidget);
+      expect(find.text('Điều khoản sử dụng'), findsOneWidget);
       expect(find.text('Tạo tài khoản'), findsOneWidget);
       expect(find.text('Đăng nhập với Google'), findsOneWidget);
       expect(find.text('Đăng nhập với Apple'), findsOneWidget);
@@ -124,7 +125,8 @@ void main() {
     ) async {
       await _pump(tester, const EcForgotPasswordScreen());
       expect(find.text('Quên mật khẩu'), findsOneWidget);
-      expect(find.text('Email'), findsOneWidget);
+      // The design's email field carries a placeholder, not a label.
+      expect(find.text('Nhập email của bạn'), findsOneWidget);
       expect(find.text('Gửi link đặt lại'), findsOneWidget);
       expect(find.text('Đăng nhập'), findsOneWidget);
       expect(
@@ -173,7 +175,7 @@ void main() {
       tester,
     ) async {
       await _pump(tester, const EcChooseShopScreen(shops: shops));
-      expect(find.text('Shop của bạn'), findsOneWidget);
+      expect(find.text('Chọn cửa hàng'), findsOneWidget);
       expect(find.text('Shop ABC'), findsOneWidget);
       expect(find.text('Shop XYZ'), findsOneWidget);
       expect(find.text('Quản lý cửa hàng'), findsOneWidget);
@@ -222,10 +224,10 @@ void main() {
     ) async {
       await _pump(tester, const EcCreateShopScreen());
       expect(find.text('Tạo shop'), findsNWidgets(2));
-      expect(find.text('Tên shop'), findsNWidgets(2));
+      expect(find.text('Tên shop'), findsOneWidget);
       expect(find.text('Sàn thương mại'), findsOneWidget);
       expect(find.text('Shopee'), findsOneWidget);
-      expect(find.text('TikTok Shop'), findsOneWidget);
+      expect(find.text('TikTok'), findsOneWidget);
       expect(find.text('Lazada'), findsOneWidget);
       expect(find.text('Tiki'), findsOneWidget);
       expect(find.text('Khác'), findsOneWidget);
@@ -310,7 +312,7 @@ void main() {
           videoTypes: videoTypes,
         ),
       );
-      expect(find.text('Shop ABC · Shopee'), findsOneWidget);
+      expect(find.text('Shop ABC'), findsOneWidget);
       expect(find.text('THÀNH VIÊN'), findsOneWidget);
       expect(find.text('Nguyễn Văn A'), findsOneWidget);
       expect(find.text('Trần Thị B'), findsOneWidget);
@@ -336,7 +338,7 @@ void main() {
         ),
       );
       await tester.tap(find.text('Độ phân giải quay'));
-      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.tap(find.byIcon(LucideIcons.pencil));
       expect(resolutionTapped, isTrue);
       expect(edited?.name, 'Cân hàng');
     });
@@ -376,8 +378,8 @@ void main() {
       // which the curly-quoted literal here predates.
       expect(find.text('Xóa loại "Cân hàng"?'), findsOneWidget);
       expect(find.text('Hủy'), findsOneWidget);
-      expect(find.text('Xóa loại'), findsOneWidget);
-      expect(find.text('(Chỉ xóa khi loại chưa có video nào)'), findsOneWidget);
+      expect(find.text('Xác nhận'), findsOneWidget);
+      expect(find.text('Không mất bằng chứng'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -392,7 +394,7 @@ void main() {
         ),
       );
       await tester.tap(find.text('Hủy'));
-      await tester.tap(find.text('Xóa loại'));
+      await tester.tap(find.text('Xác nhận'));
       expect(cancelled, isTrue);
       expect(confirmed, isTrue);
     });
@@ -426,7 +428,7 @@ void main() {
       expect(find.text('Vận đơn hôm nay'), findsOneWidget);
       expect(find.text('SPXVN024567890'), findsOneWidget);
       expect(find.text('SPXVN044556677'), findsOneWidget);
-      expect(find.text('· 1 lỗi'), findsOneWidget);
+      expect(find.text('1 lỗi'), findsOneWidget);
       expect(find.text('Vận đơn'), findsOneWidget);
       expect(find.text('Ghi hình'), findsOneWidget);
       expect(find.text('Tài khoản'), findsOneWidget);
@@ -497,7 +499,7 @@ void main() {
       // Three chevron-down chips, each showing its own "no filter" value —
       // they used to be three chips whose sheets offered a single option
       // (themselves), which made two of the three dead controls.
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsNWidgets(3));
+      expect(find.byIcon(LucideIcons.chevronDown), findsNWidgets(3));
       expect(find.text('Tất cả'), findsOneWidget);
       expect(find.text('Mọi lúc'), findsOneWidget);
       expect(find.text('Loại video'), findsOneWidget);

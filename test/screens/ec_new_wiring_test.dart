@@ -2,6 +2,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:feature_orders/feature_orders.dart'
     show EcEvidenceType, EcVideoDetail, EcVideoDetailScreen;
 import 'package:feature_shift/feature_shift.dart';
+import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
@@ -94,7 +95,7 @@ void main() {
         ),
       );
       expect(find.text('SPXVN1'), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.qr_code_scanner));
+      await tester.tap(find.byIcon(LucideIcons.scan));
       await tester.pumpAndSettle();
       // Scanned code lands in the search box and filters out non-matches
       // (SPXVN2 now shows in both the field and the matching row).
@@ -131,8 +132,9 @@ void main() {
       tester,
     ) async {
       await _pump(tester, const EcVideoDetailScreen(video: video));
-      expect(find.text('Thời lượng'), findsOneWidget);
-      expect(find.text('00:42'), findsOneWidget);
+      // The design folds the duration into the sheet's meta line rather than
+      // giving it a row of its own.
+      expect(find.textContaining('00:42'), findsOneWidget);
     });
 
     testWidgets('hides the duration row for a photo', (tester) async {

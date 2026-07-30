@@ -59,14 +59,20 @@ class _EcPrimaryButton extends StatelessWidget {
 /// Primary button that validates the enclosing [Form] before firing [onValid];
 /// invalid fields surface their inline errors and [onValid] is skipped.
 class _ValidatedPrimaryButton extends StatelessWidget {
-  const _ValidatedPrimaryButton({required this.label, this.onValid});
+  const _ValidatedPrimaryButton({
+    required this.label,
+    this.icon,
+    this.onValid,
+  });
   final String label;
+  final IconData? icon;
   final VoidCallback? onValid;
 
   @override
   Widget build(BuildContext context) {
-    return _EcPrimaryButton(
+    return PenPrimaryButton(
       label: label,
+      icon: icon,
       onPressed: onValid == null
           ? null
           : () {
@@ -261,7 +267,10 @@ class _OrDivider extends StatelessWidget {
         const Expanded(child: Divider(color: BrandColors.line, height: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text(context.l10n.authOr, style: _t(12, FontWeight.w400, BrandColors.mut)),
+          child: Text(
+            context.l10n.authOr,
+            style: _t(12, FontWeight.w400, BrandColors.mut),
+          ),
         ),
         const Expanded(child: Divider(color: BrandColors.line, height: 1)),
       ],
@@ -395,41 +404,48 @@ class _ShopHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.fromLTRB(18, 28, 18, 0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _BackButton(onTap: onBack, size: 24),
-              const SizedBox(width: 10),
-              Text(shopName, style: _t(20, FontWeight.w600, BrandColors.ink)),
-            ],
+          PenBackButton(onTap: onBack),
+          const SizedBox(width: 14),
+          Expanded(
+            child: PenText(
+              shopName,
+              size: 24,
+              color: PenColors.ink,
+              weight: FontWeight.w800,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           EcTap(
             onTap: onQueueTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                color: BrandColors.soft,
-                borderRadius: BorderRadius.circular(999),
+            child: PenBox(
+              fill: PenColors.bg,
+              radius: 999,
+              axis: PenAxis.row,
+              gap: 8,
+              cross: CrossAxisAlignment.center,
+              hugMain: true,
+              padding: const EdgeInsets.symmetric(
+                vertical: 9,
+                horizontal: 15,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.upload_outlined,
-                    size: 18,
-                    color: BrandColors.ink,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    '$queueCount',
-                    style: _t(14, FontWeight.w600, BrandColors.ink),
-                  ),
-                ],
-              ),
+              children: [
+                const Icon(
+                  LucideIcons.cloudUpload,
+                  size: 20,
+                  color: PenColors.ink,
+                ),
+                PenText(
+                  '$queueCount',
+                  size: 16,
+                  color: PenColors.ink,
+                  weight: FontWeight.w700,
+                  softWrap: false,
+                ),
+              ],
             ),
           ),
         ],
@@ -454,73 +470,14 @@ class _Nav3Bar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: BrandColors.bg,
-        border: Border(top: BorderSide(color: BrandColors.line)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: _NavItem(
-              icon: Icons.receipt_long_outlined,
-              label: context.l10n.navOrders,
-              active: activeIndex == 0,
-              onTap: onOrders,
-            ),
-          ),
-          Expanded(
-            child: _NavItem(
-              icon: Icons.videocam_outlined,
-              label: context.l10n.navRecord,
-              active: activeIndex == 1,
-              onTap: onRecord,
-            ),
-          ),
-          Expanded(
-            child: _NavItem(
-              icon: Icons.person_outline,
-              label: context.l10n.navAccount,
-              active: activeIndex == 2,
-              onTap: onAccount,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.active,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? BrandColors.ink : BrandColors.mut;
-    return EcTap(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 24, color: color),
-          const SizedBox(height: 5),
-          Text(
-            label,
-            style: _t(12, active ? FontWeight.w600 : FontWeight.w400, color),
-          ),
-        ],
-      ),
+    final l10n = context.l10n;
+    return PenTabBar(
+      activeIndex: activeIndex,
+      tabs: [
+        (LucideIcons.package, l10n.navOrders, onOrders),
+        (LucideIcons.camera, l10n.navRecord, onRecord),
+        (LucideIcons.user, l10n.navAccount, onAccount),
+      ],
     );
   }
 }
@@ -637,245 +594,177 @@ class EcRegisterScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Form(
-      child: CupertinoPageScaffold(
-        backgroundColor: BrandColors.bg,
-        child: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: PenScreen(
+        decorations: const [
+          Positioned(left: 4, top: 86, child: PenLeafSprig()),
+          Positioned(right: -12, top: 88, child: PenParcelSprite()),
+        ],
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(26, 26, 26, 30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Image.asset(
+                      'assets/design/logo.png',
+                      package: 'ec_ui',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const PenText(
+                    'ZenPack',
+                    size: 24,
+                    color: PenColors.primary,
+                    weight: FontWeight.w800,
+                    align: TextAlign.center,
+                    softWrap: false,
+                  ),
+                  const SizedBox(height: 10),
+                  PenText(
+                    l10n.authRegister,
+                    size: 30,
+                    color: PenColors.link,
+                    weight: FontWeight.w800,
+                    align: TextAlign.center,
+                  ),
+                  const SizedBox(height: 2),
+                  PenText(
+                    l10n.registerCreateAccountSubtitle,
+                    size: 14,
+                    color: PenColors.mut,
+                    align: TextAlign.center,
+                  ),
+                  const SizedBox(height: 22),
+                  PenStackedField(
+                    icon: LucideIcons.user,
+                    label: l10n.registerFullName,
+                    controller: nameController,
+                    validator: FormBuilderValidators.required(
+                      errorText: l10n.registerFullNameRequired,
+                    ),
+                  ),
+                  const SizedBox(height: 11),
+                  PenStackedField(
+                    icon: LucideIcons.mail,
+                    label: 'Email',
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: FormBuilderValidators.compose([
+                      FormBuilderValidators.required(
+                        errorText: l10n.authEmailRequired,
+                      ),
+                      FormBuilderValidators.email(
+                        errorText: l10n.authEmailInvalid,
+                      ),
+                    ]),
+                  ),
+                  const SizedBox(height: 11),
+                  PenStackedField(
+                    icon: LucideIcons.phone,
+                    label: l10n.registerPhone,
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 11),
+                  PenStackedField(
+                    icon: LucideIcons.lock,
+                    label: l10n.authPassword,
+                    controller: passwordController,
+                    obscure: true,
+                    validator: (value) => _passwordError(
+                      context,
+                      value,
+                      emailController?.text,
+                    ),
+                  ),
+                  const SizedBox(height: 11),
+                  PenStackedField(
+                    icon: LucideIcons.lock,
+                    label: l10n.registerConfirmPassword,
+                    controller: confirmPasswordController,
+                    obscure: true,
+                    validator: (value) => value == passwordController?.text
+                        ? null
+                        : l10n.passwordMismatch,
+                  ),
+                  const SizedBox(height: 15),
+                  Row(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _BackButton(onTap: onBack),
-                          _LangChip(onTap: onLanguage),
-                        ],
+                      PenCheckbox(
+                        checked: policyAccepted,
+                        onChanged: onPolicyChanged,
                       ),
-                      const SizedBox(height: 10),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Column(
-                          children: [
-                            Text(
-                              context.l10n.authRegister,
-                              style: _t(24, FontWeight.w600, BrandColors.ink),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              context.l10n.registerTitle,
-                              style: _t(14, FontWeight.w400, BrandColors.mut),
-                            ),
-                          ],
+                      const SizedBox(width: 10),
+                      PenText(
+                        l10n.registerAgreePrefix,
+                        size: 14,
+                        color: PenColors.ink,
+                        softWrap: false,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: PenLink(
+                          l10n.registerTermsOfUse,
+                          onTap: onViewPolicy,
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      _Field(
-                        label: context.l10n.accountFullName,
-                        hint: 'Nguyễn Văn A',
-                        controller: nameController,
-                        validator: FormBuilderValidators.required(
-                          errorText: context.l10n.accountFullNameRequired,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      _Field(
-                        label: 'Email',
-                        hint: 'ban@email.com',
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(
-                            errorText: context.l10n.authEmailRequired,
-                          ),
-                          FormBuilderValidators.email(
-                            errorText: context.l10n.authEmailInvalid,
-                          ),
-                        ]),
-                      ),
-                      const SizedBox(height: 10),
-                      _Field(
-                        label: context.l10n.phoneLabel,
-                        hint: '090 123 4567',
-                        controller: phoneController,
-                        keyboardType: TextInputType.phone,
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(
-                            errorText: context.l10n.phoneRequired,
-                          ),
-                          // ponytail: library's general phone check; swap for a
-                          // strict VN 9–11 digit rule if it proves too loose.
-                          FormBuilderValidators.phoneNumber(
-                            errorText: context.l10n.phoneInvalid,
-                          ),
-                        ]),
-                      ),
-                      const SizedBox(height: 10),
-                      _Field(
-                        label: context.l10n.authPassword,
-                        hint: context.l10n.passwordMinHint,
-                        controller: passwordController,
-                        obscure: true,
-                        trailing: Icons.visibility_outlined,
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(
-                            errorText: context.l10n.authPasswordRequired,
-                          ),
-                          (value) => _passwordError(
-                            context,
-                            value,
-                            emailController?.text,
-                          ),
-                        ]),
-                      ),
-                      const SizedBox(height: 10),
-                      _Field(
-                        label: context.l10n.registerConfirmPassword,
-                        hint: '••••••••',
-                        controller: confirmPasswordController,
-                        obscure: true,
-                        trailing: Icons.visibility_outlined,
-                        validator: (value) => value == passwordController?.text
-                            ? null
-                            : context.l10n.passwordMismatch,
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          _PolicyCheckbox(
-                            checked: policyAccepted,
-                            onChanged: onPolicyChanged,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Wrap(
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Text(
-                                  context.l10n.registerAgreePolicy,
-                                  style: _t(
-                                    12,
-                                    FontWeight.w400,
-                                    BrandColors.ink,
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: onViewPolicy,
-                                  child: Text(
-                                    context.l10n.registerViewPolicy,
-                                    style: _t(
-                                      12,
-                                      FontWeight.w600,
-                                      BrandColors.ink,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      _ValidatedPrimaryButton(
-                        label: context.l10n.registerCreateAccount,
-                        onValid: onRegister,
-                      ),
-                      const SizedBox(height: 10),
-                      const _OrDivider(),
-                      const SizedBox(height: 10),
-                      _SocialButton(
-                        label: context.l10n.authSignInGoogle,
-                        background: Colors.white,
-                        borderColor: const Color(0xFFDADCE0),
-                        foreground: const Color(0xFF3C4043),
-                        icon: const _GoogleLogo(),
-                        onPressed: onGoogle,
-                      ),
-                      if (defaultTargetPlatform != TargetPlatform.android) ...[
-                        const SizedBox(height: 10),
-                        _SocialButton(
-                          label: context.l10n.authSignInApple,
-                          background: Colors.black,
-                          borderColor: Colors.black,
-                          foreground: Colors.white,
-                          icon: const Icon(
-                            Icons.apple,
-                            size: 20,
-                            color: Colors.white,
-                          ),
-                          onPressed: onApple,
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      Text(
-                        context.l10n.registerSameEmailNote,
-                        textAlign: TextAlign.center,
-                        style: _t(12, FontWeight.w400, BrandColors.mut),
-                      ),
-                      const Spacer(),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            context.l10n.registerHaveAccountPrompt,
-                            style: _t(14, FontWeight.w400, BrandColors.mut),
-                          ),
-                          GestureDetector(
-                            onTap: onLogin,
-                            child: Text(
-                              context.l10n.authSignIn,
-                              style: _t(14, FontWeight.w600, BrandColors.ink),
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 11),
+                  _ValidatedPrimaryButton(
+                    label: l10n.registerCreateAccount,
+                    onValid: policyAccepted ? onRegister : null,
+                  ),
+                  const SizedBox(height: 11),
+                  PenLabelledRule(l10n.authOr),
+                  const SizedBox(height: 11),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: PenOutlineButton(
+                          label: 'Google',
+                          height: 56,
+                          icon: const PenGoogleMark(size: 21),
+                          onPressed: onGoogle,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: PenOutlineButton(
+                          label: 'Apple',
+                          height: 56,
+                          icon: const PenAppleMark(height: 22),
+                          onPressed: onApple,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  PenPromptLink(
+                    prompt: l10n.registerHaveAccountPrompt.trim(),
+                    action: l10n.authSignIn,
+                    onTap: onLogin,
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            Positioned(
+              top: 22,
+              right: 22,
+              child: PenLangPill(label: 'VI', onTap: onLanguage),
+            ),
+          ],
         ),
       ),
     );
   }
 }
-
-class _PolicyCheckbox extends StatelessWidget {
-  const _PolicyCheckbox({required this.checked, this.onChanged});
-  final bool checked;
-  final ValueChanged<bool>? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onChanged == null ? null : () => onChanged!(!checked),
-      child: Container(
-        width: 18,
-        height: 18,
-        decoration: BoxDecoration(
-          color: BrandColors.dark,
-          borderRadius: BorderRadius.circular(AppRadius.dialog),
-        ),
-        alignment: Alignment.center,
-        child: checked
-            ? const Icon(Icons.check, size: 11, color: Colors.white)
-            : null,
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// ForgotPassword
-// ============================================================================
 
 /// ForgotPassword — lang chip, title, email field, primary "Gửi link đặt
 /// lại" button, an optional "sent" confirmation box, login footer link.
@@ -903,117 +792,108 @@ class EcForgotPasswordScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Form(
-      child: CupertinoPageScaffold(
-        backgroundColor: BrandColors.bg,
-        child: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _BackButton(onTap: onBack),
-                          _LangChip(onTap: onLanguage),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Column(
-                          children: [
-                            Text(
-                              context.l10n.forgotPasswordTitle,
-                              style: _t(24, FontWeight.w600, BrandColors.ink),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              context.l10n.forgotPasswordSubtitle,
-                              textAlign: TextAlign.center,
-                              style: _t(14, FontWeight.w400, BrandColors.mut),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      _Field(
-                        label: 'Email',
-                        hint: 'ban@email.com',
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(
-                            errorText: context.l10n.authEmailRequired,
-                          ),
-                          FormBuilderValidators.email(
-                            errorText: context.l10n.authEmailInvalid,
-                          ),
-                        ]),
-                      ),
-                      const SizedBox(height: 14),
-                      _ValidatedPrimaryButton(
-                        label: context.l10n.forgotPasswordSubmit,
-                        onValid: onSend,
-                      ),
-                      if (sent) ...[
-                        const SizedBox(height: 14),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: BrandColors.soft,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.mail_outline,
-                                size: 16,
-                                color: BrandColors.ink,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  context.l10n.forgotPasswordSent,
-                                  style: _t(
-                                    12,
-                                    FontWeight.w400,
-                                    BrandColors.ink,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+      child: PenScreen(
+        decorations: const [
+          Positioned(
+            left: 42,
+            bottom: 66,
+            child: Image(
+              image: AssetImage(
+                'assets/design/flow1-zenpack-hero-art-support.png',
+                package: 'ec_ui',
+              ),
+              width: 306,
+              height: 230,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.all(30),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: PenBackButton(onTap: onBack, size: 28),
+              ),
+              PenText(
+                l10n.forgotPasswordTitle,
+                size: 36,
+                color: PenColors.link,
+                weight: FontWeight.w800,
+              ),
+              const SizedBox(height: 8),
+              PenText(
+                l10n.forgotPasswordSubtitle,
+                size: 14,
+                color: PenColors.mut,
+                lineHeight: 1.5,
+              ),
+              const SizedBox(height: 26),
+              PenField(
+                hint: l10n.authEmailPlaceholder,
+                icon: LucideIcons.mail,
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                validator: FormBuilderValidators.compose([
+                  FormBuilderValidators.required(
+                    errorText: l10n.authEmailRequired,
+                  ),
+                  FormBuilderValidators.email(errorText: l10n.authEmailInvalid),
+                ]),
+              ),
+              const SizedBox(height: 16),
+              _ValidatedPrimaryButton(
+                label: l10n.forgotPasswordSubmit,
+                icon: LucideIcons.send,
+                onValid: onSend,
+              ),
+              if (sent) ...[
+                const SizedBox(height: 16),
+                PenBox(
+                  width: double.infinity,
+                  fill: PenColors.bg,
+                  radius: 14,
+                  axis: PenAxis.row,
+                  gap: 16,
+                  cross: CrossAxisAlignment.center,
+                  padding: const EdgeInsets.all(18),
+                  children: [
+                    const PenBox(
+                      width: 44,
+                      height: 44,
+                      fill: PenColors.soft,
+                      radius: 999,
+                      axis: PenAxis.row,
+                      main: MainAxisAlignment.center,
+                      cross: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.mail,
+                          size: 22,
+                          color: PenColors.success,
                         ),
                       ],
-                      const Spacer(),
-                      const SizedBox(height: 14),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            context.l10n.forgotPasswordRememberPrompt,
-                            style: _t(14, FontWeight.w400, BrandColors.mut),
-                          ),
-                          GestureDetector(
-                            onTap: onLogin,
-                            child: Text(
-                              context.l10n.authSignIn,
-                              style: _t(14, FontWeight.w600, BrandColors.ink),
-                            ),
-                          ),
-                        ],
+                    ),
+                    Expanded(
+                      child: PenText(
+                        l10n.forgotPasswordSent,
+                        size: 14,
+                        color: PenColors.ink,
+                        lineHeight: 1.45,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ],
+              const SizedBox(height: 10),
+              PenPromptLink(
+                prompt: l10n.forgotPasswordRememberPrompt.trim(),
+                action: l10n.authSignIn,
+                onTap: onLogin,
               ),
             ],
           ),
@@ -1076,6 +956,7 @@ class EcChooseShopScreen extends StatelessWidget {
     required this.shops,
     this.onSelect,
     this.onManage,
+    this.onAddShop,
     this.onLogout,
     this.showManage = true,
     super.key,
@@ -1084,6 +965,9 @@ class EcChooseShopScreen extends StatelessWidget {
   final List<EcShopSummary> shops;
   final ValueChanged<EcShopSummary>? onSelect;
   final VoidCallback? onManage;
+
+  /// "Thêm cửa hàng mới" — the design puts a create entry on this screen too.
+  final VoidCallback? onAddShop;
   final VoidCallback? onLogout;
 
   /// Whether the "Quản lý cửa hàng" row is shown — hidden when the user is only
@@ -1092,67 +976,119 @@ class EcChooseShopScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: BrandColors.bg,
-      child: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      context.l10n.shopYourShops,
-                      style: _t(24, FontWeight.w600, BrandColors.ink),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      context.l10n.shopTapToClockIn,
-                      style: _t(14, FontWeight.w400, BrandColors.mut),
-                    ),
-                    const SizedBox(height: 12),
-                    for (final shop in shops) ...[
-                      _ShopListTile(
-                        shop: shop,
-                        onTap: onSelect == null ? null : () => onSelect!(shop),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    if (showManage) _ManageRow(onTap: onManage),
-                    const Spacer(),
-                    const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: onLogout,
-                      behavior: HitTestBehavior.opaque,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.logout,
-                              size: 16,
-                              color: BrandColors.ink,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              context.l10n.accountSignOut,
-                              style: _t(14, FontWeight.w500, BrandColors.ink),
-                            ),
-                          ],
+    final l10n = context.l10n;
+    return PenScreen(
+      decorations: const [
+        Positioned(left: 49, top: 25, child: PenPlatformHero()),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 186, 22, 30),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PenText(
+              l10n.shopChooseTitle,
+              size: 30,
+              color: PenColors.ink,
+              weight: FontWeight.w800,
+              align: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            PenText(
+              l10n.shopChooseSubtitle,
+              size: 14,
+              color: PenColors.mut,
+              align: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            for (var i = 0; i < shops.length; i++) ...[
+              if (i > 0) const SizedBox(height: 10),
+              _ShopRow(
+                shop: shops[i],
+                selected: i == 0,
+                onTap: onSelect == null ? null : () => onSelect!(shops[i]),
+              ),
+            ],
+            const SizedBox(height: 16),
+            if (showManage) ...[
+              PenCard(
+                gap: 16,
+                padding: const EdgeInsets.all(16),
+                onTap: onManage,
+                children: [
+                  const Icon(
+                    LucideIcons.settings,
+                    size: 26,
+                    color: PenColors.ink,
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        PenText(
+                          l10n.shopManageTitle,
+                          size: 18,
+                          color: PenColors.ink,
+                          weight: FontWeight.w700,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
+                        const SizedBox(height: 3),
+                        PenText(
+                          l10n.shopManageOwnerOnly,
+                          size: 12,
+                          color: PenColors.mut,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      context.l10n.shopLastOpenedNote,
-                      textAlign: TextAlign.center,
-                      style: _t(12, FontWeight.w400, BrandColors.mut),
+                  ),
+                  const Icon(
+                    LucideIcons.chevronRight,
+                    size: 21,
+                    color: PenColors.mut,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+            EcTap(
+              onTap: onAddShop,
+              child: PenBox(
+                width: double.infinity,
+                height: 58,
+                fill: PenColors.bg,
+                stroke: PenColors.line,
+                radius: 14,
+                axis: PenAxis.row,
+                gap: 12,
+                main: MainAxisAlignment.center,
+                cross: CrossAxisAlignment.center,
+                children: [
+                  const Icon(LucideIcons.plus, size: 22, color: PenColors.ink),
+                  Flexible(
+                    child: PenText(
+                      l10n.shopAddNew,
+                      size: 16,
+                      color: PenColors.link,
+                      weight: FontWeight.w600,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Center(
+              child: EcTap(
+                onTap: onLogout,
+                child: PenText(
+                  l10n.accountSignOut,
+                  size: 16,
+                  color: PenColors.ink,
+                  weight: FontWeight.w700,
+                  softWrap: false,
                 ),
               ),
             ),
@@ -1163,115 +1099,64 @@ class EcChooseShopScreen extends StatelessWidget {
   }
 }
 
-class _ShopListTile extends StatelessWidget {
-  const _ShopListTile({required this.shop, this.onTap});
+/// One selectable shop: platform tile, name + meta, selection dot. The selected
+/// row is filled `--secondary` grey (the design never tints it green).
+class _ShopRow extends StatelessWidget {
+  const _ShopRow({required this.shop, required this.selected, this.onTap});
+
   final EcShopSummary shop;
+  final bool selected;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = BrandColors.platform(shop.platform);
-    return EcTap(
+    return PenCard(
+      fill: selected ? PenColors.soft : PenColors.card,
+      stroke: selected ? PenColors.soft : PenColors.line,
+      gap: 16,
+      padding: const EdgeInsets.all(14),
       onTap: onTap,
-      child: Container(
-        decoration: ecSquircleDecoration(
-          radius: 12,
-          color: BrandColors.bg,
-          side: const BorderSide(color: BrandColors.line),
+      children: [
+        PenBox(
+          width: 52,
+          height: 52,
+          fill: PenColors.card,
+          stroke: PenColors.line,
+          radius: 14,
+          axis: PenAxis.row,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          children: [PenPlatforms.logo(shop.platform)],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: BrandColors.soft,
-                  borderRadius: BorderRadius.circular(AppRadius.dialog),
-                ),
-                child: Icon(Icons.storefront, size: 24, color: color),
+              PenText(
+                shop.name,
+                size: 18,
+                color: PenColors.ink,
+                weight: FontWeight.w700,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      shop.name,
-                      style: _t(16, FontWeight.w600, BrandColors.ink),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      shop.meta ?? _platformLabel(shop.platform),
-                      style: _t(14, FontWeight.w400, BrandColors.mut),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 3),
+              PenText(
+                shop.meta ?? shop.platform,
+                size: 14,
+                color: PenColors.mut,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
               ),
-              const Icon(Icons.chevron_right, size: 20, color: BrandColors.mut),
             ],
           ),
         ),
-      ),
+        PenRadio(selected: selected),
+      ],
     );
   }
 }
-
-class _ManageRow extends StatelessWidget {
-  const _ManageRow({this.onTap});
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return EcTap(
-      onTap: onTap,
-      child: Container(
-        decoration: ecSquircleDecoration(
-          radius: 12,
-          color: BrandColors.soft,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.settings_outlined,
-                size: 22,
-                color: BrandColors.ink,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      context.l10n.shopManageStore,
-                      style: _t(16, FontWeight.w600, BrandColors.ink),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      context.l10n.shopManageVisibilityNote,
-                      style: _t(14, FontWeight.w400, BrandColors.mut),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, size: 20, color: BrandColors.mut),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// NoShop
-// ============================================================================
 
 /// NoShop — empty state shown when the account has no shop yet: create a
 /// new shop, or wait for an invite.
@@ -1282,86 +1167,104 @@ class EcNoShopScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: BrandColors.bg,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: BrandColors.soft,
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                ),
-                child: const Icon(
-                  Icons.storefront_outlined,
-                  size: 36,
-                  color: BrandColors.mut,
-                ),
+    final l10n = context.l10n;
+    return PenScreen(
+      decorations: const [
+        Positioned(left: 49, top: 118, child: PenPlatformHero()),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(32, 376, 32, 30),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PenText(
+              l10n.noShopTitle,
+              size: 30,
+              color: PenColors.ink,
+              weight: FontWeight.w800,
+              align: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            for (final line in [
+              l10n.noShopLineOne,
+              l10n.noShopLineTwo,
+              l10n.noShopLineThree,
+            ]) ...[
+              PenText(
+                line,
+                size: 14,
+                color: PenColors.mut,
+                align: TextAlign.center,
               ),
-              const SizedBox(height: 14),
-              Text(
-                context.l10n.shopEmpty,
-                style: _t(18, FontWeight.w600, BrandColors.ink),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                width: 280,
-                child: Text(
-                  context.l10n.shopEmptyBody,
-                  textAlign: TextAlign.center,
-                  style: _t(14, FontWeight.w400, BrandColors.mut),
-                ),
-              ),
-              const SizedBox(height: 14),
-              _EcPrimaryButton(
-                label: context.l10n.shopCreateNew,
-                onPressed: onCreate,
-              ),
-              const SizedBox(height: 14),
-              GestureDetector(
-                onTap: onInviteTap,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: BrandColors.line),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.mail_outline,
-                        size: 16,
-                        color: BrandColors.ink,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          context.l10n.shopInvitesHere,
-                          style: _t(12, FontWeight.w400, BrandColors.mut),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              const SizedBox(height: 4),
             ],
-          ),
+            const SizedBox(height: 24),
+            EcTap(
+              onTap: onCreate,
+              child: PenBox(
+                width: double.infinity,
+                height: 62,
+                fill: PenColors.primary,
+                radius: 14,
+                axis: PenAxis.row,
+                gap: 12,
+                main: MainAxisAlignment.center,
+                cross: CrossAxisAlignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  Flexible(
+                    child: PenText(
+                      l10n.noShopCreateCta,
+                      size: 16,
+                      color: PenColors.card,
+                      weight: FontWeight.w700,
+                      align: TextAlign.center,
+                    ),
+                  ),
+                  const Icon(
+                    LucideIcons.chevronRight,
+                    size: 20,
+                    color: PenColors.card,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            PenCard(
+              stroke: PenColors.soft,
+              gap: 16,
+              padding: const EdgeInsets.symmetric(
+                vertical: 14,
+                horizontal: 16,
+              ),
+              children: [
+                const PenBox(
+                  width: 44,
+                  height: 44,
+                  fill: PenColors.soft,
+                  radius: 999,
+                  axis: PenAxis.row,
+                  main: MainAxisAlignment.center,
+                  cross: CrossAxisAlignment.center,
+                  children: [
+                    Icon(LucideIcons.mail, size: 22, color: PenColors.success),
+                  ],
+                ),
+                Expanded(
+                  child: PenText(
+                    l10n.noShopInviteHint,
+                    size: 14,
+                    color: PenColors.ink,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 }
-
-// ============================================================================
-// CreateShop
-// ============================================================================
 
 /// CreateShop — name field, single-select platform pills, an ownership
 /// note, primary "Tạo shop" button.
@@ -1383,7 +1286,7 @@ class EcCreateShopScreen extends StatelessWidget {
 
   static const List<(String, String)> _platforms = [
     ('shopee', 'Shopee'),
-    ('tiktok', 'TikTok Shop'),
+    ('tiktok', 'TikTok'),
     ('lazada', 'Lazada'),
     ('tiki', 'Tiki'),
     ('other', 'Khác'),
@@ -1391,93 +1294,114 @@ class EcCreateShopScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Form(
-      child: CupertinoPageScaffold(
-        backgroundColor: BrandColors.bg,
-        child: SafeArea(
+      child: PenScreen(
+        decorations: const [
+          Positioned(
+            left: 38,
+            bottom: 116,
+            child: Image(
+              image: AssetImage(
+                'assets/design/flow1-zenpack-hero-art-create-shop.png',
+                package: 'ec_ui',
+              ),
+              width: 314,
+              height: 240,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(28, 30, 28, 30),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _SimpleHeader(title: context.l10n.shopCreateTitle, onBack: onBack),
-              Expanded(
-                child: CustomScrollView(
-                  slivers: [
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _Field(
-                              label: context.l10n.shopNameLabel,
-                              hint: context.l10n.shopNameLabel,
-                              controller: nameController,
-                              validator: FormBuilderValidators.required(
-                                errorText: context.l10n.shopNameRequired,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              context.l10n.shopPlatform,
-                              style: _t(14, FontWeight.w500, BrandColors.ink),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                for (final (id, label) in _platforms)
-                                  _PlatformPill(
-                                    id: id,
-                                    label: label,
-                                    selected: selectedPlatform == id,
-                                    onTap: onPlatformSelected == null
-                                        ? null
-                                        : () => onPlatformSelected!(id),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: BrandColors.soft,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.info_outline,
-                                    size: 16,
-                                    color: BrandColors.ink,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      context.l10n.shopCreateOwnerNote,
-                                      style: _t(
-                                        12,
-                                        FontWeight.w400,
-                                        BrandColors.ink,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Spacer(),
-                            const SizedBox(height: 16),
-                            _ValidatedPrimaryButton(
-                              label: context.l10n.shopCreateTitle,
-                              onValid: onCreate,
-                            ),
-                          ],
-                        ),
+              PenHeader(title: l10n.createShopTitle, onBack: onBack),
+              const SizedBox(height: 26),
+              PenText(
+                l10n.createShopNameLabel,
+                size: 16,
+                color: PenColors.ink,
+                weight: FontWeight.w600,
+              ),
+              const SizedBox(height: 10),
+              PenBox(
+                width: double.infinity,
+                height: 62,
+                fill: PenColors.card,
+                stroke: PenColors.line,
+                radius: 14,
+                axis: PenAxis.row,
+                cross: CrossAxisAlignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                children: [
+                  Expanded(
+                    child: CupertinoTextField(
+                      controller: nameController,
+                      padding: EdgeInsets.zero,
+                      decoration: const BoxDecoration(),
+                      placeholder: l10n.createShopNameHint,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: PenColors.ink,
+                      ),
+                      placeholderStyle: const TextStyle(
+                        fontSize: 16,
+                        color: PenColors.mut,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              PenText(
+                l10n.createShopPlatformLabel,
+                size: 16,
+                color: PenColors.ink,
+                weight: FontWeight.w600,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  for (final (key, label) in _platforms) ...[
+                    if (key != _platforms.first.$1) const SizedBox(width: 10),
+                    Expanded(
+                      child: _PlatformChoice(
+                        platform: key,
+                        label: label,
+                        selected: selectedPlatform == key,
+                        onTap: onPlatformSelected == null
+                            ? null
+                            : () => onPlatformSelected!(key),
                       ),
                     ),
                   ],
-                ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              PenCard(
+                fill: PenColors.bg,
+                stroke: null,
+                lifted: false,
+                gap: 14,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  const Icon(LucideIcons.info, size: 24, color: PenColors.ink),
+                  Expanded(
+                    child: PenText(
+                      l10n.createShopOwnerNote,
+                      size: 14,
+                      color: PenColors.ink,
+                      lineHeight: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _ValidatedPrimaryButton(
+                label: l10n.createShopSubmit,
+                onValid: onCreate,
               ),
             ],
           ),
@@ -1487,56 +1411,52 @@ class EcCreateShopScreen extends StatelessWidget {
   }
 }
 
-class _PlatformPill extends StatelessWidget {
-  const _PlatformPill({
-    required this.id,
+/// One marketplace tile in the create-shop picker: 86px tall, and when picked
+/// it takes that marketplace's own brand colour for its border and label —
+/// the design's single sanctioned exception to the token palette.
+class _PlatformChoice extends StatelessWidget {
+  const _PlatformChoice({
+    required this.platform,
     required this.label,
     required this.selected,
     this.onTap,
   });
 
-  final String id;
+  final String platform;
   final String label;
   final bool selected;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final platformColor = BrandColors.platform(id);
-    final background = selected ? platformColor : BrandColors.bg;
-    final border = selected ? platformColor : BrandColors.line;
-    final foreground = selected ? Colors.white : BrandColors.ink;
+    final brand = PenPlatforms.brand[platform] ?? PenColors.ink;
     return EcTap(
       onTap: onTap,
-      child: Container(
-        decoration: ecSquircleDecoration(
-          radius: 999,
-          color: background,
-          side: BorderSide(color: border),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 13),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.storefront,
-                size: 15,
-                color: selected ? Colors.white : platformColor,
-              ),
-              const SizedBox(width: 6),
-              Text(label, style: _t(14, FontWeight.w500, foreground)),
-            ],
+      child: PenBox(
+        height: 86,
+        fill: PenColors.card,
+        stroke: selected ? brand : PenColors.line,
+        strokeWidth: selected ? 2 : 1,
+        radius: 14,
+        axis: PenAxis.column,
+        gap: 8,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        children: [
+          PenPlatforms.logo(platform, size: 26),
+          PenText(
+            label,
+            size: 11,
+            color: selected ? brand : PenColors.ink,
+            weight: FontWeight.w600,
+            align: TextAlign.center,
           ),
-        ),
+        ],
       ),
     );
   }
 }
-
-// ============================================================================
-// ShopMgmt
-// ============================================================================
 
 /// A shop entry as listed on the ShopMgmt screen.
 class EcShopMgmtEntry {
@@ -1579,38 +1499,92 @@ class EcShopMgmtScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: BrandColors.bg,
-      child: SafeArea(
+    final l10n = context.l10n;
+    return PenScreen(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(26, 30, 26, 30),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _SimpleHeader(title: context.l10n.shopManageStore, onBack: onBack),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final shop in shops) ...[
-                      _ShopMgmtTile(
-                        shop: shop,
-                        onTap: onShopTap == null
-                            ? null
-                            : () => onShopTap!(shop),
-                      ),
-                      const SizedBox(height: 10),
-                    ],
-                    _AddShopRow(onTap: onAddShop),
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        context.l10n.shopMgmtVisibilityNote,
-                        style: _t(12, FontWeight.w400, BrandColors.mut),
-                      ),
+            PenHeader(
+              title: l10n.shopManageTitle,
+              onBack: onBack,
+              gap: 14,
+            ),
+            const SizedBox(height: 18),
+            PenText(
+              l10n.shopManageDescription,
+              size: 14,
+              color: PenColors.mut,
+              lineHeight: 1.5,
+            ),
+            const SizedBox(height: 20),
+            PenCard(
+              axis: PenAxis.column,
+              stroke: null,
+              clip: true,
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              children: [
+                for (var i = 0; i < shops.length; i++) ...[
+                  if (i > 0)
+                    const PenBox(
+                      width: double.infinity,
+                      height: 1,
+                      fill: PenColors.line,
                     ),
-                  ],
-                ),
+                  _ShopMgmtRow(
+                    entry: shops[i],
+                    onTap: onShopTap == null
+                        ? null
+                        : () => onShopTap!(shops[i]),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 18),
+            EcTap(
+              onTap: onAddShop,
+              child: PenBox(
+                width: double.infinity,
+                height: 82,
+                fill: PenColors.card,
+                radius: 14,
+                shadows: const [penCardShadow],
+                axis: PenAxis.row,
+                gap: 14,
+                main: MainAxisAlignment.center,
+                cross: CrossAxisAlignment.center,
+                children: [
+                  const Icon(LucideIcons.plus, size: 24, color: PenColors.ink),
+                  Flexible(
+                    child: PenText(
+                      l10n.shopManageAddCta,
+                      size: 18,
+                      color: PenColors.link,
+                      weight: FontWeight.w700,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(LucideIcons.info, size: 20, color: PenColors.ink),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: PenText(
+                      l10n.shopManageStaffNote,
+                      size: 14,
+                      color: PenColors.mut,
+                      lineHeight: 1.5,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -1620,98 +1594,70 @@ class EcShopMgmtScreen extends StatelessWidget {
   }
 }
 
-class _ShopMgmtTile extends StatelessWidget {
-  const _ShopMgmtTile({required this.shop, this.onTap});
-  final EcShopMgmtEntry shop;
+class _ShopMgmtRow extends StatelessWidget {
+  const _ShopMgmtRow({required this.entry, this.onTap});
+
+  final EcShopMgmtEntry entry;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final platform = entry.platform ?? 'other';
+    final known = PenPlatforms.brand.containsKey(platform);
     return EcTap(
       onTap: onTap,
-      child: Container(
-        decoration: ecSquircleDecoration(
-          radius: 12,
-          color: BrandColors.bg,
-          side: const BorderSide(color: BrandColors.line),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: BrandColors.soft,
-                  border: Border.all(color: BrandColors.line),
-                  borderRadius: BorderRadius.circular(AppRadius.dialog),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      shop.name,
-                      style: _t(16, FontWeight.w600, BrandColors.ink),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      shop.meta,
-                      style: _t(14, FontWeight.w400, BrandColors.mut),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, size: 20, color: BrandColors.mut),
-            ],
+      child: PenBox(
+        width: double.infinity,
+        axis: PenAxis.row,
+        gap: 17,
+        cross: CrossAxisAlignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 19),
+        children: [
+          PenBox(
+            width: 56,
+            height: 56,
+            fill: known ? PenColors.card : PenColors.bg,
+            stroke: known ? PenColors.line : null,
+            radius: 14,
+            axis: PenAxis.row,
+            main: MainAxisAlignment.center,
+            cross: CrossAxisAlignment.center,
+            children: [PenPlatforms.logo(platform)],
           ),
-        ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PenText(
+                  entry.name,
+                  size: 18,
+                  color: PenColors.ink,
+                  weight: FontWeight.w700,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                PenText(
+                  entry.meta,
+                  size: 14,
+                  color: PenColors.mut,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            LucideIcons.chevronRight,
+            size: 22,
+            color: PenColors.ink,
+          ),
+        ],
       ),
     );
   }
 }
-
-class _AddShopRow extends StatelessWidget {
-  const _AddShopRow({this.onTap});
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return EcTap(
-      onTap: onTap,
-      child: Container(
-        decoration: ecSquircleDecoration(
-          radius: 12,
-          color: BrandColors.bg,
-          side: const BorderSide(color: BrandColors.line),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              const Icon(Icons.add, size: 16, color: BrandColors.ink),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  context.l10n.shopAddNew,
-                  style: _t(14, FontWeight.w500, BrandColors.ink),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// ShopDetail
-// ============================================================================
 
 /// A shop member as listed on the ShopDetail screen.
 class EcShopMember {
@@ -1735,7 +1681,7 @@ class EcVideoType {
     required this.name,
     this.id,
     this.locked = false,
-    this.icon = Icons.videocam_outlined,
+    this.icon = LucideIcons.video,
   });
 
   final String name;
@@ -1778,215 +1724,330 @@ class EcShopDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sections = <Widget>[
-      _SectionLabel(context.l10n.sectionMembers),
-      for (final member in members)
-        _MemberRow(
-          member: member,
-          onMore: onMemberMore == null ? null : () => onMemberMore!(member),
-        ),
-      _InviteMemberRow(onTap: onInviteMember),
-      Padding(
-        padding: const EdgeInsets.only(top: 14),
-        child: _SectionLabel(context.l10n.sectionShopSettings),
-      ),
-      _ResolutionRow(resolution: resolution, onTap: onTapResolution),
-      Padding(
-        padding: const EdgeInsets.only(top: 14),
+    final l10n = context.l10n;
+    return PenScreen(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _SectionLabel(context.l10n.sectionVideoTypes),
-            const SizedBox(height: 2),
-            Text(
-              context.l10n.videoTypesLockedNote,
-              style: _t(12, FontWeight.w400, BrandColors.mut),
+            PenHeader(
+              title: l10n.shopDetailTitle,
+              onBack: onBack,
+              gap: 14,
             ),
-          ],
-        ),
-      ),
-      for (final type in videoTypes)
-        _VideoTypeRow(
-          type: type,
-          onEdit: onEditType == null ? null : () => onEditType!(type),
-          onDelete: onDeleteType == null ? null : () => onDeleteType!(type),
-        ),
-      _AddTypeRow(onTap: onAddType),
-    ];
-
-    return CupertinoPageScaffold(
-      backgroundColor: BrandColors.bg,
-      child: SafeArea(
-        child: Column(
-          children: [
-            _SimpleHeader(title: '$shopName · $platformLabel', onBack: onBack),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+            const SizedBox(height: 8),
+            PenCard(
+              stroke: null,
+              gap: 16,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+              children: [
+                PenBox(
+                  width: 54,
+                  height: 54,
+                  fill: PenColors.card,
+                  stroke: PenColors.line,
+                  radius: 16,
+                  axis: PenAxis.row,
+                  main: MainAxisAlignment.center,
+                  cross: CrossAxisAlignment.center,
                   children: [
-                    for (var i = 0; i < sections.length; i++) ...[
-                      if (i > 0) const SizedBox(height: 6),
-                      sections[i],
-                    ],
+                    PenPlatforms.logo(platformLabel.toLowerCase(), size: 40),
                   ],
                 ),
-              ),
+                Expanded(
+                  child: PenText(
+                    shopName,
+                    size: 24,
+                    color: PenColors.ink,
+                    weight: FontWeight.w800,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _PenSectionCard(
+              icon: LucideIcons.users,
+              label: l10n.sectionMembers,
+              children: [
+                for (var i = 0; i < members.length; i++) ...[
+                  if (i > 0)
+                    const PenBox(
+                      width: double.infinity,
+                      height: 1,
+                      fill: PenColors.line,
+                    ),
+                  _MemberRow(
+                    member: members[i],
+                    onTap: onMemberMore == null
+                        ? null
+                        : () => onMemberMore!(members[i]),
+                  ),
+                ],
+                EcTap(
+                  onTap: onInviteMember,
+                  child: PenBox(
+                    width: double.infinity,
+                    stroke: PenColors.soft,
+                    radius: 10,
+                    axis: PenAxis.row,
+                    gap: 14,
+                    cross: CrossAxisAlignment.center,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 9,
+                      horizontal: 12,
+                    ),
+                    children: [
+                      const Icon(
+                        LucideIcons.plus,
+                        size: 22,
+                        color: PenColors.ink,
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PenText(
+                              l10n.inviteMemberTitle,
+                              size: 14,
+                              color: PenColors.link,
+                              weight: FontWeight.w700,
+                              softWrap: false,
+                            ),
+                            const SizedBox(height: 2),
+                            PenText(
+                              l10n.inviteMemberHint,
+                              size: 12,
+                              color: PenColors.mut,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _PenSectionCard(
+              icon: LucideIcons.settings,
+              label: l10n.sectionShopSettings,
+              children: [
+                EcTap(
+                  onTap: onTapResolution,
+                  child: PenBox(
+                    width: double.infinity,
+                    fill: PenColors.card,
+                    stroke: PenColors.line,
+                    radius: 10,
+                    axis: PenAxis.row,
+                    gap: 14,
+                    cross: CrossAxisAlignment.center,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 12,
+                    ),
+                    children: [
+                      const PenBox(
+                        width: 38,
+                        height: 38,
+                        fill: PenColors.bg,
+                        radius: 10,
+                        axis: PenAxis.row,
+                        main: MainAxisAlignment.center,
+                        cross: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.video,
+                            size: 22,
+                            color: PenColors.ink,
+                          ),
+                        ],
+                      ),
+                      Expanded(
+                        child: PenText(
+                          l10n.shopDetailResolution,
+                          size: 16,
+                          color: PenColors.ink,
+                        ),
+                      ),
+                      PenText(
+                        resolution,
+                        size: 16,
+                        color: PenColors.ink,
+                        weight: FontWeight.w600,
+                        softWrap: false,
+                      ),
+                      const Icon(
+                        LucideIcons.chevronRight,
+                        size: 18,
+                        color: PenColors.mut,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _PenSectionCard(
+              icon: LucideIcons.squarePlay,
+              label: l10n.sectionVideoTypes,
+              children: [
+                for (final type in videoTypes)
+                  _VideoTypeRow(
+                    type: type,
+                    onEdit: onEditType == null ? null : () => onEditType!(type),
+                    onDelete: onDeleteType == null
+                        ? null
+                        : () => onDeleteType!(type),
+                  ),
+                EcTap(
+                  onTap: onAddType,
+                  child: PenBox(
+                    width: double.infinity,
+                    stroke: PenColors.soft,
+                    radius: 10,
+                    axis: PenAxis.row,
+                    gap: 12,
+                    main: MainAxisAlignment.center,
+                    cross: CrossAxisAlignment.center,
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    children: [
+                      const Icon(
+                        LucideIcons.plus,
+                        size: 21,
+                        color: PenColors.ink,
+                      ),
+                      Flexible(
+                        child: PenText(
+                          l10n.shopDetailAddType,
+                          size: 16,
+                          color: PenColors.link,
+                          weight: FontWeight.w600,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A white card that opens with an icon + all-caps section label, then its
+/// rows — the shape every panel on the shop-detail screen uses.
+class _PenSectionCard extends StatelessWidget {
+  const _PenSectionCard({
+    required this.icon,
+    required this.label,
+    required this.children,
+  });
+
+  final IconData icon;
+  final String label;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return PenCard(
+      axis: PenAxis.column,
+      stroke: null,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 13),
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 2),
+          child: Row(
+            children: [
+              Icon(icon, size: 22, color: PenColors.ink),
+              const SizedBox(width: 12),
+              Expanded(
+                child: PenText(
+                  label.toUpperCase(),
+                  size: 14,
+                  color: PenColors.mut,
+                  weight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+        ...children,
+      ],
     );
   }
 }
 
 class _MemberRow extends StatelessWidget {
-  const _MemberRow({required this.member, this.onMore});
+  const _MemberRow({required this.member, this.onTap});
+
   final EcShopMember member;
-  final VoidCallback? onMore;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: BrandColors.line)),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-      child: Row(
+    return EcTap(
+      onTap: onTap,
+      child: PenBox(
+        width: double.infinity,
+        axis: PenAxis.row,
+        gap: 14,
+        cross: CrossAxisAlignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: BrandColors.soft,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-            ),
-            child: const Icon(
-              Icons.person_outline,
-              size: 18,
-              color: BrandColors.mut,
-            ),
+          const PenBox(
+            width: 38,
+            height: 38,
+            fill: PenColors.soft,
+            radius: 999,
+            axis: PenAxis.row,
+            main: MainAxisAlignment.center,
+            cross: CrossAxisAlignment.center,
+            children: [
+              Icon(LucideIcons.user, size: 20, color: PenColors.ink),
+            ],
           ),
-          const SizedBox(width: 14),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  member.name,
-                  style: _t(16, FontWeight.w500, BrandColors.ink),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  member.role,
-                  style: _t(14, FontWeight.w400, BrandColors.mut),
-                ),
-              ],
+            child: PenText(
+              member.name,
+              size: 16,
+              color: PenColors.ink,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          GestureDetector(
-            onTap: onMore,
-            behavior: HitTestBehavior.opaque,
-            child: const Icon(
-              Icons.more_horiz,
-              size: 20,
-              color: BrandColors.mut,
-            ),
+          PenBox(
+            fill: PenColors.bg,
+            radius: 999,
+            axis: PenAxis.row,
+            hugMain: true,
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 11),
+            children: [
+              PenText(
+                member.role,
+                size: 12,
+                color: PenColors.ink,
+                softWrap: false,
+              ),
+            ],
+          ),
+          const Icon(
+            LucideIcons.chevronRight,
+            size: 18,
+            color: PenColors.mut,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _InviteMemberRow extends StatelessWidget {
-  const _InviteMemberRow({this.onTap});
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-        child: Row(
-          children: [
-            const Icon(Icons.add, size: 20, color: BrandColors.ink),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                context.l10n.addMemberByContact,
-                style: _t(14, FontWeight.w500, BrandColors.ink),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ResolutionRow extends StatelessWidget {
-  const _ResolutionRow({required this.resolution, this.onTap});
-  final String resolution;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        decoration: BoxDecoration(
-          color: BrandColors.bg,
-          border: Border.all(color: BrandColors.line),
-          borderRadius: BorderRadius.circular(AppRadius.card),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 14),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    context.l10n.recordResolution,
-                    overflow: TextOverflow.ellipsis,
-                    style: _t(16, FontWeight.w400, BrandColors.ink),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '240p / 480p / 720p',
-                    overflow: TextOverflow.ellipsis,
-                    style: _t(14, FontWeight.w400, BrandColors.mut),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  resolution,
-                  style: _t(14, FontWeight.w500, BrandColors.ink),
-                ),
-                const SizedBox(width: 6),
-                const Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: BrandColors.mut,
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1994,133 +2055,278 @@ class _ResolutionRow extends StatelessWidget {
 
 class _VideoTypeRow extends StatelessWidget {
   const _VideoTypeRow({required this.type, this.onEdit, this.onDelete});
+
   final EcVideoType type;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: BrandColors.line)),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(type.icon, size: 22, color: BrandColors.ink),
-              const SizedBox(width: 12),
-              Text(type.name, style: _t(16, FontWeight.w400, BrandColors.ink)),
-            ],
-          ),
-          if (type.locked)
-            const Icon(Icons.lock_outline, size: 18, color: BrandColors.mut)
-          else
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                GestureDetector(
-                  onTap: onEdit,
-                  behavior: HitTestBehavior.opaque,
-                  child: const Icon(
-                    Icons.edit_outlined,
-                    size: 19,
-                    color: BrandColors.mut,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                GestureDetector(
-                  onTap: onDelete,
-                  behavior: HitTestBehavior.opaque,
-                  child: const Icon(
-                    Icons.delete_outline,
-                    size: 19,
-                    color: BrandColors.mut,
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AddTypeRow extends StatelessWidget {
-  const _AddTypeRow({this.onTap});
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-        child: Row(
-          children: [
-            const Icon(Icons.add, size: 20, color: BrandColors.ink),
-            const SizedBox(width: 10),
-            Text(
-              context.l10n.addVideoType,
-              style: _t(14, FontWeight.w500, BrandColors.ink),
-            ),
-          ],
+    return PenBox(
+      width: double.infinity,
+      axis: PenAxis.row,
+      gap: 14,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      children: [
+        PenBox(
+          width: 36,
+          height: 36,
+          fill: PenColors.bg,
+          radius: 10,
+          axis: PenAxis.row,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          children: [Icon(type.icon, size: 21, color: PenColors.ink)],
         ),
-      ),
+        Expanded(
+          child: PenText(
+            type.name,
+            size: 14,
+            color: PenColors.ink,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        // Built-in types can't be renamed or removed; the design marks that
+        // with a padlock instead of hiding the affordances.
+        if (type.locked)
+          const Icon(LucideIcons.lock, size: 19, color: PenColors.mut)
+        else ...[
+          EcTap(
+            onTap: onEdit,
+            child: const Icon(
+              LucideIcons.pencil,
+              size: 19,
+              color: PenColors.ink,
+            ),
+          ),
+          EcTap(
+            onTap: onDelete,
+            child: const Icon(
+              LucideIcons.trash2,
+              size: 19,
+              color: PenColors.danger,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
-
-// ============================================================================
-// CreateType (modal)
-// ============================================================================
 
 /// CreateType — dialog to name a new custom video type.
 class EcCreateTypeScreen extends StatelessWidget {
   const EcCreateTypeScreen({
     this.nameController,
+    this.selectedIcon = 0,
+    this.onIconSelected,
+    this.selectedColor = 0,
+    this.onColorSelected,
     this.onCancel,
     this.onCreate,
     super.key,
   });
 
   final TextEditingController? nameController;
+
+  /// Index into the design's six-icon palette.
+  final int selectedIcon;
+  final ValueChanged<int>? onIconSelected;
+
+  /// Index into the design's six-swatch palette.
+  final int selectedColor;
+  final ValueChanged<int>? onColorSelected;
   final VoidCallback? onCancel;
   final VoidCallback? onCreate;
 
   @override
   Widget build(BuildContext context) {
-    return _EcDialogFrame(
+    final l10n = context.l10n;
+    return PenSheet(
       children: [
-        Text(context.l10n.createVideoTypeTitle, style: _t(16, FontWeight.w600, BrandColors.ink)),
-        _Field(
-          label: context.l10n.videoTypeName,
-          hint: context.l10n.videoTypeNameHint,
-          controller: nameController,
+        const SizedBox(height: 18),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: PenText(
+            l10n.createVideoTypeTitle,
+            size: 24,
+            color: PenColors.link,
+            weight: FontWeight.w800,
+          ),
         ),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: PenText(
+            l10n.videoTypeName,
+            size: 14,
+            color: PenColors.ink,
+          ),
+        ),
+        const SizedBox(height: 12),
+        PenBox(
+          width: double.infinity,
+          height: 56,
+          fill: PenColors.card,
+          stroke: PenColors.line,
+          radius: 14,
+          axis: PenAxis.row,
+          cross: CrossAxisAlignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          children: [
+            Expanded(
+              child: CupertinoTextField(
+                controller: nameController,
+                padding: EdgeInsets.zero,
+                decoration: const BoxDecoration(),
+                placeholder: l10n.videoTypeNameHint,
+                style: const TextStyle(fontSize: 16, color: PenColors.ink),
+                placeholderStyle: const TextStyle(
+                  fontSize: 16,
+                  color: PenColors.mut,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: PenText(l10n.videoTypeIcon, size: 14, color: PenColors.ink),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            for (var i = 0; i < _iconChoices.length; i++) ...[
+              if (i > 0) const SizedBox(width: 9),
+              Expanded(
+                child: _PickTile(
+                  selected: i == selectedIcon,
+                  onTap: onIconSelected == null
+                      ? null
+                      : () => onIconSelected!(i),
+                  child: Icon(
+                    _iconChoices[i],
+                    size: 23,
+                    color: PenColors.ink,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 20),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: PenText(l10n.videoTypeColor, size: 14, color: PenColors.ink),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            for (var i = 0; i < _colorChoices.length; i++) ...[
+              if (i > 0) const SizedBox(width: 12),
+              Expanded(
+                child: EcTap(
+                  onTap: onColorSelected == null
+                      ? null
+                      : () => onColorSelected!(i),
+                  child: PenBox(
+                    height: 48,
+                    stroke: i == selectedColor ? PenColors.line : null,
+                    strokeWidth: 2,
+                    radius: 999,
+                    axis: PenAxis.row,
+                    main: MainAxisAlignment.center,
+                    cross: CrossAxisAlignment.center,
+                    children: [
+                      PenEllipse(
+                        width: i == selectedColor ? 36 : 44,
+                        height: i == selectedColor ? 36 : 44,
+                        color: _colorChoices[i],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 22),
         Row(
           children: [
             Expanded(
-              child: _EcOutlineButton(label: context.l10n.commonCancel, onPressed: onCancel),
+              child: PenDialogButton(
+                label: l10n.commonCancel,
+                primary: false,
+                height: 56,
+                radius: 14,
+                onPressed: onCancel,
+              ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 14),
             Expanded(
-              child: _EcPrimaryButton(label: context.l10n.createVideoType, onPressed: onCreate),
+              child: PenDialogButton(
+                label: l10n.createVideoTypeSubmit,
+                primary: true,
+                height: 56,
+                radius: 14,
+                onPressed: onCreate,
+              ),
             ),
           ],
         ),
       ],
     );
   }
+
+  /// The six icons the design offers for a custom video type.
+  static const _iconChoices = [
+    LucideIcons.archive,
+    LucideIcons.truck,
+    LucideIcons.shoppingCart,
+    LucideIcons.clipboardCheck,
+    LucideIcons.shieldCheck,
+    LucideIcons.packageOpen,
+  ];
+
+  /// The six swatches, all drawn from the token palette.
+  static const _colorChoices = [
+    PenColors.ink,
+    PenColors.ink,
+    PenColors.danger,
+    PenColors.link,
+    PenColors.link,
+    PenColors.mut,
+  ];
 }
 
-// ============================================================================
-// ConfirmDelete (modal)
-// ============================================================================
+/// One tile in the icon picker: selected reads as a bordered light tile, the
+/// rest as flat grey (the design never tints a selection).
+class _PickTile extends StatelessWidget {
+  const _PickTile({required this.selected, required this.child, this.onTap});
+
+  final bool selected;
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return EcTap(
+      onTap: onTap,
+      child: PenBox(
+        height: 52,
+        fill: selected ? PenColors.bg : PenColors.soft,
+        stroke: selected ? PenColors.line : null,
+        strokeWidth: 2,
+        radius: 14,
+        axis: PenAxis.row,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
+        children: [child],
+      ),
+    );
+  }
+}
 
 /// ConfirmDelete — dialog confirming that a custom video type should stop
 /// being offered for new videos. Backend blocks deletion once videos use it.
@@ -2138,44 +2344,107 @@ class EcConfirmDeleteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _EcDialogFrame(
+    final l10n = context.l10n;
+    return PenDialog(
       children: [
-        Text(
-          context.l10n.deleteVideoTypeTitle(typeName),
-          style: _t(16, FontWeight.w600, BrandColors.ink),
+        SizedBox(
+          width: 62,
+          height: 62,
+          child: Stack(
+            children: [
+              const PenEllipse(width: 56, height: 56, color: PenColors.soft),
+              const Positioned(
+                left: 16,
+                top: 15,
+                child: Icon(
+                  LucideIcons.trash2,
+                  size: 25,
+                  color: PenColors.success,
+                ),
+              ),
+              Positioned(
+                left: 36,
+                top: 34,
+                child: PenBox(
+                  width: 22,
+                  height: 22,
+                  fill: PenColors.danger,
+                  radius: 999,
+                  axis: PenAxis.row,
+                  main: MainAxisAlignment.center,
+                  cross: CrossAxisAlignment.center,
+                  children: const [
+                    PenText(
+                      '!',
+                      size: 14,
+                      color: PenColors.card,
+                      weight: FontWeight.w800,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        Text(
-          context.l10n.deleteVideoTypeBody,
-          style: _t(14, FontWeight.w400, BrandColors.mut),
+        PenText(
+          l10n.deleteVideoTypeTitle(typeName),
+          size: 20,
+          color: PenColors.danger,
+          weight: FontWeight.w800,
+          align: TextAlign.center,
         ),
+        const SizedBox(height: 10),
+        PenText(
+          l10n.deleteVideoTypeBody,
+          size: 12,
+          color: PenColors.mut,
+          align: TextAlign.center,
+          lineHeight: 1.55,
+        ),
+        const SizedBox(height: 18),
         Row(
           children: [
             Expanded(
-              child: _EcOutlineButton(label: context.l10n.commonCancel, onPressed: onCancel),
+              child: PenDialogButton(
+                label: l10n.commonCancel,
+                primary: false,
+                onPressed: onCancel,
+              ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
-              child: _EcPrimaryButton(
-                label: context.l10n.deleteVideoTypeConfirm,
+              child: PenDialogButton(
+                label: l10n.commonConfirm,
+                primary: true,
                 onPressed: onConfirm,
               ),
             ),
           ],
         ),
-        Text(
-          context.l10n.deleteVideoTypeNote,
-          textAlign: TextAlign.center,
-          style: _t(12, FontWeight.w400, BrandColors.mut),
+        const SizedBox(height: 14),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              LucideIcons.shieldCheck,
+              size: 16,
+              color: PenColors.mut,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: PenText(
+                l10n.deleteVideoTypeSafeNote,
+                size: 12,
+                color: PenColors.mut,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 }
-
-// ============================================================================
-// InviteMember (dialog) · MemberActions (sheet) · Resolution (sheet)
-// — wireframe-backlog screens for Chi tiết shop (Flow 1·9).
-// ============================================================================
 
 /// InviteMember — dialog to add an existing user to the shop by email/phone
 /// with a role. Fills the member control that previously had no destination.
@@ -2233,7 +2502,10 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
         Row(
           children: [
             Expanded(
-              child: _EcOutlineButton(label: context.l10n.commonCancel, onPressed: widget.onCancel),
+              child: _EcOutlineButton(
+                label: context.l10n.commonCancel,
+                onPressed: widget.onCancel,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -2527,9 +2799,16 @@ class _EcSheetActionRow extends StatelessWidget {
 
 /// A quick stat shown at the top of HomeOrders (e.g. "24" / "Vận đơn hôm nay").
 class EcHomeStat {
-  const EcHomeStat({required this.value, required this.label});
+  const EcHomeStat({
+    required this.value,
+    required this.label,
+    this.icon = LucideIcons.package,
+  });
   final String value;
   final String label;
+
+  /// The lucide glyph the design puts in the stat's tile.
+  final IconData icon;
 }
 
 /// An order row on HomeOrders.
@@ -2601,8 +2880,16 @@ class EcHomeOrdersScreen extends StatefulWidget {
     this.queueCount = 0,
     this.stats = const [
       EcHomeStat(value: '0', label: 'Vận đơn hôm nay'),
-      EcHomeStat(value: '0', label: 'Video đã quay'),
-      EcHomeStat(value: '0', label: 'Chờ tải'),
+      EcHomeStat(
+        value: '0',
+        label: 'Video đã quay',
+        icon: LucideIcons.video,
+      ),
+      EcHomeStat(
+        value: '0',
+        label: 'Chờ tải',
+        icon: LucideIcons.cloudUpload,
+      ),
     ],
     this.videoTypes = const [],
     this.searchHint = 'Nhập mã vận đơn',
@@ -2785,10 +3072,13 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final visible = _visibleOrders;
+    final unfiltered = _filters.isEmpty && _query.trim().isEmpty;
     return CupertinoPageScaffold(
-      backgroundColor: BrandColors.bg,
+      backgroundColor: PenColors.bg,
       child: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             _ShopHeader(
@@ -2804,96 +3094,118 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                   onNotification: _onScroll,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // The three stat cards are equal height in the
+                        // design even when one label wraps, which inside a
+                        // scroll view needs an intrinsic pass.
+                        IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              for (var i = 0; i < widget.stats.length; i++) ...[
+                                if (i > 0) const SizedBox(width: 10),
+                                Expanded(
+                                  child: _StatBox(stat: widget.stats[i]),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
                         Row(
                           children: [
-                            for (var i = 0; i < widget.stats.length; i++) ...[
-                              if (i > 0) const SizedBox(width: 10),
-                              Expanded(child: _StatBox(stat: widget.stats[i])),
-                            ],
+                            Expanded(
+                              child: PenBox(
+                                height: 56,
+                                fill: PenColors.card,
+                                stroke: PenColors.line,
+                                radius: 14,
+                                axis: PenAxis.row,
+                                gap: 12,
+                                cross: CrossAxisAlignment.center,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                children: [
+                                  const Icon(
+                                    LucideIcons.search,
+                                    size: 22,
+                                    color: PenColors.mut,
+                                  ),
+                                  Expanded(
+                                    child: CupertinoTextField(
+                                      controller: _search,
+                                      onChanged: (v) {
+                                        setState(() => _query = v);
+                                        widget.onSearchChanged?.call(v);
+                                      },
+                                      textInputAction: TextInputAction.search,
+                                      padding: EdgeInsets.zero,
+                                      decoration: const BoxDecoration(),
+                                      placeholder: widget.searchHint,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: PenColors.ink,
+                                      ),
+                                      placeholderStyle: const TextStyle(
+                                        fontSize: 16,
+                                        color: PenColors.mut,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 11),
+                            EcTap(
+                              onTap: widget.onScan == null ? null : _onScan,
+                              child: const PenBox(
+                                width: 56,
+                                height: 56,
+                                fill: PenColors.card,
+                                stroke: PenColors.line,
+                                radius: 14,
+                                axis: PenAxis.row,
+                                main: MainAxisAlignment.center,
+                                cross: CrossAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    LucideIcons.scan,
+                                    size: 22,
+                                    color: PenColors.ink,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 4,
-                          ),
-                          decoration: ecSquircleDecoration(
-                            radius: 12,
-                            color: BrandColors.soft,
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.search,
-                                size: 20,
-                                color: BrandColors.mut,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: CupertinoTextField(
-                                  controller: _search,
-                                  onChanged: (v) {
-                                    setState(() => _query = v);
-                                    widget.onSearchChanged?.call(v);
-                                  },
-                                  textInputAction: TextInputAction.search,
-                                  style: _t(
-                                    16,
-                                    FontWeight.w400,
-                                    BrandColors.ink,
-                                  ),
-                                  placeholder: widget.searchHint,
-                                  placeholderStyle: _t(
-                                    16,
-                                    FontWeight.w400,
-                                    BrandColors.mut,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 11,
-                                  ),
-                                  decoration: const BoxDecoration(),
-                                ),
-                              ),
-                              EcTap(
-                                onTap: widget.onScan == null ? null : _onScan,
-                                child: const Icon(
-                                  Icons.qr_code_scanner,
-                                  size: 22,
-                                  color: BrandColors.ink,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 13),
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
                             children: [
                               _FilterChip(
-                                name: context.l10n.filterStatusLabel,
-                                options: _statusOptions(context.l10n),
+                                name: l10n.filterStatusLabel,
+                                options: _statusOptions(l10n),
                                 selected: _uploadState,
                                 onSelected: (v) =>
                                     _select((x) => _uploadState = x, v),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 10),
                               _FilterChip(
-                                name: context.l10n.filterTimeLabel,
-                                options: _timeOptions(context.l10n),
+                                name: l10n.filterTimeLabel,
+                                options: _timeOptions(l10n),
                                 selected: _timeWindow,
                                 onSelected: (v) =>
                                     _select((x) => _timeWindow = x, v),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 10),
                               _FilterChip(
-                                name: context.l10n.filterTypeLabel,
-                                options: _typeOptions(context.l10n),
+                                name: l10n.filterTypeLabel,
+                                options: _typeOptions(l10n),
                                 selected: _videoTypeId,
                                 onSelected: (v) =>
                                     _select((x) => _videoTypeId = x, v),
@@ -2901,30 +3213,42 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 15),
                         // With the filters applied server-side, an empty list
                         // no longer means "this shop has no orders" — say
                         // which of the two it is.
                         if (visible.isEmpty)
                           _OrdersEmpty(
-                            text:
-                                _filters.isEmpty && _query.trim().isEmpty
+                            text: unfiltered
                                 ? widget.emptyText
-                                : context.l10n.ordersNotFound,
-                            hint: _filters.isEmpty && _query.trim().isEmpty
-                                ? null
-                                : context.l10n.ordersNotFoundHint,
+                                : l10n.ordersNotFound,
+                            hint: unfiltered ? null : l10n.ordersNotFoundHint,
                           )
                         else
-                          for (final order in visible) ...[
-                            _OrderTile(
-                              order: order,
-                              onTap: widget.onOrderTap == null
-                                  ? null
-                                  : () => widget.onOrderTap!(order),
+                          PenCard(
+                            axis: PenAxis.column,
+                            clip: true,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 6,
+                              horizontal: 14,
                             ),
-                            const SizedBox(height: 14),
-                          ],
+                            children: [
+                              for (var i = 0; i < visible.length; i++) ...[
+                                if (i > 0)
+                                  const PenBox(
+                                    width: double.infinity,
+                                    height: 1,
+                                    fill: PenColors.line,
+                                  ),
+                                _OrderTile(
+                                  order: visible[i],
+                                  onTap: widget.onOrderTap == null
+                                      ? null
+                                      : () => widget.onOrderTap!(visible[i]),
+                                ),
+                              ],
+                            ],
+                          ),
                         if (widget.isLoadingMore)
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),
@@ -2995,24 +3319,43 @@ class _StatBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
-      decoration: BoxDecoration(
-        color: BrandColors.soft,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(stat.value, style: _t(24, FontWeight.w600, BrandColors.ink)),
-          const SizedBox(height: 4),
-          Text(
-            stat.label,
-            textAlign: TextAlign.center,
-            style: _t(14, FontWeight.w400, BrandColors.mut),
+    return PenBox(
+      fill: PenColors.card,
+      stroke: PenColors.line,
+      radius: 14,
+      axis: PenAxis.row,
+      gap: 9,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 11),
+      children: [
+        PenBox(
+          width: 38,
+          height: 38,
+          fill: PenColors.bg,
+          radius: 10,
+          axis: PenAxis.row,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          children: [Icon(stat.icon, size: 20, color: PenColors.ink)],
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PenText(
+                stat.value,
+                size: 24,
+                color: PenColors.ink,
+                weight: FontWeight.w800,
+                softWrap: false,
+              ),
+              const SizedBox(height: 1),
+              PenText(stat.label, size: 12, color: PenColors.mut),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -3035,8 +3378,10 @@ class _FilterChip extends StatelessWidget {
   final String? selected;
   final ValueChanged<String?>? onSelected;
 
-  _FilterOption get _current =>
-      options.firstWhere((o) => o.value == selected, orElse: () => options.first);
+  _FilterOption get _current => options.firstWhere(
+    (o) => o.value == selected,
+    orElse: () => options.first,
+  );
 
   bool get _isActive => selected != null;
 
@@ -3067,7 +3412,10 @@ class _FilterChip extends StatelessWidget {
         ],
         cancelButton: CupertinoActionSheetAction(
           onPressed: () => Navigator.of(sheetContext).pop(),
-          child: Text(context.l10n.commonCancel, style: _t(16, FontWeight.w600, BrandColors.ink)),
+          child: Text(
+            context.l10n.commonCancel,
+            style: _t(16, FontWeight.w600, BrandColors.ink),
+          ),
         ),
       ),
     );
@@ -3080,41 +3428,13 @@ class _FilterChip extends StatelessWidget {
       label: name,
       value: _current.label,
       button: true,
-      child: EcTap(
+      child: PenChip(
+        label: _current.label,
+        // An active filter is narrowing the list — the design marks that with
+        // the selected grey fill and a bold label, never a brand tint.
+        selected: _isActive,
+        trailing: LucideIcons.chevronDown,
         onTap: () => _pick(context),
-        child: DecoratedBox(
-          // An active filter is narrowing the list — make that visible, so an
-          // empty list reads as "filtered" rather than "no data".
-          decoration: ecSquircleDecoration(
-            radius: 999,
-            color: _isActive ? BrandColors.soft : BrandColors.bg,
-            side: BorderSide(
-              color: _isActive ? BrandColors.dark : BrandColors.line,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _current.label,
-                  style: _t(
-                    14,
-                    _isActive ? FontWeight.w600 : FontWeight.w500,
-                    _isActive ? BrandColors.dark : BrandColors.ink,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Icon(
-                  Icons.keyboard_arrow_down,
-                  size: 16,
-                  color: _isActive ? BrandColors.dark : BrandColors.mut,
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -3127,81 +3447,100 @@ class _OrderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final failed = order.errorCount > 0;
+    return EcTap(
       onTap: onTap,
-      child: Container(
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: BrandColors.line)),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: BrandColors.soft,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.inventory_2_outlined,
-                size: 22,
-                color: BrandColors.mut,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    order.code,
-                    style: _t(16, FontWeight.w600, BrandColors.ink),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${order.time} · ${order.type}',
-                    style: _t(14, FontWeight.w400, BrandColors.mut),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 14),
-            Row(
+      child: PenBox(
+        width: double.infinity,
+        axis: PenAxis.row,
+        gap: 13,
+        cross: CrossAxisAlignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        children: [
+          const PenBox(
+            width: 52,
+            height: 52,
+            fill: PenColors.bg,
+            radius: 14,
+            axis: PenAxis.row,
+            main: MainAxisAlignment.center,
+            cross: CrossAxisAlignment.center,
+            children: [PenParcelGlyph()],
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.videocam_outlined,
-                  size: 20,
-                  color: BrandColors.ink,
+                PenText(
+                  order.code,
+                  size: 16,
+                  color: PenColors.ink,
+                  weight: FontWeight.w700,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: 5),
-                Text(
-                  '${order.videoCount}',
-                  style: _t(14, FontWeight.w600, BrandColors.ink),
+                const SizedBox(height: 4),
+                PenText(
+                  '${order.time} · ${order.type}',
+                  size: 12,
+                  color: PenColors.mut,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                if (order.errorCount > 0) ...[
-                  const SizedBox(width: 3),
-                  Text(
-                    context.l10n.ordersErrorCount(order.errorCount),
-                    style: _t(14, FontWeight.w600, BrandColors.rec),
-                  ),
-                ],
-                if (order.pendingCount > 0) ...[
-                  const SizedBox(width: 3),
-                  Text(
-                    context.l10n.ordersPendingCount(order.pendingCount),
-                    style: _t(14, FontWeight.w600, BrandColors.mut),
-                  ),
-                ],
               ],
             ),
-            const SizedBox(width: 12),
-            const Icon(Icons.chevron_right, size: 20, color: BrandColors.mut),
-          ],
-        ),
+          ),
+          // A failed upload replaces the clip count with a red error badge —
+          // the count is meaningless while evidence is missing.
+          if (failed)
+            PenBox(
+              stroke: PenColors.danger,
+              radius: 999,
+              axis: PenAxis.row,
+              gap: 6,
+              cross: CrossAxisAlignment.center,
+              hugMain: true,
+              padding: const EdgeInsets.symmetric(
+                vertical: 3,
+                horizontal: 9,
+              ),
+              children: [
+                PenText(
+                  context.l10n.orderErrorCount(order.errorCount),
+                  size: 12,
+                  color: PenColors.danger,
+                  weight: FontWeight.w700,
+                  softWrap: false,
+                ),
+              ],
+            )
+          else
+            PenBox(
+              axis: PenAxis.row,
+              gap: 6,
+              cross: CrossAxisAlignment.center,
+              hugMain: true,
+              children: [
+                const Icon(
+                  LucideIcons.video,
+                  size: 19,
+                  color: PenColors.ink,
+                ),
+                PenText(
+                  '${order.videoCount}',
+                  size: 16,
+                  color: PenColors.ink,
+                  weight: FontWeight.w700,
+                  softWrap: false,
+                ),
+              ],
+            ),
+          const Icon(
+            LucideIcons.chevronRight,
+            size: 19,
+            color: PenColors.mut,
+          ),
+        ],
       ),
     );
   }

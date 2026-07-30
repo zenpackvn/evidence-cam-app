@@ -74,6 +74,7 @@ class UploadTask {
   /// Human-readable reason the last attempt failed; only set alongside
   /// [EcUploadState.error]. Cleared on retry.
   String? errorMessage;
+
   /// Recorded clip length in seconds, captured at stop time. Null for photos
   /// and for older persisted tasks.
   final int? durationSeconds;

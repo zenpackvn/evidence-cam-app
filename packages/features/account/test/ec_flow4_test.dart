@@ -1,4 +1,5 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:ec_ui/ec_ui.dart';
 import 'package:feature_account/feature_account.dart';
 import 'package:flutter/cupertino.dart' show CupertinoTextField;
 import 'package:flutter/material.dart';
@@ -103,7 +104,7 @@ void main() {
       expect(find.text('Tiếng Việt'), findsNWidgets(2));
       expect(find.text('English'), findsOneWidget);
       expect(find.text('Tiếng Anh'), findsOneWidget);
-      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(find.byIcon(LucideIcons.check), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

@@ -1,4 +1,5 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:ec_ui/ec_ui.dart';
 import 'package:feature_orders/feature_orders.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -139,7 +140,7 @@ void main() {
       await tester.tap(find.text('Thử lại'));
       expect(retried, isTrue);
 
-      await tester.tap(find.byIcon(Icons.play_arrow).first);
+      await tester.tap(find.byIcon(LucideIcons.play).first);
       expect(played?.label, 'Đóng hàng đi');
     });
   });
@@ -148,8 +149,8 @@ void main() {
     testWidgets('shows video info and action rows', (tester) async {
       await _pump(tester, const EcVideoDetailScreen(video: _videoDetail));
 
-      expect(find.text('Đóng hàng đi'), findsOneWidget);
-      expect(find.text('02:45'), findsOneWidget);
+      expect(find.text('Chi tiết video'), findsOneWidget);
+      expect(find.text('Đóng hàng đi · 02:45'), findsOneWidget);
       expect(find.text('Giờ quay'), findsOneWidget);
       expect(find.text('23/07/2026 · 10:23'), findsOneWidget);
       expect(find.text('Người quay'), findsOneWidget);

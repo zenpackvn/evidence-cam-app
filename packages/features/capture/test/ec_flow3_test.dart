@@ -1,4 +1,5 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:ec_ui/ec_ui.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,9 +20,11 @@ Future<void> _pump(WidgetTester tester, Widget screen) {
   );
 }
 
+/// Assert on the tab bar itself rather than its labels: the design titles the
+/// recording screens "Ghi hình", which is also a tab label.
 void _expectCameraBottomTabsHidden() {
+  expect(find.byType(PenTabBar), findsNothing);
   expect(find.text('Vận đơn'), findsNothing);
-  expect(find.text('Ghi hình'), findsNothing);
   expect(find.text('Tài khoản'), findsNothing);
 }
 
@@ -44,9 +47,9 @@ void main() {
       expect(find.text('Đóng hàng'), findsOneWidget);
       expect(find.text('1x'), findsOneWidget);
       expect(find.text('720p'), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_outlined), findsOneWidget);
+      expect(find.byIcon(LucideIcons.keyboard), findsOneWidget);
       // Idle — no stop button yet.
-      expect(find.byIcon(Icons.check), findsNothing);
+      expect(find.byIcon(LucideIcons.check), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -80,7 +83,7 @@ void main() {
           onPickType: () => typeTapped = true,
         ),
       );
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LucideIcons.chevronLeft));
       await tester.tap(find.text('Đóng hàng'));
       expect(backTapped, isTrue);
       expect(typeTapped, isTrue);
@@ -252,8 +255,8 @@ void main() {
       expect(find.text('Đóng hàng'), findsOneWidget);
       expect(find.text('ĐV vận chuyển'), findsOneWidget);
       expect(find.text('Trả hàng'), findsOneWidget);
-      expect(find.byIcon(Icons.lock_outline), findsNWidgets(3));
-      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(find.byIcon(LucideIcons.lock), findsNWidgets(3));
+      expect(find.byIcon(LucideIcons.check), findsOneWidget);
       expect(
         find.text('Quản lý loại video — mở Chi tiết shop'),
         findsOneWidget,

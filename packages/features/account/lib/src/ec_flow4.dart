@@ -187,7 +187,10 @@ class EcEditProfileScreen extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              _SimpleHeader(title: context.l10n.accountInfoTitle, onBack: onBack),
+              _SimpleHeader(
+                title: context.l10n.accountInfoTitle,
+                onBack: onBack,
+              ),
               Expanded(
                 child: CustomScrollView(
                   slivers: [
@@ -338,41 +341,46 @@ class EcLanguageScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: BrandColors.bg,
-      child: SafeArea(
+    final l10n = context.l10n;
+    return PenScreen(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 28, 22, 28),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _SimpleHeader(title: context.l10n.accountLanguage, onBack: onBack),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _LanguageOption(
-                      title: 'Tiếng Việt',
-                      subtitle: context.l10n.languageNameVietnamese,
-                      selected: selected == EcAppLanguage.vi,
-                      onTap: () => onSelect?.call(EcAppLanguage.vi),
-                    ),
-                    const SizedBox(height: 10),
-                    _LanguageOption(
-                      title: 'English',
-                      subtitle: context.l10n.languageNameEnglish,
-                      selected: selected == EcAppLanguage.en,
-                      onTap: () => onSelect?.call(EcAppLanguage.en),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Text(
-                        context.l10n.languageChangeAppliesNote,
-                        style: _t(12, FontWeight.w400, BrandColors.mut),
-                      ),
-                    ),
-                  ],
-                ),
+            _SimpleHeader(title: l10n.accountLanguage, onBack: onBack),
+            const SizedBox(height: 22),
+            _LanguageOption(
+              title: 'Tiếng Việt',
+              subtitle: l10n.languageNameVietnamese,
+              selected: selected == EcAppLanguage.vi,
+              onTap: () => onSelect?.call(EcAppLanguage.vi),
+            ),
+            const SizedBox(height: 14),
+            _LanguageOption(
+              title: 'English',
+              subtitle: l10n.languageNameEnglish,
+              selected: selected == EcAppLanguage.en,
+              onTap: () => onSelect?.call(EcAppLanguage.en),
+            ),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: PenText(
+                l10n.languageChangeAppliesNote,
+                size: 14,
+                color: PenColors.mut,
               ),
+            ),
+            const SizedBox(height: 24),
+            const Center(child: PenGlobeIllustration()),
+            const SizedBox(height: 8),
+            PenText(
+              l10n.languageChangeScopeNote,
+              size: 14,
+              color: PenColors.mut,
+              align: TextAlign.center,
+              lineHeight: 1.5,
             ),
           ],
         ),
@@ -408,7 +416,10 @@ class EcLoginMethodsScreen extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            _SimpleHeader(title: context.l10n.accountLoginMethods, onBack: onBack),
+            _SimpleHeader(
+              title: context.l10n.accountLoginMethods,
+              onBack: onBack,
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -426,7 +437,9 @@ class EcLoginMethodsScreen extends StatelessWidget {
                     _LoginMethodRow(
                       icon: Icons.g_mobiledata,
                       name: 'Google',
-                      detail: googleLinked ? context.l10n.linkLinked : context.l10n.linkNotLinked,
+                      detail: googleLinked
+                          ? context.l10n.linkLinked
+                          : context.l10n.linkNotLinked,
                       linked: googleLinked,
                       onToggle: onToggleGoogle,
                     ),
@@ -434,7 +447,9 @@ class EcLoginMethodsScreen extends StatelessWidget {
                     _LoginMethodRow(
                       icon: Icons.apple,
                       name: 'Apple',
-                      detail: appleLinked ? context.l10n.linkLinked : context.l10n.linkNotLinked,
+                      detail: appleLinked
+                          ? context.l10n.linkLinked
+                          : context.l10n.linkNotLinked,
                       linked: appleLinked,
                       onToggle: onToggleApple,
                     ),
@@ -496,7 +511,10 @@ class _LoginMethodRow extends StatelessWidget {
             ),
           ),
           if (isIdentity)
-            Text(context.l10n.loginMethodIdentity, style: _t(14, FontWeight.w500, BrandColors.mut))
+            Text(
+              context.l10n.loginMethodIdentity,
+              style: _t(14, FontWeight.w500, BrandColors.mut),
+            )
           else
             EcTap(
               onTap: onToggle,
@@ -659,7 +677,9 @@ class EcQuotaScreen extends StatelessWidget {
                               ),
                               const Spacer(),
                               Text(
-                                context.l10n.quotaRetentionDays(retentionTotalDays),
+                                context.l10n.quotaRetentionDays(
+                                  retentionTotalDays,
+                                ),
                                 style: _t(14, FontWeight.w600, BrandColors.ink),
                               ),
                             ],
@@ -786,7 +806,9 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
       onDismiss: _handleCancel,
       children: [
         Text(
-          isFirstStep ? context.l10n.deleteAccountTitleStep1 : context.l10n.deleteAccountTitleStep2,
+          isFirstStep
+              ? context.l10n.deleteAccountTitleStep1
+              : context.l10n.deleteAccountTitleStep2,
           style: _t(16, FontWeight.w600, BrandColors.ink),
         ),
         const SizedBox(height: 12),
@@ -815,7 +837,9 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    context.l10n.deletePendingProfilesWarning(widget.pendingSharedProfilesCount),
+                    context.l10n.deletePendingProfilesWarning(
+                      widget.pendingSharedProfilesCount,
+                    ),
                     style: _t(12, FontWeight.w400, BrandColors.ink),
                   ),
                 ),
@@ -836,7 +860,6 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
             Expanded(
               child: _EcPrimaryButton(
                 label: context.l10n.deleteConfirmPermanent,
-                fontSize: 14,
                 onPressed: _handlePrimary,
               ),
             ),
@@ -897,7 +920,9 @@ class EcChangePasswordScreen extends StatelessWidget {
         onDismiss: onCancel,
         children: [
           Text(
-            hasExistingPassword ? context.l10n.accountChangePassword : context.l10n.accountCreatePassword,
+            hasExistingPassword
+                ? context.l10n.accountChangePassword
+                : context.l10n.accountCreatePassword,
             style: _t(16, FontWeight.w600, BrandColors.ink),
           ),
           const SizedBox(height: 12),
@@ -944,7 +969,9 @@ class EcChangePasswordScreen extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _ValidatedPrimaryButton(
-                  label: hasExistingPassword ? context.l10n.passwordSave : context.l10n.accountCreatePassword,
+                  label: hasExistingPassword
+                      ? context.l10n.passwordSave
+                      : context.l10n.accountCreatePassword,
                   onValid: onSave,
                 ),
               ),
@@ -969,39 +996,15 @@ class EcChangePasswordScreen extends StatelessWidget {
 // --- shared pieces (pixel specs from pencil-new.pen) ---
 
 class _EcPrimaryButton extends StatelessWidget {
-  const _EcPrimaryButton({
-    required this.label,
-    this.onPressed,
-    this.fontSize = 16,
-  });
-
+  const _EcPrimaryButton({required this.label, this.onPressed});
   final String label;
   final VoidCallback? onPressed;
-  final double fontSize;
 
   @override
-  Widget build(BuildContext context) {
-    final enabled = onPressed != null;
-    return EcTap(
-      onTap: onPressed,
-      child: Container(
-        height: 52,
-        width: double.infinity,
-        alignment: Alignment.center,
-        decoration: ecSquircleDecoration(
-          radius: 12,
-          color: enabled
-              ? BrandColors.dark
-              : BrandColors.dark.withValues(alpha: 0.4),
-        ),
-        child: Text(label, style: _t(fontSize, FontWeight.w600, Colors.white)),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      PenPrimaryButton(label: label, height: 64, onPressed: onPressed);
 }
 
-/// Primary button that validates the enclosing [Form] before firing [onValid];
-/// invalid fields surface their inline errors and [onValid] is skipped.
 class _ValidatedPrimaryButton extends StatelessWidget {
   const _ValidatedPrimaryButton({required this.label, this.onValid});
   final String label;
@@ -1022,125 +1025,82 @@ class _ValidatedPrimaryButton extends StatelessWidget {
 
 class _EcSecondaryButton extends StatelessWidget {
   const _EcSecondaryButton({required this.label, this.onPressed});
-
   final String label;
   final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) {
-    return EcTap(
-      onTap: onPressed,
-      child: Container(
-        height: 52,
-        width: double.infinity,
-        alignment: Alignment.center,
-        decoration: ecSquircleDecoration(
-          radius: 12,
-          color: BrandColors.bg,
-          side: const BorderSide(color: BrandColors.line),
-        ),
-        child: Text(label, style: _t(16, FontWeight.w500, BrandColors.ink)),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      PenOutlineButton(label: label, onPressed: onPressed);
 }
 
 class _ShopHeader extends StatelessWidget {
   const _ShopHeader({
     required this.shopName,
-    required this.queueCount,
+    this.queueCount = 0,
     this.onBack,
+    this.onQueueTap,
   });
 
   final String shopName;
   final int queueCount;
   final VoidCallback? onBack;
+  final VoidCallback? onQueueTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onBack,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: const Icon(
-              Icons.arrow_back_ios_new,
-              size: 20,
-              color: BrandColors.ink,
-            ),
+    return Row(
+      children: [
+        PenBackButton(onTap: onBack),
+        const SizedBox(width: 14),
+        Expanded(
+          child: PenText(
+            shopName,
+            size: 24,
+            color: PenColors.ink,
+            weight: FontWeight.w800,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              shopName,
-              overflow: TextOverflow.ellipsis,
-              style: _t(14, FontWeight.w600, BrandColors.ink),
-            ),
+        ),
+        EcTap(
+          onTap: onQueueTap,
+          child: PenBox(
+            fill: PenColors.bg,
+            radius: 999,
+            axis: PenAxis.row,
+            gap: 8,
+            cross: CrossAxisAlignment.center,
+            hugMain: true,
+            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 15),
+            children: [
+              const Icon(
+                LucideIcons.cloudUpload,
+                size: 19,
+                color: PenColors.ink,
+              ),
+              PenText(
+                '$queueCount',
+                size: 16,
+                color: PenColors.ink,
+                weight: FontWeight.w700,
+                softWrap: false,
+              ),
+            ],
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: BrandColors.soft,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.cloud_outlined,
-                  size: 14,
-                  color: BrandColors.ink,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '$queueCount',
-                  style: _t(12, FontWeight.w600, BrandColors.ink),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
 class _SimpleHeader extends StatelessWidget {
   const _SimpleHeader({required this.title, this.onBack});
-
   final String title;
   final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onBack,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: const Icon(
-              Icons.arrow_back_ios_new,
-              size: 20,
-              color: BrandColors.ink,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              title,
-              overflow: TextOverflow.ellipsis,
-              style: _t(16, FontWeight.w600, BrandColors.ink),
-            ),
-          ),
-        ],
-      ),
-    );
+    return PenHeader(title: title, onBack: onBack, gap: 14);
   }
 }
 
@@ -1162,54 +1122,52 @@ class _UserRow extends StatelessWidget {
     final path = avatarPath;
     final file = path == null ? null : File(path);
     final hasLocalFile = file?.existsSync() ?? false;
-    return EcTap(
+    return PenCard(
+      stroke: null,
+      gap: 16,
+      padding: const EdgeInsets.all(16),
       onTap: onTap,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 16),
-          child: Row(
+      children: [
+        PenBox(
+          width: 62,
+          height: 62,
+          fill: PenColors.soft,
+          radius: 999,
+          clip: true,
+          axis: PenAxis.row,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          children: [
+            if (!hasLocalFile)
+              const Icon(LucideIcons.user, size: 34, color: PenColors.ink)
+            else
+              SizedBox.expand(child: Image.file(file!, fit: BoxFit.cover)),
+          ],
+        ),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 60,
-                height: 60,
-                clipBehavior: Clip.antiAlias,
-                decoration: const BoxDecoration(
-                  color: BrandColors.soft,
-                  shape: BoxShape.circle,
-                ),
-                child: !hasLocalFile
-                    ? const Icon(
-                        Icons.person_outline,
-                        size: 28,
-                        color: BrandColors.mut,
-                      )
-                    : Image.file(file!, fit: BoxFit.cover),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name, style: _t(18, FontWeight.w600, BrandColors.ink)),
-                    const SizedBox(height: 3),
-                    Text(
-                      email,
-                      style: _t(14, FontWeight.w400, BrandColors.mut),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right,
+              PenText(
+                name,
                 size: 20,
-                color: BrandColors.mut,
+                color: PenColors.ink,
+                weight: FontWeight.w700,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 5),
+              PenText(
+                email,
+                size: 14,
+                color: PenColors.mut,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
         ),
-      ),
+        const Icon(LucideIcons.chevronRight, size: 22, color: PenColors.mut),
+      ],
     );
   }
 }
@@ -1222,8 +1180,14 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 6),
-      child: Text(label, style: _t(14, FontWeight.w600, BrandColors.mut)),
+      padding: const EdgeInsets.fromLTRB(4, 22, 4, 10),
+      child: PenText(
+        label.toUpperCase(),
+        size: 14,
+        color: PenColors.mut,
+        weight: FontWeight.w600,
+        letterSpacing: 0.7,
+      ),
     );
   }
 }
@@ -1245,34 +1209,26 @@ class _SettingsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return EcTap(
       onTap: onTap,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: BrandColors.line)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
-          child: Row(
-            children: [
-              Icon(icon, size: 22, color: BrandColors.ink),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  label,
-                  style: _t(16, FontWeight.w400, BrandColors.ink),
-                ),
-              ),
-              if (value != null) ...[
-                Text(value!, style: _t(14, FontWeight.w400, BrandColors.mut)),
-                const SizedBox(width: 6),
-              ],
-              const Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: BrandColors.mut,
-              ),
-            ],
+      child: PenBox(
+        width: double.infinity,
+        axis: PenAxis.row,
+        gap: 16,
+        cross: CrossAxisAlignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        children: [
+          Icon(icon, size: 25, color: PenColors.ink),
+          Expanded(
+            child: PenText(
+              label,
+              size: 16,
+              color: PenColors.ink,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
+          if (value != null)
+            PenText(value!, size: 14, color: PenColors.ink, softWrap: false),
+          const Icon(LucideIcons.chevronRight, size: 20, color: PenColors.mut),
+        ],
       ),
     );
   }
@@ -1289,72 +1245,18 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      decoration: const BoxDecoration(
-        color: BrandColors.bg,
-        border: Border(top: BorderSide(color: BrandColors.line)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _NavItem(
-              icon: Icons.inventory_2_outlined,
-              label: context.l10n.navOrders,
-              active: active == _NavTab.orders,
-              onTap: onOrders,
-            ),
-          ),
-          Expanded(
-            child: _NavItem(
-              icon: Icons.camera_alt_outlined,
-              label: context.l10n.navRecord,
-              active: active == _NavTab.capture,
-              onTap: onCapture,
-            ),
-          ),
-          Expanded(
-            child: _NavItem(
-              icon: Icons.person_outline,
-              label: context.l10n.navAccount,
-              active: active == _NavTab.account,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.active,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? BrandColors.ink : BrandColors.mut;
-    return EcTap(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 24, color: color),
-          const SizedBox(height: 5),
-          Text(
-            label,
-            style: _t(12, active ? FontWeight.w600 : FontWeight.w400, color),
-          ),
-        ],
-      ),
+    final l10n = context.l10n;
+    return PenTabBar(
+      activeIndex: switch (active) {
+        _NavTab.orders => 0,
+        _NavTab.capture => 1,
+        _NavTab.account => 2,
+      },
+      tabs: [
+        (LucideIcons.package, l10n.navOrders, onOrders),
+        (LucideIcons.camera, l10n.navRecord, onCapture),
+        (LucideIcons.user, l10n.navAccount, null),
+      ],
     );
   }
 }
@@ -1374,58 +1276,67 @@ class _AvatarPicker extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 96,
-          height: 96,
+          width: 130,
+          height: 130,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              Container(
-                width: 96,
-                height: 96,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: BrandColors.soft,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: BrandColors.line),
-                ),
-                child: path == null || !hasLocalFile
-                    ? const Icon(
-                        Icons.person_outline,
-                        size: 40,
-                        color: BrandColors.mut,
-                      )
-                    : Image.file(file!, fit: BoxFit.cover),
+              PenBox(
+                width: 124,
+                height: 124,
+                fill: PenColors.soft,
+                radius: 999,
+                clip: true,
+                axis: PenAxis.row,
+                main: MainAxisAlignment.center,
+                cross: CrossAxisAlignment.center,
+                children: [
+                  if (!hasLocalFile)
+                    const Icon(
+                      LucideIcons.user,
+                      size: 56,
+                      color: PenColors.ink,
+                    )
+                  else
+                    SizedBox.expand(
+                      child: Image.file(file!, fit: BoxFit.cover),
+                    ),
+                ],
               ),
               Positioned(
-                right: 0,
-                bottom: 0,
+                left: 88,
+                top: 84,
                 child: EcTap(
                   onTap: onChangeAvatar,
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: BrandColors.dark,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      size: 14,
-                      color: Colors.white,
-                    ),
+                  child: const PenBox(
+                    width: 42,
+                    height: 42,
+                    fill: PenColors.ink,
+                    radius: 999,
+                    axis: PenAxis.row,
+                    main: MainAxisAlignment.center,
+                    cross: CrossAxisAlignment.center,
+                    children: [
+                      Icon(
+                        LucideIcons.camera,
+                        size: 21,
+                        color: PenColors.card,
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 26),
         EcTap(
           onTap: onChangeAvatar,
-          child: Text(
+          child: PenText(
             context.l10n.changeAvatar,
-            style: _t(12, FontWeight.w500, BrandColors.ink),
+            size: 16,
+            color: PenColors.ink,
+            softWrap: false,
           ),
         ),
       ],
@@ -1467,30 +1378,38 @@ class _Field extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(label, style: _t(14, FontWeight.w500, BrandColors.ink)),
-        const SizedBox(height: 8),
-        DecoratedBox(
-          decoration: ecSquircleDecoration(
-            radius: 12,
-            color: BrandColors.bg,
-            side: BorderSide(
-              color: error == null ? BrandColors.line : BrandColors.rec,
+        PenText(label, size: 16, color: PenColors.ink),
+        const SizedBox(height: 9),
+        PenBox(
+          width: double.infinity,
+          height: 62,
+          fill: PenColors.card,
+          stroke: error == null ? PenColors.line : PenColors.danger,
+          radius: 14,
+          axis: PenAxis.row,
+          cross: CrossAxisAlignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          children: [
+            Expanded(
+              child: CupertinoTextField(
+                controller: controller,
+                onChanged: state?.didChange,
+                keyboardType: keyboardType,
+                padding: EdgeInsets.zero,
+                decoration: const BoxDecoration(),
+                placeholder: hint,
+                style: const TextStyle(fontSize: 16, color: PenColors.ink),
+                placeholderStyle: const TextStyle(
+                  fontSize: 16,
+                  color: PenColors.mut,
+                ),
+              ),
             ),
-          ),
-          child: CupertinoTextField(
-            controller: controller,
-            onChanged: state?.didChange,
-            keyboardType: keyboardType,
-            style: _t(14, FontWeight.w400, BrandColors.ink),
-            placeholder: hint,
-            placeholderStyle: _t(14, FontWeight.w400, BrandColors.mut),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-            decoration: const BoxDecoration(),
-          ),
+          ],
         ),
         if (error != null) ...[
           const SizedBox(height: 6),
-          Text(error, style: _t(12, FontWeight.w400, BrandColors.rec)),
+          PenText(error, size: 12, color: PenColors.danger),
         ],
       ],
     );
@@ -1508,27 +1427,29 @@ class _LockedField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(label, style: _t(14, FontWeight.w500, BrandColors.ink)),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-          decoration: BoxDecoration(
-            color: BrandColors.soft,
-            border: Border.all(color: BrandColors.line),
-            borderRadius: BorderRadius.circular(AppRadius.card),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  value,
-                  overflow: TextOverflow.ellipsis,
-                  style: _t(14, FontWeight.w400, BrandColors.mut),
-                ),
+        PenText(label, size: 16, color: PenColors.ink),
+        const SizedBox(height: 9),
+        PenBox(
+          width: double.infinity,
+          height: 62,
+          fill: PenColors.soft,
+          stroke: PenColors.line,
+          radius: 14,
+          axis: PenAxis.row,
+          gap: 10,
+          cross: CrossAxisAlignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          children: [
+            Expanded(
+              child: PenText(
+                value,
+                size: 16,
+                color: PenColors.ink,
+                overflow: TextOverflow.ellipsis,
               ),
-              const Icon(Icons.lock_outline, size: 14, color: BrandColors.mut),
-            ],
-          ),
+            ),
+            const Icon(LucideIcons.lock, size: 21, color: PenColors.ink),
+          ],
         ),
       ],
     );
@@ -1550,54 +1471,63 @@ class _LanguageOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return EcTap(
+    return PenCard(
+      fill: selected ? PenColors.soft : PenColors.card,
+      stroke: PenColors.line,
+      // The design thickens the border of the chosen language rather than
+      // tinting it — selection reads as ink, never as brand.
+      gap: 12,
+      padding: const EdgeInsets.all(20),
       onTap: onTap,
-      child: DecoratedBox(
-        decoration: ecSquircleDecoration(
-          radius: 12,
-          side: BorderSide(
-            color: selected ? BrandColors.ink : BrandColors.line,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
+      children: [
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: _t(14, FontWeight.w600, BrandColors.ink),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: _t(12, FontWeight.w400, BrandColors.mut),
-                    ),
-                  ],
-                ),
+              PenText(
+                title,
+                size: 20,
+                color: PenColors.ink,
+                weight: FontWeight.w700,
+                overflow: TextOverflow.ellipsis,
               ),
-              if (selected)
-                Container(
-                  width: 22,
-                  height: 22,
-                  decoration: const BoxDecoration(
-                    color: BrandColors.dark,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.check, size: 13, color: Colors.white),
-                ),
+              const SizedBox(height: 4),
+              PenText(
+                subtitle,
+                size: 14,
+                color: PenColors.mut,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ),
-      ),
+        if (selected)
+          const PenBox(
+            width: 32,
+            height: 32,
+            fill: PenColors.ink,
+            radius: 999,
+            axis: PenAxis.row,
+            main: MainAxisAlignment.center,
+            cross: CrossAxisAlignment.center,
+            children: [
+              Icon(LucideIcons.check, size: 18, color: PenColors.card),
+            ],
+          )
+        else
+          const PenEllipse(
+            width: 32,
+            height: 32,
+            color: PenColors.mut,
+            ring: 0.88,
+          ),
+      ],
     );
   }
 }
 
+/// A bordered panel used by the quota screen for its report blocks.
 class _InfoCard extends StatelessWidget {
   const _InfoCard({required this.children, this.row = false});
 
@@ -1606,23 +1536,17 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return PenCard(
+      axis: row ? PenAxis.row : PenAxis.column,
+      lifted: false,
       padding: const EdgeInsets.all(16),
-      decoration: ecSquircleDecoration(
-        radius: 14,
-        side: const BorderSide(color: BrandColors.line),
-      ),
-      child: row
-          ? Row(children: children)
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: children,
-            ),
+      children: children,
     );
   }
 }
 
+/// A password input with the design's 62pt field, a leading padlock and a
+/// reveal toggle.
 class _PasswordField extends StatelessWidget {
   const _PasswordField({
     required this.label,
@@ -1641,46 +1565,13 @@ class _PasswordField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (validator == null) return _decorated(null);
-    return FormField<String>(
-      initialValue: controller?.text ?? '',
+    return PenField(
+      icon: LucideIcons.lock,
+      label: label,
+      hint: hint,
+      controller: controller,
+      obscure: true,
       validator: validator,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      builder: _decorated,
-    );
-  }
-
-  Widget _decorated(FormFieldState<String>? state) {
-    final error = state?.errorText;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(label, style: _t(14, FontWeight.w500, BrandColors.ink)),
-        const SizedBox(height: 8),
-        DecoratedBox(
-          decoration: ecSquircleDecoration(
-            radius: 12,
-            color: BrandColors.bg,
-            side: BorderSide(
-              color: error == null ? BrandColors.line : BrandColors.rec,
-            ),
-          ),
-          child: CupertinoTextField(
-            controller: controller,
-            onChanged: state?.didChange,
-            obscureText: true,
-            style: _t(14, FontWeight.w400, BrandColors.ink),
-            placeholder: hint,
-            placeholderStyle: _t(14, FontWeight.w400, BrandColors.mut),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-            decoration: const BoxDecoration(),
-          ),
-        ),
-        if (error != null) ...[
-          const SizedBox(height: 6),
-          Text(error, style: _t(12, FontWeight.w400, BrandColors.rec)),
-        ],
-      ],
     );
   }
 }

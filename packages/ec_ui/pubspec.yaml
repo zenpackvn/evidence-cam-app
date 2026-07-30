@@ -19,6 +19,19 @@ dependencies:
   # Third-party.
   smooth_corner: ^1.1.1
 
+  # The design file draws its icons from lucide; this ships the same set as a
+  # font so `PenIcon` names map straight across from the `.pen` nodes.
+  lucide_icons_flutter: ^3.1.15
+
+  # `path` nodes in the design file are raw SVG geometry.
+  flutter_svg: ^2.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+flutter:
+  assets:
+    # Artwork the design file uses as image fills on frames.
+    - assets/design/
+    - assets/design/platforms/

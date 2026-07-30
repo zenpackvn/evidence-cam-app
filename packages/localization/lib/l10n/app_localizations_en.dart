@@ -892,7 +892,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Staff don\'t see this screen · shop managers only see shops they manage';
 
   @override
-  String get shopAddNew => 'Add new shop (name + platform)';
+  String get shopAddNew => 'Add a new shop';
 
   @override
   String get sectionMembers => 'MEMBERS';
@@ -1030,4 +1030,145 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scannedCodeNotFound => 'No order matches the scanned code';
+
+  @override
+  String get onboardingTaglineOne => 'Every parcel.';
+
+  @override
+  String get onboardingTaglineTwo => 'One proof.';
+
+  @override
+  String get onboardingTaglineThree => 'Protecting your revenue.';
+
+  @override
+  String get authEmailPlaceholder => 'Enter your email';
+
+  @override
+  String get authPasswordPlaceholder => 'Enter your password';
+
+  @override
+  String get registerCreateAccountSubtitle => 'Create a new account';
+
+  @override
+  String get registerFullName => 'Full name';
+
+  @override
+  String get registerFullNameRequired => 'Please enter your full name';
+
+  @override
+  String get registerPhone => 'Phone number';
+
+  @override
+  String get registerAgreePrefix => 'I agree to the';
+
+  @override
+  String get registerTermsOfUse => 'Terms of Use';
+
+  @override
+  String get shopChooseTitle => 'Choose a shop';
+
+  @override
+  String get shopChooseSubtitle => 'Pick a shop to continue';
+
+  @override
+  String get shopManageTitle => 'Manage shops';
+
+  @override
+  String get shopManageOwnerOnly => 'Visible to shop owners and managers only';
+
+  @override
+  String get noShopTitle => 'No shops yet';
+
+  @override
+  String get noShopLineOne => 'Your account does not belong to a shop yet.';
+
+  @override
+  String get noShopLineTwo => 'Create a shop to get started,';
+
+  @override
+  String get noShopLineThree => 'or wait for an invite from a shop owner.';
+
+  @override
+  String get noShopCreateCta => 'Create a shop (name + marketplace)';
+
+  @override
+  String get noShopInviteHint => 'Shop invites will appear here';
+
+  @override
+  String get createShopTitle => 'Create shop';
+
+  @override
+  String get createShopNameLabel => 'Shop name';
+
+  @override
+  String get createShopNameHint => 'e.g. Shop ABC';
+
+  @override
+  String get createShopPlatformLabel => 'Marketplace';
+
+  @override
+  String get createShopOwnerNote =>
+      'You will be the shop owner — add members later under Manage shops';
+
+  @override
+  String get createShopSubmit => 'Create shop';
+
+  @override
+  String get shopManageDescription =>
+      'View and manage the shops you administer.';
+
+  @override
+  String get shopManageAddCta => 'Add a shop (name + marketplace)';
+
+  @override
+  String get shopManageStaffNote =>
+      'Staff cannot see this screen — owners and shop managers only.';
+
+  @override
+  String get shopDetailTitle => 'Shop detail';
+
+  @override
+  String get shopDetailResolution => 'Recording resolution';
+
+  @override
+  String get shopDetailAddType => 'Add a type (enter a name)';
+
+  @override
+  String get inviteMemberTitle => 'Invite a member';
+
+  @override
+  String get inviteMemberHint => '(no account yet → send an invite)';
+
+  @override
+  String get videoTypeIcon => 'Icon';
+
+  @override
+  String get videoTypeColor => 'Colour';
+
+  @override
+  String get createVideoTypeSubmit => 'Create type';
+
+  @override
+  String get deleteVideoTypeSafeNote => 'No evidence is lost';
+
+  @override
+  String get commonConfirm => 'Confirm';
+
+  @override
+  String orderErrorCount(int count) {
+    return '$count failed';
+  }
+
+  @override
+  String get videoDetailSheetTitle => 'Video detail';
+
+  @override
+  String get tooltipStopRecording => 'Stop recording';
+
+  @override
+  String get dossierLinkTitle => 'Dispute dossier link';
+
+  @override
+  String get languageChangeScopeNote =>
+      'Every label, notification and dossier\nswitches to the language you pick.';
 }

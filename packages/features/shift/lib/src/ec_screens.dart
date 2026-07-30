@@ -1,9 +1,11 @@
 /// EvidenceCam screens, built pixel-perfect from
-/// `specs/projects/evidencecam/design-spec/pencil-new.pen`.
+/// `specs/projects/evidencecam/design-spec/pencil-app-dna.pen`.
 ///
 /// These are presentational (data-in, callbacks-out) so they can be verified in
 /// isolation now and wired to auth/router as those land. Every dimension, gap,
-/// font size/weight and color is taken directly from the design file.
+/// font size/weight and color is taken directly from the design file — compare
+/// against `PenF101`/`PenF102` (the design file transcribed verbatim by
+/// `tool/pen2dart.py`) and the goldens under `test/design/goldens/`.
 library;
 
 import 'package:app_ui/app_ui.dart';
@@ -21,7 +23,8 @@ import 'package:localization/localization.dart';
 TextStyle _t(double size, FontWeight weight, Color color) =>
     TextStyle(fontSize: size, fontWeight: weight, color: color, height: 1.3);
 
-/// Splash — logo, app name, tagline, primary "Bắt đầu" button, version.
+/// Splash (`F1-01`) — logo, wordmark, sparkle rule, three-line tagline, hero
+/// art, primary "Bắt đầu" button and the version line.
 class EcSplashScreen extends StatelessWidget {
   const EcSplashScreen({this.onStart, this.version = 'v1.0.0', super.key});
 
@@ -30,51 +33,82 @@ class EcSplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: BrandColors.bg,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SmoothClipRRect(
-                      smoothness: ecCornerSmoothing,
-                      borderRadius: BorderRadius.circular(28),
-                      child: Image.asset(
-                        'assets/icons/logo.png',
-                        width: 96,
-                        height: 96,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'ZenPack',
-                      style: _t(30, FontWeight.w600, BrandColors.ink),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: 260,
-                      child: Text(
-                        context.l10n.onboardingSubtitle,
-                        textAlign: TextAlign.center,
-                        style: _t(14, FontWeight.w400, BrandColors.mut),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              _EcPrimaryButton(label: context.l10n.onboardingStart, onPressed: onStart),
-              const SizedBox(height: 16),
-              Text(version, style: _t(12, FontWeight.w400, BrandColors.mut)),
-            ],
+    final l10n = context.l10n;
+    // The design lays this screen out absolutely on an 844pt artboard: the
+    // brand block hangs off the top, the button and version off the bottom,
+    // and the slack between them lives around the hero art. Devices are
+    // taller than the artboard, so the art takes the slack instead of a
+    // fixed spacer — that keeps every other gap at its design value.
+    return PenScreen(
+      scrollable: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 52),
+          Image.asset(
+            'assets/design/logo.png',
+            package: 'ec_ui',
+            width: 120,
+            height: 120,
+            fit: BoxFit.cover,
           ),
-        ),
+          const SizedBox(height: 6),
+          const PenText(
+            'ZenPack',
+            size: 36,
+            color: PenColors.primary,
+            weight: FontWeight.w800,
+            align: TextAlign.center,
+            softWrap: false,
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(120, 22, 100, 0),
+            child: PenOrnamentRule(),
+          ),
+          const SizedBox(height: 20),
+          for (final line in [
+            l10n.onboardingTaglineOne,
+            l10n.onboardingTaglineTwo,
+            l10n.onboardingTaglineThree,
+          ]) ...[
+            PenText(
+              line,
+              size: 20,
+              color: PenColors.ink,
+              weight: FontWeight.w500,
+              align: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+          ],
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 21, 24, 26),
+              child: Image.asset(
+                'assets/design/flow1-zenpack-hero-art-splash.png',
+                package: 'ec_ui',
+                width: 342,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 30),
+            child: PenPrimaryButton(
+              label: l10n.onboardingStart,
+              height: 64,
+              onPressed: onStart,
+            ),
+          ),
+          const SizedBox(height: 16),
+          PenText(
+            version,
+            size: 12,
+            color: PenColors.mut,
+            align: TextAlign.center,
+            softWrap: false,
+          ),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }
@@ -106,133 +140,89 @@ class EcLoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Form(
-      child: CupertinoPageScaffold(
-        backgroundColor: BrandColors.bg,
-        child: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: _LangChip(onTap: onLanguage),
-                      ),
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 28),
-                        child: Column(
-                          children: [
-                            Text(
-                              context.l10n.authSignIn,
-                              style: _t(24, FontWeight.w600, BrandColors.ink),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              context.l10n.authChooseMethod,
-                              style: _t(14, FontWeight.w400, BrandColors.mut),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _Field(
-                        label: 'Email',
-                        hint: 'ban@email.com',
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(
-                            errorText: context.l10n.authEmailRequired,
-                          ),
-                          FormBuilderValidators.email(
-                            errorText: context.l10n.authEmailInvalid,
-                          ),
-                        ]),
-                      ),
-                      const SizedBox(height: 12),
-                      _Field(
-                        label: context.l10n.authPassword,
-                        hint: '••••••••',
-                        controller: passwordController,
-                        obscure: true,
-                        trailing: Icons.visibility_outlined,
-                        validator: FormBuilderValidators.required(
-                          errorText: context.l10n.authPasswordRequired,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: EcTap(
-                          onTap: onForgot,
-                          child: Text(
-                            context.l10n.authForgotPassword,
-                            style: _t(14, FontWeight.w500, BrandColors.ink),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _ValidatedPrimaryButton(
-                        label: context.l10n.authSignIn,
-                        onValid: onLogin,
-                      ),
-                      const SizedBox(height: 12),
-                      const _OrDivider(),
-                      const SizedBox(height: 12),
-                      _SocialButton(
-                        label: context.l10n.authSignInGoogle,
-                        background: Colors.white,
-                        borderColor: const Color(0xFFDADCE0),
-                        foreground: const Color(0xFF3C4043),
-                        icon: const _GoogleLogo(),
-                        onPressed: onGoogle,
-                      ),
-                      if (defaultTargetPlatform != TargetPlatform.android) ...[
-                        const SizedBox(height: 12),
-                        _SocialButton(
-                          label: context.l10n.authSignInApple,
-                          background: Colors.black,
-                          borderColor: Colors.black,
-                          foreground: Colors.white,
-                          icon: const Icon(
-                            Icons.apple,
-                            size: 20,
-                            color: Colors.white,
-                          ),
-                          onPressed: onApple,
-                        ),
-                      ],
-                      const Spacer(),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            context.l10n.authNoAccountPrompt,
-                            style: _t(14, FontWeight.w400, BrandColors.mut),
-                          ),
-                          EcTap(
-                            onTap: onRegister,
-                            child: Text(
-                              context.l10n.authRegister,
-                              style: _t(14, FontWeight.w600, BrandColors.ink),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+      child: PenScreen(
+        decorations: const [Positioned.fill(child: PenBottomDecor())],
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(26, 44, 26, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  PenBrandHeader(
+                    title: l10n.authSignIn,
+                    subtitle: l10n.authChooseMethod,
                   ),
-                ),
+                  const SizedBox(height: 26),
+                  PenField(
+                    label: 'Email',
+                    hint: l10n.authEmailPlaceholder,
+                    icon: LucideIcons.mail,
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: FormBuilderValidators.compose([
+                      FormBuilderValidators.required(
+                        errorText: l10n.authEmailRequired,
+                      ),
+                      FormBuilderValidators.email(
+                        errorText: l10n.authEmailInvalid,
+                      ),
+                    ]),
+                  ),
+                  const SizedBox(height: 16),
+                  PenField(
+                    label: l10n.authPassword,
+                    hint: l10n.authPasswordPlaceholder,
+                    icon: LucideIcons.lock,
+                    controller: passwordController,
+                    obscure: true,
+                    validator: FormBuilderValidators.required(
+                      errorText: l10n.authPasswordRequired,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: PenLink(l10n.authForgotPassword, onTap: onForgot),
+                  ),
+                  const SizedBox(height: 16),
+                  _ValidatedPrimaryButton(
+                    label: l10n.authSignIn,
+                    onValid: onLogin,
+                  ),
+                  const SizedBox(height: 16),
+                  PenLabelledRule(l10n.authOr),
+                  const SizedBox(height: 16),
+                  PenOutlineButton(
+                    label: l10n.authSignInGoogle,
+                    icon: const PenGoogleMark(),
+                    onPressed: onGoogle,
+                  ),
+                  if (defaultTargetPlatform != TargetPlatform.android) ...[
+                    const SizedBox(height: 16),
+                    PenOutlineButton(
+                      label: l10n.authSignInApple,
+                      icon: const PenAppleMark(),
+                      onPressed: onApple,
+                    ),
+                  ],
+                  const SizedBox(height: 22),
+                  PenPromptLink(
+                    prompt: l10n.authNoAccountPrompt.trim(),
+                    action: l10n.authRegister,
+                    onTap: onRegister,
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            Positioned(
+              top: 24,
+              right: 24,
+              child: PenLangPill(label: 'VI', onTap: onLanguage),
+            ),
+          ],
         ),
       ),
     );
@@ -404,7 +394,9 @@ class _FieldState extends State<_Field> {
     // On obscured fields the eye is a live reveal toggle; otherwise decorative.
     final icon = widget.obscure
         ? Icon(
-            _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            _obscure
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
             size: 18,
             color: BrandColors.mut,
           )
@@ -431,7 +423,10 @@ class _OrDivider extends StatelessWidget {
         const Expanded(child: Divider(color: BrandColors.line, height: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text(context.l10n.authOr, style: _t(12, FontWeight.w400, BrandColors.mut)),
+          child: Text(
+            context.l10n.authOr,
+            style: _t(12, FontWeight.w400, BrandColors.mut),
+          ),
         ),
         const Expanded(child: Divider(color: BrandColors.line, height: 1)),
       ],

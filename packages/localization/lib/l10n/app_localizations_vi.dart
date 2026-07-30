@@ -886,7 +886,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Nhân viên không thấy màn này · QL shop chỉ thấy shop mình quản';
 
   @override
-  String get shopAddNew => 'Thêm shop mới (tên + sàn)';
+  String get shopAddNew => 'Thêm cửa hàng mới';
 
   @override
   String get sectionMembers => 'THÀNH VIÊN';
@@ -1021,4 +1021,146 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get scannedCodeNotFound => 'Không tìm thấy vận đơn khớp mã đã quét';
+
+  @override
+  String get onboardingTaglineOne => 'Mỗi kiện hàng.';
+
+  @override
+  String get onboardingTaglineTwo => 'Một bằng chứng.';
+
+  @override
+  String get onboardingTaglineThree => 'Bảo vệ doanh thu của bạn.';
+
+  @override
+  String get authEmailPlaceholder => 'Nhập email của bạn';
+
+  @override
+  String get authPasswordPlaceholder => 'Nhập mật khẩu của bạn';
+
+  @override
+  String get registerCreateAccountSubtitle => 'Tạo tài khoản mới';
+
+  @override
+  String get registerFullName => 'Họ tên';
+
+  @override
+  String get registerFullNameRequired => 'Vui lòng nhập họ tên';
+
+  @override
+  String get registerPhone => 'Số điện thoại';
+
+  @override
+  String get registerAgreePrefix => 'Tôi đồng ý với';
+
+  @override
+  String get registerTermsOfUse => 'Điều khoản sử dụng';
+
+  @override
+  String get shopChooseTitle => 'Chọn cửa hàng';
+
+  @override
+  String get shopChooseSubtitle => 'Chọn cửa hàng để tiếp tục';
+
+  @override
+  String get shopManageTitle => 'Quản lý cửa hàng';
+
+  @override
+  String get shopManageOwnerOnly =>
+      'Chỉ hiển thị với Chủ tài khoản / Quản lý shop';
+
+  @override
+  String get noShopTitle => 'Chưa có shop nào';
+
+  @override
+  String get noShopLineOne => 'Tài khoản của bạn chưa thuộc shop nào.';
+
+  @override
+  String get noShopLineTwo => 'Tạo shop mới để bắt đầu,';
+
+  @override
+  String get noShopLineThree => 'hoặc chờ lời mời từ chủ shop.';
+
+  @override
+  String get noShopCreateCta => 'Tạo shop mới (tên + sàn)';
+
+  @override
+  String get noShopInviteHint => 'Lời mời vào shop sẽ hiện ở đây';
+
+  @override
+  String get createShopTitle => 'Tạo shop';
+
+  @override
+  String get createShopNameLabel => 'Tên shop';
+
+  @override
+  String get createShopNameHint => 'Ví dụ: Shop ABC';
+
+  @override
+  String get createShopPlatformLabel => 'Sàn thương mại';
+
+  @override
+  String get createShopOwnerNote =>
+      'Bạn sẽ là chủ shop — thêm thành viên sau trong Quản lý cửa hàng';
+
+  @override
+  String get createShopSubmit => 'Tạo shop';
+
+  @override
+  String get shopManageDescription =>
+      'Xem và quản lý danh sách các cửa hàng bạn có quyền quản lý.';
+
+  @override
+  String get shopManageAddCta => 'Thêm shop mới (tên + sàn)';
+
+  @override
+  String get shopManageStaffNote =>
+      'Nhân viên không thấy màn này — chỉ chủ shop và quản lý shop mới xem được.';
+
+  @override
+  String get shopDetailTitle => 'Chi tiết cửa hàng';
+
+  @override
+  String get shopDetailResolution => 'Độ phân giải quay';
+
+  @override
+  String get shopDetailAddType => 'Thêm loại (nhập tên)';
+
+  @override
+  String get inviteMemberTitle => 'Mời thành viên';
+
+  @override
+  String get inviteMemberHint => '(chưa có tài khoản → gửi lời mời)';
+
+  @override
+  String get videoTypeIcon => 'Biểu tượng';
+
+  @override
+  String get videoTypeColor => 'Màu sắc';
+
+  @override
+  String get createVideoTypeSubmit => 'Tạo loại';
+
+  @override
+  String get deleteVideoTypeSafeNote => 'Không mất bằng chứng';
+
+  @override
+  String get commonConfirm => 'Xác nhận';
+
+  @override
+  String orderErrorCount(int count) {
+    return '$count lỗi';
+  }
+
+  @override
+  String get videoDetailSheetTitle => 'Chi tiết video';
+
+  @override
+  String get tooltipStopRecording => 'Dừng quay';
+
+  @override
+  String get dossierLinkTitle => 'Link hồ sơ khiếu nại';
+
+  @override
+  String get languageChangeScopeNote =>
+      'Toàn bộ nhãn, thông báo và hồ sơ\nsẽ đổi sang ngôn ngữ bạn chọn.';
 }
