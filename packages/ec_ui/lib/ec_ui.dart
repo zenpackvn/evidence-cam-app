@@ -213,7 +213,7 @@ class _EcToastState extends State<_EcToast> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Color(0xFFFFFFFF),
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                     height: 1.3,
                   ),

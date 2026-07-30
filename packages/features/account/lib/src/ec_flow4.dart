@@ -137,7 +137,7 @@ class EcAccountTabScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       child: Text(
                         context.l10n.accountShopMgmtHint,
-                        style: _t(11, FontWeight.w400, BrandColors.mut),
+                        style: _t(12, FontWeight.w400, BrandColors.mut),
                       ),
                     ),
                   ],
@@ -277,7 +277,7 @@ class EcPhoneSetupScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   Text(
                     context.l10n.phoneAddTitle,
-                    style: _t(22, FontWeight.w700, BrandColors.ink),
+                    style: _t(24, FontWeight.w600, BrandColors.ink),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -367,7 +367,7 @@ class EcLanguageScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Text(
                         context.l10n.languageChangeAppliesNote,
-                        style: _t(11, FontWeight.w400, BrandColors.mut),
+                        style: _t(12, FontWeight.w400, BrandColors.mut),
                       ),
                     ),
                   ],
@@ -478,7 +478,7 @@ class _LoginMethodRow extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         border: Border.all(color: BrandColors.line),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Row(
         children: [
@@ -491,12 +491,12 @@ class _LoginMethodRow extends StatelessWidget {
               children: [
                 Text(name, style: _t(16, FontWeight.w600, BrandColors.ink)),
                 const SizedBox(height: 2),
-                Text(detail, style: _t(13, FontWeight.w400, BrandColors.mut)),
+                Text(detail, style: _t(14, FontWeight.w400, BrandColors.mut)),
               ],
             ),
           ),
           if (isIdentity)
-            Text(context.l10n.loginMethodIdentity, style: _t(13, FontWeight.w500, BrandColors.mut))
+            Text(context.l10n.loginMethodIdentity, style: _t(14, FontWeight.w500, BrandColors.mut))
           else
             EcTap(
               onTap: onToggle,
@@ -599,7 +599,7 @@ class EcQuotaScreen extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 planLabel,
-                                style: _t(20, FontWeight.w700, BrandColors.ink),
+                                style: _t(20, FontWeight.w600, BrandColors.ink),
                               ),
                             ],
                           ),
@@ -613,7 +613,7 @@ class EcQuotaScreen extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 '${ecHumanBytes(_remainingBytes)} / ${ecHumanBytes(capBytes)}',
-                                style: _t(20, FontWeight.w700, BrandColors.ink),
+                                style: _t(20, FontWeight.w600, BrandColors.ink),
                               ),
                               const SizedBox(height: 8),
                               SizedBox(
@@ -645,7 +645,7 @@ class EcQuotaScreen extends StatelessWidget {
                               const SizedBox(height: 8),
                               Text(
                                 context.l10n.quotaUsedPercent(_usedPercent),
-                                style: _t(11, FontWeight.w400, BrandColors.mut),
+                                style: _t(12, FontWeight.w400, BrandColors.mut),
                               ),
                             ],
                           ),
@@ -675,7 +675,7 @@ class EcQuotaScreen extends StatelessWidget {
                             Text(
                               context.l10n.quotaOwnerOnlyNote,
                               textAlign: TextAlign.center,
-                              style: _t(13, FontWeight.w400, BrandColors.mut),
+                              style: _t(14, FontWeight.w400, BrandColors.mut),
                             ),
                         ],
                       ),
@@ -787,14 +787,14 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
       children: [
         Text(
           isFirstStep ? context.l10n.deleteAccountTitleStep1 : context.l10n.deleteAccountTitleStep2,
-          style: _t(16, FontWeight.w700, BrandColors.ink),
+          style: _t(16, FontWeight.w600, BrandColors.ink),
         ),
         const SizedBox(height: 12),
         Text(
           isFirstStep
               ? context.l10n.deleteAccountBodyStep1
               : context.l10n.deleteAccountBodyStep2,
-          style: _t(13, FontWeight.w400, BrandColors.mut),
+          style: _t(14, FontWeight.w400, BrandColors.mut),
         ),
         if (isFirstStep && widget.pendingSharedProfilesCount > 0) ...[
           const SizedBox(height: 12),
@@ -849,7 +849,7 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
                 ? context.l10n.deleteStep1Hint
                 : context.l10n.deleteStep2Hint,
             textAlign: TextAlign.center,
-            style: _t(11, FontWeight.w400, BrandColors.mut),
+            style: _t(12, FontWeight.w400, BrandColors.mut),
           ),
         ),
       ],
@@ -898,7 +898,7 @@ class EcChangePasswordScreen extends StatelessWidget {
         children: [
           Text(
             hasExistingPassword ? context.l10n.accountChangePassword : context.l10n.accountCreatePassword,
-            style: _t(16, FontWeight.w700, BrandColors.ink),
+            style: _t(16, FontWeight.w600, BrandColors.ink),
           ),
           const SizedBox(height: 12),
           if (hasExistingPassword) ...[
@@ -956,7 +956,7 @@ class EcChangePasswordScreen extends StatelessWidget {
               child: Text(
                 context.l10n.passwordChangeLogoutNote,
                 textAlign: TextAlign.center,
-                style: _t(11, FontWeight.w400, BrandColors.mut),
+                style: _t(12, FontWeight.w400, BrandColors.mut),
               ),
             ),
           ],
@@ -1077,7 +1077,7 @@ class _ShopHeader extends StatelessWidget {
             child: Text(
               shopName,
               overflow: TextOverflow.ellipsis,
-              style: _t(15, FontWeight.w600, BrandColors.ink),
+              style: _t(14, FontWeight.w600, BrandColors.ink),
             ),
           ),
           Container(
@@ -1135,7 +1135,7 @@ class _SimpleHeader extends StatelessWidget {
             child: Text(
               title,
               overflow: TextOverflow.ellipsis,
-              style: _t(17, FontWeight.w600, BrandColors.ink),
+              style: _t(16, FontWeight.w600, BrandColors.ink),
             ),
           ),
         ],
@@ -1223,7 +1223,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 16, bottom: 6),
-      child: Text(label, style: _t(13, FontWeight.w600, BrandColors.mut)),
+      child: Text(label, style: _t(14, FontWeight.w600, BrandColors.mut)),
     );
   }
 }
@@ -1481,9 +1481,9 @@ class _Field extends StatelessWidget {
             controller: controller,
             onChanged: state?.didChange,
             keyboardType: keyboardType,
-            style: _t(15, FontWeight.w400, BrandColors.ink),
+            style: _t(14, FontWeight.w400, BrandColors.ink),
             placeholder: hint,
-            placeholderStyle: _t(15, FontWeight.w400, BrandColors.mut),
+            placeholderStyle: _t(14, FontWeight.w400, BrandColors.mut),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             decoration: const BoxDecoration(),
           ),
@@ -1515,7 +1515,7 @@ class _LockedField extends StatelessWidget {
           decoration: BoxDecoration(
             color: BrandColors.soft,
             border: Border.all(color: BrandColors.line),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.card),
           ),
           child: Row(
             children: [
@@ -1523,7 +1523,7 @@ class _LockedField extends StatelessWidget {
                 child: Text(
                   value,
                   overflow: TextOverflow.ellipsis,
-                  style: _t(15, FontWeight.w400, BrandColors.mut),
+                  style: _t(14, FontWeight.w400, BrandColors.mut),
                 ),
               ),
               const Icon(Icons.lock_outline, size: 14, color: BrandColors.mut),
@@ -1570,7 +1570,7 @@ class _LanguageOption extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: _t(15, FontWeight.w600, BrandColors.ink),
+                      style: _t(14, FontWeight.w600, BrandColors.ink),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -1669,9 +1669,9 @@ class _PasswordField extends StatelessWidget {
             controller: controller,
             onChanged: state?.didChange,
             obscureText: true,
-            style: _t(15, FontWeight.w400, BrandColors.ink),
+            style: _t(14, FontWeight.w400, BrandColors.ink),
             placeholder: hint,
-            placeholderStyle: _t(15, FontWeight.w400, BrandColors.mut),
+            placeholderStyle: _t(14, FontWeight.w400, BrandColors.mut),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             decoration: const BoxDecoration(),
           ),

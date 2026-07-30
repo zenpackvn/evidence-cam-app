@@ -210,9 +210,9 @@ class _FieldState extends State<_Field> {
             onChanged: state?.didChange,
             obscureText: _obscure,
             keyboardType: widget.keyboardType,
-            style: _t(15, FontWeight.w400, BrandColors.ink),
+            style: _t(14, FontWeight.w400, BrandColors.ink),
             placeholder: widget.hint,
-            placeholderStyle: _t(15, FontWeight.w400, BrandColors.mut),
+            placeholderStyle: _t(14, FontWeight.w400, BrandColors.mut),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             decoration: const BoxDecoration(),
             suffix: _buildSuffix(),
@@ -306,7 +306,7 @@ class _SocialButton extends StatelessWidget {
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
-                style: _t(15, FontWeight.w500, foreground),
+                style: _t(14, FontWeight.w500, foreground),
               ),
             ),
           ],
@@ -344,7 +344,7 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(label, style: _t(11, FontWeight.w600, BrandColors.mut));
+    return Text(label, style: _t(12, FontWeight.w600, BrandColors.mut));
   }
 }
 
@@ -367,7 +367,7 @@ class _SimpleHeader extends StatelessWidget {
             child: Text(
               title,
               overflow: TextOverflow.ellipsis,
-              style: _t(17, FontWeight.w600, BrandColors.ink),
+              style: _t(16, FontWeight.w600, BrandColors.ink),
             ),
           ),
         ],
@@ -404,7 +404,7 @@ class _ShopHeader extends StatelessWidget {
             children: [
               _BackButton(onTap: onBack, size: 24),
               const SizedBox(width: 10),
-              Text(shopName, style: _t(19, FontWeight.w700, BrandColors.ink)),
+              Text(shopName, style: _t(20, FontWeight.w600, BrandColors.ink)),
             ],
           ),
           EcTap(
@@ -664,12 +664,12 @@ class EcRegisterScreen extends StatelessWidget {
                           children: [
                             Text(
                               context.l10n.authRegister,
-                              style: _t(24, FontWeight.w700, BrandColors.ink),
+                              style: _t(24, FontWeight.w600, BrandColors.ink),
                             ),
                             const SizedBox(height: 6),
                             Text(
                               context.l10n.registerTitle,
-                              style: _t(13, FontWeight.w400, BrandColors.mut),
+                              style: _t(14, FontWeight.w400, BrandColors.mut),
                             ),
                           ],
                         ),
@@ -815,7 +815,7 @@ class EcRegisterScreen extends StatelessWidget {
                       Text(
                         context.l10n.registerSameEmailNote,
                         textAlign: TextAlign.center,
-                        style: _t(11, FontWeight.w400, BrandColors.mut),
+                        style: _t(12, FontWeight.w400, BrandColors.mut),
                       ),
                       const Spacer(),
                       const SizedBox(height: 10),
@@ -825,13 +825,13 @@ class EcRegisterScreen extends StatelessWidget {
                         children: [
                           Text(
                             context.l10n.registerHaveAccountPrompt,
-                            style: _t(13, FontWeight.w400, BrandColors.mut),
+                            style: _t(14, FontWeight.w400, BrandColors.mut),
                           ),
                           GestureDetector(
                             onTap: onLogin,
                             child: Text(
                               context.l10n.authSignIn,
-                              style: _t(13, FontWeight.w600, BrandColors.ink),
+                              style: _t(14, FontWeight.w600, BrandColors.ink),
                             ),
                           ),
                         ],
@@ -862,7 +862,7 @@ class _PolicyCheckbox extends StatelessWidget {
         height: 18,
         decoration: BoxDecoration(
           color: BrandColors.dark,
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(AppRadius.dialog),
         ),
         alignment: Alignment.center,
         child: checked
@@ -930,13 +930,13 @@ class EcForgotPasswordScreen extends StatelessWidget {
                           children: [
                             Text(
                               context.l10n.forgotPasswordTitle,
-                              style: _t(24, FontWeight.w700, BrandColors.ink),
+                              style: _t(24, FontWeight.w600, BrandColors.ink),
                             ),
                             const SizedBox(height: 6),
                             Text(
                               context.l10n.forgotPasswordSubtitle,
                               textAlign: TextAlign.center,
-                              style: _t(13, FontWeight.w400, BrandColors.mut),
+                              style: _t(14, FontWeight.w400, BrandColors.mut),
                             ),
                           ],
                         ),
@@ -1000,13 +1000,13 @@ class EcForgotPasswordScreen extends StatelessWidget {
                         children: [
                           Text(
                             context.l10n.forgotPasswordRememberPrompt,
-                            style: _t(13, FontWeight.w400, BrandColors.mut),
+                            style: _t(14, FontWeight.w400, BrandColors.mut),
                           ),
                           GestureDetector(
                             onTap: onLogin,
                             child: Text(
                               context.l10n.authSignIn,
-                              style: _t(13, FontWeight.w600, BrandColors.ink),
+                              style: _t(14, FontWeight.w600, BrandColors.ink),
                             ),
                           ),
                         ],
@@ -1106,12 +1106,12 @@ class EcChooseShopScreen extends StatelessWidget {
                   children: [
                     Text(
                       context.l10n.shopYourShops,
-                      style: _t(22, FontWeight.w700, BrandColors.ink),
+                      style: _t(24, FontWeight.w600, BrandColors.ink),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       context.l10n.shopTapToClockIn,
-                      style: _t(13, FontWeight.w400, BrandColors.mut),
+                      style: _t(14, FontWeight.w400, BrandColors.mut),
                     ),
                     const SizedBox(height: 12),
                     for (final shop in shops) ...[
@@ -1140,7 +1140,7 @@ class EcChooseShopScreen extends StatelessWidget {
                             const SizedBox(width: 6),
                             Text(
                               context.l10n.accountSignOut,
-                              style: _t(13, FontWeight.w500, BrandColors.ink),
+                              style: _t(14, FontWeight.w500, BrandColors.ink),
                             ),
                           ],
                         ),
@@ -1189,7 +1189,7 @@ class _ShopListTile extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: BrandColors.soft,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.dialog),
                 ),
                 child: Icon(Icons.storefront, size: 24, color: color),
               ),
@@ -1201,7 +1201,7 @@ class _ShopListTile extends StatelessWidget {
                   children: [
                     Text(
                       shop.name,
-                      style: _t(17, FontWeight.w600, BrandColors.ink),
+                      style: _t(16, FontWeight.w600, BrandColors.ink),
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -1255,7 +1255,7 @@ class _ManageRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       context.l10n.shopManageVisibilityNote,
-                      style: _t(13, FontWeight.w400, BrandColors.mut),
+                      style: _t(14, FontWeight.w400, BrandColors.mut),
                     ),
                   ],
                 ),
@@ -1296,7 +1296,7 @@ class EcNoShopScreen extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: BrandColors.soft,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
                 ),
                 child: const Icon(
                   Icons.storefront_outlined,
@@ -1307,7 +1307,7 @@ class EcNoShopScreen extends StatelessWidget {
               const SizedBox(height: 14),
               Text(
                 context.l10n.shopEmpty,
-                style: _t(18, FontWeight.w700, BrandColors.ink),
+                style: _t(18, FontWeight.w600, BrandColors.ink),
               ),
               const SizedBox(height: 14),
               SizedBox(
@@ -1315,7 +1315,7 @@ class EcNoShopScreen extends StatelessWidget {
                 child: Text(
                   context.l10n.shopEmptyBody,
                   textAlign: TextAlign.center,
-                  style: _t(13, FontWeight.w400, BrandColors.mut),
+                  style: _t(14, FontWeight.w400, BrandColors.mut),
                 ),
               ),
               const SizedBox(height: 14),
@@ -1419,7 +1419,7 @@ class EcCreateShopScreen extends StatelessWidget {
                             const SizedBox(height: 16),
                             Text(
                               context.l10n.shopPlatform,
-                              style: _t(13, FontWeight.w500, BrandColors.ink),
+                              style: _t(14, FontWeight.w500, BrandColors.ink),
                             ),
                             const SizedBox(height: 8),
                             Wrap(
@@ -1525,7 +1525,7 @@ class _PlatformPill extends StatelessWidget {
                 color: selected ? Colors.white : platformColor,
               ),
               const SizedBox(width: 6),
-              Text(label, style: _t(13, FontWeight.w500, foreground)),
+              Text(label, style: _t(14, FontWeight.w500, foreground)),
             ],
           ),
         ),
@@ -1606,7 +1606,7 @@ class EcShopMgmtScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         context.l10n.shopMgmtVisibilityNote,
-                        style: _t(11, FontWeight.w400, BrandColors.mut),
+                        style: _t(12, FontWeight.w400, BrandColors.mut),
                       ),
                     ),
                   ],
@@ -1645,7 +1645,7 @@ class _ShopMgmtTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: BrandColors.soft,
                   border: Border.all(color: BrandColors.line),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.dialog),
                 ),
               ),
               const SizedBox(width: 14),
@@ -1656,7 +1656,7 @@ class _ShopMgmtTile extends StatelessWidget {
                   children: [
                     Text(
                       shop.name,
-                      style: _t(17, FontWeight.w600, BrandColors.ink),
+                      style: _t(16, FontWeight.w600, BrandColors.ink),
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -1800,7 +1800,7 @@ class EcShopDetailScreen extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               context.l10n.videoTypesLockedNote,
-              style: _t(11, FontWeight.w400, BrandColors.mut),
+              style: _t(12, FontWeight.w400, BrandColors.mut),
             ),
           ],
         ),
@@ -1861,7 +1861,7 @@ class _MemberRow extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: BrandColors.soft,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
             child: const Icon(
               Icons.person_outline,
@@ -1882,7 +1882,7 @@ class _MemberRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   member.role,
-                  style: _t(13, FontWeight.w400, BrandColors.mut),
+                  style: _t(14, FontWeight.w400, BrandColors.mut),
                 ),
               ],
             ),
@@ -1920,7 +1920,7 @@ class _InviteMemberRow extends StatelessWidget {
             Expanded(
               child: Text(
                 context.l10n.addMemberByContact,
-                style: _t(15, FontWeight.w500, BrandColors.ink),
+                style: _t(14, FontWeight.w500, BrandColors.ink),
               ),
             ),
           ],
@@ -1944,7 +1944,7 @@ class _ResolutionRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: BrandColors.bg,
           border: Border.all(color: BrandColors.line),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.card),
         ),
         padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 14),
         child: Row(
@@ -1964,7 +1964,7 @@ class _ResolutionRow extends StatelessWidget {
                   Text(
                     '240p / 480p / 720p',
                     overflow: TextOverflow.ellipsis,
-                    style: _t(13, FontWeight.w400, BrandColors.mut),
+                    style: _t(14, FontWeight.w400, BrandColors.mut),
                   ),
                 ],
               ),
@@ -1975,7 +1975,7 @@ class _ResolutionRow extends StatelessWidget {
               children: [
                 Text(
                   resolution,
-                  style: _t(15, FontWeight.w500, BrandColors.ink),
+                  style: _t(14, FontWeight.w500, BrandColors.ink),
                 ),
                 const SizedBox(width: 6),
                 const Icon(
@@ -2066,7 +2066,7 @@ class _AddTypeRow extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               context.l10n.addVideoType,
-              style: _t(15, FontWeight.w500, BrandColors.ink),
+              style: _t(14, FontWeight.w500, BrandColors.ink),
             ),
           ],
         ),
@@ -2096,7 +2096,7 @@ class EcCreateTypeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return _EcDialogFrame(
       children: [
-        Text(context.l10n.createVideoTypeTitle, style: _t(16, FontWeight.w700, BrandColors.ink)),
+        Text(context.l10n.createVideoTypeTitle, style: _t(16, FontWeight.w600, BrandColors.ink)),
         _Field(
           label: context.l10n.videoTypeName,
           hint: context.l10n.videoTypeNameHint,
@@ -2142,11 +2142,11 @@ class EcConfirmDeleteScreen extends StatelessWidget {
       children: [
         Text(
           context.l10n.deleteVideoTypeTitle(typeName),
-          style: _t(16, FontWeight.w700, BrandColors.ink),
+          style: _t(16, FontWeight.w600, BrandColors.ink),
         ),
         Text(
           context.l10n.deleteVideoTypeBody,
-          style: _t(13, FontWeight.w400, BrandColors.mut),
+          style: _t(14, FontWeight.w400, BrandColors.mut),
         ),
         Row(
           children: [
@@ -2165,7 +2165,7 @@ class EcConfirmDeleteScreen extends StatelessWidget {
         Text(
           context.l10n.deleteVideoTypeNote,
           textAlign: TextAlign.center,
-          style: _t(11, FontWeight.w400, BrandColors.mut),
+          style: _t(12, FontWeight.w400, BrandColors.mut),
         ),
       ],
     );
@@ -2206,11 +2206,11 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
       children: [
         Text(
           context.l10n.addMemberTitle,
-          style: _t(16, FontWeight.w700, BrandColors.ink),
+          style: _t(16, FontWeight.w600, BrandColors.ink),
         ),
         Text(
           context.l10n.addMemberBody,
-          style: _t(13, FontWeight.w400, BrandColors.mut),
+          style: _t(14, FontWeight.w400, BrandColors.mut),
         ),
         _Field(
           label: context.l10n.emailOrPhone,
@@ -2301,10 +2301,10 @@ class _RoleOption extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: _t(15, FontWeight.w600, BrandColors.ink),
+                      style: _t(14, FontWeight.w600, BrandColors.ink),
                     ),
                     const SizedBox(height: 2),
-                    Text(desc, style: _t(13, FontWeight.w400, BrandColors.mut)),
+                    Text(desc, style: _t(14, FontWeight.w400, BrandColors.mut)),
                   ],
                 ),
               ),
@@ -2429,9 +2429,7 @@ class _EcSheetFrame extends StatelessWidget {
                   color: BrandColors.bg,
                   shape: SmoothRectangleBorder(
                     smoothness: ecCornerSmoothing,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
+                    borderRadius: BorderRadius.zero,
                   ),
                 ),
                 child: Padding(
@@ -2458,13 +2456,13 @@ class _EcSheetFrame extends StatelessWidget {
                           children: [
                             Text(
                               title,
-                              style: _t(17, FontWeight.w700, BrandColors.ink),
+                              style: _t(16, FontWeight.w600, BrandColors.ink),
                             ),
                             if (sub != null) ...[
                               const SizedBox(height: 3),
                               Text(
                                 sub,
-                                style: _t(13, FontWeight.w400, BrandColors.mut),
+                                style: _t(14, FontWeight.w400, BrandColors.mut),
                               ),
                             ],
                           ],
@@ -3006,12 +3004,12 @@ class _StatBox extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(stat.value, style: _t(24, FontWeight.w700, BrandColors.ink)),
+          Text(stat.value, style: _t(24, FontWeight.w600, BrandColors.ink)),
           const SizedBox(height: 4),
           Text(
             stat.label,
             textAlign: TextAlign.center,
-            style: _t(13, FontWeight.w400, BrandColors.mut),
+            style: _t(14, FontWeight.w400, BrandColors.mut),
           ),
         ],
       ),
@@ -3048,7 +3046,7 @@ class _FilterChip extends StatelessWidget {
     final index = await showCupertinoModalPopup<int>(
       context: context,
       builder: (sheetContext) => CupertinoActionSheet(
-        title: Text(name, style: _t(13, FontWeight.w500, BrandColors.mut)),
+        title: Text(name, style: _t(14, FontWeight.w500, BrandColors.mut)),
         actions: [
           for (var i = 0; i < options.length; i++)
             CupertinoActionSheetAction(
@@ -3058,7 +3056,7 @@ class _FilterChip extends StatelessWidget {
                 style: _t(
                   16,
                   options[i].value == selected
-                      ? FontWeight.w700
+                      ? FontWeight.w600
                       : FontWeight.w500,
                   options[i].value == selected
                       ? BrandColors.dark
@@ -3102,7 +3100,7 @@ class _FilterChip extends StatelessWidget {
                 Text(
                   _current.label,
                   style: _t(
-                    15,
+                    14,
                     _isActive ? FontWeight.w600 : FontWeight.w500,
                     _isActive ? BrandColors.dark : BrandColors.ink,
                   ),
@@ -3182,20 +3180,20 @@ class _OrderTile extends StatelessWidget {
                 const SizedBox(width: 5),
                 Text(
                   '${order.videoCount}',
-                  style: _t(15, FontWeight.w600, BrandColors.ink),
+                  style: _t(14, FontWeight.w600, BrandColors.ink),
                 ),
                 if (order.errorCount > 0) ...[
                   const SizedBox(width: 3),
                   Text(
                     context.l10n.ordersErrorCount(order.errorCount),
-                    style: _t(13, FontWeight.w600, BrandColors.rec),
+                    style: _t(14, FontWeight.w600, BrandColors.rec),
                   ),
                 ],
                 if (order.pendingCount > 0) ...[
                   const SizedBox(width: 3),
                   Text(
                     context.l10n.ordersPendingCount(order.pendingCount),
-                    style: _t(13, FontWeight.w600, BrandColors.mut),
+                    style: _t(14, FontWeight.w600, BrandColors.mut),
                   ),
                 ],
               ],

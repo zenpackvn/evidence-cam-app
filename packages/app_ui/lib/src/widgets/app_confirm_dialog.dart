@@ -103,7 +103,7 @@ class AppConfirmDialog extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: context.textTheme.headlineSmall?.copyWith(
                   color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   letterSpacing: 0,
                 ),
               ),
@@ -132,7 +132,7 @@ class AppConfirmDialog extends StatelessWidget {
                         minimumSize: const Size.fromHeight(52),
                         foregroundColor: colorScheme.onSurfaceVariant,
                         textStyle: context.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           letterSpacing: 0,
                         ),
                       ),
@@ -151,7 +151,7 @@ class AppConfirmDialog extends StatelessWidget {
                           borderRadius: BorderRadius.circular(AppRadius.lg),
                         ),
                         textStyle: context.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                           letterSpacing: 0,
                         ),
                       ),

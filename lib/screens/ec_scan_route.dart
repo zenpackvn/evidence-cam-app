@@ -185,7 +185,7 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
               child: Center(
                 child: Text(
                   'Đưa mã vận đơn vào khung',
-                  style: TextStyle(color: Colors.white, fontSize: 15),
+                  style: TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ),
             ),

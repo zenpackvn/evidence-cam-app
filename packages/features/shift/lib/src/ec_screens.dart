@@ -54,7 +54,7 @@ class EcSplashScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       'ZenPack',
-                      style: _t(28, FontWeight.w700, BrandColors.ink),
+                      style: _t(30, FontWeight.w600, BrandColors.ink),
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
@@ -71,7 +71,7 @@ class EcSplashScreen extends StatelessWidget {
               const SizedBox(height: 16),
               _EcPrimaryButton(label: context.l10n.onboardingStart, onPressed: onStart),
               const SizedBox(height: 16),
-              Text(version, style: _t(11, FontWeight.w400, BrandColors.mut)),
+              Text(version, style: _t(12, FontWeight.w400, BrandColors.mut)),
             ],
           ),
         ),
@@ -130,12 +130,12 @@ class EcLoginScreen extends StatelessWidget {
                           children: [
                             Text(
                               context.l10n.authSignIn,
-                              style: _t(24, FontWeight.w700, BrandColors.ink),
+                              style: _t(24, FontWeight.w600, BrandColors.ink),
                             ),
                             const SizedBox(height: 6),
                             Text(
                               context.l10n.authChooseMethod,
-                              style: _t(13, FontWeight.w400, BrandColors.mut),
+                              style: _t(14, FontWeight.w400, BrandColors.mut),
                             ),
                           ],
                         ),
@@ -173,7 +173,7 @@ class EcLoginScreen extends StatelessWidget {
                           onTap: onForgot,
                           child: Text(
                             context.l10n.authForgotPassword,
-                            style: _t(13, FontWeight.w500, BrandColors.ink),
+                            style: _t(14, FontWeight.w500, BrandColors.ink),
                           ),
                         ),
                       ),
@@ -216,13 +216,13 @@ class EcLoginScreen extends StatelessWidget {
                         children: [
                           Text(
                             context.l10n.authNoAccountPrompt,
-                            style: _t(13, FontWeight.w400, BrandColors.mut),
+                            style: _t(14, FontWeight.w400, BrandColors.mut),
                           ),
                           EcTap(
                             onTap: onRegister,
                             child: Text(
                               context.l10n.authRegister,
-                              style: _t(13, FontWeight.w600, BrandColors.ink),
+                              style: _t(14, FontWeight.w600, BrandColors.ink),
                             ),
                           ),
                         ],
@@ -381,9 +381,9 @@ class _FieldState extends State<_Field> {
             onChanged: state?.didChange,
             obscureText: _obscure,
             keyboardType: widget.keyboardType,
-            style: _t(15, FontWeight.w400, BrandColors.ink),
+            style: _t(14, FontWeight.w400, BrandColors.ink),
             placeholder: widget.hint,
-            placeholderStyle: _t(15, FontWeight.w400, BrandColors.mut),
+            placeholderStyle: _t(14, FontWeight.w400, BrandColors.mut),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             // The squircle border comes from the wrapping DecoratedBox.
             decoration: const BoxDecoration(),
@@ -476,7 +476,7 @@ class _SocialButton extends StatelessWidget {
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
-                style: _t(15, FontWeight.w500, foreground),
+                style: _t(14, FontWeight.w500, foreground),
               ),
             ),
           ],

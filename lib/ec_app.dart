@@ -211,7 +211,7 @@ class _EcAppState extends State<EcApp> {
           textTheme: CupertinoTextThemeData(
             textStyle: GoogleFonts.inter(
               color: BrandColors.ink,
-              fontSize: 15,
+              fontSize: 14,
             ),
           ),
         ),

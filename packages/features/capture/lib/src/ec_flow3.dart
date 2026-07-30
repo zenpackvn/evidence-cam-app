@@ -274,13 +274,13 @@ class EcCutoverBScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Text(signalText, style: _t(11, FontWeight.w400, BrandColors.mut)),
+            Text(signalText, style: _t(12, FontWeight.w400, BrandColors.mut)),
             const SizedBox(height: 10),
             _CamCodeBadge(code: newCode),
             const SizedBox(height: 10),
             Text(
               newDuration,
-              style: _t(28, FontWeight.w700, BrandColors.ink),
+              style: _t(30, FontWeight.w600, BrandColors.ink),
             ),
           ],
         ),
@@ -371,7 +371,7 @@ class EcNearLimitScreen extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       duration,
-                      style: _t(28, FontWeight.w700, BrandColors.ink),
+                      style: _t(30, FontWeight.w600, BrandColors.ink),
                     ),
                   ],
                 ),
@@ -480,9 +480,9 @@ class EcReturnRecScreen extends StatelessWidget {
           children: [
             _CamCodeBadge(code: code),
             const SizedBox(height: 10),
-            Text(duration, style: _t(28, FontWeight.w700, BrandColors.ink)),
+            Text(duration, style: _t(30, FontWeight.w600, BrandColors.ink)),
             const SizedBox(height: 10),
-            Text(linkNote, style: _t(11, FontWeight.w400, BrandColors.mut)),
+            Text(linkNote, style: _t(12, FontWeight.w400, BrandColors.mut)),
           ],
         ),
       ),
@@ -651,7 +651,7 @@ class _CamHeader extends StatelessWidget {
             child: Text(
               shopName,
               overflow: TextOverflow.ellipsis,
-              style: _t(15, FontWeight.w600, BrandColors.ink),
+              style: _t(14, FontWeight.w600, BrandColors.ink),
             ),
           ),
           const SizedBox(width: 8),
@@ -762,7 +762,7 @@ class _RecRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Text('REC', style: _t(11, FontWeight.w600, BrandColors.mut)),
+        Text('REC', style: _t(12, FontWeight.w600, BrandColors.mut)),
       ],
     );
   }
@@ -844,7 +844,7 @@ class _ZoomControl extends StatelessWidget {
             child: const Icon(Icons.add, size: 14, color: BrandColors.ink),
           ),
           const SizedBox(height: 12),
-          Text(label, style: _t(11, FontWeight.w600, BrandColors.ink)),
+          Text(label, style: _t(12, FontWeight.w600, BrandColors.ink)),
           const SizedBox(height: 12),
           _Tap(
             onTap: onZoomOut,
@@ -874,7 +874,7 @@ class _RailPill extends StatelessWidget {
             color: BrandColors.bg,
             borderRadius: BorderRadius.circular(999),
           ),
-          child: Text(label, style: _t(11, FontWeight.w600, BrandColors.ink)),
+          child: Text(label, style: _t(12, FontWeight.w600, BrandColors.ink)),
         ),
       ),
     );
@@ -1201,7 +1201,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                   ),
                   Text(
                     context.l10n.uploadQueueTitle,
-                    style: _t(17, FontWeight.w600, BrandColors.ink),
+                    style: _t(16, FontWeight.w600, BrandColors.ink),
                   ),
                 ],
               ),
@@ -1265,7 +1265,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                           ? Center(
                               child: Text(
                                 context.l10n.queueEmpty,
-                                style: _t(13, FontWeight.w400, BrandColors.mut),
+                                style: _t(14, FontWeight.w400, BrandColors.mut),
                               ),
                             )
                           : ListView.separated(
@@ -1409,7 +1409,7 @@ class _UploadRow extends StatelessWidget {
                     item.errorMessage!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: _t(11, FontWeight.w400, BrandColors.rec),
+                    style: _t(12, FontWeight.w400, BrandColors.rec),
                   ),
                 ],
               ],
@@ -1486,7 +1486,7 @@ class _UploadStatusView extends StatelessWidget {
         children: [
           Text(
             context.l10n.uploadingProgress(item.progressPercent ?? 0),
-            style: _t(11, FontWeight.w500, BrandColors.ink),
+            style: _t(12, FontWeight.w500, BrandColors.ink),
           ),
           const SizedBox(height: 4),
           Container(
@@ -1511,7 +1511,7 @@ class _UploadStatusView extends StatelessWidget {
       ),
       EcUploadStatus.waiting => Text(
         context.l10n.waitingUpload,
-        style: _t(11, FontWeight.w400, BrandColors.mut),
+        style: _t(12, FontWeight.w400, BrandColors.mut),
       ),
       EcUploadStatus.done => Row(
         mainAxisSize: MainAxisSize.min,
@@ -1520,7 +1520,7 @@ class _UploadStatusView extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             context.l10n.uploaded,
-            style: _t(11, FontWeight.w400, BrandColors.ink),
+            style: _t(12, FontWeight.w400, BrandColors.ink),
           ),
         ],
       ),
@@ -1531,17 +1531,17 @@ class _UploadStatusView extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             context.l10n.errorRetryCount(item.retryCount ?? 0),
-            style: _t(11, FontWeight.w500, BrandColors.ink),
+            style: _t(12, FontWeight.w500, BrandColors.ink),
           ),
         ],
       ),
       EcUploadStatus.quotaWait => Text(
         context.l10n.waitingQuota,
-        style: _t(11, FontWeight.w400, BrandColors.mut),
+        style: _t(12, FontWeight.w400, BrandColors.mut),
       ),
       EcUploadStatus.paused => Text(
         context.l10n.pausedUpload,
-        style: _t(11, FontWeight.w400, BrandColors.mut),
+        style: _t(12, FontWeight.w400, BrandColors.mut),
       ),
     };
   }
@@ -1609,9 +1609,7 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
                     color: BrandColors.bg,
                     shape: SmoothRectangleBorder(
                       smoothness: ecCornerSmoothing,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(20),
-                      ),
+                      borderRadius: BorderRadius.zero,
                     ),
                   ),
                   child: Padding(
@@ -1640,10 +1638,10 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
                           ),
                           child: CupertinoTextField(
                             controller: _controller,
-                            style: _t(15, FontWeight.w400, BrandColors.ink),
+                            style: _t(14, FontWeight.w400, BrandColors.ink),
                             placeholder: 'SPXVN…',
                             placeholderStyle: _t(
-                              15,
+                              14,
                               FontWeight.w400,
                               BrandColors.mut,
                             ),
@@ -1734,7 +1732,7 @@ class EcNoMatchScreen extends StatelessWidget {
                     children: [
                       Text(
                         context.l10n.returnCodeMismatch,
-                        style: _t(16, FontWeight.w700, BrandColors.ink),
+                        style: _t(16, FontWeight.w600, BrandColors.ink),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -1742,7 +1740,7 @@ class EcNoMatchScreen extends StatelessWidget {
                           returnCode,
                           shopName,
                         ),
-                        style: _t(13, FontWeight.w400, BrandColors.mut),
+                        style: _t(14, FontWeight.w400, BrandColors.mut),
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -1847,9 +1845,7 @@ class EcTypeSheetScreen extends StatelessWidget {
                   color: BrandColors.bg,
                   shape: SmoothRectangleBorder(
                     smoothness: ecCornerSmoothing,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
+                    borderRadius: BorderRadius.zero,
                   ),
                 ),
                 child: Padding(
@@ -1872,7 +1868,7 @@ class EcTypeSheetScreen extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               context.l10n.videoTypeSelectNote,
-                              style: _t(11, FontWeight.w400, BrandColors.mut),
+                              style: _t(12, FontWeight.w400, BrandColors.mut),
                             ),
                           ],
                         ),

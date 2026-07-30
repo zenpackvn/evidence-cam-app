@@ -309,9 +309,7 @@ class EcVideoDetailScreen extends StatelessWidget {
                 color: BrandColors.bg,
                 shape: SmoothRectangleBorder(
                   smoothness: ecCornerSmoothing,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
+                  borderRadius: BorderRadius.zero,
                 ),
               ),
               child: SafeArea(
@@ -460,9 +458,7 @@ class EcPhotoDetailScreen extends StatelessWidget {
                 color: BrandColors.bg,
                 shape: SmoothRectangleBorder(
                   smoothness: ecCornerSmoothing,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
+                  borderRadius: BorderRadius.zero,
                 ),
               ),
               child: SafeArea(
@@ -633,7 +629,7 @@ class _EcOrderTimelineHeader extends StatelessWidget {
             child: Text(
               orderCode,
               overflow: TextOverflow.ellipsis,
-              style: _t(19, FontWeight.w700, BrandColors.ink),
+              style: _t(20, FontWeight.w600, BrandColors.ink),
             ),
           ),
           EcTap(
@@ -675,7 +671,7 @@ class _EcUploadWarnBanner extends StatelessWidget {
           Expanded(
             child: Text(
               context.l10n.ordersPendingEvidenceWarning(pendingCount),
-              style: _t(13, FontWeight.w500, BrandColors.ink),
+              style: _t(14, FontWeight.w500, BrandColors.ink),
             ),
           ),
           const SizedBox(width: 8),
@@ -683,7 +679,7 @@ class _EcUploadWarnBanner extends StatelessWidget {
             onTap: onRetry,
             child: Text(
               context.l10n.commonRetry,
-              style: _t(13, FontWeight.w600, BrandColors.ink),
+              style: _t(14, FontWeight.w600, BrandColors.ink),
             ),
           ),
         ],
@@ -741,7 +737,7 @@ class _EcTimelineVideoRow extends StatelessWidget {
                   child: Text(
                     video.label,
                     overflow: TextOverflow.ellipsis,
-                    style: _t(15, FontWeight.w500, BrandColors.ink),
+                    style: _t(14, FontWeight.w500, BrandColors.ink),
                   ),
                 ),
                 if (statusText != null) ...[
@@ -908,7 +904,7 @@ class _EcDetailInfoRow extends StatelessWidget {
               value,
               textAlign: TextAlign.right,
               overflow: TextOverflow.ellipsis,
-              style: _t(15, FontWeight.w500, BrandColors.ink),
+              style: _t(14, FontWeight.w500, BrandColors.ink),
             ),
           ),
         ],
@@ -961,7 +957,7 @@ class _EcDetailActionRow extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             sub,
-                            style: _t(13, FontWeight.w400, BrandColors.mut),
+                            style: _t(14, FontWeight.w400, BrandColors.mut),
                           ),
                         ],
                       ),
@@ -1010,7 +1006,7 @@ class _EcDetailDeleteRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       context.l10n.deleteVideoNote,
-                      style: _t(13, FontWeight.w400, BrandColors.mut),
+                      style: _t(14, FontWeight.w400, BrandColors.mut),
                     ),
                   ],
                 ),
