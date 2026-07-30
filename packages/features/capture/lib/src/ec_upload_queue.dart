@@ -38,6 +38,7 @@ class UploadTask {
     this.progress = 0,
     this.retryCount = 0,
     this.remoteUrl,
+    this.errorMessage,
   });
 
   /// Parses a task from the legacy `queue.json` format, used only by the
@@ -68,6 +69,10 @@ class UploadTask {
   double progress;
   int retryCount;
   String? remoteUrl;
+
+  /// Human-readable reason the last attempt failed; only set alongside
+  /// [EcUploadState.error]. Cleared on retry.
+  String? errorMessage;
 }
 
 class EcUploadQueue extends ChangeNotifier {
@@ -159,7 +164,8 @@ class EcUploadQueue extends ChangeNotifier {
     if (task == null || task.state == EcUploadState.uploading) return;
     task
       ..state = EcUploadState.waiting
-      ..progress = 0;
+      ..progress = 0
+      ..errorMessage = null;
     await _store.save(task);
     notifyListeners();
     unawaited(_process());
@@ -265,7 +271,12 @@ class EcUploadQueue extends ChangeNotifier {
           } else {
             task
               ..state = EcUploadState.error
-              ..retryCount += 1;
+              ..retryCount += 1
+              // error.toString() is deliberately the whole message shown to
+              // the seller — ApiEvidenceUploader rewraps network failures
+              // into an UploadFailureException with a message already safe
+              // to display, rather than a raw DioException.
+              ..errorMessage = error.toString();
             unawaited(_analytics?.trackUploadFailed());
           }
         }

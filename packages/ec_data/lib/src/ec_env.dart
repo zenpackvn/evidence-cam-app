@@ -2,9 +2,11 @@ import 'package:network/network.dart'
     show
         BaseOptions,
         Dio,
+        IdempotencyInterceptor,
         Interceptor,
         RequestInterceptorHandler,
-        RequestOptions;
+        RequestOptions,
+        RetryInterceptor;
 
 import 'ec_api.dart';
 import 'ec_auth.dart';
@@ -54,6 +56,15 @@ EcApi buildApi({EcAuth? auth, String url = kApiBaseUrl}) {
     ),
   );
   if (auth != null) dio.interceptors.add(_BearerTokenInterceptor(auth));
+  // A stable key per logical request lets the backend dedupe a replayed
+  // POST/PATCH (see IdempotencyInterceptor's doc comment); RetryInterceptor
+  // then safely retries a 500/502/503/504/429 — which means the request was
+  // never fully processed — on *any* method, including the upload flow's
+  // completeUpload/completeMultipartUpload. Neither was wired onto this Dio
+  // before, unlike the DI-provided one (see NetworkModule.provideDio), which
+  // meant every upload-path request went out with no retry protection at all.
+  dio.interceptors.add(IdempotencyInterceptor());
+  dio.interceptors.add(RetryInterceptor(dio));
   return EcApi(dio);
 }
 

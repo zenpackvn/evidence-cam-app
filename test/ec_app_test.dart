@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ec_data/ec_data.dart';
 import 'package:evidence_cam/app/di/injection.dart';
 import 'package:evidence_cam/ec_app.dart';
@@ -6,9 +8,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 import 'package:network/network.dart'
     show DioException, DioExceptionType, RequestOptions, Response;
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:storage/storage.dart';
 
+/// Real `path_provider` has no platform to answer its method channel in a
+/// widget test, leaving `getApplicationDocumentsDirectory()` pending forever
+/// instead of throwing — silently stalling anything that awaits it (the
+/// edit-profile save flow, since it now persists the picked avatar into the
+/// documents dir). A directory the OS actually gives back keeps that flow
+/// real instead of relying on its failure-path fallback.
+class _FakePathProviderPlatform extends PathProviderPlatform {
+  @override
+  Future<String?> getApplicationDocumentsPath() async =>
+      Directory.systemTemp.createTempSync('ec_app_test_docs').path;
+}
+
 void main() {
+  PathProviderPlatform.instance = _FakePathProviderPlatform();
   Future<void> pumpPhoneSizedApp(WidgetTester tester, Widget app) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
@@ -298,7 +314,14 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.camera_alt).last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Lưu thay đổi'));
+      // Saving now copies the picked avatar into the documents dir before
+      // persisting its path — real dart:io File I/O, which (unlike Timers)
+      // pump/pumpAndSettle don't drive forward on their own; it needs the
+      // real event loop that runAsync provides.
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Lưu thay đổi'));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
       await tester.pumpAndSettle();
 
       expect(repo.updatedAvatarUrl, 'https://cdn.evidencecam.test/avatar.png');

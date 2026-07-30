@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:ec_data/ec_data.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:network/network.dart'
@@ -19,6 +20,50 @@ import 'package:network/network.dart'
 /// actually keep/serve evidence it flagged as over-quota, so this must be
 /// flipped back to `false` once quota limits are ready to enforce again.
 const _ignoreQuotaHoldForTesting = true;
+
+/// How long to wait for the backend to finalize an upload (`complete` /
+/// `multipart/complete`) — this runs after every byte is already on R2, so it
+/// has to assemble the object and write the evidence row, which can
+/// legitimately take longer than the app's normal API timeout
+/// (`API_TIMEOUT_SECONDS`, 10s in dev). Giving just these two calls a longer
+/// budget avoids the client giving up on a request the backend is still
+/// about to succeed on.
+const _completeUploadTimeout = Duration(seconds: 45);
+
+/// A network/server failure with a message already safe to show a seller —
+/// [ApiEvidenceUploader.upload] rewraps every [DioException] into one of
+/// these so the upload queue has something better than "Lỗi" to display.
+/// Deliberately NOT thrown for the `StateError`s below (`quota_exceeded`,
+/// `missing_part_etag`) — those are internal signals other code matches on
+/// by their exact text, not user-facing failures.
+class UploadFailureException implements Exception {
+  const UploadFailureException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+String _friendlyMessage(DioException error) {
+  switch (error.type) {
+    case DioExceptionType.connectionTimeout:
+    case DioExceptionType.sendTimeout:
+    case DioExceptionType.receiveTimeout:
+      return 'Máy chủ phản hồi quá lâu, chưa rõ video đã lưu hay chưa — thử lại giúp kiểm tra.';
+    case DioExceptionType.connectionError:
+      return 'Mất kết nối mạng khi tải lên — kiểm tra mạng rồi thử lại.';
+    case DioExceptionType.badResponse:
+      final status = error.response?.statusCode;
+      return 'Máy chủ báo lỗi${status != null ? ' (mã $status)' : ''} — thử lại sau.';
+    case DioExceptionType.cancel:
+      return 'Đã huỷ tải lên.';
+    case DioExceptionType.badCertificate:
+      return 'Lỗi chứng chỉ bảo mật kết nối — thử lại sau.';
+    case DioExceptionType.unknown:
+      return 'Lỗi kết nối không xác định — thử lại sau.';
+  }
+}
 
 /// Real backend uploader following the EvidenceCam presigned-R2 flow:
 ///
@@ -52,8 +97,59 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
   final int multipartThresholdBytes;
   final int multipartPartSizeBytes;
 
+  /// Cached after the first read — the physical device doesn't change
+  /// mid-session, so there's no reason to hit the platform channel again
+  /// for every clip.
+  String? _deviceLabel;
+  bool _deviceLabelRead = false;
+
+  /// The recording phone's make/model (e.g. "samsung SM-M146B"), sent up with
+  /// every upload so the evidence detail screen can show which device
+  /// recorded a clip instead of "Không rõ thiết bị" — previously nothing
+  /// populated this at all. Best-effort: a failure here shouldn't fail the
+  /// upload itself.
+  Future<String?> _readDeviceLabel() async {
+    if (_deviceLabelRead) return _deviceLabel;
+    _deviceLabelRead = true;
+    try {
+      final info = DeviceInfoPlugin();
+      if (Platform.isAndroid) {
+        final android = await info.androidInfo;
+        _deviceLabel = '${android.manufacturer} ${android.model}'.trim();
+      } else if (Platform.isIOS) {
+        final ios = await info.iosInfo;
+        _deviceLabel = ios.modelName;
+      }
+    } on Object {
+      _deviceLabel = null;
+    }
+    return _deviceLabel;
+  }
+
   @override
   Future<String> upload(
+    File file, {
+    required String tracking,
+    required String type,
+    String? shopId,
+    int? capturedAt,
+    void Function(double progress)? onProgress,
+  }) async {
+    try {
+      return await _uploadInner(
+        file,
+        tracking: tracking,
+        type: type,
+        shopId: shopId,
+        capturedAt: capturedAt,
+        onProgress: onProgress,
+      );
+    } on DioException catch (e, stack) {
+      Error.throwWithStackTrace(UploadFailureException(_friendlyMessage(e)), stack);
+    }
+  }
+
+  Future<String> _uploadInner(
     File file, {
     required String tracking,
     required String type,
@@ -93,26 +189,44 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       kind: isPhoto ? 'photo' : 'video',
       capturedAt: captureTime,
       videoTypeId: videoTypeId,
+      device: await _readDeviceLabel(),
     );
-    await _putWithRetry(
-      () => _r2.put<void>(
-        presign.uploadUrl,
-        data: file.openRead(),
-        options: Options(
-          headers: {
-            Headers.contentLengthHeader: length,
-            Headers.contentTypeHeader: _contentTypeFor(file, isPhoto: isPhoto),
+    // presignUpload already created this evidence row server-side (needed to
+    // hand back an evidenceId + presigned URL) — if the PUT itself fails, the
+    // row is now a permanent orphan (a retry starts over via a fresh presign,
+    // never revisiting this evidenceId), left forever at status 'error' and
+    // counted in the order's error/evidence totals with nothing in the app
+    // pointing back at it. Deleting it here is safe because nothing has been
+    // marked done yet; scoped to just the PUT so a completeUpload failure
+    // (which may have actually succeeded server-side) is never touched.
+    try {
+      await _putWithRetry(
+        () => _r2.put<void>(
+          presign.uploadUrl,
+          data: file.openRead(),
+          options: Options(
+            headers: {
+              Headers.contentLengthHeader: length,
+              Headers.contentTypeHeader: _contentTypeFor(
+                file,
+                isPhoto: isPhoto,
+              ),
+            },
+          ),
+          onSendProgress: (sent, total) {
+            if (total > 0) onProgress?.call(sent / total);
           },
         ),
-        onSendProgress: (sent, total) {
-          if (total > 0) onProgress?.call(sent / total);
-        },
-      ),
-    );
+      );
+    } on Object {
+      await _deleteEvidenceQuietly(shopId, order.id, presign.evidenceId);
+      rethrow;
+    }
     final status = await _api.completeUpload(
       shopId,
       order.id,
       presign.evidenceId,
+      receiveTimeout: _completeUploadTimeout,
     );
     if (status == 'quota_hold' && !_ignoreQuotaHoldForTesting) {
       throw StateError('quota_exceeded');
@@ -139,7 +253,15 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       kind: kind,
       capturedAt: capturedAt,
       videoTypeId: videoTypeId,
+      device: await _readDeviceLabel(),
     );
+    // Aborting deletes the multipart upload on R2 — only safe while nothing
+    // has been "completed" yet. Once completeMultipartUpload has actually
+    // been sent, the bytes may already be fully assembled server-side even
+    // if the client never saw the response (e.g. it timed out waiting); this
+    // is scoped so a failure there propagates without aborting a possibly
+    // already-succeeded upload out from under itself.
+    final uploaded = <UploadedPartDto>[];
     try {
       final partNumbers = [for (var i = 1; i <= partCount; i++) i];
       final urls = await _api.presignMultipartParts(
@@ -149,7 +271,6 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
         uploadId: created.uploadId,
         partNumbers: partNumbers,
       );
-      final uploaded = <UploadedPartDto>[];
       // Bytes from parts that have *fully* succeeded — the base every
       // in-flight part's progress is added to. Kept separate from the
       // current part's own sent-bytes so a retried part (fresh stream,
@@ -178,21 +299,19 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
           ),
         );
         completedBytes += partLength;
-        final etag = res.headers.value('etag');
-        if (etag == null || etag.isEmpty) throw StateError('missing_part_etag');
+        final rawEtag = res.headers.value('etag');
+        if (rawEtag == null || rawEtag.isEmpty) {
+          throw StateError('missing_part_etag');
+        }
+        // R2's raw HTTP response quotes the ETag per the S3/HTTP convention
+        // (e.g. `"9bb58f26..."`), but the Workers R2 binding's own
+        // `complete()` call expects the bare hash it would have gotten back
+        // from its own uploadPart() — passing the quoted form through
+        // verbatim makes R2 reject the completion, which the backend was
+        // surfacing as an unconditional 500 on every single attempt.
+        final etag = rawEtag.replaceAll('"', '');
         uploaded.add(UploadedPartDto(partNumber: part.partNumber, etag: etag));
       }
-      final status = await _api.completeMultipartUpload(
-        shopId,
-        orderId,
-        created.evidenceId,
-        uploadId: created.uploadId,
-        parts: uploaded,
-      );
-      if (status == 'quota_hold' && !_ignoreQuotaHoldForTesting) {
-        throw StateError('quota_exceeded');
-      }
-      return created.key;
     } on Object {
       await _api.abortMultipartUpload(
         shopId,
@@ -200,7 +319,37 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
         created.evidenceId,
         uploadId: created.uploadId,
       );
+      await _deleteEvidenceQuietly(shopId, orderId, created.evidenceId);
       rethrow;
+    }
+    final status = await _api.completeMultipartUpload(
+      shopId,
+      orderId,
+      created.evidenceId,
+      uploadId: created.uploadId,
+      parts: uploaded,
+      receiveTimeout: _completeUploadTimeout,
+    );
+    if (status == 'quota_hold' && !_ignoreQuotaHoldForTesting) {
+      throw StateError('quota_exceeded');
+    }
+    return created.key;
+  }
+
+  /// Best-effort cleanup of an evidence row that never finished uploading —
+  /// only ever called for a failure known *not* to have reached the
+  /// complete/multipart-complete call, so there's nothing real to lose.
+  /// Swallows its own failure: the original upload error is what the queue
+  /// needs to see, not a secondary cleanup problem.
+  Future<void> _deleteEvidenceQuietly(
+    String shopId,
+    String orderId,
+    String evidenceId,
+  ) async {
+    try {
+      await _api.deleteEvidence(shopId, orderId, evidenceId);
+    } on Object {
+      // Leaves one orphaned row behind — better than masking the real error.
     }
   }
 

@@ -25,6 +25,7 @@ class EvidenceClipEntity {
     this.progress = 0,
     this.retryCount = 0,
     this.remoteUrl,
+    this.errorMessage,
   });
 
   /// ObjectBox primary key. Internal — never exposed to the UI. 0 means "new";
@@ -68,4 +69,8 @@ class EvidenceClipEntity {
 
   /// Remote URL once uploaded; null while still local.
   String? remoteUrl;
+
+  /// Human-readable reason the last upload attempt failed; null while
+  /// waiting/uploading/done, or for rows persisted before this field existed.
+  String? errorMessage;
 }

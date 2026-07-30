@@ -346,6 +346,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountSignOut => 'Sign out';
 
   @override
+  String get accountSignOutConfirmTitle => 'Sign out?';
+
+  @override
+  String get accountSignOutConfirmMessage =>
+      'You\'ll need to sign in again to keep using the app.';
+
+  @override
   String get accountDeleteAccount => 'Delete account';
 
   @override

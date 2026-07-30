@@ -10,12 +10,14 @@
 library;
 
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:app_platform/app_platform.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// In the final minute, the cap-warning screen replaces the recording screen
@@ -232,7 +234,10 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         ),
       );
     }
-    return _CoverPreview(controller: controller);
+    return _CoverPreview(
+      controller: controller,
+      transitioning: _bloc.previewTransitioning,
+    );
   }
 
   String _formatElapsed(Duration d) {
@@ -327,26 +332,148 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
 /// Fills the black camera area with [controller]'s preview, cover-cropped so it
 /// bleeds edge-to-edge without distortion.
-class _CoverPreview extends StatelessWidget {
-  const _CoverPreview({required this.controller});
+class _CoverPreview extends StatefulWidget {
+  const _CoverPreview({required this.controller, required this.transitioning});
 
   final CameraController controller;
 
+  /// True for the entire native start/stop-recording call, set by the bloc
+  /// *before* it awaits that call — unlike reacting to [CameraController]'s
+  /// own state, this covers the camera-pipeline rebind from its first frame,
+  /// not just whatever's left once the Dart await already returned.
+  final ValueListenable<bool> transitioning;
+
+  @override
+  State<_CoverPreview> createState() => _CoverPreviewState();
+}
+
+class _CoverPreviewState extends State<_CoverPreview> {
+  // CameraX's own rebind keeps visibly settling for close to a second even
+  // after the native call has returned to Dart, so the freeze outlasts it by
+  // a comfortable margin rather than trimming it close.
+  static const _settleBuffer = Duration(milliseconds: 1200);
+  // How often a known-good frame is refreshed while live — frequent enough
+  // that the frame on hand the instant a transition starts is always recent.
+  static const _refreshInterval = Duration(milliseconds: 250);
+
+  final GlobalKey _boundaryKey = GlobalKey();
+  bool _masking = false;
+  ui.Image? _lastGoodFrame;
+  Timer? _unmaskTimer;
+  Timer? _refreshTimer;
+  bool _capturing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _masking = widget.transitioning.value;
+    widget.transitioning.addListener(_onTransitioningChanged);
+    _refreshTimer = Timer.periodic(_refreshInterval, (_) {
+      if (!_masking) unawaited(_refreshLastGoodFrame());
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _CoverPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.transitioning, widget.transitioning)) {
+      oldWidget.transitioning.removeListener(_onTransitioningChanged);
+      widget.transitioning.addListener(_onTransitioningChanged);
+    }
+  }
+
+  void _onTransitioningChanged() {
+    _unmaskTimer?.cancel();
+    if (widget.transitioning.value) {
+      // Switch to the frame already captured moments ago — grabbing a fresh
+      // one *now* would race the rebind-triggered rotation glitch, which can
+      // start rendering before this listener even runs.
+      setState(() => _masking = true);
+    } else {
+      _unmaskTimer = Timer(_settleBuffer, () {
+        if (mounted) setState(() => _masking = false);
+      });
+    }
+  }
+
+  Future<void> _refreshLastGoodFrame() async {
+    if (_capturing) return;
+    _capturing = true;
+    try {
+      final boundary =
+          _boundaryKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final image = await boundary.toImage(
+        pixelRatio: MediaQuery.devicePixelRatioOf(context),
+      );
+      if (!mounted || _masking) {
+        image.dispose();
+        return;
+      }
+      final old = _lastGoodFrame;
+      setState(() => _lastGoodFrame = image);
+      old?.dispose();
+    } on Object {
+      // Best effort — the live feed underneath still covers a missed frame.
+    } finally {
+      _capturing = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _unmaskTimer?.cancel();
+    _refreshTimer?.cancel();
+    widget.transitioning.removeListener(_onTransitioningChanged);
+    _lastGoodFrame?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
+    final frame = _lastGoodFrame;
     return ColoredBox(
       color: Colors.black,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          return ClipRect(
+          // See didUpdateWidget: only the live preview's rotation is
+          // affected by the recording-start rebind, not the recorded file,
+          // so the correction is scoped to isRecordingVideo. The live layer
+          // keeps rendering underneath even while masked, so the next
+          // known-good frame is ready the moment masking lifts.
+          final recordingTurns = controller.value.isRecordingVideo ? 3 : 0;
+          final liveLayer = ClipRect(
             child: FittedBox(
               fit: BoxFit.cover,
               child: SizedBox(
                 width: constraints.maxWidth,
                 height: constraints.maxWidth * controller.value.aspectRatio,
-                child: CameraPreview(controller),
+                child: RepaintBoundary(
+                  key: _boundaryKey,
+                  child: RotatedBox(
+                    quarterTurns: recordingTurns,
+                    child: CameraPreview(controller),
+                  ),
+                ),
               ),
             ),
+          );
+          if (!_masking || frame == null) return liveLayer;
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              liveLayer,
+              FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: frame.width.toDouble(),
+                  height: frame.height.toDouble(),
+                  child: RawImage(image: frame),
+                ),
+              ),
+            ],
           );
         },
       ),

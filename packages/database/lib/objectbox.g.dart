@@ -322,7 +322,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(6, 610114076402941823),
     name: 'EvidenceClipEntity',
-    lastPropertyId: const obx_int.IdUid(11, 1933466406096036724),
+    lastPropertyId: const obx_int.IdUid(12, 8832645181416904060),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -389,6 +389,12 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(11, 1933466406096036724),
         name: 'shopId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 8832645181416904060),
+        name: 'errorMessage',
         type: 9,
         flags: 0,
       ),
@@ -891,7 +897,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final shopIdOffset = object.shopId == null
             ? null
             : fbb.writeString(object.shopId!);
-        fbb.startTable(12);
+        final errorMessageOffset = object.errorMessage == null
+            ? null
+            : fbb.writeString(object.errorMessage!);
+        fbb.startTable(13);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, taskIdOffset);
         fbb.addOffset(2, trackingOffset);
@@ -903,6 +912,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addInt64(8, object.retryCount);
         fbb.addOffset(9, remoteUrlOffset);
         fbb.addOffset(10, shopIdOffset);
+        fbb.addOffset(11, errorMessageOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -956,6 +966,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final remoteUrlParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 22);
+        final errorMessageParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 26);
         final object = EvidenceClipEntity(
           id: idParam,
           taskId: taskIdParam,
@@ -968,6 +981,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           progress: progressParam,
           retryCount: retryCountParam,
           remoteUrl: remoteUrlParam,
+          errorMessage: errorMessageParam,
         );
 
         return object;
@@ -1248,5 +1262,10 @@ class EvidenceClipEntity_ {
   /// See [EvidenceClipEntity.shopId].
   static final shopId = obx.QueryStringProperty<EvidenceClipEntity>(
     _entities[5].properties[10],
+  );
+
+  /// See [EvidenceClipEntity.errorMessage].
+  static final errorMessage = obx.QueryStringProperty<EvidenceClipEntity>(
+    _entities[5].properties[11],
   );
 }

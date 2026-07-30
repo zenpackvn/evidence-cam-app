@@ -728,6 +728,18 @@ abstract class AppLocalizations {
   /// **'Sign out'**
   String get accountSignOut;
 
+  /// No description provided for @accountSignOutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out?'**
+  String get accountSignOutConfirmTitle;
+
+  /// No description provided for @accountSignOutConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll need to sign in again to keep using the app.'**
+  String get accountSignOutConfirmMessage;
+
   /// No description provided for @accountDeleteAccount.
   ///
   /// In en, this message translates to:

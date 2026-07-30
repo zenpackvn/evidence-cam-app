@@ -1153,6 +1153,7 @@ class EcUploadItem {
     this.id,
     this.progressPercent,
     this.retryCount,
+    this.errorMessage,
   });
 
   /// Stable id used to route retry actions back to the queue.
@@ -1164,6 +1165,11 @@ class EcUploadItem {
   final EcUploadStatus status;
   final int? progressPercent;
   final int? retryCount;
+
+  /// Human-readable reason the last attempt failed, only set for
+  /// [EcUploadStatus.error] — shown under the retry count so a seller isn't
+  /// left staring at an unexplained "Lỗi".
+  final String? errorMessage;
 }
 
 /// Sample queue for previews/tests; production callers pass live queue data.
@@ -1486,6 +1492,16 @@ class _UploadRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: _t(12, FontWeight.w400, BrandColors.mut),
                 ),
+                if (item.status == EcUploadStatus.error &&
+                    item.errorMessage != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    item.errorMessage!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: _t(11, FontWeight.w400, BrandColors.rec),
+                  ),
+                ],
               ],
             ),
           ),

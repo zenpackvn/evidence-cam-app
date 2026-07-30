@@ -344,6 +344,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountSignOut => 'Đăng xuất';
 
   @override
+  String get accountSignOutConfirmTitle => 'Đăng xuất?';
+
+  @override
+  String get accountSignOutConfirmMessage =>
+      'Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng.';
+
+  @override
   String get accountDeleteAccount => 'Xóa tài khoản';
 
   @override

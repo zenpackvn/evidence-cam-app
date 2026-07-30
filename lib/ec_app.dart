@@ -45,6 +45,7 @@ import 'package:flutter/cupertino.dart'
         CupertinoButton,
         CupertinoDialogAction,
         CupertinoPageScaffold,
+        CupertinoSlider,
         CupertinoTextThemeData,
         CupertinoThemeData,
         showCupertinoDialog;
@@ -152,6 +153,8 @@ class _EcAppState extends State<EcApp> {
   // the user is on Vận đơn/Tài khoản. Flipped from the shell's own builder,
   // read by EcRecordRoute to release/reacquire the camera accordingly.
   final ValueNotifier<bool> _isRecordTabActive = ValueNotifier(false);
+  final _EvidenceCountOverrides _evidenceCountOverrides =
+      _EvidenceCountOverrides();
 
   late final GoRouter _router = _buildRouter(
     widget.repo,
@@ -166,6 +169,7 @@ class _EcAppState extends State<EcApp> {
     downloadDio: widget.downloadDio,
     voiceAnnouncer: _voiceAnnouncer,
     isRecordTabActive: _isRecordTabActive,
+    evidenceCountOverrides: _evidenceCountOverrides,
   );
 
   @override
@@ -583,6 +587,25 @@ class _AccountRouteState extends State<_AccountRoute> {
   );
 
   Future<void> _logout() async {
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(context.l10n.accountSignOutConfirmTitle),
+        content: Text(context.l10n.accountSignOutConfirmMessage),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(context.l10n.commonCancel),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(context.l10n.accountSignOut),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     await widget.auth.signOut();
     if (mounted) context.go('/login', extra: 'back');
   }
@@ -711,12 +734,18 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
     final phone = _phone.text.trim();
     try {
       await widget.auth.updateProfile(name: name, phone: phone);
+      var avatarPath = _avatarPath;
+      if (avatarPath != null) {
+        avatarPath = await _persistAvatarFile(
+          avatarPath,
+          widget.auth.currentUser?.uid,
+        );
+      }
       await widget.repo.updateProfile(
         name: name,
         phone: phone,
-        avatarUrl: _avatarPath,
+        avatarUrl: avatarPath,
       );
-      final avatarPath = _avatarPath;
       if (avatarPath != null) {
         await _appMemory()?.setString(
           _avatarPathKey(widget.auth.currentUser?.uid),
@@ -1244,6 +1273,35 @@ KeyValueStore? _appMemory() =>
 /// Device-local avatar image path, keyed per account since the avatar isn't
 /// uploaded/served from the backend yet (see `_EditProfileRouteState`).
 String _avatarPathKey(String? uid) => 'profile.avatar_path.${uid ?? ''}';
+
+/// Copies a picked avatar into the app-documents dir, keyed per account, so
+/// it survives OS cache purges the same way evidence clips do (see
+/// `EcUploadQueue`'s doc comment) — `image_picker`'s own returned path points
+/// into a plugin cache/temp location with no such guarantee, which was
+/// letting a saved avatar quietly vanish (silently falls back to the
+/// placeholder icon — see `_UserRow`/`_AvatarPicker`) once the OS reclaimed it.
+Future<String> _persistAvatarFile(String pickedPath, String? uid) async {
+  try {
+    final dir = await getApplicationDocumentsDirectory();
+    final avatarsDir = Directory('${dir.path}/avatars');
+    if (!avatarsDir.existsSync()) avatarsDir.createSync(recursive: true);
+    final stored =
+        '${avatarsDir.path}/${uid ?? 'anon'}${_fileExtension(pickedPath)}';
+    await File(pickedPath).copy(stored);
+    return stored;
+  } on Object {
+    // Not a copyable local file (e.g. a test double, or the copy failed for
+    // some other reason) — fall back to the original value rather than fail
+    // the whole save, mirroring EcUploadQueue.enqueue's identical fallback.
+    return pickedPath;
+  }
+}
+
+String _fileExtension(String path) {
+  final dot = path.lastIndexOf('.');
+  final slash = path.lastIndexOf('/');
+  return dot > slash ? path.substring(dot) : '.jpg';
+}
 
 /// Keychain-backed store for the remembered login email + password. Null in
 /// tests/pumps that skip DI, so every credential read/write there is a no-op.
@@ -1941,6 +1999,7 @@ class _OrdersRoute extends StatefulWidget {
     required this.queue,
     required this.shopId,
     required this.shopName,
+    this.evidenceCountOverrides,
     this.onBack,
     this.onNavRecord,
     this.onNavAccount,
@@ -1953,11 +2012,12 @@ class _OrdersRoute extends StatefulWidget {
   final EcUploadQueue queue;
   final String shopId;
   final String shopName;
+  final _EvidenceCountOverrides? evidenceCountOverrides;
   final VoidCallback? onBack;
   final VoidCallback? onNavRecord;
   final VoidCallback? onNavAccount;
   final VoidCallback? onQueueTap;
-  final ValueChanged<OrderSummaryDto>? onOrderTap;
+  final Future<void> Function(OrderSummaryDto order)? onOrderTap;
   final Future<String?> Function()? onScan;
 
   @override
@@ -2146,6 +2206,14 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     }
   }
 
+  /// The server's own count, unless a fresher one is known from actually
+  /// having opened this order (see `_EvidenceCountOverrides`).
+  int _evidenceCount(OrderSummaryDto o) =>
+      widget.evidenceCountOverrides?[o.tracking]?.$1 ?? o.evidenceCount;
+
+  int _errorCount(OrderSummaryDto o) =>
+      widget.evidenceCountOverrides?[o.tracking]?.$2 ?? o.errorCount;
+
   EcOrderRow _toRow(AppLocalizations l10n, OrderSummaryDto o) {
     final capturedAt = o.lastCapturedAt;
     return EcOrderRow(
@@ -2154,8 +2222,8 @@ class _OrdersRouteState extends State<_OrdersRoute> {
           ? '—'
           : _hhmm(DateTime.fromMillisecondsSinceEpoch(capturedAt)),
       type: o.latestType ?? l10n.orderNoEvidence,
-      videoCount: o.evidenceCount,
-      errorCount: o.errorCount,
+      videoCount: _evidenceCount(o),
+      errorCount: _errorCount(o),
     );
   }
 
@@ -2198,9 +2266,18 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         onRetry: () => _loadFirst(showSpinner: true),
       );
     }
-    final rows = _orders.map((o) => _toRow(context.l10n, o)).toList();
+    // An order every clip has been deleted from is an empty shell — nothing
+    // left to review, so it shouldn't linger in the list at all.
+    final visibleOrders = _orders
+        .where((o) => _evidenceCount(o) > 0)
+        .toList();
+    final rows = visibleOrders.map((o) => _toRow(context.l10n, o)).toList();
     return ListenableBuilder(
-      listenable: widget.queue,
+      listenable: Listenable.merge([
+        widget.queue,
+        if (widget.evidenceCountOverrides != null)
+          widget.evidenceCountOverrides!,
+      ]),
       builder: (context, _) => EcHomeOrdersScreen(
         shopName: widget.shopName,
         orders: rows,
@@ -2213,8 +2290,18 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         onOrderTap: widget.onOrderTap == null
             ? null
             : (row) {
-                final i = rows.indexWhere((r) => r.code == row.code);
-                if (i >= 0) widget.onOrderTap!(_orders[i]);
+                final matches = visibleOrders.where(
+                  (o) => o.tracking == row.code,
+                );
+                if (matches.isEmpty) return;
+                final order = matches.first;
+                // Deleting evidence inside the order detail screen changes
+                // its evidence/error count — refresh this list on return so
+                // the card shown here doesn't keep showing stale counts (or
+                // an order that's now empty doesn't stay listed).
+                widget.onOrderTap!(order).then((_) {
+                  if (mounted) _loadFirst();
+                });
               },
         onNavOrders: () {},
         onScan: widget.onScan,
@@ -2238,6 +2325,7 @@ class _OrderRoute extends StatefulWidget {
     required this.shop,
     required this.order,
     this.shareService,
+    this.evidenceCountOverrides,
     this.onBack,
     this.onOpenVideo,
   });
@@ -2247,6 +2335,7 @@ class _OrderRoute extends StatefulWidget {
   final EcShopSummary shop;
   final OrderSummaryDto order;
   final ShareService? shareService;
+  final _EvidenceCountOverrides? evidenceCountOverrides;
   final VoidCallback? onBack;
   final Future<void> Function(_VideoRouteExtra extra)? onOpenVideo;
 
@@ -2259,6 +2348,18 @@ class _OrderRouteState extends State<_OrderRoute> {
 
   Future<_OrderDetailData> _load() async {
     final detail = await widget.repo.order(widget.shop.id, widget.order.id);
+    // The orders list can only show whatever `evidence_count`/`error_count`
+    // the server last computed for this order — which, unlike this detail
+    // fetch, isn't recalculated when a clip is deleted (see
+    // _EvidenceCountOverrides' doc comment). Report the true, live numbers
+    // from the data already being fetched here so that list corrects itself
+    // without needing its own extra request.
+    final live = detail.evidence.where((e) => e.uploadStatus != 'deleted');
+    widget.evidenceCountOverrides?.report(
+      widget.order.tracking,
+      live.length,
+      live.where((e) => e.uploadStatus == 'error').length,
+    );
     final types = await widget.repo.videoTypes(widget.shop.id);
     DossierDto? dossier;
     if (widget.shop.role != 'staff') {
@@ -2271,10 +2372,25 @@ class _OrderRouteState extends State<_OrderRoute> {
         dossier = null;
       }
     }
+    // "Người quay" was showing the raw Firebase uid — resolve it to whoever
+    // that account actually is (name, else email) so it reads like a person
+    // instead of a token. Best-effort: an empty map just falls back to the
+    // uid, same as before, rather than failing the whole screen.
+    var memberNames = const <String, String>{};
+    try {
+      final members = await widget.repo.members(widget.shop.id);
+      memberNames = {
+        for (final m in members)
+          if ((m.name ?? m.email) != null) m.accountUid: (m.name ?? m.email)!,
+      };
+    } on Object {
+      // Keep the empty map — evidence still renders, just without names.
+    }
     return _OrderDetailData(
       detail: detail,
       videoTypes: types,
       dossier: dossier,
+      memberNames: memberNames,
     );
   }
 
@@ -2289,6 +2405,7 @@ class _OrderRouteState extends State<_OrderRoute> {
           detail: data.detail,
           videoTypes: data.videoTypes,
           dossier: dossier,
+          memberNames: data.memberNames,
         ),
       );
     });
@@ -2352,6 +2469,7 @@ class _OrderRouteState extends State<_OrderRoute> {
           context.l10n,
           data.detail.evidence,
           data.videoTypes,
+          data.memberNames,
         );
         final dossier = data.dossier;
         final dossierUrl = dossier == null || dossier.revoked
@@ -2439,11 +2557,44 @@ class _OrderDetailData {
     required this.detail,
     required this.videoTypes,
     required this.dossier,
+    this.memberNames = const {},
   });
 
   final OrderDetailDto detail;
   final List<VideoTypeDto> videoTypes;
   final DossierDto? dossier;
+
+  /// Account uid -> display name (name, else email), for resolving
+  /// [EvidenceDto.createdByUid] to something readable.
+  final Map<String, String> memberNames;
+}
+
+/// Corrects the orders list's evidence/error counts against reality.
+///
+/// `listOrders`' per-order `evidence_count`/`error_count` are server-computed
+/// totals that, as observed live, are never decremented when a clip is
+/// deleted (deleteEvidence only removes the row; nothing recomputes the
+/// order's own aggregate) — so the list keeps showing however many clips
+/// were *ever* recorded, not however many still exist. The order detail
+/// screen already fetches the full evidence list to render itself; this
+/// captures the true, live count from that same fetch and lets the orders
+/// list use it instead, with no extra network calls.
+class _EvidenceCountOverrides extends ChangeNotifier {
+  final Map<String, (int count, int errorCount)> _byTracking = {};
+
+  void report(String tracking, int count, int errorCount) {
+    final current = _byTracking[tracking];
+    if (current != null &&
+        current.$1 == count &&
+        current.$2 == errorCount) {
+      return;
+    }
+    _byTracking[tracking] = (count, errorCount);
+    notifyListeners();
+  }
+
+  (int count, int errorCount)? operator [](String tracking) =>
+      _byTracking[tracking];
 }
 
 class _VideoPlayerRoute extends StatefulWidget {
@@ -2469,12 +2620,27 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
   );
   late final Future<void> _ready = _initialize();
 
+  // While the user drags the scrubber, show the drag target instead of the
+  // controller's real position — seeking is throttled to onChangeEnd, so the
+  // real position wouldn't move smoothly with the thumb otherwise.
+  Duration? _scrubPosition;
+
   void _togglePlayPause() {
     if (_controller.value.isPlaying) {
       _controller.pause();
     } else {
       _controller.play();
     }
+  }
+
+  String _formatDuration(Duration d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    final hours = d.inHours;
+    final minutes = d.inMinutes.remainder(60);
+    final seconds = d.inSeconds.remainder(60);
+    return hours > 0
+        ? '$hours:${two(minutes)}:${two(seconds)}'
+        : '${two(minutes)}:${two(seconds)}';
   }
 
   Future<void> _initialize() async {
@@ -2561,42 +2727,107 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                     ),
                   );
                 }
-                return Center(
-                  child: ValueListenableBuilder<VideoPlayerValue>(
-                    valueListenable: _controller.valueListenable,
-                    builder: (context, value, _) => GestureDetector(
-                      onTap: _togglePlayPause,
-                      child: AspectRatio(
-                        aspectRatio: value.aspectRatio == 0
-                            ? 16 / 9
-                            : value.aspectRatio,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            VideoPlayer(raw),
-                            AnimatedOpacity(
-                              opacity: value.isPlaying ? 0 : 1,
-                              duration: const Duration(milliseconds: 150),
-                              child: const DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: Color(0x66000000),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Padding(
-                                  padding: EdgeInsets.all(14),
-                                  child: Icon(
-                                    Icons.play_arrow,
-                                    color: Colors.white,
-                                    size: 36,
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: ValueListenableBuilder<VideoPlayerValue>(
+                          valueListenable: _controller.valueListenable,
+                          builder: (context, value, _) => GestureDetector(
+                            onTap: _togglePlayPause,
+                            child: AspectRatio(
+                              aspectRatio: value.aspectRatio == 0
+                                  ? 16 / 9
+                                  : value.aspectRatio,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  VideoPlayer(raw),
+                                  AnimatedOpacity(
+                                    opacity: value.isPlaying ? 0 : 1,
+                                    duration: const Duration(
+                                      milliseconds: 150,
+                                    ),
+                                    child: const DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        color: Color(0x66000000),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Padding(
+                                        padding: EdgeInsets.all(14),
+                                        child: Icon(
+                                          Icons.play_arrow,
+                                          color: Colors.white,
+                                          size: 36,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                    ValueListenableBuilder<VideoPlayerValue>(
+                      valueListenable: _controller.valueListenable,
+                      builder: (context, value, _) {
+                        final duration = value.duration;
+                        final position = _scrubPosition ?? value.position;
+                        final sliderMax = duration.inMilliseconds > 0
+                            ? duration.inMilliseconds.toDouble()
+                            : 1.0;
+                        final sliderValue = position.inMilliseconds
+                            .toDouble()
+                            .clamp(0.0, sliderMax);
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                          child: Row(
+                            children: [
+                              Text(
+                                _formatDuration(position),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Expanded(
+                                child: CupertinoSlider(
+                                  value: sliderValue,
+                                  max: sliderMax,
+                                  activeColor: Colors.white,
+                                  thumbColor: Colors.white,
+                                  onChanged: duration.inMilliseconds > 0
+                                      ? (v) => setState(() {
+                                          _scrubPosition = Duration(
+                                            milliseconds: v.round(),
+                                          );
+                                        })
+                                      : null,
+                                  onChangeEnd: (v) {
+                                    final target = Duration(
+                                      milliseconds: v.round(),
+                                    );
+                                    _controller.seekTo(target);
+                                    setState(() => _scrubPosition = null);
+                                  },
+                                ),
+                              ),
+                              Text(
+                                _formatDuration(duration),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 );
               },
             ),
@@ -2646,6 +2877,7 @@ List<EcTimelineDay> _timelineDays(
   AppLocalizations l10n,
   List<EvidenceDto> evidence,
   List<VideoTypeDto> videoTypes,
+  Map<String, String> memberNames,
 ) {
   final typeNames = {for (final t in videoTypes) t.id: t.name};
   final groups = <String, List<EcTimelineVideo>>{};
@@ -2653,6 +2885,16 @@ List<EcTimelineDay> _timelineDays(
     // A deleted clip should vanish from the list entirely, not linger with a
     // "Đã xóa" badge — deletion already happened server-side (deleteEvidence);
     // showing it here was the actual bug, not a missing status label.
+    //
+    // 'error' rows are deliberately still shown (not filtered) — a failed
+    // upload's evidence row is created server-side as soon as the upload
+    // starts, before the clip is actually stored, and a retry never revisits
+    // that row (it starts a fresh upload from scratch via ApiEvidenceUploader,
+    // which now deletes the failed row itself the moment it gives up — see
+    // ec_uploader.dart's _deleteEvidenceQuietly). So a lingering 'error' row
+    // here is already the exception, not the rule; leaving it visible (and
+    // deletable, like any other clip) is how a seller clears out whatever
+    // failed attempts existed before that cleanup was in place.
     if (item.uploadStatus == 'deleted') continue;
     final captured = DateTime.fromMillisecondsSinceEpoch(item.capturedAt);
     final day = _dateLabel(captured);
@@ -2671,7 +2913,11 @@ List<EcTimelineDay> _timelineDays(
                 : _uploadStatusLabel(l10n, item.uploadStatus),
             statusIcon: item.uploadStatus == 'error' ? Icons.refresh : null,
             recordedAt: '${_dateLabel(captured)} · ${_hhmm(captured)}',
-            recordedBy: item.createdByUid ?? l10n.recordedByFallback,
+            recordedBy:
+                (item.createdByUid == null
+                    ? null
+                    : memberNames[item.createdByUid]) ??
+                l10n.recordedByFallback,
             device: item.device ?? l10n.deviceUnknown,
             uploadStatus: _uploadStatusLabel(l10n, item.uploadStatus),
             mediaUrl: item.url,
@@ -2888,6 +3134,7 @@ EcUploadItem _taskToItem(UploadTask task) => EcUploadItem(
   },
   progressPercent: (task.progress * 100).round(),
   retryCount: task.retryCount,
+  errorMessage: task.errorMessage,
 );
 
 String _hhmm(DateTime d) {
@@ -2911,6 +3158,7 @@ GoRouter _buildRouter(
   Dio? downloadDio,
   VoiceAnnouncerService? voiceAnnouncer,
   ValueNotifier<bool>? isRecordTabActive,
+  _EvidenceCountOverrides? evidenceCountOverrides,
 }) {
   final share = shareService ?? _maybeGetIt<ShareService>();
   final videoPlayer = videoPlayerService ?? _maybeGetIt<VideoPlayerService>();
@@ -3056,6 +3304,7 @@ GoRouter _buildRouter(
                     queue: queue,
                     shopId: shop.id,
                     shopName: shop.name,
+                    evidenceCountOverrides: evidenceCountOverrides,
                     onBack: () => c.go('/shops', extra: 'back'),
                     onNavRecord: () => c.go('/record'),
                     onNavAccount: () => c.go('/account'),
@@ -3212,6 +3461,7 @@ GoRouter _buildRouter(
             shop: shop,
             order: order,
             shareService: share,
+            evidenceCountOverrides: evidenceCountOverrides,
             onBack: () => _back(c, '/home'),
             onOpenVideo: (extra) => c.push(
               extra.video.type == EcEvidenceType.image ? '/photo' : '/video',

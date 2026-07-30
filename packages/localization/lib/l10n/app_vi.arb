@@ -119,6 +119,8 @@
   "accountSectionSecurity": "BẢO MẬT & ĐĂNG NHẬP",
   "accountLoginMethods": "Phương thức đăng nhập",
   "accountSignOut": "Đăng xuất",
+  "accountSignOutConfirmTitle": "Đăng xuất?",
+  "accountSignOutConfirmMessage": "Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng.",
   "accountDeleteAccount": "Xóa tài khoản",
   "accountShopMgmtHint": "Quản lý shop/thành viên: bấm back trên header để về lớp Shop",
   "accountInfoTitle": "Thông tin tài khoản",

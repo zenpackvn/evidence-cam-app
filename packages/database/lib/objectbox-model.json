@@ -260,7 +260,7 @@
     },
     {
       "id": "6:610114076402941823",
-      "lastPropertyId": "11:1933466406096036724",
+      "lastPropertyId": "12:8832645181416904060",
       "name": "EvidenceClipEntity",
       "properties": [
         {
@@ -319,6 +319,11 @@
         {
           "id": "11:1933466406096036724",
           "name": "shopId",
+          "type": 9
+        },
+        {
+          "id": "12:8832645181416904060",
+          "name": "errorMessage",
           "type": 9
         }
       ],

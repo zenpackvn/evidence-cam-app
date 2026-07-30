@@ -78,6 +78,7 @@ UploadTask taskFromEntity(EvidenceClipEntity e) => UploadTask(
   progress: e.progress,
   retryCount: e.retryCount,
   remoteUrl: e.remoteUrl,
+  errorMessage: e.errorMessage,
 );
 
 /// Maps the UI/queue model to a persisted row. id 0 + replace-on-conflict on
@@ -93,4 +94,5 @@ EvidenceClipEntity entityFromTask(UploadTask t) => EvidenceClipEntity(
   progress: t.progress,
   retryCount: t.retryCount,
   remoteUrl: t.remoteUrl,
+  errorMessage: t.errorMessage,
 );

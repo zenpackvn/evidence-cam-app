@@ -1,4 +1,4 @@
-import 'package:network/network.dart' show Dio;
+import 'package:network/network.dart' show Dio, Options;
 
 import 'ec_models.dart';
 
@@ -261,10 +261,14 @@ class EcApi {
   Future<String> completeUpload(
     String shopId,
     String orderId,
-    String evidenceId,
-  ) async {
+    String evidenceId, {
+    Duration? receiveTimeout,
+  }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/orders/$orderId/uploads/$evidenceId/complete',
+      options: receiveTimeout == null
+          ? null
+          : Options(receiveTimeout: receiveTimeout),
     );
     return res.data!['status'] as String;
   }
@@ -275,6 +279,7 @@ class EcApi {
     String evidenceId, {
     required String uploadId,
     required List<UploadedPartDto> parts,
+    Duration? receiveTimeout,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/orders/$orderId/uploads/$evidenceId/multipart/complete',
@@ -282,6 +287,9 @@ class EcApi {
         'uploadId': uploadId,
         'parts': parts.map((p) => p.toJson()).toList(),
       },
+      options: receiveTimeout == null
+          ? null
+          : Options(receiveTimeout: receiveTimeout),
     );
     return res.data!['status'] as String;
   }

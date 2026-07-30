@@ -298,6 +298,14 @@ class RecordingSessionBloc
   /// rebuilds when [RecordingSessionState.cameraGeneration] changes.
   CameraController? get previewController => _camera.controller;
 
+  /// True while starting/stopping a recording is rebinding the camera's
+  /// capture pipeline (adding or dropping the video-capture use case) — a
+  /// window in which the live preview's rotation visibly flails on some
+  /// devices (a camera_android_camerax quirk unrelated to the saved file's
+  /// rotation). The view masks the preview for this signal rather than
+  /// trying to track exactly when the native side has settled.
+  final ValueNotifier<bool> previewTransitioning = ValueNotifier<bool>(false);
+
   Future<void> _serialized(Future<void> Function() op) {
     final next = _camLock.then((_) => op());
     _camLock = next.catchError((_) {});
@@ -482,8 +490,13 @@ class RecordingSessionBloc
         // take a few real seconds, and waiting for that made the
         // announcement feel badly out of sync with the code being scanned.
         unawaited(_voice.speak('Đã bắt đầu quay'));
-        if (_camera.isStreamingImages) await _camera.stopImageStream();
-        await _startVideoWithScan();
+        previewTransitioning.value = true;
+        try {
+          if (_camera.isStreamingImages) await _camera.stopImageStream();
+          await _startVideoWithScan();
+        } finally {
+          previewTransitioning.value = false;
+        }
         if (isClosed) return;
         emit(
           state.copyWith(
@@ -588,12 +601,19 @@ class RecordingSessionBloc
         unawaited(
           _voice.speak(next != null ? 'Đã bắt đầu quay' : 'Đã dừng quay'),
         );
-        if (_camera.isRecordingVideo) {
-          final file = await _camera.stopVideoRecording();
-          _onClipSaved(file.path, state.code, state.typeLabel);
+        previewTransitioning.value = true;
+        try {
+          if (_camera.isRecordingVideo) {
+            final file = await _camera.stopVideoRecording();
+            _onClipSaved(file.path, state.code, state.typeLabel);
+          }
+          if (next != null) {
+            await _startVideoWithScan();
+          }
+        } finally {
+          previewTransitioning.value = false;
         }
         if (next != null) {
-          await _startVideoWithScan();
           if (isClosed) return;
           emit(
             state.copyWith(
@@ -755,6 +775,7 @@ class RecordingSessionBloc
   @override
   Future<void> close() async {
     _cancelTimer();
+    previewTransitioning.dispose();
     await _scanner.dispose();
     await _camera.dispose();
     return super.close();

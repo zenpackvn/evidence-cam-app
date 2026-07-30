@@ -390,6 +390,8 @@ void main() {
 
       final uploader = ApiEvidenceUploader(EcApi(apiDio), r2Dio: r2Dio);
 
+      // upload() rewraps every DioException into an UploadFailureException
+      // with a message already safe to show a seller — see ec_uploader.dart.
       await expectLater(
         uploader.upload(
           clip,
@@ -397,7 +399,7 @@ void main() {
           type: 'Đóng hàng',
           shopId: 's1',
         ),
-        throwsA(isA<DioException>()),
+        throwsA(isA<UploadFailureException>()),
       );
       expect(putAttempts, 1);
     },

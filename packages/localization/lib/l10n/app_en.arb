@@ -134,6 +134,8 @@
   "accountSectionSecurity": "SECURITY & SIGN-IN",
   "accountLoginMethods": "Sign-in method",
   "accountSignOut": "Sign out",
+  "accountSignOutConfirmTitle": "Sign out?",
+  "accountSignOutConfirmMessage": "You'll need to sign in again to keep using the app.",
   "accountDeleteAccount": "Delete account",
   "accountShopMgmtHint": "Manage shop/members: tap back on the header to return to the Shop layer",
   "accountInfoTitle": "Account info",
