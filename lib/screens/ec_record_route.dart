@@ -286,7 +286,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
               shopName: widget.shopName,
               queueCount: widget.queueCount,
               code: state.code,
-              duration: _formatElapsed(state.elapsed),
               typeLabel: state.typeLabel,
               zoomLabel: zoomLabel,
               resolutionLabel: state.resolutionLabel,

@@ -58,7 +58,8 @@ android {
 
     defaultConfig {
         applicationId = "com.aktechvn.zenpack"
-        minSdk = flutter.minSdkVersion
+        // ffmpeg_kit_extended_flutter (video-stamp overlay) requires API 26+.
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

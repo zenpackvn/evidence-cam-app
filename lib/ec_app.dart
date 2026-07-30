@@ -2600,12 +2600,17 @@ class _EvidenceCountOverrides extends ChangeNotifier {
 class _VideoPlayerRoute extends StatefulWidget {
   const _VideoPlayerRoute({
     required this.title,
+    required this.recordedAt,
     required this.url,
     required this.service,
     this.onBack,
   });
 
   final String title;
+
+  /// Recording date + time, e.g. `23/07/2026 · 10:23` — matches what's shown
+  /// on the Ghi hình screen while recording and in the evidence detail sheet.
+  final String recordedAt;
   final String url;
   final VideoPlayerService service;
   final VoidCallback? onBack;
@@ -2682,14 +2687,28 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                 ),
                 Expanded(
-                  child: Text(
-                    widget.title,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.title,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        widget.recordedAt,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -2857,11 +2876,16 @@ class _VideoRouteExtra {
 class _VideoPlayerRouteExtra {
   const _VideoPlayerRouteExtra({
     required this.title,
+    required this.recordedAt,
     required this.url,
     required this.videoPlayerService,
   });
 
   final String title;
+
+  /// Recording date + time, e.g. `23/07/2026 · 10:23` — the same value shown
+  /// on the Ghi hình screen while recording and in the evidence detail sheet.
+  final String recordedAt;
   final String url;
   final VideoPlayerService videoPlayerService;
 }
@@ -3506,6 +3530,7 @@ GoRouter _buildRouter(
                     '/video-player',
                     extra: _VideoPlayerRouteExtra(
                       title: extra!.video.title,
+                      recordedAt: extra.video.recordedAt,
                       url: url,
                       videoPlayerService: videoPlayer,
                     ),
@@ -3633,6 +3658,7 @@ GoRouter _buildRouter(
           }
           return _VideoPlayerRoute(
             title: extra.title,
+            recordedAt: extra.recordedAt,
             url: extra.url,
             service: extra.videoPlayerService,
             onBack: () => c.pop(),

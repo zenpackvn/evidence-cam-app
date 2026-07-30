@@ -53,10 +53,9 @@ void main() {
   });
 
   group('EcRecording2Screen', () {
-    testWidgets('shows mã vận đơn, duration and REC dot', (tester) async {
+    testWidgets('shows mã vận đơn and REC dot', (tester) async {
       await _pump(tester, const EcRecording2Screen());
       expect(find.text('SPXVN024567890'), findsOneWidget);
-      expect(find.text('02:45'), findsOneWidget);
       expect(find.text('REC'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

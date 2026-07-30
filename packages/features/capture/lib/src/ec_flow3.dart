@@ -110,13 +110,14 @@ class EcWaitBill2Screen extends StatelessWidget {
 
 // --- Recording2 ---------------------------------------------------------
 
-/// Active recording screen — mã vận đơn badge, elapsed duration and REC dot.
+/// Active recording screen — mã vận đơn badge and REC dot. The header's
+/// live clock already covers "what time is it", so this doesn't duplicate
+/// it with an elapsed-time counter.
 class EcRecording2Screen extends StatelessWidget {
   const EcRecording2Screen({
     this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.code = 'SPXVN024567890',
-    this.duration = '02:45',
     this.typeLabel = 'Đóng hàng',
     this.zoomLabel = '1x',
     this.resolutionLabel = '720p',
@@ -138,7 +139,6 @@ class EcRecording2Screen extends StatelessWidget {
   final String shopName;
   final int queueCount;
   final String code;
-  final String duration;
   final String typeLabel;
   final String zoomLabel;
   final String resolutionLabel;
@@ -184,8 +184,6 @@ class EcRecording2Screen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             _CamCodeBadge(code: code),
-            const SizedBox(height: 10),
-            Text(duration, style: _t(28, FontWeight.w700, BrandColors.ink)),
             const SizedBox(height: 10),
             const _RecRow(),
           ],
@@ -700,17 +698,12 @@ class _LiveClockState extends State<_LiveClock> {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final date =
-        '${_two(now.day)}/${_two(now.month)}/${now.year}';
-    final time = '${_two(now.hour)}:${_two(now.minute)}:${_two(now.second)}';
+    final date = '${_two(now.day)}/${_two(now.month)}/${now.year}';
     return Padding(
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text(
-          '$date · $time',
-          style: _t(12, FontWeight.w500, BrandColors.mut),
-        ),
+        child: Text(date, style: _t(12, FontWeight.w500, BrandColors.mut)),
       ),
     );
   }

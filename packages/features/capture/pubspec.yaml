@@ -30,9 +30,16 @@ dependencies:
   google_mlkit_barcode_scanning: ^0.14.0
   path_provider: ^2.1.0
   qr_flutter: ^4.1.0
+  battery_plus: ^7.1.1
+  connectivity_plus: ^7.1.1
+  ffmpeg_kit_extended_flutter: ^0.5.12
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   bloc_test: ^10.0.0
+
+flutter:
+  assets:
+    - assets/fonts/Roboto-Regular.ttf
