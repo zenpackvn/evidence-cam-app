@@ -433,18 +433,33 @@ class _CoverPreviewState extends State<_CoverPreview> {
   @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
-    final frame = _lastGoodFrame;
     return ColoredBox(
       color: Colors.black,
       child: LayoutBuilder(
         builder: (context, constraints) {
+          // While masking, the live layer isn't built at all — not even
+          // underneath an overlay — so there's no frame in which the
+          // rebind-triggered rotation glitch could paint before a cover
+          // frame lands on top of it. The periodic refresh below only
+          // touches the live layer while unmasked anyway, so nothing is
+          // lost by skipping it entirely here.
+          if (_masking) {
+            final frame = _lastGoodFrame;
+            if (frame == null) return const ColoredBox(color: Colors.black);
+            return FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: frame.width.toDouble(),
+                height: frame.height.toDouble(),
+                child: RawImage(image: frame),
+              ),
+            );
+          }
           // See didUpdateWidget: only the live preview's rotation is
           // affected by the recording-start rebind, not the recorded file,
-          // so the correction is scoped to isRecordingVideo. The live layer
-          // keeps rendering underneath even while masked, so the next
-          // known-good frame is ready the moment masking lifts.
+          // so the correction is scoped to isRecordingVideo.
           final recordingTurns = controller.value.isRecordingVideo ? 3 : 0;
-          final liveLayer = ClipRect(
+          return ClipRect(
             child: FittedBox(
               fit: BoxFit.cover,
               child: SizedBox(
@@ -459,21 +474,6 @@ class _CoverPreviewState extends State<_CoverPreview> {
                 ),
               ),
             ),
-          );
-          if (!_masking || frame == null) return liveLayer;
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              liveLayer,
-              FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: frame.width.toDouble(),
-                  height: frame.height.toDouble(),
-                  child: RawImage(image: frame),
-                ),
-              ),
-            ],
           );
         },
       ),
