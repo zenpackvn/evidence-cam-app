@@ -24,7 +24,8 @@ class EcVideoStampService {
   // an on-disk path, not an asset-bundle entry. `/system/fonts/*` looked
   // like a shortcut but modern Android sandboxing can make it unreadable
   // from the app's own process, silently defeating drawtext.
-  static const _fontAsset = 'packages/feature_capture/assets/fonts/Roboto-Regular.ttf';
+  static const _fontAsset =
+      'packages/feature_capture/assets/fonts/Roboto-Regular.ttf';
 
   static Future<void>? _ready;
   static Future<String>? _fontFile;
@@ -52,18 +53,10 @@ class EcVideoStampService {
     required String label,
     required DateTime recordedAt,
   }) async {
-    if (!File(inputPath).existsSync()) {
-      // ignore: avoid_print
-      print('DEBUG stamp: input missing $inputPath');
-      return inputPath;
-    }
+    if (!File(inputPath).existsSync()) return inputPath;
     try {
       await _ensureReady();
-      // ignore: avoid_print
-      print('DEBUG stamp: ffmpeg ready');
       final fontPath = await _ensureFontFile();
-      // ignore: avoid_print
-      print('DEBUG stamp: font at $fontPath exists=${File(fontPath).existsSync()}');
       final overlay = await _overlayText(label, recordedAt);
       final outputPath = await _outputPathFor(inputPath);
       final drawText =
@@ -73,17 +66,9 @@ class EcVideoStampService {
           'boxborderw=10:x=20:y=20';
       final command =
           '-y -i "$inputPath" -vf "$drawText" -c:a copy "$outputPath"';
-      // ignore: avoid_print
-      print('DEBUG stamp: running $command');
       final ok = await _run(command);
-      // ignore: avoid_print
-      print(
-        'DEBUG stamp: ok=$ok outputExists=${File(outputPath).existsSync()}',
-      );
       return ok && File(outputPath).existsSync() ? outputPath : inputPath;
-    } on Object catch (e, st) {
-      // ignore: avoid_print
-      print('DEBUG stamp: failed $e\n$st');
+    } on Object {
       return inputPath;
     }
   }
@@ -136,39 +121,24 @@ class EcVideoStampService {
   // escape/quote characters within the filter-graph string, and `%` as the
   // start of a `%{...}` expansion (e.g. `%{pts}`) — a literal `%` (from a
   // battery percentage) needs doubling or it's a syntax error.
-  static String _escape(String s) =>
-      s
-          .replaceAll(r'\', r'\\')
-          .replaceAll(':', r'\:')
-          .replaceAll("'", r"\'")
-          .replaceAll('%', '%%');
+  static String _escape(String s) => s
+      .replaceAll(r'\', r'\\')
+      .replaceAll(':', r'\:')
+      .replaceAll("'", r"\'")
+      .replaceAll('%', '%%');
 
   Future<bool> _run(String command) {
     final completer = Completer<bool>();
-    // ignore: avoid_print
-    print('DEBUG stamp: executeAsync called');
     FFmpegKit.executeAsync(
       command,
       onComplete: (session) {
-        // ignore: avoid_print
-        print('DEBUG stamp: onComplete fired');
         var success = false;
         try {
-          final code = session.getReturnCode();
-          // ignore: avoid_print
-          print('DEBUG stamp: code=$code');
-          // ignore: avoid_print
-          print('DEBUG stamp: output=${session.getOutput()}');
-          success = ReturnCode.isSuccess(code);
-        } on Object catch (e, st) {
-          // ignore: avoid_print
-          print('DEBUG stamp: onComplete threw $e\n$st');
+          success = ReturnCode.isSuccess(session.getReturnCode());
+        } on Object {
+          // Treated as failure below — the caller falls back to inputPath.
         }
         if (!completer.isCompleted) completer.complete(success);
-      },
-      onLog: (log) {
-        // ignore: avoid_print
-        print('DEBUG stamp: log ${log.message}');
       },
     );
     return completer.future;

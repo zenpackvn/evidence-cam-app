@@ -29,7 +29,7 @@ class EcAccountTabScreen extends StatelessWidget {
     this.userEmail = 'nguyenvana@gmail.com',
     this.shopName = 'Shop ABC',
     this.queueCount = 3,
-    this.planLabel = 'Pro 500',
+    this.planLabel = 'Cơ bản',
     this.languageLabel = 'Tiếng Việt',
     this.loginMethodsLabel = '3 liên kết',
     this.passwordActionLabel = 'Đổi mật khẩu',
@@ -74,19 +74,18 @@ class EcAccountTabScreen extends StatelessWidget {
     return CupertinoPageScaffold(
       backgroundColor: BrandColors.bg,
       child: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            _ShopHeader(
-              shopName: shopName,
-              queueCount: queueCount,
-              onBack: onBack,
-            ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                // Design `Body`: padding [26, 18, 0, 18].
+                padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    _ShopHeader(shopName: shopName, onBack: onBack),
+                    const SizedBox(height: 18),
                     _UserRow(
                       name: userName,
                       email: userEmail,
@@ -94,44 +93,47 @@ class EcAccountTabScreen extends StatelessWidget {
                       onTap: onProfileTap,
                     ),
                     _SectionHeader(context.l10n.accountSectionApp),
-                    _SettingsRow(
-                      icon: Icons.credit_card_outlined,
-                      label: context.l10n.accountPlanQuota,
-                      value: planLabel,
-                      onTap: onQuotaTap,
-                    ),
-                    _SettingsRow(
-                      icon: Icons.language,
-                      label: context.l10n.accountLanguage,
-                      value: languageLabel,
-                      onTap: onLanguageTap,
-                    ),
-                    _SettingsRow(
-                      icon: Icons.qr_code_2,
-                      label: context.l10n.stopCodeTitle,
-                      onTap: onStopCodeTap,
+                    _SettingsGroup(
+                      rows: [
+                        _SettingsRow(
+                          icon: LucideIcons.creditCard,
+                          label: context.l10n.accountPlanQuota,
+                          value: planLabel,
+                          onTap: onQuotaTap,
+                        ),
+                        _SettingsRow(
+                          icon: LucideIcons.globe,
+                          label: context.l10n.accountLanguage,
+                          value: languageLabel,
+                          onTap: onLanguageTap,
+                        ),
+                      ],
                     ),
                     _SectionHeader(context.l10n.accountSectionSecurity),
-                    _SettingsRow(
-                      icon: Icons.lock_outline,
-                      label: passwordActionLabel,
-                      onTap: onChangePasswordTap,
-                    ),
-                    _SettingsRow(
-                      icon: Icons.vpn_key_outlined,
-                      label: context.l10n.accountLoginMethods,
-                      value: loginMethodsLabel,
-                      onTap: onLoginMethodsTap,
-                    ),
-                    _SettingsRow(
-                      icon: Icons.logout,
-                      label: context.l10n.accountSignOut,
-                      onTap: onLogout,
-                    ),
-                    _SettingsRow(
-                      icon: Icons.delete_outline,
-                      label: context.l10n.accountDeleteAccount,
-                      onTap: onDeleteAccount,
+                    _SettingsGroup(
+                      rows: [
+                        _SettingsRow(
+                          icon: LucideIcons.lock,
+                          label: passwordActionLabel,
+                          onTap: onChangePasswordTap,
+                        ),
+                        _SettingsRow(
+                          icon: LucideIcons.keyRound,
+                          label: context.l10n.accountLoginMethods,
+                          value: loginMethodsLabel,
+                          onTap: onLoginMethodsTap,
+                        ),
+                        _SettingsRow(
+                          icon: LucideIcons.logOut,
+                          label: context.l10n.accountSignOut,
+                          onTap: onLogout,
+                        ),
+                        _SettingsRow(
+                          icon: LucideIcons.trash2,
+                          label: context.l10n.accountDeleteAccount,
+                          onTap: onDeleteAccount,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -178,69 +180,66 @@ class EcEditProfileScreen extends StatelessWidget {
       child: CupertinoPageScaffold(
         backgroundColor: BrandColors.bg,
         child: SafeArea(
+          bottom: false,
           child: Column(
             children: [
-              _SimpleHeader(
-                title: context.l10n.accountInfoTitle,
-                onBack: onBack,
-              ),
               Expanded(
-                child: CustomScrollView(
-                  slivers: [
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Center(
-                              child: _AvatarPicker(
-                                avatarPath: avatarPath,
-                                onChangeAvatar: onChangeAvatar,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            _Field(
-                              label: context.l10n.accountFullName,
-                              hint: context.l10n.accountFullNameHint,
-                              controller: nameController,
-                              validator: FormBuilderValidators.required(
-                                errorText: context.l10n.accountFullNameRequired,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            _Field(
-                              label: context.l10n.phoneLabel,
-                              hint: context.l10n.phoneHint,
-                              controller: phoneController,
-                              keyboardType: TextInputType.phone,
-                              // Phone is optional here, but must be well-formed
-                              // when provided.
-                              validator: (value) =>
-                                  (value == null || value.trim().isEmpty)
-                                  ? null
-                                  : FormBuilderValidators.phoneNumber(
-                                      errorText: context.l10n.phoneInvalid,
-                                    )(value),
-                            ),
-                            const SizedBox(height: 14),
-                            _LockedField(
-                              label: 'Email',
-                              value: email,
-                              hint: context.l10n.accountEmailLockedHint,
-                            ),
-                            const Spacer(),
-                            const SizedBox(height: 14),
-                            _ValidatedPrimaryButton(
-                              label: context.l10n.accountSaveChanges,
-                              onValid: onSave,
-                            ),
-                          ],
+                child: SingleChildScrollView(
+                  // Design `Body`: padding [28, 26, 0, 26].
+                  padding: const EdgeInsets.fromLTRB(26, 28, 26, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _SimpleHeader(
+                        title: context.l10n.accountInfoTitle,
+                        onBack: onBack,
+                      ),
+                      Center(
+                        child: _AvatarPicker(
+                          avatarPath: avatarPath,
+                          onChangeAvatar: onChangeAvatar,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 30),
+                      _Field(
+                        label: context.l10n.accountFullName,
+                        hint: context.l10n.accountFullNameHint,
+                        controller: nameController,
+                        validator: FormBuilderValidators.required(
+                          errorText: context.l10n.accountFullNameRequired,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      _Field(
+                        label: context.l10n.phoneLabel,
+                        hint: context.l10n.phoneHint,
+                        controller: phoneController,
+                        keyboardType: TextInputType.phone,
+                        // Phone is optional here, but must be well-formed
+                        // when provided.
+                        validator: (value) =>
+                            (value == null || value.trim().isEmpty)
+                            ? null
+                            : FormBuilderValidators.phoneNumber(
+                                errorText: context.l10n.phoneInvalid,
+                              )(value),
+                      ),
+                      const SizedBox(height: 20),
+                      _LockedField(
+                        label: 'Email',
+                        value: email,
+                        hint: context.l10n.accountEmailLockedHint,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Design `SaveWrap`: padding [0, 26, 26, 26].
+              Padding(
+                padding: const EdgeInsets.fromLTRB(26, 0, 26, 26),
+                child: _ValidatedPrimaryButton(
+                  label: context.l10n.accountSaveChanges,
+                  onValid: onSave,
                 ),
               ),
             ],
@@ -340,46 +339,72 @@ class EcLanguageScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return PenScreen(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(22, 28, 22, 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _SimpleHeader(title: l10n.accountLanguage, onBack: onBack),
-            const SizedBox(height: 22),
-            _LanguageOption(
-              title: 'Tiếng Việt',
-              subtitle: l10n.languageNameVietnamese,
-              selected: selected == EcAppLanguage.vi,
-              onTap: () => onSelect?.call(EcAppLanguage.vi),
+      scrollable: false,
+      // The globe and its caption are absolutely placed in the design
+      // (`layoutPosition: absolute`), sitting behind the options rather than
+      // flowing after them.
+      decorations: [
+        const Positioned(left: 45, top: 392, child: PenGlobeIllustration()),
+        Positioned(
+          left: 45,
+          top: 582,
+          child: SizedBox(
+            width: 300,
+            child: Column(
+              children: [
+                for (final line in l10n.languageChangeScopeNote.split('\n'))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: PenText(
+                      line,
+                      size: 14,
+                      color: PenColors.mut,
+                      align: TextAlign.center,
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 14),
-            _LanguageOption(
-              title: 'English',
-              subtitle: l10n.languageNameEnglish,
-              selected: selected == EcAppLanguage.en,
-              onTap: () => onSelect?.call(EcAppLanguage.en),
-            ),
-            const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: PenText(
-                l10n.languageChangeAppliesNote,
-                size: 14,
-                color: PenColors.mut,
+          ),
+        ),
+      ],
+      // Fills the viewport so the absolutely-placed decorations above stay
+      // inside the screen's stack instead of being clipped away.
+      child: SizedBox.expand(
+        child: Padding(
+          // Design `Body`: padding [28, 22, 0, 22].
+          padding: const EdgeInsets.fromLTRB(22, 28, 22, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _SimpleHeader(title: l10n.accountLanguage, onBack: onBack),
+              const SizedBox(height: 22),
+              _LanguageOption(
+                title: 'Tiếng Việt',
+                // The pair reads as native-name over other-language-name, so
+                // these two labels are fixed rather than locale-dependent.
+                subtitle: 'Vietnamese',
+                selected: selected == EcAppLanguage.vi,
+                onTap: () => onSelect?.call(EcAppLanguage.vi),
               ),
-            ),
-            const SizedBox(height: 24),
-            const Center(child: PenGlobeIllustration()),
-            const SizedBox(height: 8),
-            PenText(
-              l10n.languageChangeScopeNote,
-              size: 14,
-              color: PenColors.mut,
-              align: TextAlign.center,
-              lineHeight: 1.5,
-            ),
-          ],
+              const SizedBox(height: 14),
+              _LanguageOption(
+                title: 'English',
+                subtitle: l10n.languageNameEnglish,
+                selected: selected == EcAppLanguage.en,
+                onTap: () => onSelect?.call(EcAppLanguage.en),
+              ),
+              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: PenText(
+                  l10n.languageChangeAppliesNote,
+                  size: 14,
+                  color: PenColors.mut,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -562,21 +587,36 @@ class EcQuotaTypeUsage {
   final int bytes;
 }
 
-/// Chart colors for the per-type breakdown bar/dots. Not part of the design
-/// token set (`PenColors`) — that file has no data-viz palette — chosen to
-/// stay visually distinct and calm against the rest of the screen.
+/// The breakdown ramp, straight from the design: two greens, then amber and
+/// red — `--chart-1/2` plus `--warning` and `--destructive`. Largest slice
+/// first, so rank 0 is the darkest green.
 const _quotaTypeColors = <Color>[
-  PenColors.link,
-  Color(0xFF1AA6A6),
-  Color(0xFFE08A2E),
+  PenColors.primary,
+  PenColors.success,
+  _warning,
   PenColors.danger,
 ];
+
+/// One icon per breakdown rank, matching the design's row glyphs.
+const _quotaTypeIcons = <IconData>[
+  LucideIcons.packageCheck,
+  LucideIcons.truck,
+  LucideIcons.rotateCcw,
+  LucideIcons.scale,
+];
+
+Color _quotaTypeColor(int rank) =>
+    _quotaTypeColors[rank % _quotaTypeColors.length];
+
+IconData _quotaTypeIcon(int rank) =>
+    _quotaTypeIcons[rank % _quotaTypeIcons.length];
 
 /// Quota — current plan, storage usage (GB) w/ progress bar, retention,
 /// a by-type storage breakdown and an upgrade CTA.
 class EcQuotaScreen extends StatelessWidget {
   const EcQuotaScreen({
-    this.planLabel = '500 MB',
+    this.planLabel = 'Cơ bản',
+    this.planCode = 'P1',
     this.usedBytes = 0,
     this.remainingBytes,
     this.capBytes = 500 * 1024 * 1024,
@@ -591,6 +631,9 @@ class EcQuotaScreen extends StatelessWidget {
   });
 
   final String planLabel;
+
+  /// Short plan code shown in the header chip (design: "P1").
+  final String planCode;
   final int usedBytes;
   final int? remainingBytes;
   final int capBytes;
@@ -631,213 +674,149 @@ class EcQuotaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return CupertinoPageScaffold(
       backgroundColor: BrandColors.bg,
       child: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            _SimpleHeader(title: context.l10n.quotaScreenTitle, onBack: onBack),
             Expanded(
-              child: CustomScrollView(
-                slivers: [
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          PenCard(
-                            axis: PenAxis.column,
-                            lifted: false,
-                            padding: const EdgeInsets.all(16),
+              child: SingleChildScrollView(
+                // Design `Body`: gap 12, padding [24, 18, 0, 18].
+                padding: const EdgeInsets.fromLTRB(18, 24, 18, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        PenBackButton(onTap: onBack),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        PenText(
-                                          context.l10n.quotaCurrentPlan,
-                                          size: 12,
-                                          color: PenColors.mut,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        PenText(
-                                          planLabel,
-                                          size: 20,
-                                          weight: FontWeight.w600,
-                                          color: PenColors.ink,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (canManagePlan)
-                                    EcTap(
-                                      onTap: onUpgrade,
-                                      child: PenBox(
-                                        fill: PenColors.primary,
-                                        radius: 999,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 10,
-                                        ),
-                                        children: [
-                                          PenText(
-                                            context.l10n.quotaUpgradeShort,
-                                            size: 14,
-                                            weight: FontWeight.w600,
-                                            color: PenColors.card,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
                               PenText(
-                                '${ecHumanBytesVi(_remainingBytes)} ${context.l10n.quotaRemainingThisMonth.toLowerCase()}',
-                                size: 20,
-                                weight: FontWeight.w600,
+                                l10n.quotaScreenTitle,
+                                size: 23,
                                 color: PenColors.ink,
+                                weight: FontWeight.w800,
+                                softWrap: false,
                               ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 8,
-                                child: Stack(
-                                  children: [
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        color: PenColors.soft,
-                                        borderRadius: BorderRadius.circular(
-                                          4,
-                                        ),
-                                      ),
-                                    ),
-                                    FractionallySizedBox(
-                                      alignment: Alignment.centerLeft,
-                                      widthFactor: _usedFraction,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: PenColors.primary,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 2),
                               PenText(
-                                context.l10n.quotaUsedRatio(
-                                  ecHumanBytesVi(usedBytes),
-                                  ecHumanBytesVi(capBytes),
-                                  _usedPercent,
-                                ),
+                                l10n.quotaSubtitle,
                                 size: 12,
                                 color: PenColors.mut,
-                              ),
-                              const SizedBox(height: 16),
-                              const _QuotaDivider(),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _QuotaStat(
-                                      value: context.l10n
-                                          .quotaVideosStoredCount(videoCount),
-                                      label: context.l10n.quotaVideosStored,
-                                    ),
-                                  ),
-                                  const SizedBox(
-                                    height: 32,
-                                    child: VerticalDivider(
-                                      width: 1,
-                                      color: PenColors.line,
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: _QuotaStat(
-                                      value: context.l10n.quotaRetentionDays(
-                                        retentionTotalDays,
-                                      ),
-                                      label: context.l10n.quotaStorage,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              PenBox(
-                                width: double.infinity,
-                                fill: PenColors.soft,
-                                radius: 12,
-                                axis: PenAxis.row,
-                                gap: 10,
-                                cross: CrossAxisAlignment.start,
-                                padding: const EdgeInsets.all(12),
-                                children: [
-                                  const Icon(
-                                    LucideIcons.clock,
-                                    size: 16,
-                                    color: PenColors.mut,
-                                  ),
-                                  Expanded(
-                                    child: PenText(
-                                      context.l10n.quotaRefundNote(
-                                        retentionTotalDays,
-                                      ),
-                                      size: 12,
-                                      color: PenColors.mut,
-                                      lineHeight: 1.4,
-                                    ),
-                                  ),
-                                ],
+                                softWrap: false,
                               ),
                             ],
                           ),
-                          if (typeUsage.isNotEmpty) ...[
-                            const SizedBox(height: 14),
-                            _QuotaBreakdownCard(typeUsage: typeUsage),
-                          ],
-                          const SizedBox(height: 14),
-                          PenCard(
-                            axis: PenAxis.column,
-                            lifted: false,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
+                        ),
+                        const SizedBox(width: 12),
+                        _PlanChip(label: planCode),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _QuotaSummaryCard(
+                      planLabel: planLabel,
+                      remainingLabel: ecHumanBytesVi(_remainingBytes),
+                      usedLabel: ecHumanBytesVi(usedBytes),
+                      capLabel: ecHumanBytesVi(capBytes),
+                      usedPercent: _usedPercent,
+                      usedFraction: _usedFraction,
+                      videoCount: videoCount,
+                      retentionTotalDays: retentionTotalDays,
+                      canManagePlan: canManagePlan,
+                      onUpgrade: onUpgrade,
+                    ),
+                    if (typeUsage.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      _QuotaBreakdownCard(typeUsage: typeUsage),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            // Design `FooterWrap`: gap 8, padding [0, 18, 20, 18].
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  PenCard(
+                    axis: PenAxis.column,
+                    stroke: null,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      EcTap(
+                        onTap: onPaymentHistoryTap,
+                        child: PenBox(
+                          width: double.infinity,
+                          axis: PenAxis.row,
+                          gap: 12,
+                          cross: CrossAxisAlignment.center,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          children: [
+                            const Icon(
+                              LucideIcons.receiptText,
+                              size: 21,
+                              color: PenColors.ink,
                             ),
-                            children: [
-                              _SettingsRow(
-                                icon: LucideIcons.receipt,
-                                label: context.l10n.quotaPaymentHistory,
-                                onTap: onPaymentHistoryTap,
+                            Expanded(
+                              child: PenText(
+                                l10n.quotaPaymentHistory,
+                                size: 15,
+                                color: PenColors.ink,
+                                weight: FontWeight.w600,
                               ),
-                            ],
-                          ),
-                          const Spacer(),
-                          const SizedBox(height: 14),
-                          if (canManagePlan)
-                            _EcPrimaryButton(
-                              label: context.l10n.quotaUpgradePlan,
-                              onPressed: onUpgrade,
-                            )
-                          else
-                            PenText(
-                              context.l10n.quotaOwnerOnlyNote,
-                              align: TextAlign.center,
-                              size: 14,
+                            ),
+                            const Icon(
+                              LucideIcons.chevronRight,
+                              size: 18,
                               color: PenColors.mut,
                             ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (canManagePlan)
+                    EcTap(
+                      onTap: onUpgrade,
+                      child: PenBox(
+                        width: double.infinity,
+                        height: 52,
+                        fill: PenColors.primary,
+                        radius: 14,
+                        axis: PenAxis.row,
+                        gap: 8,
+                        main: MainAxisAlignment.center,
+                        cross: CrossAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            LucideIcons.arrowUpCircle,
+                            size: 20,
+                            color: PenColors.card,
+                          ),
+                          PenText(
+                            l10n.quotaUpgradePlan,
+                            size: 17,
+                            color: PenColors.card,
+                            weight: FontWeight.w800,
+                            softWrap: false,
+                          ),
                         ],
                       ),
+                    )
+                  else
+                    PenText(
+                      l10n.quotaOwnerOnlyNote,
+                      align: TextAlign.center,
+                      size: 14,
+                      color: PenColors.mut,
                     ),
-                  ),
                 ],
               ),
             ),
@@ -848,13 +827,215 @@ class EcQuotaScreen extends StatelessWidget {
   }
 }
 
-class _QuotaDivider extends StatelessWidget {
-  const _QuotaDivider();
+/// The amber `PlanChip` in the quota header — the plan's short code.
+class _PlanChip extends StatelessWidget {
+  const _PlanChip({required this.label});
+
+  final String label;
 
   @override
-  Widget build(BuildContext context) =>
-      const Divider(height: 1, thickness: 1, color: PenColors.line);
+  Widget build(BuildContext context) => PenBox(
+    fill: const Color(0xFFFFF6E5),
+    radius: 999,
+    axis: PenAxis.row,
+    gap: 6,
+    cross: CrossAxisAlignment.center,
+    hugMain: true,
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 11),
+    children: [
+      const Icon(LucideIcons.badgeCheck, size: 15, color: _warning),
+      PenText(
+        label,
+        size: 13,
+        color: _warning,
+        weight: FontWeight.w800,
+        softWrap: false,
+      ),
+    ],
+  );
 }
+
+/// `--warning` / `--chart-4` — the amber the design uses for plan and
+/// renewal accents (design-dna-app.md §1).
+const _warning = Color(0xFFB6770B);
+
+/// `CardUsageSummary` — plan, remaining headline, usage bar and the two
+/// stored/retention stats.
+class _QuotaSummaryCard extends StatelessWidget {
+  const _QuotaSummaryCard({
+    required this.planLabel,
+    required this.remainingLabel,
+    required this.usedLabel,
+    required this.capLabel,
+    required this.usedPercent,
+    required this.usedFraction,
+    required this.videoCount,
+    required this.retentionTotalDays,
+    required this.canManagePlan,
+    this.onUpgrade,
+  });
+
+  final String planLabel;
+  final String remainingLabel;
+  final String usedLabel;
+  final String capLabel;
+  final int usedPercent;
+  final double usedFraction;
+  final int videoCount;
+  final int retentionTotalDays;
+  final bool canManagePlan;
+  final VoidCallback? onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return PenCard(
+      axis: PenAxis.column,
+      stroke: null,
+      gap: 12,
+      padding: const EdgeInsets.all(16),
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PenText(
+                    l10n.quotaCurrentPlan,
+                    size: 13,
+                    color: PenColors.mut,
+                    softWrap: false,
+                  ),
+                  const SizedBox(height: 3),
+                  PenText(
+                    planLabel,
+                    size: 24,
+                    color: PenColors.ink,
+                    weight: FontWeight.w800,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            if (canManagePlan) ...[
+              const SizedBox(width: 12),
+              EcTap(
+                onTap: onUpgrade,
+                child: PenBox(
+                  fill: PenColors.primary,
+                  radius: 999,
+                  hugMain: true,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 9,
+                    horizontal: 12,
+                  ),
+                  children: [
+                    PenText(
+                      l10n.quotaUpgradeShort,
+                      size: 13,
+                      color: PenColors.card,
+                      weight: FontWeight.w700,
+                      softWrap: false,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            PenText(
+              l10n.quotaRemainingAmount(remainingLabel),
+              size: 28,
+              color: PenColors.ink,
+              weight: FontWeight.w800,
+              softWrap: false,
+            ),
+            const SizedBox(height: 4),
+            PenText(
+              l10n.quotaUsedRatio(usedLabel, capLabel, usedPercent),
+              size: 13,
+              color: PenColors.mut,
+              softWrap: false,
+            ),
+          ],
+        ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: SizedBox(
+            width: double.infinity,
+            height: 10,
+            child: Stack(
+              children: [
+                const Positioned.fill(child: ColoredBox(color: _track)),
+                FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: usedFraction.clamp(0.0, 1.0),
+                  child: const ColoredBox(color: PenColors.success),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: _QuotaStat(
+                  label: l10n.quotaVideosStored,
+                  value: l10n.quotaVideosStoredCount(videoCount),
+                ),
+              ),
+              const SizedBox(width: 14),
+              const SizedBox(
+                width: 1,
+                height: 34,
+                child: ColoredBox(
+                  color: PenColors.line,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: _QuotaStat(
+                  label: l10n.quotaStorage,
+                  value: l10n.quotaRetentionDays(retentionTotalDays),
+                ),
+              ),
+            ],
+          ),
+        ),
+        PenBox(
+          width: double.infinity,
+          fill: const Color(0xFFF7F7F7),
+          radius: 10,
+          axis: PenAxis.row,
+          gap: 8,
+          cross: CrossAxisAlignment.center,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          children: [
+            const Icon(LucideIcons.refreshCw, size: 16, color: _warning),
+            Expanded(
+              child: PenText(
+                l10n.quotaRefundNote(retentionTotalDays),
+                size: 12,
+                color: PenColors.mut,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// `#EDEDED` — the unfilled part of every progress/stack bar in this design.
+const _track = Color(0xFFEDEDED);
 
 class _QuotaStat extends StatelessWidget {
   const _QuotaStat({required this.value, required this.label});
@@ -865,16 +1046,17 @@ class _QuotaStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        PenText(label, size: 12, color: PenColors.mut, softWrap: false),
+        const SizedBox(height: 4),
         PenText(
           value,
-          size: 16,
-          weight: FontWeight.w600,
+          size: 17,
           color: PenColors.ink,
+          weight: FontWeight.w700,
+          softWrap: false,
         ),
-        const SizedBox(height: 2),
-        PenText(label, size: 12, color: PenColors.mut),
       ],
     );
   }
@@ -892,112 +1074,158 @@ class _QuotaBreakdownCard extends StatelessWidget {
     final totalBytes = typeUsage.fold<int>(0, (sum, u) => sum + u.bytes);
     return PenCard(
       axis: PenAxis.column,
-      lifted: false,
-      gap: 14,
-      padding: const EdgeInsets.all(16),
+      stroke: null,
+      gap: 10,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       children: [
         Row(
           children: [
-            PenText(
-              context.l10n.quotaByType,
-              size: 15,
-              weight: FontWeight.w600,
-              color: PenColors.ink,
+            Expanded(
+              child: PenText(
+                context.l10n.quotaByType,
+                size: 17,
+                color: PenColors.ink,
+                weight: FontWeight.w800,
+              ),
             ),
-            const Spacer(),
+            const SizedBox(width: 10),
             PenText(
               ecHumanBytesVi(totalBytes),
-              size: 14,
-              weight: FontWeight.w600,
+              size: 18,
               color: PenColors.ink,
+              weight: FontWeight.w800,
+              softWrap: false,
             ),
           ],
         ),
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(999),
           child: SizedBox(
-            height: 8,
+            width: double.infinity,
+            height: 10,
             child: Row(
               children: [
                 for (var i = 0; i < typeUsage.length; i++)
                   Expanded(
                     flex: typeUsage[i].bytes.clamp(1, 1 << 40),
-                    child: ColoredBox(
-                      color: _quotaTypeColors[i % _quotaTypeColors.length],
-                    ),
+                    child: ColoredBox(color: _quotaTypeColor(i)),
                   ),
               ],
             ),
           ),
         ),
-        for (var i = 0; i < typeUsage.length; i++)
-          _QuotaBreakdownRow(
-            usage: typeUsage[i],
-            color: _quotaTypeColors[i % _quotaTypeColors.length],
-          ),
+        // The design's `Rows` frame is one child with no gap of its own, so
+        // the card's 10pt gap must not fall between the rows.
+        _BreakdownRows(typeUsage: typeUsage),
       ],
     );
   }
 }
 
+class _BreakdownRows extends StatelessWidget {
+  const _BreakdownRows({required this.typeUsage});
+
+  final List<EcQuotaTypeUsage> typeUsage;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (var i = 0; i < typeUsage.length; i++) ...[
+        if (i > 0) const SizedBox(height: 1, child: ColoredBox(color: _track)),
+        _QuotaBreakdownRow(usage: typeUsage[i], rank: i),
+      ],
+    ],
+  );
+}
+
 class _QuotaBreakdownRow extends StatelessWidget {
-  const _QuotaBreakdownRow({required this.usage, required this.color});
+  const _QuotaBreakdownRow({required this.usage, required this.rank});
 
   final EcQuotaTypeUsage usage;
-  final Color color;
+  final int rank;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: PenText(
-            usage.type,
-            size: 14,
-            color: PenColors.ink,
-            overflow: TextOverflow.ellipsis,
+    final color = _quotaTypeColor(rank);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          PenBox(
+            width: 30,
+            height: 30,
+            fill: const Color(0xFFF7F7F7),
+            radius: 999,
+            axis: PenAxis.row,
+            main: MainAxisAlignment.center,
+            cross: CrossAxisAlignment.center,
+            children: [Icon(_quotaTypeIcon(rank), size: 17, color: color)],
           ),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            PenText(
-              context.l10n.quotaByTypeVideosCount(usage.videoCount),
-              size: 12,
-              color: PenColors.mut,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                PenText(
+                  usage.type,
+                  size: 14,
+                  color: PenColors.ink,
+                  weight: FontWeight.w600,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                ),
+                const SizedBox(height: 2),
+                PenText(
+                  context.l10n.quotaByTypeVideosCount(usage.videoCount),
+                  size: 12,
+                  color: PenColors.mut,
+                  softWrap: false,
+                ),
+              ],
             ),
-            const SizedBox(height: 2),
-            PenText(
-              ecHumanBytesVi(usage.bytes),
-              size: 14,
-              weight: FontWeight.w600,
-              color: PenColors.ink,
-            ),
-          ],
-        ),
-      ],
+          ),
+          const SizedBox(width: 10),
+          PenText(
+            ecHumanBytesVi(usage.bytes),
+            size: 16,
+            color: PenColors.ink,
+            weight: FontWeight.w800,
+            softWrap: false,
+          ),
+        ],
+      ),
     );
   }
 }
 
 /// Centered dialog chrome with tap-outside-to-dismiss (matches flow-1's
 /// dialogs). [onDismiss] fires when the area outside the card is tapped.
+/// The modal scrim the design paints behind every dialog (`Dim` in the `.pen`).
+const _dimFill = Color(0xA6636363);
+
+/// Dialog shell — the design's `Dialog` frame: a [width]pt card with a 14pt
+/// radius over a [_dimFill] scrim, anchored at the design's own [top] offset
+/// on the 844pt artboard. Taller-than-viewport content scrolls, and the anchor
+/// collapses toward the top edge on shorter screens so the card always fits.
 class _DialogFrame extends StatelessWidget {
-  const _DialogFrame({required this.children, this.onDismiss});
+  const _DialogFrame({
+    required this.children,
+    this.onDismiss,
+    this.padding = const EdgeInsets.fromLTRB(20, 24, 20, 18),
+    this.width = 314,
+    this.top = 248,
+  });
   final List<Widget> children;
   final VoidCallback? onDismiss;
+  final EdgeInsets padding;
+  final double width;
+  final double top;
 
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: Colors.transparent,
+      color: _dimFill,
       child: Stack(
         children: [
           Positioned.fill(
@@ -1006,24 +1234,24 @@ class _DialogFrame extends StatelessWidget {
               onTap: onDismiss ?? () => Navigator.of(context).maybePop(),
             ),
           ),
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+          LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              padding: EdgeInsets.only(
+                top: (top / 844 * constraints.maxHeight).clamp(16.0, top),
+                bottom: 24,
+              ),
+              child: Align(
                 child: GestureDetector(
                   onTap: () => FocusScope.of(context).unfocus(),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: ecSquircleDecoration(
-                      radius: 16,
-                      color: BrandColors.bg,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: children,
-                    ),
+                  child: PenBox(
+                    width: width,
+                    fill: PenColors.card,
+                    radius: 14,
+                    axis: PenAxis.column,
+                    cross: CrossAxisAlignment.center,
+                    hugMain: true,
+                    padding: padding,
+                    children: children,
                   ),
                 ),
               ),
@@ -1031,6 +1259,77 @@ class _DialogFrame extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The dialog action pair: two 52pt / 10pt-radius buttons with a 12pt gap.
+class _DialogButtons extends StatelessWidget {
+  const _DialogButtons({
+    required this.cancelLabel,
+    required this.confirmLabel,
+    this.onCancel,
+    this.onConfirm,
+    this.confirmColor = PenColors.primary,
+  });
+
+  final String cancelLabel;
+  final String confirmLabel;
+  final VoidCallback? onCancel;
+  final VoidCallback? onConfirm;
+  final Color confirmColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: EcTap(
+            onTap: onCancel,
+            child: PenBox(
+              height: 52,
+              fill: PenColors.card,
+              stroke: PenColors.line,
+              radius: 10,
+              axis: PenAxis.row,
+              main: MainAxisAlignment.center,
+              cross: CrossAxisAlignment.center,
+              children: [
+                PenText(
+                  cancelLabel,
+                  size: 16,
+                  color: PenColors.ink,
+                  weight: FontWeight.w600,
+                  softWrap: false,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: EcTap(
+            onTap: onConfirm,
+            child: PenBox(
+              height: 52,
+              fill: confirmColor,
+              radius: 10,
+              axis: PenAxis.row,
+              main: MainAxisAlignment.center,
+              cross: CrossAxisAlignment.center,
+              children: [
+                PenText(
+                  confirmLabel,
+                  size: 16,
+                  color: PenColors.card,
+                  weight: FontWeight.w700,
+                  softWrap: false,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1078,97 +1377,83 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final isFirstStep = _isFirstStep;
+    final showNote = isFirstStep && widget.pendingSharedProfilesCount > 0;
     return _DialogFrame(
       onDismiss: _handleCancel,
       children: [
-        Center(
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: const BoxDecoration(
-              color: BrandColors.recTint,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.warning_rounded,
-              size: 28,
-              color: BrandColors.rec,
-            ),
-          ),
+        const PenBox(
+          width: 82,
+          height: 82,
+          fill: BrandColors.recTint,
+          radius: 999,
+          axis: PenAxis.row,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          children: [
+            Icon(LucideIcons.triangleAlert, size: 40, color: PenColors.danger),
+          ],
         ),
-        const SizedBox(height: 12),
-        Text(
+        const SizedBox(height: 18),
+        PenText(
           isFirstStep
               ? context.l10n.deleteAccountTitleStep1
               : context.l10n.deleteAccountTitleStep2,
-          textAlign: TextAlign.center,
-          style: _t(18, FontWeight.w700, BrandColors.rec),
+          size: 24,
+          color: PenColors.danger,
+          weight: FontWeight.w800,
+          align: TextAlign.center,
         ),
         const SizedBox(height: 12),
-        Text(
+        PenText(
           isFirstStep
               ? context.l10n.deleteAccountBodyStep1
               : context.l10n.deleteAccountBodyStep2,
-          textAlign: TextAlign.center,
-          style: _t(14, FontWeight.w400, BrandColors.mut),
+          size: 14,
+          color: PenColors.mut,
+          align: TextAlign.center,
+          lineHeight: 1.55,
         ),
-        if (isFirstStep && widget.pendingSharedProfilesCount > 0) ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: BrandColors.recTint,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.info_outline,
-                  size: 16,
-                  color: BrandColors.rec,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    context.l10n.deletePendingProfilesWarning(
-                      widget.pendingSharedProfilesCount,
-                    ),
-                    style: _t(12, FontWeight.w400, BrandColors.ink),
+        if (showNote) ...[
+          const SizedBox(height: 16),
+          PenBox(
+            width: double.infinity,
+            fill: BrandColors.recTint,
+            radius: 10,
+            axis: PenAxis.row,
+            gap: 12,
+            cross: CrossAxisAlignment.center,
+            padding: const EdgeInsets.all(14),
+            children: [
+              const Icon(LucideIcons.info, size: 22, color: PenColors.success),
+              Expanded(
+                child: PenText(
+                  context.l10n.deletePendingProfilesWarning(
+                    widget.pendingSharedProfilesCount,
                   ),
+                  size: 12,
+                  color: PenColors.ink,
+                  lineHeight: 1.45,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _EcSecondaryButton(
-                label: context.l10n.commonCancel,
-                onPressed: _handleCancel,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _EcPrimaryButton(
-                label: context.l10n.deleteConfirmPermanent,
-                onPressed: _handlePrimary,
-                color: BrandColors.rec,
-              ),
-            ),
-          ],
+        const SizedBox(height: 18),
+        _DialogButtons(
+          cancelLabel: context.l10n.commonCancel,
+          confirmLabel: context.l10n.deleteConfirmPermanent,
+          confirmColor: PenColors.danger,
+          onCancel: _handleCancel,
+          onConfirm: _handlePrimary,
         ),
-        const SizedBox(height: 12),
-        Center(
-          child: Text(
-            isFirstStep
-                ? context.l10n.deleteStep1Hint
-                : context.l10n.deleteStep2Hint,
-            textAlign: TextAlign.center,
-            style: _t(12, FontWeight.w400, BrandColors.mut),
-          ),
+        const SizedBox(height: 14),
+        PenText(
+          isFirstStep
+              ? context.l10n.deleteStep1Hint
+              : context.l10n.deleteStep2Hint,
+          size: 12,
+          color: PenColors.mut,
+          align: TextAlign.center,
         ),
       ],
     );
@@ -1211,79 +1496,164 @@ class EcChangePasswordScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Form(
-      child: _DialogFrame(
-        onDismiss: onCancel,
-        children: [
-          Text(
-            hasExistingPassword
-                ? context.l10n.accountChangePassword
-                : context.l10n.accountCreatePassword,
-            style: _t(16, FontWeight.w600, BrandColors.ink),
-          ),
-          const SizedBox(height: 12),
-          if (hasExistingPassword) ...[
-            _PasswordField(
-              label: context.l10n.passwordCurrentLabel,
-              hint: '••••••••',
-              controller: currentPasswordController,
-              validator: FormBuilderValidators.required(
-                errorText: context.l10n.passwordCurrentRequired,
-              ),
+      child: Builder(
+        builder: (context) => _DialogFrame(
+          onDismiss: onCancel,
+          padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+          children: [
+            PenText(
+              hasExistingPassword
+                  ? context.l10n.accountChangePassword
+                  : context.l10n.accountCreatePassword,
+              size: 20,
+              color: PenColors.ink,
+              weight: FontWeight.w800,
+              align: TextAlign.center,
             ),
-            const SizedBox(height: 12),
-          ],
-          _PasswordField(
-            label: context.l10n.passwordNewLabel,
-            hint: context.l10n.passwordMinHint,
-            controller: newPasswordController,
-            validator: FormBuilderValidators.compose([
-              FormBuilderValidators.required(
-                errorText: context.l10n.passwordNewRequired,
-              ),
-              (value) => _passwordError(context, value),
-            ]),
-          ),
-          const SizedBox(height: 12),
-          _PasswordField(
-            label: context.l10n.passwordConfirmLabel,
-            hint: '••••••••',
-            controller: confirmPasswordController,
-            validator: (value) => value == newPasswordController?.text
-                ? null
-                : context.l10n.passwordMismatch,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _EcSecondaryButton(
-                  label: context.l10n.commonCancel,
-                  onPressed: onCancel,
+            const SizedBox(height: 18),
+            if (hasExistingPassword) ...[
+              _DialogPasswordField(
+                label: context.l10n.passwordCurrentLabel,
+                hint: '•••••••••',
+                controller: currentPasswordController,
+                validator: FormBuilderValidators.required(
+                  errorText: context.l10n.passwordCurrentRequired,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _ValidatedPrimaryButton(
-                  label: hasExistingPassword
-                      ? context.l10n.passwordSave
-                      : context.l10n.accountCreatePassword,
-                  onValid: onSave,
+              const SizedBox(height: 14),
+            ],
+            _DialogPasswordField(
+              label: context.l10n.passwordNewLabel,
+              hint: context.l10n.passwordMinHint,
+              controller: newPasswordController,
+              validator: FormBuilderValidators.compose([
+                FormBuilderValidators.required(
+                  errorText: context.l10n.passwordNewRequired,
                 ),
+                (value) => _passwordError(context, value),
+              ]),
+            ),
+            const SizedBox(height: 14),
+            _DialogPasswordField(
+              label: context.l10n.passwordConfirmLabel,
+              hint: '•••••••••',
+              controller: confirmPasswordController,
+              validator: (value) => value == newPasswordController?.text
+                  ? null
+                  : context.l10n.passwordMismatch,
+            ),
+            const SizedBox(height: 20),
+            _DialogButtons(
+              cancelLabel: context.l10n.commonCancel,
+              confirmLabel: hasExistingPassword
+                  ? context.l10n.passwordSave
+                  : context.l10n.accountCreatePassword,
+              onCancel: onCancel,
+              onConfirm: onSave == null
+                  ? null
+                  : () {
+                      if (Form.of(context).validate()) onSave!();
+                    },
+            ),
+            if (hasExistingPassword) ...[
+              const SizedBox(height: 14),
+              PenText(
+                context.l10n.passwordChangeLogoutNote,
+                size: 12,
+                color: PenColors.mut,
+                align: TextAlign.center,
               ),
             ],
-          ),
-          if (hasExistingPassword) ...[
-            const SizedBox(height: 12),
-            Center(
-              child: Text(
-                context.l10n.passwordChangeLogoutNote,
-                textAlign: TextAlign.center,
-                style: _t(12, FontWeight.w400, BrandColors.mut),
-              ),
-            ),
           ],
-        ],
+        ),
       ),
+    );
+  }
+}
+
+/// The dialog-sized password input: a 14/400 label, 8pt gap, then a 54pt
+/// field with a 10pt radius and a reveal toggle (design `G-*` groups in
+/// F4-05). Distinct from the full-screen [PenField], which is taller.
+class _DialogPasswordField extends StatefulWidget {
+  const _DialogPasswordField({
+    required this.label,
+    required this.hint,
+    this.controller,
+    this.validator,
+  });
+
+  final String label;
+  final String hint;
+  final TextEditingController? controller;
+  final String? Function(String?)? validator;
+
+  @override
+  State<_DialogPasswordField> createState() => _DialogPasswordFieldState();
+}
+
+class _DialogPasswordFieldState extends State<_DialogPasswordField> {
+  var _obscured = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return FormField<String>(
+      initialValue: widget.controller?.text ?? '',
+      validator: widget.validator,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      builder: (state) {
+        final error = state.errorText;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PenText(widget.label, size: 14, color: PenColors.ink),
+            const SizedBox(height: 8),
+            PenBox(
+              width: double.infinity,
+              height: 54,
+              fill: PenColors.card,
+              stroke: error == null ? PenColors.line : PenColors.danger,
+              radius: 10,
+              axis: PenAxis.row,
+              gap: 10,
+              cross: CrossAxisAlignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                Expanded(
+                  child: CupertinoTextField(
+                    controller: widget.controller,
+                    onChanged: state.didChange,
+                    obscureText: _obscured,
+                    padding: EdgeInsets.zero,
+                    decoration: const BoxDecoration(),
+                    placeholder: widget.hint,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: PenColors.ink,
+                    ),
+                    placeholderStyle: const TextStyle(
+                      fontSize: 14,
+                      color: PenColors.mut,
+                    ),
+                  ),
+                ),
+                EcTap(
+                  onTap: () => setState(() => _obscured = !_obscured),
+                  child: Icon(
+                    _obscured ? LucideIcons.eye : LucideIcons.eyeOff,
+                    size: 20,
+                    color: PenColors.ink,
+                  ),
+                ),
+              ],
+            ),
+            if (error != null) ...[
+              const SizedBox(height: 6),
+              PenText(error, size: 12, color: PenColors.danger),
+            ],
+          ],
+        );
+      },
     );
   }
 }
@@ -1327,28 +1697,14 @@ class _ValidatedPrimaryButton extends StatelessWidget {
   }
 }
 
-class _EcSecondaryButton extends StatelessWidget {
-  const _EcSecondaryButton({required this.label, this.onPressed});
-  final String label;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) =>
-      PenOutlineButton(label: label, onPressed: onPressed);
-}
-
+/// The account tab's `Head`: back chevron, 14pt gap, shop name. The design
+/// dropped the upload-queue pill from this header — the queue is reached from
+/// the Vận đơn tab instead.
 class _ShopHeader extends StatelessWidget {
-  const _ShopHeader({
-    required this.shopName,
-    this.queueCount = 0,
-    this.onBack,
-    this.onQueueTap,
-  });
+  const _ShopHeader({required this.shopName, this.onBack});
 
   final String shopName;
-  final int queueCount;
   final VoidCallback? onBack;
-  final VoidCallback? onQueueTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1364,32 +1720,6 @@ class _ShopHeader extends StatelessWidget {
             weight: FontWeight.w800,
             softWrap: false,
             overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        EcTap(
-          onTap: onQueueTap,
-          child: PenBox(
-            fill: PenColors.bg,
-            radius: 999,
-            axis: PenAxis.row,
-            gap: 8,
-            cross: CrossAxisAlignment.center,
-            hugMain: true,
-            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 15),
-            children: [
-              const Icon(
-                LucideIcons.cloudUpload,
-                size: 19,
-                color: PenColors.ink,
-              ),
-              PenText(
-                '$queueCount',
-                size: 16,
-                color: PenColors.ink,
-                weight: FontWeight.w700,
-                softWrap: false,
-              ),
-            ],
           ),
         ),
       ],
@@ -1531,19 +1861,38 @@ class _SettingsRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
           Icon(icon, size: 25, color: PenColors.ink),
-          Expanded(
-            child: PenText(
-              label,
-              size: 16,
-              color: PenColors.ink,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+          Expanded(child: PenText(label, size: 16, color: PenColors.ink)),
           if (value != null)
             PenText(value!, size: 14, color: PenColors.ink, softWrap: false),
           const Icon(LucideIcons.chevronRight, size: 20, color: PenColors.mut),
         ],
       ),
+    );
+  }
+}
+
+/// Wraps a section's [_SettingsRow]s in one rounded card, hairline dividers
+/// between rows — the grouped-list look the reference design uses for
+/// "GÓI & ỨNG DỤNG" / "BẢO MẬT & ĐĂNG NHẬP".
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.rows});
+
+  final List<_SettingsRow> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return PenCard(
+      axis: PenAxis.column,
+      stroke: null,
+      clip: true,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0)
+            const Divider(height: 1, thickness: 1, color: PenColors.line),
+          rows[i],
+        ],
+      ],
     );
   }
 }
@@ -1622,9 +1971,7 @@ class _AvatarPicker extends StatelessWidget {
               // camera badge's job, so the two intents don't collide on one
               // tap target.
               EcTap(
-                onTap: hasLocalFile
-                    ? () => _showPreview(context, file!)
-                    : null,
+                onTap: hasLocalFile ? () => _showPreview(context, file!) : null,
                 child: PenBox(
                   width: 124,
                   height: 124,
@@ -1889,37 +2236,6 @@ class _LanguageOption extends StatelessWidget {
             ring: 0.88,
           ),
       ],
-    );
-  }
-}
-
-/// A password input with the design's 62pt field, a leading padlock and a
-/// reveal toggle.
-class _PasswordField extends StatelessWidget {
-  const _PasswordField({
-    required this.label,
-    required this.hint,
-    this.controller,
-    this.validator,
-  });
-
-  final String label;
-  final String hint;
-  final TextEditingController? controller;
-
-  /// When set, the field registers with the enclosing [Form] and shows an
-  /// inline error beneath itself; null keeps the plain (unvalidated) field.
-  final String? Function(String?)? validator;
-
-  @override
-  Widget build(BuildContext context) {
-    return PenField(
-      icon: LucideIcons.lock,
-      label: label,
-      hint: hint,
-      controller: controller,
-      obscure: true,
-      validator: validator,
     );
   }
 }

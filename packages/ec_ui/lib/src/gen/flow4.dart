@@ -50,29 +50,6 @@ class PenF401 extends StatelessWidget {
                       height: 1,
                     ),
                   ),
-                  PenBox(
-                    fill: const Color(0xFFFCFCFC),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    gap: 8,
-                    cross: CrossAxisAlignment.center,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 15),
-                    children: [
-                      Icon(
-                        LucideIcons.cloudUpload,
-                        size: 19,
-                        color: const Color(0xFF161616),
-                      ),
-                      PenText(
-                        '3',
-                        size: 16,
-                        color: const Color(0xFF161616),
-                        weight: FontWeight.w700,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
                 ],
               ),
               PenBox(
@@ -1439,7 +1416,7 @@ class PenF404 extends StatelessWidget {
                       PenBox(
                         width: 84,
                         height: 10,
-                        fill: const Color(0xFF2266A4),
+                        fill: const Color(0xFF1F9047),
                       ),
                       PenBox(
                         width: 36,
@@ -1542,7 +1519,7 @@ class PenF404 extends StatelessWidget {
                               Icon(
                                 LucideIcons.truck,
                                 size: 17,
-                                color: const Color(0xFF2266A4),
+                                color: const Color(0xFF1F9047),
                               ),
                             ],
                           ),
@@ -1833,32 +1810,6 @@ class PenF405 extends StatelessWidget {
                           child: PenBox(
                             height: 1,
                           ),
-                        ),
-                        PenBox(
-                          fill: const Color(0xFFFCFCFC),
-                          radius: 999,
-                          axis: PenAxis.row,
-                          gap: 8,
-                          cross: CrossAxisAlignment.center,
-                          hugMain: true,
-                          padding: EdgeInsets.symmetric(
-                            vertical: 9,
-                            horizontal: 15,
-                          ),
-                          children: [
-                            Icon(
-                              LucideIcons.cloudUpload,
-                              size: 19,
-                              color: const Color(0xFF161616),
-                            ),
-                            PenText(
-                              '3',
-                              size: 16,
-                              color: const Color(0xFF161616),
-                              weight: FontWeight.w700,
-                              softWrap: false,
-                            ),
-                          ],
                         ),
                       ],
                     ),
@@ -2600,32 +2551,6 @@ class PenF406 extends StatelessWidget {
                           child: PenBox(
                             height: 1,
                           ),
-                        ),
-                        PenBox(
-                          fill: const Color(0xFFFCFCFC),
-                          radius: 999,
-                          axis: PenAxis.row,
-                          gap: 8,
-                          cross: CrossAxisAlignment.center,
-                          hugMain: true,
-                          padding: EdgeInsets.symmetric(
-                            vertical: 9,
-                            horizontal: 15,
-                          ),
-                          children: [
-                            Icon(
-                              LucideIcons.cloudUpload,
-                              size: 19,
-                              color: const Color(0xFF161616),
-                            ),
-                            PenText(
-                              '3',
-                              size: 16,
-                              color: const Color(0xFF161616),
-                              weight: FontWeight.w700,
-                              softWrap: false,
-                            ),
-                          ],
                         ),
                       ],
                     ),

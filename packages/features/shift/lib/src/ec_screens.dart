@@ -12,8 +12,6 @@ import 'package:app_ui/app_ui.dart';
 import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart'
     show CupertinoPageScaffold, CupertinoTextField;
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -39,75 +37,103 @@ class EcSplashScreen extends StatelessWidget {
     // and the slack between them lives around the hero art. Devices are
     // taller than the artboard, so the art takes the slack instead of a
     // fixed spacer — that keeps every other gap at its design value.
+    // Every node on this screen is `layoutPosition: absolute` in the design,
+    // so it is placed by coordinate rather than flowed: the brand block is
+    // anchored to the top, the button and version to the bottom, and a taller
+    // device only grows the gap around the hero art.
     return PenScreen(
       scrollable: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Stack(
         children: [
-          const SizedBox(height: 52),
-          Image.asset(
-            'assets/design/logo.png',
-            package: 'ec_ui',
-            width: 120,
-            height: 120,
-            fit: BoxFit.cover,
+          Positioned(
+            left: 135,
+            top: 52,
+            child: Image.asset(
+              'assets/design/logo.png',
+              package: 'ec_ui',
+              width: 120,
+              height: 120,
+              fit: BoxFit.cover,
+            ),
           ),
-          const SizedBox(height: 6),
-          const PenText(
-            'ZenPack',
-            size: 36,
-            color: PenColors.primary,
-            weight: FontWeight.w800,
-            align: TextAlign.center,
-            softWrap: false,
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(120, 22, 100, 0),
-            child: PenOrnamentRule(),
-          ),
-          const SizedBox(height: 20),
-          for (final line in [
-            l10n.onboardingTaglineOne,
-            l10n.onboardingTaglineTwo,
-            l10n.onboardingTaglineThree,
-          ]) ...[
-            PenText(
-              line,
-              size: 20,
-              color: PenColors.ink,
-              weight: FontWeight.w500,
+          const Positioned(
+            left: 0,
+            right: 0,
+            top: 178,
+            child: PenText(
+              'ZenPack',
+              size: 36,
+              color: PenColors.primary,
+              weight: FontWeight.w800,
               align: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-          ],
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 21, 24, 26),
-              child: Image.asset(
-                'assets/design/flow1-zenpack-hero-art-splash.png',
-                package: 'ec_ui',
-                width: 342,
-                fit: BoxFit.contain,
-              ),
+              softWrap: false,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 30),
+          const Positioned(
+            left: 0,
+            right: 0,
+            top: 239,
+            child: PenOrnamentRule(lineWidth: 78, gap: 1, sparkleSize: 14),
+          ),
+          Positioned(
+            left: 30,
+            top: 274,
+            width: 330,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final line in [
+                  l10n.onboardingTaglineOne,
+                  l10n.onboardingTaglineTwo,
+                  l10n.onboardingTaglineThree,
+                ]) ...[
+                  if (line != l10n.onboardingTaglineOne)
+                    const SizedBox(height: 8),
+                  PenText(
+                    line,
+                    size: 20,
+                    color: PenColors.ink,
+                    weight: FontWeight.w500,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Positioned(
+            left: 24,
+            top: 365,
+            width: 342,
+            height: 325,
+            child: Image.asset(
+              'assets/design/flow1-zenpack-hero-art-splash.png',
+              package: 'ec_ui',
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            left: 30,
+            right: 30,
+            bottom: 64,
             child: PenPrimaryButton(
               label: l10n.onboardingStart,
               height: 64,
+              labelSize: 20,
               onPressed: onStart,
             ),
           ),
-          const SizedBox(height: 16),
-          PenText(
-            version,
-            size: 12,
-            color: PenColors.mut,
-            align: TextAlign.center,
-            softWrap: false,
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 33,
+            child: PenText(
+              version,
+              size: 12,
+              color: PenColors.mut,
+              align: TextAlign.center,
+              softWrap: false,
+            ),
           ),
-          const SizedBox(height: 32),
         ],
       ),
     );
@@ -147,7 +173,9 @@ class EcLoginScreen extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(26, 44, 26, 32),
+              // Design `Body`: padding [14, 26, 0, 26]; `Form` opens 18 under
+              // the title block and separates its groups by 25.
+              padding: const EdgeInsets.fromLTRB(26, 14, 26, 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -155,7 +183,7 @@ class EcLoginScreen extends StatelessWidget {
                     title: l10n.authSignIn,
                     subtitle: l10n.authChooseMethod,
                   ),
-                  const SizedBox(height: 26),
+                  const SizedBox(height: 18),
                   PenField(
                     label: 'Email',
                     hint: l10n.authEmailPlaceholder,
@@ -171,7 +199,7 @@ class EcLoginScreen extends StatelessWidget {
                       ),
                     ]),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   PenField(
                     label: l10n.authPassword,
                     hint: l10n.authPasswordPlaceholder,
@@ -182,33 +210,31 @@ class EcLoginScreen extends StatelessWidget {
                       errorText: l10n.authPasswordRequired,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   Align(
                     alignment: Alignment.centerRight,
                     child: PenLink(l10n.authForgotPassword, onTap: onForgot),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 25),
                   _ValidatedPrimaryButton(
                     label: l10n.authSignIn,
                     onValid: onLogin,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 25),
                   PenLabelledRule(l10n.authOr),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 25),
                   PenOutlineButton(
                     label: l10n.authSignInGoogle,
                     icon: const PenGoogleMark(),
                     onPressed: onGoogle,
                   ),
-                  if (defaultTargetPlatform != TargetPlatform.android) ...[
-                    const SizedBox(height: 16),
-                    PenOutlineButton(
-                      label: l10n.authSignInApple,
-                      icon: const PenAppleMark(),
-                      onPressed: onApple,
-                    ),
-                  ],
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 12),
+                  PenOutlineButton(
+                    label: l10n.authSignInApple,
+                    icon: const PenAppleMark(),
+                    onPressed: onApple,
+                  ),
+                  const SizedBox(height: 25),
                   PenPromptLink(
                     prompt: l10n.authNoAccountPrompt.trim(),
                     action: l10n.authRegister,
@@ -218,8 +244,9 @@ class EcLoginScreen extends StatelessWidget {
               ),
             ),
             Positioned(
-              top: 24,
-              right: 24,
+              // Design `LangPill`: x=294, y=14 on the 390pt artboard.
+              top: 14,
+              right: 12,
               child: PenLangPill(label: 'VI', onTap: onLanguage),
             ),
           ],
@@ -237,24 +264,10 @@ class _EcPrimaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) {
-    final enabled = onPressed != null;
-    return EcTap(
-      onTap: onPressed,
-      child: Container(
-        height: 52,
-        width: double.infinity,
-        alignment: Alignment.center,
-        decoration: ecSquircleDecoration(
-          radius: 12,
-          color: enabled
-              ? BrandColors.dark
-              : BrandColors.dark.withValues(alpha: 0.4),
-        ),
-        child: Text(label, style: _t(16, FontWeight.w600, Colors.white)),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      // Design `BtnLogin`: 62pt tall, 14pt radius, 18/700 label — the shared
+      // primary button, not the older 52/12/16 one.
+      PenPrimaryButton(label: label, onPressed: onPressed);
 }
 
 /// Primary button that validates the enclosing [Form] before firing [onValid];

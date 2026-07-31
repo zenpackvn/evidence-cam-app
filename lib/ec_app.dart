@@ -1233,7 +1233,9 @@ CustomTransitionPage<void> _modalPage(
   name: s.uri.path,
   opaque: false,
   barrierDismissible: true,
-  barrierColor: Colors.black.withValues(alpha: 0.4),
+  // Each modal screen paints the design's own `Dim` rect (#A6636363) as part
+  // of its frame, so the route must not add a second scrim on top of it.
+  barrierColor: Colors.transparent,
   transitionDuration: const Duration(milliseconds: 200),
   transitionsBuilder: (context, animation, _, child) =>
       FadeTransition(opacity: animation, child: child),
@@ -2303,9 +2305,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     }
     // An order every clip has been deleted from is an empty shell — nothing
     // left to review, so it shouldn't linger in the list at all.
-    final visibleOrders = _orders
-        .where((o) => _evidenceCount(o) > 0)
-        .toList();
+    final visibleOrders = _orders.where((o) => _evidenceCount(o) > 0).toList();
     final rows = visibleOrders.map((o) => _toRow(context.l10n, o)).toList();
     return ListenableBuilder(
       listenable: Listenable.merge([
@@ -2535,9 +2535,7 @@ class _EvidenceCountOverrides extends ChangeNotifier {
 
   void report(String tracking, int count, int errorCount) {
     final current = _byTracking[tracking];
-    if (current != null &&
-        current.$1 == count &&
-        current.$2 == errorCount) {
+    if (current != null && current.$1 == count && current.$2 == errorCount) {
       return;
     }
     _byTracking[tracking] = (count, errorCount);
@@ -3190,8 +3188,7 @@ GoRouter _buildRouter(
         // routing to /login. A still-signed-in user goes straight to shop
         // selection, same destination a fresh login lands on.
         builder: (c, s) => EcSplashScreen(
-          onStart: () =>
-              c.go(auth.currentUser != null ? '/shops' : '/login'),
+          onStart: () => c.go(auth.currentUser != null ? '/shops' : '/login'),
         ),
       ),
       GoRoute(

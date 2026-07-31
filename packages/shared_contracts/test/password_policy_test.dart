@@ -17,7 +17,10 @@ void main() {
 
     test('từ chối khi thiếu chữ hoặc thiếu số', () {
       expect(passwordProblem('123456789'), PasswordProblem.needsLetterAndDigit);
-      expect(passwordProblem('matkhaudai'), PasswordProblem.needsLetterAndDigit);
+      expect(
+        passwordProblem('matkhaudai'),
+        PasswordProblem.needsLetterAndDigit,
+      );
     });
 
     test('từ chối mật khẩu phổ biến', () {

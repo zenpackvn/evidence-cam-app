@@ -301,7 +301,8 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         bloc: _bloc,
         listenWhen: (previous, current) =>
             !previous.lowStorageWarning && current.lowStorageWarning,
-        listener: (context, state) => unawaited(_showLowStorageWarning(context)),
+        listener: (context, state) =>
+            unawaited(_showLowStorageWarning(context)),
         child: BlocBuilder<RecordingSessionBloc, RecordingSessionState>(
           bloc: _bloc,
           builder: (context, state) => _buildScreen(state),
@@ -312,7 +313,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
   Widget _buildScreen(RecordingSessionState state) {
     final preview = _buildPreview(state);
-    final zoomLabel = '${state.zoom.toStringAsFixed(1)}x';
     final closedCode = state.cutoverFromCode;
 
     if (state.isRecording && closedCode != null) {
@@ -327,7 +327,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         newCode: state.code,
         newDuration: _formatElapsed(state.elapsed),
         typeLabel: state.typeLabel,
-        zoomLabel: zoomLabel,
         resolutionLabel: state.resolutionLabel,
         preview: preview,
         onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
@@ -343,14 +342,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           code: state.code,
           duration: _formatElapsed(state.elapsed),
           typeLabel: state.typeLabel,
-          zoomLabel: zoomLabel,
           resolutionLabel: state.resolutionLabel,
           preview: preview,
           onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
           onPickType: null,
           onSettings: null,
-          onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
-          onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
           onNavOrders: () =>
               unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
           onNavAccount: () =>
@@ -365,12 +361,9 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           code: state.code,
           duration: _formatElapsed(state.elapsed),
           typeLabel: state.typeLabel,
-          zoomLabel: zoomLabel,
           resolutionLabel: state.resolutionLabel,
           preview: preview,
           onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
-          onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
-          onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
           onStop: () => _bloc.add(const RecordingStopRequested()),
         );
       }
@@ -380,14 +373,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         code: state.code,
         elapsed: _formatElapsed(state.elapsed),
         typeLabel: state.typeLabel,
-        zoomLabel: zoomLabel,
         resolutionLabel: state.resolutionLabel,
         preview: preview,
         onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
         onPickType: null,
         onSettings: null,
-        onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
-        onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
         onNavOrders: () => unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
         onNavAccount: () =>
             unawaited(_leaveAfterFinalizing(widget.onNavAccount)),
@@ -399,14 +389,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       shopName: widget.shopName,
       queueCount: widget.queueCount,
       typeLabel: state.typeLabel,
-      zoomLabel: zoomLabel,
       resolutionLabel: state.resolutionLabel,
       preview: preview,
       onBack: widget.onBack,
       onPickType: _pickType,
       onSettings: _pickType,
-      onZoomIn: () => _bloc.add(const RecordingZoomAdjusted(0.5)),
-      onZoomOut: () => _bloc.add(const RecordingZoomAdjusted(-0.5)),
       onResolution: () => _bloc.add(const RecordingResolutionCycled()),
       onFlipCamera: state.hasMultipleCameras
           ? () => _bloc.add(const RecordingCameraFlipped())

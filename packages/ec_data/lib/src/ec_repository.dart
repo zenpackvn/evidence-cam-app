@@ -53,6 +53,7 @@ abstract interface class EcRepository {
   );
   Future<void> deleteVideoType(String shopId, String typeId);
   Future<QuotaDto> quota({String? shopId});
+
   /// A page of orders, newest first. [uploadState] / [fromTs] / [videoTypeId]
   /// are the "Vận đơn" tab's three filters; they are applied by the backend
   /// because the list is paged and a client-side filter would only ever see

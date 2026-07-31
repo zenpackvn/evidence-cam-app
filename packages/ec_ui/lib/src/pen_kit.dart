@@ -45,8 +45,10 @@ abstract final class PenColors {
   /// `--chart-2` — the lighter green, used for success text only.
   static const success = Color(0xFF1F9047);
 
-  /// `--chart-5` — screen titles and links read blue in this design.
-  static const link = Color(0xFF2266A4);
+  /// Links and link-like labels. `--primary`, same green as the primary
+  /// button: design-dna law 2 puts links in `--primary`, and `--chart-5` blue
+  /// is chart-only — the design file no longer uses `#2266A4` anywhere.
+  static const link = Color(0xFF16522C);
 
   /// `--destructive` — REC, delete, errors.
   static const danger = Color(0xFFD02D27);
@@ -125,6 +127,7 @@ class PenPrimaryButton extends StatelessWidget {
     this.onPressed,
     this.height = 62,
     this.color = PenColors.primary,
+    this.labelSize = 18,
     super.key,
   });
 
@@ -132,6 +135,9 @@ class PenPrimaryButton extends StatelessWidget {
   final IconData? icon;
   final VoidCallback? onPressed;
   final double height;
+
+  /// Label point size — 18 everywhere except the splash's 20pt "Bắt đầu".
+  final double labelSize;
 
   /// Fill color — defaults to the brand green; pass [PenColors.danger] for a
   /// destructive primary action (e.g. "Xóa vĩnh viễn").
@@ -156,7 +162,7 @@ class PenPrimaryButton extends StatelessWidget {
           Flexible(
             child: PenText(
               label,
-              size: 18,
+              size: labelSize,
               color: PenColors.card,
               weight: FontWeight.w700,
               softWrap: false,
@@ -466,12 +472,12 @@ class PenLangPill extends StatelessWidget {
         stroke: PenColors.line,
         radius: 999,
         axis: PenAxis.row,
-        gap: 7,
+        gap: 6,
         cross: CrossAxisAlignment.center,
         hugMain: true,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         children: [
-          const Icon(LucideIcons.globe, size: 18, color: PenColors.ink),
+          const Icon(LucideIcons.globe, size: 16, color: PenColors.ink),
           PenText(
             label,
             size: 14,
@@ -479,7 +485,7 @@ class PenLangPill extends StatelessWidget {
             weight: FontWeight.w700,
             softWrap: false,
           ),
-          const Icon(LucideIcons.chevronDown, size: 15, color: PenColors.mut),
+          const Icon(LucideIcons.chevronDown, size: 14, color: PenColors.mut),
         ],
       ),
     );
@@ -492,7 +498,7 @@ class PenBrandHeader extends StatelessWidget {
   const PenBrandHeader({
     required this.title,
     this.subtitle,
-    this.logoSize = 76.8,
+    this.logoSize = 40,
     super.key,
   });
 
@@ -502,6 +508,8 @@ class PenBrandHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // `BrandHeader` (gap 3) then `Title` (padding-top 12, gap 4) — the same
+    // block opens F1-02, F1-03 and F1-04.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -510,32 +518,33 @@ class PenBrandHeader extends StatelessWidget {
           package: 'ec_ui',
           width: logoSize,
           height: logoSize,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
         ),
+        const SizedBox(height: 3),
         PenText(
           'ZenPack',
-          size: 30,
+          size: 18,
           color: PenColors.primary,
           weight: FontWeight.w800,
           softWrap: false,
         ),
         const Padding(
-          padding: EdgeInsets.only(top: 8, left: 40, right: 40),
+          padding: EdgeInsets.only(top: 9),
           child: PenOrnamentRule(),
         ),
         Padding(
-          padding: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.only(top: 12),
           child: Column(
             children: [
               PenText(
                 title,
                 size: 30,
-                color: PenColors.link,
+                color: PenColors.primary,
                 weight: FontWeight.w800,
                 align: TextAlign.center,
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 5),
+                const SizedBox(height: 4),
                 PenText(
                   subtitle!,
                   size: 14,
@@ -553,7 +562,17 @@ class PenBrandHeader extends StatelessWidget {
 
 /// Hairline — sparkle — hairline.
 class PenOrnamentRule extends StatelessWidget {
-  const PenOrnamentRule({super.key});
+  const PenOrnamentRule({
+    this.lineWidth = 44,
+    this.gap = 8,
+    this.sparkleSize = 10,
+    super.key,
+  });
+
+  /// Each hairline's width — 44 in the auth headers, 78 on the splash.
+  final double lineWidth;
+  final double gap;
+  final double sparkleSize;
 
   static const _sparkle =
       'M7 0l1.6 5.4 5.4 1.6-5.4 1.6-1.6 5.4-1.6-5.4-5.4-1.6 5.4-1.6z';
@@ -561,20 +580,21 @@ class PenOrnamentRule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PenBox(
-      width: double.infinity,
       axis: PenAxis.row,
-      gap: 10,
+      gap: gap,
+      main: MainAxisAlignment.center,
       cross: CrossAxisAlignment.center,
-      children: const [
-        Expanded(child: PenBox(height: 1, fill: PenColors.soft)),
+      hugMain: true,
+      children: [
+        PenBox(width: lineWidth, height: 1, fill: PenColors.soft),
         PenPath(
           _sparkle,
-          viewBox: [0, 0, 14, 14],
-          width: 12,
-          height: 12,
+          viewBox: const [0, 0, 14, 14],
+          width: sparkleSize,
+          height: sparkleSize,
           color: PenColors.line,
         ),
-        Expanded(child: PenBox(height: 1, fill: PenColors.soft)),
+        PenBox(width: lineWidth, height: 1, fill: PenColors.soft),
       ],
     );
   }
@@ -944,6 +964,7 @@ class PenSheet extends StatelessWidget {
     required this.children,
     this.padding = const EdgeInsets.fromLTRB(22, 12, 22, 20),
     this.onDismiss,
+    this.dim = const Color(0xA6636363),
     super.key,
   });
 
@@ -953,6 +974,11 @@ class PenSheet extends StatelessWidget {
   /// What tapping the backdrop does; defaults to popping the route.
   final VoidCallback? onDismiss;
 
+  /// The design's `Dim` rect behind the sheet. Dialogs over a light screen use
+  /// the default grey wash; sheets that need more separation (the video-detail
+  /// sheet) darken with ink instead.
+  final Color dim;
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -961,7 +987,7 @@ class PenSheet extends StatelessWidget {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: onDismiss ?? () => Navigator.of(context).maybePop(),
-            child: const ColoredBox(color: Color(0xA6636363)),
+            child: ColoredBox(color: dim),
           ),
         ),
         Align(

@@ -301,6 +301,9 @@ class EcVideoDetailScreen extends StatelessWidget {
     final l10n = context.l10n;
     return PenSheet(
       onDismiss: onClose,
+      // Design `Sheet`: padding [12, 20, 20, 20], over an ink `Dim`.
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      dim: const Color(0x99161616),
       children: [
         const SizedBox(height: 18),
         Row(
@@ -958,8 +961,10 @@ class _EcDetailInfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 14),
       children: [
         PenText(label, size: 14, color: PenColors.mut, softWrap: false),
-        const Spacer(),
-        Flexible(
+        // The design's spacer is the flexible one and the value hugs its text,
+        // so the value gets all the leftover room and only ellipsises when it
+        // genuinely cannot fit.
+        Expanded(
           child: PenText(
             value,
             size: 14,

@@ -671,7 +671,7 @@ abstract class AppLocalizations {
   /// No description provided for @statOrdersToday.
   ///
   /// In en, this message translates to:
-  /// **'Orders today'**
+  /// **'Orders'**
   String get statOrdersToday;
 
   /// No description provided for @statVideosRecorded.
@@ -896,6 +896,18 @@ abstract class AppLocalizations {
   /// **'Remaining this month'**
   String get quotaRemainingThisMonth;
 
+  /// No description provided for @quotaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track the storage you are using'**
+  String get quotaSubtitle;
+
+  /// No description provided for @quotaRemainingAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} remaining'**
+  String quotaRemainingAmount(String amount);
+
   /// No description provided for @quotaStorage.
   ///
   /// In en, this message translates to:
@@ -935,7 +947,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteAccountBodyStep1.
   ///
   /// In en, this message translates to:
-  /// **'All your videos, orders and dossiers will be permanently deleted. This action cannot be undone.'**
+  /// **'All your videos, shipments and dossiers will be permanently deleted. This action cannot be undone.'**
   String get deleteAccountBodyStep1;
 
   /// No description provided for @deleteAccountBodyStep2.
@@ -953,7 +965,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteStep1Hint.
   ///
   /// In en, this message translates to:
-  /// **'Step 1/2 — will ask for confirmation again · then sign out'**
+  /// **'Step 1/2 — will ask for confirmation again'**
   String get deleteStep1Hint;
 
   /// No description provided for @deleteStep2Hint.
@@ -983,7 +995,7 @@ abstract class AppLocalizations {
   /// No description provided for @passwordMinHint.
   ///
   /// In en, this message translates to:
-  /// **'At least 8 characters, with letters and numbers'**
+  /// **'At least 8 characters'**
   String get passwordMinHint;
 
   /// No description provided for @passwordNewRequired.
@@ -1031,7 +1043,7 @@ abstract class AppLocalizations {
   /// No description provided for @passwordChangeLogoutNote.
   ///
   /// In en, this message translates to:
-  /// **'(You\'ll be signed out of other devices after changing)'**
+  /// **'You\'ll be signed out of other devices after changing'**
   String get passwordChangeLogoutNote;
 
   /// No description provided for @navOrders.
@@ -1121,7 +1133,7 @@ abstract class AppLocalizations {
   /// No description provided for @deletePendingProfilesWarning.
   ///
   /// In en, this message translates to:
-  /// **'You still have {count} open claim dossiers — their share links will stop working'**
+  /// **'You still have {count} dossiers “sent to the platform” — their share links will stop working'**
   String deletePendingProfilesWarning(int count);
 
   /// No description provided for @detailRecordedTime.
@@ -1187,7 +1199,7 @@ abstract class AppLocalizations {
   /// No description provided for @detailDownloadNote.
   ///
   /// In en, this message translates to:
-  /// **'Download the video to attach to a marketplace complaint form'**
+  /// **'Owner/manager only · for when the marketplace asks for the original file'**
   String get detailDownloadNote;
 
   /// No description provided for @detailDownloadPhoto.
@@ -1211,7 +1223,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteVideoNote.
   ///
   /// In en, this message translates to:
-  /// **'Account owner / shop manager only · permanent, cannot be undone'**
+  /// **'Owner/manager only · locked while a dossier is open · two-step confirm'**
   String get deleteVideoNote;
 
   /// No description provided for @deleteVideoConfirmTitle.
@@ -1247,7 +1259,7 @@ abstract class AppLocalizations {
   /// No description provided for @ordersPendingEvidenceWarning.
   ///
   /// In en, this message translates to:
-  /// **'{count} evidence not uploaded'**
+  /// **'{count} evidence not uploaded · the dossier link will be incomplete'**
   String ordersPendingEvidenceWarning(int count);
 
   /// No description provided for @captureFramePrompt.
@@ -1433,14 +1445,20 @@ abstract class AppLocalizations {
   /// No description provided for @manualTrackingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter tracking code manually'**
+  /// **'Enter tracking code'**
   String get manualTrackingTitle;
 
   /// No description provided for @manualTrackingNote.
   ///
   /// In en, this message translates to:
-  /// **'Use when the bill is blurry — no more than 10 seconds'**
+  /// **'Type it in or scan the code again'**
   String get manualTrackingNote;
+
+  /// No description provided for @commonDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get commonDone;
 
   /// No description provided for @startRecording.
   ///
@@ -1567,6 +1585,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Forgot password?'**
   String get authForgotPassword;
+
+  /// No description provided for @registerWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign up with Google'**
+  String get registerWithGoogle;
+
+  /// No description provided for @registerWithApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign up with Apple'**
+  String get registerWithApple;
 
   /// No description provided for @authSignInGoogle.
   ///

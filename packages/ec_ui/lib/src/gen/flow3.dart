@@ -251,13 +251,13 @@ class PenF301 extends StatelessWidget {
           bottom: 0,
           child: PenBox(
             width: 390,
-            height: 118,
+            height: 76,
             fill: const Color(0xFF050505),
           ),
         ),
         Positioned(
           left: 0,
-          bottom: 117,
+          bottom: 75,
           child: PenBox(
             width: 390,
             height: 1,
@@ -266,11 +266,10 @@ class PenF301 extends StatelessWidget {
         ),
         Positioned(
           left: 0,
-          bottom: 110,
+          bottom: 59,
           child: PenBox(
             width: 390,
             axis: PenAxis.column,
-            gap: 10,
             cross: CrossAxisAlignment.center,
             hugMain: true,
             children: [
@@ -302,7 +301,6 @@ class PenF301 extends StatelessWidget {
                   ),
                   PenBox(
                     fill: const Color(0xCC1C1C1E),
-                    stroke: const Color(0x14FFFFFF),
                     radius: 999,
                     axis: PenAxis.row,
                     gap: 2,
@@ -311,43 +309,26 @@ class PenF301 extends StatelessWidget {
                     padding: EdgeInsets.all(4),
                     children: [
                       PenBox(
-                        width: 44,
-                        height: 34,
-                        fill: const Color(0x00000000),
+                        fill: const Color(0x1FFFFFFF),
                         radius: 999,
                         axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
+                        hugMain: true,
+                        padding: EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 16,
+                        ),
                         children: [
                           PenText(
-                            '.5',
-                            size: 13,
-                            color: const Color(0xB3FFFFFF),
-                            weight: FontWeight.w700,
-                            softWrap: false,
-                          ),
-                        ],
-                      ),
-                      PenBox(
-                        width: 44,
-                        height: 34,
-                        fill: const Color(0x29FFFFFF),
-                        radius: 999,
-                        axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          PenText(
-                            '1x',
-                            size: 14,
+                            'Đóng hàng',
+                            size: 15,
                             color: const Color(0xFF67BB75),
-                            weight: FontWeight.w700,
+                            weight: FontWeight.w800,
                             softWrap: false,
                           ),
                         ],
                       ),
                       PenBox(
-                        width: 44,
+                        width: 34,
                         height: 34,
                         fill: const Color(0x00000000),
                         radius: 999,
@@ -355,12 +336,10 @@ class PenF301 extends StatelessWidget {
                         main: MainAxisAlignment.center,
                         cross: CrossAxisAlignment.center,
                         children: [
-                          PenText(
-                            '2',
-                            size: 13,
+                          Icon(
+                            LucideIcons.settings,
+                            size: 19,
                             color: const Color(0xB3FFFFFF),
-                            weight: FontWeight.w700,
-                            softWrap: false,
                           ),
                         ],
                       ),
@@ -380,65 +359,6 @@ class PenF301 extends StatelessWidget {
                         LucideIcons.refreshCw,
                         size: 21,
                         color: const Color(0xFFFFFFFF),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              PenBox(
-                fill: const Color(0xCC1C1C1E),
-                radius: 999,
-                axis: PenAxis.row,
-                gap: 2,
-                cross: CrossAxisAlignment.center,
-                hugMain: true,
-                padding: EdgeInsets.all(4),
-                children: [
-                  PenBox(
-                    fill: const Color(0x00000000),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Trả hàng',
-                        size: 13,
-                        color: const Color(0x8CFFFFFF),
-                        weight: FontWeight.w500,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                  PenBox(
-                    fill: const Color(0x1FFFFFFF),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Đóng hàng',
-                        size: 15,
-                        color: const Color(0xFF67BB75),
-                        weight: FontWeight.w800,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                  PenBox(
-                    fill: const Color(0x00000000),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Đơn vị VC',
-                        size: 13,
-                        color: const Color(0x8CFFFFFF),
-                        weight: FontWeight.w500,
-                        softWrap: false,
                       ),
                     ],
                   ),
@@ -1115,10 +1035,10 @@ class PenF303 extends StatelessWidget {
                 ],
               ),
               PenText(
-                'Ghi hình',
-                size: 18,
+                'Shop ABC',
+                size: 24,
                 color: const Color(0xFFFFFFFF),
-                weight: FontWeight.w600,
+                weight: FontWeight.w800,
                 softWrap: false,
               ),
               Expanded(
@@ -1307,13 +1227,13 @@ class PenF303 extends StatelessWidget {
           bottom: 0,
           child: PenBox(
             width: 390,
-            height: 118,
+            height: 76,
             fill: const Color(0xFF050505),
           ),
         ),
         Positioned(
           left: 0,
-          bottom: 117,
+          bottom: 75,
           child: PenBox(
             width: 390,
             height: 1,
@@ -1322,11 +1242,10 @@ class PenF303 extends StatelessWidget {
         ),
         Positioned(
           left: 0,
-          bottom: 110,
+          bottom: 59,
           child: PenBox(
             width: 390,
             axis: PenAxis.column,
-            gap: 10,
             cross: CrossAxisAlignment.center,
             hugMain: true,
             children: [
@@ -1358,7 +1277,6 @@ class PenF303 extends StatelessWidget {
                   ),
                   PenBox(
                     fill: const Color(0xCC1C1C1E),
-                    stroke: const Color(0x14FFFFFF),
                     radius: 999,
                     axis: PenAxis.row,
                     gap: 2,
@@ -1367,43 +1285,26 @@ class PenF303 extends StatelessWidget {
                     padding: EdgeInsets.all(4),
                     children: [
                       PenBox(
-                        width: 44,
-                        height: 34,
-                        fill: const Color(0x00000000),
+                        fill: const Color(0x1FFFFFFF),
                         radius: 999,
                         axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
+                        hugMain: true,
+                        padding: EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 16,
+                        ),
                         children: [
                           PenText(
-                            '.5',
-                            size: 13,
-                            color: const Color(0xB3FFFFFF),
-                            weight: FontWeight.w700,
-                            softWrap: false,
-                          ),
-                        ],
-                      ),
-                      PenBox(
-                        width: 44,
-                        height: 34,
-                        fill: const Color(0x29FFFFFF),
-                        radius: 999,
-                        axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          PenText(
-                            '1x',
-                            size: 14,
+                            'Đóng hàng',
+                            size: 15,
                             color: const Color(0xFF67BB75),
-                            weight: FontWeight.w700,
+                            weight: FontWeight.w800,
                             softWrap: false,
                           ),
                         ],
                       ),
                       PenBox(
-                        width: 44,
+                        width: 34,
                         height: 34,
                         fill: const Color(0x00000000),
                         radius: 999,
@@ -1411,12 +1312,10 @@ class PenF303 extends StatelessWidget {
                         main: MainAxisAlignment.center,
                         cross: CrossAxisAlignment.center,
                         children: [
-                          PenText(
-                            '2',
-                            size: 13,
+                          Icon(
+                            LucideIcons.settings,
+                            size: 19,
                             color: const Color(0xB3FFFFFF),
-                            weight: FontWeight.w700,
-                            softWrap: false,
                           ),
                         ],
                       ),
@@ -1436,65 +1335,6 @@ class PenF303 extends StatelessWidget {
                         LucideIcons.refreshCw,
                         size: 21,
                         color: const Color(0xFFFFFFFF),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              PenBox(
-                fill: const Color(0xCC1C1C1E),
-                radius: 999,
-                axis: PenAxis.row,
-                gap: 2,
-                cross: CrossAxisAlignment.center,
-                hugMain: true,
-                padding: EdgeInsets.all(4),
-                children: [
-                  PenBox(
-                    fill: const Color(0x00000000),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Trả hàng',
-                        size: 13,
-                        color: const Color(0x8CFFFFFF),
-                        weight: FontWeight.w500,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                  PenBox(
-                    fill: const Color(0x1FFFFFFF),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Đóng hàng',
-                        size: 15,
-                        color: const Color(0xFF67BB75),
-                        weight: FontWeight.w800,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                  PenBox(
-                    fill: const Color(0x00000000),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Đơn vị VC',
-                        size: 13,
-                        color: const Color(0x8CFFFFFF),
-                        weight: FontWeight.w500,
-                        softWrap: false,
                       ),
                     ],
                   ),
@@ -1568,10 +1408,10 @@ class PenF304 extends StatelessWidget {
                 ],
               ),
               PenText(
-                'Ghi hình đơn hàng',
-                size: 20,
+                'Shop ABC',
+                size: 24,
                 color: const Color(0xFFFFFFFF),
-                weight: FontWeight.w700,
+                weight: FontWeight.w800,
                 softWrap: false,
               ),
               Expanded(
@@ -1580,35 +1420,35 @@ class PenF304 extends StatelessWidget {
                 ),
               ),
               PenBox(
-                width: 36,
-                height: 36,
                 fill: const Color(0xBF161616),
                 stroke: const Color(0xFF636363),
                 radius: 999,
                 axis: PenAxis.row,
-                main: MainAxisAlignment.center,
+                gap: 8,
                 cross: CrossAxisAlignment.center,
+                hugMain: true,
+                padding: EdgeInsets.symmetric(vertical: 9, horizontal: 15),
                 children: [
                   Icon(
                     LucideIcons.cloudUpload,
                     size: 19,
                     color: const Color(0xFFFFFFFF),
                   ),
+                  PenText(
+                    '3',
+                    size: 16,
+                    color: const Color(0xFFFFFFFF),
+                    weight: FontWeight.w700,
+                    softWrap: false,
+                  ),
                 ],
-              ),
-              PenText(
-                '3',
-                size: 16,
-                color: const Color(0xFFFFFFFF),
-                weight: FontWeight.w700,
-                softWrap: false,
               ),
             ],
           ),
         ),
         Positioned(
           left: 40,
-          top: 190,
+          top: 381,
           child: PenBox(
             width: 310,
             axis: PenAxis.column,
@@ -1616,13 +1456,6 @@ class PenF304 extends StatelessWidget {
             cross: CrossAxisAlignment.center,
             hugMain: true,
             children: [
-              PenText(
-                'Đã lưu',
-                size: 36,
-                color: const Color(0xFFFFFFFF),
-                weight: FontWeight.w800,
-                softWrap: false,
-              ),
               PenText(
                 'Chuẩn bị ghi hình tiếp theo',
                 size: 16,
@@ -1666,19 +1499,6 @@ class PenF304 extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
-        Positioned(
-          left: 40,
-          top: 386,
-          child: SizedBox(
-            width: 310,
-            child: PenText(
-              'Tự động chuyển sang đơn tiếp theo',
-              size: 12,
-              color: const Color(0xFF636363),
-              align: TextAlign.center,
-            ),
           ),
         ),
         Positioned(
@@ -1841,13 +1661,13 @@ class PenF304 extends StatelessWidget {
           bottom: 0,
           child: PenBox(
             width: 390,
-            height: 118,
+            height: 76,
             fill: const Color(0xFF050505),
           ),
         ),
         Positioned(
           left: 0,
-          bottom: 117,
+          bottom: 75,
           child: PenBox(
             width: 390,
             height: 1,
@@ -1856,11 +1676,10 @@ class PenF304 extends StatelessWidget {
         ),
         Positioned(
           left: 0,
-          bottom: 110,
+          bottom: 59,
           child: PenBox(
             width: 390,
             axis: PenAxis.column,
-            gap: 10,
             cross: CrossAxisAlignment.center,
             hugMain: true,
             children: [
@@ -1892,7 +1711,6 @@ class PenF304 extends StatelessWidget {
                   ),
                   PenBox(
                     fill: const Color(0xCC1C1C1E),
-                    stroke: const Color(0x14FFFFFF),
                     radius: 999,
                     axis: PenAxis.row,
                     gap: 2,
@@ -1901,43 +1719,26 @@ class PenF304 extends StatelessWidget {
                     padding: EdgeInsets.all(4),
                     children: [
                       PenBox(
-                        width: 44,
-                        height: 34,
-                        fill: const Color(0x00000000),
+                        fill: const Color(0x1FFFFFFF),
                         radius: 999,
                         axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
+                        hugMain: true,
+                        padding: EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 16,
+                        ),
                         children: [
                           PenText(
-                            '.5',
-                            size: 13,
-                            color: const Color(0xB3FFFFFF),
-                            weight: FontWeight.w700,
-                            softWrap: false,
-                          ),
-                        ],
-                      ),
-                      PenBox(
-                        width: 44,
-                        height: 34,
-                        fill: const Color(0x29FFFFFF),
-                        radius: 999,
-                        axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          PenText(
-                            '1x',
-                            size: 14,
+                            'Đóng hàng',
+                            size: 15,
                             color: const Color(0xFF67BB75),
-                            weight: FontWeight.w700,
+                            weight: FontWeight.w800,
                             softWrap: false,
                           ),
                         ],
                       ),
                       PenBox(
-                        width: 44,
+                        width: 34,
                         height: 34,
                         fill: const Color(0x00000000),
                         radius: 999,
@@ -1945,12 +1746,10 @@ class PenF304 extends StatelessWidget {
                         main: MainAxisAlignment.center,
                         cross: CrossAxisAlignment.center,
                         children: [
-                          PenText(
-                            '2',
-                            size: 13,
+                          Icon(
+                            LucideIcons.settings,
+                            size: 19,
                             color: const Color(0xB3FFFFFF),
-                            weight: FontWeight.w700,
-                            softWrap: false,
                           ),
                         ],
                       ),
@@ -1970,65 +1769,6 @@ class PenF304 extends StatelessWidget {
                         LucideIcons.refreshCw,
                         size: 21,
                         color: const Color(0xFFFFFFFF),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              PenBox(
-                fill: const Color(0xCC1C1C1E),
-                radius: 999,
-                axis: PenAxis.row,
-                gap: 2,
-                cross: CrossAxisAlignment.center,
-                hugMain: true,
-                padding: EdgeInsets.all(4),
-                children: [
-                  PenBox(
-                    fill: const Color(0x00000000),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Trả hàng',
-                        size: 13,
-                        color: const Color(0x8CFFFFFF),
-                        weight: FontWeight.w500,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                  PenBox(
-                    fill: const Color(0x1FFFFFFF),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Đóng hàng',
-                        size: 15,
-                        color: const Color(0xFF67BB75),
-                        weight: FontWeight.w800,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                  PenBox(
-                    fill: const Color(0x00000000),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Đơn vị VC',
-                        size: 13,
-                        color: const Color(0x8CFFFFFF),
-                        weight: FontWeight.w500,
-                        softWrap: false,
                       ),
                     ],
                   ),
@@ -2121,7 +1861,7 @@ class PenF305 extends StatelessWidget {
                 gap: 8,
                 cross: CrossAxisAlignment.center,
                 hugMain: true,
-                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 14),
+                padding: EdgeInsets.symmetric(vertical: 9, horizontal: 15),
                 children: [
                   Icon(
                     LucideIcons.cloudUpload,
@@ -2142,7 +1882,7 @@ class PenF305 extends StatelessWidget {
         ),
         Positioned(
           left: 16,
-          top: 184,
+          top: 393,
           child: PenBox(
             width: 358,
             fill: const Color(0xD9161616),
@@ -2269,13 +2009,13 @@ class PenF305 extends StatelessWidget {
           bottom: 0,
           child: PenBox(
             width: 390,
-            height: 118,
+            height: 76,
             fill: const Color(0xFF050505),
           ),
         ),
         Positioned(
           left: 0,
-          bottom: 117,
+          bottom: 75,
           child: PenBox(
             width: 390,
             height: 1,
@@ -2284,11 +2024,10 @@ class PenF305 extends StatelessWidget {
         ),
         Positioned(
           left: 0,
-          bottom: 110,
+          bottom: 59,
           child: PenBox(
             width: 390,
             axis: PenAxis.column,
-            gap: 10,
             cross: CrossAxisAlignment.center,
             hugMain: true,
             children: [
@@ -2320,7 +2059,6 @@ class PenF305 extends StatelessWidget {
                   ),
                   PenBox(
                     fill: const Color(0xCC1C1C1E),
-                    stroke: const Color(0x14FFFFFF),
                     radius: 999,
                     axis: PenAxis.row,
                     gap: 2,
@@ -2329,43 +2067,26 @@ class PenF305 extends StatelessWidget {
                     padding: EdgeInsets.all(4),
                     children: [
                       PenBox(
-                        width: 44,
-                        height: 34,
-                        fill: const Color(0x00000000),
+                        fill: const Color(0x1FFFFFFF),
                         radius: 999,
                         axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
+                        hugMain: true,
+                        padding: EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 16,
+                        ),
                         children: [
                           PenText(
-                            '.5',
-                            size: 13,
-                            color: const Color(0xB3FFFFFF),
-                            weight: FontWeight.w700,
-                            softWrap: false,
-                          ),
-                        ],
-                      ),
-                      PenBox(
-                        width: 44,
-                        height: 34,
-                        fill: const Color(0x29FFFFFF),
-                        radius: 999,
-                        axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          PenText(
-                            '1x',
-                            size: 14,
+                            'Đóng hàng',
+                            size: 15,
                             color: const Color(0xFF67BB75),
-                            weight: FontWeight.w700,
+                            weight: FontWeight.w800,
                             softWrap: false,
                           ),
                         ],
                       ),
                       PenBox(
-                        width: 44,
+                        width: 34,
                         height: 34,
                         fill: const Color(0x00000000),
                         radius: 999,
@@ -2373,12 +2094,10 @@ class PenF305 extends StatelessWidget {
                         main: MainAxisAlignment.center,
                         cross: CrossAxisAlignment.center,
                         children: [
-                          PenText(
-                            '2',
-                            size: 13,
+                          Icon(
+                            LucideIcons.settings,
+                            size: 19,
                             color: const Color(0xB3FFFFFF),
-                            weight: FontWeight.w700,
-                            softWrap: false,
                           ),
                         ],
                       ),
@@ -2398,65 +2117,6 @@ class PenF305 extends StatelessWidget {
                         LucideIcons.refreshCw,
                         size: 21,
                         color: const Color(0xFFFFFFFF),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              PenBox(
-                fill: const Color(0xCC1C1C1E),
-                radius: 999,
-                axis: PenAxis.row,
-                gap: 2,
-                cross: CrossAxisAlignment.center,
-                hugMain: true,
-                padding: EdgeInsets.all(4),
-                children: [
-                  PenBox(
-                    fill: const Color(0x00000000),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Trả hàng',
-                        size: 13,
-                        color: const Color(0x8CFFFFFF),
-                        weight: FontWeight.w500,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                  PenBox(
-                    fill: const Color(0x1FFFFFFF),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Đóng hàng',
-                        size: 15,
-                        color: const Color(0xFF67BB75),
-                        weight: FontWeight.w800,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                  PenBox(
-                    fill: const Color(0x00000000),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Đơn vị VC',
-                        size: 13,
-                        color: const Color(0x8CFFFFFF),
-                        weight: FontWeight.w500,
-                        softWrap: false,
                       ),
                     ],
                   ),
@@ -2610,7 +2270,7 @@ class PenF306 extends StatelessWidget {
                     Icon(
                       LucideIcons.info,
                       size: 22,
-                      color: const Color(0xFF2266A4),
+                      color: const Color(0xFF16522C),
                     ),
                     Expanded(
                       child: PenText(
@@ -2633,7 +2293,7 @@ class PenF306 extends StatelessWidget {
                         PenText(
                           'Nâng gói',
                           size: 14,
-                          color: const Color(0xFF2266A4),
+                          color: const Color(0xFF16522C),
                           weight: FontWeight.w600,
                           softWrap: false,
                         ),
@@ -2814,7 +2474,7 @@ class PenF306 extends StatelessWidget {
                                 children: [
                                   PenBox(
                                     width: 75,
-                                    height: 7,
+                                    height: double.infinity,
                                     fill: const Color(0xFF161616),
                                     radius: 4,
                                   ),
@@ -3119,28 +2779,11 @@ class PenF307 extends StatelessWidget {
                 ],
               ),
               PenText(
-                'Ghi hình',
-                size: 17,
+                'Shop ABC',
+                size: 24,
                 color: const Color(0xFFFFFFFF),
-                weight: FontWeight.w700,
+                weight: FontWeight.w800,
                 softWrap: false,
-              ),
-              PenBox(
-                width: 32,
-                height: 32,
-                fill: const Color(0xFF16522C),
-                stroke: const Color(0xFF1F9047),
-                radius: 999,
-                axis: PenAxis.row,
-                main: MainAxisAlignment.center,
-                cross: CrossAxisAlignment.center,
-                children: [
-                  Icon(
-                    LucideIcons.lock,
-                    size: 17,
-                    color: const Color(0xFFFFFFFF),
-                  ),
-                ],
               ),
               Expanded(
                 child: PenBox(
@@ -3155,11 +2798,11 @@ class PenF307 extends StatelessWidget {
                 gap: 8,
                 cross: CrossAxisAlignment.center,
                 hugMain: true,
-                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 14),
+                padding: EdgeInsets.symmetric(vertical: 9, horizontal: 15),
                 children: [
                   Icon(
                     LucideIcons.cloudUpload,
-                    size: 18,
+                    size: 19,
                     color: const Color(0xFFFFFFFF),
                   ),
                   PenText(
@@ -3280,13 +2923,13 @@ class PenF307 extends StatelessWidget {
           bottom: 0,
           child: PenBox(
             width: 390,
-            height: 118,
+            height: 76,
             fill: const Color(0xFF050505),
           ),
         ),
         Positioned(
           left: 0,
-          bottom: 117,
+          bottom: 75,
           child: PenBox(
             width: 390,
             height: 1,
@@ -3295,11 +2938,10 @@ class PenF307 extends StatelessWidget {
         ),
         Positioned(
           left: 0,
-          bottom: 110,
+          bottom: 59,
           child: PenBox(
             width: 390,
             axis: PenAxis.column,
-            gap: 10,
             cross: CrossAxisAlignment.center,
             hugMain: true,
             children: [
@@ -3331,7 +2973,6 @@ class PenF307 extends StatelessWidget {
                   ),
                   PenBox(
                     fill: const Color(0xCC1C1C1E),
-                    stroke: const Color(0x14FFFFFF),
                     radius: 999,
                     axis: PenAxis.row,
                     gap: 2,
@@ -3340,43 +2981,26 @@ class PenF307 extends StatelessWidget {
                     padding: EdgeInsets.all(4),
                     children: [
                       PenBox(
-                        width: 44,
-                        height: 34,
-                        fill: const Color(0x00000000),
+                        fill: const Color(0x1FFFFFFF),
                         radius: 999,
                         axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
+                        hugMain: true,
+                        padding: EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 16,
+                        ),
                         children: [
                           PenText(
-                            '.5',
-                            size: 13,
-                            color: const Color(0xB3FFFFFF),
-                            weight: FontWeight.w700,
-                            softWrap: false,
-                          ),
-                        ],
-                      ),
-                      PenBox(
-                        width: 44,
-                        height: 34,
-                        fill: const Color(0x29FFFFFF),
-                        radius: 999,
-                        axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          PenText(
-                            '1x',
-                            size: 14,
+                            'Trả hàng',
+                            size: 15,
                             color: const Color(0xFF67BB75),
-                            weight: FontWeight.w700,
+                            weight: FontWeight.w800,
                             softWrap: false,
                           ),
                         ],
                       ),
                       PenBox(
-                        width: 44,
+                        width: 34,
                         height: 34,
                         fill: const Color(0x00000000),
                         radius: 999,
@@ -3384,12 +3008,10 @@ class PenF307 extends StatelessWidget {
                         main: MainAxisAlignment.center,
                         cross: CrossAxisAlignment.center,
                         children: [
-                          PenText(
-                            '2',
-                            size: 13,
+                          Icon(
+                            LucideIcons.settings,
+                            size: 19,
                             color: const Color(0xB3FFFFFF),
-                            weight: FontWeight.w700,
-                            softWrap: false,
                           ),
                         ],
                       ),
@@ -3409,65 +3031,6 @@ class PenF307 extends StatelessWidget {
                         LucideIcons.refreshCw,
                         size: 21,
                         color: const Color(0xFFFFFFFF),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              PenBox(
-                fill: const Color(0xCC1C1C1E),
-                radius: 999,
-                axis: PenAxis.row,
-                gap: 2,
-                cross: CrossAxisAlignment.center,
-                hugMain: true,
-                padding: EdgeInsets.all(4),
-                children: [
-                  PenBox(
-                    fill: const Color(0xFF2266A4),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Trả hàng',
-                        size: 15,
-                        color: const Color(0xFFFFFFFF),
-                        weight: FontWeight.w800,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                  PenBox(
-                    fill: const Color(0x00000000),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Đóng hàng',
-                        size: 13,
-                        color: const Color(0x8CFFFFFF),
-                        weight: FontWeight.w500,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                  PenBox(
-                    fill: const Color(0x00000000),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Đơn vị VC',
-                        size: 13,
-                        color: const Color(0x8CFFFFFF),
-                        weight: FontWeight.w500,
-                        softWrap: false,
                       ),
                     ],
                   ),
@@ -3541,10 +3104,10 @@ class PenF308 extends StatelessWidget {
                 ],
               ),
               PenText(
-                'Ghi hình',
-                size: 17,
+                'Shop ABC',
+                size: 24,
                 color: const Color(0xFFFFFFFF),
-                weight: FontWeight.w700,
+                weight: FontWeight.w800,
                 softWrap: false,
               ),
               Expanded(
@@ -3560,11 +3123,11 @@ class PenF308 extends StatelessWidget {
                 gap: 8,
                 cross: CrossAxisAlignment.center,
                 hugMain: true,
-                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 14),
+                padding: EdgeInsets.symmetric(vertical: 9, horizontal: 15),
                 children: [
                   Icon(
                     LucideIcons.cloudUpload,
-                    size: 18,
+                    size: 19,
                     color: const Color(0xFFFFFFFF),
                   ),
                   PenText(
@@ -3642,13 +3205,13 @@ class PenF308 extends StatelessWidget {
           bottom: 0,
           child: PenBox(
             width: 390,
-            height: 118,
+            height: 76,
             fill: const Color(0xFF050505),
           ),
         ),
         Positioned(
           left: 0,
-          bottom: 117,
+          bottom: 75,
           child: PenBox(
             width: 390,
             height: 1,
@@ -3724,11 +3287,10 @@ class PenF308 extends StatelessWidget {
         ),
         Positioned(
           left: 0,
-          bottom: 110,
+          bottom: 59,
           child: PenBox(
             width: 390,
             axis: PenAxis.column,
-            gap: 10,
             cross: CrossAxisAlignment.center,
             hugMain: true,
             children: [
@@ -3760,7 +3322,6 @@ class PenF308 extends StatelessWidget {
                   ),
                   PenBox(
                     fill: const Color(0xCC1C1C1E),
-                    stroke: const Color(0x14FFFFFF),
                     radius: 999,
                     axis: PenAxis.row,
                     gap: 2,
@@ -3769,43 +3330,26 @@ class PenF308 extends StatelessWidget {
                     padding: EdgeInsets.all(4),
                     children: [
                       PenBox(
-                        width: 44,
-                        height: 34,
-                        fill: const Color(0x00000000),
+                        fill: const Color(0x1FFFFFFF),
                         radius: 999,
                         axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
+                        hugMain: true,
+                        padding: EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 16,
+                        ),
                         children: [
                           PenText(
-                            '.5',
-                            size: 13,
-                            color: const Color(0xB3FFFFFF),
-                            weight: FontWeight.w700,
-                            softWrap: false,
-                          ),
-                        ],
-                      ),
-                      PenBox(
-                        width: 44,
-                        height: 34,
-                        fill: const Color(0x29FFFFFF),
-                        radius: 999,
-                        axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          PenText(
-                            '1x',
-                            size: 14,
+                            'Trả hàng',
+                            size: 15,
                             color: const Color(0xFF67BB75),
-                            weight: FontWeight.w700,
+                            weight: FontWeight.w800,
                             softWrap: false,
                           ),
                         ],
                       ),
                       PenBox(
-                        width: 44,
+                        width: 34,
                         height: 34,
                         fill: const Color(0x00000000),
                         radius: 999,
@@ -3813,12 +3357,10 @@ class PenF308 extends StatelessWidget {
                         main: MainAxisAlignment.center,
                         cross: CrossAxisAlignment.center,
                         children: [
-                          PenText(
-                            '2',
-                            size: 13,
+                          Icon(
+                            LucideIcons.settings,
+                            size: 19,
                             color: const Color(0xB3FFFFFF),
-                            weight: FontWeight.w700,
-                            softWrap: false,
                           ),
                         ],
                       ),
@@ -3838,65 +3380,6 @@ class PenF308 extends StatelessWidget {
                         LucideIcons.refreshCw,
                         size: 21,
                         color: const Color(0xFFFFFFFF),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              PenBox(
-                fill: const Color(0xCC1C1C1E),
-                radius: 999,
-                axis: PenAxis.row,
-                gap: 2,
-                cross: CrossAxisAlignment.center,
-                hugMain: true,
-                padding: EdgeInsets.all(4),
-                children: [
-                  PenBox(
-                    fill: const Color(0xFF2266A4),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Trả hàng',
-                        size: 15,
-                        color: const Color(0xFFFFFFFF),
-                        weight: FontWeight.w800,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                  PenBox(
-                    fill: const Color(0x00000000),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Đóng hàng',
-                        size: 13,
-                        color: const Color(0x8CFFFFFF),
-                        weight: FontWeight.w500,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                  PenBox(
-                    fill: const Color(0x00000000),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                    children: [
-                      PenText(
-                        'Đơn vị VC',
-                        size: 13,
-                        color: const Color(0x8CFFFFFF),
-                        weight: FontWeight.w500,
-                        softWrap: false,
                       ),
                     ],
                   ),
@@ -4096,10 +3579,10 @@ class PenF309 extends StatelessWidget {
               ),
               Expanded(
                 child: PenText(
-                  'Ghi hình',
-                  size: 17,
+                  'Shop ABC',
+                  size: 24,
                   color: const Color(0xFFFFFFFF),
-                  weight: FontWeight.w700,
+                  weight: FontWeight.w800,
                 ),
               ),
               PenBox(
@@ -4682,10 +4165,10 @@ class PenF310 extends StatelessWidget {
               ),
               Expanded(
                 child: PenText(
-                  'Ghi hình',
-                  size: 17,
+                  'Shop ABC',
+                  size: 24,
                   color: const Color(0xFFFFFFFF),
-                  weight: FontWeight.w700,
+                  weight: FontWeight.w800,
                 ),
               ),
               PenBox(
@@ -4841,7 +4324,7 @@ class PenF310 extends StatelessWidget {
                   PenText(
                     'Tạo loại video mới',
                     size: 24,
-                    color: const Color(0xFF2266A4),
+                    color: const Color(0xFF16522C),
                     weight: FontWeight.w800,
                     softWrap: false,
                   ),
@@ -5050,7 +4533,41 @@ class PenF310 extends StatelessWidget {
                             PenEllipse(
                               width: 42,
                               height: 42,
-                              color: const Color(0xFF161616),
+                              color: const Color(0xFF16522C),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: PenBox(
+                          height: 46,
+                          stroke: const Color(0x00000000),
+                          radius: 999,
+                          axis: PenAxis.row,
+                          main: MainAxisAlignment.center,
+                          cross: CrossAxisAlignment.center,
+                          children: [
+                            PenEllipse(
+                              width: 42,
+                              height: 42,
+                              color: const Color(0xFF1F9047),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: PenBox(
+                          height: 46,
+                          stroke: const Color(0x00000000),
+                          radius: 999,
+                          axis: PenAxis.row,
+                          main: MainAxisAlignment.center,
+                          cross: CrossAxisAlignment.center,
+                          children: [
+                            PenEllipse(
+                              width: 42,
+                              height: 42,
+                              color: const Color(0xFFB6770B),
                             ),
                           ],
                         ),
@@ -5068,40 +4585,6 @@ class PenF310 extends StatelessWidget {
                               width: 42,
                               height: 42,
                               color: const Color(0xFFD02D27),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: PenBox(
-                          height: 46,
-                          stroke: const Color(0x00000000),
-                          radius: 999,
-                          axis: PenAxis.row,
-                          main: MainAxisAlignment.center,
-                          cross: CrossAxisAlignment.center,
-                          children: [
-                            PenEllipse(
-                              width: 42,
-                              height: 42,
-                              color: const Color(0xFF2266A4),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: PenBox(
-                          height: 46,
-                          stroke: const Color(0x00000000),
-                          radius: 999,
-                          axis: PenAxis.row,
-                          main: MainAxisAlignment.center,
-                          cross: CrossAxisAlignment.center,
-                          children: [
-                            PenEllipse(
-                              width: 42,
-                              height: 42,
-                              color: const Color(0xFF2266A4),
                             ),
                           ],
                         ),

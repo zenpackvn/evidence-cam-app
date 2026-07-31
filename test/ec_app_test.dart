@@ -893,13 +893,13 @@ class _DemoRepository extends FakeEcRepository {
     int? fromTs,
     String? videoTypeId,
   }) async => const [
-        OrderSummaryDto(
-          id: 'o1',
-          tracking: 'SPXVN024567890',
-          createdAt: 3,
-          evidenceCount: 2,
-        ),
-      ];
+    OrderSummaryDto(
+      id: 'o1',
+      tracking: 'SPXVN024567890',
+      createdAt: 3,
+      evidenceCount: 2,
+    ),
+  ];
 
   @override
   Future<List<VideoTypeDto>> videoTypes(String shopId) async => const [

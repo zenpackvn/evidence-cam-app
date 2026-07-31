@@ -18,6 +18,7 @@ import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 import 'package:localization/localization.dart';
 
 const _designSize = Size(390, 844);
+const _gb = 1024 * 1024 * 1024;
 
 Future<void> _warmDesignArtwork() async {
   final files = Directory('packages/ec_ui/assets/design')
@@ -60,14 +61,99 @@ final _hasInter = () {
   return path != null && File(path).existsSync();
 }();
 
+/// Screens the app presents as a transparent modal route stack them over the
+/// screen behind, and the design frame draws that backdrop too. Rendering the
+/// modal alone would diff the whole backdrop as a mismatch, so compose the
+/// pair exactly as the router does.
+Widget _over(Widget backdrop, Widget modal) => Stack(
+  children: [
+    Positioned.fill(child: backdrop),
+    Positioned.fill(child: modal),
+  ],
+);
+
+const _accountBackdrop = EcAccountTabScreen(
+  shopName: 'Shop ABC',
+  userName: 'Nguyễn Văn A',
+  userEmail: 'nguyenvana@gmail.com',
+);
+
+const _evidenceBackdrop = EcOrderTimelineScreen(
+  orderCode: 'SPXVN024567890',
+  pendingUploadCount: 4,
+  dossierUrl: 'zenpack.vn/r/abc123...',
+  days: [
+    EcTimelineDay(
+      date: '23/07/2026',
+      videos: [
+        EcTimelineVideo(
+          time: '10:23',
+          label: 'Đóng hàng',
+          statusText: 'Đã upload',
+        ),
+        EcTimelineVideo(
+          time: '10:35',
+          label: 'Đơn vị vận chuyển',
+          statusText: 'Đang tải 72%',
+        ),
+        EcTimelineVideo(
+          time: '10:52',
+          label: 'Ảnh kèm hàng',
+          statusText: 'Chờ upload',
+        ),
+      ],
+    ),
+    EcTimelineDay(
+      date: '31/07/2026',
+      videos: [
+        EcTimelineVideo(
+          time: '09:12',
+          label: 'Trả hàng',
+          statusText: 'Lỗi · Thử lại',
+        ),
+        EcTimelineVideo(
+          time: '09:30',
+          label: 'Cân hàng',
+          statusText: 'Chờ quota',
+        ),
+      ],
+    ),
+  ],
+);
+
+/// The design's viewfinder stills, so a camera screen's golden shows the same
+/// scene the design frame does instead of an empty (camera-less) preview.
+Widget _viewfinder(String name) => Image.asset(
+  'assets/design/$name.png',
+  package: 'ec_ui',
+  fit: BoxFit.cover,
+);
+
+const _shopDetailBackdrop = shift.EcShopDetailScreen(
+  shopName: 'Shop ABC',
+  platformLabel: 'shopee',
+  members: [
+    shift.EcShopMember(name: 'Nguyễn Văn A', role: 'Chủ shop'),
+    shift.EcShopMember(name: 'Trần Thị B', role: 'Nhân viên'),
+    shift.EcShopMember(name: 'Lê Văn C', role: 'Quản lý'),
+  ],
+  videoTypes: [
+    shift.EcVideoType(name: 'Đóng hàng', locked: true),
+    shift.EcVideoType(name: 'Đơn vị vận chuyển', locked: true),
+    shift.EcVideoType(name: 'Trả hàng', locked: true),
+    shift.EcVideoType(name: 'Cân hàng'),
+    shift.EcVideoType(name: 'Kiểm đếm sản phẩm'),
+  ],
+);
+
 void main() {
   setUpAll(_loadInter);
 
   final screens = <String, Widget>{
-    'ported_f1_01_splash': const shift.EcSplashScreen(),
-    'ported_f1_02_login': const shift.EcLoginScreen(),
-    'ported_f1_03_register': const shift.EcRegisterScreen(),
-    'ported_f1_04_forgot': const shift.EcForgotPasswordScreen(),
+    'ported_f1_01_splash': shift.EcSplashScreen(onStart: () {}),
+    'ported_f1_02_login': shift.EcLoginScreen(onLogin: () {}),
+    'ported_f1_03_register': shift.EcRegisterScreen(onRegister: () {}),
+    'ported_f1_04_forgot': shift.EcForgotPasswordScreen(onSend: () {}),
     'ported_f1_05_choose_shop': const shift.EcChooseShopScreen(
       shops: [
         shift.EcShopSummary(
@@ -79,6 +165,16 @@ void main() {
           name: 'Shop XYZ',
           platform: 'lazada',
           meta: 'Lazada · ID: 780012',
+        ),
+        shift.EcShopSummary(
+          name: 'Shop 247',
+          platform: 'tiktok',
+          meta: 'TikTok Shop · ID: 345678',
+        ),
+        shift.EcShopSummary(
+          name: 'Kho tổng',
+          platform: 'other',
+          meta: 'Khác · ID: 999999',
         ),
       ],
     ),
@@ -92,29 +188,29 @@ void main() {
           platform: 'shopee',
         ),
         shift.EcShopMgmtEntry(
+          name: 'Shop XYZ',
+          meta: 'Lazada · 2 thành viên',
+          platform: 'lazada',
+        ),
+        shift.EcShopMgmtEntry(
           name: 'Kho tổng',
           meta: 'Khác · 1 thành viên',
           platform: 'other',
         ),
       ],
     ),
-    'ported_f1_09_shop_detail': const shift.EcShopDetailScreen(
-      shopName: 'Shop ABC',
-      platformLabel: 'shopee',
-      members: [
-        shift.EcShopMember(name: 'Nguyễn Văn A', role: 'Chủ shop'),
-        shift.EcShopMember(name: 'Trần Thị B', role: 'Nhân viên'),
-      ],
-      videoTypes: [
-        shift.EcVideoType(name: 'Đóng hàng', locked: true),
-        shift.EcVideoType(name: 'Cân hàng'),
-      ],
+    'ported_f1_09_shop_detail': _shopDetailBackdrop,
+    'ported_f1_10_create_type': _over(
+      _evidenceBackdrop,
+      const shift.EcCreateTypeScreen(),
     ),
-    'ported_f1_10_create_type': const shift.EcCreateTypeScreen(),
-    'ported_f1_11_delete_type': const shift.EcConfirmDeleteScreen(),
+    'ported_f1_11_delete_type': _over(
+      _shopDetailBackdrop,
+      const shift.EcConfirmDeleteScreen(),
+    ),
     'ported_f1_12_orders_tab': const shift.EcHomeOrdersScreen(
       shopName: 'Shop ABC',
-      queueCount: 3,
+      queueCount: 4,
       orders: [
         shift.EcOrderRow(
           code: 'SPXVN024567890',
@@ -123,48 +219,46 @@ void main() {
           videoCount: 2,
         ),
         shift.EcOrderRow(
+          code: 'SPXVN098765432',
+          time: '09:45',
+          type: 'Đơn vị vận chuyển',
+          videoCount: 1,
+        ),
+        shift.EcOrderRow(
+          code: 'SPXVN011122233',
+          time: '08:30',
+          type: 'Đóng hàng',
+          videoCount: 3,
+        ),
+        shift.EcOrderRow(
           code: 'SPXVN044556677',
           time: '07:15',
           type: 'Đơn vị vận chuyển',
           videoCount: 1,
-          errorCount: 1,
         ),
       ],
     ),
-    'ported_f2_02_evidence': const EcOrderTimelineScreen(
-      orderCode: 'SPXVN024567890',
-      pendingUploadCount: 4,
-      dossierUrl: 'zenpack.vn/r/abc123...',
-      days: [
-        EcTimelineDay(
-          date: '23/07/2026',
-          videos: [
-            EcTimelineVideo(
-              time: '10:23',
-              label: 'Đóng hàng',
-              statusText: 'Đã upload',
-            ),
-            EcTimelineVideo(
-              time: '10:35',
-              label: 'Đơn vị vận chuyển',
-              statusText: 'Đang tải 72%',
-            ),
-          ],
+    'ported_f2_02_evidence': _evidenceBackdrop,
+    'ported_f2_03_video_detail': _over(
+      _evidenceBackdrop,
+      const EcVideoDetailScreen(
+        video: EcVideoDetail(
+          title: 'Đóng hàng',
+          duration: '02:45',
+          recordedAt: '23/07/2026 · 10:23',
+          recordedBy: 'Trần Thị B (Nhân viên)',
+          device: 'iPhone 12 · app 1.0',
+          uploadStatus: 'Đã upload',
         ),
-      ],
-    ),
-    'ported_f2_03_video_detail': const EcVideoDetailScreen(
-      video: EcVideoDetail(
-        title: 'Đóng hàng',
-        duration: '02:45',
-        recordedAt: '23/07/2026 · 10:23',
-        recordedBy: 'Trần Thị B (Nhân viên)',
-        device: 'iPhone 12 · app 1.0',
-        uploadStatus: 'Đã upload',
       ),
     ),
-    'ported_f3_01_idle': const EcWaitBill2Screen(),
-    'ported_f3_03_rec': const EcRecording2Screen(elapsed: '00:12'),
+    'ported_f3_01_idle': EcWaitBill2Screen(
+      preview: _viewfinder('ec-viewfinder-idle'),
+    ),
+    'ported_f3_03_rec': EcRecording2Screen(
+      elapsed: '00:12',
+      preview: _viewfinder('ec-viewfinder-rec'),
+    ),
     'ported_f4_01_account': const EcAccountTabScreen(
       shopName: 'Shop ABC',
       queueCount: 3,
@@ -173,8 +267,12 @@ void main() {
     ),
     'ported_f4_03_language': const EcLanguageScreen(),
     'ported_f3_02_code': const EcManualEntryScreen(),
-    'ported_f3_04_saved': const EcCutoverBScreen(),
-    'ported_f3_05_ceiling': const EcNearLimitScreen(),
+    'ported_f3_04_saved': EcCutoverBScreen(
+      preview: _viewfinder('ec-viewfinder-saved-next'),
+    ),
+    'ported_f3_05_ceiling': EcNearLimitScreen(
+      preview: _viewfinder('ec-viewfinder-long-recording'),
+    ),
     'ported_f3_06_queue': const EcUploadQueueScreen(
       items: [
         EcUploadItem(
@@ -193,13 +291,63 @@ void main() {
         ),
       ],
     ),
-    'ported_f3_07_return': const EcReturnRecScreen(),
-    'ported_f3_08_mismatch': const EcNoMatchScreen(),
-    'ported_f3_09_pick_type': const EcTypeSheetScreen(),
-    'ported_f4_02_profile': const EcEditProfileScreen(),
-    'ported_f4_04_quota': const EcQuotaScreen(),
-    'ported_f4_05_password': const EcChangePasswordScreen(),
-    'ported_f4_06_delete': const EcDeleteAccountScreen(),
+    'ported_f3_07_return': EcReturnRecScreen(
+      preview: _viewfinder('ec-viewfinder-return'),
+    ),
+    'ported_f3_08_mismatch': _over(
+      EcReturnRecScreen(preview: _viewfinder('ec-viewfinder-return-mismatch')),
+      const EcNoMatchScreen(),
+    ),
+    'ported_f3_09_pick_type': _over(
+      EcRecording2Screen(
+        elapsed: '00:14',
+        preview: _viewfinder('ec-viewfinder-new-video-type'),
+      ),
+      const EcTypeSheetScreen(),
+    ),
+    'ported_f4_02_profile': EcEditProfileScreen(
+      nameController: TextEditingController(text: 'Nguyễn Văn A'),
+      phoneController: TextEditingController(text: '090 123 4567'),
+      onSave: () {},
+    ),
+    // Same sample figures the design frame shows, so the diff is about
+    // layout rather than about which numbers happen to be loaded.
+    'ported_f4_04_quota': EcQuotaScreen(
+      usedBytes: (28.2 * _gb).round(),
+      capBytes: (60 * _gb).round(),
+      retentionTotalDays: 25,
+      videoCount: 263,
+      typeUsage: [
+        EcQuotaTypeUsage(
+          type: 'Đóng hàng',
+          videoCount: 148,
+          bytes: (15.4 * _gb).round(),
+        ),
+        EcQuotaTypeUsage(
+          type: 'Đơn vị vận chuyển',
+          videoCount: 72,
+          bytes: (7.7 * _gb).round(),
+        ),
+        EcQuotaTypeUsage(
+          type: 'Trả hàng',
+          videoCount: 31,
+          bytes: (3.3 * _gb).round(),
+        ),
+        EcQuotaTypeUsage(
+          type: 'Cân hàng',
+          videoCount: 12,
+          bytes: (1.8 * _gb).round(),
+        ),
+      ],
+    ),
+    'ported_f4_05_password': _over(
+      _accountBackdrop,
+      const EcChangePasswordScreen(),
+    ),
+    'ported_f4_06_delete': _over(
+      _accountBackdrop,
+      const EcDeleteAccountScreen(),
+    ),
   };
 
   screens.forEach((name, screen) {

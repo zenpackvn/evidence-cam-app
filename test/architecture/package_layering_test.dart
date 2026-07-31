@@ -47,11 +47,13 @@ const _layers = <String, int>{
   'app_platform': 2, // -> analytics, architecture
   // 3 — shared test harness, sits on top of what it provides fakes for.
   'test_utils': 3, // -> analytics, app_platform, storage
-  'ec_data': 3, // EC backend DTOs/API/repo/auth -> network + firebase/google/apple
+  'ec_data':
+      3, // EC backend DTOs/API/repo/auth -> network + firebase/google/apple
   // 4 — EvidenceCam feature packages: the top runtime layer (only the app
   //     composes them); none depend on a sibling feature.
   'feature_account': 4, // Flow 4 screens -> app_ui, ec_ui
-  'feature_capture': 4, // -> app_platform (camera + scanner), analytics; no sibling deps
+  'feature_capture':
+      4, // -> app_platform (camera + scanner), analytics; no sibling deps
   'feature_orders': 4, // Flow 2 screens -> app_ui, ec_ui
   'feature_shift': 4, // Flow 1 + splash/login screens -> app_ui, ec_ui
 };
