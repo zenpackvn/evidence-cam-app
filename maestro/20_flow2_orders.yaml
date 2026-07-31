@@ -1,0 +1,74 @@
+appId: com.aktechvn.zenpack
+name: "Flow 2a - Tab Vận đơn: danh sách, tìm kiếm, lọc, phân trang"
+---
+- runFlow: _ec_login.yaml
+
+# --- Màn hình có đủ 3 ô thống kê + thanh tìm + bottom nav -------------------
+- assertVisible:
+    text: "Vận đơn"
+- assertVisible:
+    text: "Video đã quay"
+- assertVisible:
+    text: "Chờ tải"
+- assertVisible:
+    text: "Tài khoản"
+
+# --- Tìm kiếm: gõ mã có thật thì còn kết quả -------------------------------
+# Mã tìm kiếm đi qua chuẩn hóa của backend (bỏ khoảng trắng + viết thường), nên
+# cố tình gõ lệch hoa-thường: ra kết quả mới là đúng FR-01.7/FR-04.
+- tapOn:
+    text: "Nhập mã vận đơn"
+- inputText: ${EC_TRACKING_LOWER}
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      text: ${EC_TRACKING}
+    timeout: 15000
+
+# --- Tìm mã không tồn tại thì ra trạng thái rỗng, không phải lỗi -----------
+- tapOn:
+    text: ${EC_TRACKING_LOWER}
+- eraseText: 40
+- inputText: "khongtontai00000"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      text: "Shop chưa có đơn nào"
+    timeout: 15000
+
+- tapOn:
+    text: "khongtontai00000"
+- eraseText: 40
+- hideKeyboard
+
+# --- Kéo để làm mới --------------------------------------------------------
+- swipe:
+    start: "50%, 45%"
+    end: "50%, 85%"
+- extendedWaitUntil:
+    visible:
+      text: ${EC_TRACKING}
+    timeout: 20000
+
+# --- Mở hàng đợi upload rồi quay lại ---------------------------------------
+# Đây là màn duy nhất cho nhân viên biết clip của mình đã an toàn chưa; nó vỡ
+# thì sự cố upload chỉ còn cách mò log.
+- tapOn:
+    text: "Chờ tải"
+- extendedWaitUntil:
+    visible:
+      text: "Hàng đợi upload"
+    timeout: 15000
+- back
+
+# --- Bottom nav đi được cả 3 tab và quay về ---------------------------------
+- tapOn:
+    text: "Tài khoản"
+- extendedWaitUntil:
+    visible:
+      text: "Vận đơn"
+    timeout: 15000
+- tapOn:
+    text: "Vận đơn"
+- assertVisible:
+    text: "Nhập mã vận đơn"

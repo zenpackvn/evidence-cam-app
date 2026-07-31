@@ -1,0 +1,86 @@
+appId: com.aktechvn.zenpack
+name: "Flow 3b - Hàng đợi upload: bộ lọc, tạm dừng/tiếp tục, xóa, offline"
+---
+# Chạy SAU 30_flow3_record.yaml — flow đó là thứ đẻ ra clip cho màn này.
+- runFlow: _ec_login.yaml
+
+- tapOn:
+    text: "Chờ tải"
+- extendedWaitUntil:
+    visible:
+      text: "Hàng đợi upload"
+    timeout: 20000
+- assertVisible:
+    text: "Upload khi có mạng sẽ được tự động thực hiện"
+
+# --- Ba bộ lọc, nhãn kèm số đếm ("Tất cả · 3") -----------------------------
+- tapOn:
+    text: "Đang tải.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    text: "Lỗi.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    text: "Tất cả.*"
+
+# --- Tạm dừng rồi tiếp tục --------------------------------------------------
+# Hàng đợi chạy TUẦN TỰ một clip một lần, nên tạm dừng là cách duy nhất nhân
+# viên nhường băng thông cho việc khác. Nút phải đổi nhãn qua lại thật.
+- runFlow:
+    when:
+      visible: "Tạm dừng"
+    commands:
+      - tapOn:
+          text: "Tạm dừng"
+      - extendedWaitUntil:
+          visible:
+            text: "Đã tạm dừng"
+          timeout: 10000
+      - tapOn:
+          text: "Tiếp tục"
+      - assertNotVisible:
+          text: "Đã tạm dừng"
+
+# --- Mất mạng: task nằm chờ, KHÔNG được biến mất ----------------------------
+# Đây là bài test đắt giá nhất của màn này. Bằng chứng phải sống sót khi rớt
+# mạng; mất task ở đây nghĩa là mất video của người bán.
+- setAirplaneMode: enabled
+- waitForAnimationToEnd:
+    timeout: 10000
+- assertNotVisible:
+    text: "Chưa có video trong hàng đợi"
+- takeScreenshot: flow3_queue_offline
+- setAirplaneMode: disabled
+
+# Có mạng lại thì phải tự chạy tiếp, không cần ai bấm gì.
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: flow3_queue_back_online
+
+# --- Sống sót qua restart ---------------------------------------------------
+# Hàng đợi nằm trong ObjectBox + file nằm ở app-documents (không phải cache),
+# nên tắt mở lại app vẫn còn. Cố ý KHÔNG clearState.
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Ghi hình"
+    timeout: 45000
+- tapOn:
+    text: "Chờ tải"
+- extendedWaitUntil:
+    visible:
+      text: "Hàng đợi upload"
+    timeout: 20000
+
+# --- Xóa một task khỏi hàng đợi --------------------------------------------
+- runFlow:
+    when:
+      visible: "Xóa"
+    commands:
+      - tapOn:
+          text: "Xóa"
+      - waitForAnimationToEnd:
+          timeout: 5000

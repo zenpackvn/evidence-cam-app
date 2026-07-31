@@ -1,0 +1,102 @@
+appId: com.aktechvn.zenpack
+name: "Flow 2b - Chi tiết đơn: dòng thời gian, sheet bằng chứng, phát video"
+---
+- runFlow: _ec_login.yaml
+
+- tapOn:
+    text: "Nhập mã vận đơn"
+- inputText: ${EC_TRACKING}
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      text: ${EC_TRACKING}
+    timeout: 15000
+
+- tapOn:
+    text: ${EC_TRACKING}
+- extendedWaitUntil:
+    visible:
+      text: "Đính kèm ảnh vào đơn"
+    timeout: 20000
+
+# Mã vận đơn phải hiện ở header — người dùng cần biết mình đang xem đơn nào
+# trước khi gửi bất cứ thứ gì cho sàn.
+- assertVisible:
+    text: ${EC_TRACKING}
+
+# --- Sheet chi tiết một bằng chứng -----------------------------------------
+# Bám vào nhãn loại video (`EcTimelineVideo.label`) vì đó là chữ duy nhất ổn
+# định trên dòng — giờ quay thì đổi mỗi lần chạy. Loại video do từng shop tự
+# đặt tên nên phải truyền vào, đừng hằng số hóa "Đóng hàng".
+- tapOn:
+    text: ${EC_VIDEO_TYPE}
+    index: 0
+- extendedWaitUntil:
+    visible:
+      text: "Phát video"
+    timeout: 15000
+
+# Bốn dữ kiện chain-of-custody phải có mặt. Thiếu bất kỳ cái nào là hồ sơ gửi
+# sàn mất giá trị chứng minh, nên assert từng cái chứ không assert cả sheet.
+- assertVisible:
+    text: "Chi tiết video"
+- assertVisible:
+    text: "Giờ quay"
+- assertVisible:
+    text: "Người quay"
+- assertVisible:
+    text: "Trạng thái upload"
+- assertVisible:
+    text: "Tải video về máy"
+
+# --- Phát video ------------------------------------------------------------
+# Link phát là presigned, ký lại mỗi lần đọc. Clip vừa upload xong có thể 404
+# do CDN chưa kịp lan — player tự thử lại 3 lần × 2 giây, nên chờ ở đây phải
+# dài hơn 6 giây, nếu không test đỏ vì đúng cái workaround đang chạy.
+- tapOn:
+    text: "Phát video"
+- extendedWaitUntil:
+    visible:
+      text: ${EC_TRACKING}
+    timeout: 30000
+
+# Nhãn mã + giờ quay vẽ đè lên khung hình (thay cho việc nung chữ vào file).
+# Đây là thứ ảnh chụp màn hình gửi sàn mang theo — mất nó là mất giá trị dùng.
+- takeScreenshot: flow2_player_overlay
+
+- back
+- extendedWaitUntil:
+    visible:
+      text: "Đính kèm ảnh vào đơn"
+    timeout: 20000
+
+# --- Đính kèm ảnh: chỉ mở được picker rồi thoát ------------------------------
+# Không chọn ảnh thật: picker là UI của hệ điều hành, Maestro chạm được nhưng
+# nội dung thư viện khác nhau giữa các máy nên assert vào đó là tự chuốc flaky.
+- tapOn:
+    text: "Đính kèm ảnh vào đơn"
+- waitForAnimationToEnd:
+    timeout: 5000
+- back
+
+- extendedWaitUntil:
+    visible:
+      text: "Đính kèm ảnh vào đơn"
+    timeout: 15000
+
+# --- Link hồ sơ khiếu nại --------------------------------------------------
+# Thẻ này CHỈ hiện khi hồ sơ đã được tạo (và chưa thu hồi) — app chỉ đọc, việc
+# tạo là của web admin. Nên đây là bước có điều kiện: chạy trên đơn chưa có hồ
+# sơ thì bỏ qua chứ không đỏ. Muốn phủ thật thì tạo hồ sơ ở web admin trước
+# cho đúng ${EC_TRACKING}.
+- runFlow:
+    when:
+      visible: "Link hồ sơ khiếu nại"
+    commands:
+      - assertVisible:
+          text: ".*/d/.*"
+      - takeScreenshot: flow2_dossier_card
+
+- back
+- assertVisible:
+    text: "Nhập mã vận đơn"

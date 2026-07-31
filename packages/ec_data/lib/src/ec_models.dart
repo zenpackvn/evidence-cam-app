@@ -202,6 +202,32 @@ class OrderPageDto {
   int get lastIndex => items.isEmpty ? 0 : firstIndex + items.length - 1;
 }
 
+/// FR-07: hồ sơ khiếu nại chia sẻ được của một đơn. App chỉ **đọc** — link
+/// được tạo/thu hồi ở web admin, nên ở đây không có method tạo.
+class DossierDto {
+  const DossierDto({
+    required this.id,
+    required this.orderId,
+    required this.shareToken,
+    required this.revoked,
+  });
+
+  factory DossierDto.fromJson(Map<String, dynamic> j) => DossierDto(
+    id: j['id'] as String,
+    orderId: j['order_id'] as String,
+    shareToken: j['share_token'] as String,
+    revoked: _int(j['revoked']) == 1,
+  );
+
+  final String id;
+  final String orderId;
+  final String shareToken;
+
+  /// Link đã bị thu hồi thì token vẫn còn trong DB nhưng trang công khai trả
+  /// 410 — đừng đưa cho người dùng đi chia sẻ.
+  final bool revoked;
+}
+
 class EvidenceDto {
   const EvidenceDto({
     required this.id,
@@ -414,15 +440,26 @@ class VideoTypeDto {
     required this.id,
     required this.name,
     required this.isDefault,
+    this.icon,
+    this.color,
   });
 
   factory VideoTypeDto.fromJson(Map<String, dynamic> j) => VideoTypeDto(
     id: j['id'] as String,
     name: j['name'] as String,
     isDefault: _int(j['is_default']) == 1,
+    icon: j['icon'] as String?,
+    color: j['color'] as String?,
   );
 
   final String id;
   final String name;
   final bool isDefault;
+
+  /// Khóa icon người tạo chọn. `null` với 3 loại mặc định và với loại tạo
+  /// trước khi màn chọn icon được nối dây — client rơi về icon mặc định.
+  final String? icon;
+
+  /// `#RRGGBB` người tạo chọn; `null` = dùng màu mặc định.
+  final String? color;
 }

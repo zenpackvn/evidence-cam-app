@@ -50,12 +50,19 @@ abstract interface class EcRepository {
   });
   Future<void> removeMember(String shopId, String accountUid);
   Future<List<VideoTypeDto>> videoTypes(String shopId);
-  Future<VideoTypeDto> addVideoType(String shopId, String name);
+  Future<VideoTypeDto> addVideoType(
+    String shopId,
+    String name, {
+    String? icon,
+    String? color,
+  });
   Future<VideoTypeDto> renameVideoType(
     String shopId,
     String typeId,
-    String name,
-  );
+    String name, {
+    String? icon,
+    String? color,
+  });
   Future<void> deleteVideoType(String shopId, String typeId);
   Future<QuotaDto> quota({String? shopId});
 
@@ -73,6 +80,13 @@ abstract interface class EcRepository {
   Future<List<OrderSummaryDto>> searchOrders(String shopId, String query);
   Future<OrderDto> createOrder(String shopId, String tracking);
   Future<OrderDetailDto> order(String shopId, String orderId);
+
+  /// FR-07: link hồ sơ khiếu nại của đơn, `null` khi chưa có. Chỉ đọc — link
+  /// được tạo/thu hồi ở web admin.
+  Future<DossierDto?> dossier(String shopId, String orderId);
+
+  /// URL công khai của [shareToken].
+  String dossierShareUrl(String shareToken);
   Future<void> deleteEvidence(String shopId, String orderId, String evidenceId);
   Future<void> deleteAccount({bool force, bool dryRun});
 }
@@ -154,15 +168,21 @@ class RemoteEcRepository implements EcRepository {
       _api.listVideoTypes(shopId);
 
   @override
-  Future<VideoTypeDto> addVideoType(String shopId, String name) =>
-      _api.addVideoType(shopId, name);
+  Future<VideoTypeDto> addVideoType(
+    String shopId,
+    String name, {
+    String? icon,
+    String? color,
+  }) => _api.addVideoType(shopId, name, icon: icon, color: color);
 
   @override
   Future<VideoTypeDto> renameVideoType(
     String shopId,
     String typeId,
-    String name,
-  ) => _api.renameVideoType(shopId, typeId, name);
+    String name, {
+    String? icon,
+    String? color,
+  }) => _api.renameVideoType(shopId, typeId, name, icon: icon, color: color);
 
   @override
   Future<void> deleteVideoType(String shopId, String typeId) =>
@@ -197,6 +217,14 @@ class RemoteEcRepository implements EcRepository {
   @override
   Future<OrderDetailDto> order(String shopId, String orderId) =>
       _api.getOrder(shopId, orderId);
+
+  @override
+  Future<DossierDto?> dossier(String shopId, String orderId) =>
+      _api.getDossier(shopId, orderId);
+
+  @override
+  String dossierShareUrl(String shareToken) =>
+      _api.dossierShareUrl(shareToken);
 
   @override
   Future<void> deleteEvidence(
@@ -313,15 +341,33 @@ class FakeEcRepository implements EcRepository {
   Future<List<VideoTypeDto>> videoTypes(String shopId) async => const [];
 
   @override
-  Future<VideoTypeDto> addVideoType(String shopId, String name) async =>
-      VideoTypeDto(id: 'vt-new', name: name, isDefault: false);
+  Future<VideoTypeDto> addVideoType(
+    String shopId,
+    String name, {
+    String? icon,
+    String? color,
+  }) async => VideoTypeDto(
+    id: 'vt-new',
+    name: name,
+    isDefault: false,
+    icon: icon,
+    color: color,
+  );
 
   @override
   Future<VideoTypeDto> renameVideoType(
     String shopId,
     String typeId,
-    String name,
-  ) async => VideoTypeDto(id: typeId, name: name, isDefault: false);
+    String name, {
+    String? icon,
+    String? color,
+  }) async => VideoTypeDto(
+    id: typeId,
+    name: name,
+    isDefault: false,
+    icon: icon,
+    color: color,
+  );
 
   @override
   Future<void> deleteVideoType(String shopId, String typeId) async {}
@@ -369,6 +415,12 @@ class FakeEcRepository implements EcRepository {
         order: OrderDto(id: orderId, tracking: '', createdAt: 0),
         evidence: const [],
       );
+
+  @override
+  Future<DossierDto?> dossier(String shopId, String orderId) async => null;
+
+  @override
+  String dossierShareUrl(String shareToken) => '';
 
   @override
   Future<void> deleteEvidence(

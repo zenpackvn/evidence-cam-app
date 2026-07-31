@@ -137,22 +137,31 @@ class EcApi {
   Future<List<VideoTypeDto>> listVideoTypes(String shopId) =>
       _getList('/api/shops/$shopId/video-types', VideoTypeDto.fromJson);
 
-  Future<VideoTypeDto> addVideoType(String shopId, String name) async {
+  Future<VideoTypeDto> addVideoType(
+    String shopId,
+    String name, {
+    String? icon,
+    String? color,
+  }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/video-types',
-      data: {'name': name},
+      data: {'name': name, 'icon': ?icon, 'color': ?color},
     );
     return VideoTypeDto.fromJson(res.data!);
   }
 
+  /// Bỏ trống [icon]/[color] = giữ nguyên vẻ ngoài đang có (backend không
+  /// coi field vắng mặt là lệnh xóa).
   Future<VideoTypeDto> renameVideoType(
     String shopId,
     String typeId,
-    String name,
-  ) async {
+    String name, {
+    String? icon,
+    String? color,
+  }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/api/shops/$shopId/video-types/$typeId',
-      data: {'name': name},
+      data: {'name': name, 'icon': ?icon, 'color': ?color},
     );
     return VideoTypeDto.fromJson(res.data!);
   }
@@ -226,6 +235,22 @@ class EcApi {
     );
     return OrderDto.fromJson(res.data!);
   }
+
+  /// Hồ sơ khiếu nại của đơn, `null` khi chưa ai tạo (backend trả thân `null`
+  /// chứ không phải 404, nên phải nhận `dynamic` rồi tự kiểm tra).
+  Future<DossierDto?> getDossier(String shopId, String orderId) async {
+    final res = await _dio.get<dynamic>(
+      '/api/shops/$shopId/orders/$orderId/dossier',
+    );
+    final body = res.data;
+    if (body is! Map<String, dynamic>) return null;
+    return DossierDto.fromJson(body);
+  }
+
+  /// Trang công khai backend phục vụ ở `/d/<token>` — cùng công thức web admin
+  /// dùng, nên hai bên không thể sinh ra hai link khác nhau.
+  String dossierShareUrl(String shareToken) =>
+      '${_dio.options.baseUrl.replaceAll(RegExp(r'/+$'), '')}/d/$shareToken';
 
   Future<OrderDetailDto> getOrder(String shopId, String orderId) =>
       _get('/api/shops/$shopId/orders/$orderId', OrderDetailDto.fromJson);

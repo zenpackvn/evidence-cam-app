@@ -1,0 +1,98 @@
+appId: com.aktechvn.zenpack
+name: "Flow 3a - Ghi hình: nhập tay mã, quay, dừng, clip vào hàng đợi"
+---
+# ⚠️ ĐỌC TRƯỚC KHI SỬA
+# Đường quét mã KHÔNG chạy được ở đây. Maestro chạm được màn hình, nó không
+# giơ được tờ bill vào ống kính. Ba nhánh nghiệp vụ dưới đây vì thế NẰM NGOÀI
+# tầm với và phải test tay (hoặc bằng hook ở phần cuối README):
+#   - quét bill để bắt đầu quay
+#   - cut-over sang đơn khác khi thấy mã lạ giữa lúc quay
+#   - QR kết thúc `EVIDENCECAM:END`
+# Flow này đi bằng NHẬP TAY, nên nó vẫn phủ được đúng máy trạng thái ghi hình,
+# vòng đời clip và hàng đợi upload — chỉ không phủ được phần nhận dạng ảnh.
+- runFlow: _ec_login.yaml
+
+- tapOn:
+    text: "Ghi hình"
+- extendedWaitUntil:
+    visible:
+      text: "Đưa bill vào khung để bắt đầu"
+    timeout: 30000
+
+# --- Nhập tay ---------------------------------------------------------------
+- tapOn:
+    text: "Nhập mã vận đơn"
+- extendedWaitUntil:
+    visible:
+      text: "Nhập hoặc quét lại mã vận đơn"
+    timeout: 10000
+
+# ⚠️ Bàn phím ở đây là bàn phím SỐ tự vẽ, không phải TextField — `inputText`
+# không có tác dụng vì không có ô nhập nào được focus và bàn phím hệ điều hành
+# không bao giờ bật lên. Phải chạm từng phím.
+# Hệ quả nghiệp vụ (không phải chuyện test): mã chữ-số như `SPXVN0245…` KHÔNG
+# nhập tay được. Xem mục "Đã phát hiện" trong README.
+- tapOn:
+    text: "9"
+- tapOn:
+    text: "8"
+- tapOn:
+    text: "7"
+- tapOn:
+    text: "6"
+- tapOn:
+    text: "5"
+- tapOn:
+    text: "4"
+- assertVisible:
+    text: "987654"
+
+- tapOn:
+    text: "Xong"
+
+# Mã chưa có trong shop → hỏi xác nhận tạo đơn mới (FR-01.9 tìm-hoặc-tạo).
+# Mã đã có thì bước này không xuất hiện và vào quay thẳng.
+- runFlow:
+    when:
+      visible: "Tạo vận đơn mới"
+    commands:
+      - tapOn:
+          text: "Tạo vận đơn mới"
+
+# --- Đang quay --------------------------------------------------------------
+# Nút dừng chỉ có Tooltip, không có nhãn chữ hiện trên màn — Maestro bắt được
+# qua accessibility label. Đây là selector mong manh nhất của cả bộ; nó gãy thì
+# thêm `Semantics(identifier:)` chứ đừng chuyển sang chạm theo toạ độ.
+- extendedWaitUntil:
+    visible:
+      text: "Dừng quay"
+    timeout: 20000
+
+# Quay đủ dài để có clip thật (đủ vượt 8MB → đi đường multipart, tức là đúng
+# đường mà mọi clip thật đi qua).
+- waitForAnimationToEnd:
+    timeout: 20000
+
+- tapOn:
+    text: "Dừng quay"
+
+# --- Chốt xong thì về trạng thái chờ ---------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Đưa bill vào khung để bắt đầu"
+    timeout: 30000
+
+# --- Clip phải xuất hiện trong hàng đợi -------------------------------------
+# Đây là assert quan trọng nhất của flow: "video đã an toàn". Chốt clip xong mà
+# nó không vào hàng đợi nghĩa là bằng chứng vừa quay có thể mất khi tắt app.
+- tapOn:
+    text: "Vận đơn"
+- tapOn:
+    text: "Chờ tải"
+- extendedWaitUntil:
+    visible:
+      text: "Hàng đợi upload"
+    timeout: 15000
+- assertNotVisible:
+    text: "Chưa có video trong hàng đợi"
+- takeScreenshot: flow3_queue_after_record

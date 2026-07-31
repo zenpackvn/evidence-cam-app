@@ -233,10 +233,15 @@ class _EcAppState extends State<EcApp> {
 /// (FR-15). Email/Google/Apple all sign in through [EcAuth] then go to the shop
 /// layer; today [FakeEcAuth] succeeds instantly, `FirebaseEcAuth` does it for real.
 class _LoginRoute extends StatefulWidget {
-  const _LoginRoute({required this.auth, required this.repo});
+  const _LoginRoute({
+    required this.auth,
+    required this.repo,
+    required this.language,
+  });
 
   final EcAuth auth;
   final EcRepository repo;
+  final ValueNotifier<EcAppLanguage> language;
 
   @override
   State<_LoginRoute> createState() => _LoginRouteState();
@@ -299,7 +304,7 @@ class _LoginRouteState extends State<_LoginRoute> {
       widget.repo,
       widget.auth.signInWithApple(),
     ),
-    onLanguage: () => _toast(context, context.l10n.toastChangeLanguage),
+    onLanguage: () => _toggleLanguage(context, widget.language),
   );
 }
 
@@ -307,10 +312,15 @@ class _LoginRouteState extends State<_LoginRoute> {
 /// (notably the confirm-password match) have live text to read. Valid submits
 /// create the auth user, persist profile fields, then enter the shop layer.
 class _RegisterRoute extends StatefulWidget {
-  const _RegisterRoute({required this.auth, required this.repo});
+  const _RegisterRoute({
+    required this.auth,
+    required this.repo,
+    required this.language,
+  });
 
   final EcAuth auth;
   final EcRepository repo;
+  final ValueNotifier<EcAppLanguage> language;
 
   @override
   State<_RegisterRoute> createState() => _RegisterRouteState();
@@ -390,15 +400,16 @@ class _RegisterRouteState extends State<_RegisterRoute> {
       widget.repo,
       widget.auth.signInWithApple(),
     ),
-    onLanguage: () => _toast(context, context.l10n.toastChangeLanguage),
+    onLanguage: () => _toggleLanguage(context, widget.language),
     onViewPolicy: () => _toast(context, context.l10n.toastTermsPolicy),
   );
 }
 
 class _ForgotRoute extends StatefulWidget {
-  const _ForgotRoute({required this.auth});
+  const _ForgotRoute({required this.auth, required this.language});
 
   final EcAuth auth;
+  final ValueNotifier<EcAppLanguage> language;
 
   @override
   State<_ForgotRoute> createState() => _ForgotRouteState();
@@ -435,7 +446,7 @@ class _ForgotRouteState extends State<_ForgotRoute> {
     onBack: () => _back(context, '/login'),
     onLogin: () => _back(context, '/login'),
     onSend: _sending ? null : _send,
-    onLanguage: () => _toast(context, context.l10n.toastChangeLanguage),
+    onLanguage: () => _toggleLanguage(context, widget.language),
   );
 }
 
@@ -1053,6 +1064,44 @@ AnalyticsService? _analytics() => _maybeGetIt<AnalyticsService>();
 
 CrashReporter? _crashReporter() => _maybeGetIt<CrashReporter>();
 
+/// FR-07: đưa link hồ sơ ra share sheet. Không có [share] (DI vắng, hoặc
+/// test) thì chép vào clipboard — im lặng không làm gì mới là thứ không chấp
+/// nhận được với một nút đang hiện trên màn.
+Future<void> _shareDossierLink(
+  BuildContext context,
+  ShareService? share,
+  String url,
+) async {
+  final l10n = context.l10n;
+  try {
+    if (share == null) {
+      await Clipboard.setData(ClipboardData(text: url));
+      if (context.mounted) _toast(context, l10n.toastCopiedShareLink);
+      return;
+    }
+    await share.share(text: url, subject: l10n.dossierLinkTitle);
+  } on Object {
+    if (context.mounted) _toast(context, l10n.toastShareFailed);
+  }
+}
+
+/// Chỉ có hai ngôn ngữ, nên nút quả địa cầu ở màn trước-đăng-nhập lật thẳng
+/// chứ không đẩy sang màn `/language` (màn đó back về `/account`, chưa đăng
+/// nhập thì không có chỗ mà về).
+void _toggleLanguage(
+  BuildContext context,
+  ValueNotifier<EcAppLanguage> language,
+) {
+  final next = language.value == EcAppLanguage.vi
+      ? EcAppLanguage.en
+      : EcAppLanguage.vi;
+  language.value = next;
+  _toast(
+    context,
+    next == EcAppLanguage.vi ? 'Đã đổi sang Tiếng Việt' : 'Switched to English',
+  );
+}
+
 Future<void> _copyText(BuildContext context, String text, String label) async {
   await Clipboard.setData(ClipboardData(text: text));
   if (context.mounted) _toast(context, context.l10n.copiedLabel(label));
@@ -1634,6 +1683,9 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
           showManage: shops.any((shop) => shop.role != 'staff'),
           onSelect: widget.onSelect,
           onManage: widget.onManage,
+          // Cùng đích với nút "Tạo shop" ở màn chưa-có-shop; thiếu dòng này
+          // hàng "Tạo shop mới" vẫn vẽ ra nhưng bấm không ra gì.
+          onAddShop: widget.onCreateShop ?? widget.onManage,
           onLogout: widget.onLogout,
         );
       },
@@ -1894,17 +1946,28 @@ EcShopMember _memberFromDto(AppLocalizations l10n, MemberDto member) =>
       role: _roleDisplayName(l10n, member.role),
     );
 
-EcVideoType _videoTypeFromDto(VideoTypeDto type) => EcVideoType(
-  id: type.id,
-  name: type.name,
-  locked: type.isDefault,
-  icon: switch (type.name) {
-    'Đóng hàng' => Icons.inventory_2_outlined,
-    'Đơn vị vận chuyển' => Icons.local_shipping_outlined,
-    'Trả hàng' => Icons.assignment_return_outlined,
-    _ => Icons.videocam_outlined,
-  },
-);
+/// Loại tự đặt mang icon người tạo đã chọn; ba loại mặc định (và loại tạo
+/// trước khi màn chọn icon được nối dây) rơi về icon suy từ tên.
+EcVideoType _videoTypeFromDto(VideoTypeDto type) {
+  final pickedIcon = type.icon == null
+      ? null
+      : EcCreateTypeScreen.iconFor(type.icon!);
+  return EcVideoType(
+    id: type.id,
+    name: type.name,
+    locked: type.isDefault,
+    iconKey: type.icon,
+    colorHex: type.color,
+    icon:
+        pickedIcon ??
+        switch (type.name) {
+          'Đóng hàng' => Icons.inventory_2_outlined,
+          'Đơn vị vận chuyển' => Icons.local_shipping_outlined,
+          'Trả hàng' => Icons.assignment_return_outlined,
+          _ => Icons.videocam_outlined,
+        },
+  );
+}
 
 class _CreateTypeRoute extends StatefulWidget {
   const _CreateTypeRoute({
@@ -1928,6 +1991,8 @@ class _CreateTypeRouteState extends State<_CreateTypeRoute> {
     text: widget.type?.name ?? '',
   );
   var _saving = false;
+  late var _icon = EcCreateTypeScreen.iconIndexOf(widget.type?.iconKey);
+  late var _color = EcCreateTypeScreen.colorIndexOf(widget.type?.colorHex);
 
   @override
   void dispose() {
@@ -1940,12 +2005,25 @@ class _CreateTypeRouteState extends State<_CreateTypeRoute> {
     final name = _name.text.trim();
     if (name.isEmpty) return;
     setState(() => _saving = true);
+    final icon = EcCreateTypeScreen.iconKeys[_icon];
+    final color = EcCreateTypeScreen.colorHexes[_color];
     try {
       final typeId = widget.type?.id;
       if (typeId == null) {
-        await widget.repo.addVideoType(widget.shopId, name);
+        await widget.repo.addVideoType(
+          widget.shopId,
+          name,
+          icon: icon,
+          color: color,
+        );
       } else {
-        await widget.repo.renameVideoType(widget.shopId, typeId, name);
+        await widget.repo.renameVideoType(
+          widget.shopId,
+          typeId,
+          name,
+          icon: icon,
+          color: color,
+        );
       }
       if (mounted) widget.onDone?.call();
     } on Object catch (error) {
@@ -1959,6 +2037,10 @@ class _CreateTypeRouteState extends State<_CreateTypeRoute> {
   Widget build(BuildContext context) {
     return EcCreateTypeScreen(
       nameController: _name,
+      selectedIcon: _icon,
+      onIconSelected: (i) => setState(() => _icon = i),
+      selectedColor: _color,
+      onColorSelected: (i) => setState(() => _color = i),
       onCancel: () => Navigator.of(context).pop(),
       onCreate: _saving ? null : _save,
     );
@@ -2428,6 +2510,7 @@ class _OrderRoute extends StatefulWidget {
     required this.queue,
     required this.shop,
     required this.order,
+    this.share,
     this.evidenceCountOverrides,
     this.onBack,
     this.onOpenVideo,
@@ -2437,6 +2520,10 @@ class _OrderRoute extends StatefulWidget {
   final EcUploadQueue queue;
   final EcShopSummary shop;
   final OrderSummaryDto order;
+
+  /// Share sheet của hệ điều hành; `null` (thiếu DI trong test) thì nút chia
+  /// sẻ rơi về clipboard.
+  final ShareService? share;
   final _EvidenceCountOverrides? evidenceCountOverrides;
   final VoidCallback? onBack;
   final Future<void> Function(_VideoRouteExtra extra)? onOpenVideo;
@@ -2477,10 +2564,26 @@ class _OrderRouteState extends State<_OrderRoute> {
     } on Object {
       // Keep the empty map — evidence still renders, just without names.
     }
+    // FR-07: link hồ sơ khiếu nại, nếu web admin đã tạo cho đơn này. Best
+    // effort — nhân viên bị 403 ở endpoint này, và không có link thì thẻ chỉ
+    // ẩn đi chứ không được làm hỏng cả màn.
+    String? dossierUrl;
+    try {
+      final dossier = await widget.repo.dossier(
+        widget.shop.id,
+        widget.order.id,
+      );
+      if (dossier != null && !dossier.revoked) {
+        dossierUrl = widget.repo.dossierShareUrl(dossier.shareToken);
+      }
+    } on Object {
+      // Không có quyền hoặc mạng lỗi — coi như chưa có link.
+    }
     return _OrderDetailData(
       detail: detail,
       videoTypes: types,
       memberNames: memberNames,
+      dossierUrl: dossierUrl,
     );
   }
 
@@ -2488,14 +2591,29 @@ class _OrderRouteState extends State<_OrderRoute> {
     _detail = _load();
   });
 
-  int get _pendingCount => widget.queue.tasks
-      .where(
-        (t) =>
-            t.shopId == widget.shop.id &&
-            t.tracking == widget.order.tracking &&
-            t.state != EcUploadState.done,
-      )
-      .length;
+  Iterable<UploadTask> get _pendingTasks => widget.queue.tasks.where(
+    (t) =>
+        t.shopId == widget.shop.id &&
+        t.tracking == widget.order.tracking &&
+        t.state != EcUploadState.done,
+  );
+
+  int get _pendingCount => _pendingTasks.length;
+
+  /// "Thử lại" trên banner "còn N bằng chứng chưa upload". Banner nói về hàng
+  /// chờ upload, nên nút phải đẩy lại chính những task đó — tải lại chi tiết
+  /// đơn không gỡ được cái gì đang kẹt. Đọc chi tiết lại sau để timeline lấy
+  /// được trạng thái mới khi upload xong.
+  Future<void> _retryPendingUploads() async {
+    final stuck = _pendingTasks
+        .where((t) => t.state != EcUploadState.uploading)
+        .toList();
+    if (stuck.isEmpty) return;
+    for (final task in stuck) {
+      await widget.queue.retry(task.id);
+    }
+    if (mounted) _retry();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2560,7 +2678,23 @@ class _OrderRouteState extends State<_OrderRoute> {
               data.detail.order.tracking,
               context.l10n.labelTrackingCode,
             ),
-            onRetryUpload: _retry,
+            onRetryUpload: () => unawaited(_retryPendingUploads()),
+            dossierUrl: data.dossierUrl,
+            onCopyDossierLink: data.dossierUrl == null
+                ? null
+                : () => _copyText(
+                    context,
+                    data.dossierUrl!,
+                    context.l10n.dossierLinkTitle,
+                  ),
+            // Share sheet thật (share_plus đã có sẵn qua app_platform, dùng
+            // cho chia sẻ video); thiếu DI thì rơi về clipboard chứ không im
+            // lặng không làm gì.
+            onShareDossierLink: data.dossierUrl == null
+                ? null
+                : () => unawaited(
+                    _shareDossierLink(context, widget.share, data.dossierUrl!),
+                  ),
             onAttachPhoto: () => _attachPhoto(
               context,
               widget.queue,
@@ -2581,10 +2715,15 @@ class _OrderDetailData {
     required this.detail,
     required this.videoTypes,
     this.memberNames = const {},
+    this.dossierUrl,
   });
 
   final OrderDetailDto detail;
   final List<VideoTypeDto> videoTypes;
+
+  /// Link công khai của hồ sơ khiếu nại, `null` khi đơn chưa có hoặc đã bị
+  /// thu hồi — thẻ link chỉ hiện khi có giá trị.
+  final String? dossierUrl;
 
   /// Account uid -> display name (name, else email), for resolving
   /// [EvidenceDto.createdByUid] to something readable.
@@ -3314,12 +3453,15 @@ GoRouter _buildRouter(
       ),
       GoRoute(
         path: '/login',
-        pageBuilder: (c, s) =>
-            _directionalPage(s, _LoginRoute(auth: auth, repo: repo)),
+        pageBuilder: (c, s) => _directionalPage(
+          s,
+          _LoginRoute(auth: auth, repo: repo, language: language),
+        ),
       ),
       GoRoute(
         path: '/register',
-        builder: (c, s) => _RegisterRoute(auth: auth, repo: repo),
+        builder: (c, s) =>
+            _RegisterRoute(auth: auth, repo: repo, language: language),
       ),
       GoRoute(
         path: '/phone-setup',
@@ -3328,7 +3470,7 @@ GoRouter _buildRouter(
       ),
       GoRoute(
         path: '/forgot',
-        builder: (c, s) => _ForgotRoute(auth: auth),
+        builder: (c, s) => _ForgotRoute(auth: auth, language: language),
       ),
       GoRoute(
         path: '/shops',
@@ -3458,6 +3600,7 @@ GoRouter _buildRouter(
                       maxRecording: shop.clipBudget.maxRecording,
                       isActive: isRecordTabActive,
                       onBack: () => c.go('/home'),
+                      onQueueTap: () => c.push('/queue'),
                       onRequestCode: () => c.push<String>('/manual'),
                       onConfirmManualCode: (code) =>
                           _confirmManualTracking(c, repo, shop.id, code),
@@ -3579,6 +3722,7 @@ GoRouter _buildRouter(
           return _OrderRoute(
             repo: repo,
             queue: queue,
+            share: share,
             shop: shop,
             order: order,
             evidenceCountOverrides: evidenceCountOverrides,

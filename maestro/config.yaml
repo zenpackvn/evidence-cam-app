@@ -1,14 +1,21 @@
-appId: com.aktechvn.quangsat
+appId: com.aktechvn.zenpack
 ---
-# Run all flows in order
+# EvidenceCam — Flow 2 (xem bằng chứng) và Flow 3 (quay + upload).
+#
+# Thứ tự có ý nghĩa: 30 quay ra clip, 31 mới có thứ để kiểm tra trong hàng đợi.
+#
+# Cần biến môi trường, xem README:
+#   maestro test maestro/ \
+#     -e EC_EMAIL=... -e EC_PASSWORD=... \
+#     -e EC_TRACKING=SPXVN024567890 -e EC_TRACKING_LOWER=spxvn024567890 \
+#     -e EC_VIDEO_TYPE="Đóng hàng"
 flows:
-  - 01_onboarding.yaml
-  - 02_register.yaml
-  - 03_login_validation.yaml
-  - 04_home.yaml
-  - 05_bookmarks_crud.yaml
-  - 06_collections_crud.yaml
-  - 07_notifications.yaml
-  - 08_profile.yaml
-  - 09_change_password.yaml
-  - 10_signout.yaml
+  - 20_flow2_orders.yaml
+  - 21_flow2_order_detail.yaml
+  - 30_flow3_record.yaml
+  - 31_flow3_queue.yaml
+
+# Các flow 01–11 là rác còn lại của Flutter Starter Template (bookmarks /
+# collections) và trỏ vào appId cũ `com.aktechvn.quangsat`. Chúng không chạy
+# được với EvidenceCam — cố ý bỏ khỏi danh sách này thay vì xóa, để ai đó xác
+# nhận không còn ai dùng rồi hẵng dọn.

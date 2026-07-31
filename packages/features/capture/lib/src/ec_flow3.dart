@@ -28,12 +28,12 @@ TextStyle _t(double size, FontWeight weight, Color color) =>
 /// Idle recording screen — camera waiting for a bill to be framed.
 class EcWaitBill2Screen extends StatelessWidget {
   const EcWaitBill2Screen({
-    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.typeLabel = 'Đóng hàng',
     this.resolutionLabel = '720p',
     this.preview,
     this.onBack,
+    this.onQueueTap,
     this.onPickType,
     this.onSettings,
     this.onFlipCamera,
@@ -44,7 +44,6 @@ class EcWaitBill2Screen extends StatelessWidget {
     super.key,
   });
 
-  final String shopName;
   final int queueCount;
   final String typeLabel;
   final String resolutionLabel;
@@ -53,6 +52,7 @@ class EcWaitBill2Screen extends StatelessWidget {
   /// placeholder is shown when `null` (design mock / no camera).
   final Widget? preview;
   final VoidCallback? onBack;
+  final VoidCallback? onQueueTap;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
   final VoidCallback? onFlipCamera;
@@ -64,17 +64,18 @@ class EcWaitBill2Screen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
-      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
+      onQueueTap: onQueueTap,
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
       onManualEntry: onManualEntry,
       onResolution: onResolution,
+      showScanFrame: true,
       // Matches _FramingCorners' frame fractions so the hint reads inside the
       // frame and the manual-entry pill sits just below it, never overlapping.
       centerArea: LayoutBuilder(
@@ -177,7 +178,6 @@ class EcWaitBill2Screen extends StatelessWidget {
 /// it with an elapsed-time counter.
 class EcRecording2Screen extends StatelessWidget {
   const EcRecording2Screen({
-    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.code = 'SPXVN024567890',
     this.elapsed = '00:00',
@@ -185,6 +185,7 @@ class EcRecording2Screen extends StatelessWidget {
     this.resolutionLabel = '720p',
     this.preview,
     this.onBack,
+    this.onQueueTap,
     this.onPickType,
     this.onSettings,
     this.onFlipCamera,
@@ -196,7 +197,6 @@ class EcRecording2Screen extends StatelessWidget {
     super.key,
   });
 
-  final String shopName;
   final int queueCount;
   final String code;
 
@@ -209,6 +209,7 @@ class EcRecording2Screen extends StatelessWidget {
   /// placeholder is shown when `null` (design mock / no camera).
   final Widget? preview;
   final VoidCallback? onBack;
+  final VoidCallback? onQueueTap;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
   final VoidCallback? onFlipCamera;
@@ -221,13 +222,12 @@ class EcRecording2Screen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
-      headerTitle: context.l10n.navRecord,
-      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
+      onQueueTap: onQueueTap,
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
@@ -260,7 +260,6 @@ class EcRecording2Screen extends StatelessWidget {
 /// Order-cutover transition screen — order A just closed, order B started.
 class EcCutoverBScreen extends StatelessWidget {
   const EcCutoverBScreen({
-    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.closedSummary = 'Đã chốt mã vận đơn A (02:45)',
     this.signalText = 'Âm báo + rung khi chuyển đơn',
@@ -270,6 +269,7 @@ class EcCutoverBScreen extends StatelessWidget {
     this.resolutionLabel = '720p',
     this.preview,
     this.onBack,
+    this.onQueueTap,
     this.onPickType,
     this.onSettings,
     this.onFlipCamera,
@@ -278,7 +278,6 @@ class EcCutoverBScreen extends StatelessWidget {
     super.key,
   });
 
-  final String shopName;
   final int queueCount;
   final String closedSummary;
   final String signalText;
@@ -291,6 +290,7 @@ class EcCutoverBScreen extends StatelessWidget {
   /// confirmation moment, so it must stay visible, not go black.
   final Widget? preview;
   final VoidCallback? onBack;
+  final VoidCallback? onQueueTap;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
   final VoidCallback? onFlipCamera;
@@ -300,13 +300,12 @@ class EcCutoverBScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
-      headerTitle: context.l10n.navRecord,
-      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
+      onQueueTap: onQueueTap,
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
@@ -353,7 +352,6 @@ class EcCutoverBScreen extends StatelessWidget {
 /// the shop's setting (FR-18), so the caller passes the text.
 class EcNearLimitScreen extends StatelessWidget {
   const EcNearLimitScreen({
-    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.warningText = 'Sắp chạm trần 2 phút — video sẽ tự chốt',
     this.code = 'SPXVN024567890',
@@ -362,6 +360,7 @@ class EcNearLimitScreen extends StatelessWidget {
     this.resolutionLabel = '720p',
     this.preview,
     this.onBack,
+    this.onQueueTap,
     this.onPickType,
     this.onSettings,
     this.onFlipCamera,
@@ -373,7 +372,6 @@ class EcNearLimitScreen extends StatelessWidget {
     super.key,
   });
 
-  final String shopName;
   final int queueCount;
   final String warningText;
   final String code;
@@ -382,6 +380,7 @@ class EcNearLimitScreen extends StatelessWidget {
   final String resolutionLabel;
   final Widget? preview;
   final VoidCallback? onBack;
+  final VoidCallback? onQueueTap;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
   final VoidCallback? onFlipCamera;
@@ -394,13 +393,12 @@ class EcNearLimitScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
-      headerTitle: context.l10n.navRecord,
-      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
+      onQueueTap: onQueueTap,
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
@@ -469,7 +467,6 @@ class _WarnBanner extends StatelessWidget {
 /// original order.
 class EcReturnRecScreen extends StatelessWidget {
   const EcReturnRecScreen({
-    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.code = 'SPXVN088877766 (hoàn)',
     this.duration = '00:32',
@@ -478,6 +475,7 @@ class EcReturnRecScreen extends StatelessWidget {
     this.resolutionLabel = '720p',
     this.preview,
     this.onBack,
+    this.onQueueTap,
     this.onPickType,
     this.onSettings,
     this.onFlipCamera,
@@ -486,7 +484,6 @@ class EcReturnRecScreen extends StatelessWidget {
     super.key,
   });
 
-  final String shopName;
   final int queueCount;
   final String code;
   final String duration;
@@ -495,6 +492,7 @@ class EcReturnRecScreen extends StatelessWidget {
   final String resolutionLabel;
   final Widget? preview;
   final VoidCallback? onBack;
+  final VoidCallback? onQueueTap;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
   final VoidCallback? onFlipCamera;
@@ -504,13 +502,12 @@ class EcReturnRecScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
-      headerTitle: context.l10n.navRecord,
-      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
+      onQueueTap: onQueueTap,
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
@@ -540,24 +537,23 @@ class EcReturnRecScreen extends StatelessWidget {
 /// button).
 class _CamScaffold extends StatelessWidget {
   const _CamScaffold({
-    required this.shopName,
     required this.queueCount,
     required this.typeLabel,
     required this.resolutionLabel,
     required this.centerArea,
-    this.headerTitle,
     this.preview,
     this.onBack,
+    this.onQueueTap,
     this.onPickType,
     this.onSettings,
     this.onFlipCamera,
     this.onManualEntry,
     this.onResolution,
+    this.showScanFrame = false,
     this.showStopButton = false,
     this.onStop,
   });
 
-  final String shopName;
   final int queueCount;
   final String typeLabel;
   final String resolutionLabel;
@@ -567,11 +563,17 @@ class _CamScaffold extends StatelessWidget {
   final String? headerTitle;
   final Widget? preview;
   final VoidCallback? onBack;
+
+  /// Chạm chip mây ở header → mở màn trạng thái tải lên.
+  final VoidCallback? onQueueTap;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
   final VoidCallback? onFlipCamera;
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
+  /// Framing brackets + sweeping scan line. Only the idle screen shows them —
+  /// once recording starts the frame would just crop the operator's view.
+  final bool showScanFrame;
   final bool showStopButton;
   final VoidCallback? onStop;
 
@@ -589,7 +591,7 @@ class _CamScaffold extends StatelessWidget {
           const Positioned.fill(
             child: IgnorePointer(child: ColoredBox(color: Color(0x73161616))),
           ),
-          const Positioned.fill(child: _FramingCorners()),
+          if (showScanFrame) const Positioned.fill(child: _FramingCorners()),
           Positioned.fill(child: centerArea),
           Positioned(
             top: 0,
@@ -601,6 +603,7 @@ class _CamScaffold extends StatelessWidget {
                 title: headerTitle ?? shopName,
                 queueCount: queueCount,
                 onBack: onBack,
+                onQueueTap: onQueueTap,
               ),
             ),
           ),
@@ -631,14 +634,51 @@ class _CamScaffold extends StatelessWidget {
   }
 }
 
-/// The four white framing brackets the design draws around the bill area.
-class _FramingCorners extends StatelessWidget {
+/// The four white framing brackets the design draws around the bill area,
+/// plus the line that sweeps the window while the bill/QR scanner is live —
+/// which on every Flow 3 camera screen it is, recording included (the scanner
+/// keeps watching for the next bill so it can cut over).
+class _FramingCorners extends StatefulWidget {
   const _FramingCorners();
 
+  @override
+  State<_FramingCorners> createState() => _FramingCornersState();
+}
+
+class _FramingCornersState extends State<_FramingCorners>
+    with SingleTickerProviderStateMixin {
   static const _topLeft = 'M2 34l0-26q0-6 6-6l26 0';
   static const _topRight = 'M0 2l26 0q6 0 6 6l0 26';
   static const _bottomLeft = 'M2 0l0 26q0 6 6 6l26 0';
   static const _bottomRight = 'M0 32l26 0q6 0 6-6l0-26';
+
+  late final AnimationController _sweep = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  );
+  late final Animation<Alignment> _sweepAlignment =
+      CurvedAnimation(parent: _sweep, curve: Curves.easeInOut).drive(
+        AlignmentTween(begin: Alignment.topCenter, end: Alignment.bottomCenter),
+      );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reduce Motion parks the line in the middle instead of sweeping.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _sweep
+        ..stop()
+        ..value = 0.5;
+    } else if (!_sweep.isAnimating) {
+      _sweep.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _sweep.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -655,6 +695,18 @@ class _FramingCorners extends StatelessWidget {
           final bottom = height * 0.313;
           return Stack(
             children: [
+              Positioned(
+                left: left,
+                right: left,
+                top: top,
+                bottom: bottom,
+                child: ClipRect(
+                  child: AlignTransition(
+                    alignment: _sweepAlignment,
+                    child: const _ScanLine(),
+                  ),
+                ),
+              ),
               Positioned(left: left, top: top, child: const _Corner(_topLeft)),
               Positioned(
                 right: left,
@@ -677,6 +729,33 @@ class _FramingCorners extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The sweeping scan line: a hairline that fades out at both frame edges.
+class _ScanLine extends StatelessWidget {
+  const _ScanLine();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 2,
+    decoration: BoxDecoration(
+      // `--chart-2`, the design system's lighter green: the only token that
+      // stays legible against an arbitrary (and darkened) camera scene.
+      gradient: LinearGradient(
+        colors: [
+          PenColors.success.withValues(alpha: 0),
+          PenColors.success,
+          PenColors.success.withValues(alpha: 0),
+        ],
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: PenColors.success.withValues(alpha: 0.35),
+          blurRadius: 8,
+        ),
+      ],
+    ),
+  );
 }
 
 class _Corner extends StatelessWidget {
@@ -759,6 +838,7 @@ class _CamHeader extends StatelessWidget {
     required this.title,
     required this.queueCount,
     this.onBack,
+    this.onQueueTap,
   });
 
   /// The shop name while idle; the design switches it to "Ghi hình" once a
@@ -766,6 +846,7 @@ class _CamHeader extends StatelessWidget {
   final String title;
   final int queueCount;
   final VoidCallback? onBack;
+  final VoidCallback? onQueueTap;
 
   @override
   Widget build(BuildContext context) {
@@ -806,7 +887,12 @@ class _CamHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          _QueueChip(count: queueCount),
+          // ponytail: EcTap thay vì _Tap — _Tap thêm padding 4 làm lệch chip
+          // so với thiết kế; ở đây chỉ cần vùng bấm.
+          EcTap(
+            onTap: onQueueTap,
+            child: _QueueChip(count: queueCount),
+          ),
         ],
       ),
     );
@@ -1080,29 +1166,34 @@ class _TypeChipRow extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       children: [
         Flexible(
-          child: EcTap(
-            onTap: onPickType,
-            child: PenBox(
-              fill: const Color(0x1FFFFFFF),
-              radius: 999,
-              axis: PenAxis.row,
-              hugMain: true,
-              padding: const EdgeInsets.symmetric(
-                vertical: 9,
-                horizontal: 16,
-              ),
-              children: [
-                Flexible(
-                  child: PenText(
-                    typeLabel,
-                    size: 15,
-                    color: const Color(0xFF67BB75),
-                    weight: FontWeight.w800,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+          child: Opacity(
+            // Khoá đổi loại video giữa lúc quay (xem RecordingSession) — chip
+            // phải trông bị khoá chứ không sáng như thường.
+            opacity: onPickType == null ? kEcDisabledOpacity : 1,
+            child: EcTap(
+              onTap: onPickType,
+              child: PenBox(
+                fill: const Color(0x1FFFFFFF),
+                radius: 999,
+                axis: PenAxis.row,
+                hugMain: true,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 9,
+                  horizontal: 16,
                 ),
-              ],
+                children: [
+                  Flexible(
+                    child: PenText(
+                      typeLabel,
+                      size: 15,
+                      color: const Color(0xFF67BB75),
+                      weight: FontWeight.w800,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1143,11 +1234,23 @@ class _Tap extends StatelessWidget {
   Widget build(BuildContext context) {
     final button = EcTap(
       onTap: onTap,
-      child: Padding(padding: const EdgeInsets.all(4), child: child),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        // Đang quay thì đổi camera / độ phân giải bị chặn. Không làm mờ thì
+        // nút trông y hệt lúc bấm được, người dùng bấm mãi không hiểu vì sao.
+        child: Opacity(
+          opacity: onTap == null ? kEcDisabledOpacity : 1,
+          child: child,
+        ),
+      ),
     );
     return tooltip == null ? button : Tooltip(message: tooltip, child: button);
   }
 }
+
+/// Độ mờ của control camera đang bị khoá — dùng chung để mọi nút bị khoá
+/// trông giống nhau.
+const kEcDisabledOpacity = 0.4;
 
 // --- UploadQueue ---------------------------------------------------------
 

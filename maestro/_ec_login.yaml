@@ -1,0 +1,34 @@
+appId: com.aktechvn.zenpack
+name: "_helper - Đăng nhập EvidenceCam và vào được tab Vận đơn"
+---
+# Quyền camera/ảnh xin ngay ở launch: Flow 3 mở camera là chạm quyền, và một
+# dialog quyền bật lên giữa flow sẽ làm mọi selector sau đó trượt.
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+
+- extendedWaitUntil:
+    visible:
+      text: "Đăng nhập"
+    timeout: 30000
+
+- tapOn:
+    text: "Nhập email của bạn"
+- inputText: ${EC_EMAIL}
+
+- tapOn:
+    text: "Nhập mật khẩu của bạn"
+- inputText: ${EC_PASSWORD}
+- hideKeyboard
+
+- tapOn:
+    text: "Đăng nhập"
+    index: 1
+
+# Đăng nhập xong đáp xuống /home = tab Vận đơn. Chờ dài vì lần đầu còn phải
+# gọi backend lấy shop + danh sách đơn.
+- extendedWaitUntil:
+    visible:
+      text: "Ghi hình"
+    timeout: 45000

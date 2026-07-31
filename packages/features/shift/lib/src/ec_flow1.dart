@@ -1638,12 +1638,29 @@ class EcVideoType {
     this.id,
     this.locked = false,
     this.icon = LucideIcons.video,
+    this.iconKey,
+    this.colorHex,
   });
 
   final String name;
   final String? id;
   final bool locked;
   final IconData icon;
+
+  /// Khóa icon người tạo đã chọn (một trong [EcCreateTypeScreen.iconKeys]).
+  /// `null` với 3 loại mặc định và loại tạo trước khi có tính năng này.
+  final String? iconKey;
+
+  /// `#RRGGBB` người tạo đã chọn; `null` = chưa chọn.
+  final String? colorHex;
+
+  /// Màu để tô icon trong danh sách. Chưa chọn thì trả `null` để nơi hiển thị
+  /// dùng màu mặc định của nó.
+  Color? get color {
+    final hex = colorHex;
+    if (hex == null || !RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(hex)) return null;
+    return Color(0xFF000000 | int.parse(hex.substring(1), radix: 16));
+  }
 }
 
 /// ShopDetail — member list + invite row, then shop settings: recording
@@ -2180,7 +2197,11 @@ class _VideoTypeRow extends StatelessWidget {
           axis: PenAxis.row,
           main: MainAxisAlignment.center,
           cross: CrossAxisAlignment.center,
-          children: [Icon(type.icon, size: 21, color: PenColors.ink)],
+          // Màu người tạo chọn hiện ở đây — nếu không thì hai hàng chọn
+          // icon/màu ở màn tạo loại chẳng dẫn tới đâu cả.
+          children: [
+            Icon(type.icon, size: 21, color: type.color ?? PenColors.ink),
+          ],
         ),
         Expanded(
           child: PenText(
@@ -2383,6 +2404,46 @@ class EcCreateTypeScreen extends StatelessWidget {
   }
 
   /// The six icons the design offers for a custom video type.
+  /// Khóa gửi lên backend cho từng ô icon, **cùng thứ tự** với
+  /// [_iconChoices]. Để sát nhau để thêm/bớt icon là thấy ngay phải sửa cả
+  /// hai; backend chỉ nhận đúng 6 khóa này.
+  static const iconKeys = [
+    'archive',
+    'truck',
+    'shopping-cart',
+    'clipboard-check',
+    'shield-check',
+    'package-open',
+  ];
+
+  /// `#RRGGBB` của từng ô màu, cùng thứ tự với [_colorChoices].
+  static const colorHexes = [
+    '#161616',
+    '#16522C',
+    '#1F9047',
+    '#B6770B',
+    '#D02D27',
+    '#636363',
+  ];
+
+  /// Icon ứng với khóa đã lưu, `null` nếu khóa lạ (backend đổi danh sách mà
+  /// app chưa cập nhật) — nơi gọi tự chọn icon dự phòng.
+  static IconData? iconFor(String key) {
+    final i = iconKeys.indexOf(key);
+    return i < 0 ? null : _iconChoices[i];
+  }
+
+  /// Vị trí ô ứng với khóa/màu đã lưu; không nhận ra thì rơi về ô đầu.
+  static int iconIndexOf(String? key) {
+    final i = iconKeys.indexOf(key ?? '');
+    return i < 0 ? 0 : i;
+  }
+
+  static int colorIndexOf(String? hex) {
+    final i = colorHexes.indexOf((hex ?? '').toUpperCase());
+    return i < 0 ? 0 : i;
+  }
+
   static const _iconChoices = [
     LucideIcons.archive,
     LucideIcons.truck,

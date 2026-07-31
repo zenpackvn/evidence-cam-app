@@ -20,7 +20,8 @@ import 'package:flutter/cupertino.dart'
         CupertinoAlertDialog,
         CupertinoDialogAction,
         showCupertinoDialog;
-import 'package:flutter/foundation.dart' show ValueListenable;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, ValueListenable, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -39,6 +40,7 @@ Duration _warnAtFor(Duration cap) => cap > const Duration(minutes: 2)
 class EcRecordRoute extends StatefulWidget {
   const EcRecordRoute({
     this.onBack,
+    this.onQueueTap,
     this.onRequestCode,
     this.onConfirmManualCode,
     this.onRequestType,
@@ -60,6 +62,10 @@ class EcRecordRoute extends StatefulWidget {
 
   /// Called when the header back chevron is tapped.
   final VoidCallback? onBack;
+
+  /// Called when the header upload chip is tapped — opens the upload-queue
+  /// screen. Đang quay thì chốt clip trước khi rời màn, y như nút back.
+  final VoidCallback? onQueueTap;
 
   /// Asks for a tracking code (opens the manual-entry sheet); starting a
   /// recording is gated on a non-empty result.
@@ -339,6 +345,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         resolutionLabel: state.resolutionLabel,
         preview: preview,
         onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
+        onQueueTap: () => unawaited(_leaveAfterFinalizing(widget.onQueueTap)),
         onStop: () => _bloc.add(const RecordingStopRequested()),
       );
     }
@@ -357,6 +364,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           resolutionLabel: state.resolutionLabel,
           preview: preview,
           onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
+          onQueueTap: () => unawaited(_leaveAfterFinalizing(widget.onQueueTap)),
           onPickType: null,
           onSettings: null,
           onNavOrders: () =>
@@ -376,6 +384,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           resolutionLabel: state.resolutionLabel,
           preview: preview,
           onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
+          onQueueTap: () => unawaited(_leaveAfterFinalizing(widget.onQueueTap)),
           onStop: () => _bloc.add(const RecordingStopRequested()),
         );
       }
@@ -388,6 +397,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         resolutionLabel: state.resolutionLabel,
         preview: preview,
         onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
+        onQueueTap: () => unawaited(_leaveAfterFinalizing(widget.onQueueTap)),
         onPickType: null,
         onSettings: null,
         onNavOrders: () => unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
@@ -404,6 +414,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       resolutionLabel: state.resolutionLabel,
       preview: preview,
       onBack: widget.onBack,
+      onQueueTap: widget.onQueueTap,
       onPickType: _pickType,
       onSettings: _pickType,
       onResolution: () => _bloc.add(const RecordingResolutionCycled()),
@@ -545,10 +556,17 @@ class _CoverPreviewState extends State<_CoverPreview> {
               ),
             );
           }
-          // See didUpdateWidget: only the live preview's rotation is
-          // affected by the recording-start rebind, not the recorded file,
-          // so the correction is scoped to isRecordingVideo.
-          final recordingTurns = controller.value.isRecordingVideo ? 3 : 0;
+          // Only the live preview's rotation is affected by the
+          // recording-start rebind, not the recorded file — so the correction
+          // is scoped to isRecordingVideo, and to Android: package:camera
+          // wraps the preview in a RotatedBox *only there*
+          // (camera_preview.dart, `_wrapInRotatedBox`), so counter-rotating on
+          // iOS just turns an upright preview on its side.
+          final recordingTurns =
+              controller.value.isRecordingVideo &&
+                  defaultTargetPlatform == TargetPlatform.android
+              ? 3
+              : 0;
           return ClipRect(
             child: FittedBox(
               fit: BoxFit.cover,
@@ -559,7 +577,14 @@ class _CoverPreviewState extends State<_CoverPreview> {
                   key: _boundaryKey,
                   child: RotatedBox(
                     quarterTurns: recordingTurns,
-                    child: CameraPreview(controller),
+                    // ponytail: iOS dùng thẳng texture thay cho CameraPreview —
+                    // CameraPreview lật AspectRatio sang ngang khi
+                    // recordingOrientation bị đọc là landscape (điện thoại nằm
+                    // gần phẳng trên bàn), làm preview méo/quay dù file quay ra
+                    // vẫn đúng. SizedBox trên đã dựng sẵn khung 9:16 đúng rồi.
+                    child: defaultTargetPlatform == TargetPlatform.android
+                        ? CameraPreview(controller)
+                        : controller.buildPreview(),
                   ),
                 ),
               ),

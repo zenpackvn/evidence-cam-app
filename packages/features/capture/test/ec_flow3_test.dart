@@ -53,6 +53,14 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('tapping the upload chip fires onQueueTap', (tester) async {
+      var taps = 0;
+      await _pump(tester, EcWaitBill2Screen(onQueueTap: () => taps++));
+      await tester.tap(find.byIcon(LucideIcons.cloudUpload));
+      await tester.pump();
+      expect(taps, 1);
+    });
+
     testWidgets('hides the bottom tab bar while inside camera screens', (
       tester,
     ) async {

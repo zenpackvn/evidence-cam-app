@@ -886,6 +886,8 @@ class _Tab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Tab đang chọn chỉ khác nhau ở **màu**: gạch chân và chữ đậm làm cột
+    // active cao/rộng hơn hàng xóm, kéo icon lệch lên so với các tab còn lại.
     final color = active ? PenColors.ink : PenColors.mut;
     return EcTap(
       onTap: onTap,
@@ -898,13 +900,9 @@ class _Tab extends StatelessWidget {
             label,
             size: 14,
             color: color,
-            weight: active ? FontWeight.w700 : FontWeight.w500,
+            weight: FontWeight.w500,
             softWrap: false,
           ),
-          if (active) ...[
-            const SizedBox(height: 7),
-            const PenBox(width: 34, height: 3, fill: PenColors.ink, radius: 2),
-          ],
         ],
       ),
     );
