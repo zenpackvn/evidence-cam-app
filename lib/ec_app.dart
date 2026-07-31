@@ -881,11 +881,15 @@ class _LoginMethodsRoute extends StatelessWidget {
   }
 }
 
-/// Quota — reads the real per-period figures from the repository.
+/// Quota — reads the plan's cap/retention from the repository, but computes
+/// usage (bytes used, video counts, per-type breakdown) from the clips
+/// actually sitting in [queue] so the numbers on screen can never disagree
+/// with what's really stored on the device.
 class _QuotaRoute extends StatefulWidget {
-  const _QuotaRoute({required this.repo, this.shopId});
+  const _QuotaRoute({required this.repo, required this.queue, this.shopId});
 
   final EcRepository repo;
+  final EcUploadQueue queue;
 
   /// Shop đang chọn. Gói cước gắn với tài khoản CHỦ shop, nên phải hỏi theo
   /// shop thì quản lý/nhân viên mới thấy đúng gói đang chi phối ca làm của họ
@@ -905,6 +909,34 @@ class _QuotaRouteState extends State<_QuotaRoute> {
     _analytics()?.trackPaywallViewed();
   }
 
+  /// Groups this shop's clips by [UploadTask.type], summing each clip's
+  /// on-disk file size. Sorted largest-first so the breakdown (and its
+  /// stacked bar) read biggest-type-first, matching the reference design.
+  List<EcQuotaTypeUsage> _localTypeUsage() {
+    final byType = <String, (int count, int bytes)>{};
+    for (final task in widget.queue.tasks) {
+      if (task.shopId != widget.shopId) continue;
+      var bytes = 0;
+      try {
+        bytes = File(task.filePath).lengthSync();
+      } on Object {
+        // Clip's file was moved/cleaned up since it was queued — still
+        // count the video, just not its (now unknown) size.
+      }
+      final prev = byType[task.type] ?? (0, 0);
+      byType[task.type] = (prev.$1 + 1, prev.$2 + bytes);
+    }
+    final usage = [
+      for (final entry in byType.entries)
+        EcQuotaTypeUsage(
+          type: entry.key,
+          videoCount: entry.value.$1,
+          bytes: entry.value.$2,
+        ),
+    ]..sort((a, b) => b.bytes.compareTo(a.bytes));
+    return usage;
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<QuotaDto>(
@@ -917,21 +949,30 @@ class _QuotaRouteState extends State<_QuotaRoute> {
           );
         }
         final quota = snap.data!;
+        final typeUsage = _localTypeUsage();
+        final videoCount = typeUsage.fold<int>(
+          0,
+          (total, u) => total + u.videoCount,
+        );
+        final usedBytes = typeUsage.fold<int>(0, (total, u) => total + u.bytes);
         return EcQuotaScreen(
           planLabel: _planDisplayName(context.l10n, quota.planCode),
-          usedBytes: quota.usedBytes,
-          // Derived from usedBytes/capBytes rather than trusting the API's
-          // separate remaining_bytes field, so the "remaining" label can
-          // never disagree with the usage bar below it (which is itself
-          // usedBytes/capBytes-based).
+          // Computed from the clips actually on this device rather than the
+          // API's usedBytes, so this always matches what quotaByType lists
+          // below it.
+          usedBytes: usedBytes,
           capBytes: quota.capBytes,
           retentionTotalDays: quota.retentionDays,
+          videoCount: videoCount,
+          typeUsage: typeUsage,
           canManagePlan: quota.canManagePlan,
           onBack: () => _back(context, '/account'),
           onUpgrade: () {
             _analytics()?.trackPurchaseStarted(planCode: quota.planCode);
             _toast(context, context.l10n.toastUpgradeComingSoon);
           },
+          onPaymentHistoryTap: () =>
+              _toast(context, context.l10n.toastUpgradeComingSoon),
         );
       },
     );
@@ -3230,8 +3271,10 @@ GoRouter _buildRouter(
         // set only inside the /record branch (see EcRecordRoute) never even
         // gets consulted when that branch has nothing left to pop into — the
         // root navigator reports "can't pop" and Android exits the app
-        // instead. Blocking pop here, at the root-level shell page, while the
-        // record tab is active covers that case too.
+        // instead. Blocking pop here, at the root-level shell page, covers
+        // every tab: a left-edge back-swipe on any of the 3 tab roots is a
+        // no-op rather than exiting the app — pushed routes on top (e.g.
+        // /order) still pop normally since they sit above this PopScope.
         builder: (c, s, navigationShell) {
           // Assigned synchronously (not in a post-frame callback) so that
           // when the record branch is built for the first time this same
@@ -3239,10 +3282,7 @@ GoRouter _buildRouter(
           // of a stale one from before the switch.
           isRecordTabActive?.value =
               navigationShell.currentIndex == _recordBranchIndex;
-          return PopScope(
-            canPop: navigationShell.currentIndex != _recordBranchIndex,
-            child: navigationShell,
-          );
+          return PopScope(canPop: false, child: navigationShell);
         },
         branches: [
           StatefulShellBranch(
@@ -3892,8 +3932,11 @@ GoRouter _buildRouter(
       // --- account sub-screens (pushed, back via pop) ---
       GoRoute(
         path: '/quota',
-        builder: (c, s) =>
-            _QuotaRoute(repo: repo, shopId: _selected(selectedShop)?.id),
+        builder: (c, s) => _QuotaRoute(
+          repo: repo,
+          queue: queue,
+          shopId: _selected(selectedShop)?.id,
+        ),
       ),
       GoRoute(
         path: '/language',

@@ -133,13 +133,6 @@ class EcAccountTabScreen extends StatelessWidget {
                       label: context.l10n.accountDeleteAccount,
                       onTap: onDeleteAccount,
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Text(
-                        context.l10n.accountShopMgmtHint,
-                        style: _t(12, FontWeight.w400, BrandColors.mut),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -232,7 +225,11 @@ class EcEditProfileScreen extends StatelessWidget {
                                     )(value),
                             ),
                             const SizedBox(height: 14),
-                            _LockedField(label: 'Email', value: email),
+                            _LockedField(
+                              label: 'Email',
+                              value: email,
+                              hint: context.l10n.accountEmailLockedHint,
+                            ),
                             const Spacer(),
                             const SizedBox(height: 14),
                             _ValidatedPrimaryButton(
@@ -544,8 +541,39 @@ String ecHumanBytes(int b) {
   return '${(b / 1024).round()} KB';
 }
 
+/// [ecHumanBytes], but with the Vietnamese comma decimal separator (the rest
+/// of this screen's copy is Vietnamese-first).
+String ecHumanBytesVi(int b) => ecHumanBytes(b).replaceAll('.', ',');
+
+/// One video type's local storage footprint, used by [EcQuotaScreen]'s
+/// "Dung lượng theo loại" breakdown. Computed on-device from the upload
+/// queue's actual clip files, so it always agrees with what's really stored —
+/// never a separate, possibly-stale server figure.
+@immutable
+class EcQuotaTypeUsage {
+  const EcQuotaTypeUsage({
+    required this.type,
+    required this.videoCount,
+    required this.bytes,
+  });
+
+  final String type;
+  final int videoCount;
+  final int bytes;
+}
+
+/// Chart colors for the per-type breakdown bar/dots. Not part of the design
+/// token set (`PenColors`) — that file has no data-viz palette — chosen to
+/// stay visually distinct and calm against the rest of the screen.
+const _quotaTypeColors = <Color>[
+  PenColors.link,
+  Color(0xFF1AA6A6),
+  Color(0xFFE08A2E),
+  PenColors.danger,
+];
+
 /// Quota — current plan, storage usage (GB) w/ progress bar, retention,
-/// and an upgrade CTA.
+/// a by-type storage breakdown and an upgrade CTA.
 class EcQuotaScreen extends StatelessWidget {
   const EcQuotaScreen({
     this.planLabel = '500 MB',
@@ -553,8 +581,11 @@ class EcQuotaScreen extends StatelessWidget {
     this.remainingBytes,
     this.capBytes = 500 * 1024 * 1024,
     this.retentionTotalDays = 20,
+    this.videoCount = 0,
+    this.typeUsage = const [],
     this.onBack,
     this.onUpgrade,
+    this.onPaymentHistoryTap,
     this.canManagePlan = true,
     super.key,
   });
@@ -564,8 +595,16 @@ class EcQuotaScreen extends StatelessWidget {
   final int? remainingBytes;
   final int capBytes;
   final int retentionTotalDays;
+
+  /// Total clips still stored on this device — the same source of truth as
+  /// [typeUsage], so this number and the sum of the breakdown always agree.
+  final int videoCount;
+
+  /// Per-type breakdown, pre-sorted largest-first by the caller.
+  final List<EcQuotaTypeUsage> typeUsage;
   final VoidCallback? onBack;
   final VoidCallback? onUpgrade;
+  final VoidCallback? onPaymentHistoryTap;
 
   /// Gói cước gắn với tài khoản CHỦ shop. Quản lý/nhân viên vẫn thấy gói đang
   /// chi phối ca làm (giới hạn quay, retention) nhưng không có đường nâng gói —
@@ -608,30 +647,62 @@ class EcQuotaScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _InfoCard(
+                          PenCard(
+                            axis: PenAxis.column,
+                            lifted: false,
+                            padding: const EdgeInsets.all(16),
                             children: [
-                              Text(
-                                context.l10n.quotaCurrentPlan,
-                                style: _t(12, FontWeight.w400, BrandColors.mut),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        PenText(
+                                          context.l10n.quotaCurrentPlan,
+                                          size: 12,
+                                          color: PenColors.mut,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        PenText(
+                                          planLabel,
+                                          size: 20,
+                                          weight: FontWeight.w600,
+                                          color: PenColors.ink,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (canManagePlan)
+                                    EcTap(
+                                      onTap: onUpgrade,
+                                      child: PenBox(
+                                        fill: PenColors.primary,
+                                        radius: 999,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 10,
+                                        ),
+                                        children: [
+                                          PenText(
+                                            context.l10n.quotaUpgradeShort,
+                                            size: 14,
+                                            weight: FontWeight.w600,
+                                            color: PenColors.card,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                planLabel,
-                                style: _t(20, FontWeight.w600, BrandColors.ink),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          _InfoCard(
-                            children: [
-                              Text(
-                                context.l10n.quotaRemainingThisMonth,
-                                style: _t(12, FontWeight.w400, BrandColors.mut),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${ecHumanBytes(_remainingBytes)} / ${ecHumanBytes(capBytes)}',
-                                style: _t(20, FontWeight.w600, BrandColors.ink),
+                              const SizedBox(height: 16),
+                              PenText(
+                                '${ecHumanBytesVi(_remainingBytes)} ${context.l10n.quotaRemainingThisMonth.toLowerCase()}',
+                                size: 20,
+                                weight: FontWeight.w600,
+                                color: PenColors.ink,
                               ),
                               const SizedBox(height: 8),
                               SizedBox(
@@ -641,8 +712,10 @@ class EcQuotaScreen extends StatelessWidget {
                                   children: [
                                     Container(
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFE2E2E2),
-                                        borderRadius: BorderRadius.circular(4),
+                                        color: PenColors.soft,
+                                        borderRadius: BorderRadius.circular(
+                                          4,
+                                        ),
                                       ),
                                     ),
                                     FractionallySizedBox(
@@ -650,7 +723,7 @@ class EcQuotaScreen extends StatelessWidget {
                                       widthFactor: _usedFraction,
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          color: BrandColors.dark,
+                                          color: PenColors.primary,
                                           borderRadius: BorderRadius.circular(
                                             4,
                                           ),
@@ -661,26 +734,89 @@ class EcQuotaScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Text(
-                                context.l10n.quotaUsedPercent(_usedPercent),
-                                style: _t(12, FontWeight.w400, BrandColors.mut),
+                              PenText(
+                                context.l10n.quotaUsedRatio(
+                                  ecHumanBytesVi(usedBytes),
+                                  ecHumanBytesVi(capBytes),
+                                  _usedPercent,
+                                ),
+                                size: 12,
+                                color: PenColors.mut,
+                              ),
+                              const SizedBox(height: 16),
+                              const _QuotaDivider(),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _QuotaStat(
+                                      value: context.l10n
+                                          .quotaVideosStoredCount(videoCount),
+                                      label: context.l10n.quotaVideosStored,
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    height: 32,
+                                    child: VerticalDivider(
+                                      width: 1,
+                                      color: PenColors.line,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: _QuotaStat(
+                                      value: context.l10n.quotaRetentionDays(
+                                        retentionTotalDays,
+                                      ),
+                                      label: context.l10n.quotaStorage,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              PenBox(
+                                width: double.infinity,
+                                fill: PenColors.soft,
+                                radius: 12,
+                                axis: PenAxis.row,
+                                gap: 10,
+                                cross: CrossAxisAlignment.start,
+                                padding: const EdgeInsets.all(12),
+                                children: [
+                                  const Icon(
+                                    LucideIcons.clock,
+                                    size: 16,
+                                    color: PenColors.mut,
+                                  ),
+                                  Expanded(
+                                    child: PenText(
+                                      context.l10n.quotaRefundNote(
+                                        retentionTotalDays,
+                                      ),
+                                      size: 12,
+                                      color: PenColors.mut,
+                                      lineHeight: 1.4,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
+                          if (typeUsage.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            _QuotaBreakdownCard(typeUsage: typeUsage),
+                          ],
                           const SizedBox(height: 14),
-                          _InfoCard(
-                            row: true,
+                          PenCard(
+                            axis: PenAxis.column,
+                            lifted: false,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                            ),
                             children: [
-                              Text(
-                                context.l10n.quotaStorage,
-                                style: _t(14, FontWeight.w400, BrandColors.ink),
-                              ),
-                              const Spacer(),
-                              Text(
-                                context.l10n.quotaRetentionDays(
-                                  retentionTotalDays,
-                                ),
-                                style: _t(14, FontWeight.w600, BrandColors.ink),
+                              _SettingsRow(
+                                icon: LucideIcons.receipt,
+                                label: context.l10n.quotaPaymentHistory,
+                                onTap: onPaymentHistoryTap,
                               ),
                             ],
                           ),
@@ -692,10 +828,11 @@ class EcQuotaScreen extends StatelessWidget {
                               onPressed: onUpgrade,
                             )
                           else
-                            Text(
+                            PenText(
                               context.l10n.quotaOwnerOnlyNote,
-                              textAlign: TextAlign.center,
-                              style: _t(14, FontWeight.w400, BrandColors.mut),
+                              align: TextAlign.center,
+                              size: 14,
+                              color: PenColors.mut,
                             ),
                         ],
                       ),
@@ -707,6 +844,145 @@ class EcQuotaScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _QuotaDivider extends StatelessWidget {
+  const _QuotaDivider();
+
+  @override
+  Widget build(BuildContext context) =>
+      const Divider(height: 1, thickness: 1, color: PenColors.line);
+}
+
+class _QuotaStat extends StatelessWidget {
+  const _QuotaStat({required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        PenText(
+          value,
+          size: 16,
+          weight: FontWeight.w600,
+          color: PenColors.ink,
+        ),
+        const SizedBox(height: 2),
+        PenText(label, size: 12, color: PenColors.mut),
+      ],
+    );
+  }
+}
+
+/// "Dung lượng theo loại" — a stacked bar plus a row per video type, each
+/// tagged with the same color so the bar segment and its row read as one.
+class _QuotaBreakdownCard extends StatelessWidget {
+  const _QuotaBreakdownCard({required this.typeUsage});
+
+  final List<EcQuotaTypeUsage> typeUsage;
+
+  @override
+  Widget build(BuildContext context) {
+    final totalBytes = typeUsage.fold<int>(0, (sum, u) => sum + u.bytes);
+    return PenCard(
+      axis: PenAxis.column,
+      lifted: false,
+      gap: 14,
+      padding: const EdgeInsets.all(16),
+      children: [
+        Row(
+          children: [
+            PenText(
+              context.l10n.quotaByType,
+              size: 15,
+              weight: FontWeight.w600,
+              color: PenColors.ink,
+            ),
+            const Spacer(),
+            PenText(
+              ecHumanBytesVi(totalBytes),
+              size: 14,
+              weight: FontWeight.w600,
+              color: PenColors.ink,
+            ),
+          ],
+        ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: SizedBox(
+            height: 8,
+            child: Row(
+              children: [
+                for (var i = 0; i < typeUsage.length; i++)
+                  Expanded(
+                    flex: typeUsage[i].bytes.clamp(1, 1 << 40),
+                    child: ColoredBox(
+                      color: _quotaTypeColors[i % _quotaTypeColors.length],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        for (var i = 0; i < typeUsage.length; i++)
+          _QuotaBreakdownRow(
+            usage: typeUsage[i],
+            color: _quotaTypeColors[i % _quotaTypeColors.length],
+          ),
+      ],
+    );
+  }
+}
+
+class _QuotaBreakdownRow extends StatelessWidget {
+  const _QuotaBreakdownRow({required this.usage, required this.color});
+
+  final EcQuotaTypeUsage usage;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: PenText(
+            usage.type,
+            size: 14,
+            color: PenColors.ink,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            PenText(
+              context.l10n.quotaByTypeVideosCount(usage.videoCount),
+              size: 12,
+              color: PenColors.mut,
+            ),
+            const SizedBox(height: 2),
+            PenText(
+              ecHumanBytesVi(usage.bytes),
+              size: 14,
+              weight: FontWeight.w600,
+              color: PenColors.ink,
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -735,7 +1011,7 @@ class _DialogFrame extends StatelessWidget {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: GestureDetector(
-                  onTap: () {},
+                  onTap: () => FocusScope.of(context).unfocus(),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -805,17 +1081,35 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
     return _DialogFrame(
       onDismiss: _handleCancel,
       children: [
+        Center(
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: const BoxDecoration(
+              color: BrandColors.recTint,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.warning_rounded,
+              size: 28,
+              color: BrandColors.rec,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
         Text(
           isFirstStep
               ? context.l10n.deleteAccountTitleStep1
               : context.l10n.deleteAccountTitleStep2,
-          style: _t(16, FontWeight.w600, BrandColors.ink),
+          textAlign: TextAlign.center,
+          style: _t(18, FontWeight.w700, BrandColors.rec),
         ),
         const SizedBox(height: 12),
         Text(
           isFirstStep
               ? context.l10n.deleteAccountBodyStep1
               : context.l10n.deleteAccountBodyStep2,
+          textAlign: TextAlign.center,
           style: _t(14, FontWeight.w400, BrandColors.mut),
         ),
         if (isFirstStep && widget.pendingSharedProfilesCount > 0) ...[
@@ -823,7 +1117,7 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: BrandColors.soft,
+              color: BrandColors.recTint,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -832,7 +1126,7 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
                 const Icon(
                   Icons.info_outline,
                   size: 16,
-                  color: BrandColors.ink,
+                  color: BrandColors.rec,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -861,6 +1155,7 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
               child: _EcPrimaryButton(
                 label: context.l10n.deleteConfirmPermanent,
                 onPressed: _handlePrimary,
+                color: BrandColors.rec,
               ),
             ),
           ],
@@ -996,13 +1291,22 @@ class EcChangePasswordScreen extends StatelessWidget {
 // --- shared pieces (pixel specs from pencil-new.pen) ---
 
 class _EcPrimaryButton extends StatelessWidget {
-  const _EcPrimaryButton({required this.label, this.onPressed});
+  const _EcPrimaryButton({
+    required this.label,
+    this.onPressed,
+    this.color = PenColors.primary,
+  });
   final String label;
   final VoidCallback? onPressed;
+  final Color color;
 
   @override
-  Widget build(BuildContext context) =>
-      PenPrimaryButton(label: label, height: 64, onPressed: onPressed);
+  Widget build(BuildContext context) => PenPrimaryButton(
+    label: label,
+    height: 64,
+    onPressed: onPressed,
+    color: color,
+  );
 }
 
 class _ValidatedPrimaryButton extends StatelessWidget {
@@ -1141,7 +1445,17 @@ class _UserRow extends StatelessWidget {
             if (!hasLocalFile)
               const Icon(LucideIcons.user, size: 34, color: PenColors.ink)
             else
-              SizedBox.expand(child: Image.file(file!, fit: BoxFit.cover)),
+              SizedBox.expand(
+                child: Image.file(
+                  file!,
+                  fit: BoxFit.cover,
+                  // Avatars are re-saved to the same path each time, so the
+                  // path alone isn't a valid cache key — without this, a
+                  // freshly changed photo keeps showing the stale decoded
+                  // image until the app restarts.
+                  key: ValueKey(file.lastModifiedSync()),
+                ),
+              ),
           ],
         ),
         Expanded(
@@ -1267,6 +1581,29 @@ class _AvatarPicker extends StatelessWidget {
   final String? avatarPath;
   final VoidCallback? onChangeAvatar;
 
+  static void _showPreview(BuildContext context, File file) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black,
+      builder: (context) => GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: SafeArea(
+            child: InteractiveViewer(
+              child: Center(
+                child: Image.file(
+                  file,
+                  key: ValueKey(file.lastModifiedSync()),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final path = avatarPath;
@@ -1281,27 +1618,39 @@ class _AvatarPicker extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              PenBox(
-                width: 124,
-                height: 124,
-                fill: PenColors.soft,
-                radius: 999,
-                clip: true,
-                axis: PenAxis.row,
-                main: MainAxisAlignment.center,
-                cross: CrossAxisAlignment.center,
-                children: [
-                  if (!hasLocalFile)
-                    const Icon(
-                      LucideIcons.user,
-                      size: 56,
-                      color: PenColors.ink,
-                    )
-                  else
-                    SizedBox.expand(
-                      child: Image.file(file!, fit: BoxFit.cover),
-                    ),
-                ],
+              // Tapping the photo views it full-screen; changing it is the
+              // camera badge's job, so the two intents don't collide on one
+              // tap target.
+              EcTap(
+                onTap: hasLocalFile
+                    ? () => _showPreview(context, file!)
+                    : null,
+                child: PenBox(
+                  width: 124,
+                  height: 124,
+                  fill: PenColors.soft,
+                  radius: 999,
+                  clip: true,
+                  axis: PenAxis.row,
+                  main: MainAxisAlignment.center,
+                  cross: CrossAxisAlignment.center,
+                  children: [
+                    if (!hasLocalFile)
+                      const Icon(
+                        LucideIcons.user,
+                        size: 56,
+                        color: PenColors.ink,
+                      )
+                    else
+                      SizedBox.expand(
+                        child: Image.file(
+                          file!,
+                          fit: BoxFit.cover,
+                          key: ValueKey(file.lastModifiedSync()),
+                        ),
+                      ),
+                  ],
+                ),
               ),
               Positioned(
                 left: 88,
@@ -1417,10 +1766,13 @@ class _Field extends StatelessWidget {
 }
 
 class _LockedField extends StatelessWidget {
-  const _LockedField({required this.label, required this.value});
+  const _LockedField({required this.label, required this.value, this.hint});
 
   final String label;
   final String value;
+
+  /// Small caption shown below the field explaining why it's locked.
+  final String? hint;
 
   @override
   Widget build(BuildContext context) {
@@ -1451,6 +1803,20 @@ class _LockedField extends StatelessWidget {
             const Icon(LucideIcons.lock, size: 21, color: PenColors.ink),
           ],
         ),
+        if (hint != null)
+          PenBox(
+            width: double.infinity,
+            axis: PenAxis.row,
+            gap: 8,
+            cross: CrossAxisAlignment.center,
+            padding: const EdgeInsets.fromLTRB(2, 4, 2, 0),
+            children: [
+              const Icon(LucideIcons.info, size: 16, color: PenColors.mut),
+              Expanded(
+                child: PenText(hint!, size: 12, color: PenColors.mut),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -1523,24 +1889,6 @@ class _LanguageOption extends StatelessWidget {
             ring: 0.88,
           ),
       ],
-    );
-  }
-}
-
-/// A bordered panel used by the quota screen for its report blocks.
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.children, this.row = false});
-
-  final List<Widget> children;
-  final bool row;
-
-  @override
-  Widget build(BuildContext context) {
-    return PenCard(
-      axis: row ? PenAxis.row : PenAxis.column,
-      lifted: false,
-      padding: const EdgeInsets.all(16),
-      children: children,
     );
   }
 }

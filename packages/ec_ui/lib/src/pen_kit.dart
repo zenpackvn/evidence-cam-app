@@ -124,6 +124,7 @@ class PenPrimaryButton extends StatelessWidget {
     this.icon,
     this.onPressed,
     this.height = 62,
+    this.color = PenColors.primary,
     super.key,
   });
 
@@ -131,6 +132,10 @@ class PenPrimaryButton extends StatelessWidget {
   final IconData? icon;
   final VoidCallback? onPressed;
   final double height;
+
+  /// Fill color — defaults to the brand green; pass [PenColors.danger] for a
+  /// destructive primary action (e.g. "Xóa vĩnh viễn").
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -140,9 +145,7 @@ class PenPrimaryButton extends StatelessWidget {
       child: PenBox(
         width: double.infinity,
         height: height,
-        fill: enabled
-            ? PenColors.primary
-            : const Color(0xFF16522C).withValues(alpha: 0.4),
+        fill: enabled ? color : color.withValues(alpha: 0.4),
         radius: 14,
         axis: PenAxis.row,
         gap: 12,
@@ -303,7 +306,9 @@ class _PenFieldState extends State<PenField> {
               EcTap(
                 onTap: () => setState(() => _obscure = !_obscure),
                 child: Icon(
-                  _obscure ? LucideIcons.eye : LucideIcons.eyeOff,
+                  // Icon reflects the field's *current* state: a slashed eye
+                  // while the text is hidden, an open eye once revealed.
+                  _obscure ? LucideIcons.eyeOff : LucideIcons.eye,
                   size: 21,
                   color: PenColors.ink,
                 ),

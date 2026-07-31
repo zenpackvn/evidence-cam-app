@@ -157,6 +157,7 @@
   "phoneRequired": "Please enter your phone number",
   "phoneInvalid": "Invalid phone number",
   "accountSaveChanges": "Save changes",
+  "accountEmailLockedHint": "Email used to sign in — cannot be changed",
   "phoneAddTitle": "Add phone number",
   "phoneAddBody": "Your Apple/Google account has no phone number yet. Please enter a phone number to continue.",
   "commonContinue": "Continue",
@@ -174,6 +175,7 @@
   "quotaRemainingThisMonth": "Remaining this month",
   "quotaStorage": "Storage",
   "quotaUpgradePlan": "Upgrade plan",
+  "quotaUpgradeShort": "Upgrade",
   "quotaOwnerOnlyNote": "Only the account owner can change the plan",
   "deleteAccountTitleStep1": "Delete account?",
   "deleteAccountTitleStep2": "Confirm permanent deletion?",
@@ -225,6 +227,47 @@
       }
     }
   },
+  "quotaUsedRatio": "Used {used} / {cap} · {percent}%",
+  "@quotaUsedRatio": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaVideosStored": "Videos stored",
+  "quotaVideosStoredCount": "{count} videos",
+  "@quotaVideosStoredCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaByType": "Storage by type",
+  "quotaByTypeVideosCount": "{count} videos stored",
+  "@quotaByTypeVideosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaRefundNote": "Storage is freed once a video passes its {days}-day retention window",
+  "@quotaRefundNote": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaPaymentHistory": "Payment history",
   "deletePendingProfilesWarning": "You still have {count} open claim dossiers — their share links will stop working",
   "@deletePendingProfilesWarning": {
     "placeholders": {

@@ -384,6 +384,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountSaveChanges => 'Save changes';
 
   @override
+  String get accountEmailLockedHint =>
+      'Email used to sign in — cannot be changed';
+
+  @override
   String get phoneAddTitle => 'Add phone number';
 
   @override
@@ -436,6 +440,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quotaUpgradePlan => 'Upgrade plan';
+
+  @override
+  String get quotaUpgradeShort => 'Upgrade';
 
   @override
   String get quotaOwnerOnlyNote => 'Only the account owner can change the plan';
@@ -530,6 +537,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String quotaRetentionDays(int days) {
     return '$days days';
   }
+
+  @override
+  String quotaUsedRatio(String used, String cap, int percent) {
+    return 'Used $used / $cap · $percent%';
+  }
+
+  @override
+  String get quotaVideosStored => 'Videos stored';
+
+  @override
+  String quotaVideosStoredCount(int count) {
+    return '$count videos';
+  }
+
+  @override
+  String get quotaByType => 'Storage by type';
+
+  @override
+  String quotaByTypeVideosCount(int count) {
+    return '$count videos stored';
+  }
+
+  @override
+  String quotaRefundNote(int days) {
+    return 'Storage is freed once a video passes its $days-day retention window';
+  }
+
+  @override
+  String get quotaPaymentHistory => 'Payment history';
 
   @override
   String deletePendingProfilesWarning(int count) {

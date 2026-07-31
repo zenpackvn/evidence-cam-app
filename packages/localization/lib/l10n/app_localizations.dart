@@ -800,6 +800,12 @@ abstract class AppLocalizations {
   /// **'Save changes'**
   String get accountSaveChanges;
 
+  /// No description provided for @accountEmailLockedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Email used to sign in — cannot be changed'**
+  String get accountEmailLockedHint;
+
   /// No description provided for @phoneAddTitle.
   ///
   /// In en, this message translates to:
@@ -901,6 +907,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upgrade plan'**
   String get quotaUpgradePlan;
+
+  /// No description provided for @quotaUpgradeShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade'**
+  String get quotaUpgradeShort;
 
   /// No description provided for @quotaOwnerOnlyNote.
   ///
@@ -1063,6 +1075,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{days} days'**
   String quotaRetentionDays(int days);
+
+  /// No description provided for @quotaUsedRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'Used {used} / {cap} · {percent}%'**
+  String quotaUsedRatio(String used, String cap, int percent);
+
+  /// No description provided for @quotaVideosStored.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos stored'**
+  String get quotaVideosStored;
+
+  /// No description provided for @quotaVideosStoredCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} videos'**
+  String quotaVideosStoredCount(int count);
+
+  /// No description provided for @quotaByType.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage by type'**
+  String get quotaByType;
+
+  /// No description provided for @quotaByTypeVideosCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} videos stored'**
+  String quotaByTypeVideosCount(int count);
+
+  /// No description provided for @quotaRefundNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage is freed once a video passes its {days}-day retention window'**
+  String quotaRefundNote(int days);
+
+  /// No description provided for @quotaPaymentHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment history'**
+  String get quotaPaymentHistory;
 
   /// No description provided for @deletePendingProfilesWarning.
   ///

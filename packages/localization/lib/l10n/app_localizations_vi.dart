@@ -382,6 +382,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountSaveChanges => 'Lưu thay đổi';
 
   @override
+  String get accountEmailLockedHint =>
+      'Email dùng để đăng nhập, không thể thay đổi';
+
+  @override
   String get phoneAddTitle => 'Thêm số điện thoại';
 
   @override
@@ -434,6 +438,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get quotaUpgradePlan => 'Nâng cấp gói';
+
+  @override
+  String get quotaUpgradeShort => 'Nâng cấp';
 
   @override
   String get quotaOwnerOnlyNote => 'Chỉ chủ tài khoản mới đổi được gói cước';
@@ -526,6 +533,35 @@ class AppLocalizationsVi extends AppLocalizations {
   String quotaRetentionDays(int days) {
     return '$days ngày';
   }
+
+  @override
+  String quotaUsedRatio(String used, String cap, int percent) {
+    return 'Đã dùng $used / $cap · $percent%';
+  }
+
+  @override
+  String get quotaVideosStored => 'Video đang lưu';
+
+  @override
+  String quotaVideosStoredCount(int count) {
+    return '$count video';
+  }
+
+  @override
+  String get quotaByType => 'Dung lượng theo loại';
+
+  @override
+  String quotaByTypeVideosCount(int count) {
+    return '$count video đang lưu';
+  }
+
+  @override
+  String quotaRefundNote(int days) {
+    return 'Dung lượng hoàn lại khi video hết hạn lưu trữ $days ngày';
+  }
+
+  @override
+  String get quotaPaymentHistory => 'Lịch sử thanh toán';
 
   @override
   String deletePendingProfilesWarning(int count) {
