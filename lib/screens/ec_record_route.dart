@@ -27,13 +27,6 @@ import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
 
-/// Cảnh báo trước khi chạm trần: 1 phút cuối. Trần giờ do shop đặt và có thể
-/// ngắn tới 1 phút (FR-18), nên với trần ngắn thì lùi về nửa thời lượng —
-/// cảnh báo hiện ngay từ giây 0 thì không còn là cảnh báo.
-Duration _warnAtFor(Duration cap) => cap > const Duration(minutes: 2)
-    ? cap - const Duration(minutes: 1)
-    : cap * 0.5;
-
 /// The recording route mounted at `/record`. Callbacks stay routing-agnostic so
 /// the app shell owns navigation; [onRequestCode] returns the tracking code the
 /// user entered (or `null` if they cancelled).
@@ -351,7 +344,8 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     }
 
     if (state.isRecording) {
-      if (state.elapsed >= _warnAtFor(widget.maxRecording)) {
+      if (state.elapsed >= _bloc.nearLimitAt) {
+        final remaining = _bloc.maxRecording - state.elapsed;
         return EcNearLimitScreen(
           shopName: widget.shopName,
           queueCount: widget.queueCount,
@@ -360,6 +354,9 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           ),
           code: state.code,
           duration: _formatElapsed(state.elapsed),
+          countdownText:
+              'Tự chốt sau '
+              '${_formatElapsed(remaining.isNegative ? Duration.zero : remaining)}',
           typeLabel: state.typeLabel,
           resolutionLabel: state.resolutionLabel,
           preview: preview,

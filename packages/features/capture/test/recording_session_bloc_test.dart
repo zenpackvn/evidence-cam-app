@@ -4,12 +4,18 @@ import 'package:feature_capture/feature_capture.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  // VoiceAnnouncerService builds a FlutterTts, which sets a method-call
+  // handler — that asserts unless a binding exists.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late _FakeCamera camera;
   late List<String> saved;
+  late _RecordingVoice voice;
 
   setUp(() {
     camera = _FakeCamera();
     saved = <String>[];
+    voice = _RecordingVoice();
   });
 
   RecordingSessionBloc build({
@@ -19,6 +25,7 @@ void main() {
       camera: camera,
       scanner: _FakeScanner(),
       onClipSaved: (path, tracking, type, durationSeconds) => saved.add(path),
+      voiceAnnouncer: voice,
       maxRecording: maxRecording,
     );
   }
@@ -198,6 +205,86 @@ void main() {
     wait: const Duration(milliseconds: 40),
     verify: (bloc) => expect(bloc.state.typeLabel, 'Đóng hàng'),
   );
+
+  blocTest<RecordingSessionBloc, RecordingSessionState>(
+    'the hard cap really stops the camera and announces it exactly once',
+    // A 3s cap keeps the test fast; the tick loop is the same one that runs
+    // at 15'. The one-minute warning lead is longer than the whole clip here,
+    // so the near-limit line is spoken on the first tick.
+    build: () => build(maxRecording: const Duration(seconds: 3)),
+    act: (bloc) async {
+      bloc.add(const RecordingInitRequested());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      bloc.add(const RecordingManualCodeSubmitted('SPX1'));
+      await Future<void>.delayed(const Duration(seconds: 4));
+    },
+    wait: const Duration(milliseconds: 200),
+    verify: (bloc) {
+      expect(bloc.state.status, RecordingStatus.idle);
+      // The camera was actually told to stop — the reported stop and the real
+      // one must not diverge.
+      expect(camera.recording, isFalse);
+      expect(camera.stopCount, 1);
+      expect(saved, hasLength(1));
+      expect(voice.spoken.where((s) => s == 'Đã dừng quay'), hasLength(1));
+      expect(
+        voice.spoken.where((s) => s.contains('Sắp chạm trần')),
+        hasLength(1),
+      );
+    },
+  );
+
+  group('idleScanMayStart', () {
+    final now = DateTime(2026, 7, 31, 12);
+
+    test('blocks the bill whose clip just closed while it is still framed', () {
+      expect(
+        idleScanMayStart(
+          'SPX1',
+          justClosedCode: 'spx1',
+          blockedUntil: now.add(const Duration(seconds: 5)),
+          now: now,
+        ),
+        isFalse,
+      );
+    });
+
+    test('lets a different order start immediately (A→B hand-off)', () {
+      expect(
+        idleScanMayStart(
+          'SPX2',
+          justClosedCode: 'spx1',
+          blockedUntil: now.add(const Duration(seconds: 5)),
+          now: now,
+        ),
+        isTrue,
+      );
+    });
+
+    test('re-arms the same order once the block has lapsed', () {
+      expect(
+        idleScanMayStart(
+          'SPX1',
+          justClosedCode: 'spx1',
+          blockedUntil: now.subtract(const Duration(seconds: 1)),
+          now: now,
+        ),
+        isTrue,
+      );
+    });
+
+    test('allows anything when nothing has closed yet', () {
+      expect(
+        idleScanMayStart(
+          'SPX1',
+          justClosedCode: null,
+          blockedUntil: null,
+          now: now,
+        ),
+        isTrue,
+      );
+    });
+  });
 }
 
 /// A [CameraService] with no hardware — tracks recording/streaming/dispose so
@@ -304,4 +391,12 @@ class _FakeCamera extends CameraService {
 class _FakeScanner extends BillScanner {
   @override
   Future<void> dispose() async {}
+}
+
+/// Records what would have been spoken instead of reaching the TTS engine.
+class _RecordingVoice extends VoiceAnnouncerService {
+  final List<String> spoken = <String>[];
+
+  @override
+  Future<void> speak(String text) async => spoken.add(text);
 }

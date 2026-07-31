@@ -184,7 +184,7 @@ class EcOrderTimelineScreen extends StatelessWidget {
   /// Called when "Thử lại" is tapped on the upload warning banner.
   final VoidCallback? onRetryUpload;
 
-  /// Called with the tapped evidence entry's play button.
+  /// Called when an evidence entry's card is tapped.
   final ValueChanged<EcTimelineVideo>? onVideoTap;
 
   /// Called with the tapped evidence entry's overflow (⋮) menu.
@@ -756,6 +756,8 @@ class _EcTimelineVideoRow extends StatelessWidget {
           ),
         ),
         Expanded(
+          // The whole card opens the evidence detail — the design's play
+          // triangle was a second, smaller target for the same destination.
           child: PenCard(
             lifted: false,
             gap: 12,
@@ -763,6 +765,7 @@ class _EcTimelineVideoRow extends StatelessWidget {
               vertical: 10,
               horizontal: 11,
             ),
+            onTap: onPlay,
             children: [
               _EcTimelineThumb(video: video),
               Expanded(
@@ -785,14 +788,6 @@ class _EcTimelineVideoRow extends StatelessWidget {
                       ),
                     ],
                   ],
-                ),
-              ),
-              EcTap(
-                onTap: onPlay,
-                child: const Icon(
-                  LucideIcons.play,
-                  size: 20,
-                  color: PenColors.ink,
                 ),
               ),
               EcTap(

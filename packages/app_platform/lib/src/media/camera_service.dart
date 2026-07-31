@@ -117,10 +117,17 @@ class CameraService {
   }
 
   /// Disposes of the active [CameraController], releasing the camera hardware resource.
+  ///
+  /// The field is cleared *before* awaiting `dispose()`: the await yields, and
+  /// a widget rebuild landing in that window would otherwise still read a
+  /// disposed controller off [controller] and blow up inside
+  /// `CameraPreview.buildPreview()`. Clearing first makes the getter report
+  /// "no camera" for the whole teardown, which callers already handle.
   Future<void> dispose() async {
-    if (_controller != null) {
-      await _controller!.dispose();
+    final controller = _controller;
+    if (controller != null) {
       _controller = null;
+      await controller.dispose();
     }
   }
 

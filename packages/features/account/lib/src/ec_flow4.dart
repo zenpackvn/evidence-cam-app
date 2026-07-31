@@ -1640,7 +1640,7 @@ class _DialogPasswordFieldState extends State<_DialogPasswordField> {
                 EcTap(
                   onTap: () => setState(() => _obscured = !_obscured),
                   child: Icon(
-                    _obscured ? LucideIcons.eye : LucideIcons.eyeOff,
+                    _obscured ? LucideIcons.eyeOff : LucideIcons.eye,
                     size: 20,
                     color: PenColors.ink,
                   ),

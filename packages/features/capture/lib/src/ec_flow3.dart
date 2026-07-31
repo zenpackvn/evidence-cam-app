@@ -28,6 +28,7 @@ TextStyle _t(double size, FontWeight weight, Color color) =>
 /// Idle recording screen — camera waiting for a bill to be framed.
 class EcWaitBill2Screen extends StatelessWidget {
   const EcWaitBill2Screen({
+    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.typeLabel = 'Đóng hàng',
     this.resolutionLabel = '720p',
@@ -44,6 +45,7 @@ class EcWaitBill2Screen extends StatelessWidget {
     super.key,
   });
 
+  final String shopName;
   final int queueCount;
   final String typeLabel;
   final String resolutionLabel;
@@ -64,6 +66,7 @@ class EcWaitBill2Screen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
+      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
@@ -178,6 +181,7 @@ class EcWaitBill2Screen extends StatelessWidget {
 /// it with an elapsed-time counter.
 class EcRecording2Screen extends StatelessWidget {
   const EcRecording2Screen({
+    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.code = 'SPXVN024567890',
     this.elapsed = '00:00',
@@ -197,6 +201,7 @@ class EcRecording2Screen extends StatelessWidget {
     super.key,
   });
 
+  final String shopName;
   final int queueCount;
   final String code;
 
@@ -222,12 +227,12 @@ class EcRecording2Screen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
+      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
-      onQueueTap: onQueueTap,
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
@@ -260,6 +265,7 @@ class EcRecording2Screen extends StatelessWidget {
 /// Order-cutover transition screen — order A just closed, order B started.
 class EcCutoverBScreen extends StatelessWidget {
   const EcCutoverBScreen({
+    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.closedSummary = 'Đã chốt mã vận đơn A (02:45)',
     this.signalText = 'Âm báo + rung khi chuyển đơn',
@@ -278,6 +284,7 @@ class EcCutoverBScreen extends StatelessWidget {
     super.key,
   });
 
+  final String shopName;
   final int queueCount;
   final String closedSummary;
   final String signalText;
@@ -300,12 +307,12 @@ class EcCutoverBScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
+      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
-      onQueueTap: onQueueTap,
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
@@ -352,10 +359,12 @@ class EcCutoverBScreen extends StatelessWidget {
 /// the shop's setting (FR-18), so the caller passes the text.
 class EcNearLimitScreen extends StatelessWidget {
   const EcNearLimitScreen({
+    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.warningText = 'Sắp chạm trần 2 phút — video sẽ tự chốt',
     this.code = 'SPXVN024567890',
     this.duration = '14:12',
+    this.countdownText = 'Tự chốt sau 00:48',
     this.typeLabel = 'Đóng hàng',
     this.resolutionLabel = '720p',
     this.preview,
@@ -372,10 +381,15 @@ class EcNearLimitScreen extends StatelessWidget {
     super.key,
   });
 
+  final String shopName;
   final int queueCount;
   final String warningText;
   final String code;
   final String duration;
+
+  /// Time left before the clip auto-closes, shown under the elapsed counter so
+  /// the seller can see exactly how long they have.
+  final String countdownText;
   final String typeLabel;
   final String resolutionLabel;
   final Widget? preview;
@@ -393,12 +407,12 @@ class EcNearLimitScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
+      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
-      onQueueTap: onQueueTap,
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
@@ -422,6 +436,8 @@ class EcNearLimitScreen extends StatelessWidget {
                       duration,
                       style: _t(30, FontWeight.w600, BrandColors.ink),
                     ),
+                    const SizedBox(height: 8),
+                    _CountdownPill(text: countdownText),
                   ],
                 ),
               ),
@@ -429,6 +445,36 @@ class EcNearLimitScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The "tự chốt sau mm:ss" countdown shown under the elapsed counter once the
+/// clip enters its final minute.
+class _CountdownPill extends StatelessWidget {
+  const _CountdownPill({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return PenBox(
+      fill: BrandColors.dark,
+      radius: 999,
+      axis: PenAxis.row,
+      gap: 6,
+      cross: CrossAxisAlignment.center,
+      hugMain: true,
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      children: [
+        const Icon(Icons.timer_outlined, size: 14, color: Colors.white),
+        PenText(
+          text,
+          size: 13,
+          color: Colors.white,
+          weight: FontWeight.w700,
+          softWrap: false,
+        ),
+      ],
     );
   }
 }
@@ -467,6 +513,7 @@ class _WarnBanner extends StatelessWidget {
 /// original order.
 class EcReturnRecScreen extends StatelessWidget {
   const EcReturnRecScreen({
+    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.code = 'SPXVN088877766 (hoàn)',
     this.duration = '00:32',
@@ -484,6 +531,7 @@ class EcReturnRecScreen extends StatelessWidget {
     super.key,
   });
 
+  final String shopName;
   final int queueCount;
   final String code;
   final String duration;
@@ -502,12 +550,12 @@ class EcReturnRecScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
+      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
-      onQueueTap: onQueueTap,
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
@@ -537,10 +585,12 @@ class EcReturnRecScreen extends StatelessWidget {
 /// button).
 class _CamScaffold extends StatelessWidget {
   const _CamScaffold({
+    required this.shopName,
     required this.queueCount,
     required this.typeLabel,
     required this.resolutionLabel,
     required this.centerArea,
+    this.headerTitle,
     this.preview,
     this.onBack,
     this.onQueueTap,
@@ -554,12 +604,13 @@ class _CamScaffold extends StatelessWidget {
     this.onStop,
   });
 
+  final String shopName;
   final int queueCount;
   final String typeLabel;
   final String resolutionLabel;
   final Widget centerArea;
 
-  /// Overrides the header text; the recording states use it to read "Ghi hình".
+  /// Overrides the header text; normally left null so the shop name shows.
   final String? headerTitle;
   final Widget? preview;
   final VoidCallback? onBack;
@@ -841,8 +892,8 @@ class _CamHeader extends StatelessWidget {
     this.onQueueTap,
   });
 
-  /// The shop name while idle; the design switches it to "Ghi hình" once a
-  /// clip is rolling, so the screen states read apart at a glance.
+  /// The shop name, shown in the header in every recording state (a
+  /// clip is rolling).
   final String title;
   final int queueCount;
   final VoidCallback? onBack;
@@ -1793,27 +1844,35 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
     text: widget.initialValue,
   );
 
+  final _focus = FocusNode();
+
   @override
   void dispose() {
     _controller.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
-  void _type(String digit) =>
-      setState(() => _controller.text = _controller.text + digit);
-
-  void _backspace() {
-    final text = _controller.text;
-    if (text.isEmpty) return;
-    setState(() => _controller.text = text.substring(0, text.length - 1));
+  @override
+  void initState() {
+    super.initState();
+    // Opening the sheet is the user asking to type, so raise the keyboard
+    // straight away instead of making them tap the field first.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focus.requestFocus();
+    });
   }
+
+  void _submit() => widget.onManualSubmit?.call(_controller.text.trim());
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ColoredBox(
       color: Colors.transparent,
       child: Stack(
         children: [
+          // Tapping anywhere outside the sheet closes it.
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -1824,218 +1883,142 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
             left: 0,
             right: 0,
             bottom: 0,
-            // The design's `KeypadSheet`: 490pt tall, 14pt top corners,
-            // padding [12, 22, 0, 22]. Its own keypad replaces the system
-            // keyboard, so nothing has to shift for an inset.
-            child: PenBox(
-              width: double.infinity,
-              fill: PenColors.card,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(14),
-              ),
-              axis: PenAxis.column,
-              hugMain: true,
-              padding: const EdgeInsets.fromLTRB(22, 12, 22, 0),
-              children: [
-                const Center(
-                  child: PenBox(
-                    width: 46,
-                    height: 5,
-                    fill: PenColors.line,
-                    radius: 3,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                PenText(
-                  context.l10n.manualTrackingTitle,
-                  size: 24,
-                  color: PenColors.ink,
-                  weight: FontWeight.w800,
-                ),
-                const SizedBox(height: 5),
-                PenText(
-                  context.l10n.manualTrackingNote,
-                  size: 14,
-                  color: PenColors.mut,
-                ),
-                const SizedBox(height: 14),
-                PenBox(
+            child: GestureDetector(
+              // Dragging the sheet down dismisses it too.
+              onVerticalDragEnd: (details) {
+                if ((details.primaryVelocity ?? 0) > 200)
+                  widget.onCancel?.call();
+              },
+              // A tap on the sheet's own chrome drops the keyboard without
+              // closing the sheet.
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 120),
+                padding: EdgeInsets.only(bottom: context.bottomInset),
+                child: PenBox(
                   width: double.infinity,
-                  height: 58,
                   fill: PenColors.card,
-                  stroke: PenColors.line,
-                  radius: 14,
-                  axis: PenAxis.row,
-                  gap: 10,
-                  cross: CrossAxisAlignment.center,
-                  padding: const EdgeInsets.fromLTRB(18, 0, 8, 0),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(14),
+                  ),
+                  axis: PenAxis.column,
+                  hugMain: true,
+                  padding: const EdgeInsets.fromLTRB(22, 12, 22, 20),
                   children: [
-                    Expanded(
-                      child: PenText(
-                        _controller.text.isEmpty ? 'SPXVN…' : _controller.text,
-                        size: 18,
-                        color: _controller.text.isEmpty
-                            ? PenColors.mut
-                            : PenColors.ink,
-                        weight: FontWeight.w500,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
+                    const Center(
+                      child: PenBox(
+                        width: 46,
+                        height: 5,
+                        fill: PenColors.line,
+                        radius: 3,
                       ),
                     ),
-                    EcTap(
-                      onTap: widget.onCancel,
-                      child: const PenBox(
-                        width: 44,
-                        height: 44,
-                        fill: PenColors.bg,
-                        radius: 10,
+                    const SizedBox(height: 18),
+                    PenText(
+                      l10n.manualTrackingTitle,
+                      size: 24,
+                      color: PenColors.ink,
+                      weight: FontWeight.w800,
+                    ),
+                    const SizedBox(height: 14),
+                    // The whole 58pt box focuses the field — previously only
+                    // the text span itself did, so taps on the right half of
+                    // the row did nothing.
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _focus.requestFocus,
+                      child: PenBox(
+                        width: double.infinity,
+                        height: 58,
+                        fill: PenColors.card,
+                        stroke: PenColors.line,
+                        radius: 14,
                         axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
                         cross: CrossAxisAlignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
                         children: [
-                          Icon(
-                            LucideIcons.scan,
-                            size: 22,
-                            color: PenColors.ink,
+                          Expanded(
+                            child: CupertinoTextField(
+                              controller: _controller,
+                              focusNode: _focus,
+                              padding: EdgeInsets.zero,
+                              decoration: const BoxDecoration(),
+                              placeholder: 'SPXVN…',
+                              textInputAction: TextInputAction.done,
+                              autocorrect: false,
+                              textCapitalization: TextCapitalization.characters,
+                              onSubmitted: (_) => _submit(),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                                color: PenColors.ink,
+                              ),
+                              placeholderStyle: const TextStyle(
+                                fontSize: 18,
+                                color: PenColors.mut,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                _Keypad(onDigit: _type, onBackspace: _backspace),
-                const SizedBox(height: 14),
-                EcTap(
-                  onTap: () => widget.onManualSubmit?.call(_controller.text),
-                  child: PenBox(
-                    width: double.infinity,
-                    height: 56,
-                    fill: PenColors.primary,
-                    radius: 14,
-                    axis: PenAxis.row,
-                    main: MainAxisAlignment.center,
-                    cross: CrossAxisAlignment.center,
-                    children: [
-                      PenText(
-                        context.l10n.commonDone,
-                        size: 18,
-                        color: PenColors.card,
-                        weight: FontWeight.w700,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: MediaQuery.paddingOf(context).bottom),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The design's 3x4 phone keypad: digits with their letter groups, an empty
-/// slot and a filled backspace key.
-class _Keypad extends StatelessWidget {
-  const _Keypad({required this.onDigit, required this.onBackspace});
-
-  final ValueChanged<String> onDigit;
-  final VoidCallback onBackspace;
-
-  static const _rows = <List<(String, String)>>[
-    [('1', ''), ('2', 'ABC'), ('3', 'DEF')],
-    [('4', 'GHI'), ('5', 'JKL'), ('6', 'MNO')],
-    [('7', 'PQRS'), ('8', 'TUV'), ('9', 'WXYZ')],
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (final row in _rows) ...[
-          Row(
-            children: [
-              for (final (digit, letters) in row) ...[
-                if (digit != row.first.$1) const SizedBox(width: 8),
-                Expanded(
-                  child: _Key(
-                    digit: digit,
-                    letters: letters,
-                    onTap: () => onDigit(digit),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 8),
-        ],
-        Row(
-          children: [
-            const Expanded(child: SizedBox(height: 52)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _Key(digit: '0', onTap: () => onDigit('0')),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: EcTap(
-                onTap: onBackspace,
-                child: const PenBox(
-                  height: 52,
-                  fill: PenColors.line,
-                  radius: 10,
-                  axis: PenAxis.row,
-                  main: MainAxisAlignment.center,
-                  cross: CrossAxisAlignment.center,
-                  children: [
-                    Icon(
-                      LucideIcons.delete,
-                      size: 24,
-                      color: PenColors.card,
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: EcTap(
+                            onTap: widget.onCancel,
+                            child: PenBox(
+                              height: 56,
+                              fill: PenColors.card,
+                              stroke: PenColors.line,
+                              radius: 14,
+                              axis: PenAxis.row,
+                              main: MainAxisAlignment.center,
+                              cross: CrossAxisAlignment.center,
+                              children: [
+                                PenText(
+                                  l10n.commonCancel,
+                                  size: 16,
+                                  color: PenColors.ink,
+                                  weight: FontWeight.w600,
+                                  softWrap: false,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: EcTap(
+                            onTap: _submit,
+                            child: PenBox(
+                              height: 56,
+                              fill: PenColors.primary,
+                              radius: 14,
+                              axis: PenAxis.row,
+                              main: MainAxisAlignment.center,
+                              cross: CrossAxisAlignment.center,
+                              children: [
+                                PenText(
+                                  l10n.startRecording,
+                                  size: 16,
+                                  color: PenColors.card,
+                                  weight: FontWeight.w700,
+                                  softWrap: false,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    SizedBox(height: MediaQuery.paddingOf(context).bottom),
                   ],
                 ),
               ),
             ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _Key extends StatelessWidget {
-  const _Key({required this.digit, required this.onTap, this.letters = ''});
-
-  final String digit;
-  final String letters;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return EcTap(
-      onTap: onTap,
-      child: PenBox(
-        height: 52,
-        fill: PenColors.card,
-        stroke: PenColors.line,
-        radius: 10,
-        axis: PenAxis.column,
-        main: MainAxisAlignment.center,
-        cross: CrossAxisAlignment.center,
-        children: [
-          PenText(
-            digit,
-            size: 20,
-            color: PenColors.ink,
-            weight: FontWeight.w600,
-            softWrap: false,
           ),
-          if (letters.isNotEmpty)
-            PenText(letters, size: 12, color: PenColors.mut, softWrap: false),
         ],
       ),
     );

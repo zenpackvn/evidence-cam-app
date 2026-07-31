@@ -421,35 +421,8 @@ class _ShopHeader extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          EcTap(
-            onTap: onQueueTap,
-            child: PenBox(
-              fill: PenColors.bg,
-              radius: 999,
-              axis: PenAxis.row,
-              gap: 8,
-              cross: CrossAxisAlignment.center,
-              hugMain: true,
-              padding: const EdgeInsets.symmetric(
-                vertical: 9,
-                horizontal: 15,
-              ),
-              children: [
-                const Icon(
-                  LucideIcons.cloudUpload,
-                  size: 20,
-                  color: PenColors.ink,
-                ),
-                PenText(
-                  '$queueCount',
-                  size: 16,
-                  color: PenColors.ink,
-                  weight: FontWeight.w700,
-                  softWrap: false,
-                ),
-              ],
-            ),
-          ),
+          // The upload-queue chip used to live here; the "Chờ tải" stat card
+          // below already shows the same number and is the tap target now.
         ],
       ),
     );
@@ -1034,15 +1007,24 @@ class EcChooseShopScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
+            // The tap target used to be the glyph box of a 16pt line — a few
+            // points tall, so most taps missed it. Pad it out to a proper
+            // touch target and keep the label itself unchanged.
             Center(
               child: EcTap(
                 onTap: onLogout,
-                child: PenText(
-                  l10n.accountSignOut,
-                  size: 16,
-                  color: PenColors.ink,
-                  weight: FontWeight.w700,
-                  softWrap: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                    horizontal: 28,
+                  ),
+                  child: PenText(
+                    l10n.accountSignOut,
+                    size: 16,
+                    color: PenColors.ink,
+                    weight: FontWeight.w700,
+                    softWrap: false,
+                  ),
                 ),
               ),
             ),
@@ -1053,8 +1035,9 @@ class EcChooseShopScreen extends StatelessWidget {
   }
 }
 
-/// One selectable shop: platform tile, name + meta, selection dot. The selected
-/// row is filled `--secondary` grey (the design never tints it green).
+/// One selectable shop: platform tile, name + meta, navigation chevron. The
+/// selected row is filled `--secondary` grey (the design never tints it
+/// green).
 class _ShopRow extends StatelessWidget {
   const _ShopRow({required this.shop, required this.selected, this.onTap});
 
@@ -1106,7 +1089,9 @@ class _ShopRow extends StatelessWidget {
             ],
           ),
         ),
-        PenRadio(selected: selected),
+        // The row navigates into the shop rather than toggling a choice, so
+        // it carries a chevron instead of the design's selection dot.
+        const Icon(LucideIcons.chevronRight, size: 21, color: PenColors.mut),
       ],
     );
   }
@@ -3037,9 +3022,13 @@ class EcHomeStat {
     required this.value,
     required this.label,
     this.icon = LucideIcons.package,
+    this.onTap,
   });
   final String value;
   final String label;
+
+  /// Makes the card tappable — "Chờ tải" uses it to open the upload queue.
+  final VoidCallback? onTap;
 
   /// The lucide glyph the design puts in the stat's tile.
   final IconData icon;
@@ -3426,7 +3415,7 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                               cross: CrossAxisAlignment.center,
                               children: [
                                 Icon(
-                                  LucideIcons.scan,
+                                  LucideIcons.scanBarcode,
                                   size: 22,
                                   color: PenColors.ink,
                                 ),
@@ -3762,7 +3751,7 @@ class _StatBox extends StatelessWidget {
   Widget build(BuildContext context) {
     // The design stacks the tile+number row over the label; it used to be a
     // single row with the label beside the number.
-    return PenBox(
+    final card = PenBox(
       fill: PenColors.card,
       stroke: PenColors.line,
       radius: 14,
@@ -3799,6 +3788,7 @@ class _StatBox extends StatelessWidget {
         PenText(stat.label, size: 12, color: PenColors.mut, softWrap: false),
       ],
     );
+    return stat.onTap == null ? card : EcTap(onTap: stat.onTap, child: card);
   }
 }
 

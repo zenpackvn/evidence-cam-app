@@ -219,10 +219,18 @@ class _EcAppState extends State<EcApp> {
         routerConfig: _router,
         // Tapping anywhere outside the focused field (e.g. a text field)
         // dismisses the keyboard app-wide.
-        builder: (context, child) => GestureDetector(
-          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-          behavior: HitTestBehavior.opaque,
-          child: child,
+        builder: (context, child) => PopScope(
+          // A back gesture that reaches the root would otherwise close the
+          // app outright — which is what happens on the pre-shell screens
+          // (splash / login / shop picker), since only the tab shell has its
+          // own PopScope. go_router still pops pushed routes normally: this
+          // only fires once nothing is left to pop.
+          canPop: false,
+          child: GestureDetector(
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            behavior: HitTestBehavior.opaque,
+            child: child,
+          ),
         ),
       ),
     );
@@ -2434,6 +2442,8 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       EcHomeStat(
         value: '${_pendingUploads(queue)}',
         label: context.l10n.statPendingUpload,
+        // Replaces the upload-queue chip that used to sit in the header.
+        onTap: widget.onQueueTap,
       ),
     ];
   }

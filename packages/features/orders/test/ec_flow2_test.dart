@@ -1,5 +1,4 @@
 import 'package:app_ui/app_ui.dart';
-import 'package:ec_ui/ec_ui.dart';
 import 'package:feature_orders/feature_orders.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -140,7 +139,7 @@ void main() {
       await tester.tap(find.text('Thử lại'));
       expect(retried, isTrue);
 
-      await tester.tap(find.byIcon(LucideIcons.play).first);
+      await tester.tap(find.text('Đóng hàng đi'));
       expect(played?.label, 'Đóng hàng đi');
     });
   });

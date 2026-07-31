@@ -62,6 +62,27 @@ RecordingFrameAction recordingFrameAction(
 String normalizeTrackingCode(String raw) =>
     raw.trim().replaceAll(RegExp(r'\s+'), '').toLowerCase();
 
+/// Whether an idle-scanned [code] may auto-start a clip, given the order whose
+/// clip closed most recently ([justClosedCode], already normalized) and the
+/// instant its block lapses ([blockedUntil]).
+///
+/// The seam that makes the "don't immediately re-record the bill that just
+/// finished" rule testable without a camera. A parcel normally stays on the
+/// packing table after its clip closes, so the idle scan that resumes right
+/// after a stop would otherwise re-detect the very same code within one scan
+/// cooldown and record it all over again — which is what made the 15' cap
+/// announce "đã dừng quay" and then visibly keep recording.
+bool idleScanMayStart(
+  String code, {
+  required String? justClosedCode,
+  required DateTime? blockedUntil,
+  required DateTime now,
+}) {
+  if (justClosedCode == null || blockedUntil == null) return true;
+  if (!now.isBefore(blockedUntil)) return true;
+  return normalizeTrackingCode(code) != justClosedCode;
+}
+
 /// Explicit recording-session status. Illegal flag combinations that the old
 /// bools allowed (e.g. starting && recording) are now unrepresentable.
 enum RecordingStatus { initializing, idle, recording, error }
@@ -340,6 +361,21 @@ class RecordingSessionBloc
   DateTime? _lastIdleScanAt;
   String? _lastRejectedReturnCode;
 
+  /// True from the moment the near-cap warning has been spoken for the clip
+  /// currently recording, so the 60-second heads-up is announced once per clip
+  /// rather than on every tick past the threshold.
+  bool _nearLimitWarned = false;
+
+  /// True once this clip's hard cap has already queued its stop. Without it the
+  /// 1s tick keeps firing (and re-requesting a stop) for as long as
+  /// [_finalize] is still awaiting the camera, which announced "đã dừng quay"
+  /// several times over for a single cap.
+  bool _capRequested = false;
+
+  /// The tracking code of the clip that just closed, plus how long it stays
+  /// blocked from auto-starting a new one. See [_onIdleFrame].
+  String? _suppressedCode;
+  DateTime? _suppressedUntil;
 
   // ML Kit's per-frame scan is expensive enough to visibly stutter the video
   // encoder if run on every delivered frame, and instant recognition isn't
@@ -352,6 +388,30 @@ class RecordingSessionBloc
   // Async mutex chaining all camera-mutating ops. ponytail: a single global
   // lock — fine here because there's exactly one camera; nothing to parallelize.
   Future<void> _camLock = Future<void>.value();
+
+  /// How long a single clip may run before it is auto-closed (FR-01, 15').
+  Duration get maxRecording => _maxRecording;
+
+  /// Elapsed time at which the clip enters its final minute: the view swaps to
+  /// the cap-warning screen with a countdown and the warning is spoken once.
+  ///
+  /// The cap is the shop's setting and can be as short as a minute (FR-18), so
+  /// short caps fall back to half the clip — a warning that fires at second 0
+  /// is no warning at all.
+  Duration get nearLimitAt => _maxRecording > const Duration(minutes: 2)
+      ? _maxRecording - _nearLimitLead
+      : _maxRecording * 0.5;
+
+  /// How long before the cap the warning fires.
+  static const _nearLimitLead = Duration(minutes: 1);
+
+  /// How long the just-closed order's code stays blocked from auto-starting a
+  /// new clip, measured from the last frame it was seen in. The bill normally
+  /// stays on the packing table for a while after its clip closes, so without
+  /// this the idle scan that resumes right after [_finalize] re-detects the
+  /// same code within one cooldown and records it all over again — which is
+  /// what made the 15' cap announce "đã dừng quay" and then keep recording.
+  static const _reArmDelay = Duration(seconds: 5);
 
   /// The live controller for the preview widget. The bloc can't hide it — a
   /// `CameraPreview` needs the actual controller — so the view reads it here and
@@ -508,6 +568,7 @@ class RecordingSessionBloc
       if (code != null &&
           code.isNotEmpty &&
           code != _endQr &&
+          _mayAutoStart(code) &&
           state.status == RecordingStatus.idle &&
           !isClosed) {
         add(RecordingCodeScanned(code));
@@ -515,6 +576,30 @@ class RecordingSessionBloc
     } finally {
       _idleScanBusy = false;
     }
+  }
+
+  /// Applies [idleScanMayStart] to [code], extending the block for as long as
+  /// the just-closed bill keeps showing up.
+  ///
+  /// The window runs from the last frame the bill was seen in, not from the
+  /// moment its clip closed: a parcel left on the table must never re-arm,
+  /// while one taken away and later presented again should. Manual entry
+  /// deliberately bypasses this — typing a code is an explicit request to
+  /// record it.
+  bool _mayAutoStart(String code) {
+    final mayStart = idleScanMayStart(
+      code,
+      justClosedCode: _suppressedCode,
+      blockedUntil: _suppressedUntil,
+      now: DateTime.now(),
+    );
+    if (mayStart) {
+      _suppressedCode = null;
+      _suppressedUntil = null;
+    } else {
+      _suppressedUntil = DateTime.now().add(_reArmDelay);
+    }
+    return mayStart;
   }
 
   Future<void> _onManualCodeSubmitted(
@@ -553,6 +638,8 @@ class RecordingSessionBloc
     Emitter<RecordingSessionState> emit,
   ) async {
     if (state.isRecording) return;
+    _suppressedCode = null;
+    _suppressedUntil = null;
     try {
       await _serialized(() async {
         if (!_camera.isInitialized || _camera.isRecordingVideo) return;
@@ -568,6 +655,8 @@ class RecordingSessionBloc
         } finally {
           previewTransitioning.value = false;
         }
+        _nearLimitWarned = false;
+        _capRequested = false;
         if (isClosed) return;
         emit(
           state.copyWith(
@@ -672,9 +761,17 @@ class RecordingSessionBloc
     // show what just closed alongside what's now recording.
     final closedCode = state.code;
     final closedElapsed = state.elapsed;
+    // Blocks the bill that just closed from immediately auto-starting the next
+    // clip while it is still sitting in frame (see [_reArmDelay]).
+    if (closedCode.isNotEmpty) {
+      _suppressedCode = normalizeTrackingCode(closedCode);
+      _suppressedUntil = DateTime.now().add(_reArmDelay);
+    }
     try {
       await _serialized(() async {
         _cancelTimer();
+        _nearLimitWarned = false;
+        _capRequested = false;
         // Spoken the instant the decision is made — stopVideoRecording below
         // (muxing the clip) can itself take a real moment, and waiting for
         // it made the announcement feel out of sync with the stop-QR/cap
@@ -756,8 +853,17 @@ class RecordingSessionBloc
     if (state.status != RecordingStatus.recording) return;
     final elapsed = state.elapsed + const Duration(seconds: 1);
     emit(state.copyWith(elapsed: elapsed));
+    // Heads-up a minute out: the seller is packing with both hands and isn't
+    // looking at the countdown the view now shows, so the cap is spoken too.
+    if (!_nearLimitWarned && elapsed >= nearLimitAt) {
+      _nearLimitWarned = true;
+      unawaited(_voice.speak('Sắp chạm trần mười lăm phút, video sẽ tự chốt'));
+    }
     // Hard cap: auto-close the clip at 15' so a forgotten session finalizes.
-    if (elapsed >= _maxRecording) add(const RecordingStopRequested());
+    if (!_capRequested && elapsed >= _maxRecording) {
+      _capRequested = true;
+      add(const RecordingStopRequested());
+    }
   }
 
   Future<void> _onBackgrounded(
