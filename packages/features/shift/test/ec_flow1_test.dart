@@ -531,7 +531,7 @@ void main() {
         const EcHomeOrdersScreen(shopName: 'Shop ABC', orders: orders),
       );
       expect(find.text('Shop ABC'), findsOneWidget);
-      expect(find.text('Vận đơn hôm nay'), findsOneWidget);
+      expect(find.text('Vận đơn'), findsOneWidget);
       expect(find.text('SPXVN024567890'), findsOneWidget);
       expect(find.text('SPXVN044556677'), findsOneWidget);
       expect(find.text('1 lỗi'), findsOneWidget);

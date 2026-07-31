@@ -180,11 +180,9 @@ extension EvidenceCamAnalytics on AnalyticsService {
   Future<void> trackUploadCompleted() =>
       logEvent(AnalyticsEvents.uploadCompleted);
 
-  Future<void> trackUploadFailed() =>
-      logEvent(AnalyticsEvents.uploadFailed);
+  Future<void> trackUploadFailed() => logEvent(AnalyticsEvents.uploadFailed);
 
-  Future<void> trackPaywallViewed() =>
-      logEvent(AnalyticsEvents.paywallViewed);
+  Future<void> trackPaywallViewed() => logEvent(AnalyticsEvents.paywallViewed);
 
   Future<void> trackPurchaseStarted({required String planCode}) {
     return logEvent(

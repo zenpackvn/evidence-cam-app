@@ -314,7 +314,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get createOrderConfirm => 'Tạo vận đơn mới';
 
   @override
-  String get statOrdersToday => 'Vận đơn hôm nay';
+  String get statOrdersToday => 'Vận đơn';
 
   @override
   String get statVideosRecorded => 'Video đã quay';
@@ -382,6 +382,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountSaveChanges => 'Lưu thay đổi';
 
   @override
+  String get accountEmailLockedHint =>
+      'Email dùng để đăng nhập, không thể thay đổi';
+
+  @override
   String get phoneAddTitle => 'Thêm số điện thoại';
 
   @override
@@ -430,10 +434,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String get quotaRemainingThisMonth => 'Còn lại trong tháng';
 
   @override
+  String get quotaSubtitle => 'Theo dõi dung lượng đang dùng';
+
+  @override
+  String quotaRemainingAmount(String amount) {
+    return '$amount còn lại';
+  }
+
+  @override
   String get quotaStorage => 'Lưu trữ';
 
   @override
   String get quotaUpgradePlan => 'Nâng cấp gói';
+
+  @override
+  String get quotaUpgradeShort => 'Nâng cấp';
 
   @override
   String get quotaOwnerOnlyNote => 'Chỉ chủ tài khoản mới đổi được gói cước';
@@ -446,7 +461,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get deleteAccountBodyStep1 =>
-      'Toàn bộ video, đơn hàng và hồ sơ của bạn sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.';
+      'Toàn bộ video, vận đơn và hồ sơ của bạn sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.';
 
   @override
   String get deleteAccountBodyStep2 =>
@@ -456,8 +471,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteConfirmPermanent => 'Xóa vĩnh viễn';
 
   @override
-  String get deleteStep1Hint =>
-      'Bước 1/2 — sẽ yêu cầu xác nhận lại · xong đăng xuất ngay';
+  String get deleteStep1Hint => 'Bước 1/2 — sẽ yêu cầu xác nhận lại';
 
   @override
   String get deleteStep2Hint => 'Bước 2/2 — hành động này không thể hoàn tác';
@@ -472,7 +486,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get passwordNewLabel => 'Mật khẩu mới';
 
   @override
-  String get passwordMinHint => 'Tối thiểu 8 ký tự, có cả chữ và số';
+  String get passwordMinHint => 'Tối thiểu 8 ký tự';
 
   @override
   String get passwordNewRequired => 'Vui lòng nhập mật khẩu mới';
@@ -498,7 +512,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get passwordChangeLogoutNote =>
-      '(Đổi xong sẽ đăng xuất khỏi các thiết bị khác)';
+      'Đổi xong sẽ đăng xuất khỏi các thiết bị khác';
 
   @override
   String get navOrders => 'Vận đơn';
@@ -528,8 +542,37 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String quotaUsedRatio(String used, String cap, int percent) {
+    return 'Đã dùng $used / $cap · $percent%';
+  }
+
+  @override
+  String get quotaVideosStored => 'Video đang lưu';
+
+  @override
+  String quotaVideosStoredCount(int count) {
+    return '$count video';
+  }
+
+  @override
+  String get quotaByType => 'Dung lượng theo loại';
+
+  @override
+  String quotaByTypeVideosCount(int count) {
+    return '$count video đang lưu';
+  }
+
+  @override
+  String quotaRefundNote(int days) {
+    return 'Dung lượng hoàn lại khi video hết hạn lưu trữ $days ngày';
+  }
+
+  @override
+  String get quotaPaymentHistory => 'Lịch sử thanh toán';
+
+  @override
   String deletePendingProfilesWarning(int count) {
-    return 'Bạn còn $count hồ sơ khiếu nại đang mở — link chia sẻ sẽ ngừng hoạt động';
+    return 'Bạn còn $count hồ sơ “đã gửi sàn” — link chia sẻ sẽ ngừng hoạt động';
   }
 
   @override
@@ -564,7 +607,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get detailDownloadNote =>
-      'Tải video về máy để đính kèm form khiếu nại sàn';
+      'Chỉ Chủ/QL shop · dùng khi sàn yêu cầu file gốc';
 
   @override
   String get detailDownloadPhoto => 'Tải ảnh về máy';
@@ -577,7 +620,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get deleteVideoNote =>
-      'Chỉ Chủ tài khoản / QL shop · mất vĩnh viễn, không khôi phục được';
+      'Chỉ Chủ/QL shop · khóa nếu hồ sơ đang mở · xác nhận 2 bước';
 
   @override
   String get deleteVideoConfirmTitle => 'Xác nhận lần cuối';
@@ -601,7 +644,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String ordersPendingEvidenceWarning(int count) {
-    return '$count bằng chứng chưa upload';
+    return '$count bằng chứng chưa upload · link hồ sơ sẽ thiếu';
   }
 
   @override
@@ -700,10 +743,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get toastQueueItemDeleted => 'Đã xóa khỏi hàng đợi tải lên';
 
   @override
-  String get manualTrackingTitle => 'Nhập tay mã vận đơn';
+  String get manualTrackingTitle => 'Nhập mã vận đơn';
 
   @override
-  String get manualTrackingNote => 'Dùng khi bill mờ — không quá 10 giây';
+  String get manualTrackingNote => 'Nhập hoặc quét lại mã vận đơn';
+
+  @override
+  String get commonDone => 'Xong';
 
   @override
   String get startRecording => 'Bắt đầu quay';
@@ -781,6 +827,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get authForgotPassword => 'Quên mật khẩu?';
+
+  @override
+  String get registerWithGoogle => 'Đăng ký với Google';
+
+  @override
+  String get registerWithApple => 'Đăng ký với Apple';
 
   @override
   String get authSignInGoogle => 'Đăng nhập với Google';

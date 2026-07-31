@@ -316,7 +316,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createOrderConfirm => 'Create new order';
 
   @override
-  String get statOrdersToday => 'Orders today';
+  String get statOrdersToday => 'Orders';
 
   @override
   String get statVideosRecorded => 'Videos recorded';
@@ -384,6 +384,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountSaveChanges => 'Save changes';
 
   @override
+  String get accountEmailLockedHint =>
+      'Email used to sign in — cannot be changed';
+
+  @override
   String get phoneAddTitle => 'Add phone number';
 
   @override
@@ -432,10 +436,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaRemainingThisMonth => 'Remaining this month';
 
   @override
+  String get quotaSubtitle => 'Track the storage you are using';
+
+  @override
+  String quotaRemainingAmount(String amount) {
+    return '$amount remaining';
+  }
+
+  @override
   String get quotaStorage => 'Storage';
 
   @override
   String get quotaUpgradePlan => 'Upgrade plan';
+
+  @override
+  String get quotaUpgradeShort => 'Upgrade';
 
   @override
   String get quotaOwnerOnlyNote => 'Only the account owner can change the plan';
@@ -448,7 +463,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountBodyStep1 =>
-      'All your videos, orders and dossiers will be permanently deleted. This action cannot be undone.';
+      'All your videos, shipments and dossiers will be permanently deleted. This action cannot be undone.';
 
   @override
   String get deleteAccountBodyStep2 =>
@@ -458,8 +473,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteConfirmPermanent => 'Delete permanently';
 
   @override
-  String get deleteStep1Hint =>
-      'Step 1/2 — will ask for confirmation again · then sign out';
+  String get deleteStep1Hint => 'Step 1/2 — will ask for confirmation again';
 
   @override
   String get deleteStep2Hint => 'Step 2/2 — this action cannot be undone';
@@ -474,8 +488,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordNewLabel => 'New password';
 
   @override
-  String get passwordMinHint =>
-      'At least 8 characters, with letters and numbers';
+  String get passwordMinHint => 'At least 8 characters';
 
   @override
   String get passwordNewRequired => 'Please enter a new password';
@@ -502,7 +515,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passwordChangeLogoutNote =>
-      '(You\'ll be signed out of other devices after changing)';
+      'You\'ll be signed out of other devices after changing';
 
   @override
   String get navOrders => 'Orders';
@@ -532,8 +545,37 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String quotaUsedRatio(String used, String cap, int percent) {
+    return 'Used $used / $cap · $percent%';
+  }
+
+  @override
+  String get quotaVideosStored => 'Videos stored';
+
+  @override
+  String quotaVideosStoredCount(int count) {
+    return '$count videos';
+  }
+
+  @override
+  String get quotaByType => 'Storage by type';
+
+  @override
+  String quotaByTypeVideosCount(int count) {
+    return '$count videos stored';
+  }
+
+  @override
+  String quotaRefundNote(int days) {
+    return 'Storage is freed once a video passes its $days-day retention window';
+  }
+
+  @override
+  String get quotaPaymentHistory => 'Payment history';
+
+  @override
   String deletePendingProfilesWarning(int count) {
-    return 'You still have $count open claim dossiers — their share links will stop working';
+    return 'You still have $count dossiers “sent to the platform” — their share links will stop working';
   }
 
   @override
@@ -568,7 +610,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailDownloadNote =>
-      'Download the video to attach to a marketplace complaint form';
+      'Owner/manager only · for when the marketplace asks for the original file';
 
   @override
   String get detailDownloadPhoto => 'Download photo';
@@ -581,7 +623,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteVideoNote =>
-      'Account owner / shop manager only · permanent, cannot be undone';
+      'Owner/manager only · locked while a dossier is open · two-step confirm';
 
   @override
   String get deleteVideoConfirmTitle => 'Final confirmation';
@@ -605,7 +647,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String ordersPendingEvidenceWarning(int count) {
-    return '$count evidence not uploaded';
+    return '$count evidence not uploaded · the dossier link will be incomplete';
   }
 
   @override
@@ -705,11 +747,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toastQueueItemDeleted => 'Removed from the upload queue';
 
   @override
-  String get manualTrackingTitle => 'Enter tracking code manually';
+  String get manualTrackingTitle => 'Enter tracking code';
 
   @override
-  String get manualTrackingNote =>
-      'Use when the bill is blurry — no more than 10 seconds';
+  String get manualTrackingNote => 'Type it in or scan the code again';
+
+  @override
+  String get commonDone => 'Done';
 
   @override
   String get startRecording => 'Start recording';
@@ -787,6 +831,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authForgotPassword => 'Forgot password?';
+
+  @override
+  String get registerWithGoogle => 'Sign up with Google';
+
+  @override
+  String get registerWithApple => 'Sign up with Apple';
 
   @override
   String get authSignInGoogle => 'Sign in with Google';

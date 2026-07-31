@@ -31,14 +31,11 @@ class EcWaitBill2Screen extends StatelessWidget {
     this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.typeLabel = 'Đóng hàng',
-    this.zoomLabel = '1x',
     this.resolutionLabel = '720p',
     this.preview,
     this.onBack,
     this.onPickType,
     this.onSettings,
-    this.onZoomIn,
-    this.onZoomOut,
     this.onFlipCamera,
     this.onManualEntry,
     this.onResolution,
@@ -50,7 +47,6 @@ class EcWaitBill2Screen extends StatelessWidget {
   final String shopName;
   final int queueCount;
   final String typeLabel;
-  final String zoomLabel;
   final String resolutionLabel;
 
   /// Live camera preview rendered full-bleed behind the overlay; a black
@@ -59,8 +55,6 @@ class EcWaitBill2Screen extends StatelessWidget {
   final VoidCallback? onBack;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
-  final VoidCallback? onZoomIn;
-  final VoidCallback? onZoomOut;
   final VoidCallback? onFlipCamera;
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
@@ -73,85 +67,104 @@ class EcWaitBill2Screen extends StatelessWidget {
       shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
-      zoomLabel: zoomLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
       onPickType: onPickType,
       onSettings: onSettings,
-      onZoomIn: onZoomIn,
-      onZoomOut: onZoomOut,
       onFlipCamera: onFlipCamera,
       onManualEntry: onManualEntry,
       onResolution: onResolution,
-      centerArea: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 244,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                PenText(
-                  context.l10n.captureFramePrompt,
-                  size: 16,
-                  color: PenColors.card,
-                  weight: FontWeight.w700,
-                  align: TextAlign.center,
-                ),
-                const SizedBox(height: 5),
-                PenText(
-                  context.l10n.captureCameraDownHint,
-                  size: 13,
-                  color: const Color(0x99FFFFFF),
-                  align: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 42),
-          // Tooltip doubles as the accessible name for the pill — it is the
-          // only way into manual entry now that the rail is gone.
-          Tooltip(
-            message: context.l10n.tooltipEnterTracking,
-            child: EcTap(
-              onTap: onManualEntry,
-              child: PenBox(
-                width: 214,
-                height: 42,
-                fill: const Color(0xCC050505),
-                stroke: const Color(0x1AFFFFFF),
-                radius: 999,
-                axis: PenAxis.row,
-                gap: 9,
-                main: MainAxisAlignment.center,
-                cross: CrossAxisAlignment.center,
-                children: [
-                  const Icon(
-                    LucideIcons.keyboard,
-                    size: 18,
-                    color: PenColors.card,
-                  ),
-                  Flexible(
-                    child: PenText(
-                      context.l10n.tooltipEnterTracking,
-                      size: 14,
-                      color: PenColors.card,
-                      weight: FontWeight.w700,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
+      // Matches _FramingCorners' frame fractions so the hint reads inside the
+      // frame and the manual-entry pill sits just below it, never overlapping.
+      centerArea: LayoutBuilder(
+        builder: (context, constraints) {
+          final frameTop = constraints.maxHeight * 0.253;
+          final frameBottom = constraints.maxHeight * (1 - 0.313);
+          return Stack(
+            children: [
+              Positioned(
+                left: 0,
+                right: 0,
+                top: frameTop,
+                height: frameBottom - frameTop,
+                child: Center(
+                  child: SizedBox(
+                    width: 244,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        PenText(
+                          context.l10n.captureFramePrompt,
+                          size: 16,
+                          color: PenColors.card,
+                          weight: FontWeight.w700,
+                          align: TextAlign.center,
+                        ),
+                        const SizedBox(height: 5),
+                        PenText(
+                          context.l10n.captureCameraDownHint,
+                          size: 13,
+                          color: const Color(0x99FFFFFF),
+                          align: TextAlign.center,
+                        ),
+                      ],
                     ),
                   ),
-                  const Icon(
-                    LucideIcons.chevronRight,
-                    size: 16,
-                    color: Color(0x99FFFFFF),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-        ],
+              Positioned(
+                left: 0,
+                right: 0,
+                top: frameBottom + 24,
+                child: Center(
+                  // Tooltip doubles as the accessible name for the pill — it
+                  // is the only way into manual entry now that the rail is
+                  // gone.
+                  child: Tooltip(
+                    message: context.l10n.tooltipEnterTracking,
+                    child: EcTap(
+                      onTap: onManualEntry,
+                      child: PenBox(
+                        width: 214,
+                        height: 42,
+                        fill: const Color(0xCC050505),
+                        stroke: const Color(0x1AFFFFFF),
+                        radius: 999,
+                        axis: PenAxis.row,
+                        gap: 9,
+                        main: MainAxisAlignment.center,
+                        cross: CrossAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            LucideIcons.keyboard,
+                            size: 18,
+                            color: PenColors.card,
+                          ),
+                          Flexible(
+                            child: PenText(
+                              context.l10n.tooltipEnterTracking,
+                              size: 14,
+                              color: PenColors.card,
+                              weight: FontWeight.w700,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const Icon(
+                            LucideIcons.chevronRight,
+                            size: 16,
+                            color: Color(0x99FFFFFF),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -169,14 +182,11 @@ class EcRecording2Screen extends StatelessWidget {
     this.code = 'SPXVN024567890',
     this.elapsed = '00:00',
     this.typeLabel = 'Đóng hàng',
-    this.zoomLabel = '1x',
     this.resolutionLabel = '720p',
     this.preview,
     this.onBack,
     this.onPickType,
     this.onSettings,
-    this.onZoomIn,
-    this.onZoomOut,
     this.onFlipCamera,
     this.onManualEntry,
     this.onResolution,
@@ -193,7 +203,6 @@ class EcRecording2Screen extends StatelessWidget {
   /// Running clip length shown next to REC, `mm:ss`.
   final String elapsed;
   final String typeLabel;
-  final String zoomLabel;
   final String resolutionLabel;
 
   /// Live camera preview rendered full-bleed behind the overlay; a black
@@ -202,8 +211,6 @@ class EcRecording2Screen extends StatelessWidget {
   final VoidCallback? onBack;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
-  final VoidCallback? onZoomIn;
-  final VoidCallback? onZoomOut;
   final VoidCallback? onFlipCamera;
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
@@ -218,14 +225,11 @@ class EcRecording2Screen extends StatelessWidget {
       shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
-      zoomLabel: zoomLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
       onPickType: onPickType,
       onSettings: onSettings,
-      onZoomIn: onZoomIn,
-      onZoomOut: onZoomOut,
       onFlipCamera: onFlipCamera,
       onManualEntry: onManualEntry,
       onResolution: onResolution,
@@ -263,14 +267,11 @@ class EcCutoverBScreen extends StatelessWidget {
     this.newCode = 'SPXVN098765432',
     this.newDuration = '00:01',
     this.typeLabel = 'Đóng hàng',
-    this.zoomLabel = '1x',
     this.resolutionLabel = '720p',
     this.preview,
     this.onBack,
     this.onPickType,
     this.onSettings,
-    this.onZoomIn,
-    this.onZoomOut,
     this.onFlipCamera,
     this.onManualEntry,
     this.onStop,
@@ -284,7 +285,6 @@ class EcCutoverBScreen extends StatelessWidget {
   final String newCode;
   final String newDuration;
   final String typeLabel;
-  final String zoomLabel;
   final String resolutionLabel;
 
   /// The live camera texture — recording keeps running underneath this
@@ -293,8 +293,6 @@ class EcCutoverBScreen extends StatelessWidget {
   final VoidCallback? onBack;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
-  final VoidCallback? onZoomIn;
-  final VoidCallback? onZoomOut;
   final VoidCallback? onFlipCamera;
   final VoidCallback? onManualEntry;
   final VoidCallback? onStop;
@@ -306,14 +304,11 @@ class EcCutoverBScreen extends StatelessWidget {
       shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
-      zoomLabel: zoomLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
       onPickType: onPickType,
       onSettings: onSettings,
-      onZoomIn: onZoomIn,
-      onZoomOut: onZoomOut,
       onFlipCamera: onFlipCamera,
       onManualEntry: onManualEntry,
       showStopButton: true,
@@ -364,14 +359,11 @@ class EcNearLimitScreen extends StatelessWidget {
     this.code = 'SPXVN024567890',
     this.duration = '14:12',
     this.typeLabel = 'Đóng hàng',
-    this.zoomLabel = '1x',
     this.resolutionLabel = '720p',
     this.preview,
     this.onBack,
     this.onPickType,
     this.onSettings,
-    this.onZoomIn,
-    this.onZoomOut,
     this.onFlipCamera,
     this.onManualEntry,
     this.onResolution,
@@ -387,14 +379,11 @@ class EcNearLimitScreen extends StatelessWidget {
   final String code;
   final String duration;
   final String typeLabel;
-  final String zoomLabel;
   final String resolutionLabel;
   final Widget? preview;
   final VoidCallback? onBack;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
-  final VoidCallback? onZoomIn;
-  final VoidCallback? onZoomOut;
   final VoidCallback? onFlipCamera;
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
@@ -409,14 +398,11 @@ class EcNearLimitScreen extends StatelessWidget {
       shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
-      zoomLabel: zoomLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
       onPickType: onPickType,
       onSettings: onSettings,
-      onZoomIn: onZoomIn,
-      onZoomOut: onZoomOut,
       onFlipCamera: onFlipCamera,
       onManualEntry: onManualEntry,
       onResolution: onResolution,
@@ -489,14 +475,11 @@ class EcReturnRecScreen extends StatelessWidget {
     this.duration = '00:32',
     this.linkNote = 'Tự liên kết về hồ sơ mã vận đơn gốc',
     this.typeLabel = 'Trả hàng',
-    this.zoomLabel = '1x',
     this.resolutionLabel = '720p',
     this.preview,
     this.onBack,
     this.onPickType,
     this.onSettings,
-    this.onZoomIn,
-    this.onZoomOut,
     this.onFlipCamera,
     this.onManualEntry,
     this.onStop,
@@ -509,14 +492,11 @@ class EcReturnRecScreen extends StatelessWidget {
   final String duration;
   final String linkNote;
   final String typeLabel;
-  final String zoomLabel;
   final String resolutionLabel;
   final Widget? preview;
   final VoidCallback? onBack;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
-  final VoidCallback? onZoomIn;
-  final VoidCallback? onZoomOut;
   final VoidCallback? onFlipCamera;
   final VoidCallback? onManualEntry;
   final VoidCallback? onStop;
@@ -528,14 +508,11 @@ class EcReturnRecScreen extends StatelessWidget {
       shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
-      zoomLabel: zoomLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
       onBack: onBack,
       onPickType: onPickType,
       onSettings: onSettings,
-      onZoomIn: onZoomIn,
-      onZoomOut: onZoomOut,
       onFlipCamera: onFlipCamera,
       onManualEntry: onManualEntry,
       showStopButton: true,
@@ -566,7 +543,6 @@ class _CamScaffold extends StatelessWidget {
     required this.shopName,
     required this.queueCount,
     required this.typeLabel,
-    required this.zoomLabel,
     required this.resolutionLabel,
     required this.centerArea,
     this.headerTitle,
@@ -574,8 +550,6 @@ class _CamScaffold extends StatelessWidget {
     this.onBack,
     this.onPickType,
     this.onSettings,
-    this.onZoomIn,
-    this.onZoomOut,
     this.onFlipCamera,
     this.onManualEntry,
     this.onResolution,
@@ -586,7 +560,6 @@ class _CamScaffold extends StatelessWidget {
   final String shopName;
   final int queueCount;
   final String typeLabel;
-  final String zoomLabel;
   final String resolutionLabel;
   final Widget centerArea;
 
@@ -596,8 +569,6 @@ class _CamScaffold extends StatelessWidget {
   final VoidCallback? onBack;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
-  final VoidCallback? onZoomIn;
-  final VoidCallback? onZoomOut;
   final VoidCallback? onFlipCamera;
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
@@ -647,12 +618,9 @@ class _CamScaffold extends StatelessWidget {
             bottom: 0,
             child: _CamFooter(
               typeLabel: typeLabel,
-              zoomLabel: zoomLabel,
               resolutionLabel: resolutionLabel,
               onPickType: onPickType,
               onSettings: onSettings,
-              onZoomIn: onZoomIn,
-              onZoomOut: onZoomOut,
               onResolution: onResolution,
               onFlipCamera: onFlipCamera,
             ),
@@ -728,28 +696,22 @@ class _Corner extends StatelessWidget {
   );
 }
 
-/// The dark footer panel: resolution, zoom and flip on top, the video-type
-/// selector under it.
+/// The dark footer panel: resolution, video-type selector and flip camera,
+/// all in one row.
 class _CamFooter extends StatelessWidget {
   const _CamFooter({
     required this.typeLabel,
-    required this.zoomLabel,
     required this.resolutionLabel,
     this.onPickType,
     this.onSettings,
-    this.onZoomIn,
-    this.onZoomOut,
     this.onResolution,
     this.onFlipCamera,
   });
 
   final String typeLabel;
-  final String zoomLabel;
   final String resolutionLabel;
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
-  final VoidCallback? onZoomIn;
-  final VoidCallback? onZoomOut;
   final VoidCallback? onResolution;
   final VoidCallback? onFlipCamera;
 
@@ -763,34 +725,26 @@ class _CamFooter extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 34),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _RailPill(label: resolutionLabel, onTap: onResolution),
-                    _ZoomControl(
-                      label: zoomLabel,
-                      onZoomIn: onZoomIn,
-                      onZoomOut: onZoomOut,
-                    ),
-                    _RailIconButton(
-                      icon: LucideIcons.refreshCw,
-                      tooltip: context.l10n.tooltipSwitchCamera,
-                      onTap: onFlipCamera,
-                    ),
-                  ],
+              _RailPill(label: resolutionLabel, onTap: onResolution),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Center(
+                  child: _TypeChipRow(
+                    typeLabel: typeLabel,
+                    onPickType: onPickType,
+                    onSettings: onSettings,
+                  ),
                 ),
               ),
-              const SizedBox(height: 10),
-              _TypeChipRow(
-                typeLabel: typeLabel,
-                onPickType: onPickType,
-                onSettings: onSettings,
+              const SizedBox(width: 10),
+              _RailIconButton(
+                icon: LucideIcons.refreshCw,
+                tooltip: context.l10n.tooltipSwitchCamera,
+                onTap: onFlipCamera,
               ),
             ],
           ),
@@ -1011,132 +965,6 @@ class _RecRow extends StatelessWidget {
           softWrap: false,
         ),
       ],
-    );
-  }
-}
-
-class _CamRail extends StatelessWidget {
-  const _CamRail({
-    required this.zoomLabel,
-    required this.resolutionLabel,
-    this.onZoomIn,
-    this.onZoomOut,
-    this.onResolution,
-    this.onFlipCamera,
-    this.onManualEntry,
-  });
-
-  final String zoomLabel;
-  final String resolutionLabel;
-  final VoidCallback? onZoomIn;
-  final VoidCallback? onZoomOut;
-  final VoidCallback? onResolution;
-  final VoidCallback? onFlipCamera;
-  final VoidCallback? onManualEntry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _ZoomControl(
-          label: zoomLabel,
-          onZoomIn: onZoomIn,
-          onZoomOut: onZoomOut,
-        ),
-        const SizedBox(height: 10),
-        if (onResolution != null) ...[
-          _RailPill(label: resolutionLabel, onTap: onResolution),
-          const SizedBox(height: 10),
-        ],
-        if (onFlipCamera != null) ...[
-          _RailIconButton(
-            icon: Icons.flip_camera_ios_outlined,
-            tooltip: context.l10n.tooltipSwitchCamera,
-            onTap: onFlipCamera,
-          ),
-          const SizedBox(height: 10),
-        ],
-        if (onManualEntry != null)
-          _RailIconButton(
-            icon: Icons.keyboard_outlined,
-            tooltip: context.l10n.tooltipEnterTracking,
-            onTap: onManualEntry,
-          ),
-      ],
-    );
-  }
-}
-
-class _ZoomControl extends StatelessWidget {
-  const _ZoomControl({required this.label, this.onZoomIn, this.onZoomOut});
-  final String label;
-  final VoidCallback? onZoomIn;
-  final VoidCallback? onZoomOut;
-
-  @override
-  Widget build(BuildContext context) {
-    return PenBox(
-      fill: const Color(0xCC1C1C1E),
-      stroke: const Color(0x14FFFFFF),
-      radius: 999,
-      axis: PenAxis.row,
-      gap: 2,
-      cross: CrossAxisAlignment.center,
-      hugMain: true,
-      padding: const EdgeInsets.all(4),
-      children: [
-        _ZoomStep(label: '.5', selected: label == '.5', onTap: onZoomOut),
-        _ZoomStep(label: label, selected: true),
-        _ZoomStep(label: '2', selected: label == '2', onTap: onZoomIn),
-      ],
-    );
-  }
-}
-
-/// One step in the zoom pill. The chosen step is the only green thing on the
-/// camera chrome — the design uses `--chart-3` for it.
-class _ZoomStep extends StatelessWidget {
-  const _ZoomStep({
-    required this.label,
-    required this.selected,
-    this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return _Tap(
-      onTap: onTap,
-      tooltip: label,
-      child: PenBox(
-        width: 44,
-        height: 34,
-        fill: selected ? const Color(0x29FFFFFF) : null,
-        radius: 999,
-        axis: PenAxis.row,
-        main: MainAxisAlignment.center,
-        cross: CrossAxisAlignment.center,
-        children: [
-          // The current zoom can be longer than the design's ".5 / 1x / 2"
-          // (e.g. "1.0x"), so the step has to be able to shrink.
-          Flexible(
-            child: PenText(
-              label,
-              size: selected ? 14 : 13,
-              color: selected
-                  ? const Color(0xFF67BB75)
-                  : const Color(0xB3FFFFFF),
-              weight: FontWeight.w700,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1868,6 +1696,15 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
     super.dispose();
   }
 
+  void _type(String digit) =>
+      setState(() => _controller.text = _controller.text + digit);
+
+  void _backspace() {
+    final text = _controller.text;
+    if (text.isEmpty) return;
+    setState(() => _controller.text = text.substring(0, text.length - 1));
+  }
+
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
@@ -1878,97 +1715,224 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: widget.onCancel,
-              child: const ColoredBox(color: Colors.black54),
             ),
           ),
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: SafeArea(
-              top: false,
-              // The keyboard covers this sheet otherwise — it's a bare
-              // Positioned/Stack overlay (see `_modalPage`), not a Scaffold,
-              // so nothing else shifts it above the keyboard when the field
-              // is focused.
-              child: AnimatedPadding(
-                duration: const Duration(milliseconds: 100),
-                padding: EdgeInsets.only(bottom: context.bottomInset),
-                child: DecoratedBox(
-                  decoration: ShapeDecoration(
-                    color: BrandColors.bg,
-                    shape: SmoothRectangleBorder(
-                      smoothness: ecCornerSmoothing,
-                      borderRadius: BorderRadius.zero,
-                    ),
+            // The design's `KeypadSheet`: 490pt tall, 14pt top corners,
+            // padding [12, 22, 0, 22]. Its own keypad replaces the system
+            // keyboard, so nothing has to shift for an inset.
+            child: PenBox(
+              width: double.infinity,
+              fill: PenColors.card,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(14),
+              ),
+              axis: PenAxis.column,
+              hugMain: true,
+              padding: const EdgeInsets.fromLTRB(22, 12, 22, 0),
+              children: [
+                const Center(
+                  child: PenBox(
+                    width: 46,
+                    height: 5,
+                    fill: PenColors.line,
+                    radius: 3,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const _SheetHandle(),
-                        const SizedBox(height: 12),
-                        Text(
-                          context.l10n.manualTrackingTitle,
-                          style: _t(16, FontWeight.w600, BrandColors.ink),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          context.l10n.manualTrackingNote,
-                          style: _t(12, FontWeight.w400, BrandColors.mut),
-                        ),
-                        const SizedBox(height: 12),
-                        DecoratedBox(
-                          decoration: ecSquircleDecoration(
-                            radius: 12,
-                            color: BrandColors.bg,
-                            side: const BorderSide(color: BrandColors.line),
-                          ),
-                          child: CupertinoTextField(
-                            controller: _controller,
-                            style: _t(14, FontWeight.w400, BrandColors.ink),
-                            placeholder: 'SPXVN…',
-                            placeholderStyle: _t(
-                              14,
-                              FontWeight.w400,
-                              BrandColors.mut,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 15,
-                            ),
-                            decoration: const BoxDecoration(),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _OutlineButton(
-                                label: context.l10n.commonCancel,
-                                onPressed: widget.onCancel,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _PrimaryButton(
-                                label: context.l10n.startRecording,
-                                onPressed: () => widget.onManualSubmit?.call(
-                                  _controller.text,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                ),
+                const SizedBox(height: 14),
+                PenText(
+                  context.l10n.manualTrackingTitle,
+                  size: 24,
+                  color: PenColors.ink,
+                  weight: FontWeight.w800,
+                ),
+                const SizedBox(height: 5),
+                PenText(
+                  context.l10n.manualTrackingNote,
+                  size: 14,
+                  color: PenColors.mut,
+                ),
+                const SizedBox(height: 14),
+                PenBox(
+                  width: double.infinity,
+                  height: 58,
+                  fill: PenColors.card,
+                  stroke: PenColors.line,
+                  radius: 14,
+                  axis: PenAxis.row,
+                  gap: 10,
+                  cross: CrossAxisAlignment.center,
+                  padding: const EdgeInsets.fromLTRB(18, 0, 8, 0),
+                  children: [
+                    Expanded(
+                      child: PenText(
+                        _controller.text.isEmpty ? 'SPXVN…' : _controller.text,
+                        size: 18,
+                        color: _controller.text.isEmpty
+                            ? PenColors.mut
+                            : PenColors.ink,
+                        weight: FontWeight.w500,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                    EcTap(
+                      onTap: widget.onCancel,
+                      child: const PenBox(
+                        width: 44,
+                        height: 44,
+                        fill: PenColors.bg,
+                        radius: 10,
+                        axis: PenAxis.row,
+                        main: MainAxisAlignment.center,
+                        cross: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.scan,
+                            size: 22,
+                            color: PenColors.ink,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _Keypad(onDigit: _type, onBackspace: _backspace),
+                const SizedBox(height: 14),
+                EcTap(
+                  onTap: () => widget.onManualSubmit?.call(_controller.text),
+                  child: PenBox(
+                    width: double.infinity,
+                    height: 56,
+                    fill: PenColors.primary,
+                    radius: 14,
+                    axis: PenAxis.row,
+                    main: MainAxisAlignment.center,
+                    cross: CrossAxisAlignment.center,
+                    children: [
+                      PenText(
+                        context.l10n.commonDone,
+                        size: 18,
+                        color: PenColors.card,
+                        weight: FontWeight.w700,
+                        softWrap: false,
+                      ),
+                    ],
                   ),
+                ),
+                SizedBox(height: MediaQuery.paddingOf(context).bottom),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The design's 3x4 phone keypad: digits with their letter groups, an empty
+/// slot and a filled backspace key.
+class _Keypad extends StatelessWidget {
+  const _Keypad({required this.onDigit, required this.onBackspace});
+
+  final ValueChanged<String> onDigit;
+  final VoidCallback onBackspace;
+
+  static const _rows = <List<(String, String)>>[
+    [('1', ''), ('2', 'ABC'), ('3', 'DEF')],
+    [('4', 'GHI'), ('5', 'JKL'), ('6', 'MNO')],
+    [('7', 'PQRS'), ('8', 'TUV'), ('9', 'WXYZ')],
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (final row in _rows) ...[
+          Row(
+            children: [
+              for (final (digit, letters) in row) ...[
+                if (digit != row.first.$1) const SizedBox(width: 8),
+                Expanded(
+                  child: _Key(
+                    digit: digit,
+                    letters: letters,
+                    onTap: () => onDigit(digit),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+        Row(
+          children: [
+            const Expanded(child: SizedBox(height: 52)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _Key(digit: '0', onTap: () => onDigit('0')),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: EcTap(
+                onTap: onBackspace,
+                child: const PenBox(
+                  height: 52,
+                  fill: PenColors.line,
+                  radius: 10,
+                  axis: PenAxis.row,
+                  main: MainAxisAlignment.center,
+                  cross: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      LucideIcons.delete,
+                      size: 24,
+                      color: PenColors.card,
+                    ),
+                  ],
                 ),
               ),
             ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _Key extends StatelessWidget {
+  const _Key({required this.digit, required this.onTap, this.letters = ''});
+
+  final String digit;
+  final String letters;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return EcTap(
+      onTap: onTap,
+      child: PenBox(
+        height: 52,
+        fill: PenColors.card,
+        stroke: PenColors.line,
+        radius: 10,
+        axis: PenAxis.column,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
+        children: [
+          PenText(
+            digit,
+            size: 20,
+            color: PenColors.ink,
+            weight: FontWeight.w600,
+            softWrap: false,
           ),
+          if (letters.isNotEmpty)
+            PenText(letters, size: 12, color: PenColors.mut, softWrap: false),
         ],
       ),
     );

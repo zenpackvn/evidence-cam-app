@@ -23,10 +23,30 @@ enum LogLevel {
 /// records elsewhere (e.g. crash-reporter breadcrumbs) without touching call
 /// sites.
 abstract class AppLogger {
-  void debug(String message, {String? name, Object? error, StackTrace? stackTrace});
-  void info(String message, {String? name, Object? error, StackTrace? stackTrace});
-  void warn(String message, {String? name, Object? error, StackTrace? stackTrace});
-  void error(String message, {String? name, Object? error, StackTrace? stackTrace});
+  void debug(
+    String message, {
+    String? name,
+    Object? error,
+    StackTrace? stackTrace,
+  });
+  void info(
+    String message, {
+    String? name,
+    Object? error,
+    StackTrace? stackTrace,
+  });
+  void warn(
+    String message, {
+    String? name,
+    Object? error,
+    StackTrace? stackTrace,
+  });
+  void error(
+    String message, {
+    String? name,
+    Object? error,
+    StackTrace? stackTrace,
+  });
 }
 
 /// An [AppLogger] backed by `dart:developer`, filtering out records below
@@ -62,18 +82,58 @@ class DeveloperAppLogger implements AppLogger {
   }
 
   @override
-  void debug(String message, {String? name, Object? error, StackTrace? stackTrace}) =>
-      _log(LogLevel.debug, message, name: name, error: error, stackTrace: stackTrace);
+  void debug(
+    String message, {
+    String? name,
+    Object? error,
+    StackTrace? stackTrace,
+  }) => _log(
+    LogLevel.debug,
+    message,
+    name: name,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   @override
-  void info(String message, {String? name, Object? error, StackTrace? stackTrace}) =>
-      _log(LogLevel.info, message, name: name, error: error, stackTrace: stackTrace);
+  void info(
+    String message, {
+    String? name,
+    Object? error,
+    StackTrace? stackTrace,
+  }) => _log(
+    LogLevel.info,
+    message,
+    name: name,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   @override
-  void warn(String message, {String? name, Object? error, StackTrace? stackTrace}) =>
-      _log(LogLevel.warn, message, name: name, error: error, stackTrace: stackTrace);
+  void warn(
+    String message, {
+    String? name,
+    Object? error,
+    StackTrace? stackTrace,
+  }) => _log(
+    LogLevel.warn,
+    message,
+    name: name,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   @override
-  void error(String message, {String? name, Object? error, StackTrace? stackTrace}) =>
-      _log(LogLevel.error, message, name: name, error: error, stackTrace: stackTrace);
+  void error(
+    String message, {
+    String? name,
+    Object? error,
+    StackTrace? stackTrace,
+  }) => _log(
+    LogLevel.error,
+    message,
+    name: name,
+    error: error,
+    stackTrace: stackTrace,
+  );
 }

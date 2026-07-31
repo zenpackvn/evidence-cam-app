@@ -12,7 +12,7 @@ void main() {
       'returns empty offline data instead of demo business records',
       () async {
         expect(await repo.shops(), isEmpty);
-        expect(await repo.orders('s1'), isEmpty);
+        expect((await repo.orders('s1')).items, isEmpty);
         expect(await repo.videoTypes('s1'), isEmpty);
       },
     );

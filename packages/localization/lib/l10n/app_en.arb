@@ -135,7 +135,7 @@
     }
   },
   "createOrderConfirm": "Create new order",
-  "statOrdersToday": "Orders today",
+  "statOrdersToday": "Orders",
   "statVideosRecorded": "Videos recorded",
   "statPendingUpload": "Pending upload",
   "accountPlanQuota": "Plan & Quota",
@@ -157,6 +157,7 @@
   "phoneRequired": "Please enter your phone number",
   "phoneInvalid": "Invalid phone number",
   "accountSaveChanges": "Save changes",
+  "accountEmailLockedHint": "Email used to sign in — cannot be changed",
   "phoneAddTitle": "Add phone number",
   "phoneAddBody": "Your Apple/Google account has no phone number yet. Please enter a phone number to continue.",
   "commonContinue": "Continue",
@@ -172,20 +173,26 @@
   "quotaScreenTitle": "Reports & Quota",
   "quotaCurrentPlan": "Current plan",
   "quotaRemainingThisMonth": "Remaining this month",
+  "quotaSubtitle": "Track the storage you are using",
+  "quotaRemainingAmount": "{amount} remaining",
+  "@quotaRemainingAmount": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
   "quotaStorage": "Storage",
   "quotaUpgradePlan": "Upgrade plan",
+  "quotaUpgradeShort": "Upgrade",
   "quotaOwnerOnlyNote": "Only the account owner can change the plan",
   "deleteAccountTitleStep1": "Delete account?",
   "deleteAccountTitleStep2": "Confirm permanent deletion?",
-  "deleteAccountBodyStep1": "All your videos, orders and dossiers will be permanently deleted. This action cannot be undone.",
+  "deleteAccountBodyStep1": "All your videos, shipments and dossiers will be permanently deleted. This action cannot be undone.",
   "deleteAccountBodyStep2": "This is the final confirmation step. After deletion, you'll be signed out of the app immediately.",
   "deleteConfirmPermanent": "Delete permanently",
-  "deleteStep1Hint": "Step 1/2 — will ask for confirmation again · then sign out",
+  "deleteStep1Hint": "Step 1/2 — will ask for confirmation again",
   "deleteStep2Hint": "Step 2/2 — this action cannot be undone",
   "passwordCurrentLabel": "Current password",
   "passwordCurrentRequired": "Please enter your current password",
   "passwordNewLabel": "New password",
-  "passwordMinHint": "At least 8 characters, with letters and numbers",
+  "passwordMinHint": "At least 8 characters",
   "passwordNewRequired": "Please enter a new password",
   "passwordMin8Error": "Password must be at least 8 characters",
   "passwordNeedsLetterDigit": "Password needs both letters and numbers",
@@ -193,7 +200,7 @@
   "passwordConfirmLabel": "Re-enter new password",
   "passwordMismatch": "Passwords don't match",
   "passwordSave": "Save password",
-  "passwordChangeLogoutNote": "(You'll be signed out of other devices after changing)",
+  "passwordChangeLogoutNote": "You'll be signed out of other devices after changing",
   "navOrders": "Orders",
   "navRecord": "Record",
   "navAccount": "Account",
@@ -225,7 +232,48 @@
       }
     }
   },
-  "deletePendingProfilesWarning": "You still have {count} open claim dossiers — their share links will stop working",
+  "quotaUsedRatio": "Used {used} / {cap} · {percent}%",
+  "@quotaUsedRatio": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaVideosStored": "Videos stored",
+  "quotaVideosStoredCount": "{count} videos",
+  "@quotaVideosStoredCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaByType": "Storage by type",
+  "quotaByTypeVideosCount": "{count} videos stored",
+  "@quotaByTypeVideosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaRefundNote": "Storage is freed once a video passes its {days}-day retention window",
+  "@quotaRefundNote": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaPaymentHistory": "Payment history",
+  "deletePendingProfilesWarning": "You still have {count} dossiers “sent to the platform” — their share links will stop working",
   "@deletePendingProfilesWarning": {
     "placeholders": {
       "count": {
@@ -243,11 +291,11 @@
   "detailUploadStatus": "Upload status",
   "detailPlayVideo": "Play video",
   "detailDownloadVideo": "Download video",
-  "detailDownloadNote": "Download the video to attach to a marketplace complaint form",
+  "detailDownloadNote": "Owner/manager only · for when the marketplace asks for the original file",
   "detailDownloadPhoto": "Download photo",
   "attachPhotoToOrder": "Attach photo to order",
   "deleteVideoAction": "Delete video",
-  "deleteVideoNote": "Account owner / shop manager only · permanent, cannot be undone",
+  "deleteVideoNote": "Owner/manager only · locked while a dossier is open · two-step confirm",
   "deleteVideoConfirmTitle": "Final confirmation",
   "deleteVideoConfirmBody": "This evidence will be permanently deleted and cannot be recovered — delete anyway?",
   "deleteVideoConfirmAction": "Delete permanently",
@@ -267,7 +315,7 @@
       }
     }
   },
-  "ordersPendingEvidenceWarning": "{count} evidence not uploaded",
+  "ordersPendingEvidenceWarning": "{count} evidence not uploaded · the dossier link will be incomplete",
   "@ordersPendingEvidenceWarning": {
     "placeholders": {
       "count": {
@@ -317,8 +365,9 @@
   "queueDeleteConfirmTitle": "Remove from queue?",
   "queueDeleteConfirmBody": "This clip hasn't been uploaded yet — removing it deletes it from your device permanently.",
   "toastQueueItemDeleted": "Removed from the upload queue",
-  "manualTrackingTitle": "Enter tracking code manually",
-  "manualTrackingNote": "Use when the bill is blurry — no more than 10 seconds",
+  "manualTrackingTitle": "Enter tracking code",
+  "manualTrackingNote": "Type it in or scan the code again",
+  "commonDone": "Done",
   "startRecording": "Start recording",
   "returnCodeMismatch": "Return code doesn't match",
   "enterCodeManually": "Enter code manually",
@@ -385,6 +434,8 @@
   "authPassword": "Password",
   "authPasswordRequired": "Please enter your password",
   "authForgotPassword": "Forgot password?",
+  "registerWithGoogle": "Sign up with Google",
+  "registerWithApple": "Sign up with Apple",
   "authSignInGoogle": "Sign in with Google",
   "authSignInApple": "Sign in with Apple",
   "authNoAccountPrompt": "Don't have an account? ",

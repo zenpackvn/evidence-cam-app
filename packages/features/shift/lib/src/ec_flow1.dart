@@ -599,50 +599,20 @@ class EcRegisterScreen extends StatelessWidget {
     final l10n = context.l10n;
     return Form(
       child: PenScreen(
-        decorations: const [
-          Positioned(left: 4, top: 86, child: PenLeafSprig()),
-          Positioned(right: -12, top: 88, child: PenParcelSprite()),
-        ],
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(26, 26, 26, 30),
+              // Design `Body`: padding [14, 26, 0, 26]; `Form` opens 16 below
+              // the title block and spaces every row by 8.
+              padding: const EdgeInsets.fromLTRB(26, 14, 26, 30),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Center(
-                    child: Image.asset(
-                      'assets/design/logo.png',
-                      package: 'ec_ui',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                    ),
+                  PenBrandHeader(
+                    title: l10n.authRegister,
+                    subtitle: l10n.registerCreateAccountSubtitle,
                   ),
-                  const PenText(
-                    'ZenPack',
-                    size: 24,
-                    color: PenColors.primary,
-                    weight: FontWeight.w800,
-                    align: TextAlign.center,
-                    softWrap: false,
-                  ),
-                  const SizedBox(height: 10),
-                  PenText(
-                    l10n.authRegister,
-                    size: 30,
-                    color: PenColors.link,
-                    weight: FontWeight.w800,
-                    align: TextAlign.center,
-                  ),
-                  const SizedBox(height: 2),
-                  PenText(
-                    l10n.registerCreateAccountSubtitle,
-                    size: 14,
-                    color: PenColors.mut,
-                    align: TextAlign.center,
-                  ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 16),
                   PenStackedField(
                     icon: LucideIcons.user,
                     label: l10n.registerFullName,
@@ -651,7 +621,7 @@ class EcRegisterScreen extends StatelessWidget {
                       errorText: l10n.registerFullNameRequired,
                     ),
                   ),
-                  const SizedBox(height: 11),
+                  const SizedBox(height: 8),
                   PenStackedField(
                     icon: LucideIcons.mail,
                     label: 'Email',
@@ -666,14 +636,14 @@ class EcRegisterScreen extends StatelessWidget {
                       ),
                     ]),
                   ),
-                  const SizedBox(height: 11),
+                  const SizedBox(height: 8),
                   PenStackedField(
                     icon: LucideIcons.phone,
                     label: l10n.registerPhone,
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
                   ),
-                  const SizedBox(height: 11),
+                  const SizedBox(height: 8),
                   PenStackedField(
                     icon: LucideIcons.lock,
                     label: l10n.authPassword,
@@ -685,7 +655,7 @@ class EcRegisterScreen extends StatelessWidget {
                       emailController?.text,
                     ),
                   ),
-                  const SizedBox(height: 11),
+                  const SizedBox(height: 8),
                   PenStackedField(
                     icon: LucideIcons.lock,
                     label: l10n.registerConfirmPassword,
@@ -695,7 +665,7 @@ class EcRegisterScreen extends StatelessWidget {
                         ? null
                         : l10n.passwordMismatch,
                   ),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       PenCheckbox(
@@ -718,36 +688,26 @@ class EcRegisterScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 11),
+                  const SizedBox(height: 8),
                   _ValidatedPrimaryButton(
                     label: l10n.registerCreateAccount,
                     onValid: policyAccepted ? onRegister : null,
                   ),
-                  const SizedBox(height: 11),
+                  const SizedBox(height: 10),
                   PenLabelledRule(l10n.authOr),
-                  const SizedBox(height: 11),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: PenOutlineButton(
-                          label: 'Google',
-                          height: 56,
-                          icon: const PenGoogleMark(size: 21),
-                          onPressed: onGoogle,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: PenOutlineButton(
-                          label: 'Apple',
-                          height: 56,
-                          icon: const PenAppleMark(height: 22),
-                          onPressed: onApple,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 10),
+                  PenOutlineButton(
+                    label: l10n.registerWithGoogle,
+                    icon: const PenGoogleMark(),
+                    onPressed: onGoogle,
                   ),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 12),
+                  PenOutlineButton(
+                    label: l10n.registerWithApple,
+                    icon: const PenAppleMark(),
+                    onPressed: onApple,
+                  ),
+                  const SizedBox(height: 12),
                   PenPromptLink(
                     prompt: l10n.registerHaveAccountPrompt.trim(),
                     action: l10n.authSignIn,
@@ -756,10 +716,11 @@ class EcRegisterScreen extends StatelessWidget {
                 ],
               ),
             ),
+            // Design `Back`: x=26, y=16, 28pt chevron.
             Positioned(
-              top: 22,
-              right: 22,
-              child: PenLangPill(label: 'VI', onTap: onLanguage),
+              left: 26,
+              top: 16,
+              child: PenBackButton(onTap: onLogin, size: 28),
             ),
           ],
         ),
@@ -798,107 +759,93 @@ class EcForgotPasswordScreen extends StatelessWidget {
     return Form(
       child: PenScreen(
         decorations: const [
+          // Design `SupportArt`: x=26, y=524, 338x254.
           Positioned(
-            left: 42,
-            bottom: 66,
+            left: 26,
+            top: 524,
+            width: 338,
+            height: 254,
             child: Image(
               image: AssetImage(
                 'assets/design/flow1-zenpack-hero-art-support.png',
                 package: 'ec_ui',
               ),
-              width: 306,
-              height: 230,
               fit: BoxFit.cover,
             ),
           ),
         ],
-        child: Padding(
-          padding: const EdgeInsets.all(30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: PenBackButton(onTap: onBack, size: 28),
-              ),
-              PenText(
-                l10n.forgotPasswordTitle,
-                size: 36,
-                color: PenColors.link,
-                weight: FontWeight.w800,
-              ),
-              const SizedBox(height: 8),
-              PenText(
-                l10n.forgotPasswordSubtitle,
-                size: 14,
-                color: PenColors.mut,
-                lineHeight: 1.5,
-              ),
-              const SizedBox(height: 26),
-              PenField(
-                hint: l10n.authEmailPlaceholder,
-                icon: LucideIcons.mail,
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.required(
-                    errorText: l10n.authEmailRequired,
+        child: Stack(
+          children: [
+            Padding(
+              // Design `Body`: padding [14, 26, 0, 26]; `FieldWrap` opens 40
+              // below the title block and spaces its rows by 22.
+              padding: const EdgeInsets.fromLTRB(26, 14, 26, 30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  PenBrandHeader(
+                    title: l10n.forgotPasswordTitle,
+                    subtitle: l10n.forgotPasswordSubtitle,
                   ),
-                  FormBuilderValidators.email(errorText: l10n.authEmailInvalid),
-                ]),
-              ),
-              const SizedBox(height: 16),
-              _ValidatedPrimaryButton(
-                label: l10n.forgotPasswordSubmit,
-                icon: LucideIcons.send,
-                onValid: onSend,
-              ),
-              if (sent) ...[
-                const SizedBox(height: 16),
-                PenBox(
-                  width: double.infinity,
-                  fill: PenColors.bg,
-                  radius: 14,
-                  axis: PenAxis.row,
-                  gap: 16,
-                  cross: CrossAxisAlignment.center,
-                  padding: const EdgeInsets.all(18),
-                  children: [
-                    const PenBox(
-                      width: 44,
-                      height: 44,
-                      fill: PenColors.soft,
-                      radius: 999,
+                  const SizedBox(height: 40),
+                  PenField(
+                    hint: l10n.authEmailPlaceholder,
+                    icon: LucideIcons.mail,
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: FormBuilderValidators.compose([
+                      FormBuilderValidators.required(
+                        errorText: l10n.authEmailRequired,
+                      ),
+                      FormBuilderValidators.email(
+                        errorText: l10n.authEmailInvalid,
+                      ),
+                    ]),
+                  ),
+                  const SizedBox(height: 22),
+                  _ValidatedPrimaryButton(
+                    label: l10n.forgotPasswordSubmit,
+                    icon: LucideIcons.send,
+                    onValid: onSend,
+                  ),
+                  if (sent) ...[
+                    const SizedBox(height: 22),
+                    PenBox(
+                      width: double.infinity,
+                      fill: PenColors.bg,
+                      radius: 14,
                       axis: PenAxis.row,
-                      main: MainAxisAlignment.center,
+                      gap: 16,
                       cross: CrossAxisAlignment.center,
+                      padding: const EdgeInsets.all(18),
                       children: [
-                        Icon(
-                          LucideIcons.mail,
-                          size: 22,
-                          color: PenColors.success,
+                        Expanded(
+                          child: PenText(
+                            l10n.forgotPasswordSent,
+                            size: 14,
+                            color: PenColors.ink,
+                            lineHeight: 1.45,
+                          ),
                         ),
                       ],
                     ),
-                    Expanded(
-                      child: PenText(
-                        l10n.forgotPasswordSent,
-                        size: 14,
-                        color: PenColors.ink,
-                        lineHeight: 1.45,
-                      ),
-                    ),
                   ],
-                ),
-              ],
-              const SizedBox(height: 10),
-              PenPromptLink(
-                prompt: l10n.forgotPasswordRememberPrompt.trim(),
-                action: l10n.authSignIn,
-                onTap: onLogin,
+                  const SizedBox(height: 22),
+                  PenPromptLink(
+                    prompt: l10n.forgotPasswordRememberPrompt.trim(),
+                    action: l10n.authSignIn,
+                    onTap: onLogin,
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            // Design `Back`: x=26, y=16, 28pt chevron.
+            Positioned(
+              left: 26,
+              top: 16,
+              child: PenBackButton(onTap: onBack, size: 28),
+            ),
+          ],
         ),
       ),
     );
@@ -2445,13 +2392,14 @@ class EcCreateTypeScreen extends StatelessWidget {
     LucideIcons.packageOpen,
   ];
 
-  /// The six swatches, all drawn from the token palette.
+  /// The six swatches: ink, the two greens, `--warning` amber, destructive
+  /// red and muted grey — in the design file's own order.
   static const _colorChoices = [
     PenColors.ink,
-    PenColors.ink,
+    PenColors.primary,
+    PenColors.success,
+    Color(0xFFB6770B),
     PenColors.danger,
-    PenColors.link,
-    PenColors.link,
     PenColors.mut,
   ];
 }
@@ -3022,7 +2970,7 @@ class _EcSheetActionRow extends StatelessWidget {
 // HomeOrders
 // ============================================================================
 
-/// A quick stat shown at the top of HomeOrders (e.g. "24" / "Vận đơn hôm nay").
+/// A quick stat shown at the top of HomeOrders (e.g. "24" / "Vận đơn").
 class EcHomeStat {
   const EcHomeStat({
     required this.value,
@@ -3132,7 +3080,7 @@ class EcHomeOrdersScreen extends StatefulWidget {
     required this.orders,
     this.queueCount = 0,
     this.stats = const [
-      EcHomeStat(value: '0', label: 'Vận đơn hôm nay'),
+      EcHomeStat(value: '0', label: 'Vận đơn'),
       EcHomeStat(
         value: '0',
         label: 'Video đã quay',
@@ -3448,6 +3396,7 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                             ),
                             const SizedBox(width: 10),
                             _FilterChip(
+                              showChevron: true,
                               name: l10n.filterTypeLabel,
                               options: _typeOptions(l10n),
                               selected: _videoTypeId,
@@ -3746,42 +3695,43 @@ class _StatBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The design stacks the tile+number row over the label; it used to be a
+    // single row with the label beside the number.
     return PenBox(
       fill: PenColors.card,
       stroke: PenColors.line,
       radius: 14,
-      axis: PenAxis.row,
-      gap: 9,
-      cross: CrossAxisAlignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 11),
+      axis: PenAxis.column,
+      gap: 8,
+      cross: CrossAxisAlignment.start,
+      hugMain: true,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
       children: [
-        PenBox(
-          width: 38,
-          height: 38,
-          fill: PenColors.bg,
-          radius: 10,
-          axis: PenAxis.row,
-          main: MainAxisAlignment.center,
-          cross: CrossAxisAlignment.center,
-          children: [Icon(stat.icon, size: 20, color: PenColors.ink)],
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            PenBox(
+              width: 36,
+              height: 36,
+              fill: PenColors.bg,
+              radius: 10,
+              axis: PenAxis.row,
+              main: MainAxisAlignment.center,
+              cross: CrossAxisAlignment.center,
+              children: [Icon(stat.icon, size: 19, color: PenColors.ink)],
+            ),
+            const SizedBox(width: 10),
+            PenText(
+              stat.value,
+              size: 24,
+              color: PenColors.ink,
+              weight: FontWeight.w800,
+              softWrap: false,
+            ),
+          ],
         ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              PenText(
-                stat.value,
-                size: 24,
-                color: PenColors.ink,
-                weight: FontWeight.w800,
-                softWrap: false,
-              ),
-              const SizedBox(height: 1),
-              PenText(stat.label, size: 12, color: PenColors.mut),
-            ],
-          ),
-        ),
+        PenText(stat.label, size: 12, color: PenColors.mut, softWrap: false),
       ],
     );
   }
@@ -3797,9 +3747,14 @@ class _FilterChip extends StatelessWidget {
     required this.options,
     required this.selected,
     this.onSelected,
+    this.showChevron = false,
   });
   final String name;
   final List<_FilterOption> options;
+
+  /// The design only marks the video-type filter as a dropdown; the status and
+  /// time chips carry no trailing glyph.
+  final bool showChevron;
 
   /// Value of the current selection, or null when this filter is off.
   final String? selected;
@@ -3860,7 +3815,7 @@ class _FilterChip extends StatelessWidget {
         // An active filter is narrowing the list — the design marks that with
         // the selected grey fill and a bold label, never a brand tint.
         selected: _isActive,
-        trailing: LucideIcons.chevronDown,
+        trailing: showChevron ? LucideIcons.chevronDown : null,
         onTap: () => _pick(context),
       ),
     );
