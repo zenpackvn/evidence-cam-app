@@ -24,8 +24,7 @@ class EcVideoStampService {
   // an on-disk path, not an asset-bundle entry. `/system/fonts/*` looked
   // like a shortcut but modern Android sandboxing can make it unreadable
   // from the app's own process, silently defeating drawtext.
-  static const _fontAsset =
-      'packages/feature_capture/assets/fonts/Roboto-Regular.ttf';
+  static const _fontAsset = 'packages/feature_capture/assets/fonts/Roboto-Regular.ttf';
 
   static Future<void>? _ready;
   static Future<String>? _fontFile;
@@ -64,9 +63,7 @@ class EcVideoStampService {
       print('DEBUG stamp: ffmpeg ready');
       final fontPath = await _ensureFontFile();
       // ignore: avoid_print
-      print(
-        'DEBUG stamp: font at $fontPath exists=${File(fontPath).existsSync()}',
-      );
+      print('DEBUG stamp: font at $fontPath exists=${File(fontPath).existsSync()}');
       final overlay = await _overlayText(label, recordedAt);
       final outputPath = await _outputPathFor(inputPath);
       final drawText =
@@ -135,10 +132,16 @@ class EcVideoStampService {
 
   static String _two(int n) => n.toString().padLeft(2, '0');
 
-  // ffmpeg's drawtext treats `:` as an option separator and `\`/`'` as
-  // escape/quote characters within the filter-graph string.
+  // ffmpeg's drawtext treats `:` as an option separator, `\`/`'` as
+  // escape/quote characters within the filter-graph string, and `%` as the
+  // start of a `%{...}` expansion (e.g. `%{pts}`) — a literal `%` (from a
+  // battery percentage) needs doubling or it's a syntax error.
   static String _escape(String s) =>
-      s.replaceAll(r'\', r'\\').replaceAll(':', r'\:').replaceAll("'", r"\'");
+      s
+          .replaceAll(r'\', r'\\')
+          .replaceAll(':', r'\:')
+          .replaceAll("'", r"\'")
+          .replaceAll('%', '%%');
 
   Future<bool> _run(String command) {
     final completer = Completer<bool>();

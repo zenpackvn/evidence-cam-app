@@ -270,3 +270,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# EcVideoStampService (feature_capture) burns date/tracking-code/battery/
+# network text onto evidence clips via ffmpeg's `drawtext` filter, which
+# needs libfreetype — only bundled in the "full" build. gpl:false keeps the
+# LGPL license posture (libfreetype itself isn't GPL-gated).
+ffmpeg_kit_extended_config:
+  type: "full"
+  gpl: false

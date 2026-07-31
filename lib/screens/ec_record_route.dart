@@ -136,7 +136,12 @@ class EcRecordRoute extends StatefulWidget {
 
 class _EcRecordRouteState extends State<EcRecordRoute>
     with WidgetsBindingObserver {
+  // Tuned so a full pinch (roughly 0.5x-2x scale) sweeps a comfortable
+  // fraction of the camera's zoom range rather than snapping to the limits.
+  static const _pinchZoomSensitivity = 6.0;
+
   bool _leaving = false;
+  double _pinchLastScale = 1;
 
   late final RecordingSessionBloc _bloc = RecordingSessionBloc(
     camera: widget.camera ?? CameraService(),
@@ -247,9 +252,18 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         ),
       );
     }
-    return _CoverPreview(
-      controller: controller,
-      transitioning: _bloc.previewTransitioning,
+    return GestureDetector(
+      onScaleStart: (_) => _pinchLastScale = 1,
+      onScaleUpdate: (details) {
+        final stepDelta =
+            (details.scale - _pinchLastScale) * _pinchZoomSensitivity;
+        _pinchLastScale = details.scale;
+        if (stepDelta != 0) _bloc.add(RecordingZoomAdjusted(stepDelta));
+      },
+      child: _CoverPreview(
+        controller: controller,
+        transitioning: _bloc.previewTransitioning,
+      ),
     );
   }
 
@@ -364,6 +378,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         shopName: widget.shopName,
         queueCount: widget.queueCount,
         code: state.code,
+        elapsed: _formatElapsed(state.elapsed),
         typeLabel: state.typeLabel,
         zoomLabel: zoomLabel,
         resolutionLabel: state.resolutionLabel,
@@ -423,8 +438,11 @@ class _CoverPreview extends StatefulWidget {
 class _CoverPreviewState extends State<_CoverPreview> {
   // CameraX's own rebind keeps visibly settling for close to a second even
   // after the native call has returned to Dart, so the freeze outlasts it by
-  // a comfortable margin rather than trimming it close.
-  static const _settleBuffer = Duration(milliseconds: 1200);
+  // a comfortable margin rather than trimming it close. 1200ms still let the
+  // landscape rebind glitch peek through on a real mid-range device
+  // (Samsung SM-M146B) — mid-range camera HALs rebind slower than the
+  // emulator/flagship hardware this was first tuned against.
+  static const _settleBuffer = Duration(milliseconds: 2200);
   // How often a known-good frame is refreshed while live — frequent enough
   // that the frame on hand the instant a transition starts is always recent.
   static const _refreshInterval = Duration(milliseconds: 250);
