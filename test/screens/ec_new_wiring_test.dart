@@ -46,41 +46,79 @@ void main() {
       expect(find.text('Không tìm thấy đơn hàng'), findsNothing);
     });
 
-    testWidgets('shows a trailing spinner while loading more', (tester) async {
+    testWidgets('shows the page range and the current page', (tester) async {
+      await _pump(
+        tester,
+        EcHomeOrdersScreen(
+          shopName: 'Shop ABC',
+          orders: [for (var i = 0; i < 10; i++) _order(i)],
+          pageInfo: const EcOrderPage(
+            page: 2,
+            total: 128,
+            pageSize: 10,
+            shown: 10,
+          ),
+          onPageChanged: (_) {},
+        ),
+      );
+      expect(find.text('11–20 / 128 vận đơn'), findsOneWidget);
+      expect(find.text('13'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('hides the pager when everything fits on one page', (
+      tester,
+    ) async {
       await _pump(
         tester,
         EcHomeOrdersScreen(
           shopName: 'Shop ABC',
           orders: [for (var i = 0; i < 3; i++) _order(i)],
-          hasMore: true,
-          isLoadingMore: true,
+          pageInfo: const EcOrderPage(
+            page: 1,
+            total: 3,
+            pageSize: 10,
+            shown: 3,
+          ),
+          onPageChanged: (_) {},
         ),
       );
-      expect(find.byType(CircularProgressIndicator), findsNothing);
-      // CupertinoActivityIndicator renders as a custom painter, so assert the
-      // list still shows the orders and no exception was thrown.
-      expect(find.text('SPXVN0'), findsOneWidget);
-      expect(tester.takeException(), isNull);
+      expect(find.textContaining('/ 3 vận đơn'), findsNothing);
     });
 
-    testWidgets('fires onLoadMore when scrolled to the bottom', (tester) async {
-      var loadMoreCalls = 0;
+    testWidgets('fires onPageChanged when a page number is tapped', (
+      tester,
+    ) async {
+      final taps = <int>[];
       await _pump(
         tester,
         EcHomeOrdersScreen(
           shopName: 'Shop ABC',
-          orders: [for (var i = 0; i < 40; i++) _order(i)],
-          hasMore: true,
-          onLoadMore: () => loadMoreCalls++,
+          orders: [for (var i = 0; i < 10; i++) _order(i)],
+          pageInfo: const EcOrderPage(
+            page: 1,
+            total: 128,
+            pageSize: 10,
+            shown: 10,
+          ),
+          onPageChanged: taps.add,
         ),
       );
-      await tester.drag(
-        find.text('SPXVN0'),
-        const Offset(0, -6000),
-        warnIfMissed: false,
-      );
+      await tester.ensureVisible(find.text('2'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('2'));
       await tester.pump();
-      expect(loadMoreCalls, greaterThan(0));
+      expect(taps, [2]);
+    });
+
+    test('the page window keeps the last page reachable', () {
+      // Trang 1/32 khớp thiết kế F2-01: 1 2 3 … 32.
+      expect(ecOrderPageWindow(1, 32), [1, 2, 3, null, 32]);
+      // Sát cuối thì không còn dấu "…" vì chẳng còn khoảng trống nào.
+      expect(ecOrderPageWindow(32, 32), [30, 31, 32]);
+      expect(ecOrderPageWindow(30, 32), [29, 30, 31, 32]);
+      // Ít trang thì liệt kê hết.
+      expect(ecOrderPageWindow(1, 3), [1, 2, 3]);
     });
 
     testWidgets('a scanned code fills the search and filters the list', (

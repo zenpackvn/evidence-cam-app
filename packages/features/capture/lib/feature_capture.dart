@@ -12,5 +12,5 @@ export 'src/ec_evidence_uploader.dart';
 export 'src/ec_flow3.dart';
 export 'src/ec_stop_code_screen.dart';
 export 'src/ec_upload_queue.dart';
-export 'src/ec_video_stamp.dart';
+export 'src/ec_video_faststart.dart';
 export 'src/recording_session.dart';

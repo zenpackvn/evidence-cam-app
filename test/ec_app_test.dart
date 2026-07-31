@@ -678,9 +678,9 @@ class _OrderLoadFailingRepository extends FakeEcRepository {
   ];
 
   @override
-  Future<List<OrderSummaryDto>> orders(
+  Future<OrderPageDto> orders(
     String shopId, {
-    int? before,
+    int page = 1,
     String? uploadState,
     int? fromTs,
     String? videoTypeId,
@@ -811,6 +811,7 @@ class _TwoShopRepository extends FakeEcRepository {
 
 class _ManageableShopRepository extends _DemoRepository {
   String? updatedResolution;
+  int? updatedClipSeconds;
   String? invitedContact;
   String? invitedRole;
 
@@ -830,8 +831,10 @@ class _ManageableShopRepository extends _DemoRepository {
     String? name,
     String? platform,
     String? resolution,
+    int? maxClipSeconds,
   }) async {
     updatedResolution = resolution;
+    updatedClipSeconds = maxClipSeconds;
     return ShopDto(
       id: shopId,
       name: name ?? 'Shop ABC',
@@ -886,20 +889,25 @@ class _DemoRepository extends FakeEcRepository {
   ];
 
   @override
-  Future<List<OrderSummaryDto>> orders(
+  Future<OrderPageDto> orders(
     String shopId, {
-    int? before,
+    int page = 1,
     String? uploadState,
     int? fromTs,
     String? videoTypeId,
-  }) async => const [
-        OrderSummaryDto(
-          id: 'o1',
-          tracking: 'SPXVN024567890',
-          createdAt: 3,
-          evidenceCount: 2,
-        ),
-      ];
+  }) async => OrderPageDto(
+    items: const [
+      OrderSummaryDto(
+        id: 'o1',
+        tracking: 'SPXVN024567890',
+        createdAt: 3,
+        evidenceCount: 2,
+      ),
+    ],
+    total: 1,
+    page: page,
+    pageSize: EcApi.ordersPageSize,
+  );
 
   @override
   Future<List<VideoTypeDto>> videoTypes(String shopId) async => const [

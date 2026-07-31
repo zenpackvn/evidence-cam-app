@@ -1,4 +1,4 @@
-import 'package:network/network.dart' show Dio, Options;
+import 'package:network/network.dart' show Dio, Options, Response;
 
 import 'ec_models.dart';
 
@@ -79,6 +79,7 @@ class EcApi {
     String? name,
     String? platform,
     String? resolution,
+    int? maxClipSeconds,
   }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/api/shops/$shopId',
@@ -86,8 +87,14 @@ class EcApi {
         'name': ?name,
         'platform': ?platform,
         'resolution': ?resolution,
+        'max_clip_seconds': ?maxClipSeconds,
       },
     );
+    return ShopDto.fromJson(res.data!);
+  }
+
+  Future<ShopDto> getShop(String shopId) async {
+    final res = await _dio.get<Map<String, dynamic>>('/api/shops/$shopId');
     return ShopDto.fromJson(res.data!);
   }
 
@@ -154,29 +161,52 @@ class EcApi {
       _dio.delete<void>('/api/shops/$shopId/video-types/$typeId');
 
   // --- orders / search (FR-04, FR-01) ---
-  /// Lists a page of orders, newest first.
+  /// Kích thước trang mặc định, khớp `PAGE_SIZE` của Worker. Chỉ dùng làm dự
+  /// phòng khi phản hồi thiếu header `X-Page-Size`.
+  static const ordersPageSize = 10;
+
+  /// Lists page [page] (1-based) of orders, newest first.
   ///
   /// [uploadState] (`pending` | `error` | `done`), [fromTs] and [videoTypeId]
   /// map onto the backend's `upload_state` / `from` / `video_type_id` query
   /// params. Filtering has to happen server-side: the list is paged, so
   /// filtering only the loaded page would quietly hide matches still on the
   /// next one.
-  Future<List<OrderSummaryDto>> listOrders(
+  ///
+  /// Thân phản hồi chỉ là mảng đơn; tổng số đơn nằm ở header `X-Total-Count`
+  /// (backend giữ nguyên thân mảng cho web admin đang cuộn vô hạn).
+  Future<OrderPageDto> listOrders(
     String shopId, {
-    int? before,
+    int page = 1,
     String? uploadState,
     int? fromTs,
     String? videoTypeId,
-  }) => _getList(
-    '/api/shops/$shopId/orders',
-    OrderSummaryDto.fromJson,
-    query: {
-      'before': ?before,
-      'upload_state': ?uploadState,
-      'from': ?fromTs,
-      'video_type_id': ?videoTypeId,
-    },
-  );
+  }) async {
+    final res = await _dio.get<List<dynamic>>(
+      '/api/shops/$shopId/orders',
+      queryParameters: {
+        'page': page,
+        'upload_state': ?uploadState,
+        'from': ?fromTs,
+        'video_type_id': ?videoTypeId,
+      },
+    );
+    final items = res.data!
+        .map((e) => OrderSummaryDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final pageSize = _header(res, 'x-page-size') ?? ordersPageSize;
+    return OrderPageDto(
+      items: items,
+      // Thiếu header (proxy cắt, backend cũ) thì coi trang này là tất cả —
+      // thà mất thanh phân trang còn hơn vẽ ra số trang bịa.
+      total: _header(res, 'x-total-count') ?? items.length,
+      page: page,
+      pageSize: pageSize,
+    );
+  }
+
+  static int? _header(Response<dynamic> res, String name) =>
+      int.tryParse(res.headers.value(name) ?? '');
 
   Future<List<OrderSummaryDto>> searchOrders(String shopId, String query) =>
       _getList(
@@ -215,6 +245,7 @@ class EcApi {
       data: {
         'kind': kind,
         'capturedAt': capturedAt,
+        'clientNow': DateTime.now().millisecondsSinceEpoch,
         'videoTypeId': ?videoTypeId,
         'device': ?device,
         'durationSeconds': ?durationSeconds,
@@ -237,6 +268,7 @@ class EcApi {
       data: {
         'kind': kind,
         'capturedAt': capturedAt,
+        'clientNow': DateTime.now().millisecondsSinceEpoch,
         'videoTypeId': ?videoTypeId,
         'device': ?device,
         'durationSeconds': ?durationSeconds,
@@ -267,9 +299,11 @@ class EcApi {
     String orderId,
     String evidenceId, {
     Duration? receiveTimeout,
+    String? sha256,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/orders/$orderId/uploads/$evidenceId/complete',
+      data: {'sha256': ?sha256},
       options: receiveTimeout == null
           ? null
           : Options(receiveTimeout: receiveTimeout),
@@ -284,12 +318,14 @@ class EcApi {
     required String uploadId,
     required List<UploadedPartDto> parts,
     Duration? receiveTimeout,
+    String? sha256,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/orders/$orderId/uploads/$evidenceId/multipart/complete',
       data: {
         'uploadId': uploadId,
         'parts': parts.map((p) => p.toJson()).toList(),
+        'sha256': ?sha256,
       },
       options: receiveTimeout == null
           ? null

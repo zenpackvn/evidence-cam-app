@@ -6,6 +6,8 @@
 /// size/weight and color is taken directly from the design file.
 library;
 
+import 'dart:math' as math;
+
 import 'package:app_ui/app_ui.dart';
 import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart'
@@ -916,6 +918,7 @@ class EcShopSummary {
     this.meta,
     this.role = 'owner',
     this.resolution = '720p',
+    this.clipBudget = ClipBudget.fallback,
   });
 
   /// Backend shop id (used to fetch that shop's orders). Empty for design mocks.
@@ -935,6 +938,10 @@ class EcShopSummary {
   /// The signed-in user's role in this shop: `owner` / `manager` / `staff`
   /// (FR-05). Drives what they may do once clocked in (e.g. delete evidence).
   final String role;
+
+  /// Ngân sách thời lượng/dung lượng clip của shop (FR-17/FR-18) — seed trần
+  /// quay của Flow 3 và mục "Thời lượng/video" ở màn Chi tiết cửa hàng.
+  final ClipBudget clipBudget;
 
   /// The shop's recording resolution setting (`240p` / `480p` / `720p`) —
   /// seeds the camera when clocked into this shop.
@@ -1467,6 +1474,7 @@ class EcShopMgmtEntry {
     this.platform,
     this.resolution,
     this.role,
+    this.clipBudget = ClipBudget.fallback,
   });
 
   /// Display name.
@@ -1479,6 +1487,7 @@ class EcShopMgmtEntry {
   final String? platform;
   final String? resolution;
   final String? role;
+  final ClipBudget clipBudget;
 }
 
 /// ShopMgmt — "Quản lý cửa hàng": list of shops with a logo placeholder,
@@ -1699,10 +1708,12 @@ class EcShopDetailScreen extends StatelessWidget {
     required this.members,
     required this.videoTypes,
     this.resolution = '720p',
+    this.clipBudget = ClipBudget.fallback,
     this.onBack,
     this.onMemberMore,
     this.onInviteMember,
     this.onTapResolution,
+    this.onTapClipDuration,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
@@ -1714,10 +1725,12 @@ class EcShopDetailScreen extends StatelessWidget {
   final List<EcShopMember> members;
   final List<EcVideoType> videoTypes;
   final String resolution;
+  final ClipBudget clipBudget;
   final VoidCallback? onBack;
   final ValueChanged<EcShopMember>? onMemberMore;
   final VoidCallback? onInviteMember;
   final VoidCallback? onTapResolution;
+  final VoidCallback? onTapClipDuration;
   final ValueChanged<EcVideoType>? onEditType;
   final ValueChanged<EcVideoType>? onDeleteType;
   final VoidCallback? onAddType;
@@ -1891,6 +1904,12 @@ class EcShopDetailScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+                _ClipDurationRow(
+                  budget: clipBudget,
+                  platformLabel: platformLabel,
+                  resolution: resolution,
+                  onTap: onTapClipDuration,
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -1943,6 +1962,143 @@ class EcShopDetailScreen extends StatelessWidget {
     );
   }
 }
+
+/// "Thời lượng/video" row + the recommendation caption + the amber warning that
+/// appears only once the shop has raised the cap past what the marketplace
+/// accepts as a direct attachment (FR-18, FR-19).
+class _ClipDurationRow extends StatelessWidget {
+  const _ClipDurationRow({
+    required this.budget,
+    required this.platformLabel,
+    required this.resolution,
+    this.onTap,
+  });
+
+  final ClipBudget budget;
+  final String platformLabel;
+  final String resolution;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final minutes = _minutes(budget.seconds);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        EcTap(
+          onTap: onTap,
+          child: PenBox(
+            width: double.infinity,
+            fill: PenColors.card,
+            stroke: PenColors.line,
+            radius: 10,
+            axis: PenAxis.row,
+            gap: 14,
+            cross: CrossAxisAlignment.center,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            children: [
+              const PenBox(
+                width: 38,
+                height: 38,
+                fill: PenColors.bg,
+                radius: 10,
+                axis: PenAxis.row,
+                main: MainAxisAlignment.center,
+                cross: CrossAxisAlignment.center,
+                children: [
+                  Icon(LucideIcons.timer, size: 22, color: PenColors.ink),
+                ],
+              ),
+              Expanded(
+                child: PenText(
+                  l10n.shopDetailClipDuration,
+                  size: 16,
+                  color: PenColors.ink,
+                ),
+              ),
+              PenText(
+                l10n.clipDurationValue(minutes),
+                size: 16,
+                color: PenColors.ink,
+                weight: FontWeight.w600,
+                softWrap: false,
+              ),
+              const Icon(
+                LucideIcons.chevronRight,
+                size: 18,
+                color: PenColors.mut,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        PenText(
+          budget.platformLimitsVerified
+              ? l10n.clipRecommendedHint(
+                  _minutes(budget.recommendedSeconds),
+                  platformLabel,
+                  _megabytes(budget.maxVideoBytes),
+                  resolution,
+                )
+              : l10n.clipRecommendedHintUnverified(
+                  _minutes(budget.recommendedSeconds),
+                  platformLabel,
+                ),
+          size: 12,
+          color: PenColors.mut,
+        ),
+        if (budget.exceedsRecommended) ...[
+          const SizedBox(height: 8),
+          PenBox(
+            width: double.infinity,
+            fill: _warnFill,
+            stroke: _warnStroke,
+            radius: 10,
+            axis: PenAxis.row,
+            gap: 10,
+            cross: CrossAxisAlignment.start,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            children: [
+              const Icon(
+                LucideIcons.triangleAlert,
+                size: 18,
+                color: _warnInk,
+              ),
+              Expanded(
+                child: PenText(
+                  l10n.clipOverRecommendedWarning(
+                    _minutes(budget.recommendedSeconds),
+                    platformLabel,
+                    minutes,
+                    _megabytes(
+                      ClipBudget.estimatedBytes(budget.seconds, resolution),
+                    ),
+                  ),
+                  size: 12.5,
+                  color: _warnInk,
+                  weight: FontWeight.w600,
+                  lineHeight: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Amber of the design file's warn bar (F3-05) — the one warning colour the
+/// EvidenceCam DNA has; reused here so the two screens read as the same system.
+const _warnInk = Color(0xFFB6770B);
+const _warnFill = Color(0x14B6770B);
+const _warnStroke = Color(0x4DB6770B);
+
+String _minutes(int seconds) => '${(seconds / 60).round()}';
+
+String _megabytes(int bytes) => ClipBudget.megabytesLabel(bytes);
 
 /// A white card that opens with an icon + all-caps section label, then its
 /// rows — the shape every panel on the shop-detail screen uses.
@@ -2665,6 +2821,75 @@ class EcResolutionSheetScreen extends StatelessWidget {
   }
 }
 
+/// ClipDuration — bottom sheet picking the shop's max length per video.
+///
+/// Options run 1 minute → the plan ceiling. The recommendation is labelled
+/// rather than enforced: everything above it stays selectable, it just carries
+/// the amber warning back on the shop-detail screen (FR-19 — cảnh báo, không
+/// chặn).
+class EcClipDurationSheetScreen extends StatelessWidget {
+  const EcClipDurationSheetScreen({
+    required this.budget,
+    required this.platformLabel,
+    this.onSelect,
+    super.key,
+  });
+
+  final ClipBudget budget;
+  final String platformLabel;
+
+  /// Emits the chosen cap in **seconds**.
+  final ValueChanged<int>? onSelect;
+
+  /// Minute marks offered, capped by the plan. Coarse past 10 minutes — nobody
+  /// needs to tell a packing clip 23 from 24 minutes, and a 25-row sheet is
+  /// worse than a short one.
+  static const _marks = [1, 2, 3, 5, 8, 10, 15, 20, 25];
+
+  List<int> get _options {
+    final capMinutes = (budget.planMaxSeconds / 60).floor();
+    final marks = _marks.where((m) => m <= capMinutes).toList();
+    final recommended = (budget.recommendedSeconds / 60).round();
+    // Mức đề xuất luôn phải chọn được, kể cả khi nó không rơi vào mốc nào.
+    if (recommended <= capMinutes && !marks.contains(recommended)) {
+      marks
+        ..add(recommended)
+        ..sort();
+    }
+    return marks;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final selectedMinutes = (budget.seconds / 60).round();
+    final recommended = (budget.recommendedSeconds / 60).round();
+    return _EcSheetFrame(
+      title: l10n.clipDurationTitle,
+      subtitle: l10n.clipDurationSubtitle('$recommended', platformLabel),
+      children: [
+        for (final m in _options)
+          _EcSheetActionRow(
+            icon: LucideIcons.timer,
+            label: m == recommended
+                ? l10n.clipDurationOptionRecommended('$m')
+                : l10n.clipDurationValue('$m'),
+            selected: m == selectedMinutes,
+            onTap: () => onSelect?.call(m * 60),
+          ),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: PenText(
+            l10n.clipDurationPlanCap('${(budget.planMaxSeconds / 60).floor()}'),
+            size: 12,
+            color: PenColors.mut,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Shared bottom-sheet chrome for flow-1 sheets (dim scrim + rounded panel).
 class _EcSheetFrame extends StatelessWidget {
   const _EcSheetFrame({
@@ -2870,6 +3095,34 @@ class EcOrderFilters {
       uploadState == null && fromTs == null && videoTypeId == null;
 }
 
+/// Vị trí của trang đang xem trong toàn bộ kết quả, cho thanh phân trang ở
+/// cuối danh sách vận đơn (F2-01). [total] là tổng số đơn khớp bộ lọc trên
+/// server, [shown] là số đơn trang này thực sự trả về.
+@immutable
+class EcOrderPage {
+  const EcOrderPage({
+    this.page = 1,
+    this.total = 0,
+    this.pageSize = 10,
+    this.shown = 0,
+  });
+
+  /// 1-based.
+  final int page;
+  final int total;
+  final int pageSize;
+  final int shown;
+
+  int get pageCount => total <= 0 ? 1 : (total + pageSize - 1) ~/ pageSize;
+
+  /// Số thứ tự đơn đầu/cuối trang này — nhãn "1–10 / 128".
+  int get firstIndex => shown == 0 ? 0 : (page - 1) * pageSize + 1;
+  int get lastIndex => shown == 0 ? 0 : firstIndex + shown - 1;
+
+  /// Chỉ có một trang thì thanh phân trang là nhiễu, ẩn đi.
+  bool get hasPages => pageCount > 1;
+}
+
 /// HomeOrders — the main "Vận đơn" tab: shop header with upload queue,
 /// quick stats, a tracking-code search box, the three filter chips, the order
 /// list and the bottom tab bar (Vận đơn active).
@@ -2902,9 +3155,9 @@ class EcHomeOrdersScreen extends StatefulWidget {
     this.onFiltersChanged,
     this.onOrderTap,
     this.onRefresh,
-    this.onLoadMore,
-    this.isLoadingMore = false,
-    this.hasMore = false,
+    this.pageInfo = const EcOrderPage(),
+    this.onPageChanged,
+    this.isPageLoading = false,
     this.onNavOrders,
     this.onNavRecord,
     this.onNavAccount,
@@ -2944,17 +3197,17 @@ class EcHomeOrdersScreen extends StatefulWidget {
   final ValueChanged<EcOrderFilters>? onFiltersChanged;
   final ValueChanged<EcOrderRow>? onOrderTap;
 
-  /// Pull-to-refresh — reloads the first page.
+  /// Pull-to-refresh — reloads the current page.
   final Future<void> Function()? onRefresh;
 
-  /// Called when the list is scrolled near the bottom and [hasMore] is true.
-  final VoidCallback? onLoadMore;
+  /// Vị trí trang hiện tại trong toàn bộ kết quả.
+  final EcOrderPage pageInfo;
 
-  /// Whether a next page is currently being fetched (shows a trailing spinner).
-  final bool isLoadingMore;
+  /// Người dùng bấm sang trang khác (1-based). Bỏ trống = ẩn thanh phân trang.
+  final ValueChanged<int>? onPageChanged;
 
-  /// Whether more pages remain to load.
-  final bool hasMore;
+  /// Đang tải trang mới — thanh phân trang mờ đi và không nhận thêm cú bấm.
+  final bool isPageLoading;
   final VoidCallback? onNavOrders;
   final VoidCallback? onNavRecord;
   final VoidCallback? onNavAccount;
@@ -3057,24 +3310,17 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
     }
   }
 
-  /// Triggers [EcHomeOrdersScreen.onLoadMore] when the user scrolls within
-  /// [_loadMoreThreshold] of the bottom and more pages remain.
-  static const _loadMoreThreshold = 240.0;
-  bool _onScroll(ScrollNotification n) {
-    if (!widget.hasMore || widget.isLoadingMore || widget.onLoadMore == null) {
-      return false;
-    }
-    if (n.metrics.pixels >= n.metrics.maxScrollExtent - _loadMoreThreshold) {
-      widget.onLoadMore!.call();
-    }
-    return false;
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final visible = _visibleOrders;
     final unfiltered = _filters.isEmpty && _query.trim().isEmpty;
+    // Tìm kiếm bỏ qua phân trang ở backend (trả hết kết quả một lần), nên
+    // thanh phân trang chỉ có nghĩa khi không đang tìm kiếm.
+    final showPager =
+        widget.onPageChanged != null &&
+        widget.pageInfo.hasPages &&
+        _query.trim().isEmpty;
     return CupertinoPageScaffold(
       backgroundColor: PenColors.bg,
       child: SafeArea(
@@ -3090,172 +3336,180 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
             Expanded(
               child: RefreshIndicator.adaptive(
                 onRefresh: widget.onRefresh ?? () async {},
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: _onScroll,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // The three stat cards are equal height in the
-                        // design even when one label wraps, which inside a
-                        // scroll view needs an intrinsic pass.
-                        IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              for (var i = 0; i < widget.stats.length; i++) ...[
-                                if (i > 0) const SizedBox(width: 10),
-                                Expanded(
-                                  child: _StatBox(stat: widget.stats[i]),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Row(
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // The three stat cards are equal height in the
+                      // design even when one label wraps, which inside a
+                      // scroll view needs an intrinsic pass.
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(
-                              child: PenBox(
-                                height: 56,
-                                fill: PenColors.card,
-                                stroke: PenColors.line,
-                                radius: 14,
-                                axis: PenAxis.row,
-                                gap: 12,
-                                cross: CrossAxisAlignment.center,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
+                            for (var i = 0; i < widget.stats.length; i++) ...[
+                              if (i > 0) const SizedBox(width: 10),
+                              Expanded(
+                                child: _StatBox(stat: widget.stats[i]),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: PenBox(
+                              height: 56,
+                              fill: PenColors.card,
+                              stroke: PenColors.line,
+                              radius: 14,
+                              axis: PenAxis.row,
+                              gap: 12,
+                              cross: CrossAxisAlignment.center,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              children: [
+                                const Icon(
+                                  LucideIcons.search,
+                                  size: 22,
+                                  color: PenColors.mut,
                                 ),
-                                children: [
-                                  const Icon(
-                                    LucideIcons.search,
-                                    size: 22,
-                                    color: PenColors.mut,
-                                  ),
-                                  Expanded(
-                                    child: CupertinoTextField(
-                                      controller: _search,
-                                      onChanged: (v) {
-                                        setState(() => _query = v);
-                                        widget.onSearchChanged?.call(v);
-                                      },
-                                      textInputAction: TextInputAction.search,
-                                      padding: EdgeInsets.zero,
-                                      decoration: const BoxDecoration(),
-                                      placeholder: widget.searchHint,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        color: PenColors.ink,
-                                      ),
-                                      placeholderStyle: const TextStyle(
-                                        fontSize: 16,
-                                        color: PenColors.mut,
-                                      ),
+                                Expanded(
+                                  child: CupertinoTextField(
+                                    controller: _search,
+                                    onChanged: (v) {
+                                      setState(() => _query = v);
+                                      widget.onSearchChanged?.call(v);
+                                    },
+                                    textInputAction: TextInputAction.search,
+                                    padding: EdgeInsets.zero,
+                                    decoration: const BoxDecoration(),
+                                    placeholder: widget.searchHint,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: PenColors.ink,
+                                    ),
+                                    placeholderStyle: const TextStyle(
+                                      fontSize: 16,
+                                      color: PenColors.mut,
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 11),
-                            EcTap(
-                              onTap: widget.onScan == null ? null : _onScan,
-                              child: const PenBox(
-                                width: 56,
-                                height: 56,
-                                fill: PenColors.card,
-                                stroke: PenColors.line,
-                                radius: 14,
-                                axis: PenAxis.row,
-                                main: MainAxisAlignment.center,
-                                cross: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    LucideIcons.scan,
-                                    size: 22,
-                                    color: PenColors.ink,
-                                  ),
-                                ],
-                              ),
+                          ),
+                          const SizedBox(width: 11),
+                          EcTap(
+                            onTap: widget.onScan == null ? null : _onScan,
+                            child: const PenBox(
+                              width: 56,
+                              height: 56,
+                              fill: PenColors.card,
+                              stroke: PenColors.line,
+                              radius: 14,
+                              axis: PenAxis.row,
+                              main: MainAxisAlignment.center,
+                              cross: CrossAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LucideIcons.scan,
+                                  size: 22,
+                                  color: PenColors.ink,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 13),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _FilterChip(
+                              name: l10n.filterStatusLabel,
+                              options: _statusOptions(l10n),
+                              selected: _uploadState,
+                              onSelected: (v) =>
+                                  _select((x) => _uploadState = x, v),
+                            ),
+                            const SizedBox(width: 10),
+                            _FilterChip(
+                              name: l10n.filterTimeLabel,
+                              options: _timeOptions(l10n),
+                              selected: _timeWindow,
+                              onSelected: (v) =>
+                                  _select((x) => _timeWindow = x, v),
+                            ),
+                            const SizedBox(width: 10),
+                            _FilterChip(
+                              name: l10n.filterTypeLabel,
+                              options: _typeOptions(l10n),
+                              selected: _videoTypeId,
+                              onSelected: (v) =>
+                                  _select((x) => _videoTypeId = x, v),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 13),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              _FilterChip(
-                                name: l10n.filterStatusLabel,
-                                options: _statusOptions(l10n),
-                                selected: _uploadState,
-                                onSelected: (v) =>
-                                    _select((x) => _uploadState = x, v),
-                              ),
-                              const SizedBox(width: 10),
-                              _FilterChip(
-                                name: l10n.filterTimeLabel,
-                                options: _timeOptions(l10n),
-                                selected: _timeWindow,
-                                onSelected: (v) =>
-                                    _select((x) => _timeWindow = x, v),
-                              ),
-                              const SizedBox(width: 10),
-                              _FilterChip(
-                                name: l10n.filterTypeLabel,
-                                options: _typeOptions(l10n),
-                                selected: _videoTypeId,
-                                onSelected: (v) =>
-                                    _select((x) => _videoTypeId = x, v),
-                              ),
-                            ],
+                      ),
+                      const SizedBox(height: 15),
+                      // With the filters applied server-side, an empty list
+                      // no longer means "this shop has no orders" — say
+                      // which of the two it is.
+                      if (visible.isEmpty)
+                        _OrdersEmpty(
+                          text: unfiltered
+                              ? widget.emptyText
+                              : l10n.ordersNotFound,
+                          hint: unfiltered ? null : l10n.ordersNotFoundHint,
+                        )
+                      else
+                        PenCard(
+                          axis: PenAxis.column,
+                          clip: true,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 14,
                           ),
-                        ),
-                        const SizedBox(height: 15),
-                        // With the filters applied server-side, an empty list
-                        // no longer means "this shop has no orders" — say
-                        // which of the two it is.
-                        if (visible.isEmpty)
-                          _OrdersEmpty(
-                            text: unfiltered
-                                ? widget.emptyText
-                                : l10n.ordersNotFound,
-                            hint: unfiltered ? null : l10n.ordersNotFoundHint,
-                          )
-                        else
-                          PenCard(
-                            axis: PenAxis.column,
-                            clip: true,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 6,
-                              horizontal: 14,
-                            ),
-                            children: [
-                              for (var i = 0; i < visible.length; i++) ...[
-                                if (i > 0)
-                                  const PenBox(
-                                    width: double.infinity,
-                                    height: 1,
-                                    fill: PenColors.line,
-                                  ),
-                                _OrderTile(
-                                  order: visible[i],
-                                  onTap: widget.onOrderTap == null
-                                      ? null
-                                      : () => widget.onOrderTap!(visible[i]),
+                          children: [
+                            for (var i = 0; i < visible.length; i++) ...[
+                              if (i > 0)
+                                const PenBox(
+                                  width: double.infinity,
+                                  height: 1,
+                                  fill: PenColors.line,
                                 ),
-                              ],
+                              _OrderTile(
+                                order: visible[i],
+                                onTap: widget.onOrderTap == null
+                                    ? null
+                                    : () => widget.onOrderTap!(visible[i]),
+                              ),
                             ],
-                          ),
-                        if (widget.isLoadingMore)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Center(child: CupertinoActivityIndicator()),
-                          ),
-                      ],
-                    ),
+                            // Phân trang nằm trong thẻ, dưới một đường kẻ —
+                            // nó thuộc về danh sách chứ không trôi tự do
+                            // dưới đáy màn hình. Tìm kiếm trả về mọi kết quả
+                            // trong một lần nên không có trang để chuyển.
+                            if (showPager) ...[
+                              const PenBox(
+                                width: double.infinity,
+                                height: 1,
+                                fill: PenColors.line,
+                              ),
+                              _OrdersPager(
+                                info: widget.pageInfo,
+                                busy: widget.isPageLoading,
+                                onPageChanged: widget.onPageChanged!,
+                              ),
+                            ],
+                          ],
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -3265,6 +3519,179 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
               onOrders: widget.onNavOrders,
               onRecord: widget.onNavRecord,
               onAccount: widget.onNavAccount,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Các ô số hiện trên thanh phân trang: cửa sổ 3 số quanh [page], kèm trang
+/// cuối sau dấu "…" khi nó nằm ngoài cửa sổ. `null` = dấu "…".
+///
+/// ponytail: không có "1 …" ở đầu — trên màn hình 390px hàng nút sẽ tràn. Từ
+/// giữa danh sách muốn về trang 1 phải bấm ‹ nhiều lần; thêm nếu người dùng
+/// thực sự kêu.
+List<int?> ecOrderPageWindow(int page, int count) {
+  if (count <= 4) return [for (var p = 1; p <= count; p++) p];
+  var start = math.max(1, page - 1);
+  final end = math.min(count, start + 2);
+  start = math.max(1, end - 2);
+  return [
+    for (var p = start; p <= end; p++) p,
+    if (end < count) ...[if (end < count - 1) null, count],
+  ];
+}
+
+/// Thanh phân trang cuối danh sách vận đơn: nhãn "1–10 / 128 vận đơn" bên
+/// trái, các nút trang bên phải.
+class _OrdersPager extends StatelessWidget {
+  const _OrdersPager({
+    required this.info,
+    required this.busy,
+    required this.onPageChanged,
+  });
+
+  final EcOrderPage info;
+  final bool busy;
+  final ValueChanged<int> onPageChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final slots = ecOrderPageWindow(info.page, info.pageCount);
+    return Opacity(
+      opacity: busy ? 0.5 : 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.ordersPageRange(
+                  info.firstIndex,
+                  info.lastIndex,
+                  info.total,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _t(12, FontWeight.w500, PenColors.mut),
+              ),
+            ),
+            _PagerArrow(
+              icon: LucideIcons.chevronLeft,
+              tooltip: l10n.ordersPagePrevious,
+              onTap: busy || info.page <= 1
+                  ? null
+                  : () => onPageChanged(info.page - 1),
+            ),
+            for (final slot in slots) ...[
+              const SizedBox(width: 4),
+              if (slot == null)
+                Text('…', style: _t(13, FontWeight.w500, PenColors.mut))
+              else
+                _PagerNumber(
+                  page: slot,
+                  active: slot == info.page,
+                  onTap: busy || slot == info.page
+                      ? null
+                      : () => onPageChanged(slot),
+                ),
+            ],
+            const SizedBox(width: 4),
+            _PagerArrow(
+              icon: LucideIcons.chevronRight,
+              tooltip: l10n.ordersPageNext,
+              onTap: busy || info.page >= info.pageCount
+                  ? null
+                  : () => onPageChanged(info.page + 1),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+const _pagerButtonSize = 32.0;
+
+class _PagerArrow extends StatelessWidget {
+  const _PagerArrow({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+
+  /// `null` = hết đường theo hướng này; nút mờ đi và không bấm được.
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      label: tooltip,
+      child: EcTap(
+        onTap: onTap,
+        child: Opacity(
+          opacity: onTap == null ? 0.4 : 1,
+          child: PenBox(
+            width: _pagerButtonSize,
+            height: _pagerButtonSize,
+            radius: _pagerButtonSize / 2,
+            stroke: PenColors.line,
+            axis: PenAxis.row,
+            main: MainAxisAlignment.center,
+            cross: CrossAxisAlignment.center,
+            children: [Icon(icon, size: 16, color: PenColors.ink)],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PagerNumber extends StatelessWidget {
+  const _PagerNumber({
+    required this.page,
+    required this.active,
+    required this.onTap,
+  });
+
+  final int page;
+  final bool active;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: active,
+      label: context.l10n.ordersPageNumber(page),
+      child: EcTap(
+        onTap: onTap,
+        child: PenBox(
+          width: _pagerButtonSize,
+          height: _pagerButtonSize,
+          radius: _pagerButtonSize / 2,
+          // Luật 3 của design DNA: trạng thái đang chọn là grey
+          // `--sidebar-accent`, không phải green.
+          fill: active ? PenColors.selected : null,
+          axis: PenAxis.row,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          children: [
+            Text(
+              '$page',
+              style: _t(
+                13,
+                active ? FontWeight.w700 : FontWeight.w500,
+                active ? PenColors.ink : PenColors.mut,
+              ),
             ),
           ],
         ),

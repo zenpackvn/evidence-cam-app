@@ -1862,6 +1862,30 @@ abstract class AppLocalizations {
   /// **'Double-check the tracking code and try again'**
   String get ordersNotFoundHint;
 
+  /// Orders list pagination footer (F2-01).
+  ///
+  /// In en, this message translates to:
+  /// **'{first}–{last} of {total} orders'**
+  String ordersPageRange(int first, int last, int total);
+
+  /// No description provided for @ordersPagePrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get ordersPagePrevious;
+
+  /// No description provided for @ordersPageNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get ordersPageNext;
+
+  /// No description provided for @ordersPageNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page}'**
+  String ordersPageNumber(int page);
+
   /// No description provided for @filterStatusLabel.
   ///
   /// In en, this message translates to:
@@ -2155,6 +2179,92 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recording resolution'**
   String get shopDetailResolution;
+
+  /// Shop detail / clip budget (FR-17..FR-20).
+  ///
+  /// In en, this message translates to:
+  /// **'Max length/video'**
+  String get shopDetailClipDuration;
+
+  /// Shop detail / clip budget (FR-17..FR-20).
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String clipDurationValue(String minutes);
+
+  /// Shop detail / clip budget (FR-17..FR-20).
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended {minutes} min — for {platform} ({megabytes} MB/video) + {resolution}'**
+  String clipRecommendedHint(
+    String minutes,
+    String platform,
+    String megabytes,
+    String resolution,
+  );
+
+  /// Shop detail / clip budget (FR-17..FR-20).
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended {minutes} min — {platform} limits unconfirmed, using the safest known values'**
+  String clipRecommendedHintUnverified(String minutes, String platform);
+
+  /// Shop detail / clip budget (FR-17..FR-20).
+  ///
+  /// In en, this message translates to:
+  /// **'Over the {minutes}-min recommendation for {platform} — a {chosen}-min video is ~{megabytes} MB, so it has to be sent as a dossier link instead of attached to the complaint form.'**
+  String clipOverRecommendedWarning(
+    String minutes,
+    String platform,
+    String chosen,
+    String megabytes,
+  );
+
+  /// Shop detail / clip budget (FR-17..FR-20).
+  ///
+  /// In en, this message translates to:
+  /// **'Max length per video'**
+  String get clipDurationTitle;
+
+  /// Shop detail / clip budget (FR-17..FR-20).
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-closes at this length; {minutes} min still attaches directly to {platform}'**
+  String clipDurationSubtitle(String minutes, String platform);
+
+  /// Shop detail / clip budget (FR-17..FR-20).
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min (recommended)'**
+  String clipDurationOptionRecommended(String minutes);
+
+  /// Shop detail / clip budget (FR-17..FR-20).
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan allows up to {minutes} min'**
+  String clipDurationPlanCap(String minutes);
+
+  /// Shop detail / clip budget (FR-17..FR-20).
+  ///
+  /// In en, this message translates to:
+  /// **'Max length/video: {minutes} min'**
+  String clipDurationChanged(String minutes);
+
+  /// Shop detail / clip budget (FR-17..FR-20).
+  ///
+  /// In en, this message translates to:
+  /// **'Photo is {megabytes} MB — over {platform}\'s {limit} MB limit. Kept in full; send it via the dossier link.'**
+  String imageOverPlatformLimit(
+    String megabytes,
+    String platform,
+    String limit,
+  );
+
+  /// Recording: near-cap warning banner (FR-01).
+  ///
+  /// In en, this message translates to:
+  /// **'Nearing the {minutes}-min cap — the video will close itself'**
+  String nearClipLimitWarning(String minutes);
 
   /// Shop detail: shopDetailAddType.
   ///

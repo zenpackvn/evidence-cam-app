@@ -7,6 +7,7 @@ export 'src/activity_notifier.dart';
 export 'src/auth_user.dart';
 export 'src/bookmark_stats.dart';
 export 'src/bookmark_summaries.dart';
+export 'src/clip_budget.dart';
 export 'src/collections.dart';
 export 'src/di.module.dart' show SharedContractsPackageModule;
 export 'src/password_policy.dart';

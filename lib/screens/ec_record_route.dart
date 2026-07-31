@@ -26,9 +26,12 @@ import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
 
-/// In the final minute, the cap-warning screen replaces the recording screen
-/// (auto-close at 15').
-const _warnAt = Duration(minutes: 14);
+/// Cảnh báo trước khi chạm trần: 1 phút cuối. Trần giờ do shop đặt và có thể
+/// ngắn tới 1 phút (FR-18), nên với trần ngắn thì lùi về nửa thời lượng —
+/// cảnh báo hiện ngay từ giây 0 thì không còn là cảnh báo.
+Duration _warnAtFor(Duration cap) => cap > const Duration(minutes: 2)
+    ? cap - const Duration(minutes: 1)
+    : cap * 0.5;
 
 /// The recording route mounted at `/record`. Callbacks stay routing-agnostic so
 /// the app shell owns navigation; [onRequestCode] returns the tracking code the
@@ -49,6 +52,7 @@ class EcRecordRoute extends StatefulWidget {
     this.queueCount = 0,
     this.shopName = 'Shop',
     this.initialResolution = '720p',
+    this.maxRecording = const Duration(minutes: 2),
     this.camera,
     this.isActive,
     super.key,
@@ -114,6 +118,10 @@ class EcRecordRoute extends StatefulWidget {
   /// the rail pill cycles it while idle.
   final String initialResolution;
 
+  /// Trần thời lượng một clip — của **shop**, không phải số cứng (FR-18).
+  /// Chạm trần thì phiên tự chốt và nhân viên được báo.
+  final Duration maxRecording;
+
   /// Camera wrapper. Injectable so tests can drive recording and lifecycle
   /// without real hardware; production leaves it null and uses [CameraService].
   @visibleForTesting
@@ -152,6 +160,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     voiceAnnouncer: widget.voiceAnnouncer,
     initialType: widget.initialType,
     initialResolution: widget.initialResolution,
+    maxRecording: widget.maxRecording,
   );
 
   @override
@@ -301,7 +310,8 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         bloc: _bloc,
         listenWhen: (previous, current) =>
             !previous.lowStorageWarning && current.lowStorageWarning,
-        listener: (context, state) => unawaited(_showLowStorageWarning(context)),
+        listener: (context, state) =>
+            unawaited(_showLowStorageWarning(context)),
         child: BlocBuilder<RecordingSessionBloc, RecordingSessionState>(
           bloc: _bloc,
           builder: (context, state) => _buildScreen(state),
@@ -336,10 +346,13 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     }
 
     if (state.isRecording) {
-      if (state.elapsed >= _warnAt) {
+      if (state.elapsed >= _warnAtFor(widget.maxRecording)) {
         return EcNearLimitScreen(
           shopName: widget.shopName,
           queueCount: widget.queueCount,
+          warningText: context.l10n.nearClipLimitWarning(
+            '${(widget.maxRecording.inSeconds / 60).round()}',
+          ),
           code: state.code,
           duration: _formatElapsed(state.elapsed),
           typeLabel: state.typeLabel,

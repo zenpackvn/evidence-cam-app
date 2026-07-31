@@ -6,6 +6,10 @@ import 'ec_models.dart';
 abstract interface class EcRepository {
   Future<List<ShopDto>> shops();
 
+  /// Một shop kèm ngân sách clip mới nhất — màn Chi tiết cửa hàng đọc lại sau
+  /// mỗi lần sửa cài đặt thay vì tin vào snapshot của route.
+  Future<ShopDto> shop(String shopId);
+
   /// The signed-in account (`GET /api/me`). Read after a social sign-in to tell
   /// whether the business phone is already on file (it lives in D1, not Firebase
   /// Auth) so a returning account skips the phone-setup step.
@@ -26,6 +30,7 @@ abstract interface class EcRepository {
     String? name,
     String? platform,
     String? resolution,
+    int? maxClipSeconds,
   });
   Future<List<MemberDto>> members(String shopId);
   Future<void> addMember(
@@ -53,13 +58,14 @@ abstract interface class EcRepository {
   );
   Future<void> deleteVideoType(String shopId, String typeId);
   Future<QuotaDto> quota({String? shopId});
-  /// A page of orders, newest first. [uploadState] / [fromTs] / [videoTypeId]
-  /// are the "Vận đơn" tab's three filters; they are applied by the backend
-  /// because the list is paged and a client-side filter would only ever see
-  /// the rows already loaded.
-  Future<List<OrderSummaryDto>> orders(
+
+  /// Page [page] (1-based) of orders, newest first. [uploadState] / [fromTs] /
+  /// [videoTypeId] are the "Vận đơn" tab's three filters; they are applied by
+  /// the backend because the list is paged and a client-side filter would only
+  /// ever see the rows already loaded.
+  Future<OrderPageDto> orders(
     String shopId, {
-    int? before,
+    int page,
     String? uploadState,
     int? fromTs,
     String? videoTypeId,
@@ -79,6 +85,9 @@ class RemoteEcRepository implements EcRepository {
 
   @override
   Future<List<ShopDto>> shops() => _api.listShops();
+
+  @override
+  Future<ShopDto> shop(String shopId) => _api.getShop(shopId);
 
   @override
   Future<AccountDto> account() => _api.getMe();
@@ -103,11 +112,13 @@ class RemoteEcRepository implements EcRepository {
     String? name,
     String? platform,
     String? resolution,
+    int? maxClipSeconds,
   }) => _api.updateShop(
     shopId,
     name: name,
     platform: platform,
     resolution: resolution,
+    maxClipSeconds: maxClipSeconds,
   );
 
   @override
@@ -161,15 +172,15 @@ class RemoteEcRepository implements EcRepository {
   Future<QuotaDto> quota({String? shopId}) => _api.getQuota(shopId: shopId);
 
   @override
-  Future<List<OrderSummaryDto>> orders(
+  Future<OrderPageDto> orders(
     String shopId, {
-    int? before,
+    int page = 1,
     String? uploadState,
     int? fromTs,
     String? videoTypeId,
   }) => _api.listOrders(
     shopId,
-    before: before,
+    page: page,
     uploadState: uploadState,
     fromTs: fromTs,
     videoTypeId: videoTypeId,
@@ -205,6 +216,15 @@ class FakeEcRepository implements EcRepository {
 
   @override
   Future<List<ShopDto>> shops() async => const [];
+
+  @override
+  Future<ShopDto> shop(String shopId) async => ShopDto(
+    id: shopId,
+    name: 'Shop',
+    platform: 'shopee',
+    resolution: '720p',
+    role: 'owner',
+  );
 
   // No backend → no phone on file, so social sign-ins land on phone-setup.
   @override
@@ -243,12 +263,14 @@ class FakeEcRepository implements EcRepository {
     String? name,
     String? platform,
     String? resolution,
+    int? maxClipSeconds,
   }) async => ShopDto(
     id: shopId,
     name: name ?? 'Shop',
     platform: platform ?? 'khac',
     resolution: resolution ?? '720p',
     role: 'owner',
+    clipSeconds: maxClipSeconds ?? 120,
   );
 
   @override
@@ -314,14 +336,19 @@ class FakeEcRepository implements EcRepository {
   );
 
   @override
-  Future<List<OrderSummaryDto>> orders(
+  Future<OrderPageDto> orders(
     String shopId, {
-    int? before,
+    int page = 1,
     String? uploadState,
     int? fromTs,
     String? videoTypeId,
   }) async {
-    return const [];
+    return OrderPageDto(
+      items: const [],
+      total: 0,
+      page: page,
+      pageSize: EcApi.ordersPageSize,
+    );
   }
 
   @override

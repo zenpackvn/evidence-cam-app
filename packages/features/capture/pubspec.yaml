@@ -30,8 +30,7 @@ dependencies:
   google_mlkit_barcode_scanning: ^0.14.0
   path_provider: ^2.1.0
   qr_flutter: ^4.1.0
-  battery_plus: ^7.1.1
-  connectivity_plus: ^7.1.1
+  # Container remux only (moov -> front). Never re-encodes evidence.
   ffmpeg_kit_extended_flutter: ^0.5.12
 
 dev_dependencies:
@@ -41,5 +40,3 @@ dev_dependencies:
   bloc_test: ^10.0.0
 
 flutter:
-  assets:
-    - assets/fonts/Roboto-Regular.ttf

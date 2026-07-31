@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_contracts/shared_contracts.dart';
 import 'package:localization/localization.dart';
 
 /// These screens read their copy through `context.l10n`, so the harness has to
@@ -321,6 +322,111 @@ void main() {
       expect(find.text('Đóng hàng'), findsOneWidget);
       expect(find.text('Cân hàng'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'shows the recommendation caption and no warning at or below it',
+      (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          const EcShopDetailScreen(
+            shopName: 'Shop ABC',
+            platformLabel: 'Shopee',
+            members: members,
+            videoTypes: videoTypes,
+            clipBudget: ClipBudget(
+              seconds: 120,
+              recommendedSeconds: 120,
+              planMaxSeconds: 900,
+              maxImageBytes: 10000000,
+              maxVideoBytes: 30000000,
+            ),
+          ),
+        );
+        expect(find.text('Thời lượng/video'), findsOneWidget);
+        expect(find.text('2 phút'), findsOneWidget);
+        expect(
+          find.text('Đề xuất 2 phút — theo Shopee (30 MB/video) + 720p'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Vượt mức đề xuất'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'raising the cap past the recommendation shows the amber warning',
+      (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          const EcShopDetailScreen(
+            shopName: 'Shop ABC',
+            platformLabel: 'Shopee',
+            members: members,
+            videoTypes: videoTypes,
+            clipBudget: ClipBudget(
+              seconds: 300,
+              recommendedSeconds: 120,
+              planMaxSeconds: 900,
+              maxImageBytes: 10000000,
+              maxVideoBytes: 30000000,
+            ),
+          ),
+        );
+        expect(find.text('5 phút'), findsOneWidget);
+        expect(
+          find.textContaining('Vượt mức đề xuất 2 phút của Shopee'),
+          findsOneWidget,
+        );
+        // 5 phút × 15 MB/phút = ~75 MB — con số phải thật, không phải nhãn suông.
+        expect(find.textContaining('~75 MB'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('an unverified platform says so instead of quoting a number', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcShopDetailScreen(
+          shopName: 'Kho tổng',
+          platformLabel: 'Khác',
+          members: members,
+          videoTypes: videoTypes,
+          clipBudget: ClipBudget(
+            seconds: 120,
+            recommendedSeconds: 120,
+            planMaxSeconds: 900,
+            maxImageBytes: 10000000,
+            maxVideoBytes: 30000000,
+            platformLimitsVerified: false,
+          ),
+        ),
+      );
+      expect(find.textContaining('chưa xác minh'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('clip duration row opens the picker', (tester) async {
+      var tapped = false;
+      await _pump(
+        tester,
+        EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          members: members,
+          videoTypes: videoTypes,
+          onTapClipDuration: () => tapped = true,
+        ),
+      );
+      await tester.tap(find.text('Thời lượng/video'));
+      await tester.pump();
+      expect(tapped, isTrue);
     });
 
     testWidgets('resolution + edit type callbacks fire', (tester) async {

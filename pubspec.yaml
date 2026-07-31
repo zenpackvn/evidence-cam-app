@@ -150,6 +150,8 @@ dependencies:
   sign_in_with_apple: ^8.1.0
   smooth_corner: ^1.1.1
   google_fonts: ^8.2.0
+  video_thumbnail: ^0.5.6
+  crypto: ^3.0.7
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -271,10 +273,14 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-# EcVideoStampService (feature_capture) burns date/tracking-code/battery/
-# network text onto evidence clips via ffmpeg's `drawtext` filter, which
-# needs libfreetype — only bundled in the "full" build. gpl:false keeps the
-# LGPL license posture (libfreetype itself isn't GPL-gated).
+# EcVideoFaststartService (feature_capture) only remuxes finished clips
+# (`-c copy -movflags +faststart`) — that needs the mp4 demuxer/muxer and no
+# codec, encoder or font rendering at all, so the smallest bundle covers it.
+# ("min" is not a valid type here; the build hook accepts debug, base, full,
+# audio, video, video_hw.) It was "full" while the service still burned a
+# `drawtext` overlay, which needed libfreetype; dropping that dropped the
+# bundled codec set with it. Raising this again means someone reintroduced
+# transcoding — check FR-07 before you do.
 ffmpeg_kit_extended_config:
-  type: "full"
+  type: "base"
   gpl: false

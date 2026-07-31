@@ -443,6 +443,31 @@
   "resolutionDefaultOption": "720p (default)",
   "ordersNotFound": "No orders found",
   "ordersNotFoundHint": "Double-check the tracking code and try again",
+  "ordersPageRange": "{first}–{last} of {total} orders",
+  "@ordersPageRange": {
+    "description": "Orders list pagination footer (F2-01).",
+    "placeholders": {
+      "first": {
+        "type": "int"
+      },
+      "last": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "ordersPagePrevious": "Previous page",
+  "ordersPageNext": "Next page",
+  "ordersPageNumber": "Page {page}",
+  "@ordersPageNumber": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
   "filterStatusLabel": "Upload status",
   "filterStatusAll": "All",
   "filterStatusPending": "Awaiting upload",
@@ -602,6 +627,134 @@
   "@shopDetailResolution": {
     "description": "Shop detail: shopDetailResolution."
   },
+    "shopDetailClipDuration": "Max length/video",
+    "@shopDetailClipDuration": {
+      "description": "Shop detail / clip budget (FR-17..FR-20)."
+    },
+    "clipDurationValue": "{minutes} min",
+    "@clipDurationValue": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        }
+      }
+    },
+    "clipRecommendedHint": "Recommended {minutes} min — for {platform} ({megabytes} MB/video) + {resolution}",
+    "@clipRecommendedHint": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        },
+        "megabytes": {
+          "type": "String"
+        },
+        "resolution": {
+          "type": "String"
+        }
+      }
+    },
+    "clipRecommendedHintUnverified": "Recommended {minutes} min — {platform} limits unconfirmed, using the safest known values",
+    "@clipRecommendedHintUnverified": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        }
+      }
+    },
+    "clipOverRecommendedWarning": "Over the {minutes}-min recommendation for {platform} — a {chosen}-min video is ~{megabytes} MB, so it has to be sent as a dossier link instead of attached to the complaint form.",
+    "@clipOverRecommendedWarning": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        },
+        "chosen": {
+          "type": "String"
+        },
+        "megabytes": {
+          "type": "String"
+        }
+      }
+    },
+    "clipDurationTitle": "Max length per video",
+    "@clipDurationTitle": {
+      "description": "Shop detail / clip budget (FR-17..FR-20)."
+    },
+    "clipDurationSubtitle": "Auto-closes at this length; {minutes} min still attaches directly to {platform}",
+    "@clipDurationSubtitle": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        }
+      }
+    },
+    "clipDurationOptionRecommended": "{minutes} min (recommended)",
+    "@clipDurationOptionRecommended": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        }
+      }
+    },
+    "clipDurationPlanCap": "Your plan allows up to {minutes} min",
+    "@clipDurationPlanCap": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        }
+      }
+    },
+    "clipDurationChanged": "Max length/video: {minutes} min",
+    "@clipDurationChanged": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        }
+      }
+    },
+    "imageOverPlatformLimit": "Photo is {megabytes} MB — over {platform}'s {limit} MB limit. Kept in full; send it via the dossier link.",
+    "@imageOverPlatformLimit": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        },
+        "limit": {
+          "type": "String"
+        }
+      }
+    },
+    "nearClipLimitWarning": "Nearing the {minutes}-min cap — the video will close itself",
+    "@nearClipLimitWarning": {
+      "description": "Recording: near-cap warning banner (FR-01).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        }
+      }
+    },
   "shopDetailAddType": "Add a type (enter a name)",
   "@shopDetailAddType": {
     "description": "Shop detail: shopDetailAddType."

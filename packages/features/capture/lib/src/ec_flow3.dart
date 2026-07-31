@@ -354,12 +354,13 @@ class EcCutoverBScreen extends StatelessWidget {
 
 // --- NearLimit ---------------------------------------------------------
 
-/// Recording screen showing the 15-minute cap warning banner.
+/// Recording screen showing the near-cap warning banner. The cap itself is
+/// the shop's setting (FR-18), so the caller passes the text.
 class EcNearLimitScreen extends StatelessWidget {
   const EcNearLimitScreen({
     this.shopName = 'Shop ABC',
     this.queueCount = 3,
-    this.warningText = 'Sắp chạm trần 15 phút — video sẽ tự chốt',
+    this.warningText = 'Sắp chạm trần 2 phút — video sẽ tự chốt',
     this.code = 'SPXVN024567890',
     this.duration = '14:12',
     this.typeLabel = 'Đóng hàng',

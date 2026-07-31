@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart' show sha256;
 import 'package:ec_data/ec_data.dart';
 import 'package:evidence_cam/data/ec_uploader.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -264,17 +266,18 @@ void main() {
         'partNumbers': [3],
       },
     );
-    expect(
-      bodies['/api/shops/s1/orders/ord1/uploads/evm/multipart/complete'],
-      {
-        'uploadId': 'up1',
-        'parts': [
-          {'partNumber': 1, 'etag': 'etag-p1'},
-          {'partNumber': 2, 'etag': 'etag-p2'},
-          {'partNumber': 3, 'etag': 'etag-p3'},
-        ],
-      },
-    );
+    final completeBody =
+        bodies['/api/shops/s1/orders/ord1/uploads/evm/multipart/complete']!
+            as Map<String, Object?>;
+    expect(completeBody['uploadId'], 'up1');
+    expect(completeBody['parts'], [
+      {'partNumber': 1, 'etag': 'etag-p1'},
+      {'partNumber': 2, 'etag': 'etag-p2'},
+      {'partNumber': 3, 'etag': 'etag-p3'},
+    ]);
+    // The evidence fingerprint rides along on the same call — asserted by shape
+    // rather than value so the clip's contents stay free to change.
+    expect(completeBody['sha256'], matches(RegExp(r'^[0-9a-f]{64}$')));
   });
 
   test('ApiEvidenceUploader throws without a shopId', () async {
@@ -487,4 +490,177 @@ void main() {
       expect(partAttempts, {'p1': 1, 'p2': 2});
     },
   );
+
+  group('poster frame', () {
+    /// Backend that hands back a poster URL alongside the clip's own.
+    Dio posterApi() => Dio()
+      ..httpClientAdapter = _StubAdapter((o) {
+        if (o.path.endsWith('/video-types')) return _json('[]');
+        if (o.path.endsWith('/uploads/presign')) {
+          return _json(
+            '{"evidenceId":"ev1","key":"r2/ev1.mp4",'
+            '"uploadUrl":"https://r2.example/clip?sig=1",'
+            '"thumbUploadUrl":"https://r2.example/thumb?sig=2"}',
+          );
+        }
+        if (o.path.endsWith('/complete')) return _json('{"status":"stored"}');
+        return _json('{"id":"ord1","tracking_raw":"SPX1","created_at":0}');
+      });
+
+    (Directory, File) tempClip() {
+      final dir = Directory.systemTemp.createTempSync('ec_uploader_poster');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      return (
+        dir,
+        File('${dir.path}/clip.mp4')..writeAsStringSync('video-bytes'),
+      );
+    }
+
+    test('uploads the poster before the clip it belongs to', () async {
+      // Arrange
+      final (dir, clip) = tempClip();
+      final poster = File('${dir.path}/poster.jpg')..writeAsStringSync('jpeg');
+      final r2 = _FakeR2((_) => 'etag');
+      final uploader = ApiEvidenceUploader(
+        EcApi(posterApi()),
+        put: r2.put,
+        extractThumbnail: (_) async => poster.path,
+      );
+
+      // Act
+      await uploader.upload(
+        clip,
+        tracking: 'SPX1',
+        type: 'Đóng hàng',
+        shopId: 'shop1',
+      );
+
+      // Assert — poster first, so the timeline fills in while the clip climbs.
+      expect(r2.calls.map((c) => c.url).toList(), [
+        'https://r2.example/thumb?sig=2',
+        'https://r2.example/clip?sig=1',
+      ]);
+      expect(r2.calls.first.contentType, 'image/jpeg');
+      expect(poster.existsSync(), isFalse, reason: 'temp poster is cleaned up');
+    });
+
+    test('still uploads the clip when frame extraction fails', () async {
+      // Arrange — the branch that must never cost evidence.
+      final (_, clip) = tempClip();
+      final r2 = _FakeR2((_) => 'etag');
+      final uploader = ApiEvidenceUploader(
+        EcApi(posterApi()),
+        put: r2.put,
+        extractThumbnail: (_) async => throw StateError('no frame'),
+      );
+
+      // Act
+      final key = await uploader.upload(
+        clip,
+        tracking: 'SPX1',
+        type: 'Đóng hàng',
+        shopId: 'shop1',
+      );
+
+      // Assert
+      expect(key, 'r2/ev1.mp4');
+      expect(r2.calls.map((c) => c.url).toList(), [
+        'https://r2.example/clip?sig=1',
+      ]);
+    });
+
+    test('still uploads the clip when the poster PUT is rejected', () async {
+      // Arrange
+      final (dir, clip) = tempClip();
+      final poster = File('${dir.path}/poster.jpg')..writeAsStringSync('jpeg');
+      final r2 = _FakeR2((call) {
+        if (call.url.contains('thumb')) {
+          throw R2PutException('nope', statusCode: 403);
+        }
+        return 'etag';
+      });
+      final uploader = ApiEvidenceUploader(
+        EcApi(posterApi()),
+        put: r2.put,
+        extractThumbnail: (_) async => poster.path,
+      );
+
+      // Act
+      final key = await uploader.upload(
+        clip,
+        tracking: 'SPX1',
+        type: 'Đóng hàng',
+        shopId: 'shop1',
+      );
+
+      // Assert
+      expect(key, 'r2/ev1.mp4');
+      expect(r2.calls.length, 2);
+    });
+
+    test('sends the clip fingerprint on the single-PUT complete call', () async {
+      // Arrange
+      final (_, clip) = tempClip();
+      final bodies = <String, Object?>{};
+      final apiDio = Dio()
+        ..httpClientAdapter = _StubAdapter((o) {
+          bodies[o.path] = o.data;
+          if (o.path.endsWith('/video-types')) return _json('[]');
+          if (o.path.endsWith('/uploads/presign')) {
+            return _json(
+              '{"evidenceId":"ev1","key":"r2/ev1.mp4",'
+              '"uploadUrl":"https://r2.example/clip?sig=1"}',
+            );
+          }
+          if (o.path.endsWith('/complete')) return _json('{"status":"stored"}');
+          return _json('{"id":"ord1","tracking_raw":"SPX1","created_at":0}');
+        });
+      final uploader = ApiEvidenceUploader(
+        EcApi(apiDio),
+        put: _FakeR2((_) => 'etag').put,
+        extractThumbnail: (_) async => null,
+      );
+
+      // Act
+      await uploader.upload(
+        clip,
+        tracking: 'SPX1',
+        type: 'Đóng hàng',
+        shopId: 'shop1',
+      );
+
+      // Assert — sha256 of the literal bytes written by tempClip().
+      final body =
+          bodies['/api/shops/shop1/orders/ord1/uploads/ev1/complete']!
+              as Map<String, Object?>;
+      expect(
+        body['sha256'],
+        sha256.convert(utf8.encode('video-bytes')).toString(),
+      );
+    });
+
+    test('skips the poster entirely for a photo', () async {
+      // Arrange
+      final dir = Directory.systemTemp.createTempSync('ec_uploader_photo');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final photo = File('${dir.path}/shot.jpg')..writeAsStringSync('jpeg');
+      final r2 = _FakeR2((_) => 'etag');
+      final uploader = ApiEvidenceUploader(
+        EcApi(posterApi()),
+        put: r2.put,
+        extractThumbnail: (_) async => fail('a photo is its own preview'),
+      );
+
+      // Act
+      await uploader.upload(
+        photo,
+        tracking: 'SPX1',
+        type: 'Ảnh đính kèm',
+        shopId: 'shop1',
+      );
+
+      // Assert
+      expect(r2.calls.single.url, 'https://r2.example/clip?sig=1');
+    });
+  });
 }

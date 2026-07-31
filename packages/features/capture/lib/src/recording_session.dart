@@ -21,7 +21,7 @@ import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'ec_bill_scanner.dart';
-import 'ec_video_stamp.dart';
+import 'ec_video_faststart.dart';
 
 /// Content of the printed "kết thúc phiên" QR placed on the packing table.
 ///
@@ -280,18 +280,18 @@ class RecordingSessionBloc
     )
     onClipSaved,
     VoiceAnnouncerService? voiceAnnouncer,
-    EcVideoStampService? videoStamp,
+    EcVideoFaststartService? faststart,
     Future<bool> Function(String code)? verifyReturnCode,
     Future<double?> Function()? checkFreeDiskSpaceMb,
     String initialType = 'Đóng hàng',
     String initialResolution = '720p',
     String endQr = kEndSessionQr,
-    Duration maxRecording = const Duration(minutes: 15),
+    Duration maxRecording = const Duration(minutes: 2),
   }) : _camera = camera,
        _scanner = scanner,
        _onClipSaved = onClipSaved,
        _voice = voiceAnnouncer ?? VoiceAnnouncerService(),
-       _videoStamp = videoStamp ?? EcVideoStampService(),
+       _faststart = faststart ?? EcVideoFaststartService(),
        _verifyReturnCode = verifyReturnCode,
        _checkFreeDiskSpaceMb = checkFreeDiskSpaceMb ?? getFreeDiskSpaceMb,
        _endQr = endQr,
@@ -323,7 +323,7 @@ class RecordingSessionBloc
   final BillScanner _scanner;
   final void Function(String, String, String, int) _onClipSaved;
   final VoiceAnnouncerService _voice;
-  final EcVideoStampService _videoStamp;
+  final EcVideoFaststartService _faststart;
   final Future<double?> Function() _checkFreeDiskSpaceMb;
   final Future<bool> Function(String code)? _verifyReturnCode;
   final String _endQr;
@@ -340,10 +340,6 @@ class RecordingSessionBloc
   DateTime? _lastIdleScanAt;
   String? _lastRejectedReturnCode;
 
-  /// Wall-clock instant the clip currently recording actually started —
-  /// stamped onto the finished file so the burned-in overlay reflects when
-  /// recording began, not when it happened to finish.
-  DateTime? _recordingStartedAt;
 
   // ML Kit's per-frame scan is expensive enough to visibly stutter the video
   // encoder if run on every delivered frame, and instant recognition isn't
@@ -572,7 +568,6 @@ class RecordingSessionBloc
         } finally {
           previewTransitioning.value = false;
         }
-        _recordingStartedAt = DateTime.now();
         if (isClosed) return;
         emit(
           state.copyWith(
@@ -691,23 +686,19 @@ class RecordingSessionBloc
         try {
           if (_camera.isRecordingVideo) {
             final file = await _camera.stopVideoRecording();
-            // Stamping re-encodes the clip and can take a real moment — done
-            // in the background so it never delays the hands-free cutover to
-            // the next order or the return to idle scanning below.
+            // Remuxing is fast but still I/O — done in the background so it
+            // never delays the hands-free cutover to the next order or the
+            // return to idle scanning below.
             unawaited(
-              _stampAndSave(
+              _prepareAndSave(
                 file.path,
                 state.code,
                 state.typeLabel,
-                _recordingStartedAt ?? DateTime.now(),
                 closedElapsed.inSeconds,
               ),
             );
           }
-          if (next != null) {
-            await _startVideoWithScan();
-            _recordingStartedAt = DateTime.now();
-          }
+          if (next != null) await _startVideoWithScan();
         } finally {
           previewTransitioning.value = false;
         }
@@ -741,23 +732,24 @@ class RecordingSessionBloc
     }
   }
 
-  /// Burns the recording-time/tracking/battery/connectivity overlay onto
-  /// [path] before handing it to [_onClipSaved] — best-effort, since
-  /// [EcVideoStampService.stamp] itself falls back to the original file on
-  /// any failure.
-  Future<void> _stampAndSave(
+  /// Makes [path] streamable (moov atom to the front) before handing it to
+  /// [_onClipSaved] — best-effort, since [EcVideoFaststartService.prepare]
+  /// falls back to the original file on any failure.
+  ///
+  /// This deliberately does NOT alter a single frame. An earlier version burned
+  /// a time/tracking/battery overlay in here, which re-encoded every clip and
+  /// broke FR-07's "evidence stays intact" rule for the 99% of clips that are
+  /// never disputed. The overlay's data all lives in the backend already
+  /// (captured time, tracking code, video type), so a burned-in copy can be
+  /// rendered on demand if a marketplace ever needs one.
+  Future<void> _prepareAndSave(
     String path,
     String code,
     String typeLabel,
-    DateTime startedAt,
     int durationSeconds,
   ) async {
-    final stamped = await _videoStamp.stamp(
-      path,
-      label: '$code · $typeLabel',
-      recordedAt: startedAt,
-    );
-    _onClipSaved(stamped, code, typeLabel, durationSeconds);
+    final streamable = await _faststart.prepare(path);
+    _onClipSaved(streamable, code, typeLabel, durationSeconds);
   }
 
   void _onTicked(RecordingTicked event, Emitter<RecordingSessionState> emit) {
@@ -775,9 +767,10 @@ class RecordingSessionBloc
     // Finalize an in-progress clip BEFORE releasing the camera, so backgrounding
     // never loses the seller's evidence (FR-08/FR-09). Keyed off the camera's
     // own recording state so it fires even if the OS interrupts us mid-frame.
-    // Skips the stamping step (unlike _finalize) — the OS can kill this
-    // process shortly after backgrounding, and losing the clip entirely
-    // while ffmpeg is mid-encode would be worse than saving it unstamped.
+    // Skips the faststart remux (unlike _finalize) — the OS can kill this
+    // process shortly after backgrounding, and losing the clip entirely while
+    // ffmpeg is mid-remux would be worse than saving one that merely buffers
+    // badly on playback.
     final elapsedAtBackground = state.elapsed;
     await _serialized(() async {
       _cancelTimer();

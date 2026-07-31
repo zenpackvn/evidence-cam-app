@@ -56,6 +56,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';
 import 'package:network/network.dart' show Dio, DioException, DioExceptionType;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_contracts/shared_contracts.dart' show ClipBudget;
 import 'package:storage/storage.dart';
 
 import 'app/di/injection.dart';
@@ -1387,6 +1388,15 @@ Future<bool> _confirmManualTracking(
   }
 }
 
+ClipBudget _budgetFromDto(ShopDto shop) => ClipBudget(
+  seconds: shop.clipSeconds,
+  recommendedSeconds: shop.recommendedClipSeconds,
+  planMaxSeconds: shop.planMaxClipSeconds,
+  maxImageBytes: shop.maxImageBytes,
+  maxVideoBytes: shop.maxVideoBytes,
+  platformLimitsVerified: shop.platformLimitsVerified,
+);
+
 EcShopSummary _shopFromDto(ShopDto shop) => EcShopSummary(
   id: shop.id,
   name: shop.name,
@@ -1394,6 +1404,7 @@ EcShopSummary _shopFromDto(ShopDto shop) => EcShopSummary(
   meta: '${_platformDisplayName(shop.platform)} · ${shop.role}',
   role: shop.role,
   resolution: shop.resolution,
+  clipBudget: _budgetFromDto(shop),
 );
 
 EcShopMgmtEntry _shopMgmtFromDto(
@@ -1405,6 +1416,7 @@ EcShopMgmtEntry _shopMgmtFromDto(
   platform: shop.platform,
   resolution: shop.resolution,
   role: shop.role,
+  clipBudget: _budgetFromDto(shop),
   meta:
       '${_platformDisplayName(shop.platform)} · ${_roleDisplayName(l10n, shop.role)}',
 );
@@ -1419,6 +1431,7 @@ EcShopSummary? _shopFromMgmt(EcShopMgmtEntry shop) {
     meta: shop.meta,
     role: shop.role ?? 'staff',
     resolution: shop.resolution ?? '720p',
+    clipBudget: shop.clipBudget,
   );
 }
 
@@ -1458,19 +1471,36 @@ Future<void> _attachPhoto(
   BuildContext context,
   EcUploadQueue queue,
   String tracking,
-  String shopId,
-) async {
+  String shopId, {
+  ClipBudget? budget,
+  String platformLabel = '',
+}) async {
   final path = await _pickImagePath();
   if (path == null || !context.mounted) return;
+  // Ảnh vượt giới hạn của sàn vẫn lưu NGUYÊN VẸN — không nén, không cắt (FR-20:
+  // chuỗi bằng chứng phải nguyên gốc). Chỉ cảnh báo để CSKH biết phải gửi bằng
+  // link hồ sơ thay vì đính thẳng lên form khiếu nại.
+  final bytes = await File(path).length();
   await queue.enqueue(
     tracking: tracking,
     type: 'Ảnh đính kèm',
     filePath: path,
     shopId: shopId,
   );
-  if (context.mounted) {
-    _toast(context, context.l10n.toastPhotoQueued);
+  if (!context.mounted) return;
+  final limit = budget?.maxImageBytes;
+  if (limit != null && bytes > limit) {
+    _toast(
+      context,
+      context.l10n.imageOverPlatformLimit(
+        ClipBudget.megabytesLabel(bytes),
+        platformLabel,
+        ClipBudget.megabytesLabel(limit),
+      ),
+    );
+    return;
   }
+  _toast(context, context.l10n.toastPhotoQueued);
 }
 
 /// Shop picker backed by the repository. The dev/prod app must choose a real
@@ -1689,6 +1719,7 @@ class _ShopDetailRoute extends StatefulWidget {
     this.onMemberMore,
     this.onInviteMember,
     this.onTapResolution,
+    this.onTapClipDuration,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
@@ -1699,7 +1730,8 @@ class _ShopDetailRoute extends StatefulWidget {
   final VoidCallback? onBack;
   final Future<void> Function(EcShopMember member)? onMemberMore;
   final Future<void> Function()? onInviteMember;
-  final VoidCallback? onTapResolution;
+  final Future<void> Function()? onTapResolution;
+  final Future<void> Function()? onTapClipDuration;
   final Future<void> Function(EcVideoType type)? onEditType;
   final Future<void> Function(EcVideoType type)? onDeleteType;
   final Future<void> Function()? onAddType;
@@ -1714,6 +1746,9 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
   Future<_ShopDetailData> _load() async {
     final l10n = context.l10n;
     return _ShopDetailData(
+      // Đọc lại shop, không dùng snapshot của route: đổi độ phân giải hay thời
+      // lượng xong quay về là mức đề xuất + cảnh báo phải đúng ngay.
+      shop: await widget.repo.shop(widget.shop.id),
       members: (await widget.repo.members(
         widget.shop.id,
       )).map((m) => _memberFromDto(l10n, m)).toList(),
@@ -1747,9 +1782,10 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
         }
         final detail = snap.data!;
         return EcShopDetailScreen(
-          shopName: widget.shop.name,
-          platformLabel: _platformDisplayName(widget.shop.platform),
-          resolution: widget.shop.resolution,
+          shopName: detail.shop.name,
+          platformLabel: _platformDisplayName(detail.shop.platform),
+          resolution: detail.shop.resolution,
+          clipBudget: _budgetFromDto(detail.shop),
           members: detail.members,
           videoTypes: detail.videoTypes,
           onBack: widget.onBack,
@@ -1763,7 +1799,16 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
               : () => widget.onInviteMember!().then((_) {
                   if (mounted) _retry();
                 }),
-          onTapResolution: widget.onTapResolution,
+          onTapResolution: widget.onTapResolution == null
+              ? null
+              : () => widget.onTapResolution!().then((_) {
+                  if (mounted) _retry();
+                }),
+          onTapClipDuration: widget.onTapClipDuration == null
+              ? null
+              : () => widget.onTapClipDuration!().then((_) {
+                  if (mounted) _retry();
+                }),
           onEditType: widget.onEditType == null
               ? null
               : (type) => widget.onEditType!(type).then((_) {
@@ -1786,7 +1831,13 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
 }
 
 class _ShopDetailData {
-  const _ShopDetailData({required this.members, required this.videoTypes});
+  const _ShopDetailData({
+    required this.shop,
+    required this.members,
+    required this.videoTypes,
+  });
+
+  final ShopDto shop;
 
   final List<EcShopMember> members;
   final List<EcVideoType> videoTypes;
@@ -2018,17 +2069,26 @@ class _OrdersRoute extends StatefulWidget {
 }
 
 class _OrdersRouteState extends State<_OrdersRoute> {
-  static const _pageSize = 20;
-
   List<OrderSummaryDto> _orders = const [];
   List<EcVideoTypeOption> _videoTypes = const [];
   bool _loading = true;
-  bool _loadingMore = false;
-  bool _hasMore = false;
+  bool _loadingPage = false;
+  EcOrderPage _page = const EcOrderPage();
   String _query = '';
   EcOrderFilters _filters = const EcOrderFilters();
   var _searchGeneration = 0;
   Object? _loadError;
+
+  /// Kết quả tìm kiếm không phân trang (backend trả hết một lần), nên phần
+  /// hiển thị trang bị dọn sạch để thanh phân trang biến mất.
+  static const _unpaged = EcOrderPage();
+
+  EcOrderPage _pageOf(OrderPageDto dto) => EcOrderPage(
+    page: dto.page,
+    total: dto.total,
+    pageSize: dto.pageSize,
+    shown: dto.items.length,
+  );
 
   @override
   void initState() {
@@ -2072,16 +2132,11 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       });
     }
     try {
-      final page = await widget.repo.orders(
-        widget.shopId,
-        uploadState: _filters.uploadState,
-        fromTs: _filters.fromTs,
-        videoTypeId: _filters.videoTypeId,
-      );
+      final result = await _fetchPage(_page.page);
       if (!mounted || queryGeneration != _searchGeneration) return;
       setState(() {
-        _orders = page;
-        _hasMore = page.length >= _pageSize;
+        _orders = result.items;
+        _page = _pageOf(result);
         _loading = false;
         _loadError = null;
       });
@@ -2089,29 +2144,64 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       if (!mounted) return;
       setState(() {
         _orders = const [];
-        _hasMore = false;
+        _page = _unpaged;
         _loading = false;
         _loadError = error;
       });
     }
   }
 
-  /// Pull-to-refresh — reload the first page (no full-screen spinner).
+  Future<OrderPageDto> _fetchPage(int page) => widget.repo.orders(
+    widget.shopId,
+    page: page,
+    uploadState: _filters.uploadState,
+    fromTs: _filters.fromTs,
+    videoTypeId: _filters.videoTypeId,
+  );
+
+  /// Chuyển trang. Lỗi thì giữ nguyên trang đang xem thay vì bỏ trắng danh
+  /// sách — người dùng vẫn còn cái đang đọc và chỉ cần bấm lại.
+  Future<void> _goToPage(int page) async {
+    if (_loadingPage || page == _page.page) return;
+    final queryGeneration = ++_searchGeneration;
+    setState(() => _loadingPage = true);
+    try {
+      final result = await _fetchPage(page);
+      if (!mounted || queryGeneration != _searchGeneration) return;
+      setState(() {
+        _orders = result.items;
+        _page = _pageOf(result);
+        _loadingPage = false;
+        _loadError = null;
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _loadingPage = false);
+      if (queryGeneration == _searchGeneration) {
+        _toast(context, _dataErrorText(context.l10n, error));
+      }
+    }
+  }
+
+  /// Pull-to-refresh — reload the page being viewed (no full-screen spinner).
   Future<void> _refresh() async {
     final trimmed = _query.trim();
     try {
-      final page = trimmed.isEmpty
-          ? await widget.repo.orders(
-              widget.shopId,
-              uploadState: _filters.uploadState,
-              fromTs: _filters.fromTs,
-              videoTypeId: _filters.videoTypeId,
-            )
-          : await widget.repo.searchOrders(widget.shopId, trimmed);
+      if (trimmed.isEmpty) {
+        final result = await _fetchPage(_page.page);
+        if (!mounted) return;
+        setState(() {
+          _orders = result.items;
+          _page = _pageOf(result);
+          _loadError = null;
+        });
+        return;
+      }
+      final hits = await widget.repo.searchOrders(widget.shopId, trimmed);
       if (!mounted) return;
       setState(() {
-        _orders = page;
-        _hasMore = trimmed.isEmpty && page.length >= _pageSize;
+        _orders = hits;
+        _page = _unpaged;
         _loadError = null;
       });
     } on Object catch (error) {
@@ -2119,23 +2209,28 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     }
   }
 
+  /// Gõ tìm kiếm mới thì quay về trang 1: số trang cũ không còn nghĩa gì với
+  /// tập kết quả khác.
   Future<void> _search(String query) async {
     final trimmed = query.trim();
     final queryGeneration = ++_searchGeneration;
     _query = trimmed;
     try {
-      final page = trimmed.isEmpty
-          ? await widget.repo.orders(
-              widget.shopId,
-              uploadState: _filters.uploadState,
-              fromTs: _filters.fromTs,
-              videoTypeId: _filters.videoTypeId,
-            )
-          : await widget.repo.searchOrders(widget.shopId, trimmed);
+      if (trimmed.isEmpty) {
+        final result = await _fetchPage(1);
+        if (!mounted || queryGeneration != _searchGeneration) return;
+        setState(() {
+          _orders = result.items;
+          _page = _pageOf(result);
+          _loadError = null;
+        });
+        return;
+      }
+      final hits = await widget.repo.searchOrders(widget.shopId, trimmed);
       if (!mounted || queryGeneration != _searchGeneration) return;
       setState(() {
-        _orders = page;
-        _hasMore = trimmed.isEmpty && page.length >= _pageSize;
+        _orders = hits;
+        _page = _unpaged;
         _loadError = null;
       });
     } on Object catch (error) {
@@ -2162,7 +2257,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
           .toList();
       setState(() {
         _orders = exact;
-        _hasMore = false;
+        _page = _unpaged;
         _loadError = null;
       });
       if (exact.isEmpty) _toast(context, context.l10n.scannedCodeNotFound);
@@ -2170,32 +2265,6 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       if (mounted && queryGeneration == _searchGeneration) {
         _toast(context, _dataErrorText(context.l10n, error));
       }
-    }
-  }
-
-  Future<void> _loadMore() async {
-    if (_query.isNotEmpty || _loadingMore || !_hasMore || _orders.isEmpty) {
-      return;
-    }
-    setState(() => _loadingMore = true);
-    try {
-      final page = await widget.repo.orders(
-        widget.shopId,
-        before: _orders.last.createdAt,
-        uploadState: _filters.uploadState,
-        fromTs: _filters.fromTs,
-        videoTypeId: _filters.videoTypeId,
-      );
-      if (!mounted) return;
-      setState(() {
-        _orders = [..._orders, ...page];
-        _hasMore = page.length >= _pageSize;
-        _loadingMore = false;
-      });
-    } on Object catch (error) {
-      if (!mounted) return;
-      setState(() => _loadingMore = false);
-      _toast(context, _dataErrorText(context.l10n, error));
     }
   }
 
@@ -2262,9 +2331,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     }
     // An order every clip has been deleted from is an empty shell — nothing
     // left to review, so it shouldn't linger in the list at all.
-    final visibleOrders = _orders
-        .where((o) => _evidenceCount(o) > 0)
-        .toList();
+    final visibleOrders = _orders.where((o) => _evidenceCount(o) > 0).toList();
     final rows = visibleOrders.map((o) => _toRow(context.l10n, o)).toList();
     return ListenableBuilder(
       listenable: Listenable.merge([
@@ -2304,9 +2371,9 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         videoTypes: _videoTypes,
         onFiltersChanged: _applyFilters,
         onRefresh: _refresh,
-        onLoadMore: _loadMore,
-        isLoadingMore: _loadingMore,
-        hasMore: _hasMore,
+        pageInfo: _page,
+        onPageChanged: _goToPage,
+        isPageLoading: _loadingPage,
       ),
     );
   }
@@ -2456,6 +2523,8 @@ class _OrderRouteState extends State<_OrderRoute> {
               widget.queue,
               data.detail.order.tracking,
               widget.shop.id,
+              budget: widget.shop.clipBudget,
+              platformLabel: _platformDisplayName(widget.shop.platform),
             ),
           ),
         );
@@ -2494,9 +2563,7 @@ class _EvidenceCountOverrides extends ChangeNotifier {
 
   void report(String tracking, int count, int errorCount) {
     final current = _byTracking[tracking];
-    if (current != null &&
-        current.$1 == count &&
-        current.$2 == errorCount) {
+    if (current != null && current.$1 == count && current.$2 == errorCount) {
       return;
     }
     _byTracking[tracking] = (count, errorCount);
@@ -2527,6 +2594,50 @@ class _VideoPlayerRoute extends StatefulWidget {
 
   @override
   State<_VideoPlayerRoute> createState() => _VideoPlayerRouteState();
+}
+
+/// Nhãn mã vận đơn + giờ quay vẽ đè lên khung hình lúc phát.
+///
+/// Thay cho việc nung chữ vào file lúc quay: nung chữ bắt buộc phải encode lại
+/// video, tức là file không còn là chuỗi byte gốc từ cảm biến — đúng thứ FR-07
+/// cấm. Vẽ lúc phát giữ file nguyên vẹn mà ảnh chụp màn hình gửi sàn vẫn mang
+/// đủ mã và giờ.
+///
+/// ponytail: chỉ hai dữ kiện. Pin và trạng thái mạng mà bản nung chữ cũ có thì
+/// chưa bao giờ được lưu lại, nên không dựng lại được ở đây — muốn có thì phải
+/// ghi chúng lúc quay trước đã.
+class _PlaybackStamp extends StatelessWidget {
+  const _PlaybackStamp({required this.title, required this.recordedAt});
+
+  final String title;
+  final String recordedAt;
+
+  static const _style = TextStyle(
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    shadows: [
+      Shadow(color: Color(0xE6000000), blurRadius: 3, offset: Offset(0, 1)),
+    ],
+  );
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+    top: 8,
+    left: 8,
+    right: 8,
+    child: IgnorePointer(
+      child: Row(
+        children: [
+          Flexible(
+            child: Text(title, overflow: TextOverflow.ellipsis, style: _style),
+          ),
+          const Spacer(),
+          Text(recordedAt, style: _style),
+        ],
+      ),
+    ),
+  );
 }
 
 class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
@@ -2673,6 +2784,10 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                                 alignment: Alignment.center,
                                 children: [
                                   VideoPlayer(raw),
+                                  _PlaybackStamp(
+                                    title: widget.title,
+                                    recordedAt: widget.recordedAt,
+                                  ),
                                   AnimatedOpacity(
                                     opacity: value.isPlaying ? 0 : 1,
                                     duration: const Duration(
@@ -2842,6 +2957,8 @@ List<EcTimelineDay> _timelineDays(
             type: item.kind == 'photo'
                 ? EcEvidenceType.image
                 : EcEvidenceType.video,
+            // Photos preview themselves; a clip needs its extracted poster.
+            thumbUrl: item.kind == 'photo' ? item.url : item.thumbUrl,
             statusText: item.uploadStatus == 'done'
                 ? null
                 : item.uploadStatus == 'expired'
@@ -3149,8 +3266,7 @@ GoRouter _buildRouter(
         // routing to /login. A still-signed-in user goes straight to shop
         // selection, same destination a fresh login lands on.
         builder: (c, s) => EcSplashScreen(
-          onStart: () =>
-              c.go(auth.currentUser != null ? '/shops' : '/login'),
+          onStart: () => c.go(auth.currentUser != null ? '/shops' : '/login'),
         ),
       ),
       GoRoute(
@@ -3297,6 +3413,7 @@ GoRouter _buildRouter(
                       shopName: shop.name,
                       initialType: recordingType.value,
                       initialResolution: shop.resolution,
+                      maxRecording: shop.clipBudget.maxRecording,
                       isActive: isRecordTabActive,
                       onBack: () => c.go('/home'),
                       onRequestCode: () => c.push<String>('/manual'),
@@ -3715,7 +3832,10 @@ GoRouter _buildRouter(
                 .then((_) {}),
             onInviteMember: () =>
                 c.push('/invite-member', extra: shop.id).then((_) {}),
-            onTapResolution: () => c.push('/resolution', extra: shop.id),
+            onTapResolution: () =>
+                c.push<void>('/resolution', extra: shop.id).then((_) {}),
+            onTapClipDuration: () =>
+                c.push<void>('/clip-duration', extra: shop.id).then((_) {}),
             onEditType: (type) =>
                 c.push('/create-type', extra: (shop.id, type)).then((_) {}),
             onDeleteType: (type) =>
@@ -3890,6 +4010,43 @@ GoRouter _buildRouter(
         builder: (c, s) => _LoginMethodsRoute(auth: auth),
       ),
       // --- account sub-screens (pushed, back via pop) ---
+      GoRoute(
+        path: '/clip-duration',
+        pageBuilder: (c, s) {
+          final shop = _selected(selectedShop);
+          final shopId = s.extra is String
+              ? s.extra! as String
+              : shop?.id ?? '';
+          return _modalPage(
+            s,
+            EcClipDurationSheetScreen(
+              budget: shop?.clipBudget ?? ClipBudget.fallback,
+              platformLabel: _platformDisplayName(shop?.platform ?? 'other'),
+              onSelect: (seconds) {
+                repo
+                    .updateShop(shopId, maxClipSeconds: seconds)
+                    .then((updated) {
+                      if (!c.mounted) return;
+                      final current = _selected(selectedShop);
+                      if (current?.id == updated.id) {
+                        selectedShop.value = _shopFromDto(updated);
+                      }
+                      c.pop();
+                      _toast(
+                        c,
+                        c.l10n.clipDurationChanged(
+                          '${(updated.clipSeconds / 60).round()}',
+                        ),
+                      );
+                    })
+                    .catchError((Object error) {
+                      if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
+                    });
+              },
+            ),
+          );
+        },
+      ),
       GoRoute(
         path: '/quota',
         builder: (c, s) =>

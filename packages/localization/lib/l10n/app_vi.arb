@@ -294,6 +294,10 @@
   "resolutionDefaultOption": "720p (mặc định)",
   "ordersNotFound": "Không tìm thấy đơn hàng",
   "ordersNotFoundHint": "Kiểm tra lại mã vận đơn và thử lại",
+  "ordersPageRange": "{first}–{last} / {total} vận đơn",
+  "ordersPagePrevious": "Trang trước",
+  "ordersPageNext": "Trang sau",
+  "ordersPageNumber": "Trang {page}",
   "filterStatusLabel": "Trạng thái upload",
   "filterStatusAll": "Tất cả",
   "filterStatusPending": "Chờ upload",
@@ -439,6 +443,134 @@
   "@shopDetailResolution": {
     "description": "Shop detail: shopDetailResolution."
   },
+    "shopDetailClipDuration": "Thời lượng/video",
+    "@shopDetailClipDuration": {
+      "description": "Shop detail / clip budget (FR-17..FR-20)."
+    },
+    "clipDurationValue": "{minutes} phút",
+    "@clipDurationValue": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        }
+      }
+    },
+    "clipRecommendedHint": "Đề xuất {minutes} phút — theo {platform} ({megabytes} MB/video) + {resolution}",
+    "@clipRecommendedHint": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        },
+        "megabytes": {
+          "type": "String"
+        },
+        "resolution": {
+          "type": "String"
+        }
+      }
+    },
+    "clipRecommendedHintUnverified": "Đề xuất {minutes} phút — giới hạn của {platform} chưa xác minh, đang dùng mức chung thận trọng nhất",
+    "@clipRecommendedHintUnverified": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        }
+      }
+    },
+    "clipOverRecommendedWarning": "Vượt mức đề xuất {minutes} phút của {platform} — video {chosen} phút nặng ~{megabytes} MB, phải gửi bằng link hồ sơ thay vì đính trực tiếp lên form khiếu nại.",
+    "@clipOverRecommendedWarning": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        },
+        "chosen": {
+          "type": "String"
+        },
+        "megabytes": {
+          "type": "String"
+        }
+      }
+    },
+    "clipDurationTitle": "Thời lượng tối đa mỗi video",
+    "@clipDurationTitle": {
+      "description": "Shop detail / clip budget (FR-17..FR-20)."
+    },
+    "clipDurationSubtitle": "Chạm mốc này là tự chốt; {minutes} phút vẫn đính thẳng lên {platform} được",
+    "@clipDurationSubtitle": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        }
+      }
+    },
+    "clipDurationOptionRecommended": "{minutes} phút (đề xuất)",
+    "@clipDurationOptionRecommended": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        }
+      }
+    },
+    "clipDurationPlanCap": "Gói của bạn cho tối đa {minutes} phút",
+    "@clipDurationPlanCap": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        }
+      }
+    },
+    "clipDurationChanged": "Thời lượng/video: {minutes} phút",
+    "@clipDurationChanged": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        }
+      }
+    },
+    "imageOverPlatformLimit": "Ảnh {megabytes} MB — vượt giới hạn {limit} MB của {platform}. Vẫn lưu nguyên vẹn; khi khiếu nại hãy gửi bằng link hồ sơ.",
+    "@imageOverPlatformLimit": {
+      "description": "Shop detail / clip budget (FR-17..FR-20).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        },
+        "limit": {
+          "type": "String"
+        }
+      }
+    },
+    "nearClipLimitWarning": "Sắp chạm trần {minutes} phút — video sẽ tự chốt",
+    "@nearClipLimitWarning": {
+      "description": "Recording: near-cap warning banner (FR-01).",
+      "placeholders": {
+        "minutes": {
+          "type": "String"
+        }
+      }
+    },
   "shopDetailAddType": "Thêm loại (nhập tên)",
   "@shopDetailAddType": {
     "description": "Shop detail: shopDetailAddType."

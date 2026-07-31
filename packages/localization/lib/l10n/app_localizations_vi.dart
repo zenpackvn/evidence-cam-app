@@ -967,6 +967,22 @@ class AppLocalizationsVi extends AppLocalizations {
   String get ordersNotFoundHint => 'Kiểm tra lại mã vận đơn và thử lại';
 
   @override
+  String ordersPageRange(int first, int last, int total) {
+    return '$first–$last / $total vận đơn';
+  }
+
+  @override
+  String get ordersPagePrevious => 'Trang trước';
+
+  @override
+  String get ordersPageNext => 'Trang sau';
+
+  @override
+  String ordersPageNumber(int page) {
+    return 'Trang $page';
+  }
+
+  @override
   String get filterStatusLabel => 'Trạng thái upload';
 
   @override
@@ -1121,6 +1137,76 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get shopDetailResolution => 'Độ phân giải quay';
+
+  @override
+  String get shopDetailClipDuration => 'Thời lượng/video';
+
+  @override
+  String clipDurationValue(String minutes) {
+    return '$minutes phút';
+  }
+
+  @override
+  String clipRecommendedHint(
+    String minutes,
+    String platform,
+    String megabytes,
+    String resolution,
+  ) {
+    return 'Đề xuất $minutes phút — theo $platform ($megabytes MB/video) + $resolution';
+  }
+
+  @override
+  String clipRecommendedHintUnverified(String minutes, String platform) {
+    return 'Đề xuất $minutes phút — giới hạn của $platform chưa xác minh, đang dùng mức chung thận trọng nhất';
+  }
+
+  @override
+  String clipOverRecommendedWarning(
+    String minutes,
+    String platform,
+    String chosen,
+    String megabytes,
+  ) {
+    return 'Vượt mức đề xuất $minutes phút của $platform — video $chosen phút nặng ~$megabytes MB, phải gửi bằng link hồ sơ thay vì đính trực tiếp lên form khiếu nại.';
+  }
+
+  @override
+  String get clipDurationTitle => 'Thời lượng tối đa mỗi video';
+
+  @override
+  String clipDurationSubtitle(String minutes, String platform) {
+    return 'Chạm mốc này là tự chốt; $minutes phút vẫn đính thẳng lên $platform được';
+  }
+
+  @override
+  String clipDurationOptionRecommended(String minutes) {
+    return '$minutes phút (đề xuất)';
+  }
+
+  @override
+  String clipDurationPlanCap(String minutes) {
+    return 'Gói của bạn cho tối đa $minutes phút';
+  }
+
+  @override
+  String clipDurationChanged(String minutes) {
+    return 'Thời lượng/video: $minutes phút';
+  }
+
+  @override
+  String imageOverPlatformLimit(
+    String megabytes,
+    String platform,
+    String limit,
+  ) {
+    return 'Ảnh $megabytes MB — vượt giới hạn $limit MB của $platform. Vẫn lưu nguyên vẹn; khi khiếu nại hãy gửi bằng link hồ sơ.';
+  }
+
+  @override
+  String nearClipLimitWarning(String minutes) {
+    return 'Sắp chạm trần $minutes phút — video sẽ tự chốt';
+  }
 
   @override
   String get shopDetailAddType => 'Thêm loại (nhập tên)';

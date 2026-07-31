@@ -4,7 +4,7 @@
 /// the API surface can evolve independently.
 library;
 
-int _int(Object? v) => (v as num?)?.toInt() ?? 0;
+int _int(Object? v, [int fallback = 0]) => (v as num?)?.toInt() ?? fallback;
 int? _intN(Object? v) => (v as num?)?.toInt();
 
 class AccountDto {
@@ -38,6 +38,12 @@ class ShopDto {
     required this.platform,
     required this.resolution,
     required this.role,
+    this.clipSeconds = 120,
+    this.recommendedClipSeconds = 120,
+    this.planMaxClipSeconds = 900,
+    this.maxImageBytes = 10000000,
+    this.maxVideoBytes = 30000000,
+    this.platformLimitsVerified = true,
   });
 
   factory ShopDto.fromJson(Map<String, dynamic> j) => ShopDto(
@@ -46,6 +52,12 @@ class ShopDto {
     platform: j['platform'] as String,
     resolution: (j['resolution'] as String?) ?? '720p',
     role: (j['role'] as String?) ?? 'owner',
+    clipSeconds: _int(j['effective_clip_seconds'], 120),
+    recommendedClipSeconds: _int(j['recommended_clip_seconds'], 120),
+    planMaxClipSeconds: _int(j['plan_max_clip_seconds'], 900),
+    maxImageBytes: _int(j['max_image_bytes'], 10000000),
+    maxVideoBytes: _int(j['max_video_bytes'], 30000000),
+    platformLimitsVerified: (j['platform_limits_verified'] as bool?) ?? true,
   );
 
   final String id;
@@ -55,6 +67,15 @@ class ShopDto {
 
   /// owner | manager | staff
   final String role;
+
+  /// Ngân sách clip (FR-17/FR-18). Backend đã kẹp [clipSeconds] vào trần gói,
+  /// nên app dùng thẳng, không tính lại.
+  final int clipSeconds;
+  final int recommendedClipSeconds;
+  final int planMaxClipSeconds;
+  final int maxImageBytes;
+  final int maxVideoBytes;
+  final bool platformLimitsVerified;
 }
 
 class MemberDto {
@@ -156,6 +177,31 @@ class OrderSummaryDto {
   final int pendingCount;
 }
 
+/// Một trang của danh sách vận đơn (F2-01). [total] là tổng số đơn khớp bộ
+/// lọc, không phải số đơn trong trang — thanh phân trang cần nó để biết có
+/// bao nhiêu trang và hiện "1–10 / 128".
+class OrderPageDto {
+  const OrderPageDto({
+    required this.items,
+    required this.total,
+    required this.page,
+    required this.pageSize,
+  });
+
+  final List<OrderSummaryDto> items;
+  final int total;
+
+  /// 1-based, đúng trang vừa yêu cầu.
+  final int page;
+  final int pageSize;
+
+  int get pageCount => total <= 0 ? 1 : (total + pageSize - 1) ~/ pageSize;
+
+  /// Số thứ tự (1-based) của đơn đầu/cuối trang này, cho nhãn "1–10 / 128".
+  int get firstIndex => items.isEmpty ? 0 : (page - 1) * pageSize + 1;
+  int get lastIndex => items.isEmpty ? 0 : firstIndex + items.length - 1;
+}
+
 class EvidenceDto {
   const EvidenceDto({
     required this.id,
@@ -166,9 +212,12 @@ class EvidenceDto {
     this.createdByUid,
     this.device,
     this.r2Key,
+    this.thumbUrl,
+    this.sha256,
     this.url,
     this.retentionExpiresAt,
     this.durationSeconds,
+    this.clockSkewMs,
   });
 
   factory EvidenceDto.fromJson(Map<String, dynamic> j) => EvidenceDto(
@@ -181,8 +230,11 @@ class EvidenceDto {
     device: j['device'] as String?,
     r2Key: j['r2_key'] as String?,
     url: j['url'] as String?,
+    thumbUrl: j['thumb_url'] as String?,
+    sha256: j['sha256'] as String?,
     retentionExpiresAt: _intN(j['retention_expires_at']),
     durationSeconds: _intN(j['duration_seconds']),
+    clockSkewMs: _intN(j['clock_skew_ms']),
   );
 
   final String id;
@@ -200,10 +252,44 @@ class EvidenceDto {
   final String? r2Key;
   final String? url;
 
+  /// Poster frame for this clip — a few dozen KB, so a timeline can show every
+  /// entry without pulling a single video byte. Null for photos (their own
+  /// preview), for expired evidence, and when frame extraction failed.
+  final String? thumbUrl;
+
+  /// SHA-256 (lowercase hex) of the uploaded bytes, computed on the recording
+  /// phone and recorded once at upload time. Re-hashing the stored object and
+  /// getting this value back proves it has not been altered since.
+  final String? sha256;
+
   /// Recorded clip length in seconds; null for photos and older evidence
   /// captured before this field existed.
   final int? durationSeconds;
+
+  /// How far the recording phone's clock was from server time when this
+  /// evidence was uploaded (positive = phone ahead), in ms. Null for evidence
+  /// uploaded by a client that predates the measurement.
+  ///
+  /// [capturedAt] is a phone-clock reading, so it is only as trustworthy as
+  /// this number is small — see [hasUntrustedClock].
+  final int? clockSkewMs;
+
+  /// True when the phone's clock was off by more than [kClockSkewToleranceMs],
+  /// i.e. [capturedAt] should not be presented as the authoritative packing
+  /// time without a caveat.
+  ///
+  /// Derived, never stored: the tolerance is a policy that can change, and a
+  /// persisted flag would freeze old rows at whatever it used to be.
+  bool get hasUntrustedClock =>
+      clockSkewMs != null && clockSkewMs!.abs() > kClockSkewToleranceMs;
 }
+
+/// Device-clock error we treat as normal drift rather than a wrong clock.
+///
+/// 2 minutes: comfortably above the seconds of round-trip and NTP jitter a
+/// healthy phone shows, far below the timezone- or date-sized mistakes that
+/// actually misdate evidence.
+const int kClockSkewToleranceMs = 2 * 60 * 1000;
 
 class OrderDetailDto {
   const OrderDetailDto({required this.order, required this.evidence});
@@ -254,17 +340,23 @@ class PresignDto {
     required this.evidenceId,
     required this.key,
     required this.uploadUrl,
+    this.thumbUploadUrl,
   });
 
   factory PresignDto.fromJson(Map<String, dynamic> j) => PresignDto(
     evidenceId: j['evidenceId'] as String,
     key: j['key'] as String,
     uploadUrl: j['uploadUrl'] as String,
+    thumbUploadUrl: j['thumbUploadUrl'] as String?,
   );
 
   final String evidenceId;
   final String key;
   final String uploadUrl;
+
+  /// Where to PUT the poster frame extracted from this clip. Null for photos
+  /// (their own preview) and for a backend that predates posters.
+  final String? thumbUploadUrl;
 }
 
 class MultipartUploadDto {
@@ -272,6 +364,7 @@ class MultipartUploadDto {
     required this.evidenceId,
     required this.key,
     required this.uploadId,
+    this.thumbUploadUrl,
   });
 
   factory MultipartUploadDto.fromJson(Map<String, dynamic> j) =>
@@ -279,11 +372,16 @@ class MultipartUploadDto {
         evidenceId: j['evidenceId'] as String,
         key: j['key'] as String,
         uploadId: j['uploadId'] as String,
+        thumbUploadUrl: j['thumbUploadUrl'] as String?,
       );
 
   final String evidenceId;
   final String key;
   final String uploadId;
+
+  /// See [PresignDto.thumbUploadUrl] — a poster is small enough to never need
+  /// multipart, so it is a plain PUT even on this path.
+  final String? thumbUploadUrl;
 }
 
 class MultipartPartUrlDto {

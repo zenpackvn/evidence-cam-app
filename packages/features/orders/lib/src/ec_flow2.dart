@@ -52,6 +52,7 @@ class EcTimelineVideo {
     this.device,
     this.uploadStatus,
     this.mediaUrl,
+    this.thumbUrl,
     this.type = EcEvidenceType.video,
     this.statusText,
     this.statusIcon,
@@ -71,6 +72,11 @@ class EcTimelineVideo {
   final String? device;
   final String? uploadStatus;
   final String? mediaUrl;
+
+  /// Poster frame URL — a few dozen KB, shown in place of the leading icon so
+  /// the row is recognisable without downloading any video. Null falls back to
+  /// the icon (photos, expired evidence, older clips with no poster).
+  final String? thumbUrl;
 
   /// Evidence kind, driving the leading icon.
   final EcEvidenceType type;
@@ -755,18 +761,7 @@ class _EcTimelineVideoRow extends StatelessWidget {
               horizontal: 11,
             ),
             children: [
-              PenBox(
-                width: 42,
-                height: 42,
-                fill: PenColors.bg,
-                radius: 10,
-                axis: PenAxis.row,
-                main: MainAxisAlignment.center,
-                cross: CrossAxisAlignment.center,
-                children: [
-                  Icon(video.type.icon, size: 21, color: PenColors.ink),
-                ],
-              ),
+              _EcTimelineThumb(video: video),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -811,6 +806,54 @@ class _EcTimelineVideoRow extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Leading square of a timeline row: the clip's own poster frame when there is
+/// one, otherwise the kind icon.
+///
+/// Every fallback lands on the same icon square, so a missing, still-uploading
+/// or broken poster looks like the old design rather than like a bug.
+class _EcTimelineThumb extends StatelessWidget {
+  const _EcTimelineThumb({required this.video});
+
+  static const _size = 42.0;
+  static const _radius = 10.0;
+
+  final EcTimelineVideo video;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = video.thumbUrl;
+    if (url == null) return _icon();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(_radius),
+      child: Image.network(
+        url,
+        width: _size,
+        height: _size,
+        // A poster is 16:9 and the slot is square — crop rather than letterbox,
+        // so the row keeps its rhythm down the list.
+        fit: BoxFit.cover,
+        // Bounded so a large source decodes small: the whole point of the
+        // poster is that a timeline costs almost no memory or bandwidth.
+        cacheWidth: (_size * MediaQuery.devicePixelRatioOf(context)).round(),
+        errorBuilder: (context, error, stackTrace) => _icon(),
+        loadingBuilder: (context, child, progress) =>
+            progress == null ? child : _icon(),
+      ),
+    );
+  }
+
+  Widget _icon() => PenBox(
+    width: _size,
+    height: _size,
+    fill: PenColors.bg,
+    radius: _radius,
+    axis: PenAxis.row,
+    main: MainAxisAlignment.center,
+    cross: CrossAxisAlignment.center,
+    children: [Icon(video.type.icon, size: 21, color: PenColors.ink)],
+  );
 }
 
 class _EcStatusBadge extends StatelessWidget {

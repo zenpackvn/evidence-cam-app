@@ -191,72 +191,71 @@ class PenF102 extends StatelessWidget {
                 axis: PenAxis.column,
                 cross: CrossAxisAlignment.center,
                 hugMain: true,
-                padding: EdgeInsets.fromLTRB(26, 44, 26, 0),
+                padding: EdgeInsets.fromLTRB(26, 14, 26, 0),
                 children: [
                   PenBox(
-                    width: 76.8,
-                    height: 76.8,
-                    axis: PenAxis.stack,
-                    clip: true,
+                    width: double.infinity,
+                    axis: PenAxis.column,
+                    gap: 3,
+                    cross: CrossAxisAlignment.center,
+                    hugMain: true,
                     children: [
                       PenBox(
-                        width: 76.8,
-                        height: 76.8,
+                        width: 40,
+                        height: 40,
                         image: const AssetImage(
                           'assets/design/logo.png',
                           package: 'ec_ui',
                         ),
-                        imageFit: BoxFit.cover,
+                        imageFit: BoxFit.contain,
                       ),
-                    ],
-                  ),
-                  PenText(
-                    'ZenPack',
-                    size: 30,
-                    color: const Color(0xFF16522C),
-                    weight: FontWeight.w800,
-                    softWrap: false,
-                  ),
-                  PenBox(
-                    width: double.infinity,
-                    axis: PenAxis.row,
-                    gap: 10,
-                    cross: CrossAxisAlignment.center,
-                    padding: EdgeInsets.fromLTRB(40, 8, 40, 0),
-                    children: [
-                      Expanded(
-                        child: PenBox(
-                          height: 1,
-                          fill: const Color(0xFFF3F3F3),
-                        ),
+                      PenText(
+                        'ZenPack',
+                        size: 18,
+                        color: const Color(0xFF16522C),
+                        weight: FontWeight.w800,
+                        softWrap: false,
                       ),
-                      PenPath(
-                        'M7 0l1.6 5.4 5.4 1.6-5.4 1.6-1.6 5.4-1.6-5.4-5.4-1.6 5.4-1.6z',
-                        viewBox: const [0, 0, 14, 14],
-                        width: 12,
-                        height: 12,
-                        color: const Color(0xFFE4E4E4),
-                      ),
-                      Expanded(
-                        child: PenBox(
-                          height: 1,
-                          fill: const Color(0xFFF3F3F3),
-                        ),
+                      PenBox(
+                        axis: PenAxis.row,
+                        gap: 8,
+                        cross: CrossAxisAlignment.center,
+                        hugMain: true,
+                        padding: EdgeInsets.fromLTRB(0, 6, 0, 0),
+                        children: [
+                          PenBox(
+                            width: 44,
+                            height: 1,
+                            fill: const Color(0xFFF3F3F3),
+                          ),
+                          PenPath(
+                            'M7 0l1.6 5.4 5.4 1.6-5.4 1.6-1.6 5.4-1.6-5.4-5.4-1.6 5.4-1.6z',
+                            viewBox: const [0, 0, 14, 14],
+                            width: 10,
+                            height: 10,
+                            color: const Color(0xFFE4E4E4),
+                          ),
+                          PenBox(
+                            width: 44,
+                            height: 1,
+                            fill: const Color(0xFFF3F3F3),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                   PenBox(
                     width: double.infinity,
                     axis: PenAxis.column,
-                    gap: 5,
+                    gap: 4,
                     cross: CrossAxisAlignment.center,
                     hugMain: true,
-                    padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                    padding: EdgeInsets.fromLTRB(0, 12, 0, 0),
                     children: [
                       PenText(
                         'Đăng nhập',
                         size: 30,
-                        color: const Color(0xFF2266A4),
+                        color: const Color(0xFF16522C),
                         weight: FontWeight.w800,
                         softWrap: false,
                       ),
@@ -271,112 +270,128 @@ class PenF102 extends StatelessWidget {
                   PenBox(
                     width: double.infinity,
                     axis: PenAxis.column,
-                    gap: 16,
+                    gap: 25,
                     hugMain: true,
-                    padding: EdgeInsets.fromLTRB(0, 26, 0, 0),
+                    padding: EdgeInsets.fromLTRB(0, 18, 0, 0),
                     children: [
                       PenBox(
                         width: double.infinity,
                         axis: PenAxis.column,
-                        gap: 8,
+                        gap: 20,
                         hugMain: true,
                         children: [
-                          PenText(
-                            'Email',
-                            size: 14,
-                            color: const Color(0xFF161616),
-                            weight: FontWeight.w600,
-                            softWrap: false,
-                          ),
                           PenBox(
                             width: double.infinity,
-                            height: 60,
-                            fill: const Color(0xFFFFFFFF),
-                            stroke: const Color(0xFFE4E4E4),
-                            radius: 14,
-                            axis: PenAxis.row,
-                            gap: 13,
-                            cross: CrossAxisAlignment.center,
-                            padding: EdgeInsets.symmetric(
-                              vertical: 0,
-                              horizontal: 18,
-                            ),
+                            axis: PenAxis.column,
+                            gap: 8,
+                            hugMain: true,
                             children: [
-                              Icon(
-                                LucideIcons.mail,
-                                size: 21,
+                              PenText(
+                                'Email',
+                                size: 14,
                                 color: const Color(0xFF161616),
+                                weight: FontWeight.w600,
+                                softWrap: false,
                               ),
-                              Expanded(
-                                child: PenText(
-                                  'Nhập email của bạn',
-                                  size: 14,
-                                  color: const Color(0xFF636363),
+                              PenBox(
+                                width: double.infinity,
+                                height: 60,
+                                fill: const Color(0xFFFFFFFF),
+                                stroke: const Color(0xFFE4E4E4),
+                                radius: 14,
+                                axis: PenAxis.row,
+                                gap: 13,
+                                cross: CrossAxisAlignment.center,
+                                padding: EdgeInsets.symmetric(
+                                  vertical: 0,
+                                  horizontal: 18,
                                 ),
+                                children: [
+                                  Icon(
+                                    LucideIcons.mail,
+                                    size: 21,
+                                    color: const Color(0xFF161616),
+                                  ),
+                                  Expanded(
+                                    child: PenText(
+                                      'Nhập email của bạn',
+                                      size: 14,
+                                      color: const Color(0xFF636363),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                      PenBox(
-                        width: double.infinity,
-                        axis: PenAxis.column,
-                        gap: 8,
-                        hugMain: true,
-                        children: [
-                          PenText(
-                            'Mật khẩu',
-                            size: 14,
-                            color: const Color(0xFF161616),
-                            weight: FontWeight.w600,
-                            softWrap: false,
-                          ),
                           PenBox(
                             width: double.infinity,
-                            height: 60,
-                            fill: const Color(0xFFFFFFFF),
-                            stroke: const Color(0xFFE4E4E4),
-                            radius: 14,
-                            axis: PenAxis.row,
-                            gap: 13,
-                            cross: CrossAxisAlignment.center,
-                            padding: EdgeInsets.symmetric(
-                              vertical: 0,
-                              horizontal: 18,
-                            ),
+                            axis: PenAxis.column,
+                            gap: 10,
+                            hugMain: true,
                             children: [
-                              Icon(
-                                LucideIcons.lock,
-                                size: 21,
-                                color: const Color(0xFF161616),
+                              PenBox(
+                                width: double.infinity,
+                                axis: PenAxis.column,
+                                gap: 8,
+                                hugMain: true,
+                                children: [
+                                  PenText(
+                                    'Mật khẩu',
+                                    size: 14,
+                                    color: const Color(0xFF161616),
+                                    weight: FontWeight.w600,
+                                    softWrap: false,
+                                  ),
+                                  PenBox(
+                                    width: double.infinity,
+                                    height: 60,
+                                    fill: const Color(0xFFFFFFFF),
+                                    stroke: const Color(0xFFE4E4E4),
+                                    radius: 14,
+                                    axis: PenAxis.row,
+                                    gap: 13,
+                                    cross: CrossAxisAlignment.center,
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: 0,
+                                      horizontal: 18,
+                                    ),
+                                    children: [
+                                      Icon(
+                                        LucideIcons.lock,
+                                        size: 21,
+                                        color: const Color(0xFF161616),
+                                      ),
+                                      Expanded(
+                                        child: PenText(
+                                          'Nhập mật khẩu của bạn',
+                                          size: 14,
+                                          color: const Color(0xFF636363),
+                                        ),
+                                      ),
+                                      Icon(
+                                        LucideIcons.eye,
+                                        size: 21,
+                                        color: const Color(0xFF161616),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                              Expanded(
-                                child: PenText(
-                                  'Nhập mật khẩu của bạn',
-                                  size: 14,
-                                  color: const Color(0xFF636363),
-                                ),
-                              ),
-                              Icon(
-                                LucideIcons.eye,
-                                size: 21,
-                                color: const Color(0xFF161616),
+                              PenBox(
+                                width: double.infinity,
+                                axis: PenAxis.row,
+                                main: MainAxisAlignment.end,
+                                children: [
+                                  PenText(
+                                    'Quên mật khẩu?',
+                                    size: 14,
+                                    color: const Color(0xFF16522C),
+                                    weight: FontWeight.w600,
+                                    softWrap: false,
+                                  ),
+                                ],
                               ),
                             ],
-                          ),
-                        ],
-                      ),
-                      PenBox(
-                        width: double.infinity,
-                        axis: PenAxis.row,
-                        main: MainAxisAlignment.end,
-                        children: [
-                          PenText(
-                            'Quên mật khẩu?',
-                            size: 14,
-                            color: const Color(0xFF2266A4),
-                            weight: FontWeight.w600,
-                            softWrap: false,
                           ),
                         ],
                       ),
@@ -403,10 +418,6 @@ class PenF102 extends StatelessWidget {
                         axis: PenAxis.row,
                         gap: 12,
                         cross: CrossAxisAlignment.center,
-                        padding: EdgeInsets.symmetric(
-                          vertical: 4,
-                          horizontal: 0,
-                        ),
                         children: [
                           Expanded(
                             child: PenBox(
@@ -430,83 +441,91 @@ class PenF102 extends StatelessWidget {
                       ),
                       PenBox(
                         width: double.infinity,
-                        height: 60,
-                        fill: const Color(0xFFFFFFFF),
-                        stroke: const Color(0xFFE4E4E4),
-                        radius: 14,
-                        axis: PenAxis.row,
+                        axis: PenAxis.column,
                         gap: 12,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
+                        hugMain: true,
                         children: [
                           PenBox(
-                            width: 22,
-                            height: 22,
-                            axis: PenAxis.stack,
+                            width: double.infinity,
+                            height: 60,
+                            fill: const Color(0xFFFFFFFF),
+                            stroke: const Color(0xFFE4E4E4),
+                            radius: 14,
+                            axis: PenAxis.row,
+                            gap: 12,
+                            main: MainAxisAlignment.center,
+                            cross: CrossAxisAlignment.center,
                             children: [
-                              PenPath(
-                                'M45.12 24.5c0-1.56-0.14-3.06-0.4-4.5h-20.72v8.51h11.84c-0.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z',
-                                viewBox: const [0, 0, 48, 48],
+                              PenBox(
                                 width: 22,
                                 height: 22,
-                                color: const Color(0xFF4285F4),
+                                axis: PenAxis.stack,
+                                children: [
+                                  PenPath(
+                                    'M45.12 24.5c0-1.56-0.14-3.06-0.4-4.5h-20.72v8.51h11.84c-0.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z',
+                                    viewBox: const [0, 0, 48, 48],
+                                    width: 22,
+                                    height: 22,
+                                    color: const Color(0xFF4285F4),
+                                  ),
+                                  PenPath(
+                                    'M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07h-7.35v5.7c3.62 7.19 11.06 12.12 19.66 12.12z',
+                                    viewBox: const [0, 0, 48, 48],
+                                    width: 22,
+                                    height: 22,
+                                    color: const Color(0xFF34A853),
+                                  ),
+                                  PenPath(
+                                    'M11.69 28.18c-0.44-1.32-0.69-2.73-0.69-4.18s0.25-2.86 0.69-4.18v-5.7h-7.35c-1.49 2.97-2.34 6.33-2.34 9.88s0.85 6.91 2.34 9.88l7.35-5.7z',
+                                    viewBox: const [0, 0, 48, 48],
+                                    width: 22,
+                                    height: 22,
+                                    color: const Color(0xFFFBBC05),
+                                  ),
+                                  PenPath(
+                                    'M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31c-3.81-3.55-8.79-5.73-14.72-5.73-8.6 0-16.04 4.93-19.66 12.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z',
+                                    viewBox: const [0, 0, 48, 48],
+                                    width: 22,
+                                    height: 22,
+                                    color: const Color(0xFFEA4335),
+                                  ),
+                                ],
                               ),
-                              PenPath(
-                                'M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07h-7.35v5.7c3.62 7.19 11.06 12.12 19.66 12.12z',
-                                viewBox: const [0, 0, 48, 48],
-                                width: 22,
-                                height: 22,
-                                color: const Color(0xFF34A853),
-                              ),
-                              PenPath(
-                                'M11.69 28.18c-0.44-1.32-0.69-2.73-0.69-4.18s0.25-2.86 0.69-4.18v-5.7h-7.35c-1.49 2.97-2.34 6.33-2.34 9.88s0.85 6.91 2.34 9.88l7.35-5.7z',
-                                viewBox: const [0, 0, 48, 48],
-                                width: 22,
-                                height: 22,
-                                color: const Color(0xFFFBBC05),
-                              ),
-                              PenPath(
-                                'M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31c-3.81-3.55-8.79-5.73-14.72-5.73-8.6 0-16.04 4.93-19.66 12.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z',
-                                viewBox: const [0, 0, 48, 48],
-                                width: 22,
-                                height: 22,
-                                color: const Color(0xFFEA4335),
+                              PenText(
+                                'Đăng nhập với Google',
+                                size: 16,
+                                color: const Color(0xFF161616),
+                                weight: FontWeight.w600,
+                                softWrap: false,
                               ),
                             ],
                           ),
-                          PenText(
-                            'Đăng nhập với Google',
-                            size: 16,
-                            color: const Color(0xFF161616),
-                            weight: FontWeight.w600,
-                            softWrap: false,
-                          ),
-                        ],
-                      ),
-                      PenBox(
-                        width: double.infinity,
-                        height: 60,
-                        fill: const Color(0xFFFFFFFF),
-                        stroke: const Color(0xFFE4E4E4),
-                        radius: 14,
-                        axis: PenAxis.row,
-                        gap: 12,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          PenPath(
-                            'M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-0.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1-67.4 0-84.6-39.5-162.4-39.5-75.9 0-102.9 40.8-164.5 40.8-56.3 0-88.9-57-125.6-127.4-82.3-123.9-116.7-242-116.7-353.6 0-183.7 119.4-281 236.9-281 62.4 0 114.4 41 153.6 41 37.3 0 95.4-43.5 166.4-43.5 26.9 0 129.3 2.4 210.5 105.5z m-214-195.2c29.6-35.1 50.5-83.8 50.5-132.5 0-6.8-0.6-13.6-1.8-19.2-48.2 1.8-105.5 32.1-140 72.3-27 30.6-52.6 79.3-52.6 128.7 0 6.1 0.6 12.2 1.2 14.2 3.2 0.6 8.4 1.3 13.6 1.3 43.2 0 97.5-28.9 129.1-64.8z',
-                            viewBox: const [0, 0, 814, 1000],
-                            width: 19,
-                            height: 23,
-                            color: const Color(0xFF161616),
-                          ),
-                          PenText(
-                            'Đăng nhập với Apple',
-                            size: 16,
-                            color: const Color(0xFF161616),
-                            weight: FontWeight.w600,
-                            softWrap: false,
+                          PenBox(
+                            width: double.infinity,
+                            height: 60,
+                            fill: const Color(0xFFFFFFFF),
+                            stroke: const Color(0xFFE4E4E4),
+                            radius: 14,
+                            axis: PenAxis.row,
+                            gap: 12,
+                            main: MainAxisAlignment.center,
+                            cross: CrossAxisAlignment.center,
+                            children: [
+                              PenPath(
+                                'M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-0.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1-67.4 0-84.6-39.5-162.4-39.5-75.9 0-102.9 40.8-164.5 40.8-56.3 0-88.9-57-125.6-127.4-82.3-123.9-116.7-242-116.7-353.6 0-183.7 119.4-281 236.9-281 62.4 0 114.4 41 153.6 41 37.3 0 95.4-43.5 166.4-43.5 26.9 0 129.3 2.4 210.5 105.5z m-214-195.2c29.6-35.1 50.5-83.8 50.5-132.5 0-6.8-0.6-13.6-1.8-19.2-48.2 1.8-105.5 32.1-140 72.3-27 30.6-52.6 79.3-52.6 128.7 0 6.1 0.6 12.2 1.2 14.2 3.2 0.6 8.4 1.3 13.6 1.3 43.2 0 97.5-28.9 129.1-64.8z',
+                                viewBox: const [0, 0, 814, 1000],
+                                width: 19,
+                                height: 23,
+                                color: const Color(0xFF161616),
+                              ),
+                              PenText(
+                                'Đăng nhập với Apple',
+                                size: 16,
+                                color: const Color(0xFF161616),
+                                weight: FontWeight.w600,
+                                softWrap: false,
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -515,7 +534,6 @@ class PenF102 extends StatelessWidget {
                         axis: PenAxis.row,
                         gap: 6,
                         main: MainAxisAlignment.center,
-                        padding: EdgeInsets.fromLTRB(0, 6, 0, 0),
                         children: [
                           PenText(
                             'Bạn chưa có tài khoản?',
@@ -526,7 +544,7 @@ class PenF102 extends StatelessWidget {
                           PenText(
                             'Đăng ký',
                             size: 14,
-                            color: const Color(0xFF2266A4),
+                            color: const Color(0xFF16522C),
                             weight: FontWeight.w700,
                             softWrap: false,
                           ),
@@ -540,71 +558,19 @@ class PenF102 extends StatelessWidget {
           ),
         ),
         Positioned(
-          right: 16,
-          bottom: 40,
-          child: PenPath(
-            'M15 42c-9 0-15-7-15-14 0-8 6-14 13-14 2-8 10-14 18-14 9 0 17 7 19 15 1 0 2-1 4-1 10 0 20 7 20 15 0 7-7 13-15 13z',
-            viewBox: const [0, 0, 74, 42],
-            width: 74,
-            height: 42,
-            color: const Color(0xFFF3F3F3),
-          ),
-        ),
-        Positioned(
-          left: 26,
-          bottom: 82,
-          child: PenEllipse(
-            width: 44,
-            height: 20,
-            color: const Color(0xFFF3F3F3),
-            rotation: -18,
-          ),
-        ),
-        Positioned(
-          left: 18,
-          bottom: 60,
-          child: PenEllipse(
-            width: 48,
-            height: 20,
-            color: const Color(0xFFF3F3F3),
-            rotation: 8,
-          ),
-        ),
-        Positioned(
-          left: 34,
-          bottom: 42,
-          child: PenEllipse(
-            width: 40,
-            height: 18,
-            color: const Color(0xFFF3F3F3),
-            rotation: 26,
-          ),
-        ),
-        Positioned(
-          left: 38,
-          bottom: 40,
-          child: PenBox(
-            width: 3,
-            height: 56,
-            fill: const Color(0xFFF3F3F3),
-            radius: 2,
-            rotation: -8,
-          ),
-        ),
-        Positioned(
-          right: 100,
-          top: 24,
+          right: 96,
+          top: 14,
           child: PenBox(
             fill: const Color(0xFFFFFFFF),
             stroke: const Color(0xFFE4E4E4),
             radius: 999,
             axis: PenAxis.row,
-            gap: 7,
+            gap: 6,
             cross: CrossAxisAlignment.center,
             hugMain: true,
-            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             children: [
-              Icon(LucideIcons.globe, size: 18, color: const Color(0xFF161616)),
+              Icon(LucideIcons.globe, size: 16, color: const Color(0xFF161616)),
               PenText(
                 'VI',
                 size: 14,
@@ -614,7 +580,7 @@ class PenF102 extends StatelessWidget {
               ),
               Icon(
                 LucideIcons.chevronDown,
-                size: 15,
+                size: 14,
                 color: const Color(0xFF636363),
               ),
             ],
@@ -645,44 +611,71 @@ class PenF103 extends StatelessWidget {
                 axis: PenAxis.column,
                 cross: CrossAxisAlignment.center,
                 hugMain: true,
-                padding: EdgeInsets.fromLTRB(26, 26, 26, 0),
+                padding: EdgeInsets.fromLTRB(26, 14, 26, 0),
                 children: [
                   PenBox(
-                    width: 60,
-                    height: 60,
-                    axis: PenAxis.stack,
-                    clip: true,
+                    width: double.infinity,
+                    axis: PenAxis.column,
+                    gap: 3,
+                    cross: CrossAxisAlignment.center,
+                    hugMain: true,
                     children: [
                       PenBox(
-                        width: 60,
-                        height: 60,
+                        width: 40,
+                        height: 40,
                         image: const AssetImage(
                           'assets/design/logo.png',
                           package: 'ec_ui',
                         ),
-                        imageFit: BoxFit.cover,
+                        imageFit: BoxFit.contain,
+                      ),
+                      PenText(
+                        'ZenPack',
+                        size: 18,
+                        color: const Color(0xFF16522C),
+                        weight: FontWeight.w800,
+                        softWrap: false,
+                      ),
+                      PenBox(
+                        axis: PenAxis.row,
+                        gap: 8,
+                        cross: CrossAxisAlignment.center,
+                        hugMain: true,
+                        padding: EdgeInsets.fromLTRB(0, 6, 0, 0),
+                        children: [
+                          PenBox(
+                            width: 44,
+                            height: 1,
+                            fill: const Color(0xFFF3F3F3),
+                          ),
+                          PenPath(
+                            'M7 0l1.6 5.4 5.4 1.6-5.4 1.6-1.6 5.4-1.6-5.4-5.4-1.6 5.4-1.6z',
+                            viewBox: const [0, 0, 14, 14],
+                            width: 10,
+                            height: 10,
+                            color: const Color(0xFFE4E4E4),
+                          ),
+                          PenBox(
+                            width: 44,
+                            height: 1,
+                            fill: const Color(0xFFF3F3F3),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                  PenText(
-                    'ZenPack',
-                    size: 24,
-                    color: const Color(0xFF16522C),
-                    weight: FontWeight.w800,
-                    softWrap: false,
                   ),
                   PenBox(
                     width: double.infinity,
                     axis: PenAxis.column,
-                    gap: 2,
+                    gap: 4,
                     cross: CrossAxisAlignment.center,
                     hugMain: true,
-                    padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
+                    padding: EdgeInsets.fromLTRB(0, 12, 0, 0),
                     children: [
                       PenText(
                         'Đăng ký',
                         size: 30,
-                        color: const Color(0xFF2266A4),
+                        color: const Color(0xFF16522C),
                         weight: FontWeight.w800,
                         softWrap: false,
                       ),
@@ -697,9 +690,9 @@ class PenF103 extends StatelessWidget {
                   PenBox(
                     width: double.infinity,
                     axis: PenAxis.column,
-                    gap: 11,
+                    gap: 8,
                     hugMain: true,
-                    padding: EdgeInsets.fromLTRB(0, 22, 0, 0),
+                    padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
                     children: [
                       PenBox(
                         width: double.infinity,
@@ -937,7 +930,7 @@ class PenF103 extends StatelessWidget {
                           PenText(
                             'Điều khoản sử dụng',
                             size: 14,
-                            color: const Color(0xFF2266A4),
+                            color: const Color(0xFF16522C),
                             weight: FontWeight.w600,
                             softWrap: false,
                           ),
@@ -993,92 +986,91 @@ class PenF103 extends StatelessWidget {
                       ),
                       PenBox(
                         width: double.infinity,
-                        axis: PenAxis.row,
+                        axis: PenAxis.column,
                         gap: 12,
+                        hugMain: true,
                         children: [
-                          Expanded(
-                            child: PenBox(
-                              height: 56,
-                              fill: const Color(0xFFFFFFFF),
-                              stroke: const Color(0xFFE4E4E4),
-                              radius: 14,
-                              axis: PenAxis.row,
-                              gap: 10,
-                              main: MainAxisAlignment.center,
-                              cross: CrossAxisAlignment.center,
-                              children: [
-                                PenBox(
-                                  width: 21,
-                                  height: 21,
-                                  axis: PenAxis.stack,
-                                  children: [
-                                    PenPath(
-                                      'M45.12 24.5c0-1.56-0.14-3.06-0.4-4.5h-20.72v8.51h11.84c-0.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z',
-                                      viewBox: const [0, 0, 48, 48],
-                                      width: 21,
-                                      height: 21,
-                                      color: const Color(0xFF4285F4),
-                                    ),
-                                    PenPath(
-                                      'M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07h-7.35v5.7c3.62 7.19 11.06 12.12 19.66 12.12z',
-                                      viewBox: const [0, 0, 48, 48],
-                                      width: 21,
-                                      height: 21,
-                                      color: const Color(0xFF34A853),
-                                    ),
-                                    PenPath(
-                                      'M11.69 28.18c-0.44-1.32-0.69-2.73-0.69-4.18s0.25-2.86 0.69-4.18v-5.7h-7.35c-1.49 2.97-2.34 6.33-2.34 9.88s0.85 6.91 2.34 9.88l7.35-5.7z',
-                                      viewBox: const [0, 0, 48, 48],
-                                      width: 21,
-                                      height: 21,
-                                      color: const Color(0xFFFBBC05),
-                                    ),
-                                    PenPath(
-                                      'M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31c-3.81-3.55-8.79-5.73-14.72-5.73-8.6 0-16.04 4.93-19.66 12.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z',
-                                      viewBox: const [0, 0, 48, 48],
-                                      width: 21,
-                                      height: 21,
-                                      color: const Color(0xFFEA4335),
-                                    ),
-                                  ],
-                                ),
-                                PenText(
-                                  'Google',
-                                  size: 16,
-                                  color: const Color(0xFF161616),
-                                  weight: FontWeight.w600,
-                                  softWrap: false,
-                                ),
-                              ],
-                            ),
+                          PenBox(
+                            width: double.infinity,
+                            height: 60,
+                            fill: const Color(0xFFFFFFFF),
+                            stroke: const Color(0xFFE4E4E4),
+                            radius: 14,
+                            axis: PenAxis.row,
+                            gap: 12,
+                            main: MainAxisAlignment.center,
+                            cross: CrossAxisAlignment.center,
+                            children: [
+                              PenBox(
+                                width: 22,
+                                height: 22,
+                                axis: PenAxis.stack,
+                                children: [
+                                  PenPath(
+                                    'M45.12 24.5c0-1.56-0.14-3.06-0.4-4.5h-20.72v8.51h11.84c-0.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z',
+                                    viewBox: const [0, 0, 48, 48],
+                                    width: 22,
+                                    height: 22,
+                                    color: const Color(0xFF4285F4),
+                                  ),
+                                  PenPath(
+                                    'M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07h-7.35v5.7c3.62 7.19 11.06 12.12 19.66 12.12z',
+                                    viewBox: const [0, 0, 48, 48],
+                                    width: 22,
+                                    height: 22,
+                                    color: const Color(0xFF34A853),
+                                  ),
+                                  PenPath(
+                                    'M11.69 28.18c-0.44-1.32-0.69-2.73-0.69-4.18s0.25-2.86 0.69-4.18v-5.7h-7.35c-1.49 2.97-2.34 6.33-2.34 9.88s0.85 6.91 2.34 9.88l7.35-5.7z',
+                                    viewBox: const [0, 0, 48, 48],
+                                    width: 22,
+                                    height: 22,
+                                    color: const Color(0xFFFBBC05),
+                                  ),
+                                  PenPath(
+                                    'M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31c-3.81-3.55-8.79-5.73-14.72-5.73-8.6 0-16.04 4.93-19.66 12.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z',
+                                    viewBox: const [0, 0, 48, 48],
+                                    width: 22,
+                                    height: 22,
+                                    color: const Color(0xFFEA4335),
+                                  ),
+                                ],
+                              ),
+                              PenText(
+                                'Đăng ký với Google',
+                                size: 16,
+                                color: const Color(0xFF161616),
+                                weight: FontWeight.w600,
+                                softWrap: false,
+                              ),
+                            ],
                           ),
-                          Expanded(
-                            child: PenBox(
-                              height: 56,
-                              fill: const Color(0xFFFFFFFF),
-                              stroke: const Color(0xFFE4E4E4),
-                              radius: 14,
-                              axis: PenAxis.row,
-                              gap: 10,
-                              main: MainAxisAlignment.center,
-                              cross: CrossAxisAlignment.center,
-                              children: [
-                                PenPath(
-                                  'M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-0.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1-67.4 0-84.6-39.5-162.4-39.5-75.9 0-102.9 40.8-164.5 40.8-56.3 0-88.9-57-125.6-127.4-82.3-123.9-116.7-242-116.7-353.6 0-183.7 119.4-281 236.9-281 62.4 0 114.4 41 153.6 41 37.3 0 95.4-43.5 166.4-43.5 26.9 0 129.3 2.4 210.5 105.5z m-214-195.2c29.6-35.1 50.5-83.8 50.5-132.5 0-6.8-0.6-13.6-1.8-19.2-48.2 1.8-105.5 32.1-140 72.3-27 30.6-52.6 79.3-52.6 128.7 0 6.1 0.6 12.2 1.2 14.2 3.2 0.6 8.4 1.3 13.6 1.3 43.2 0 97.5-28.9 129.1-64.8z',
-                                  viewBox: const [0, 0, 814, 1000],
-                                  width: 18,
-                                  height: 22,
-                                  color: const Color(0xFF161616),
-                                ),
-                                PenText(
-                                  'Apple',
-                                  size: 16,
-                                  color: const Color(0xFF161616),
-                                  weight: FontWeight.w600,
-                                  softWrap: false,
-                                ),
-                              ],
-                            ),
+                          PenBox(
+                            width: double.infinity,
+                            height: 60,
+                            fill: const Color(0xFFFFFFFF),
+                            stroke: const Color(0xFFE4E4E4),
+                            radius: 14,
+                            axis: PenAxis.row,
+                            gap: 12,
+                            main: MainAxisAlignment.center,
+                            cross: CrossAxisAlignment.center,
+                            children: [
+                              PenPath(
+                                'M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-0.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1-67.4 0-84.6-39.5-162.4-39.5-75.9 0-102.9 40.8-164.5 40.8-56.3 0-88.9-57-125.6-127.4-82.3-123.9-116.7-242-116.7-353.6 0-183.7 119.4-281 236.9-281 62.4 0 114.4 41 153.6 41 37.3 0 95.4-43.5 166.4-43.5 26.9 0 129.3 2.4 210.5 105.5z m-214-195.2c29.6-35.1 50.5-83.8 50.5-132.5 0-6.8-0.6-13.6-1.8-19.2-48.2 1.8-105.5 32.1-140 72.3-27 30.6-52.6 79.3-52.6 128.7 0 6.1 0.6 12.2 1.2 14.2 3.2 0.6 8.4 1.3 13.6 1.3 43.2 0 97.5-28.9 129.1-64.8z',
+                                viewBox: const [0, 0, 814, 1000],
+                                width: 19,
+                                height: 23,
+                                color: const Color(0xFF161616),
+                              ),
+                              PenText(
+                                'Đăng ký với Apple',
+                                size: 16,
+                                color: const Color(0xFF161616),
+                                weight: FontWeight.w600,
+                                softWrap: false,
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -1098,7 +1090,7 @@ class PenF103 extends StatelessWidget {
                           PenText(
                             'Đăng nhập',
                             size: 14,
-                            color: const Color(0xFF2266A4),
+                            color: const Color(0xFF16522C),
                             weight: FontWeight.w700,
                             softWrap: false,
                           ),
@@ -1112,155 +1104,12 @@ class PenF103 extends StatelessWidget {
           ),
         ),
         Positioned(
-          left: 12,
-          top: 86,
-          child: PenEllipse(
-            width: 44,
-            height: 20,
-            color: const Color(0xFFF3F3F3),
-            rotation: -18,
-          ),
-        ),
-        Positioned(
-          left: 4,
-          top: 108,
-          child: PenEllipse(
-            width: 48,
-            height: 20,
-            color: const Color(0xFFF3F3F3),
-            rotation: 8,
-          ),
-        ),
-        Positioned(
-          left: 20,
-          top: 128,
-          child: PenEllipse(
-            width: 40,
-            height: 18,
-            color: const Color(0xFFF3F3F3),
-            rotation: 26,
-          ),
-        ),
-        Positioned(
-          left: 24,
-          top: 92,
-          child: PenBox(
-            width: 3,
-            height: 56,
-            fill: const Color(0xFFF3F3F3),
-            radius: 2,
-            rotation: -8,
-          ),
-        ),
-        Positioned(
-          right: 24.89999999999999,
-          top: 88,
-          child: PenPath(
-            'M32.55 0l32.55 15.75-32.55 15.75-32.55-15.75z',
-            viewBox: const [0, 0, 65.10000000000001, 31.5],
-            width: 65.10000000000001,
-            height: 31.5,
-            color: const Color(0xFFF3F3F3),
-          ),
-        ),
-        Positioned(
-          right: 57.449999999999996,
-          top: 103.75,
-          child: PenPath(
-            'M0 0l32.55 15.75 0 33.6-32.55-15.75z',
-            viewBox: const [0, 0, 32.550000000000004, 49.35],
-            width: 32.550000000000004,
-            height: 49.35,
-            color: const Color(0xFF636363),
-          ),
-        ),
-        Positioned(
-          right: 24.899999999999984,
-          top: 103.75,
-          child: PenPath(
-            'M32.55 0l0 33.6-32.55 15.75 0-33.6z',
-            viewBox: const [0, 0, 32.550000000000004, 49.35],
-            width: 32.550000000000004,
-            height: 49.35,
-            color: const Color(0xFF636363),
-          ),
-        ),
-        Positioned(
-          right: 36.39999999999999,
-          top: 123.7,
-          child: PenPath(
-            'M37.8 0l37.8 17.85-37.8 17.85-37.8-17.85z',
-            viewBox: const [0, 0, 75.60000000000001, 35.7],
-            width: 75.60000000000001,
-            height: 35.7,
-            color: const Color(0xFFF3F3F3),
-          ),
-        ),
-        Positioned(
-          right: 74.19999999999999,
-          top: 141.55,
-          child: PenPath(
-            'M0 0l37.8 17.85 0 37.8-37.8-17.85z',
-            viewBox: const [0, 0, 37.800000000000004, 55.650000000000006],
-            width: 37.800000000000004,
-            height: 55.650000000000006,
-            color: const Color(0xFF636363),
-          ),
-        ),
-        Positioned(
-          right: 36.399999999999984,
-          top: 141.55,
-          child: PenPath(
-            'M37.8 0l0 37.8-37.8 17.85 0-37.8z',
-            viewBox: const [0, 0, 37.800000000000004, 55.650000000000006],
-            width: 37.800000000000004,
-            height: 55.650000000000006,
-            color: const Color(0xFF636363),
-          ),
-        ),
-        Positioned(
-          right: 19.599999999999987,
-          top: 148.9,
-          child: PenPath(
-            'M21 0l21 7.3 0 17.7c0 12.5-9.5 20-21 23-11.5-3-21-10.5-21-23l0-17.7z',
-            viewBox: const [0, 0, 42, 48],
-            width: 44.1,
-            height: 50.400000000000006,
-            color: const Color(0xFF16522C),
-          ),
-        ),
-        Positioned(
-          right: 32.20000000000002,
-          top: 167.8,
-          child: PenBox(
-            width: 18.900000000000002,
-            height: 15.75,
-            fill: const Color(0xFFF3F3F3),
-            radius: 4,
-          ),
-        ),
-        Positioned(
-          right: 76,
-          top: 22,
-          child: PenBox(
-            fill: const Color(0xFFFFFFFF),
-            stroke: const Color(0xFFE4E4E4),
-            radius: 999,
-            axis: PenAxis.row,
-            gap: 6,
-            cross: CrossAxisAlignment.center,
-            hugMain: true,
-            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            children: [
-              Icon(LucideIcons.globe, size: 16, color: const Color(0xFF161616)),
-              PenText(
-                'VI',
-                size: 14,
-                color: const Color(0xFF161616),
-                weight: FontWeight.w700,
-                softWrap: false,
-              ),
-            ],
+          left: 26,
+          top: 16,
+          child: Icon(
+            LucideIcons.chevronLeft,
+            size: 28,
+            color: const Color(0xFF161616),
           ),
         ),
       ],
@@ -1287,39 +1136,89 @@ class PenF104 extends StatelessWidget {
                 width: double.infinity,
                 axis: PenAxis.column,
                 hugMain: true,
-                padding: EdgeInsets.fromLTRB(30, 30, 30, 0),
+                padding: EdgeInsets.fromLTRB(26, 14, 26, 0),
                 children: [
-                  Icon(
-                    LucideIcons.chevronLeft,
-                    size: 28,
-                    color: const Color(0xFF161616),
-                  ),
-                  PenText(
-                    'Quên mật khẩu',
-                    size: 36,
-                    color: const Color(0xFF2266A4),
-                    weight: FontWeight.w800,
-                  ),
                   PenBox(
                     width: double.infinity,
                     axis: PenAxis.column,
+                    gap: 3,
+                    cross: CrossAxisAlignment.center,
                     hugMain: true,
-                    padding: EdgeInsets.fromLTRB(0, 8, 0, 0),
                     children: [
+                      PenBox(
+                        width: 40,
+                        height: 40,
+                        image: const AssetImage(
+                          'assets/design/logo.png',
+                          package: 'ec_ui',
+                        ),
+                        imageFit: BoxFit.contain,
+                      ),
                       PenText(
-                        'Nhập email để nhận liên kết đặt lại mật khẩu',
-                        size: 14,
-                        color: const Color(0xFF636363),
-                        lineHeight: 1.5,
+                        'ZenPack',
+                        size: 18,
+                        color: const Color(0xFF16522C),
+                        weight: FontWeight.w800,
+                        softWrap: false,
+                      ),
+                      PenBox(
+                        axis: PenAxis.row,
+                        gap: 8,
+                        cross: CrossAxisAlignment.center,
+                        hugMain: true,
+                        padding: EdgeInsets.fromLTRB(0, 6, 0, 0),
+                        children: [
+                          PenBox(
+                            width: 44,
+                            height: 1,
+                            fill: const Color(0xFFF3F3F3),
+                          ),
+                          PenPath(
+                            'M7 0l1.6 5.4 5.4 1.6-5.4 1.6-1.6 5.4-1.6-5.4-5.4-1.6 5.4-1.6z',
+                            viewBox: const [0, 0, 14, 14],
+                            width: 10,
+                            height: 10,
+                            color: const Color(0xFFE4E4E4),
+                          ),
+                          PenBox(
+                            width: 44,
+                            height: 1,
+                            fill: const Color(0xFFF3F3F3),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                   PenBox(
                     width: double.infinity,
                     axis: PenAxis.column,
-                    gap: 16,
+                    gap: 4,
+                    cross: CrossAxisAlignment.center,
                     hugMain: true,
-                    padding: EdgeInsets.fromLTRB(0, 26, 0, 0),
+                    padding: EdgeInsets.fromLTRB(0, 12, 0, 0),
+                    children: [
+                      PenText(
+                        'Quên mật khẩu',
+                        size: 30,
+                        color: const Color(0xFF16522C),
+                        weight: FontWeight.w800,
+                        softWrap: false,
+                      ),
+                      PenText(
+                        'Nhập email để nhận liên kết đặt lại mật khẩu',
+                        size: 14,
+                        color: const Color(0xFF636363),
+                        lineHeight: 1.5,
+                        softWrap: false,
+                      ),
+                    ],
+                  ),
+                  PenBox(
+                    width: double.infinity,
+                    axis: PenAxis.column,
+                    gap: 22,
+                    hugMain: true,
+                    padding: EdgeInsets.fromLTRB(0, 40, 0, 0),
                     children: [
                       PenBox(
                         width: double.infinity,
@@ -1381,22 +1280,6 @@ class PenF104 extends StatelessWidget {
                         cross: CrossAxisAlignment.center,
                         padding: EdgeInsets.all(18),
                         children: [
-                          PenBox(
-                            width: 44,
-                            height: 44,
-                            fill: const Color(0xFFF3F3F3),
-                            radius: 999,
-                            axis: PenAxis.row,
-                            main: MainAxisAlignment.center,
-                            cross: CrossAxisAlignment.center,
-                            children: [
-                              Icon(
-                                LucideIcons.mail,
-                                size: 22,
-                                color: const Color(0xFF1F9047),
-                              ),
-                            ],
-                          ),
                           Expanded(
                             child: PenText(
                               'Đã gửi — kiểm tra hộp thư, kể cả mục spam',
@@ -1423,7 +1306,7 @@ class PenF104 extends StatelessWidget {
                           PenText(
                             'Đăng nhập',
                             size: 14,
-                            color: const Color(0xFF2266A4),
+                            color: const Color(0xFF16522C),
                             weight: FontWeight.w700,
                             softWrap: false,
                           ),
@@ -1437,16 +1320,25 @@ class PenF104 extends StatelessWidget {
           ),
         ),
         Positioned(
-          left: 42,
+          left: 26,
           bottom: 66,
           child: PenBox(
-            width: 306,
-            height: 230,
+            width: 338,
+            height: 254,
             image: const AssetImage(
               'assets/design/flow1-zenpack-hero-art-support.png',
               package: 'ec_ui',
             ),
             imageFit: BoxFit.cover,
+          ),
+        ),
+        Positioned(
+          left: 26,
+          top: 16,
+          child: Icon(
+            LucideIcons.chevronLeft,
+            size: 28,
+            color: const Color(0xFF161616),
           ),
         ),
       ],
@@ -1507,8 +1399,8 @@ class PenF105 extends StatelessWidget {
                     children: [
                       PenBox(
                         width: double.infinity,
-                        fill: const Color(0xFFF3F3F3),
-                        stroke: const Color(0xFFF3F3F3),
+                        fill: const Color(0xFFFFFFFF),
+                        stroke: const Color(0xFFE4E4E4),
                         radius: 14,
                         shadows: const [
                           BoxShadow(
@@ -1565,21 +1457,10 @@ class PenF105 extends StatelessWidget {
                               ],
                             ),
                           ),
-                          PenBox(
-                            width: 34,
-                            height: 34,
-                            fill: const Color(0xFF1F9047),
-                            radius: 999,
-                            axis: PenAxis.row,
-                            main: MainAxisAlignment.center,
-                            cross: CrossAxisAlignment.center,
-                            children: [
-                              Icon(
-                                LucideIcons.check,
-                                size: 19,
-                                color: const Color(0xFFFFFFFF),
-                              ),
-                            ],
+                          Icon(
+                            LucideIcons.chevronRight,
+                            size: 22,
+                            color: const Color(0xFF161616),
                           ),
                         ],
                       ),
@@ -1643,11 +1524,10 @@ class PenF105 extends StatelessWidget {
                               ],
                             ),
                           ),
-                          PenEllipse(
-                            width: 34,
-                            height: 34,
-                            color: const Color(0xFF636363),
-                            ring: 0.88,
+                          Icon(
+                            LucideIcons.chevronRight,
+                            size: 22,
+                            color: const Color(0xFF161616),
                           ),
                         ],
                       ),
@@ -1711,11 +1591,10 @@ class PenF105 extends StatelessWidget {
                               ],
                             ),
                           ),
-                          PenEllipse(
-                            width: 34,
-                            height: 34,
-                            color: const Color(0xFF636363),
-                            ring: 0.88,
+                          Icon(
+                            LucideIcons.chevronRight,
+                            size: 22,
+                            color: const Color(0xFF161616),
                           ),
                         ],
                       ),
@@ -1775,11 +1654,10 @@ class PenF105 extends StatelessWidget {
                               ],
                             ),
                           ),
-                          PenEllipse(
-                            width: 34,
-                            height: 34,
-                            color: const Color(0xFF636363),
-                            ring: 0.88,
+                          Icon(
+                            LucideIcons.chevronRight,
+                            size: 22,
+                            color: const Color(0xFF161616),
                           ),
                         ],
                       ),
@@ -1861,7 +1739,7 @@ class PenF105 extends StatelessWidget {
                           PenText(
                             'Thêm cửa hàng mới',
                             size: 16,
-                            color: const Color(0xFF2266A4),
+                            color: const Color(0xFF16522C),
                             weight: FontWeight.w600,
                             softWrap: false,
                           ),
@@ -1870,9 +1748,16 @@ class PenF105 extends StatelessWidget {
                       PenBox(
                         width: double.infinity,
                         axis: PenAxis.row,
+                        gap: 8,
                         main: MainAxisAlignment.center,
+                        cross: CrossAxisAlignment.center,
                         padding: EdgeInsets.fromLTRB(0, 8, 0, 0),
                         children: [
+                          Icon(
+                            LucideIcons.logOut,
+                            size: 18,
+                            color: const Color(0xFF161616),
+                          ),
                           PenText(
                             'Đăng xuất',
                             size: 16,
@@ -2041,7 +1926,7 @@ class PenF105 extends StatelessWidget {
                 left: 58,
                 top: 91,
                 child: PenPath(
-                  'M0 0 C45 32 115 30 172 2',
+                  'M0 0c45 32 115 30 172 2',
                   viewBox: const [0, 0, 172, 34],
                   width: 172,
                   height: 34,
@@ -2192,6 +2077,28 @@ class PenF106 extends StatelessWidget {
                             'Lời mời vào shop sẽ hiện ở đây',
                             size: 14,
                             color: const Color(0xFF161616),
+                            softWrap: false,
+                          ),
+                        ],
+                      ),
+                      PenBox(
+                        width: double.infinity,
+                        axis: PenAxis.row,
+                        gap: 8,
+                        main: MainAxisAlignment.center,
+                        cross: CrossAxisAlignment.center,
+                        padding: EdgeInsets.fromLTRB(0, 24, 0, 0),
+                        children: [
+                          Icon(
+                            LucideIcons.logOut,
+                            size: 18,
+                            color: const Color(0xFF161616),
+                          ),
+                          PenText(
+                            'Đăng xuất',
+                            size: 16,
+                            color: const Color(0xFF161616),
+                            weight: FontWeight.w700,
                             softWrap: false,
                           ),
                         ],
@@ -2355,7 +2262,7 @@ class PenF106 extends StatelessWidget {
                 left: 58,
                 top: 91,
                 child: PenPath(
-                  'M0 0 C45 32 115 30 172 2',
+                  'M0 0c45 32 115 30 172 2',
                   viewBox: const [0, 0, 172, 34],
                   width: 172,
                   height: 34,
@@ -3000,7 +2907,7 @@ class PenF108 extends StatelessWidget {
                     PenText(
                       'Thêm shop mới (tiến + sàn)',
                       size: 18,
-                      color: const Color(0xFF2266A4),
+                      color: const Color(0xFF16522C),
                       weight: FontWeight.w700,
                       softWrap: false,
                     ),
@@ -3363,7 +3270,7 @@ class PenF109 extends StatelessWidget {
                           PenText(
                             'Mời thành viên',
                             size: 14,
-                            color: const Color(0xFF2266A4),
+                            color: const Color(0xFF16522C),
                             weight: FontWeight.w700,
                             softWrap: false,
                           ),
@@ -3392,6 +3299,7 @@ class PenF109 extends StatelessWidget {
                 ),
               ],
               axis: PenAxis.column,
+              gap: 8,
               hugMain: true,
               padding: EdgeInsets.symmetric(vertical: 10, horizontal: 13),
               children: [
@@ -3461,6 +3369,95 @@ class PenF109 extends StatelessWidget {
                       LucideIcons.chevronRight,
                       size: 18,
                       color: const Color(0xFF636363),
+                    ),
+                  ],
+                ),
+                PenBox(
+                  width: double.infinity,
+                  fill: const Color(0xFFFFFFFF),
+                  stroke: const Color(0xFFE4E4E4),
+                  radius: 10,
+                  axis: PenAxis.row,
+                  gap: 14,
+                  cross: CrossAxisAlignment.center,
+                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  children: [
+                    PenBox(
+                      width: 38,
+                      height: 38,
+                      fill: const Color(0xFFFCFCFC),
+                      radius: 10,
+                      axis: PenAxis.row,
+                      main: MainAxisAlignment.center,
+                      cross: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.timer,
+                          size: 22,
+                          color: const Color(0xFF161616),
+                        ),
+                      ],
+                    ),
+                    Expanded(
+                      child: PenText(
+                        'Thời lượng/video',
+                        size: 16,
+                        color: const Color(0xFF161616),
+                      ),
+                    ),
+                    PenText(
+                      '5 phút',
+                      size: 16,
+                      color: const Color(0xFF161616),
+                      weight: FontWeight.w600,
+                      softWrap: false,
+                    ),
+                    Icon(
+                      LucideIcons.chevronRight,
+                      size: 18,
+                      color: const Color(0xFF636363),
+                    ),
+                  ],
+                ),
+                PenText(
+                  'Đề xuất 2 phút — theo Shopee (30 MB/video) + 720p',
+                  size: 12,
+                  color: const Color(0xFF636363),
+                ),
+                PenBox(
+                  width: double.infinity,
+                  fill: const Color(0x14B6770B),
+                  stroke: const Color(0x4DB6770B),
+                  radius: 10,
+                  axis: PenAxis.row,
+                  gap: 10,
+                  padding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  children: [
+                    PenBox(
+                      width: 32,
+                      height: 32,
+                      fill: const Color(0x26B6770B),
+                      stroke: const Color(0x66B6770B),
+                      radius: 999,
+                      axis: PenAxis.row,
+                      main: MainAxisAlignment.center,
+                      cross: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.triangleAlert,
+                          size: 18,
+                          color: const Color(0xFFB6770B),
+                        ),
+                      ],
+                    ),
+                    Expanded(
+                      child: PenText(
+                        'Vượt mức đề xuất 2 phút của Shopee — video 5 phút nặng ~75 MB, phải gửi bằng link hồ sơ thay vì đính trực tiếp lên form khiếu nại.',
+                        size: 12.5,
+                        color: const Color(0xFFB6770B),
+                        weight: FontWeight.w600,
+                        lineHeight: 1.4,
+                      ),
                     ),
                   ],
                 ),
@@ -3716,7 +3713,7 @@ class PenF109 extends StatelessWidget {
                     PenText(
                       'Thêm loại (nhập tên)',
                       size: 16,
-                      color: const Color(0xFF2266A4),
+                      color: const Color(0xFF16522C),
                       weight: FontWeight.w600,
                       softWrap: false,
                     ),
@@ -3808,7 +3805,7 @@ class PenF110 extends StatelessWidget {
                           PenText(
                             'Thử lại',
                             size: 12,
-                            color: const Color(0xFF2266A4),
+                            color: const Color(0xFF16522C),
                             weight: FontWeight.w700,
                             softWrap: false,
                           ),
@@ -4025,7 +4022,7 @@ class PenF110 extends StatelessWidget {
                                           PenText(
                                             'Đang tải 72%',
                                             size: 12,
-                                            color: const Color(0xFF2266A4),
+                                            color: const Color(0xFF16522C),
                                             weight: FontWeight.w500,
                                             softWrap: false,
                                           ),
@@ -4418,7 +4415,7 @@ class PenF110 extends StatelessWidget {
                           PenText(
                             'Đính kèm ảnh vào đơn',
                             size: 16,
-                            color: const Color(0xFF2266A4),
+                            color: const Color(0xFF16522C),
                             weight: FontWeight.w600,
                             softWrap: false,
                           ),
@@ -4445,7 +4442,7 @@ class PenF110 extends StatelessWidget {
                                 PenText(
                                   'Link hồ sơ khiếu nại',
                                   size: 16,
-                                  color: const Color(0xFF2266A4),
+                                  color: const Color(0xFF16522C),
                                   weight: FontWeight.w600,
                                   softWrap: false,
                                 ),
@@ -4525,7 +4522,7 @@ class PenF110 extends StatelessWidget {
                   PenText(
                     'Tạo loại video',
                     size: 24,
-                    color: const Color(0xFF2266A4),
+                    color: const Color(0xFF16522C),
                     weight: FontWeight.w800,
                     softWrap: false,
                   ),
@@ -4734,7 +4731,41 @@ class PenF110 extends StatelessWidget {
                             PenEllipse(
                               width: 44,
                               height: 44,
-                              color: const Color(0xFF161616),
+                              color: const Color(0xFF16522C),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: PenBox(
+                          height: 48,
+                          stroke: const Color(0x00000000),
+                          radius: 999,
+                          axis: PenAxis.row,
+                          main: MainAxisAlignment.center,
+                          cross: CrossAxisAlignment.center,
+                          children: [
+                            PenEllipse(
+                              width: 44,
+                              height: 44,
+                              color: const Color(0xFF1F9047),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: PenBox(
+                          height: 48,
+                          stroke: const Color(0x00000000),
+                          radius: 999,
+                          axis: PenAxis.row,
+                          main: MainAxisAlignment.center,
+                          cross: CrossAxisAlignment.center,
+                          children: [
+                            PenEllipse(
+                              width: 44,
+                              height: 44,
+                              color: const Color(0xFFB6770B),
                             ),
                           ],
                         ),
@@ -4752,40 +4783,6 @@ class PenF110 extends StatelessWidget {
                               width: 44,
                               height: 44,
                               color: const Color(0xFFD02D27),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: PenBox(
-                          height: 48,
-                          stroke: const Color(0x00000000),
-                          radius: 999,
-                          axis: PenAxis.row,
-                          main: MainAxisAlignment.center,
-                          cross: CrossAxisAlignment.center,
-                          children: [
-                            PenEllipse(
-                              width: 44,
-                              height: 44,
-                              color: const Color(0xFF2266A4),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: PenBox(
-                          height: 48,
-                          stroke: const Color(0x00000000),
-                          radius: 999,
-                          axis: PenAxis.row,
-                          main: MainAxisAlignment.center,
-                          cross: CrossAxisAlignment.center,
-                          children: [
-                            PenEllipse(
-                              width: 44,
-                              height: 44,
-                              color: const Color(0xFF2266A4),
                             ),
                           ],
                         ),
@@ -5209,7 +5206,7 @@ class PenF111 extends StatelessWidget {
                                 PenText(
                                   'Mời thành viên',
                                   size: 14,
-                                  color: const Color(0xFF2266A4),
+                                  color: const Color(0xFF16522C),
                                   weight: FontWeight.w700,
                                   softWrap: false,
                                 ),
@@ -5583,7 +5580,7 @@ class PenF111 extends StatelessWidget {
                           PenText(
                             'Thêm loại (nhập tên)',
                             size: 16,
-                            color: const Color(0xFF2266A4),
+                            color: const Color(0xFF16522C),
                             weight: FontWeight.w600,
                             softWrap: false,
                           ),
@@ -5798,29 +5795,6 @@ class PenF112 extends StatelessWidget {
                       height: 1,
                     ),
                   ),
-                  PenBox(
-                    fill: const Color(0xFFFCFCFC),
-                    radius: 999,
-                    axis: PenAxis.row,
-                    gap: 8,
-                    cross: CrossAxisAlignment.center,
-                    hugMain: true,
-                    padding: EdgeInsets.symmetric(vertical: 9, horizontal: 15),
-                    children: [
-                      Icon(
-                        LucideIcons.cloudUpload,
-                        size: 20,
-                        color: const Color(0xFF161616),
-                      ),
-                      PenText(
-                        '3',
-                        size: 16,
-                        color: const Color(0xFF161616),
-                        weight: FontWeight.w700,
-                        softWrap: false,
-                      ),
-                    ],
-                  ),
                 ],
               ),
               PenBox(
@@ -5834,50 +5808,51 @@ class PenF112 extends StatelessWidget {
                       fill: const Color(0xFFFFFFFF),
                       stroke: const Color(0xFFE4E4E4),
                       radius: 14,
-                      axis: PenAxis.row,
-                      gap: 9,
+                      axis: PenAxis.column,
+                      gap: 8,
                       cross: CrossAxisAlignment.center,
+                      hugMain: true,
                       padding: EdgeInsets.symmetric(
-                        vertical: 13,
-                        horizontal: 11,
+                        vertical: 12,
+                        horizontal: 10,
                       ),
                       children: [
                         PenBox(
-                          width: 38,
-                          height: 38,
-                          fill: const Color(0xFFFCFCFC),
-                          radius: 10,
                           axis: PenAxis.row,
-                          main: MainAxisAlignment.center,
+                          gap: 10,
                           cross: CrossAxisAlignment.center,
+                          hugMain: true,
                           children: [
-                            Icon(
-                              LucideIcons.package,
-                              size: 20,
+                            PenBox(
+                              width: 36,
+                              height: 36,
+                              fill: const Color(0xFFFCFCFC),
+                              radius: 10,
+                              axis: PenAxis.row,
+                              main: MainAxisAlignment.center,
+                              cross: CrossAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LucideIcons.package,
+                                  size: 19,
+                                  color: const Color(0xFF161616),
+                                ),
+                              ],
+                            ),
+                            PenText(
+                              '24',
+                              size: 24,
                               color: const Color(0xFF161616),
+                              weight: FontWeight.w800,
+                              softWrap: false,
                             ),
                           ],
                         ),
-                        Expanded(
-                          child: PenBox(
-                            axis: PenAxis.column,
-                            gap: 1,
-                            hugMain: true,
-                            children: [
-                              PenText(
-                                '24',
-                                size: 24,
-                                color: const Color(0xFF161616),
-                                weight: FontWeight.w800,
-                                softWrap: false,
-                              ),
-                              PenText(
-                                'Đơn hôm nay',
-                                size: 12,
-                                color: const Color(0xFF636363),
-                              ),
-                            ],
-                          ),
+                        PenText(
+                          'Vận đơn',
+                          size: 12,
+                          color: const Color(0xFF636363),
+                          softWrap: false,
                         ),
                       ],
                     ),
@@ -5887,50 +5862,51 @@ class PenF112 extends StatelessWidget {
                       fill: const Color(0xFFFFFFFF),
                       stroke: const Color(0xFFE4E4E4),
                       radius: 14,
-                      axis: PenAxis.row,
-                      gap: 9,
+                      axis: PenAxis.column,
+                      gap: 8,
                       cross: CrossAxisAlignment.center,
+                      hugMain: true,
                       padding: EdgeInsets.symmetric(
-                        vertical: 13,
-                        horizontal: 11,
+                        vertical: 12,
+                        horizontal: 10,
                       ),
                       children: [
                         PenBox(
-                          width: 38,
-                          height: 38,
-                          fill: const Color(0xFFFCFCFC),
-                          radius: 10,
                           axis: PenAxis.row,
-                          main: MainAxisAlignment.center,
+                          gap: 10,
                           cross: CrossAxisAlignment.center,
+                          hugMain: true,
                           children: [
-                            Icon(
-                              LucideIcons.video,
-                              size: 20,
+                            PenBox(
+                              width: 36,
+                              height: 36,
+                              fill: const Color(0xFFFCFCFC),
+                              radius: 10,
+                              axis: PenAxis.row,
+                              main: MainAxisAlignment.center,
+                              cross: CrossAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LucideIcons.video,
+                                  size: 19,
+                                  color: const Color(0xFF161616),
+                                ),
+                              ],
+                            ),
+                            PenText(
+                              '38',
+                              size: 24,
                               color: const Color(0xFF161616),
+                              weight: FontWeight.w800,
+                              softWrap: false,
                             ),
                           ],
                         ),
-                        Expanded(
-                          child: PenBox(
-                            axis: PenAxis.column,
-                            gap: 1,
-                            hugMain: true,
-                            children: [
-                              PenText(
-                                '38',
-                                size: 24,
-                                color: const Color(0xFF161616),
-                                weight: FontWeight.w800,
-                                softWrap: false,
-                              ),
-                              PenText(
-                                'Video đã quay',
-                                size: 12,
-                                color: const Color(0xFF636363),
-                              ),
-                            ],
-                          ),
+                        PenText(
+                          'Video đã quay',
+                          size: 12,
+                          color: const Color(0xFF636363),
+                          softWrap: false,
                         ),
                       ],
                     ),
@@ -5940,50 +5916,51 @@ class PenF112 extends StatelessWidget {
                       fill: const Color(0xFFFFFFFF),
                       stroke: const Color(0xFFE4E4E4),
                       radius: 14,
-                      axis: PenAxis.row,
-                      gap: 9,
+                      axis: PenAxis.column,
+                      gap: 8,
                       cross: CrossAxisAlignment.center,
+                      hugMain: true,
                       padding: EdgeInsets.symmetric(
-                        vertical: 13,
-                        horizontal: 11,
+                        vertical: 12,
+                        horizontal: 10,
                       ),
                       children: [
                         PenBox(
-                          width: 38,
-                          height: 38,
-                          fill: const Color(0xFFFCFCFC),
-                          radius: 10,
                           axis: PenAxis.row,
-                          main: MainAxisAlignment.center,
+                          gap: 10,
                           cross: CrossAxisAlignment.center,
+                          hugMain: true,
                           children: [
-                            Icon(
-                              LucideIcons.cloudUpload,
-                              size: 20,
+                            PenBox(
+                              width: 36,
+                              height: 36,
+                              fill: const Color(0xFFFCFCFC),
+                              radius: 10,
+                              axis: PenAxis.row,
+                              main: MainAxisAlignment.center,
+                              cross: CrossAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LucideIcons.cloudUpload,
+                                  size: 19,
+                                  color: const Color(0xFF161616),
+                                ),
+                              ],
+                            ),
+                            PenText(
+                              '4',
+                              size: 24,
                               color: const Color(0xFF161616),
+                              weight: FontWeight.w800,
+                              softWrap: false,
                             ),
                           ],
                         ),
-                        Expanded(
-                          child: PenBox(
-                            axis: PenAxis.column,
-                            gap: 1,
-                            hugMain: true,
-                            children: [
-                              PenText(
-                                '4',
-                                size: 24,
-                                color: const Color(0xFF161616),
-                                weight: FontWeight.w800,
-                                softWrap: false,
-                              ),
-                              PenText(
-                                'Chờ tải',
-                                size: 12,
-                                color: const Color(0xFF636363),
-                              ),
-                            ],
-                          ),
+                        PenText(
+                          'Chờ tải',
+                          size: 12,
+                          color: const Color(0xFF636363),
+                          softWrap: false,
                         ),
                       ],
                     ),
@@ -6009,43 +5986,45 @@ class PenF112 extends StatelessWidget {
                           stroke: const Color(0xFFE4E4E4),
                           radius: 14,
                           axis: PenAxis.row,
-                          gap: 12,
+                          gap: 10,
                           cross: CrossAxisAlignment.center,
-                          padding: EdgeInsets.symmetric(
-                            vertical: 0,
-                            horizontal: 16,
-                          ),
+                          padding: EdgeInsets.fromLTRB(16, 0, 8, 0),
                           children: [
                             Icon(
                               LucideIcons.search,
                               size: 22,
                               color: const Color(0xFF636363),
                             ),
-                            PenText(
-                              'Nhập mã vận đơn',
-                              size: 16,
-                              color: const Color(0xFF636363),
-                              softWrap: false,
+                            Expanded(
+                              child: PenText(
+                                'Nhập mã vận đơn',
+                                size: 16,
+                                color: const Color(0xFF636363),
+                              ),
+                            ),
+                            PenBox(
+                              width: 1,
+                              height: 26,
+                              fill: const Color(0xFFE4E4E4),
+                            ),
+                            PenBox(
+                              width: 40,
+                              height: 40,
+                              fill: const Color(0xFFFCFCFC),
+                              radius: 12,
+                              axis: PenAxis.row,
+                              main: MainAxisAlignment.center,
+                              cross: CrossAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LucideIcons.scanBarcode,
+                                  size: 22,
+                                  color: const Color(0xFF161616),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ),
-                      PenBox(
-                        width: 56,
-                        height: 56,
-                        fill: const Color(0xFFFFFFFF),
-                        stroke: const Color(0xFFE4E4E4),
-                        radius: 14,
-                        axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          Icon(
-                            LucideIcons.slidersHorizontal,
-                            size: 22,
-                            color: const Color(0xFF161616),
-                          ),
-                        ],
                       ),
                     ],
                   ),
@@ -6141,7 +6120,7 @@ class PenF112 extends StatelessWidget {
                 axis: PenAxis.column,
                 hugMain: true,
                 clip: true,
-                padding: EdgeInsets.symmetric(vertical: 6, horizontal: 14),
+                padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                 children: [
                   PenBox(
                     width: double.infinity,
@@ -6151,7 +6130,7 @@ class PenF112 extends StatelessWidget {
                       PenBox(
                         width: double.infinity,
                         axis: PenAxis.row,
-                        gap: 13,
+                        gap: 12,
                         cross: CrossAxisAlignment.center,
                         padding: EdgeInsets.symmetric(
                           vertical: 13,
@@ -6267,7 +6246,7 @@ class PenF112 extends StatelessWidget {
                       PenBox(
                         width: double.infinity,
                         axis: PenAxis.row,
-                        gap: 13,
+                        gap: 12,
                         cross: CrossAxisAlignment.center,
                         padding: EdgeInsets.symmetric(
                           vertical: 13,
@@ -6383,7 +6362,7 @@ class PenF112 extends StatelessWidget {
                       PenBox(
                         width: double.infinity,
                         axis: PenAxis.row,
-                        gap: 13,
+                        gap: 12,
                         cross: CrossAxisAlignment.center,
                         padding: EdgeInsets.symmetric(
                           vertical: 13,
@@ -6499,7 +6478,7 @@ class PenF112 extends StatelessWidget {
                       PenBox(
                         width: double.infinity,
                         axis: PenAxis.row,
-                        gap: 13,
+                        gap: 12,
                         cross: CrossAxisAlignment.center,
                         padding: EdgeInsets.symmetric(
                           vertical: 13,
@@ -6615,7 +6594,7 @@ class PenF112 extends StatelessWidget {
                       PenBox(
                         width: double.infinity,
                         axis: PenAxis.row,
-                        gap: 13,
+                        gap: 12,
                         cross: CrossAxisAlignment.center,
                         padding: EdgeInsets.symmetric(
                           vertical: 13,

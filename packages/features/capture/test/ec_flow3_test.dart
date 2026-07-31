@@ -133,7 +133,7 @@ void main() {
     testWidgets('shows the 15-minute warning banner', (tester) async {
       await _pump(tester, const EcNearLimitScreen());
       expect(
-        find.text('Sắp chạm trần 15 phút — video sẽ tự chốt'),
+        find.text('Sắp chạm trần 2 phút — video sẽ tự chốt'),
         findsOneWidget,
       );
       expect(find.text('SPXVN024567890'), findsOneWidget);

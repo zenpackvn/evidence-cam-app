@@ -3,6 +3,7 @@ import 'dart:io';
 // Prefixed: this package and feature_capture both export an `UploadTask` —
 // there, the queued-clip domain record; here, one HTTP transfer.
 import 'package:background_downloader/background_downloader.dart' as bg;
+import 'package:crypto/crypto.dart' show sha256;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:ec_data/ec_data.dart';
 import 'package:feature_capture/feature_capture.dart';
@@ -10,6 +11,7 @@ import 'package:feature_capture/feature_capture.dart';
 // `_api` calls around it still do, so their failures still arrive as
 // [DioException]s that [_friendlyMessage] has to translate.
 import 'package:network/network.dart' show DioException, DioExceptionType;
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 /// TEMPORARY (per shop owner request while the backend's quota rollout is
 /// still being tuned): treat a `quota_hold` response as success instead of
@@ -76,6 +78,53 @@ String _friendlyPutMessage(R2PutException error) {
 
 /// A byte slice of a clip, end-inclusive to match the HTTP `Range` header.
 typedef R2ByteRange = ({int start, int endInclusive});
+
+/// Extracts a poster frame from [videoPath], returning the JPEG's path or null
+/// when no frame could be read. A seam so the upload path stays testable.
+typedef ThumbnailExtractor = Future<String?> Function(String videoPath);
+
+/// SHA-256 of [file] as lowercase hex — the evidence's fingerprint, recorded
+/// with the row at upload time so anyone can later re-hash the stored object
+/// and prove it is byte-for-byte what the phone sent.
+///
+/// Streams the file through the digest rather than reading it into memory: an
+/// evidence clip can be hundreds of MB and this runs on a packing-station
+/// phone. Returns null on any read error — a missing fingerprint must never
+/// cost the upload.
+///
+/// Note this hashes the file **as uploaded**, i.e. after the faststart remux.
+/// That is the artifact the fingerprint is supposed to anchor.
+Future<String?> _fileSha256(File file) async {
+  try {
+    return (await sha256.bind(file.openRead()).first).toString();
+  } on Object {
+    return null;
+  }
+}
+
+/// Longest edge of the generated poster, in pixels.
+///
+/// A timeline row renders it well under 200px wide, so 320 survives a 2x screen
+/// with room to spare while keeping the file in the tens-of-KB range — the
+/// whole point is that a list costs a rounding error instead of video bytes.
+const _thumbnailMaxWidth = 320;
+
+/// JPEG quality for the poster. 60 is visibly fine at thumbnail size and about
+/// half the bytes of the default.
+const _thumbnailQuality = 60;
+
+/// Default [ThumbnailExtractor], backed by the platform's own frame reader
+/// (Android `MediaMetadataRetriever` / iOS `AVAssetImageGenerator`).
+///
+/// Deliberately not ffmpeg: the bundled ffmpeg is the `base` build, which
+/// carries no JPEG encoder, and pulling in the full build to encode one small
+/// image would cost more app size than this plugin does.
+Future<String?> _platformThumbnail(String videoPath) => VideoThumbnail.thumbnailFile(
+  video: videoPath,
+  imageFormat: ImageFormat.JPEG,
+  maxWidth: _thumbnailMaxWidth,
+  quality: _thumbnailQuality,
+);
 
 /// One PUT of a clip (or one [R2ByteRange] of it) to a presigned R2 URL,
 /// returning the response's `ETag` — multipart completion needs it.
@@ -157,12 +206,15 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
   ApiEvidenceUploader(
     this._api, {
     R2Put? put,
+    ThumbnailExtractor? extractThumbnail,
     this.multipartThresholdBytes = 8 * 1024 * 1024,
     this.multipartPartSizeBytes = 5 * 1024 * 1024,
-  }) : _put = put ?? _backgroundPut;
+  }) : _put = put ?? _backgroundPut,
+       _extractThumbnail = extractThumbnail ?? _platformThumbnail;
 
   final EcApi _api;
   final R2Put _put;
+  final ThumbnailExtractor _extractThumbnail;
   final int multipartThresholdBytes;
   final int multipartPartSizeBytes;
 
@@ -282,6 +334,10 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     // pointing back at it. Deleting it here is safe because nothing has been
     // marked done yet; scoped to just the PUT so a completeUpload failure
     // (which may have actually succeeded server-side) is never touched.
+    // Poster first: it is tens of KB against a clip's tens of MB, so sending it
+    // up front means the order's timeline can show this evidence within a
+    // second of recording, while the video itself is still climbing.
+    await _uploadThumbnailQuietly(file, presign.thumbUploadUrl, isPhoto: isPhoto);
     try {
       await _putWithRetry(
         () => _put(
@@ -300,6 +356,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       order.id,
       presign.evidenceId,
       receiveTimeout: _completeUploadTimeout,
+      sha256: await _fileSha256(file),
     );
     if (status == 'quota_hold' && !_ignoreQuotaHoldForTesting) {
       throw StateError('quota_exceeded');
@@ -330,6 +387,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       device: await _readDeviceLabel(),
       durationSeconds: durationSeconds,
     );
+    await _uploadThumbnailQuietly(file, created.thumbUploadUrl, isPhoto: isPhoto);
     // Aborting deletes the multipart upload on R2 — only safe while nothing
     // has been "completed" yet. Once completeMultipartUpload has actually
     // been sent, the bytes may already be fully assembled server-side even
@@ -404,11 +462,45 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       uploadId: created.uploadId,
       parts: uploaded,
       receiveTimeout: _completeUploadTimeout,
+      sha256: await _fileSha256(file),
     );
     if (status == 'quota_hold' && !_ignoreQuotaHoldForTesting) {
       throw StateError('quota_exceeded');
     }
     return created.key;
+  }
+
+  /// Extracts a poster frame from [file] and PUTs it to [thumbUploadUrl].
+  ///
+  /// Swallows every failure by design: a clip with no poster still shows in the
+  /// timeline behind a generic icon, whereas failing the upload over a
+  /// decorative image would lose evidence. `completeUpload` server-side checks
+  /// whether the object actually landed and clears the key if it didn't, so a
+  /// silent failure here can never produce a broken image.
+  ///
+  /// No-op for photos and against a backend that doesn't hand back a URL.
+  Future<void> _uploadThumbnailQuietly(
+    File file,
+    String? thumbUploadUrl, {
+    required bool isPhoto,
+  }) async {
+    if (isPhoto || thumbUploadUrl == null) return;
+    String? thumbPath;
+    try {
+      thumbPath = await _extractThumbnail(file.path);
+      if (thumbPath == null) return;
+      await _put(thumbUploadUrl, File(thumbPath), contentType: 'image/jpeg');
+    } on Object {
+      // Poster is decoration; the clip is the evidence.
+    } finally {
+      if (thumbPath != null) {
+        try {
+          await File(thumbPath).delete();
+        } on Object {
+          // Temp file the OS will reap anyway.
+        }
+      }
+    }
   }
 
   /// Best-effort cleanup of an evidence row that never finished uploading —

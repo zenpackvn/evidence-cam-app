@@ -167,11 +167,49 @@ void main() {
       ]),
     );
 
-    final order = (await api.listOrders('s1')).single;
+    final page = await api.listOrders('s1');
+    final order = page.items.single;
 
     expect(order.latestType, 'Đóng hàng');
     expect(order.lastCapturedAt, 222);
     expect(order.errorCount, 1);
+    // Không có header phân trang thì trang này là tất cả — thà mất thanh
+    // phân trang còn hơn vẽ ra số trang bịa.
+    expect(page.total, 1);
+    expect(page.pageCount, 1);
+  });
+
+  test('listOrders reads the total and page size from the headers', () async {
+    when(
+      () => dio.get<List<dynamic>>(
+        '/api/shops/s1/orders',
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<List<dynamic>>(
+        data: <dynamic>[
+          for (var i = 0; i < 10; i++)
+            {
+              'id': 'o\$i',
+              'tracking_raw': 'SPXVN\$i',
+              'created_at': i,
+              'evidence_count': 1,
+            },
+        ],
+        headers: Headers.fromMap({
+          'x-total-count': ['128'],
+          'x-page-size': ['10'],
+        }),
+        requestOptions: RequestOptions(path: '/api/shops/s1/orders'),
+      ),
+    );
+
+    final page = await api.listOrders('s1', page: 2);
+
+    expect(page.total, 128);
+    expect(page.pageCount, 13);
+    expect(page.firstIndex, 11);
+    expect(page.lastIndex, 20);
   });
 
   test('getOrder parses playable evidence URLs', () async {

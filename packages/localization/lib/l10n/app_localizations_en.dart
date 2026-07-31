@@ -976,6 +976,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Double-check the tracking code and try again';
 
   @override
+  String ordersPageRange(int first, int last, int total) {
+    return '$first–$last of $total orders';
+  }
+
+  @override
+  String get ordersPagePrevious => 'Previous page';
+
+  @override
+  String get ordersPageNext => 'Next page';
+
+  @override
+  String ordersPageNumber(int page) {
+    return 'Page $page';
+  }
+
+  @override
   String get filterStatusLabel => 'Upload status';
 
   @override
@@ -1129,6 +1145,76 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shopDetailResolution => 'Recording resolution';
+
+  @override
+  String get shopDetailClipDuration => 'Max length/video';
+
+  @override
+  String clipDurationValue(String minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String clipRecommendedHint(
+    String minutes,
+    String platform,
+    String megabytes,
+    String resolution,
+  ) {
+    return 'Recommended $minutes min — for $platform ($megabytes MB/video) + $resolution';
+  }
+
+  @override
+  String clipRecommendedHintUnverified(String minutes, String platform) {
+    return 'Recommended $minutes min — $platform limits unconfirmed, using the safest known values';
+  }
+
+  @override
+  String clipOverRecommendedWarning(
+    String minutes,
+    String platform,
+    String chosen,
+    String megabytes,
+  ) {
+    return 'Over the $minutes-min recommendation for $platform — a $chosen-min video is ~$megabytes MB, so it has to be sent as a dossier link instead of attached to the complaint form.';
+  }
+
+  @override
+  String get clipDurationTitle => 'Max length per video';
+
+  @override
+  String clipDurationSubtitle(String minutes, String platform) {
+    return 'Auto-closes at this length; $minutes min still attaches directly to $platform';
+  }
+
+  @override
+  String clipDurationOptionRecommended(String minutes) {
+    return '$minutes min (recommended)';
+  }
+
+  @override
+  String clipDurationPlanCap(String minutes) {
+    return 'Your plan allows up to $minutes min';
+  }
+
+  @override
+  String clipDurationChanged(String minutes) {
+    return 'Max length/video: $minutes min';
+  }
+
+  @override
+  String imageOverPlatformLimit(
+    String megabytes,
+    String platform,
+    String limit,
+  ) {
+    return 'Photo is $megabytes MB — over $platform\'s $limit MB limit. Kept in full; send it via the dossier link.';
+  }
+
+  @override
+  String nearClipLimitWarning(String minutes) {
+    return 'Nearing the $minutes-min cap — the video will close itself';
+  }
 
   @override
   String get shopDetailAddType => 'Add a type (enter a name)';
