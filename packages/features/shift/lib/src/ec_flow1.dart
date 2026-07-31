@@ -3536,7 +3536,7 @@ class _OrdersPager extends StatelessWidget {
                   : () => onPageChanged(info.page - 1),
             ),
             for (final slot in slots) ...[
-              const SizedBox(width: 4),
+              const SizedBox(width: _pagerGap),
               if (slot == null)
                 Text('…', style: _t(13, FontWeight.w500, PenColors.mut))
               else
@@ -3564,6 +3564,10 @@ class _OrdersPager extends StatelessWidget {
 }
 
 const _pagerButtonSize = 32.0;
+
+/// Khoảng hở giữa các nút trang. 2pt là mức khung design chốt lại để nhãn
+/// "1–10 / 128 vận đơn" và cả dải nút cùng vừa bề ngang thẻ 330pt.
+const _pagerGap = 2.0;
 
 class _PagerArrow extends StatelessWidget {
   const _PagerArrow({

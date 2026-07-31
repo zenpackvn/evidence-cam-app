@@ -797,7 +797,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String returnCodeMismatchBody(String returnCode, String shopName) {
-    return '$returnCode không khớp vận đơn nào trong $shopName. Kiểm tra lại mã, nhập tay hoặc xác nhận tạo vận đơn mới.';
+    return '$returnCode không khớp mã vận đơn nào trong $shopName. Kiểm tra lại mã, nhập tay hoặc xác nhận tạo vận đơn mới.';
   }
 
   @override

@@ -1959,67 +1959,100 @@ class EcNoMatchScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: Colors.transparent,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.of(context).maybePop(),
-              child: const ColoredBox(color: Colors.black54),
-            ),
-          ),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: DecoratedBox(
-                decoration: ecSquircleDecoration(
-                  radius: 16,
-                  color: BrandColors.bg,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        context.l10n.returnCodeMismatch,
-                        style: _t(16, FontWeight.w600, BrandColors.ink),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        context.l10n.returnCodeMismatchBody(
-                          returnCode,
-                          shopName,
-                        ),
-                        style: _t(14, FontWeight.w400, BrandColors.mut),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _OutlineButton(
-                              label: context.l10n.enterCodeManually,
-                              onPressed: onEnterManually,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _PrimaryButton(
-                              label: context.l10n.createOrderConfirm,
-                              onPressed: onCreateNew,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+    final l10n = context.l10n;
+    // F3-08 dựng đây là bottom sheet chứ không phải hộp thoại giữa màn: người
+    // dùng đang cầm máy quay, các nút phải nằm trong tầm ngón cái.
+    return PenSheet(
+      padding: const EdgeInsets.fromLTRB(26, 12, 26, 0),
+      dim: const Color(0x99161616),
+      children: [
+        const _MismatchBadge(),
+        PenText(
+          l10n.returnCodeMismatch,
+          size: 24,
+          color: PenColors.danger,
+          weight: FontWeight.w800,
+          align: TextAlign.center,
+        ),
+        const SizedBox(height: 14),
+        PenText(
+          l10n.returnCodeMismatchBody(returnCode, shopName),
+          size: 14,
+          color: PenColors.danger,
+          align: TextAlign.center,
+          lineHeight: 1.6,
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: PenOutlineButton(
+                label: l10n.enterCodeManually,
+                height: 58,
+                onPressed: onEnterManually,
               ),
             ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: PenPrimaryButton(
+                label: l10n.createOrderConfirm,
+                height: 58,
+                labelSize: 16,
+                onPressed: onCreateNew,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+/// Huy hiệu cảnh báo của F3-08: vòng tròn hồng nhạt, icon tam giác đỏ, và 5
+/// chấm "tia" quanh mép — toạ độ lấy nguyên từ frame `IconWrap` 118x118.
+class _MismatchBadge extends StatelessWidget {
+  const _MismatchBadge();
+
+  static const _sparks = [
+    (6.0, 26.0, 7.0),
+    (104.0, 20.0, 6.0),
+    (100.0, 72.0, 7.0),
+    (18.0, 84.0, 5.0),
+    (86.0, 4.0, 4.0),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 118,
+      height: 118,
+      child: Stack(
+        children: [
+          const Positioned(
+            left: 14,
+            top: 6,
+            child: PenEllipse(width: 96, height: 96, color: Color(0xFFF8E7E7)),
           ),
+          const Positioned(
+            left: 40,
+            top: 32,
+            child: Icon(
+              LucideIcons.triangleAlert,
+              size: 44,
+              color: PenColors.danger,
+            ),
+          ),
+          for (final (left, top, size) in _sparks)
+            Positioned(
+              left: left,
+              top: top,
+              child: PenEllipse(
+                width: size,
+                height: size,
+                color: PenColors.danger,
+              ),
+            ),
         ],
       ),
     );

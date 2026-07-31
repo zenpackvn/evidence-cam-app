@@ -241,7 +241,7 @@
   "queueFilterErrored": "Lỗi · {count}",
   "uploadingProgress": "Đang tải {percent}%",
   "errorRetryCount": "Lỗi · Thử lại ({count})",
-  "returnCodeMismatchBody": "{returnCode} không khớp vận đơn nào trong {shopName}. Kiểm tra lại mã, nhập tay hoặc xác nhận tạo vận đơn mới.",
+  "returnCodeMismatchBody": "{returnCode} không khớp mã vận đơn nào trong {shopName}. Kiểm tra lại mã, nhập tay hoặc xác nhận tạo vận đơn mới.",
   "onboardingSubtitle": "Quay video bằng chứng đóng hàng cho seller TMĐT",
   "onboardingStart": "Bắt đầu",
   "authSignIn": "Đăng nhập",

@@ -22,6 +22,13 @@ import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 
 const _designSize = Size(390, 844);
 
+/// Khung nào trong file design cao hơn artboard điện thoại thì dựng đúng chiều
+/// cao thật của nó. F1-09 là màn cuộn, khung vẽ liền 1037pt; ép xuống 844 thì
+/// ảnh tham chiếu chỉ còn vạch tràn vàng-đen đè lên phần cần đối chiếu.
+/// Nới ràng buộc cho mọi màn thì không được: chiều cao vô hạn làm vỡ
+/// `Expanded`/`Spacer` ở 27 màn còn lại.
+const _designHeightOverrides = <String, double>{'f1_09_shop_detail': 1037};
+
 /// Decodes every artwork the design file uses so the first paint has it.
 Future<void> _warmDesignArtwork() async {
   final dir = Directory('packages/ec_ui/assets/design');
@@ -110,8 +117,12 @@ void main() {
       skip: !_hasInter,
       experimentalLeakTesting: LeakTesting.settings.withIgnoredAll(),
       (tester) async {
+        final artboard = Size(
+          _designSize.width,
+          _designHeightOverrides[name] ?? _designSize.height,
+        );
         tester.view
-          ..physicalSize = _designSize
+          ..physicalSize = artboard
           ..devicePixelRatio = 1.0;
         addTearDown(tester.view.reset);
 
@@ -121,14 +132,14 @@ void main() {
 
         await tester.pumpWidget(
           MediaQuery(
-            data: const MediaQueryData(size: _designSize),
+            data: MediaQueryData(size: artboard),
             child: Directionality(
               textDirection: TextDirection.ltr,
               child: DefaultTextStyle(
                 style: const TextStyle(fontFamily: 'Inter'),
                 child: RepaintBoundary(
                   key: const Key('artboard'),
-                  child: SizedBox.fromSize(size: _designSize, child: screen),
+                  child: SizedBox.fromSize(size: artboard, child: screen),
                 ),
               ),
             ),

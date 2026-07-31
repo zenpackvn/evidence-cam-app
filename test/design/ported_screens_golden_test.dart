@@ -18,6 +18,46 @@ import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 import 'package:localization/localization.dart';
 
 const _designSize = Size(390, 844);
+
+/// Bốn dòng vận đơn đúng như khung F1-12/F2-01 vẽ, kể cả dòng cuối báo lỗi.
+const _sampleOrders = [
+  shift.EcOrderRow(
+    code: 'SPXVN024567890',
+    time: '10:21',
+    type: 'Đóng hàng',
+    videoCount: 2,
+  ),
+  shift.EcOrderRow(
+    code: 'SPXVN098765432',
+    time: '09:45',
+    type: 'Đơn vị vận chuyển',
+    videoCount: 1,
+  ),
+  shift.EcOrderRow(
+    code: 'SPXVN011122233',
+    time: '08:30',
+    type: 'Đóng hàng',
+    videoCount: 3,
+  ),
+  shift.EcOrderRow(
+    code: 'SPXVN044556677',
+    time: '07:15',
+    type: 'Đơn vị vận chuyển',
+    videoCount: 1,
+    errorCount: 1,
+  ),
+];
+
+/// "1–10 / 128 vận đơn" với 13 trang — chính con số khung design in ra.
+const _ordersPage = shift.EcOrderPage(
+  page: 1,
+  total: 128,
+  pageSize: 10,
+  shown: 10,
+);
+
+void _noopPage(int page) {}
+
 const _gb = 1024 * 1024 * 1024;
 
 Future<void> _warmDesignArtwork() async {
@@ -211,32 +251,18 @@ void main() {
     'ported_f1_12_orders_tab': const shift.EcHomeOrdersScreen(
       shopName: 'Shop ABC',
       queueCount: 4,
-      orders: [
-        shift.EcOrderRow(
-          code: 'SPXVN024567890',
-          time: '10:21',
-          type: 'Đóng hàng',
-          videoCount: 2,
-        ),
-        shift.EcOrderRow(
-          code: 'SPXVN098765432',
-          time: '09:45',
-          type: 'Đơn vị vận chuyển',
-          videoCount: 1,
-        ),
-        shift.EcOrderRow(
-          code: 'SPXVN011122233',
-          time: '08:30',
-          type: 'Đóng hàng',
-          videoCount: 3,
-        ),
-        shift.EcOrderRow(
-          code: 'SPXVN044556677',
-          time: '07:15',
-          type: 'Đơn vị vận chuyển',
-          videoCount: 1,
-        ),
-      ],
+      orders: _sampleOrders,
+      pageInfo: _ordersPage,
+      onPageChanged: _noopPage,
+    ),
+    // F1-12 và F2-01 là cùng một khung trong file design (danh sách vận đơn),
+    // nên cùng một widget phải khớp cả hai.
+    'ported_f2_01_orders': const shift.EcHomeOrdersScreen(
+      shopName: 'Shop ABC',
+      queueCount: 4,
+      orders: _sampleOrders,
+      pageInfo: _ordersPage,
+      onPageChanged: _noopPage,
     ),
     'ported_f2_02_evidence': _evidenceBackdrop,
     'ported_f2_03_video_detail': _over(
@@ -266,7 +292,12 @@ void main() {
       userEmail: 'nguyenvana@gmail.com',
     ),
     'ported_f4_03_language': const EcLanguageScreen(),
-    'ported_f3_02_code': const EcManualEntryScreen(),
+    // Khung design vẽ sheet này đè lên màn chờ bill; thiếu nền thì ảnh đối
+    // chiếu lệch phần lớn diện tích vì lý do không liên quan tới bản port.
+    'ported_f3_02_code': _over(
+      EcWaitBill2Screen(preview: _viewfinder('ec-viewfinder-idle')),
+      const EcManualEntryScreen(),
+    ),
     'ported_f3_04_saved': EcCutoverBScreen(
       preview: _viewfinder('ec-viewfinder-saved-next'),
     ),
@@ -296,7 +327,16 @@ void main() {
     ),
     'ported_f3_08_mismatch': _over(
       EcReturnRecScreen(preview: _viewfinder('ec-viewfinder-return-mismatch')),
-      const EcNoMatchScreen(),
+      // Nút phải có callback, nếu không nó vẽ ở trạng thái disabled và khung
+      // design lại vẽ nút xanh đậm đang bật.
+      EcNoMatchScreen(onEnterManually: () {}, onCreateNew: () {}),
+    ),
+    'ported_f3_10_new_type': _over(
+      EcRecording2Screen(
+        elapsed: '00:18',
+        preview: _viewfinder('ec-viewfinder-new-video-type'),
+      ),
+      const shift.EcCreateTypeScreen(),
     ),
     'ported_f3_09_pick_type': _over(
       EcRecording2Screen(
