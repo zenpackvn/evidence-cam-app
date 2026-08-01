@@ -20,6 +20,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'device_samples.dart';
 import 'ec_bill_scanner.dart';
 import 'ec_video_faststart.dart';
 
@@ -304,8 +305,10 @@ class RecordingSessionBloc
       String tracking,
       String type,
       int durationSeconds,
+      List<DeviceSample> samples,
     )
     onClipSaved,
+    DeviceConditionSource? deviceConditions,
     VoiceAnnouncerService? voiceAnnouncer,
     CaptureToneService? captureTone,
     EcVideoFaststartService? faststart,
@@ -318,6 +321,7 @@ class RecordingSessionBloc
   }) : _camera = camera,
        _scanner = scanner,
        _onClipSaved = onClipSaved,
+       _deviceConditions = deviceConditions,
        _voice = voiceAnnouncer ?? VoiceAnnouncerService(),
        _tone = captureTone ?? CaptureToneService(),
        _ownsTone = captureTone == null,
@@ -351,7 +355,13 @@ class RecordingSessionBloc
 
   final CameraService _camera;
   final BillScanner _scanner;
-  final void Function(String, String, String, int) _onClipSaved;
+  final void Function(String, String, String, int, List<DeviceSample>)
+  _onClipSaved;
+
+  /// Null = không lấy mẫu điều kiện thiết bị (test widget, và mọi luồng chưa
+  /// nối nguồn thật ở composition root). Clip khi đó vẫn quay và vẫn upload
+  /// bình thường, chỉ là bản render sau này chỉ có giờ + mã vận đơn.
+  final DeviceConditionSource? _deviceConditions;
   final VoiceAnnouncerService _voice;
   final CaptureToneService _tone;
 
@@ -370,6 +380,14 @@ class RecordingSessionBloc
   bool _liveScan = true;
   Timer? _timer;
   Timer? _cutoverTimer;
+
+  /// Đồng hồ đơn điệu của clip đang quay — nguồn `t_ms` của [_samples].
+  /// KHÔNG dùng giờ tường: đổi giờ máy giữa lúc quay không được phép làm xô
+  /// lệch timeline mẫu.
+  final Stopwatch _clipClock = Stopwatch();
+  List<DeviceSample> _samples = [];
+  bool _samplingBusy = false;
+
   bool _idleScanBusy = false;
   bool _recScanBusy = false;
   DateTime? _lastRecScanAt;
@@ -908,13 +926,16 @@ class RecordingSessionBloc
     int durationSeconds,
   ) async {
     final streamable = await _faststart.prepare(path);
-    _onClipSaved(streamable, code, typeLabel, durationSeconds);
+    _onClipSaved(streamable, code, typeLabel, durationSeconds, _samples);
   }
 
   void _onTicked(RecordingTicked event, Emitter<RecordingSessionState> emit) {
     if (state.status != RecordingStatus.recording) return;
     final elapsed = state.elapsed + const Duration(seconds: 1);
     emit(state.copyWith(elapsed: elapsed));
+    if (elapsed.inSeconds % kSampleInterval.inSeconds == 0) {
+      unawaited(_sampleDeviceCondition());
+    }
     // Heads-up a minute out: the seller is packing with both hands and isn't
     // looking at the countdown the view now shows, so the cap is spoken too.
     if (!_nearLimitWarned && elapsed >= nearLimitAt) {
@@ -950,6 +971,7 @@ class RecordingSessionBloc
             state.code,
             state.typeLabel,
             elapsedAtBackground.inSeconds,
+            _samples,
           );
         } on Object {
           // OS already tore the camera down mid-record; nothing recoverable.
@@ -1064,11 +1086,49 @@ class RecordingSessionBloc
     if (!isClosed) emit(state.copyWith(lowStorageWarning: false));
   }
 
+  /// Gọi đúng tại thời điểm bắt đầu mỗi clip, nên cũng là chỗ duy nhất cần
+  /// reset đồng hồ và bộ mẫu của clip.
   void _startTimer() {
     _cancelTimer();
+    _samples = [];
+    _clipClock
+      ..reset()
+      ..start();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!isClosed) add(const RecordingTicked());
     });
+  }
+
+  /// Đọc pin + loại mạng một lần, gắn vào timeline của clip.
+  ///
+  /// Chạy ngoài luồng tick (không `await` trong handler) vì đọc pin là lời gọi
+  /// qua platform channel — chặn tick là đồng hồ đếm ngược trên màn quay giật.
+  /// Lỡ một mẫu không sao; bộ mẫu thưa vẫn thật, còn tick trễ thì người đang
+  /// ôm thùng hàng nhìn thấy ngay.
+  Future<void> _sampleDeviceCondition() async {
+    final source = _deviceConditions;
+    if (source == null || _samplingBusy) return;
+    _samplingBusy = true;
+    try {
+      final tMs = _clipClock.elapsedMilliseconds;
+      final reading = await source.read();
+      // Máy chủ đòi t_ms tăng nghiêm ngặt — mẫu về trễ, chậm hơn mẫu đã ghi,
+      // thì bỏ chứ không chèn vào giữa.
+      if (_samples.isNotEmpty && tMs <= _samples.last.tMs) return;
+      _samples.add(
+        DeviceSample(
+          tMs: tMs,
+          battery: reading.battery,
+          charging: reading.charging,
+          net: reading.net,
+        ),
+      );
+    } on Object {
+      // Nền tảng không đọc được thì bỏ mẫu này. Thiếu một mẫu là dữ kiện thật;
+      // bịa một con số thay vào mới là thứ phá giá trị của cả bộ.
+    } finally {
+      _samplingBusy = false;
+    }
   }
 
   void _cancelTimer() {

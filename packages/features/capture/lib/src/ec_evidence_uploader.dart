@@ -15,7 +15,11 @@ abstract interface class EcEvidenceUploader {
   /// [shopId] and [capturedAt] are needed by the real backend flow (they scope
   /// the evidence to a shop/order); the legacy multipart uploader ignores them.
   /// [durationSeconds] is the recorded clip length, known at stop time; null
-  /// for photos.
+  /// for photos. [samplesJson] carries the device conditions sampled while
+  /// recording (battery/network) — the backend stores them at presign time, so
+  /// they must ride along with the bytes rather than be read at upload time:
+  /// a clip queued offline uploads hours later, on a different battery and a
+  /// different network.
   Future<String> upload(
     File file, {
     required String tracking,
@@ -23,6 +27,7 @@ abstract interface class EcEvidenceUploader {
     String? shopId,
     int? capturedAt,
     int? durationSeconds,
+    String? samplesJson,
     void Function(double progress)? onProgress,
   });
 }

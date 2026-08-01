@@ -41,6 +41,7 @@ class EcRecordRoute extends StatefulWidget {
     this.onNavAccount,
     this.onSettings,
     this.onSaved,
+    this.deviceConditions,
     this.verifyReturnCode,
     this.voiceAnnouncer,
     this.shopName = '',
@@ -95,15 +96,22 @@ class EcRecordRoute extends StatefulWidget {
   final VoidCallback? onSettings;
 
   /// Called after a recording stops with the saved clip's path, the order
-  /// tracking code and video type it belongs to, and its recorded length in
-  /// seconds.
+  /// tracking code and video type it belongs to, its recorded length in
+  /// seconds, and the device conditions sampled while it recorded.
   final void Function(
     String path,
     String tracking,
     String type,
     int durationSeconds,
+    List<DeviceSample> samples,
   )?
   onSaved;
+
+  /// Reads battery + network kind while recording. Null in tests and wherever
+  /// the composition root has not wired a real source — the clip still records
+  /// and uploads, its later burned-in render just carries time and tracking
+  /// code only.
+  final DeviceConditionSource? deviceConditions;
 
   /// For a "Trả hàng" clip, checks a scanned code against the shop's saved
   /// orders before recording starts. Returns `false` to reject the code (the
@@ -163,8 +171,9 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   late final RecordingSessionBloc _bloc = RecordingSessionBloc(
     camera: widget.camera ?? CameraService(),
     scanner: BillScanner(),
-    onClipSaved: (path, tracking, type, durationSeconds) =>
-        widget.onSaved?.call(path, tracking, type, durationSeconds),
+    onClipSaved: (path, tracking, type, durationSeconds, samples) =>
+        widget.onSaved?.call(path, tracking, type, durationSeconds, samples),
+    deviceConditions: widget.deviceConditions,
     verifyReturnCode: widget.verifyReturnCode,
     voiceAnnouncer: widget.voiceAnnouncer,
     initialType: widget.initialType,

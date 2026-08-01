@@ -18,6 +18,7 @@ class _FakeUploader implements EcEvidenceUploader {
     String? shopId,
     int? capturedAt,
     int? durationSeconds,
+    String? samplesJson,
     void Function(double progress)? onProgress,
   }) async {
     onProgress?.call(1);
@@ -157,5 +158,77 @@ void main() {
     expect(back.retryCount, 2);
     expect(back.remoteUrl, 'https://cdn/x.mp4');
     expect(back.createdAt, DateTime.fromMillisecondsSinceEpoch(1720000000000));
+  });
+
+  group('local file reclamation', () {
+    late Directory temp;
+
+    setUp(() => temp = Directory.systemTemp.createTempSync('ec_queue_temp'));
+    tearDown(() => temp.deleteSync(recursive: true));
+
+    test('deletes a temp source once its durable copy exists', () async {
+      final source = File('${temp.path}/${evidenceFaststartPrefix}1.mp4')
+        ..writeAsStringSync('video-bytes');
+      final queue = EcUploadQueue(directory: dir, temporaryDirectory: temp);
+
+      await queue.enqueue(
+        tracking: 'SPX1',
+        type: 'Đóng hàng',
+        filePath: source.path,
+      );
+
+      expect(source.existsSync(), isFalse);
+      expect(File(queue.tasks.single.filePath).existsSync(), isTrue);
+    });
+
+    test('never deletes a source outside the temp dir', () async {
+      // A path the user owns must survive: only throwaway copies are reclaimed.
+      final queue = EcUploadQueue(directory: dir, temporaryDirectory: temp);
+
+      await queue.enqueue(
+        tracking: 'SPX2',
+        type: 'Ảnh đính kèm',
+        filePath: clip.path,
+      );
+
+      expect(clip.existsSync(), isTrue);
+    });
+
+    test('load reclaims unreferenced clips in both directories', () async {
+      final orphanStored = File('${dir.path}/stale.mp4')
+        ..writeAsStringSync('orphan');
+      final orphanRemux = File('${temp.path}/${evidenceFaststartPrefix}9.mp4')
+        ..writeAsStringSync('orphan');
+      final unrelated = File('${temp.path}/somebody-elses.mp4')
+        ..writeAsStringSync('keep');
+
+      await EcUploadQueue(directory: dir, temporaryDirectory: temp).load();
+
+      expect(orphanStored.existsSync(), isFalse);
+      expect(orphanRemux.existsSync(), isFalse);
+      expect(unrelated.existsSync(), isTrue);
+    });
+
+    test('load keeps a clip its task still references', () async {
+      final store = InMemoryEvidenceClipStore();
+      final kept = File('${dir.path}/kept.mp4')..writeAsStringSync('video');
+      await store.save(
+        UploadTask(
+          id: 'k1',
+          tracking: 'SPX3',
+          type: 'Đóng hàng',
+          filePath: kept.path,
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      await EcUploadQueue(
+        store: store,
+        directory: dir,
+        temporaryDirectory: temp,
+      ).load();
+
+      expect(kept.existsSync(), isTrue);
+    });
   });
 }

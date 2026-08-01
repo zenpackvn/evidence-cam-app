@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:network/network.dart' show Dio, Options, Response;
 
 import 'ec_models.dart';
@@ -258,6 +260,21 @@ class EcApi {
       _get('/api/shops/$shopId/orders/$orderId', OrderDetailDto.fromJson);
 
   // --- uploads (FR-03) ---
+
+  /// Mẫu điều kiện thiết bị đi qua hàng đợi dưới dạng chuỗi JSON đã mã hoá; API
+  /// gửi lên dưới dạng mảng thật. Chuỗi hỏng thì **bỏ hẳn trường đó** chứ không
+  /// làm hỏng cả lần upload — mất mẫu là mất một thứ trang trí, mất clip là mất
+  /// bằng chứng.
+  static List<dynamic>? _decodeSamples(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is List && decoded.isNotEmpty ? decoded : null;
+    } on Object {
+      return null;
+    }
+  }
+
   Future<PresignDto> presignUpload(
     String shopId,
     String orderId, {
@@ -266,6 +283,8 @@ class EcApi {
     String? videoTypeId,
     String? device,
     int? durationSeconds,
+    String? samplesJson,
+    String? sha256,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/orders/$orderId/uploads/presign',
@@ -276,6 +295,8 @@ class EcApi {
         'videoTypeId': ?videoTypeId,
         'device': ?device,
         'durationSeconds': ?durationSeconds,
+        'samples': ?_decodeSamples(samplesJson),
+        'sha256': ?sha256,
       },
     );
     return PresignDto.fromJson(res.data!);
@@ -289,6 +310,8 @@ class EcApi {
     String? videoTypeId,
     String? device,
     int? durationSeconds,
+    String? samplesJson,
+    String? sha256,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/orders/$orderId/uploads/multipart',
@@ -299,6 +322,8 @@ class EcApi {
         'videoTypeId': ?videoTypeId,
         'device': ?device,
         'durationSeconds': ?durationSeconds,
+        'samples': ?_decodeSamples(samplesJson),
+        'sha256': ?sha256,
       },
     );
     return MultipartUploadDto.fromJson(res.data!);

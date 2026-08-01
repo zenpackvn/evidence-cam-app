@@ -74,21 +74,24 @@ void main() {
       expect(clip.existsSync(), isTrue);
     });
 
-    test('keeps the original path when ffmpeg reports success but wrote nothing', () async {
-      // Arrange
-      final clip = writeClip();
-      final service = EcVideoFaststartService(
-        outputDirectory: temp,
-        runner: (_) async => true,
-      );
+    test(
+      'keeps the original path when ffmpeg reports success but wrote nothing',
+      () async {
+        // Arrange
+        final clip = writeClip();
+        final service = EcVideoFaststartService(
+          outputDirectory: temp,
+          runner: (_) async => true,
+        );
 
-      // Act
-      final result = await service.prepare(clip.path);
+        // Act
+        final result = await service.prepare(clip.path);
 
-      // Assert
-      expect(result, clip.path);
-      expect(clip.existsSync(), isTrue);
-    });
+        // Assert
+        expect(result, clip.path);
+        expect(clip.existsSync(), isTrue);
+      },
+    );
 
     test('passes a missing input straight through', () async {
       // Arrange

@@ -6,6 +6,7 @@
 /// render still live in the app and relocate here in a later step.
 library;
 
+export 'src/device_samples.dart';
 export 'src/ec_bill_scanner.dart';
 export 'src/ec_evidence_store.dart';
 export 'src/ec_evidence_uploader.dart';

@@ -2222,9 +2222,7 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
                         width: double.infinity,
                         height: 58,
                         fill: PenColors.card,
-                        stroke: _emptyError
-                            ? PenColors.danger
-                            : PenColors.line,
+                        stroke: _emptyError ? PenColors.danger : PenColors.line,
                         radius: 14,
                         axis: PenAxis.row,
                         cross: CrossAxisAlignment.center,

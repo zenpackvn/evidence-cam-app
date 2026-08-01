@@ -65,6 +65,7 @@ import 'package:storage/storage.dart';
 
 import 'app/di/injection.dart';
 import 'data/ec_uploader.dart';
+import 'data/platform_device_conditions.dart';
 import 'screens/ec_record_route.dart';
 import 'screens/ec_scan_route.dart';
 
@@ -1131,7 +1132,10 @@ Future<String> _writeEndQrToTemp() async {
   return file.path;
 }
 
-Future<void> _shareEndSessionQr(BuildContext context, ShareService? share) async {
+Future<void> _shareEndSessionQr(
+  BuildContext context,
+  ShareService? share,
+) async {
   final l10n = context.l10n;
   if (share == null) {
     _toast(context, l10n.toastShareFailed);
@@ -2767,6 +2771,7 @@ class _OrderRoute extends StatefulWidget {
   final ShareService? share;
   final _EvidenceCountOverrides? evidenceCountOverrides;
   final VoidCallback? onBack;
+
   /// Mở màn chi tiết bằng chứng; hoàn tất với `true` khi có thay đổi cần nạp
   /// lại danh sách (xoá), `false` khi người dùng chỉ xem rồi đóng.
   final Future<bool> Function(_VideoRouteExtra extra)? onOpenVideo;
@@ -3950,13 +3955,17 @@ GoRouter _buildRouter(
                       onNavOrders: () => c.go('/home'),
                       onNavAccount: () => c.go('/account'),
                       onSettings: () => c.push('/type-sheet'),
-                      onSaved: (path, code, type, durationSeconds) {
+                      deviceConditions: const PlatformDeviceConditions(),
+                      onSaved: (path, code, type, durationSeconds, samples) {
                         queue.enqueue(
                           tracking: code,
                           type: type,
                           filePath: path,
                           shopId: shop.id,
                           durationSeconds: durationSeconds,
+                          samplesJson: samples.isEmpty
+                              ? null
+                              : DeviceSample.encode(samples),
                         );
                         _analytics()?.trackClipRecorded(recordingType: type);
                         _toast(c, c.l10n.toastVideoQueued);

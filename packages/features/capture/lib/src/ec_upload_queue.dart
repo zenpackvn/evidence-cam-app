@@ -22,6 +22,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'ec_evidence_store.dart';
 import 'ec_evidence_uploader.dart';
+import 'ec_video_faststart.dart' show evidenceFaststartPrefix;
 
 enum EcUploadState { waiting, uploading, done, error, quotaWait, paused }
 
@@ -40,6 +41,7 @@ class UploadTask {
     this.remoteUrl,
     this.errorMessage,
     this.durationSeconds,
+    this.samplesJson,
   });
 
   /// Parses a task from the legacy `queue.json` format, used only by the
@@ -78,6 +80,11 @@ class UploadTask {
   /// Recorded clip length in seconds, captured at stop time. Null for photos
   /// and for older persisted tasks.
   final int? durationSeconds;
+
+  /// Điều kiện thiết bị lấy mẫu trong lúc quay, đã mã hoá JSON. Đi cùng clip
+  /// qua hàng đợi vì clip offline có thể tới lúc upload sau nhiều giờ — lúc đó
+  /// pin và mạng của máy đã khác hẳn lúc quay. Null cho ảnh và task cũ.
+  final String? samplesJson;
 }
 
 class EcUploadQueue extends ChangeNotifier {
@@ -89,11 +96,13 @@ class EcUploadQueue extends ChangeNotifier {
     AnalyticsService? analytics,
     CrashReporter? crashReporter,
     @visibleForTesting Directory? directory,
+    @visibleForTesting Directory? temporaryDirectory,
   }) : _uploader = uploader,
        _store = store ?? InMemoryEvidenceClipStore(),
        _analytics = analytics,
        _crashReporter = crashReporter,
-       _dir = directory;
+       _dir = directory,
+       _temp = temporaryDirectory;
 
   final EcEvidenceUploader? _uploader;
   final EvidenceClipStore _store;
@@ -102,6 +111,7 @@ class EcUploadQueue extends ChangeNotifier {
   final List<UploadTask> _tasks = [];
   bool _processing = false;
   Directory? _dir;
+  Directory? _temp;
 
   /// Newest-first view of the queue.
   List<UploadTask> get tasks => List.unmodifiable(_tasks);
@@ -126,6 +136,9 @@ class EcUploadQueue extends ChangeNotifier {
         }
       }
       _tasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      // Strictly after the legacy import: `queue.json` lives in the evidence
+      // dir, so sweeping first would delete the very file being migrated.
+      await _sweepOrphans();
     } on Object {
       // No storage / corrupt data — run with an empty queue.
     }
@@ -143,15 +156,22 @@ class EcUploadQueue extends ChangeNotifier {
     required String filePath,
     String? shopId,
     int? durationSeconds,
+    String? samplesJson,
   }) async {
     final dir = await _evidenceDir();
     final id = DateTime.now().microsecondsSinceEpoch.toString();
     var stored = '${dir.path}/$id${_ext(filePath)}';
+    var copied = false;
     try {
       await File(filePath).copy(stored);
+      copied = true;
     } on Object {
       stored = filePath; // Fall back to the original path if the copy fails.
     }
+    // The copy above is the durable one. Whatever we were handed is a
+    // throwaway the OS never reliably reclaims, so drop it now that its
+    // contents are safe — see [_deleteSourceIfTemporary].
+    if (copied) await _deleteSourceIfTemporary(filePath);
     final task = UploadTask(
       id: id,
       tracking: tracking,
@@ -160,6 +180,7 @@ class EcUploadQueue extends ChangeNotifier {
       createdAt: DateTime.now(),
       shopId: shopId,
       durationSeconds: durationSeconds,
+      samplesJson: samplesJson,
     );
     _tasks.insert(0, task);
     await _store.save(task);
@@ -221,6 +242,69 @@ class EcUploadQueue extends ChangeNotifier {
     }
   }
 
+  /// Deletes a just-copied source file, but only when it sits in the OS temp
+  /// dir.
+  ///
+  /// Everything the queue is handed from there is already a throwaway copy —
+  /// the faststart remux, the camera's own temp clip, `image_picker`'s cache
+  /// entry (its returned path never points at the user's original photo, see
+  /// `_persistAvatarFile`). Anything *outside* temp could be a real user file,
+  /// so it is left alone.
+  Future<void> _deleteSourceIfTemporary(String path) async {
+    final temp = await _temporaryDir();
+    if (temp == null || !_isInside(temp, path)) return;
+    await _deleteLocalCopyQuietly(path);
+  }
+
+  /// Reclaims clip files nothing references any more.
+  ///
+  /// Two leaks feed this: a crash between [enqueue]'s copy and its store write
+  /// strands a file in the evidence dir, and a crash between the faststart
+  /// remux and [enqueue] strands one in temp. Neither directory is enumerated
+  /// anywhere else, so without this sweep they are never reclaimed. Runs at
+  /// [load] — no recording is in flight then, so any remux left over is
+  /// garbage by definition.
+  Future<void> _sweepOrphans() async {
+    final referenced = {for (final task in _tasks) task.filePath};
+    try {
+      final dir = await _evidenceDir();
+      for (final entity in dir.listSync()) {
+        if (entity is! File || referenced.contains(entity.path)) continue;
+        await _deleteLocalCopyQuietly(entity.path);
+      }
+    } on Object {
+      // Unreadable directory — nothing to reclaim.
+    }
+    try {
+      final temp = await _temporaryDir();
+      if (temp == null) return;
+      for (final entity in temp.listSync()) {
+        if (entity is! File) continue;
+        final name = entity.path.split('/').last;
+        if (!name.startsWith(evidenceFaststartPrefix)) continue;
+        if (referenced.contains(entity.path)) continue;
+        await _deleteLocalCopyQuietly(entity.path);
+      }
+    } on Object {
+      // No temp dir available (e.g. a plain unit test) — nothing to reclaim.
+    }
+  }
+
+  Future<Directory?> _temporaryDir() async {
+    final dir = _temp;
+    if (dir != null) return dir;
+    try {
+      return _temp = await getTemporaryDirectory();
+    } on Object {
+      return null; // No path_provider platform side — skip temp handling.
+    }
+  }
+
+  static bool _isInside(Directory dir, String path) {
+    final base = dir.path.endsWith('/') ? dir.path : '${dir.path}/';
+    return path.startsWith(base);
+  }
+
   Future<void> _process() async {
     if (_processing || _uploader == null) return;
     _processing = true;
@@ -248,6 +332,7 @@ class EcUploadQueue extends ChangeNotifier {
             shopId: task.shopId,
             capturedAt: task.createdAt.millisecondsSinceEpoch,
             durationSeconds: task.durationSeconds,
+            samplesJson: task.samplesJson,
             onProgress: (p) {
               task.progress = p;
               final percent = (p * 100).round();

@@ -259,6 +259,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     String? shopId,
     int? capturedAt,
     int? durationSeconds,
+    String? samplesJson,
     void Function(double progress)? onProgress,
   }) async {
     try {
@@ -269,6 +270,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
         shopId: shopId,
         capturedAt: capturedAt,
         durationSeconds: durationSeconds,
+        samplesJson: samplesJson,
         onProgress: onProgress,
       );
     } on DioException catch (e, stack) {
@@ -291,6 +293,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     String? shopId,
     int? capturedAt,
     int? durationSeconds,
+    String? samplesJson,
     void Function(double progress)? onProgress,
   }) async {
     if (shopId == null || shopId.isEmpty) {
@@ -305,6 +308,11 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     final isPhoto = _isPhotoEvidence(file, type);
     final videoTypeId = isPhoto ? null : await _videoTypeId(shopId, type);
     final clipDuration = isPhoto ? null : durationSeconds;
+    // Băm một lần ở đây thay vì lại ở bước complete: gửi kèm ngay từ presign
+    // thì vân tay và bộ mẫu thiết bị bị chốt trong CÙNG một request, trước khi
+    // byte nào tới server — khai mẫu đẹp rồi upload byte khác là hỏng checksum.
+    // Tiện thể bỏ được một lượt đọc hết file.
+    final fingerprint = await _fileSha256(file);
     final length = await file.length();
     if (length > multipartThresholdBytes) {
       return _uploadMultipart(
@@ -315,6 +323,8 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
         capturedAt: captureTime,
         videoTypeId: videoTypeId,
         durationSeconds: clipDuration,
+        samplesJson: samplesJson,
+        sha256: fingerprint,
         length: length,
         isPhoto: isPhoto,
         onProgress: onProgress,
@@ -329,6 +339,8 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       videoTypeId: videoTypeId,
       device: await _readDeviceLabel(),
       durationSeconds: clipDuration,
+      samplesJson: samplesJson,
+      sha256: fingerprint,
     );
     // presignUpload already created this evidence row server-side (needed to
     // hand back an evidenceId + presigned URL) — if the PUT itself fails, the
@@ -360,7 +372,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       order.id,
       presign.evidenceId,
       receiveTimeout: _completeUploadTimeout,
-      sha256: await _fileSha256(file),
+      sha256: fingerprint,
     );
     if (status == 'quota_hold' && !_ignoreQuotaHoldForTesting) {
       throw StateError('quota_exceeded');
@@ -378,6 +390,8 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     required bool isPhoto,
     String? videoTypeId,
     int? durationSeconds,
+    String? samplesJson,
+    String? sha256,
     void Function(double progress)? onProgress,
   }) async {
     final partSize = multipartPartSizeBytes;
@@ -390,6 +404,8 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       videoTypeId: videoTypeId,
       device: await _readDeviceLabel(),
       durationSeconds: durationSeconds,
+      samplesJson: samplesJson,
+      sha256: sha256,
     );
     await _uploadThumbnailQuietly(file, created.thumbUploadUrl, isPhoto: isPhoto);
     // Aborting deletes the multipart upload on R2 — only safe while nothing
@@ -466,7 +482,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       uploadId: created.uploadId,
       parts: uploaded,
       receiveTimeout: _completeUploadTimeout,
-      sha256: await _fileSha256(file),
+      sha256: sha256,
     );
     if (status == 'quota_hold' && !_ignoreQuotaHoldForTesting) {
       throw StateError('quota_exceeded');

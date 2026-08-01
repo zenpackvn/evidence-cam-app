@@ -33,6 +33,12 @@ import 'package:path_provider/path_provider.dart';
 /// native dependencies.
 typedef FfmpegRunner = Future<bool> Function(String command);
 
+/// Filename prefix of every remuxed clip. The remux lands in the OS temp dir
+/// and is only ever a hand-off to `EcUploadQueue`, which takes its own copy —
+/// so the queue uses this to reclaim any left behind by a crash between the
+/// two steps.
+const String evidenceFaststartPrefix = 'evidence_faststart_';
+
 class EcVideoFaststartService {
   EcVideoFaststartService({
     @visibleForTesting FfmpegRunner? runner,
@@ -95,7 +101,7 @@ class EcVideoFaststartService {
   Future<String> _outputPathFor() async {
     final dir = _outputDirectory ?? await getTemporaryDirectory();
     final stamp = DateTime.now().microsecondsSinceEpoch;
-    return '${dir.path}/evidence_faststart_$stamp.mp4';
+    return '${dir.path}/$evidenceFaststartPrefix$stamp.mp4';
   }
 
   Future<void> _deleteQuietly(String path) async {
@@ -110,15 +116,18 @@ class EcVideoFaststartService {
     final injected = _runner;
     if (injected != null) return injected(command);
     final completer = Completer<bool>();
-    FFmpegKit.executeAsync(command, onComplete: (session) {
-      var success = false;
-      try {
-        success = ReturnCode.isSuccess(session.getReturnCode());
-      } on Object {
-        success = false;
-      }
-      if (!completer.isCompleted) completer.complete(success);
-    });
+    FFmpegKit.executeAsync(
+      command,
+      onComplete: (session) {
+        var success = false;
+        try {
+          success = ReturnCode.isSuccess(session.getReturnCode());
+        } on Object {
+          success = false;
+        }
+        if (!completer.isCompleted) completer.complete(success);
+      },
+    );
     return completer.future;
   }
 }
