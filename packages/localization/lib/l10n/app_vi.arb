@@ -273,6 +273,30 @@
   "registerCreateAccount": "Tạo tài khoản",
   "registerSameEmailNote": "Cùng email sẽ tự liên kết về một tài khoản",
   "registerHaveAccountPrompt": "Đã có tài khoản? ",
+  "registerSuccessTitle": "Đã tạo tài khoản",
+  "registerSuccessVerifyMessage": "Đã gửi email xác minh tới {email}. Kiểm tra hộp thư (kể cả mục spam), rồi đăng nhập.",
+  "@registerSuccessVerifyMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "ban@example.com"
+      }
+    }
+  },
+  "registerSuccessMessage": "Tài khoản đã sẵn sàng. Đăng nhập bằng email và mật khẩu vừa đăng ký.",
+  "registerSuccessAction": "Đăng nhập",
+  "loginNotVerifiedTitle": "Email chưa xác minh",
+  "loginNotVerifiedMessage": "Mở email xác minh đã gửi tới {email} (kiểm tra cả mục spam), bấm link trong đó rồi đăng nhập lại.",
+  "@loginNotVerifiedMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "ban@example.com"
+      }
+    }
+  },
+  "loginResendVerification": "Gửi lại email",
+  "loginVerificationResent": "Đã gửi lại email xác minh",
   "forgotPasswordTitle": "Quên mật khẩu",
   "forgotPasswordSubtitle": "Nhập email để nhận liên kết đặt lại mật khẩu",
   "forgotPasswordSubmit": "Gửi liên kết đặt lại",
@@ -317,6 +341,17 @@
   "removeFromShop": "Gỡ khỏi shop",
   "resolutionAppliesNote": "Áp dụng cho video quay mới của shop",
   "resolutionDefaultOption": "720p (mặc định)",
+  "ordersSearchHint": "Nhập mã vận đơn",
+  "ordersEmpty": "Shop chưa có đơn nào",
+  "recordAutoStopIn": "Tự chốt sau {time}",
+  "@recordAutoStopIn": {
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "00:48"
+      }
+    }
+  },
   "ordersNotFound": "Không tìm thấy đơn hàng",
   "ordersNotFoundHint": "Kiểm tra lại mã vận đơn và thử lại",
   "ordersPageRange": "{first}–{last} / {total} vận đơn",

@@ -16,6 +16,7 @@ class EcUser {
     this.displayName,
     this.phone,
     this.providers = const [],
+    this.emailVerified = true,
   });
 
   final String uid;
@@ -23,6 +24,12 @@ class EcUser {
   final String? displayName;
   final String? phone;
   final List<String> providers;
+
+  /// Whether the email address has been confirmed through the verification
+  /// link. Federated sign-ins (Google/Apple) are verified by the provider;
+  /// only fresh email/password accounts start out false. Defaults to true so a
+  /// backend that cannot tell never locks anyone out.
+  final bool emailVerified;
 
   /// Whether [provider] is currently linked to this account.
   bool hasProvider(EcAuthProvider provider) => providers.contains(provider.id);
@@ -34,12 +41,14 @@ class EcUser {
     String? displayName,
     String? phone,
     List<String>? providers,
+    bool? emailVerified,
   }) => EcUser(
     uid: uid,
     email: email,
     displayName: displayName ?? this.displayName,
     phone: phone ?? this.phone,
     providers: providers ?? this.providers,
+    emailVerified: emailVerified ?? this.emailVerified,
   );
 }
 
@@ -88,6 +97,11 @@ abstract interface class EcAuth {
   Future<EcUser> signInWithGoogle();
   Future<EcUser> signInWithApple();
   Future<void> sendPasswordReset(String email);
+
+  /// Send the address-verification email to the signed-in user. Called right
+  /// after registration, while the freshly created account is still signed in.
+  Future<void> sendEmailVerification();
+
   Future<void> signOut();
 
   /// Update the display name and/or phone of the current user.
@@ -156,11 +170,14 @@ class FakeEcAuth implements EcAuth {
     String? name,
   }) async {
     _password = password;
+    // Như Firebase: tài khoản email/mật khẩu mới tạo chưa xác minh cho tới khi
+    // bấm link trong mail.
     return _user.value = EcUser(
       uid: 'fake-uid',
       email: email,
       displayName: name,
       providers: const ['password'],
+      emailVerified: false,
     );
   }
 
@@ -178,6 +195,9 @@ class FakeEcAuth implements EcAuth {
 
   @override
   Future<void> sendPasswordReset(String email) async {}
+
+  @override
+  Future<void> sendEmailVerification() async => _require();
 
   @override
   Future<void> signOut() async => _user.value = null;

@@ -1718,6 +1718,54 @@ abstract class AppLocalizations {
   /// **'Already have an account? '**
   String get registerHaveAccountPrompt;
 
+  /// No description provided for @registerSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created'**
+  String get registerSuccessTitle;
+
+  /// No description provided for @registerSuccessVerifyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a verification email to {email}. Check your inbox (including spam), then sign in.'**
+  String registerSuccessVerifyMessage(String email);
+
+  /// No description provided for @registerSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is ready. Sign in with the email and password you just registered.'**
+  String get registerSuccessMessage;
+
+  /// No description provided for @registerSuccessAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get registerSuccessAction;
+
+  /// No description provided for @loginNotVerifiedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Email not verified'**
+  String get loginNotVerifiedTitle;
+
+  /// No description provided for @loginNotVerifiedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the verification email sent to {email} (check spam too), follow the link, then sign in again.'**
+  String loginNotVerifiedMessage(String email);
+
+  /// No description provided for @loginResendVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend email'**
+  String get loginResendVerification;
+
+  /// No description provided for @loginVerificationResent.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification email sent again'**
+  String get loginVerificationResent;
+
   /// No description provided for @forgotPasswordTitle.
   ///
   /// In en, this message translates to:
@@ -1981,6 +2029,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'720p (default)'**
   String get resolutionDefaultOption;
+
+  /// No description provided for @ordersSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter tracking code'**
+  String get ordersSearchHint;
+
+  /// No description provided for @ordersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This shop has no orders yet'**
+  String get ordersEmpty;
+
+  /// No description provided for @recordAutoStopIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-stops in {time}'**
+  String recordAutoStopIn(String time);
 
   /// No description provided for @ordersNotFound.
   ///

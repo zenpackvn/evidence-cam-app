@@ -32,28 +32,33 @@ class EcSplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    // The design lays this screen out absolutely on an 844pt artboard: the
-    // brand block hangs off the top, the button and version off the bottom,
-    // and the slack between them lives around the hero art. Devices are
-    // taller than the artboard, so the art takes the slack instead of a
-    // fixed spacer — that keeps every other gap at its design value.
     // Every node on this screen is `layoutPosition: absolute` in the design,
     // so it is placed by coordinate rather than flowed: the brand block is
-    // anchored to the top, the button and version to the bottom, and a taller
-    // device only grows the gap around the hero art.
+    // anchored to the top, the button and version to the bottom, and the hero
+    // art takes whatever slack is left between them.
+    //
+    // Those coordinates describe a 390x844 artboard, so anything centred in
+    // the design is expressed as an equal left/right pair rather than a `left`
+    // plus a `width` — a device narrower than 390 would otherwise push it off
+    // centre by half the difference. The art is likewise anchored top *and*
+    // bottom so a screen shorter than 844 shrinks it instead of letting the
+    // button ride over it. On a 390x844 box both spellings are identical.
     return PenScreen(
       scrollable: false,
       child: Stack(
         children: [
           Positioned(
-            left: 135,
+            left: 0,
+            right: 0,
             top: 52,
-            child: Image.asset(
-              'assets/design/logo.png',
-              package: 'ec_ui',
-              width: 120,
-              height: 120,
-              fit: BoxFit.cover,
+            child: Center(
+              child: Image.asset(
+                'assets/design/logo.png',
+                package: 'ec_ui',
+                width: 120,
+                height: 120,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
           const Positioned(
@@ -77,8 +82,8 @@ class EcSplashScreen extends StatelessWidget {
           ),
           Positioned(
             left: 30,
+            right: 30,
             top: 274,
-            width: 330,
             child: Column(
               // The design centres each tagline line inside the 330pt column.
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -103,13 +108,19 @@ class EcSplashScreen extends StatelessWidget {
           ),
           Positioned(
             left: 24,
+            right: 24,
             top: 365,
-            width: 342,
-            height: 325,
+            // The button is 64 tall and sits 64 off the bottom; the design
+            // leaves 26 between it and the art, so 154 is the art's floor.
+            bottom: 154,
+            // `contain` over `cover`: the asset is exactly 3x the design's
+            // 342x325 box, so this is pixel-identical at the artboard size,
+            // but a shorter screen scales the whole illustration down instead
+            // of cropping it to a strip.
             child: Image.asset(
               'assets/design/flow1-zenpack-hero-art-splash.png',
               package: 'ec_ui',
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
             ),
           ),
           Positioned(
@@ -151,6 +162,7 @@ class EcLoginScreen extends StatelessWidget {
     this.onForgot,
     this.onGoogle,
     this.onApple,
+    this.showApple = true,
     this.onRegister,
     this.onLanguage,
     super.key,
@@ -162,6 +174,10 @@ class EcLoginScreen extends StatelessWidget {
   final VoidCallback? onForgot;
   final VoidCallback? onGoogle;
   final VoidCallback? onApple;
+
+  /// Whether to offer Apple sign-in at all. False on platforms with no native
+  /// Apple ID sheet, where the button could only ever fail.
+  final bool showApple;
   final VoidCallback? onRegister;
   final VoidCallback? onLanguage;
 
@@ -228,12 +244,14 @@ class EcLoginScreen extends StatelessWidget {
                     icon: const PenGoogleMark(),
                     onPressed: onGoogle,
                   ),
-                  const SizedBox(height: 12),
-                  PenOutlineButton(
-                    label: l10n.authSignInApple,
-                    icon: const PenAppleMark(),
-                    onPressed: onApple,
-                  ),
+                  if (showApple) ...[
+                    const SizedBox(height: 12),
+                    PenOutlineButton(
+                      label: l10n.authSignInApple,
+                      icon: const PenAppleMark(),
+                      onPressed: onApple,
+                    ),
+                  ],
                   const SizedBox(height: 25),
                   PenPromptLink(
                     prompt: l10n.authNoAccountPrompt.trim(),

@@ -13,34 +13,37 @@ void main() {
       File('${temp.path}/clip.mp4')..writeAsStringSync('original bytes');
 
   group('EcVideoFaststartService.prepare', () {
-    test('returns the remuxed copy and removes the source on success', () async {
-      // Arrange
-      final clip = writeClip();
-      late String issued;
-      final service = EcVideoFaststartService(
-        outputDirectory: temp,
-        runner: (command) async {
-          issued = command;
-          final output = RegExp(r'"([^"]+)"$').firstMatch(command)!.group(1)!;
-          File(output).writeAsStringSync('remuxed bytes');
-          return true;
-        },
-      );
+    test(
+      'returns the remuxed copy and removes the source on success',
+      () async {
+        // Arrange
+        final clip = writeClip();
+        late String issued;
+        final service = EcVideoFaststartService(
+          outputDirectory: temp,
+          runner: (command) async {
+            issued = command;
+            final output = RegExp(r'"([^"]+)"$').firstMatch(command)!.group(1)!;
+            File(output).writeAsStringSync('remuxed bytes');
+            return true;
+          },
+        );
 
-      // Act
-      final result = await service.prepare(clip.path);
+        // Act
+        final result = await service.prepare(clip.path);
 
-      // Assert
-      expect(result, isNot(clip.path));
-      expect(File(result).existsSync(), isTrue);
-      expect(clip.existsSync(), isFalse);
-      // Hình vẫn được copy nguyên (không giải mã lại); chỉ tiếng bị mã hoá lại
-      // để làm câm đoạn đầu chứa tút + "đã bắt đầu quay".
-      expect(issued, contains('-c:v copy'));
-      expect(issued, contains('-movflags +faststart'));
-      expect(issued, contains('afade=t=in:st='));
-      expect(issued, contains('-c:a aac'));
-    });
+        // Assert
+        expect(result, isNot(clip.path));
+        expect(File(result).existsSync(), isTrue);
+        expect(clip.existsSync(), isFalse);
+        // Hình vẫn được copy nguyên (không giải mã lại); chỉ tiếng bị mã hoá lại
+        // để làm câm đoạn đầu chứa tút + "đã bắt đầu quay".
+        expect(issued, contains('-c:v copy'));
+        expect(issued, contains('-movflags +faststart'));
+        expect(issued, contains('afade=t=in:st='));
+        expect(issued, contains('-c:a aac'));
+      },
+    );
 
     test('keeps the original clip when ffmpeg fails', () async {
       // Arrange — the branch that must never lose evidence.

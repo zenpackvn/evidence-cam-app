@@ -21,19 +21,22 @@ import 'package:shared_contracts/shared_contracts.dart';
 TextStyle _t(double size, FontWeight weight, Color color) =>
     TextStyle(fontSize: size, fontWeight: weight, color: color, height: 1.3);
 
-/// AccountTab — shop header w/ upload queue chip, profile row, two settings
-/// groups (Gói & ứng dụng / Bảo mật & đăng nhập) and the 3-tab bottom nav.
+/// AccountTab — profile row, two settings groups (Gói & ứng dụng / Bảo mật &
+/// đăng nhập) and the 3-tab bottom nav.
+///
+/// Design (`F4-01`) opens with a shop-name header, but this is a root tab of
+/// the bottom nav: the chevron it drew reads as a back button, and the name
+/// itself duplicates the Vận đơn tab's header. Both are dropped here, so Chi
+/// tiết cửa hàng (F1-09) is reached from the Vận đơn tab instead.
 class EcAccountTabScreen extends StatelessWidget {
   const EcAccountTabScreen({
     this.userName = 'Nguyễn Văn A',
     this.userEmail = 'nguyenvana@gmail.com',
-    this.shopName = 'Shop ABC',
     this.planLabel = 'Cơ bản',
     this.languageLabel = 'Tiếng Việt',
     this.loginMethodsLabel = '3 liên kết',
     this.passwordActionLabel = 'Đổi mật khẩu',
     this.avatarPath,
-    this.onBack,
     this.onProfileTap,
     this.onQuotaTap,
     this.onLanguageTap,
@@ -49,13 +52,11 @@ class EcAccountTabScreen extends StatelessWidget {
 
   final String userName;
   final String userEmail;
-  final String shopName;
   final String planLabel;
   final String languageLabel;
   final String loginMethodsLabel;
   final String passwordActionLabel;
   final String? avatarPath;
-  final VoidCallback? onBack;
   final VoidCallback? onProfileTap;
   final VoidCallback? onQuotaTap;
   final VoidCallback? onLanguageTap;
@@ -85,8 +86,6 @@ class EcAccountTabScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _ShopHeader(shopName: shopName, onBack: onBack),
-                    const SizedBox(height: 18),
                     _UserRow(
                       name: userName,
                       email: userEmail,
@@ -428,6 +427,7 @@ class EcLoginMethodsScreen extends StatelessWidget {
     this.email = 'nguyenvana@gmail.com',
     this.googleLinked = true,
     this.appleLinked = false,
+    this.showApple = true,
     this.onBack,
     this.onToggleGoogle,
     this.onToggleApple,
@@ -437,6 +437,11 @@ class EcLoginMethodsScreen extends StatelessWidget {
   final String email;
   final bool googleLinked;
   final bool appleLinked;
+
+  /// Whether Apple can be linked on this platform. False hides the row, unless
+  /// [appleLinked] — a link made on another device stays listed so it can still
+  /// be removed, and so the row count matches the "N methods" summary.
+  final bool showApple;
   final VoidCallback? onBack;
   final VoidCallback? onToggleGoogle;
   final VoidCallback? onToggleApple;
@@ -475,16 +480,18 @@ class EcLoginMethodsScreen extends StatelessWidget {
                       linked: googleLinked,
                       onToggle: onToggleGoogle,
                     ),
-                    const SizedBox(height: 10),
-                    _LoginMethodRow(
-                      icon: Icons.apple,
-                      name: 'Apple',
-                      detail: appleLinked
-                          ? context.l10n.linkLinked
-                          : context.l10n.linkNotLinked,
-                      linked: appleLinked,
-                      onToggle: onToggleApple,
-                    ),
+                    if (showApple || appleLinked) ...[
+                      const SizedBox(height: 10),
+                      _LoginMethodRow(
+                        icon: Icons.apple,
+                        name: 'Apple',
+                        detail: appleLinked
+                            ? context.l10n.linkLinked
+                            : context.l10n.linkNotLinked,
+                        linked: appleLinked,
+                        onToggle: onToggleApple,
+                      ),
+                    ],
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
@@ -1742,36 +1749,6 @@ class _ValidatedPrimaryButton extends StatelessWidget {
           : () {
               if (Form.of(context).validate()) onValid!();
             },
-    );
-  }
-}
-
-/// The account tab's `Head`: back chevron, 14pt gap, shop name. The design
-/// dropped the upload-queue pill from this header — the queue is reached from
-/// the Vận đơn tab instead.
-class _ShopHeader extends StatelessWidget {
-  const _ShopHeader({required this.shopName, this.onBack});
-
-  final String shopName;
-  final VoidCallback? onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        PenBackButton(onTap: onBack),
-        const SizedBox(width: 14),
-        Expanded(
-          child: PenText(
-            shopName,
-            size: 24,
-            color: PenColors.ink,
-            weight: FontWeight.w800,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
     );
   }
 }

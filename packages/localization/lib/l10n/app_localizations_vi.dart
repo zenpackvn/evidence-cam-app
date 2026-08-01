@@ -900,6 +900,35 @@ class AppLocalizationsVi extends AppLocalizations {
   String get registerHaveAccountPrompt => 'Đã có tài khoản? ';
 
   @override
+  String get registerSuccessTitle => 'Đã tạo tài khoản';
+
+  @override
+  String registerSuccessVerifyMessage(String email) {
+    return 'Đã gửi email xác minh tới $email. Kiểm tra hộp thư (kể cả mục spam), rồi đăng nhập.';
+  }
+
+  @override
+  String get registerSuccessMessage =>
+      'Tài khoản đã sẵn sàng. Đăng nhập bằng email và mật khẩu vừa đăng ký.';
+
+  @override
+  String get registerSuccessAction => 'Đăng nhập';
+
+  @override
+  String get loginNotVerifiedTitle => 'Email chưa xác minh';
+
+  @override
+  String loginNotVerifiedMessage(String email) {
+    return 'Mở email xác minh đã gửi tới $email (kiểm tra cả mục spam), bấm link trong đó rồi đăng nhập lại.';
+  }
+
+  @override
+  String get loginResendVerification => 'Gửi lại email';
+
+  @override
+  String get loginVerificationResent => 'Đã gửi lại email xác minh';
+
+  @override
   String get forgotPasswordTitle => 'Quên mật khẩu';
 
   @override
@@ -1039,6 +1068,17 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get resolutionDefaultOption => '720p (mặc định)';
+
+  @override
+  String get ordersSearchHint => 'Nhập mã vận đơn';
+
+  @override
+  String get ordersEmpty => 'Shop chưa có đơn nào';
+
+  @override
+  String recordAutoStopIn(String time) {
+    return 'Tự chốt sau $time';
+  }
 
   @override
   String get ordersNotFound => 'Không tìm thấy đơn hàng';

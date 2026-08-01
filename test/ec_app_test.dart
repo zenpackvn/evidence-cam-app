@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:ec_data/ec_data.dart';
+import 'package:ec_ui/ec_ui.dart' show LucideIcons, PenBackButton;
 import 'package:evidence_cam/app/di/injection.dart';
 import 'package:evidence_cam/ec_app.dart';
+import 'package:flutter/cupertino.dart' show CupertinoAlertDialog;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
@@ -46,13 +48,22 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> signInWithGoogleAndPhone(WidgetTester tester) async {
+  /// Signs in and enters [shop] from the picker — a login always stops there
+  /// now, so tests that want to be inside the app have to pick. Pass a null
+  /// [shop] to stay on the picker.
+  Future<void> signInWithGoogleAndPhone(
+    WidgetTester tester, {
+    String? shop = 'Shop ABC',
+  }) async {
     await tester.tap(find.text('Bắt đầu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Đăng nhập với Google'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(EditableText).first, '0912345678');
     await tester.tap(find.text('Tiếp tục'));
+    await tester.pumpAndSettle();
+    if (shop == null) return;
+    await tester.tap(find.text(shop).first);
     await tester.pumpAndSettle();
   }
 
@@ -92,12 +103,52 @@ void main() {
       final repo = _OrderLoadFailingRepository();
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogleAndPhone(tester, shop: 'Live Shop');
 
       expect(repo.ordersShopId, 'live-shop');
       expect(find.text('Không tải được đơn hàng'), findsOneWidget);
       expect(find.text('Thử lại'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'an unverified email account cannot sign in and can resend the mail',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': null,
+        'ValueNotifier<EcUser?>': null,
+        'ValueNotifier<bool>': null,
+        'ValueNotifier<_OverlayEntryWidgetState?>': null,
+        'OverlayEntry': null,
+      },
+    ),
+    (tester) async {
+      final auth = _UnverifiedAuth();
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: auth, repo: const _DemoRepository()),
+      );
+
+      await tester.tap(find.text('Bắt đầu'));
+      await tester.pumpAndSettle();
+      final fields = find.byType(EditableText);
+      await tester.enterText(fields.at(0), 'a@b.com');
+      await tester.enterText(fields.at(1), 'dongGoi2026');
+      await tester.tap(find.text('Đăng nhập').last);
+      await tester.pumpAndSettle();
+
+      // Blocked with the reason, and offered the link again.
+      expect(find.text('Email chưa xác minh'), findsOneWidget);
+      await tester.tap(find.text('Gửi lại email'));
+      await tester.pumpAndSettle();
+
+      expect(auth.verificationsSent, 1);
+      // Signed back out, still on Login — no shop picker, no shell.
+      expect(auth.currentUser, isNull);
+      expect(find.text('Chọn phương thức đăng nhập'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
     },
   );
 
@@ -135,7 +186,24 @@ void main() {
       // The account + phone are still created through the seam...
       expect(auth.registeredEmail, 'a@b.com');
       expect(auth.updatedPhone, '0901234567');
-      // ...but we bounce back to Login (signed out) instead of entering the app.
+      // ...and the verification mail goes out before the sign-out.
+      expect(auth.verificationEmail, 'a@b.com');
+      // Registration is confirmed rather than silently bouncing to Login.
+      expect(find.text('Đã tạo tài khoản'), findsOneWidget);
+      expect(
+        find.textContaining('Đã gửi email xác minh tới a@b.com'),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(CupertinoAlertDialog),
+          matching: find.text('Đăng nhập'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Only then do we land back on Login, signed out.
       expect(auth.currentUser, isNull);
       expect(find.text('Chọn phương thức đăng nhập'), findsOneWidget);
     },
@@ -160,9 +228,47 @@ void main() {
       await tester.tap(find.text('Đăng nhập với Google'));
       await tester.pumpAndSettle();
 
-      // No phone-setup step (no 'Tiếp tục'); it goes straight into the shop.
+      // No phone-setup step (no 'Tiếp tục'); it goes straight to the picker.
       expect(find.text('Tiếp tục'), findsNothing);
+      await tester.tap(find.text('Shop ABC'));
+      await tester.pumpAndSettle();
       expect(find.textContaining('SPXVN'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'tapping the shop name on a tab header opens shop detail',
+    // Same app-lifetime singletons the other shell tests ignore, plus what the
+    // pushed detail route keeps alive (its route notifier, the shop logos).
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': null,
+        'ValueNotifier<EcUser?>': 1,
+        'ValueNotifier<bool>': null,
+        '_EvidenceCountOverrides': null,
+      },
+    ),
+    (tester) async {
+      await pumpPhoneSizedApp(tester, const EcApp(repo: _DemoRepository()));
+
+      await signInWithGoogleAndPhone(tester);
+
+      // Orders tab header — the shop name itself is the entry to F1-09.
+      await tester.tap(find.text('Shop ABC'));
+      await tester.pumpAndSettle();
+      expect(find.text('CÀI ĐẶT SHOP'), findsOneWidget);
+      expect(find.text('LOẠI VIDEO'), findsOneWidget);
+
+      // And back out to the tab it was opened from.
+      await tester.tap(find.byType(PenBackButton).first);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('SPXVN'), findsWidgets);
+
+      // The account tab deliberately carries no shop name, so Vận đơn is the
+      // only way in — guard that it stays that way.
+      await tester.tap(find.text('Tài khoản').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Shop ABC'), findsNothing);
     },
   );
 
@@ -209,7 +315,7 @@ void main() {
       addTearDown(getIt.reset);
       await pumpPhoneSizedApp(tester, const EcApp(repo: _TwoShopRepository()));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogleAndPhone(tester, shop: null);
       await tester.tap(find.text('Shop XYZ').first);
       await tester.pumpAndSettle();
 
@@ -219,25 +325,129 @@ void main() {
   );
 
   testWidgets(
-    'a single shop is selected automatically after login',
+    'the language pick is remembered and beats the device locale',
+    // Two app instances (the restart) and the confirmation toast's overlay
+    // entry outlive the check; the auth notifier is an app-lifetime singleton.
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
       notDisposed: {
-        'ImageStreamCompleterHandle': 1,
-        'ValueNotifier<EcUser?>': 1,
+        'ImageStreamCompleterHandle': null,
+        'ValueNotifier<EcUser?>': null,
+        'ValueNotifier<bool>': null,
+        'ValueNotifier<_OverlayEntryWidgetState?>': null,
+        'OverlayEntry': null,
+        '_EvidenceCountOverrides': null,
+      },
+    ),
+    (tester) async {
+      await getIt.reset();
+      final memory = _MemoryStore();
+      getIt.registerSingleton<KeyValueStore>(memory);
+      addTearDown(getIt.reset);
+      // Device says English; the app starts there until a pick is stored.
+      tester.platformDispatcher.localeTestValue = const Locale('en');
+      addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+        PaintingBinding.instance.imageCache
+          ..clear()
+          ..clearLiveImages();
+      });
+
+      await tester.pumpWidget(const EcApp(repo: _DemoRepository()));
+      await tester.pumpAndSettle();
+      expect(find.text('Get started'), findsOneWidget);
+
+      await tester.tap(find.text('Get started'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sign in with Google'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(EditableText).first, '0912345678');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Shop ABC'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Account').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Language'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tiếng Việt'));
+      await tester.pumpAndSettle();
+
+      expect(memory.getString('app.language'), 'vi');
+
+      // A fresh app (restart) reads the stored pick, not the device locale.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(const EcApp(repo: _DemoRepository()));
+      await tester.pumpAndSettle();
+      expect(find.text('Bắt đầu'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'login stops on the shop picker even with a single shop',
+    // Entering the shell after the pick keeps its app-lifetime singletons alive
+    // past the check.
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': null,
+        'ValueNotifier<EcUser?>': null,
+        'ValueNotifier<bool>': null,
+        '_EvidenceCountOverrides': null,
       },
     ),
     (tester) async {
       await pumpPhoneSizedApp(tester, const EcApp(repo: _DemoRepository()));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogleAndPhone(tester, shop: null);
 
+      // The picker, not the shop: entering is the user's call.
+      expect(find.text('Chọn cửa hàng'), findsOneWidget);
+      expect(find.textContaining('SPXVN'), findsNothing);
+
+      await tester.tap(find.text('Shop ABC'));
+      await tester.pumpAndSettle();
       expect(find.textContaining('SPXVN'), findsWidgets);
-      expect(find.text('Shop của bạn'), findsNothing);
     },
   );
 
   testWidgets(
-    'account tab uses the selected shop instead of screen defaults',
+    'a resumed session still opens the remembered shop straight away',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': null,
+        'ValueNotifier<EcUser?>': null,
+        'ValueNotifier<bool>': null,
+        '_EvidenceCountOverrides': null,
+      },
+    ),
+    (tester) async {
+      await getIt.reset();
+      final memory = _MemoryStore();
+      getIt.registerSingleton<KeyValueStore>(memory);
+      addTearDown(getIt.reset);
+      // Signed in already (Firebase persists the session across restarts) and
+      // 's2' was the last shop opened.
+      final auth = FakeEcAuth();
+      await auth.signInWithEmail('demo@evidencecam.app', 'x');
+      await memory.setString('shop.last_id', 's2');
+
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: auth, repo: const _TwoShopRepository()),
+      );
+      await tester.tap(find.text('Bắt đầu'));
+      await tester.pumpAndSettle();
+
+      // Straight past the picker into Shop XYZ.
+      expect(find.text('Chọn cửa hàng'), findsNothing);
+      expect(find.text('Shop XYZ'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the shell uses the selected shop instead of screen defaults',
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
       notDisposed: {
         'ImageStreamCompleterHandle': 1,
@@ -247,12 +457,11 @@ void main() {
     (tester) async {
       await pumpPhoneSizedApp(tester, const EcApp(repo: _TwoShopRepository()));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogleAndPhone(tester, shop: null);
       await tester.tap(find.text('Shop XYZ').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Tài khoản').last);
-      await tester.pumpAndSettle();
 
+      // The picked shop drives the shell, not the screen's design default.
       expect(find.text('Shop XYZ'), findsOneWidget);
       expect(find.text('Shop ABC'), findsNothing);
     },
@@ -481,7 +690,7 @@ void main() {
       final repo = _CreateShopRepository();
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogleAndPhone(tester, shop: null);
       await tester.tap(find.text('Tạo shop mới (tên + sàn)'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(EditableText).first, 'Shop Mới');
@@ -499,10 +708,14 @@ void main() {
 
   testWidgets(
     'shop detail resolution changes are saved through the repository',
+    // Reaching Shop Detail keeps app-lifetime singletons and the pushed
+    // route's own notifiers alive past the check.
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
       notDisposed: {
-        'ImageStreamCompleterHandle': 1,
+        'ImageStreamCompleterHandle': null,
         'ValueNotifier<EcUser?>': 1,
+        'ValueNotifier<bool>': null,
+        '_EvidenceCountOverrides': null,
       },
     ),
     (tester) async {
@@ -510,7 +723,7 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
       await signInWithGoogleAndPhone(tester);
-      await tester.tap(find.byIcon(Icons.arrow_back_ios_new).first);
+      await tester.tap(find.byType(PenBackButton).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Quản lý cửa hàng'));
       await tester.pumpAndSettle();
@@ -527,10 +740,14 @@ void main() {
 
   testWidgets(
     'shop detail sends a pending member invite by contact',
+    // Reaching Shop Detail keeps app-lifetime singletons and the pushed
+    // route's own notifiers alive past the check.
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
       notDisposed: {
-        'ImageStreamCompleterHandle': 1,
+        'ImageStreamCompleterHandle': null,
         'ValueNotifier<EcUser?>': 1,
+        'ValueNotifier<bool>': null,
+        '_EvidenceCountOverrides': null,
       },
     ),
     (tester) async {
@@ -538,13 +755,13 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
       await signInWithGoogleAndPhone(tester);
-      await tester.tap(find.byIcon(Icons.arrow_back_ios_new).first);
+      await tester.tap(find.byType(PenBackButton).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Quản lý cửa hàng'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Shop ABC'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Thêm thành viên bằng email/SĐT'));
+      await tester.tap(find.text('Mời thành viên'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(EditableText).first, 'new@b.com');
       await tester.tap(find.text('Thêm'));
@@ -560,10 +777,15 @@ void main() {
 
   testWidgets(
     'record type sheet can select a type and open shop detail management',
+    // Reaching Shop Detail keeps app-lifetime singletons and the pushed
+    // route's own notifiers alive past the check.
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
       notDisposed: {
-        'ImageStreamCompleterHandle': 1,
+        'ImageStreamCompleterHandle': null,
         'ValueNotifier<EcUser?>': 1,
+        'ValueNotifier<bool>': null,
+        '_EvidenceCountOverrides': null,
+        'CurvedAnimation': null,
       },
     ),
     (tester) async {
@@ -573,7 +795,7 @@ void main() {
       await tester.tap(find.text('Ghi hình').last);
       await tester.pump(const Duration(seconds: 1));
 
-      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.tap(find.byIcon(LucideIcons.settings));
       await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.text('Trả hàng'));
       await tester.pump(const Duration(seconds: 1));
@@ -632,10 +854,26 @@ class _MemoryStore implements KeyValueStore {
   Future<void> clear() async => _values.clear();
 }
 
+/// Email/password account that never followed the verification link — what
+/// Firebase reports until the mail is opened.
+class _UnverifiedAuth extends FakeEcAuth {
+  int verificationsSent = 0;
+
+  @override
+  Future<EcUser> signInWithEmail(String email, String password) async {
+    final user = await super.signInWithEmail(email, password);
+    return user.copyWith(emailVerified: false);
+  }
+
+  @override
+  Future<void> sendEmailVerification() async => verificationsSent++;
+}
+
 class _RecordingAuth extends FakeEcAuth {
   String? registeredEmail;
   String? updatedPhone;
   String? resetEmail;
+  String? verificationEmail;
 
   @override
   Future<EcUser> registerWithEmail({
@@ -660,6 +898,11 @@ class _RecordingAuth extends FakeEcAuth {
   @override
   Future<void> sendPasswordReset(String email) async {
     resetEmail = email;
+  }
+
+  @override
+  Future<void> sendEmailVerification() async {
+    verificationEmail = currentUser?.email;
   }
 }
 

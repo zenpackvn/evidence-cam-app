@@ -500,9 +500,9 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           ),
           code: state.code,
           duration: _formatElapsed(state.elapsed),
-          countdownText:
-              'Tự chốt sau '
-              '${_formatElapsed(remaining.isNegative ? Duration.zero : remaining)}',
+          countdownText: context.l10n.recordAutoStopIn(
+            _formatElapsed(remaining.isNegative ? Duration.zero : remaining),
+          ),
           typeLabel: state.typeLabel,
           resolutionLabel: state.resolutionLabel,
           preview: preview,

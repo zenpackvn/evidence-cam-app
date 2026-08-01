@@ -89,6 +89,34 @@ void main() {
       expect(register, isTrue);
     });
 
+    // Email/mật khẩu điền sẵn từ keychain được gán sau khi màn đã dựng, không
+    // bắn onChanged — form từng coi hai ô là rỗng và chặn đăng nhập.
+    testWidgets('prefilled credentials pass validation', (tester) async {
+      final email = TextEditingController();
+      final password = TextEditingController();
+      addTearDown(email.dispose);
+      addTearDown(password.dispose);
+      var logged = false;
+      await _pump(
+        tester,
+        EcLoginScreen(
+          emailController: email,
+          passwordController: password,
+          onLogin: () => logged = true,
+        ),
+      );
+
+      email.text = 'a@b.com';
+      password.text = 'dongGoi2026';
+      await tester.pump();
+      await tester.tap(find.text('Đăng nhập').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Vui lòng nhập email'), findsNothing);
+      expect(find.text('Vui lòng nhập mật khẩu'), findsNothing);
+      expect(logged, isTrue);
+    });
+
     testWidgets('password eye toggles obscureText', (tester) async {
       await _pump(tester, const EcLoginScreen());
 
