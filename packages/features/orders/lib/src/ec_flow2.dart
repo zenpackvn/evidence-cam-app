@@ -469,7 +469,9 @@ class EcPhotoDetailScreen extends StatelessWidget {
                 color: BrandColors.bg,
                 shape: SmoothRectangleBorder(
                   smoothness: ecCornerSmoothing,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(14),
+                  ),
                 ),
               ),
               child: SafeArea(
@@ -479,7 +481,9 @@ class EcPhotoDetailScreen extends StatelessWidget {
                 // screens — scroll instead of silently clipping the download
                 // button off-screen.
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+                  // Đáy chỉ 10: SafeArea ở trên đã chừa chỗ cho home
+                  // indicator, cộng thêm 28 nữa là dải trắng thừa.
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

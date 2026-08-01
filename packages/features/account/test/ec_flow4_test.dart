@@ -37,12 +37,14 @@ void main() {
       tester,
     ) async {
       await _pump(tester, const EcAccountTabScreen());
-      expect(find.text('Shop ABC'), findsOneWidget);
+      // Không có tên shop ở đây: màn này là tab gốc, header shop thuộc về tab
+      // Vận đơn (xem doc của EcAccountTabScreen).
+      expect(find.text('Shop ABC'), findsNothing);
       expect(find.text('Nguyễn Văn A'), findsOneWidget);
       expect(find.text('nguyenvana@gmail.com'), findsOneWidget);
       expect(find.text('GÓI & ỨNG DỤNG'), findsOneWidget);
       expect(find.text('Gói cước & Quota'), findsOneWidget);
-      expect(find.text('Pro 500'), findsOneWidget);
+      expect(find.text('Cơ bản'), findsOneWidget);
       expect(find.text('Ngôn ngữ'), findsOneWidget);
       expect(find.text('BẢO MẬT & ĐĂNG NHẬP'), findsOneWidget);
       expect(find.text('Đổi mật khẩu'), findsOneWidget);
@@ -54,6 +56,15 @@ void main() {
       expect(find.text('Ghi hình'), findsOneWidget);
       expect(find.text('Tài khoản'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('opens on the brand banner and closes with the footer', (
+      tester,
+    ) async {
+      await _pump(tester, const EcAccountTabScreen(appVersion: '2.3.4'));
+      expect(find.byType(PenBrandBanner), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('ZenPack'), 200);
+      expect(find.text('Phiên bản 2.3.4'), findsOneWidget);
     });
 
     testWidgets('quota row fires its callback', (tester) async {

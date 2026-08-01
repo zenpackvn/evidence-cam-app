@@ -926,6 +926,7 @@ class _OrderLoadFailingRepository extends FakeEcRepository {
     int page = 1,
     String? uploadState,
     int? fromTs,
+    int? toTs,
     String? videoTypeId,
   }) async {
     ordersShopId = shopId;
@@ -1138,6 +1139,7 @@ class _DemoRepository extends FakeEcRepository {
     int page = 1,
     String? uploadState,
     int? fromTs,
+    int? toTs,
     String? videoTypeId,
   }) async => OrderPageDto(
     items: const [

@@ -353,6 +353,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDeleteAccount => 'Delete account';
 
   @override
+  String accountVersion(String version) {
+    return 'Version $version';
+  }
+
+  @override
   String get accountShopMgmtHint =>
       'Manage shop/members: tap back on the header to return to the Shop layer';
 
@@ -1134,10 +1139,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filterTimeToday => 'Today';
 
   @override
+  String get filterTimeYesterday => 'Yesterday';
+
+  @override
   String get filterTime7d => 'Last 7 days';
 
   @override
   String get filterTime30d => 'Last 30 days';
+
+  @override
+  String get filterTimePickDate => 'Pick a date…';
 
   @override
   String get filterTypeLabel => 'Video type';
@@ -1252,7 +1263,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'View and manage the shops you administer.';
 
   @override
-  String get shopManageAddCta => 'Add a shop (name + marketplace)';
+  String get shopManageAddCta => 'Add a shop';
 
   @override
   String get shopManageStaffNote =>

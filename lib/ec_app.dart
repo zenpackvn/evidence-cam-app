@@ -1978,6 +1978,9 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
   late Future<List<EcShopSummary>> _shops = _loadShops();
   var _autoSelected = false;
 
+  /// Kết quả tốt gần nhất — giữ màn hình đứng yên trong lúc làm mới ngầm.
+  List<EcShopSummary>? _last;
+
   Future<List<EcShopSummary>> _loadShops() async {
     final shops = await widget.repo.shops();
     return shops.map(_shopFromDto).toList();
@@ -2010,23 +2013,20 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<EcShopSummary>>(
+    return _RefreshingFuture<List<EcShopSummary>>(
       future: _shops,
-      builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done) {
-          return const CupertinoPageScaffold(
-            backgroundColor: BrandColors.bg,
-            child: Center(child: CupertinoActivityIndicator()),
-          );
-        }
-        if (snap.hasError) {
-          return _RouteLoadError(
-            title: context.l10n.errorLoadShopList,
-            detail: _dataErrorText(context.l10n, snap.error!),
-            onRetry: _retry,
-          );
-        }
-        final shops = snap.data ?? const [];
+      last: _last,
+      loading: const CupertinoPageScaffold(
+        backgroundColor: BrandColors.bg,
+        child: Center(child: CupertinoActivityIndicator()),
+      ),
+      error: (error) => _RouteLoadError(
+        title: context.l10n.errorLoadShopList,
+        detail: _dataErrorText(context.l10n, error),
+        onRetry: _retry,
+      ),
+      builder: (context, shops) {
+        _last = shops;
         if (shops.isEmpty) {
           return EcNoShopScreen(
             onCreate: widget.onCreateShop ?? widget.onManage,
@@ -2079,30 +2079,31 @@ class _ShopMgmtRouteState extends State<_ShopMgmtRoute> {
         .toList();
   }
 
+  /// Kết quả tốt gần nhất — giữ màn hình đứng yên trong lúc làm mới ngầm.
+  List<EcShopMgmtEntry>? _last;
+
   void _retry() => setState(() {
     _shops = _load();
   });
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<EcShopMgmtEntry>>(
+    return _RefreshingFuture<List<EcShopMgmtEntry>>(
       future: _shops,
-      builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done) {
-          return const CupertinoPageScaffold(
-            backgroundColor: BrandColors.bg,
-            child: Center(child: CupertinoActivityIndicator()),
-          );
-        }
-        if (snap.hasError) {
-          return _RouteLoadError(
-            title: context.l10n.errorLoadShopMgmt,
-            detail: _dataErrorText(context.l10n, snap.error!),
-            onRetry: _retry,
-          );
-        }
+      last: _last,
+      loading: const CupertinoPageScaffold(
+        backgroundColor: BrandColors.bg,
+        child: Center(child: CupertinoActivityIndicator()),
+      ),
+      error: (error) => _RouteLoadError(
+        title: context.l10n.errorLoadShopMgmt,
+        detail: _dataErrorText(context.l10n, error),
+        onRetry: _retry,
+      ),
+      builder: (context, shops) {
+        _last = shops;
         return EcShopMgmtScreen(
-          shops: snap.data ?? const [],
+          shops: shops,
           onBack: widget.onBack,
           onAddShop: widget.onAddShop,
           onShopTap: widget.onShopTap,
@@ -2212,29 +2213,29 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
     );
   }
 
+  /// Kết quả tốt gần nhất — giữ màn hình đứng yên trong lúc làm mới ngầm.
+  _ShopDetailData? _last;
+
   void _retry() => setState(() {
     _detail = _load();
   });
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_ShopDetailData>(
+    return _RefreshingFuture<_ShopDetailData>(
       future: _detail,
-      builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done) {
-          return const CupertinoPageScaffold(
-            backgroundColor: BrandColors.bg,
-            child: Center(child: CupertinoActivityIndicator()),
-          );
-        }
-        if (snap.hasError) {
-          return _RouteLoadError(
-            title: context.l10n.errorLoadShopDetail,
-            detail: _dataErrorText(context.l10n, snap.error!),
-            onRetry: _retry,
-          );
-        }
-        final detail = snap.data!;
+      last: _last,
+      loading: const CupertinoPageScaffold(
+        backgroundColor: BrandColors.bg,
+        child: Center(child: CupertinoActivityIndicator()),
+      ),
+      error: (error) => _RouteLoadError(
+        title: context.l10n.errorLoadShopDetail,
+        detail: _dataErrorText(context.l10n, error),
+        onRetry: _retry,
+      ),
+      builder: (context, detail) {
+        _last = detail;
         return EcShopDetailScreen(
           shopName: detail.shop.name,
           platformLabel: _platformDisplayName(detail.shop.platform),
@@ -2532,6 +2533,7 @@ class _OrdersRoute extends StatefulWidget {
     required this.queue,
     required this.shopId,
     required this.shopName,
+    this.shopPlatform,
     this.evidenceCountOverrides,
     this.onBack,
     this.onShopTap,
@@ -2546,6 +2548,9 @@ class _OrdersRoute extends StatefulWidget {
   final EcUploadQueue queue;
   final String shopId;
   final String shopName;
+
+  /// Sàn của shop — badge góc ảnh overview mỗi dòng đơn.
+  final String? shopPlatform;
   final _EvidenceCountOverrides? evidenceCountOverrides;
   final VoidCallback? onBack;
   final VoidCallback? onShopTap;
@@ -2647,6 +2652,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     page: page,
     uploadState: _filters.uploadState,
     fromTs: _filters.fromTs,
+    toTs: _filters.toTs,
     videoTypeId: _filters.videoTypeId,
   );
 
@@ -2778,6 +2784,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       videoCount: _evidenceCount(o),
       errorCount: _errorCount(o),
       pendingCount: o.pendingCount,
+      thumbUrl: o.latestThumbUrl,
     );
   }
 
@@ -2799,11 +2806,14 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         value: '$evidenceCount',
         label: context.l10n.statVideosRecorded,
         icon: LucideIcons.video,
+        accent: PenColors.success,
       ),
       EcHomeStat(
         value: '${_pendingUploads(queue)}',
         label: context.l10n.statPendingUpload,
         icon: LucideIcons.cloudUpload,
+        accent: PenColors.warning,
+        tintValue: true,
         // Header không còn chip mây (design không vẽ), nên thẻ này là lối vào
         // màn hàng đợi upload.
         onTap: widget.onQueueTap,
@@ -2839,6 +2849,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       ]),
       builder: (context, _) => EcHomeOrdersScreen(
         shopName: widget.shopName,
+        platform: widget.shopPlatform,
         orders: rows,
         stats: _stats(widget.queue),
         searchHint: context.l10n.ordersSearchHint,
@@ -2917,6 +2928,9 @@ class _OrderRoute extends StatefulWidget {
 
 class _OrderRouteState extends State<_OrderRoute> {
   late Future<_OrderDetailData> _detail = _load();
+
+  /// Kết quả tốt gần nhất — giữ màn hình đứng yên trong lúc làm mới ngầm.
+  _OrderDetailData? _last;
 
   Future<_OrderDetailData> _load() async {
     final detail = await widget.repo.order(widget.shop.id, widget.order.id);
@@ -3009,23 +3023,20 @@ class _OrderRouteState extends State<_OrderRoute> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_OrderDetailData>(
+    return _RefreshingFuture<_OrderDetailData>(
       future: _detail,
-      builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done) {
-          return const CupertinoPageScaffold(
-            backgroundColor: BrandColors.bg,
-            child: Center(child: CupertinoActivityIndicator()),
-          );
-        }
-        if (snap.hasError) {
-          return _RouteLoadError(
-            title: context.l10n.errorLoadOrderDetail,
-            detail: _dataErrorText(context.l10n, snap.error!),
-            onRetry: _retry,
-          );
-        }
-        final data = snap.data!;
+      last: _last,
+      loading: const CupertinoPageScaffold(
+        backgroundColor: BrandColors.bg,
+        child: Center(child: CupertinoActivityIndicator()),
+      ),
+      error: (error) => _RouteLoadError(
+        title: context.l10n.errorLoadOrderDetail,
+        detail: _dataErrorText(context.l10n, error),
+        onRetry: _retry,
+      ),
+      builder: (context, data) {
+        _last = data;
         final days = _timelineDays(
           context.l10n,
           data.detail.evidence,
@@ -3644,6 +3655,51 @@ String _dataErrorText(AppLocalizations l10n, Object error) {
   return l10n.errorCheckNetwork;
 }
 
+/// [FutureBuilder] nhưng giữ lại dữ liệu tốt gần nhất trong lúc [future] mới
+/// đang chạy.
+///
+/// `FutureBuilder` thuần quay về `ConnectionState.waiting` mỗi lần được đưa một
+/// future khác, nên mỗi lần làm mới sau khi đóng sheet, cả màn hình bị thay
+/// bằng spinner rồi dựng lại từ đầu — người dùng thấy màn "nháy"/tải lại dù chỉ
+/// vừa đổi một dòng. Ở đây chỉ **lần tải đầu tiên** mới được hiện spinner; các
+/// lần sau chạy ngầm và màn hình đổi số liệu tại chỗ khi có kết quả.
+///
+/// ponytail: refresh ngầm mà lỗi thì giữ nguyên dữ liệu cũ chứ không nuốt màn
+/// hình — lỗi của *hành động* vẫn được chính handler của nó toast. Nếu sau này
+/// cần báo cả lỗi refresh, thêm một callback `onBackgroundError`.
+class _RefreshingFuture<T> extends StatelessWidget {
+  const _RefreshingFuture({
+    required this.future,
+    required this.last,
+    required this.loading,
+    required this.error,
+    required this.builder,
+  });
+
+  final Future<T> future;
+
+  /// Kết quả tốt gần nhất, do State giữ. `null` = chưa từng tải xong.
+  final T? last;
+  final Widget loading;
+
+  /// Chỉ dùng khi chưa có [last] — hỏng ngay từ lần tải đầu.
+  final Widget Function(Object error) error;
+  final Widget Function(BuildContext context, T data) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<T>(
+      future: future,
+      builder: (context, snap) {
+        final data = snap.data ?? last;
+        if (snap.hasError && data == null) return error(snap.error!);
+        if (data == null) return loading;
+        return builder(context, data);
+      },
+    );
+  }
+}
+
 class _RouteLoadError extends StatelessWidget {
   const _RouteLoadError({
     required this.title,
@@ -3706,8 +3762,8 @@ class _RouteLoadError extends StatelessWidget {
 }
 
 /// Upload-queue tab ("Hàng đợi upload"), driven live by [EcUploadQueue]: shows
-/// the real recorded clips with their upload status, tab filtering, and retry.
-class _QueueRoute extends StatefulWidget {
+/// the real recorded clips with their upload status and retry.
+class _QueueRoute extends StatelessWidget {
   const _QueueRoute({
     required this.queue,
     required this.canDelete,
@@ -3725,40 +3781,31 @@ class _QueueRoute extends StatefulWidget {
   final VoidCallback? onUpgrade;
 
   @override
-  State<_QueueRoute> createState() => _QueueRouteState();
-}
-
-class _QueueRouteState extends State<_QueueRoute> {
-  int _tab = 0;
-
-  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: widget.queue,
+      listenable: queue,
       builder: (context, _) {
         final items = [
-          for (final task in widget.queue.tasks) _taskToItem(task),
+          for (final task in queue.tasks) _taskToItem(task),
         ];
         return EcUploadQueueScreen(
           items: items,
-          selectedTabIndex: _tab,
-          onBack: widget.onBack,
-          onUpgrade: widget.onUpgrade,
-          onTabSelected: (i) => setState(() => _tab = i),
+          onBack: onBack,
+          onUpgrade: onUpgrade,
           onRetry: (item) {
             final id = item.id;
-            if (id != null) widget.queue.retry(id);
+            if (id != null) queue.retry(id);
           },
           onPause: (item) {
             final id = item.id;
-            if (id != null) widget.queue.pause(id);
+            if (id != null) queue.pause(id);
           },
           onResume: (item) {
             final id = item.id;
-            if (id != null) widget.queue.resume(id);
+            if (id != null) queue.resume(id);
           },
-          onDelete: widget.canDelete
-              ? (item) => _confirmDeleteQueueItem(context, widget.queue, item)
+          onDelete: canDelete
+              ? (item) => _confirmDeleteQueueItem(context, queue, item)
               : null,
         );
       },
@@ -3963,8 +4010,16 @@ GoRouter _buildRouter(
           // when the record branch is built for the first time this same
           // frame, its initState reads the correct up-to-date value instead
           // of a stale one from before the switch.
-          isRecordTabActive?.value =
+          final onRecordTab =
               navigationShell.currentIndex == _recordBranchIndex;
+          // Bước vào tab ghi hình thì loại video về mặc định, để sheet mà
+          // EcRecordRoute mở ngay sau đó tick sẵn "Đóng hàng" chứ không phải
+          // loại của lượt quay trước. Không ai lắng nghe notifier này nên gán
+          // trong build là an toàn (chỉ đọc lúc dựng route và lúc mở sheet).
+          if (onRecordTab && !(isRecordTabActive?.value ?? false)) {
+            recordingType.value = kEcDefaultVideoType;
+          }
+          isRecordTabActive?.value = onRecordTab;
           return PopScope(canPop: false, child: navigationShell);
         },
         branches: [
@@ -3988,6 +4043,7 @@ GoRouter _buildRouter(
                     queue: queue,
                     shopId: shop.id,
                     shopName: shop.name,
+                    shopPlatform: shop.platform,
                     evidenceCountOverrides: evidenceCountOverrides,
                     onBack: () => c.go('/shops', extra: 'back'),
                     // Tên shop trên header là lối vào Chi tiết cửa hàng —

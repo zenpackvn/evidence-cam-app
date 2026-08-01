@@ -351,6 +351,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountDeleteAccount => 'Xóa tài khoản';
 
   @override
+  String accountVersion(String version) {
+    return 'Phiên bản $version';
+  }
+
+  @override
   String get accountShopMgmtHint =>
       'Quản lý shop/thành viên: bấm back trên header để về lớp Shop';
 
@@ -1127,10 +1132,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get filterTimeToday => 'Hôm nay';
 
   @override
+  String get filterTimeYesterday => 'Hôm qua';
+
+  @override
   String get filterTime7d => '7 ngày qua';
 
   @override
   String get filterTime30d => '30 ngày qua';
+
+  @override
+  String get filterTimePickDate => 'Chọn ngày…';
 
   @override
   String get filterTypeLabel => 'Loại video';
@@ -1246,7 +1257,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Xem và quản lý danh sách các cửa hàng bạn có quyền quản lý.';
 
   @override
-  String get shopManageAddCta => 'Thêm shop mới (tên + sàn)';
+  String get shopManageAddCta => 'Thêm shop mới';
 
   @override
   String get shopManageStaffNote =>

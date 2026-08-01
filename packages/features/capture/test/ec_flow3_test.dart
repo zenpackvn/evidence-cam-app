@@ -179,29 +179,40 @@ void main() {
         const EcUploadQueueScreen(items: ecDefaultUploadItems),
       );
       expect(find.text('Hàng đợi upload'), findsOneWidget);
-      expect(find.text('Tất cả (5)'), findsOneWidget);
-      expect(find.text('Đang tải 72%'), findsOneWidget);
+      expect(find.text('72%'), findsOneWidget);
       expect(find.text('Chờ upload'), findsOneWidget);
-      expect(find.text('Đã upload'), findsOneWidget);
-      expect(find.text('Lỗi · Thử lại (2)'), findsOneWidget);
+      expect(find.text('Thử lại'), findsOneWidget);
       expect(find.text('Chờ quota'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('tab selection and upgrade callbacks fire', (tester) async {
-      int? selectedTab;
+    // Mỗi dòng chỉ được nói trạng thái đúng một lần — trước đây vừa có dòng
+    // chữ dưới meta vừa có icon bên phải.
+    testWidgets('states are not spelled out twice per row', (tester) async {
+      await _pump(
+        tester,
+        const EcUploadQueueScreen(items: ecDefaultUploadItems),
+      );
+      expect(find.text('Đang tải 72%'), findsNothing);
+      expect(find.text('Đã upload'), findsNothing);
+      expect(find.textContaining('Tất cả ('), findsNothing);
+      expect(find.textContaining('video đang chờ'), findsNothing);
+    });
+
+    testWidgets('retry and upgrade callbacks fire', (tester) async {
+      EcUploadItem? retried;
       var upgraded = false;
       await _pump(
         tester,
         EcUploadQueueScreen(
           items: ecDefaultUploadItems,
-          onTabSelected: (index) => selectedTab = index,
+          onRetry: (item) => retried = item,
           onUpgrade: () => upgraded = true,
         ),
       );
-      await tester.tap(find.text('Đang tải (1)'));
+      await tester.tap(find.text('Thử lại'));
       await tester.tap(find.text('Nâng gói'));
-      expect(selectedTab, 1);
+      expect(retried?.status, EcUploadStatus.error);
       expect(upgraded, isTrue);
     });
 

@@ -740,6 +740,12 @@ abstract class AppLocalizations {
   /// **'Delete account'**
   String get accountDeleteAccount;
 
+  /// App version line in the Account tab footer (F4-01).
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String accountVersion(String version);
+
   /// No description provided for @accountShopMgmtHint.
   ///
   /// In en, this message translates to:
@@ -2132,6 +2138,12 @@ abstract class AppLocalizations {
   /// **'Today'**
   String get filterTimeToday;
 
+  /// No description provided for @filterTimeYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get filterTimeYesterday;
+
   /// No description provided for @filterTime7d.
   ///
   /// In en, this message translates to:
@@ -2143,6 +2155,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Last 30 days'**
   String get filterTime30d;
+
+  /// No description provided for @filterTimePickDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a date…'**
+  String get filterTimePickDate;
 
   /// No description provided for @filterTypeLabel.
   ///
@@ -2357,7 +2375,7 @@ abstract class AppLocalizations {
   /// Shop management: shopManageAddCta.
   ///
   /// In en, this message translates to:
-  /// **'Add a shop (name + marketplace)'**
+  /// **'Add a shop'**
   String get shopManageAddCta;
 
   /// Shop management: shopManageStaffNote.

@@ -37,6 +37,7 @@ class EcAccountTabScreen extends StatelessWidget {
     this.loginMethodsLabel = '3 liên kết',
     this.passwordActionLabel = 'Đổi mật khẩu',
     this.avatarPath,
+    this.appVersion = '1.0.0',
     this.onProfileTap,
     this.onQuotaTap,
     this.onLanguageTap,
@@ -57,6 +58,9 @@ class EcAccountTabScreen extends StatelessWidget {
   final String loginMethodsLabel;
   final String passwordActionLabel;
   final String? avatarPath;
+
+  /// Shown in the footer under the ZenPack wordmark.
+  final String appVersion;
   final VoidCallback? onProfileTap;
   final VoidCallback? onQuotaTap;
   final VoidCallback? onLanguageTap;
@@ -75,82 +79,135 @@ class EcAccountTabScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       backgroundColor: BrandColors.bg,
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                // Design `Body`: padding [26, 18, 0, 18].
-                padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _UserRow(
-                      name: userName,
-                      email: userEmail,
-                      avatarPath: avatarPath,
-                      onTap: onProfileTap,
-                    ),
-                    _SectionHeader(context.l10n.accountSectionApp),
-                    _SettingsGroup(
-                      rows: [
-                        _SettingsRow(
-                          icon: LucideIcons.creditCard,
-                          label: context.l10n.accountPlanQuota,
-                          value: planLabel,
-                          onTap: onQuotaTap,
+      child: Stack(
+        children: [
+          // Design vẽ dải xanh cao 189 tính từ mép artboard, gồm cả hàng header
+          // mà màn này bỏ đi (xem doc ở trên) — trừ đúng 49pt của hàng đó để
+          // dải vẫn kết thúc ngay dưới thẻ hồ sơ như thiết kế.
+          const Align(
+            alignment: Alignment.topCenter,
+            child: PenBrandBanner(height: 140),
+          ),
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    // Design `Body`: padding [26, 18, 0, 18].
+                    padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _UserRow(
+                          name: userName,
+                          email: userEmail,
+                          avatarPath: avatarPath,
+                          onTap: onProfileTap,
                         ),
-                        _SettingsRow(
-                          icon: LucideIcons.globe,
-                          label: context.l10n.accountLanguage,
-                          value: languageLabel,
-                          onTap: onLanguageTap,
+                        _SectionHeader(context.l10n.accountSectionApp, top: 38),
+                        _SettingsGroup(
+                          rows: [
+                            _SettingsRow(
+                              icon: LucideIcons.creditCard,
+                              label: context.l10n.accountPlanQuota,
+                              value: planLabel,
+                              onTap: onQuotaTap,
+                            ),
+                            _SettingsRow(
+                              icon: LucideIcons.globe,
+                              label: context.l10n.accountLanguage,
+                              value: languageLabel,
+                              onTap: onLanguageTap,
+                            ),
+                            _SettingsRow(
+                              icon: LucideIcons.qrCode,
+                              label: context.l10n.accountEndQr,
+                              onTap: onEndQrTap,
+                            ),
+                          ],
                         ),
-                        _SettingsRow(
-                          icon: LucideIcons.qrCode,
-                          label: context.l10n.accountEndQr,
-                          onTap: onEndQrTap,
+                        _SectionHeader(context.l10n.accountSectionSecurity),
+                        _SettingsGroup(
+                          rows: [
+                            _SettingsRow(
+                              icon: LucideIcons.lock,
+                              label: passwordActionLabel,
+                              onTap: onChangePasswordTap,
+                            ),
+                            _SettingsRow(
+                              icon: LucideIcons.keyRound,
+                              label: context.l10n.accountLoginMethods,
+                              value: loginMethodsLabel,
+                              onTap: onLoginMethodsTap,
+                            ),
+                            _SettingsRow(
+                              icon: LucideIcons.logOut,
+                              label: context.l10n.accountSignOut,
+                              onTap: onLogout,
+                            ),
+                            _SettingsRow(
+                              icon: LucideIcons.trash2,
+                              label: context.l10n.accountDeleteAccount,
+                              onTap: onDeleteAccount,
+                            ),
+                          ],
                         ),
+                        _AppFooter(version: appVersion),
                       ],
                     ),
-                    _SectionHeader(context.l10n.accountSectionSecurity),
-                    _SettingsGroup(
-                      rows: [
-                        _SettingsRow(
-                          icon: LucideIcons.lock,
-                          label: passwordActionLabel,
-                          onTap: onChangePasswordTap,
-                        ),
-                        _SettingsRow(
-                          icon: LucideIcons.keyRound,
-                          label: context.l10n.accountLoginMethods,
-                          value: loginMethodsLabel,
-                          onTap: onLoginMethodsTap,
-                        ),
-                        _SettingsRow(
-                          icon: LucideIcons.logOut,
-                          label: context.l10n.accountSignOut,
-                          onTap: onLogout,
-                        ),
-                        _SettingsRow(
-                          icon: LucideIcons.trash2,
-                          label: context.l10n.accountDeleteAccount,
-                          onTap: onDeleteAccount,
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                _BottomNav(
+                  active: _NavTab.account,
+                  onOrders: onNavOrders,
+                  onCapture: onNavCapture,
+                ),
+              ],
             ),
-            _BottomNav(
-              active: _NavTab.account,
-              onOrders: onNavOrders,
-              onCapture: onNavCapture,
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Đuôi màn Tài khoản: logo, wordmark, số phiên bản.
+class _AppFooter extends StatelessWidget {
+  const _AppFooter({required this.version});
+
+  final String version;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 22),
+      child: Column(
+        children: [
+          Image.asset(
+            'assets/design/logo.png',
+            package: 'ec_ui',
+            width: 34,
+            height: 34,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(height: 4),
+          const PenText(
+            'ZenPack',
+            size: 15,
+            color: PenColors.primary,
+            weight: FontWeight.w800,
+            softWrap: false,
+          ),
+          const SizedBox(height: 4),
+          PenText(
+            context.l10n.accountVersion(version),
+            size: 12,
+            color: PenColors.mut,
+            weight: FontWeight.w500,
+            softWrap: false,
+          ),
+        ],
       ),
     );
   }
@@ -1792,6 +1849,9 @@ class _UserRow extends StatelessWidget {
           width: 62,
           height: 62,
           fill: PenColors.soft,
+          // Vòng trắng 2pt tách ảnh khỏi thẻ khi thẻ đè lên dải xanh.
+          stroke: PenColors.card,
+          strokeWidth: 2,
           radius: 999,
           clip: true,
           axis: PenAxis.row,
@@ -1843,14 +1903,17 @@ class _UserRow extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.label);
+  const _SectionHeader(this.label, {this.top = 22});
 
   final String label;
+
+  /// Nhóm đầu tiên nằm xa thẻ hồ sơ hơn (38) để thoát khỏi dải xanh.
+  final double top;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 22, 4, 10),
+      padding: EdgeInsets.fromLTRB(4, top, 4, 10),
       child: PenText(
         label.toUpperCase(),
         size: 14,

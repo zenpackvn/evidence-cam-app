@@ -13,6 +13,7 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Image;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'core.dart';
@@ -54,6 +55,9 @@ abstract final class PenColors {
 
   /// `--destructive` — REC, delete, errors.
   static const danger = Color(0xFFD02D27);
+
+  /// `--warning` / `--chart-4` — the amber of "chờ tải" counts.
+  static const warning = Color(0xFFB6770B);
 }
 
 /// Drop shadow the design file puts on raised cards.
@@ -62,6 +66,46 @@ const penCardShadow = BoxShadow(
   offset: Offset(0, 2),
   blurRadius: 12,
 );
+
+/// Shadow of a card that overlaps [PenBrandBanner] — tinted with the banner's
+/// own dark green instead of ink so the card reads as lifted off the green.
+const penBrandCardShadow = BoxShadow(
+  color: Color(0x290F3D20),
+  offset: Offset(0, 4),
+  blurRadius: 14,
+);
+
+/// The brand banner the two root tabs (Vận đơn, Tài khoản) open with: a dark
+/// green gradient bleeding to the screen edges, rounded off at the bottom, with
+/// the header and the first card sitting on top of it.
+///
+/// [height] is measured from the top of the *content* area; the banner itself
+/// also fills the status bar behind it, so pass the design's height and let the
+/// widget add the inset.
+class PenBrandBanner extends StatelessWidget {
+  const PenBrandBanner({required this.height, super.key});
+
+  final double height;
+
+  /// ponytail: `pen2dart.py` drops the gradient's angle, so this is Flutter's
+  /// default left→right ramp. Two stops this close in hue barely read as a
+  /// direction; set `begin`/`end` here if the design file says otherwise.
+  static const gradient = LinearGradient(
+    colors: [Color(0xFF0F3D20), Color(0xFF1F6B39)],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return PenBox(
+      width: double.infinity,
+      height: MediaQuery.paddingOf(context).top + height,
+      gradient: gradient,
+      // The design rounds all four corners (its artboard is a device frame);
+      // full-bleed on a real screen only the bottom two are visible.
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(26)),
+    );
+  }
+}
 
 /// Screen chrome: the background fill plus a scroll view that keeps the
 /// design's layout intact on shorter devices instead of overflowing.
@@ -722,16 +766,99 @@ class PenLink extends StatelessWidget {
 
 /// Back chevron, 26px, as every pushed screen in the design draws it.
 class PenBackButton extends StatelessWidget {
-  const PenBackButton({this.onTap, this.size = 26, super.key});
+  const PenBackButton({
+    this.onTap,
+    this.size = 26,
+    this.color = PenColors.ink,
+    super.key,
+  });
 
   final VoidCallback? onTap;
   final double size;
+
+  /// White on the screens whose header sits on [PenBrandBanner].
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return EcTap(
       onTap: onTap,
-      child: Icon(LucideIcons.chevronLeft, size: size, color: PenColors.ink),
+      child: Icon(LucideIcons.chevronLeft, size: size, color: color),
+    );
+  }
+}
+
+/// The order-row leading tile: the poster frame of the order's latest clip
+/// (F2-01's "ảnh overview"), with the marketplace the order came from badged
+/// on its corner. Falls back to the parcel glyph until a poster exists — an
+/// order whose first clip is still uploading has no frame to show yet.
+class PenOrderThumb extends StatelessWidget {
+  const PenOrderThumb({
+    this.imageUrl,
+    this.platform,
+    this.size = 56,
+    super.key,
+  });
+
+  /// Remote poster URL. `null` (or a load failure) shows the parcel glyph.
+  final String? imageUrl;
+
+  /// Marketplace id (`shopee`, `tiktok`, …); omit to drop the badge.
+  final String? platform;
+  final double size;
+
+  static const _badge = 23.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = imageUrl;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        children: [
+          PenBox(
+            width: size,
+            height: size,
+            fill: PenColors.bg,
+            stroke: const Color(0x14000000),
+            radius: 12,
+            clip: true,
+            axis: PenAxis.row,
+            main: MainAxisAlignment.center,
+            cross: CrossAxisAlignment.center,
+            children: [
+              if (url == null || url.isEmpty)
+                PenParcelGlyph(size: size * 34 / 52)
+              else
+                SizedBox.expand(
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) =>
+                        Center(child: PenParcelGlyph(size: size * 34 / 52)),
+                  ),
+                ),
+            ],
+          ),
+          if (platform != null)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: PenBox(
+                width: _badge,
+                height: _badge,
+                fill: PenColors.card,
+                stroke: const Color(0x14000000),
+                radius: 999,
+                axis: PenAxis.row,
+                main: MainAxisAlignment.center,
+                cross: CrossAxisAlignment.center,
+                children: [PenPlatforms.logo(platform!, size: 15)],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -870,8 +997,9 @@ class _Tab extends StatelessWidget {
   }
 }
 
-/// A rounded filter pill. Selected reads as grey fill + bold label — never a
-/// brand tint (law 3 of the design DNA).
+/// A rounded filter pill. An applied filter reads as an ink fill with a white
+/// label; an unset one is a hairline outline — never a brand tint (law 3 of the
+/// design DNA).
 class PenChip extends StatelessWidget {
   const PenChip({
     required this.label,
@@ -888,28 +1016,31 @@ class PenChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = selected ? PenColors.card : PenColors.ink;
     return EcTap(
       onTap: onTap,
       child: PenBox(
-        fill: selected ? PenColors.selected : PenColors.bg,
+        fill: selected ? PenColors.ink : PenColors.bg,
+        stroke: selected ? null : PenColors.line,
         radius: 999,
         axis: PenAxis.row,
         gap: 7,
         cross: CrossAxisAlignment.center,
         hugMain: true,
-        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 18),
         children: [
           Flexible(
             child: PenText(
               label,
               size: 14,
-              color: PenColors.ink,
-              weight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: ink,
+              weight: selected ? FontWeight.w600 : FontWeight.w500,
               softWrap: false,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (trailing != null) Icon(trailing, size: 16, color: PenColors.mut),
+          if (trailing != null)
+            Icon(trailing, size: 16, color: selected ? ink : PenColors.mut),
         ],
       ),
     );
@@ -949,6 +1080,15 @@ class PenSheet extends StatefulWidget {
 const _dismissDistance = 90.0;
 const _dismissVelocity = 700.0;
 
+/// Phần phải bù thêm ở đáy sheet để nội dung không nằm dưới thanh home
+/// indicator: chỉ khoảng còn thiếu so với padding đáy mà design đã có (và
+/// `PenBox` đã nhân với `penDensityScale`), nên máy không khuyết vẫn giữ đúng
+/// padding thiết kế.
+double _bottomInset(BuildContext context, EdgeInsets padding) => math.max(
+  0,
+  MediaQuery.viewPaddingOf(context).bottom - padding.bottom * penDensityScale,
+);
+
 class _PenSheetState extends State<PenSheet> {
   double _dy = 0;
   bool _dragging = false;
@@ -983,9 +1123,9 @@ class _PenSheetState extends State<PenSheet> {
           alignment: Alignment.bottomCenter,
           child: GestureDetector(
             onTap: () {},
-            // ponytail: the whole panel is the drag target, which is fine while
-            // no sheet scrolls internally — if one ever does, move these
-            // handlers onto the grabber alone.
+            // ponytail: cả tấm panel là vùng kéo. Scrollable bên trong (bánh xe
+            // ngày, danh sách dài) vẫn thắng arena cử chỉ dọc vì nằm sâu hơn,
+            // nên chưa cần tách riêng vùng grabber.
             onVerticalDragUpdate: (d) => setState(() {
               _dragging = true;
               _dy = math.max(0, _dy + d.delta.dy);
@@ -1023,6 +1163,11 @@ class _PenSheetState extends State<PenSheet> {
                     ),
                   ),
                   ...widget.children,
+                  // Nâng nội dung khỏi thanh home indicator. Cộng thêm chứ
+                  // không thay thế, và chỉ phần còn thiếu — bọc SafeArea *và*
+                  // giữ padding đáy là cách sinh ra khoảng trắng thừa ở đuôi
+                  // sheet.
+                  SizedBox(height: _bottomInset(context, widget.padding)),
                 ],
               ),
             ),
@@ -1128,11 +1273,19 @@ class PenDialogButton extends StatelessWidget {
 
 /// Marketplace artwork, keyed the way the backend names the platform.
 abstract final class PenPlatforms {
-  static const _assets = <String, String>{
+  /// The official brand mark of each marketplace, as vector so it stays sharp
+  /// at any tile size instead of the blurry raster the design file exported.
+  ///
+  /// Every file is normalised to the same `0 0 100 100` viewBox with the mark
+  /// scaled to fit and centred, so a tall icon (Shopee's bag) and a wide
+  /// wordmark (Lazada, Tiki) carry the same optical weight in a square tile.
+  /// Re-normalise any logo you add — a tight-bbox export renders at its own
+  /// aspect and reads far bigger than its neighbours.
+  static const _logos = <String, String>{
     'shopee': 'shopee',
     'tiktok': 'tiktok',
     'lazada': 'lazada',
-    'tiki': 'tiki-square',
+    'tiki': 'tiki',
   };
 
   /// Brand colours, shipped as inline values in the design (not tokens).
@@ -1145,16 +1298,20 @@ abstract final class PenPlatforms {
 
   /// The platform's logo at [size], or the generic store icon for "Khác".
   static Widget logo(String platform, {double size = 30}) {
-    final asset = _assets[platform.toLowerCase()];
+    final asset = _logos[platform.toLowerCase()];
     if (asset == null) {
       return Icon(LucideIcons.store, size: size * 0.9, color: PenColors.ink);
     }
-    return Image.asset(
-      'assets/design/platforms/$asset.png',
-      package: 'ec_ui',
+    // The box has to come from outside: `SvgPicture` keeps the picture's own
+    // aspect ratio, so an un-normalised wordmark would blow a tile's Row apart.
+    return SizedBox(
       width: size,
       height: size,
-      fit: BoxFit.contain,
+      child: SvgPicture.asset(
+        'assets/design/platforms/$asset.svg',
+        package: 'ec_ui',
+        fit: BoxFit.contain,
+      ),
     );
   }
 }
@@ -1168,35 +1325,50 @@ class PenPlatformHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const IgnorePointer(
-      child: SizedBox(
-        width: 292,
-        height: 138,
-        child: Stack(
-          children: [
-            Positioned(
-              left: 61,
-              top: 0,
-              child: PenEllipse(width: 170, height: 118, color: PenColors.soft),
-            ),
-            Positioned(left: 20, top: 34, child: _HeroTile('shopee', 62, 34)),
-            Positioned(left: 82, top: 6, child: _HeroTile('tiktok', 64, 36)),
-            Positioned(left: 146, top: 34, child: _HeroTile('lazada', 72, 44)),
-            Positioned(left: 218, top: 58, child: _HeroTile('tiki', 62, 44)),
-            Positioned(
-              left: 58,
-              top: 91,
-              child: PenPath(
-                _flowLine,
-                viewBox: [0, 0, 172, 34],
-                width: 172,
-                height: 34,
-                color: PenColors.success,
-                strokeWidth: 3,
-                roundCap: true,
+    // `PenScreen` draws decorations outside its `SafeArea`, so the design's
+    // y-coordinates start at the physical top of the screen — on a notch or
+    // Dynamic Island phone that swallows the tiles. Carry the status-bar inset
+    // inside the hero so every call site keeps its design position.
+    return IgnorePointer(
+      child: Padding(
+        padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
+        child: const SizedBox(
+          width: 292,
+          height: 138,
+          child: Stack(
+            children: [
+              Positioned(
+                left: 61,
+                top: 0,
+                child: PenEllipse(
+                  width: 170,
+                  height: 118,
+                  color: PenColors.soft,
+                ),
               ),
-            ),
-          ],
+              Positioned(left: 20, top: 34, child: _HeroTile('shopee', 62, 34)),
+              Positioned(left: 82, top: 6, child: _HeroTile('tiktok', 64, 36)),
+              Positioned(
+                left: 146,
+                top: 34,
+                child: _HeroTile('lazada', 72, 44),
+              ),
+              Positioned(left: 218, top: 58, child: _HeroTile('tiki', 62, 44)),
+              Positioned(
+                left: 58,
+                top: 91,
+                child: PenPath(
+                  _flowLine,
+                  viewBox: [0, 0, 172, 34],
+                  width: 172,
+                  height: 34,
+                  color: PenColors.success,
+                  strokeWidth: 3,
+                  roundCap: true,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

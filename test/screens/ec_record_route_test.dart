@@ -166,6 +166,46 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  // Rời tab rồi vào lại là một lượt quay mới: phải hỏi loại video lần nữa thay
+  // vì im lặng dùng lại loại của lượt trước.
+  testWidgets('re-entering the record tab asks for the type again', (
+    tester,
+  ) async {
+    final camera = _FakeRecordingCamera(initiallyRecording: false);
+    final active = ValueNotifier(true);
+    addTearDown(active.dispose);
+    var typeRequests = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('vi'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: EcRecordRoute(
+          camera: camera,
+          isActive: active,
+          onRequestType: () async {
+            typeRequests++;
+            return 'Trả hàng';
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(typeRequests, 1);
+
+    active.value = false;
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    active.value = true;
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(typeRequests, 2);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('does not open the type picker while recording', (tester) async {
     final camera = _FakeRecordingCamera(initiallyRecording: false);
     var typeRequests = 0;

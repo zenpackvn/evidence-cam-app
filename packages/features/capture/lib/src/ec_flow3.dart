@@ -11,7 +11,6 @@
 library;
 
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:app_ui/app_ui.dart';
 import 'package:ec_ui/ec_ui.dart';
@@ -1517,15 +1516,13 @@ const List<EcUploadItem> ecDefaultUploadItems = [
   ),
 ];
 
-/// The upload queue list — quota banner, status tabs and per-video status.
+/// The upload queue list — quota banner and one status per video.
 class EcUploadQueueScreen extends StatelessWidget {
   const EcUploadQueueScreen({
     this.items = const [],
-    this.selectedTabIndex = 0,
     this.onBack,
     this.onUpgrade,
     this.onSettings,
-    this.onTabSelected,
     this.onRetry,
     this.onPause,
     this.onResume,
@@ -1534,14 +1531,12 @@ class EcUploadQueueScreen extends StatelessWidget {
   });
 
   final List<EcUploadItem> items;
-  final int selectedTabIndex;
   final VoidCallback? onBack;
   final VoidCallback? onUpgrade;
 
   /// F3-06's header gear. Optional: no upload-settings screen exists yet, so
   /// the icon only appears once a caller has somewhere to send it.
   final VoidCallback? onSettings;
-  final ValueChanged<int>? onTabSelected;
 
   /// Called with an errored item when its "Thử lại" affordance is tapped.
   final ValueChanged<EcUploadItem>? onRetry;
@@ -1555,34 +1550,13 @@ class EcUploadQueueScreen extends StatelessWidget {
   /// Called with an item when its remove affordance is tapped.
   final ValueChanged<EcUploadItem>? onDelete;
 
-  /// Items shown under the selected tab (0 = all, 1 = uploading, 2 = error,
-  /// 3 = quota wait) — the four filter chips F3-06 draws.
-  List<EcUploadItem> get _visibleItems => switch (selectedTabIndex) {
-    1 => _withStatus(EcUploadStatus.uploading),
-    2 => _withStatus(EcUploadStatus.error),
-    3 => _withStatus(EcUploadStatus.quotaWait),
-    _ => items,
-  };
-
-  List<EcUploadItem> _withStatus(EcUploadStatus status) => [
-    for (final i in items)
-      if (i.status == status) i,
-  ];
+  int _countWithStatus(EcUploadStatus status) =>
+      items.where((i) => i.status == status).length;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final visible = _visibleItems;
-    final uploading = _withStatus(EcUploadStatus.uploading).length;
-    final errored = _withStatus(EcUploadStatus.error).length;
-    final quotaWaiting = _withStatus(EcUploadStatus.quotaWait).length;
-    final pending = items.where((i) => i.status != EcUploadStatus.done).length;
-    final tabs = <({String label, Color color})>[
-      (label: l10n.queueFilterAll(items.length), color: BrandColors.ink),
-      (label: l10n.queueFilterUploading(uploading), color: BrandColors.ink),
-      (label: l10n.queueFilterErrored(errored), color: BrandColors.rec),
-      (label: l10n.queueFilterQuotaWait(quotaWaiting), color: BrandColors.ink),
-    ];
+    final quotaWaiting = _countWithStatus(EcUploadStatus.quotaWait);
     return CupertinoPageScaffold(
       backgroundColor: BrandColors.bg,
       child: SafeArea(
@@ -1600,12 +1574,12 @@ class EcUploadQueueScreen extends StatelessWidget {
                       color: BrandColors.ink,
                     ),
                   ),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: Center(
-                      child: Text(
-                        l10n.uploadQueueTitle,
-                        style: _t(24, FontWeight.w800, BrandColors.ink),
-                      ),
+                    child: Text(
+                      l10n.uploadQueueTitle,
+                      overflow: TextOverflow.ellipsis,
+                      style: _t(22, FontWeight.w800, BrandColors.ink),
                     ),
                   ),
                   // F3-06 draws a gear here, but nothing routes to upload
@@ -1642,36 +1616,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                       _QuotaBanner(onUpgrade: onUpgrade),
                       const SizedBox(height: 16),
                     ],
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: Text(
-                        l10n.queueSummary(pending, uploading, errored),
-                        style: _t(
-                          12,
-                          FontWeight.w400,
-                          errored > 0 ? BrandColors.rec : BrandColors.mut,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          for (var i = 0; i < tabs.length; i++) ...[
-                            if (i > 0) const SizedBox(width: 6),
-                            _UploadTab(
-                              label: tabs[i].label,
-                              color: tabs[i].color,
-                              selected: i == selectedTabIndex,
-                              onTap: () => onTabSelected?.call(i),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    if (visible.isEmpty)
+                    if (items.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 48),
                         child: Center(
@@ -1698,14 +1643,14 @@ class EcUploadQueueScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           child: Column(
                             children: [
-                              for (var i = 0; i < visible.length; i++) ...[
+                              for (var i = 0; i < items.length; i++) ...[
                                 if (i > 0)
                                   Container(
                                     height: 1,
                                     color: BrandColors.line,
                                   ),
                                 _UploadRow(
-                                  item: visible[i],
+                                  item: items[i],
                                   onRetry: onRetry,
                                   onPause: onPause,
                                   onResume: onResume,
@@ -1720,7 +1665,8 @@ class EcUploadQueueScreen extends StatelessWidget {
                     Center(
                       child: Text(
                         l10n.queueAutoUploadNote,
-                        style: _t(14, FontWeight.w400, BrandColors.mut),
+                        textAlign: TextAlign.center,
+                        style: _t(13, FontWeight.w400, BrandColors.mut),
                       ),
                     ),
                   ],
@@ -1734,8 +1680,9 @@ class EcUploadQueueScreen extends StatelessWidget {
   }
 }
 
-/// F3-06's quota banner — soft grey card, info glyph, and a white "Nâng gói"
-/// button.
+/// F3-06's quota banner. Amber-tinted, not grey: something is blocked, and the
+/// grey version read as a neutral tip nobody acted on. "Nâng gói" is a link
+/// rather than a boxed button — one less box competing with the list below.
 class _QuotaBanner extends StatelessWidget {
   const _QuotaBanner({this.onUpgrade});
 
@@ -1744,74 +1691,37 @@ class _QuotaBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-      decoration: ecSquircleDecoration(radius: 14, color: BrandColors.soft),
+      padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
+      decoration: ecSquircleDecoration(
+        radius: 14,
+        color: BrandColors.warningTint,
+      ),
       child: Row(
         children: [
-          const Icon(LucideIcons.info, size: 22, color: BrandColors.dark),
-          const SizedBox(width: 12),
+          const Icon(
+            LucideIcons.circleAlert,
+            size: 20,
+            color: BrandColors.warning,
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               context.l10n.quotaExhaustedNote,
-              style: _t(14, FontWeight.w400, BrandColors.ink),
+              style: _t(13, FontWeight.w400, BrandColors.ink),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           EcTap(
             onTap: onUpgrade,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
-              decoration: ecSquircleDecoration(
-                radius: 10,
-                color: BrandColors.card,
-                side: const BorderSide(color: BrandColors.line),
-              ),
-              child: Text(
-                context.l10n.upgradePlanShort,
-                style: _t(14, FontWeight.w600, BrandColors.dark),
+            child: Text(
+              context.l10n.upgradePlanShort,
+              style: _t(13, FontWeight.w700, BrandColors.dark).copyWith(
+                decoration: TextDecoration.underline,
+                decorationColor: BrandColors.dark,
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// A F3-06 filter chip: grey pill when selected, bare label when not. [color]
-/// is the label colour the design gives that filter (the "Lỗi" chip is red).
-class _UploadTab extends StatelessWidget {
-  const _UploadTab({
-    required this.label,
-    required this.color,
-    required this.selected,
-    this.onTap,
-  });
-  final String label;
-  final Color color;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return EcTap(
-      onTap: onTap,
-      child: Container(
-        decoration: ecSquircleDecoration(
-          radius: 999,
-          color: selected ? BrandColors.sidebarAccent : BrandColors.bg,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 9),
-          child: Text(
-            label,
-            style: _t(
-              12,
-              selected ? FontWeight.w700 : FontWeight.w500,
-              color,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -1847,23 +1757,9 @@ class _UploadRow extends StatelessWidget {
             item.status == EcUploadStatus.quotaWait);
     final canResume = onResume != null && item.status == EcUploadStatus.paused;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: 15),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: ecSquircleDecoration(
-              radius: 14,
-              color: _tileFill(item.status),
-            ),
-            child: Icon(
-              LucideIcons.video,
-              size: 24,
-              color: _tileInk(item.status),
-            ),
-          ),
-          const SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1873,25 +1769,19 @@ class _UploadRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: _t(16, FontWeight.w700, BrandColors.ink),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 5),
                 Text(
                   '${item.typeLabel} · ${item.timeRange}',
                   overflow: TextOverflow.ellipsis,
                   style: _t(12, FontWeight.w400, BrandColors.mut),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _statusLabel(context, item),
-                  overflow: TextOverflow.ellipsis,
-                  style: _t(12, FontWeight.w600, _statusInk(item.status)),
-                ),
                 if (item.status == EcUploadStatus.uploading) ...[
-                  const SizedBox(height: 7),
+                  const SizedBox(height: 8),
                   _UploadProgressBar(percent: item.progressPercent ?? 0),
                 ],
                 if (item.status == EcUploadStatus.error &&
                     item.errorMessage != null) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Text(
                     item.errorMessage!,
                     maxLines: 2,
@@ -1902,7 +1792,8 @@ class _UploadRow extends StatelessWidget {
               ],
             ),
           ),
-          _UploadStatusIcon(
+          const SizedBox(width: 12),
+          _UploadStatusTrailing(
             item: item,
             onRetry: onRetry,
           ),
@@ -1965,31 +1856,39 @@ class _UploadProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 6,
-      decoration: ecSquircleDecoration(radius: 4, color: BrandColors.line),
+      height: 5,
+      decoration: ecSquircleDecoration(radius: 999, color: BrandColors.line),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
         widthFactor: (percent.clamp(0, 100)) / 100,
         child: DecoratedBox(
-          decoration: ecSquircleDecoration(radius: 4, color: BrandColors.ink),
+          decoration: ecSquircleDecoration(radius: 999, color: BrandColors.ink),
         ),
       ),
     );
   }
 }
 
-/// The trailing glyph F3-06 gives each finished/blocked state. Uploading and
-/// waiting rows carry no icon — their progress line already says it.
-class _UploadStatusIcon extends StatelessWidget {
-  const _UploadStatusIcon({required this.item, this.onRetry});
+/// The row's whole status, at the trailing edge. One place per row: the status
+/// used to be a text line under the meta line *and* a glyph out here, which
+/// said the same thing twice and pushed every row three lines tall.
+class _UploadStatusTrailing extends StatelessWidget {
+  const _UploadStatusTrailing({required this.item, this.onRetry});
   final EcUploadItem item;
   final ValueChanged<EcUploadItem>? onRetry;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return switch (item.status) {
-      EcUploadStatus.done => Padding(
-        padding: const EdgeInsets.only(left: 13),
+      // The percentage sits where every other row shows its status; the bar
+      // under the meta line carries the same value visually.
+      EcUploadStatus.uploading => Text(
+        '${item.progressPercent ?? 0}%',
+        style: _t(13, FontWeight.w700, BrandColors.ink),
+      ),
+      EcUploadStatus.done => Semantics(
+        label: l10n.uploaded,
         child: Container(
           width: 26,
           height: 26,
@@ -2004,65 +1903,53 @@ class _UploadStatusIcon extends StatelessWidget {
           ),
         ),
       ),
-      EcUploadStatus.error => Padding(
-        padding: const EdgeInsets.only(left: 13),
-        child: EcTap(
-          onTap: onRetry == null ? null : () => onRetry!(item),
-          child: Semantics(
-            label: context.l10n.commonRetry,
-            button: true,
-            child: const Icon(
-              LucideIcons.refreshCw,
-              size: 22,
-              color: BrandColors.ink,
+      // The only action the list offers, so it looks like a button instead of
+      // a bare glyph a seller has to guess at.
+      EcUploadStatus.error => EcTap(
+        onTap: onRetry == null ? null : () => onRetry!(item),
+        child: Semantics(
+          label: l10n.commonRetry,
+          button: true,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 13),
+            decoration: ecSquircleDecoration(
+              radius: 999,
+              color: BrandColors.card,
+              side: const BorderSide(color: BrandColors.line),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  LucideIcons.refreshCw,
+                  size: 14,
+                  color: BrandColors.rec,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  l10n.commonRetry,
+                  style: _t(13, FontWeight.w700, BrandColors.rec),
+                ),
+              ],
             ),
           ),
         ),
       ),
-      EcUploadStatus.quotaWait => const Padding(
-        padding: EdgeInsets.only(left: 13),
-        child: Icon(LucideIcons.clock3, size: 24, color: BrandColors.mut),
+      EcUploadStatus.quotaWait => Text(
+        l10n.waitingQuota,
+        style: _t(12, FontWeight.w600, BrandColors.warning),
       ),
-      _ => const SizedBox.shrink(),
+      EcUploadStatus.waiting => Text(
+        l10n.waitingUpload,
+        style: _t(12, FontWeight.w600, BrandColors.mut),
+      ),
+      EcUploadStatus.paused => Text(
+        l10n.pausedUpload,
+        style: _t(12, FontWeight.w600, BrandColors.mut),
+      ),
     };
   }
 }
-
-/// The row's status line, in the design's wording per state.
-String _statusLabel(BuildContext context, EcUploadItem item) =>
-    switch (item.status) {
-      EcUploadStatus.uploading => context.l10n.uploadingProgress(
-        item.progressPercent ?? 0,
-      ),
-      EcUploadStatus.waiting => context.l10n.waitingUpload,
-      EcUploadStatus.done => context.l10n.uploaded,
-      EcUploadStatus.error => context.l10n.errorRetryCount(
-        item.retryCount ?? 0,
-      ),
-      EcUploadStatus.quotaWait => context.l10n.waitingQuota,
-      EcUploadStatus.paused => context.l10n.pausedUpload,
-    };
-
-Color _statusInk(EcUploadStatus status) => switch (status) {
-  EcUploadStatus.error => BrandColors.rec,
-  EcUploadStatus.quotaWait => BrandColors.warning,
-  EcUploadStatus.uploading || EcUploadStatus.done => BrandColors.ink,
-  EcUploadStatus.waiting || EcUploadStatus.paused => BrandColors.mut,
-};
-
-/// Tint of the 48pt video tile — red for a failed clip, grey for one parked on
-/// quota, near-white otherwise.
-Color _tileFill(EcUploadStatus status) => switch (status) {
-  EcUploadStatus.error => BrandColors.recTint,
-  EcUploadStatus.quotaWait => BrandColors.line,
-  _ => BrandColors.bg,
-};
-
-Color _tileInk(EcUploadStatus status) => switch (status) {
-  EcUploadStatus.error => BrandColors.rec,
-  EcUploadStatus.quotaWait => BrandColors.mut,
-  _ => BrandColors.ink,
-};
 
 // --- ManualEntry ---------------------------------------------------------
 
@@ -2435,6 +2322,10 @@ class EcVideoType {
 }
 
 /// Built-in video types; production callers append live custom types by shop.
+/// Loại video mỗi ca quay bắt đầu lại từ đầu — đóng gói hàng đi là việc chiếm
+/// gần hết thời lượng quay, nên nó là mặc định thay vì loại chọn lần trước.
+const kEcDefaultVideoType = 'Đóng hàng';
+
 const List<EcVideoType> ecDefaultVideoTypes = [
   EcVideoType(
     label: 'Đóng hàng',
@@ -2488,159 +2379,56 @@ class EcTypeSheetScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: Colors.transparent,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.of(context).maybePop(),
-              child: const ColoredBox(color: Colors.black54),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: _DismissibleSheetPanel(
-                child: DecoratedBox(
-                  decoration: ShapeDecoration(
-                    color: BrandColors.bg,
-                    shape: SmoothRectangleBorder(
-                      smoothness: ecCornerSmoothing,
-                      borderRadius: BorderRadius.zero,
-                    ),
+    // Dùng chung PenSheet như F3-08: bo góc trên 14, có grabber, và kéo panel
+    // xuống (hoặc vẩy nhanh) là đóng. Nền mờ đen thay vì xám mặc định vì sheet
+    // này nằm trên preview camera.
+    return PenSheet(
+      dim: Colors.black54,
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        28 + MediaQuery.paddingOf(context).bottom,
+      ),
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.videoTypeSheetTitle,
+                    style: _t(24, FontWeight.w800, BrandColors.ink),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const _SheetHandle(),
-                        const SizedBox(height: 6),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(4, 6, 4, 10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                context.l10n.videoTypeSheetTitle,
-                                style: _t(24, FontWeight.w800, BrandColors.ink),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                context.l10n.videoTypeSelectNote,
-                                style: _t(14, FontWeight.w400, BrandColors.mut),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Khung F3-09 chia danh sách làm hai nhóm có tiêu đề.
-                        // Không phải trang trí: nhóm trên là loại khoá cứng ai
-                        // cũng có, nhóm dưới là loại shop tự thêm và sửa/xoá
-                        // được — người dùng cần biết vì sao có cái bấm giữ được,
-                        // có cái không.
-                        ..._typeGroup(
-                          context.l10n.videoTypeGroupDefault,
-                          types.where((t) => t.locked),
-                        ),
-                        ..._typeGroup(
-                          context.l10n.videoTypeGroupCustom,
-                          types.where((t) => !t.locked),
-                        ),
-                        const SizedBox(height: 4),
-                        _ManageRow(onTap: onManageTypes),
-                      ],
-                    ),
+                  const SizedBox(height: 2),
+                  Text(
+                    context.l10n.videoTypeSelectNote,
+                    style: _t(14, FontWeight.w400, BrandColors.mut),
                   ),
-                ),
+                ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Ngưỡng kéo/búng xuống để đóng sheet thay vì bật ngược lên.
-const _sheetDismissDistance = 90.0;
-const _sheetDismissVelocity = 700.0;
-
-/// Panel sheet kéo xuống được: theo ngón tay 1:1, quá [_sheetDismissDistance]
-/// (hoặc búng nhanh hơn [_sheetDismissVelocity]) thì pop route.
-///
-/// Cái grabber ở đầu sheet hứa là kéo được, nên phải kéo được thật — người
-/// quay không muốn chọn loại thì gạt sheet xuống là quay luôn với loại mặc
-/// định, khỏi phải nhắm vào vùng nền mờ hẹp phía trên.
-class _DismissibleSheetPanel extends StatefulWidget {
-  const _DismissibleSheetPanel({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_DismissibleSheetPanel> createState() => _DismissibleSheetPanelState();
-}
-
-class _DismissibleSheetPanelState extends State<_DismissibleSheetPanel> {
-  double _dy = 0;
-  bool _dragging = false;
-
-  void _reset() => setState(() {
-    _dragging = false;
-    _dy = 0;
-  });
-
-  void _onDragEnd(DragEndDetails details) {
-    if (_dy > _sheetDismissDistance ||
-        details.velocity.pixelsPerSecond.dy > _sheetDismissVelocity) {
-      unawaited(Navigator.of(context).maybePop());
-      return;
-    }
-    _reset();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      // Cả panel là vùng kéo — sheet này không có phần cuộn bên trong nên
-      // không tranh chấp cử chỉ.
-      onVerticalDragUpdate: (d) => setState(() {
-        _dragging = true;
-        _dy = math.max(0, _dy + d.delta.dy);
-      }),
-      onVerticalDragEnd: _onDragEnd,
-      onVerticalDragCancel: _reset,
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(end: _dy),
-        duration: _dragging ? Duration.zero : const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        builder: (_, dy, child) =>
-            Transform.translate(offset: Offset(0, dy), child: child),
-        child: widget.child,
-      ),
-    );
-  }
-}
-
-class _SheetHandle extends StatelessWidget {
-  const _SheetHandle();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 36,
-        height: 4,
-        decoration: BoxDecoration(
-          color: BrandColors.line,
-          borderRadius: BorderRadius.circular(2),
+            // Khung F3-09 chia danh sách làm hai nhóm có tiêu đề. Không phải
+            // trang trí: nhóm trên là loại khoá cứng ai cũng có, nhóm dưới là
+            // loại shop tự thêm và sửa/xoá được — người dùng cần biết vì sao
+            // có cái bấm giữ được, có cái không.
+            ..._typeGroup(
+              context.l10n.videoTypeGroupDefault,
+              types.where((t) => t.locked),
+            ),
+            ..._typeGroup(
+              context.l10n.videoTypeGroupCustom,
+              types.where((t) => !t.locked),
+            ),
+            const SizedBox(height: 4),
+            _ManageRow(onTap: onManageTypes),
+          ],
         ),
-      ),
+      ],
     );
   }
 }

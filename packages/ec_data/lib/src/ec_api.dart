@@ -193,6 +193,7 @@ class EcApi {
     int page = 1,
     String? uploadState,
     int? fromTs,
+    int? toTs,
     String? videoTypeId,
   }) async {
     final res = await _dio.get<List<dynamic>>(
@@ -201,6 +202,7 @@ class EcApi {
         'page': page,
         'upload_state': ?uploadState,
         'from': ?fromTs,
+        'to': ?toTs,
         'video_type_id': ?videoTypeId,
       },
     );

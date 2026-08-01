@@ -67,8 +67,8 @@ abstract interface class EcRepository {
   Future<void> deleteVideoType(String shopId, String typeId);
   Future<QuotaDto> quota({String? shopId});
 
-  /// Page [page] (1-based) of orders, newest first. [uploadState] / [fromTs] /
-  /// [videoTypeId] are the "Vận đơn" tab's three filters; they are applied by
+  /// Page [page] (1-based) of orders, newest first. [uploadState] /
+  /// [fromTs]–[toTs] / [videoTypeId] are the "Vận đơn" tab's three filters; they are applied by
   /// the backend because the list is paged and a client-side filter would only
   /// ever see the rows already loaded.
   Future<OrderPageDto> orders(
@@ -76,6 +76,7 @@ abstract interface class EcRepository {
     int page,
     String? uploadState,
     int? fromTs,
+    int? toTs,
     String? videoTypeId,
   });
   Future<List<OrderSummaryDto>> searchOrders(String shopId, String query);
@@ -200,12 +201,14 @@ class RemoteEcRepository implements EcRepository {
     int page = 1,
     String? uploadState,
     int? fromTs,
+    int? toTs,
     String? videoTypeId,
   }) => _api.listOrders(
     shopId,
     page: page,
     uploadState: uploadState,
     fromTs: fromTs,
+    toTs: toTs,
     videoTypeId: videoTypeId,
   );
 
@@ -391,6 +394,7 @@ class FakeEcRepository implements EcRepository {
     int page = 1,
     String? uploadState,
     int? fromTs,
+    int? toTs,
     String? videoTypeId,
   }) async {
     return OrderPageDto(

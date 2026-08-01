@@ -2,7 +2,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:ec_ui/ec_ui.dart';
 import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/cupertino.dart'
-    show CupertinoActionSheet, CupertinoTextField;
+    show CupertinoActionSheet, CupertinoDatePicker, CupertinoTextField;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,6 +38,53 @@ Future<void> _pump(
 }
 
 void main() {
+  group('bottom sheets', () {
+    // Bốn sheet của flow 1 từng tự dựng lại panel: góc vuông, không vuốt xuống
+    // được, và SafeArea chồng lên padding đáy nên thừa một dải trắng. Chốt vào
+    // PenSheet để cả ba thứ đến từ một chỗ.
+    testWidgets('member actions is a PenSheet, not a hand-rolled panel', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcMemberActionsScreen(
+          member: EcShopMember(name: 'A', role: 'Chủ shop'),
+        ),
+      );
+      expect(find.byType(PenSheet), findsOneWidget);
+    });
+
+    testWidgets('dragging the sheet down dismisses it', (tester) async {
+      var dismissed = false;
+      await _pump(
+        tester,
+        PenSheet(
+          onDismiss: () => dismissed = true,
+          children: const [Text('nội dung')],
+        ),
+      );
+      await tester.drag(find.text('nội dung'), const Offset(0, 150));
+      await tester.pumpAndSettle();
+      expect(dismissed, isTrue);
+    });
+
+    testWidgets('a short drag snaps back instead of dismissing', (
+      tester,
+    ) async {
+      var dismissed = false;
+      await _pump(
+        tester,
+        PenSheet(
+          onDismiss: () => dismissed = true,
+          children: const [Text('nội dung')],
+        ),
+      );
+      await tester.drag(find.text('nội dung'), const Offset(0, 20));
+      await tester.pumpAndSettle();
+      expect(dismissed, isFalse);
+    });
+  });
+
   group('EcRegisterScreen', () {
     testWidgets('renders the whole register layout without overflow', (
       tester,
@@ -273,7 +320,7 @@ void main() {
       expect(find.text('Quản lý cửa hàng'), findsOneWidget);
       expect(find.text('Shop ABC'), findsOneWidget);
       expect(find.text('Shop XYZ'), findsOneWidget);
-      expect(find.text('Thêm shop mới (tên + sàn)'), findsOneWidget);
+      expect(find.text('Thêm shop mới'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -289,7 +336,7 @@ void main() {
         ),
       );
       await tester.tap(find.text('Shop ABC'));
-      await tester.tap(find.text('Thêm shop mới (tên + sàn)'));
+      await tester.tap(find.text('Thêm shop mới'));
       expect(tapped?.name, 'Shop ABC');
       expect(addTapped, isTrue);
     });
@@ -671,11 +718,11 @@ void main() {
         tester,
         const EcHomeOrdersScreen(shopName: 'Shop ABC', orders: orders),
       );
-      // All three chips open a sheet, but the design only marks the
-      // video-type one with a chevron.
-      expect(find.byIcon(LucideIcons.chevronDown), findsOneWidget);
-      expect(find.text('Tất cả'), findsOneWidget);
-      expect(find.text('Mọi lúc'), findsOneWidget);
+      // Khung F2-01 mới: cả ba chip đều là dropdown, và khi chưa lọc chip chỉ
+      // hiện tên chiều lọc chứ không phải giá trị "tất cả" của nó.
+      expect(find.byIcon(LucideIcons.chevronDown), findsNWidgets(3));
+      expect(find.text('Trạng thái upload'), findsOneWidget);
+      expect(find.text('Thời gian'), findsOneWidget);
       expect(find.text('Loại video'), findsOneWidget);
     });
 
@@ -692,7 +739,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Tất cả'));
+      await tester.tap(find.text('Trạng thái upload'));
       await tester.pumpAndSettle();
       expect(find.byType(CupertinoActionSheet), findsOneWidget);
       // A real option set, not just the chip's own label back at it.
@@ -704,11 +751,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // The backend's `upload_state` value goes out, and the chip now shows
-      // the selection instead of "Tất cả".
+      // the dimension plus the selection.
       expect(picked.single.uploadState, 'error');
       expect(picked.single.videoTypeId, isNull);
-      expect(find.text('Có lỗi tải'), findsOneWidget);
-      expect(find.text('Tất cả'), findsNothing);
+      expect(find.text('Trạng thái upload: Có lỗi tải'), findsOneWidget);
+      expect(find.text('Trạng thái upload'), findsNothing);
     });
 
     testWidgets('time chip maps "Hôm nay" to local midnight', (tester) async {
@@ -722,7 +769,10 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Mọi lúc'));
+      // Chip 'Trạng thái upload' dài hơn nhãn cũ nên hàng chip tràn ngang —
+      // cuộn chip vào tầm nhìn trước khi bấm.
+      await tester.ensureVisible(find.text('Thời gian'));
+      await tester.tap(find.text('Thời gian'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Hôm nay'));
       await tester.pumpAndSettle();
@@ -731,6 +781,100 @@ void main() {
       expect(
         picked.single.fromTs,
         DateTime(now.year, now.month, now.day).millisecondsSinceEpoch,
+      );
+    });
+
+    testWidgets('time chip bounds "Hôm qua" on both ends', (tester) async {
+      final picked = <EcOrderFilters>[];
+      await _pump(
+        tester,
+        EcHomeOrdersScreen(
+          shopName: 'Shop ABC',
+          orders: orders,
+          onFiltersChanged: picked.add,
+        ),
+      );
+
+      // Chip 'Trạng thái upload' dài hơn nhãn cũ nên hàng chip tràn ngang —
+      // cuộn chip vào tầm nhìn trước khi bấm.
+      await tester.ensureVisible(find.text('Thời gian'));
+      await tester.tap(find.text('Thời gian'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hôm qua'));
+      await tester.pumpAndSettle();
+
+      final now = DateTime.now();
+      final midnight = DateTime(now.year, now.month, now.day);
+      final yesterday = midnight.subtract(const Duration(days: 1));
+      expect(picked.single.fromTs, yesterday.millisecondsSinceEpoch);
+      // Closed at the last millisecond of the day, not the next midnight: the
+      // backend compares with `<=`, so an exclusive bound would leak today in.
+      expect(picked.single.toTs, midnight.millisecondsSinceEpoch - 1);
+    });
+
+    testWidgets('backing out of the date picker leaves the filter alone', (
+      tester,
+    ) async {
+      final picked = <EcOrderFilters>[];
+      await _pump(
+        tester,
+        EcHomeOrdersScreen(
+          shopName: 'Shop ABC',
+          orders: orders,
+          onFiltersChanged: picked.add,
+        ),
+      );
+
+      // Chip 'Trạng thái upload' dài hơn nhãn cũ nên hàng chip tràn ngang —
+      // cuộn chip vào tầm nhìn trước khi bấm.
+      await tester.ensureVisible(find.text('Thời gian'));
+      await tester.tap(find.text('Thời gian'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Chọn ngày…'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CupertinoDatePicker), findsOneWidget);
+
+      await tester.tap(find.text('Hủy'));
+      await tester.pumpAndSettle();
+
+      // Cancelling must not half-apply an empty day window.
+      expect(picked, isEmpty);
+      expect(find.text('Thời gian'), findsOneWidget);
+    });
+
+    testWidgets('picking a day filters to exactly that day', (tester) async {
+      final picked = <EcOrderFilters>[];
+      await _pump(
+        tester,
+        EcHomeOrdersScreen(
+          shopName: 'Shop ABC',
+          orders: orders,
+          onFiltersChanged: picked.add,
+        ),
+      );
+
+      // Chip 'Trạng thái upload' dài hơn nhãn cũ nên hàng chip tràn ngang —
+      // cuộn chip vào tầm nhìn trước khi bấm.
+      await tester.ensureVisible(find.text('Thời gian'));
+      await tester.tap(find.text('Thời gian'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Chọn ngày…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xong'));
+      await tester.pumpAndSettle();
+
+      // The wheel opens on today, so confirming without scrolling picks today.
+      final now = DateTime.now();
+      final midnight = DateTime(now.year, now.month, now.day);
+      expect(picked.single.fromTs, midnight.millisecondsSinceEpoch);
+      expect(
+        picked.single.toTs,
+        midnight.add(const Duration(days: 1)).millisecondsSinceEpoch - 1,
+      );
+      // The pill shows the chosen day rather than the generic prompt.
+      expect(
+        find.text('Thời gian: ${now.day}/${now.month}/${now.year}'),
+        findsOneWidget,
       );
     });
 
@@ -798,7 +942,7 @@ void main() {
       );
       expect(find.text('Shop chưa có đơn nào'), findsOneWidget);
 
-      await tester.tap(find.text('Tất cả'));
+      await tester.tap(find.text('Trạng thái upload'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Chờ upload'));
       await tester.pumpAndSettle();

@@ -147,6 +147,15 @@
   "accountSignOutConfirmTitle": "Sign out?",
   "accountSignOutConfirmMessage": "You'll need to sign in again to keep using the app.",
   "accountDeleteAccount": "Delete account",
+  "accountVersion": "Version {version}",
+  "@accountVersion": {
+    "description": "App version line in the Account tab footer (F4-01).",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "accountShopMgmtHint": "Manage shop/members: tap back on the header to return to the Shop layer",
   "accountInfoTitle": "Account info",
   "accountFullName": "Full name",
@@ -590,8 +599,10 @@
   "filterTimeLabel": "Time",
   "filterTimeAll": "Any time",
   "filterTimeToday": "Today",
+  "filterTimeYesterday": "Yesterday",
   "filterTime7d": "Last 7 days",
   "filterTime30d": "Last 30 days",
+  "filterTimePickDate": "Pick a date…",
   "filterTypeLabel": "Video type",
   "filterTypeAll": "Video type",
   "deleteVideoTypeTitle": "Delete type \"{typeName}\"?",
@@ -725,7 +736,7 @@
   "@shopManageDescription": {
     "description": "Shop management: shopManageDescription."
   },
-  "shopManageAddCta": "Add a shop (name + marketplace)",
+  "shopManageAddCta": "Add a shop",
   "@shopManageAddCta": {
     "description": "Shop management: shopManageAddCta."
   },

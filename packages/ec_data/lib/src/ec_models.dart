@@ -159,6 +159,7 @@ class OrderSummaryDto {
     this.latestType,
     this.errorCount = 0,
     this.pendingCount = 0,
+    this.latestThumbUrl,
   });
 
   factory OrderSummaryDto.fromJson(Map<String, dynamic> j) => OrderSummaryDto(
@@ -170,6 +171,7 @@ class OrderSummaryDto {
     latestType: j['latest_type'] as String?,
     errorCount: _int(j['error_count']),
     pendingCount: _int(j['pending_count']),
+    latestThumbUrl: j['latest_thumb_url'] as String?,
   );
 
   final String id;
@@ -180,6 +182,12 @@ class OrderSummaryDto {
   final String? latestType;
   final int errorCount;
   final int pendingCount;
+
+  /// Presigned GET của poster clip mới nhất — ảnh overview cho mỗi dòng ở
+  /// F2-01 (technical-spec: danh sách chỉ tải thumbnail, byte video để dành
+  /// cho lúc bấm Xem). `null` khi đơn chưa có clip nào lên xong, hoặc khi
+  /// backend chưa trả trường `latest_thumb_url`.
+  final String? latestThumbUrl;
 }
 
 /// Một trang của danh sách vận đơn (F2-01). [total] là tổng số đơn khớp bộ

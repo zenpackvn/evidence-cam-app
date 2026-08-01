@@ -107,6 +107,7 @@
   "accountSignOutConfirmTitle": "Đăng xuất?",
   "accountSignOutConfirmMessage": "Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng.",
   "accountDeleteAccount": "Xóa tài khoản",
+  "accountVersion": "Phiên bản {version}",
   "accountShopMgmtHint": "Quản lý shop/thành viên: bấm back trên header để về lớp Shop",
   "accountInfoTitle": "Thông tin tài khoản",
   "accountFullName": "Họ tên",
@@ -366,8 +367,10 @@
   "filterTimeLabel": "Thời gian",
   "filterTimeAll": "Mọi lúc",
   "filterTimeToday": "Hôm nay",
+  "filterTimeYesterday": "Hôm qua",
   "filterTime7d": "7 ngày qua",
   "filterTime30d": "30 ngày qua",
+  "filterTimePickDate": "Chọn ngày…",
   "filterTypeLabel": "Loại video",
   "filterTypeAll": "Loại video",
   "deleteVideoTypeTitle": "Xóa loại \"{typeName}\"?",
@@ -487,7 +490,7 @@
   "@shopManageDescription": {
     "description": "Shop management: shopManageDescription."
   },
-  "shopManageAddCta": "Thêm shop mới (tên + sàn)",
+  "shopManageAddCta": "Thêm shop mới",
   "@shopManageAddCta": {
     "description": "Shop management: shopManageAddCta."
   },

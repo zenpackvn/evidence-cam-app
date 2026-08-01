@@ -45,7 +45,7 @@ class EcRecordRoute extends StatefulWidget {
     this.verifyReturnCode,
     this.voiceAnnouncer,
     this.ensureCameraPermission,
-    this.initialType = 'Đóng hàng',
+    this.initialType = kEcDefaultVideoType,
     this.queueCount = 0,
     this.initialResolution = '720p',
     this.maxRecording = const Duration(minutes: 2),
@@ -242,6 +242,12 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     if (widget.isActive!.value) {
       if (_bloc.state.status != RecordingStatus.idle &&
           _bloc.state.status != RecordingStatus.recording) {
+        // Quay lại tab = một lượt quay mới: loại video về mặc định và hỏi lại.
+        // Giữ nguyên loại của lần trước là cách clip bị gán sai loại nhiều
+        // nhất — người quay chuyển tab, quay tiếp, và không ai để ý ô loại ở
+        // thanh dưới vẫn là loại cũ.
+        _typeChosen = false;
+        _bloc.add(const RecordingTypeChanged(kEcDefaultVideoType));
         unawaited(_startAfterTypeChosen());
       }
     } else {

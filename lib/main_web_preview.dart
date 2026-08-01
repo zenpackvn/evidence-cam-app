@@ -113,7 +113,11 @@ class _Artboard extends StatelessWidget {
           decoration: const BoxDecoration(
             color: Color(0xFFFFFFFF),
             boxShadow: [
-              BoxShadow(color: Color(0x22000000), blurRadius: 12, offset: Offset(0, 4)),
+              BoxShadow(
+                color: Color(0x22000000),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
             ],
           ),
           child: SizedBox(

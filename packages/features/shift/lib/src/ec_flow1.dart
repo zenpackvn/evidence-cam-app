@@ -15,6 +15,9 @@ import 'package:flutter/cupertino.dart'
         CupertinoActionSheet,
         CupertinoActionSheetAction,
         CupertinoActivityIndicator,
+        CupertinoButton,
+        CupertinoDatePicker,
+        CupertinoDatePickerMode,
         CupertinoPageScaffold,
         CupertinoTextField,
         showCupertinoModalPopup;
@@ -404,11 +407,12 @@ class _ShopHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Header nằm trên [PenBrandBanner] nên chữ và mũi tên đều trắng.
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 28, 18, 0),
       child: Row(
         children: [
-          PenBackButton(onTap: onBack),
+          PenBackButton(onTap: onBack, color: PenColors.card),
           const SizedBox(width: 14),
           Expanded(
             child: EcTap(
@@ -416,7 +420,7 @@ class _ShopHeader extends StatelessWidget {
               child: PenText(
                 shopName,
                 size: 24,
-                color: PenColors.ink,
+                color: PenColors.card,
                 weight: FontWeight.w800,
                 softWrap: false,
                 overflow: TextOverflow.ellipsis,
@@ -1681,6 +1685,19 @@ class EcVideoType {
 
 /// ShopDetail — member list + invite row, then shop settings: recording
 /// resolution and the video type list (locked defaults + custom types).
+/// Khe giữa hai thẻ nhóm trên Chi tiết cửa hàng. Lớn hơn [_sectionRowGap] để
+/// ranh giới giữa hai nhóm luôn rõ hơn ranh giới giữa hai mục cùng nhóm.
+const _sectionCardGap = 12.0;
+
+/// Khe giữa các mục *trong* một thẻ nhóm. `PenBox` nhân số này với
+/// `penDensityScale` nên ~10pt thật.
+const _sectionRowGap = 12.0;
+
+/// Khe giữa một hàng cài đặt và dòng chú thích "Đề xuất …" của chính nó. Phải
+/// nhỏ hơn [_sectionRowGap] sau khi nhân tỉ lệ, nếu không chú thích nằm lửng
+/// giữa hai hàng và không biết thuộc hàng nào.
+const _settingHintGap = 6.0;
+
 class EcShopDetailScreen extends StatelessWidget {
   const EcShopDetailScreen({
     required this.shopName,
@@ -1731,7 +1748,7 @@ class EcShopDetailScreen extends StatelessWidget {
               onBack: onBack,
               gap: 14,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: _sectionCardGap),
             PenCard(
               stroke: null,
               gap: 16,
@@ -1762,7 +1779,7 @@ class EcShopDetailScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: _sectionCardGap),
             _PenSectionCard(
               icon: LucideIcons.users,
               label: l10n.sectionMembers,
@@ -1828,7 +1845,7 @@ class EcShopDetailScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: _sectionCardGap),
             _PenSectionCard(
               icon: LucideIcons.settings,
               label: l10n.sectionShopSettings,
@@ -1899,7 +1916,7 @@ class EcShopDetailScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: _sectionCardGap),
             _PenSectionCard(
               icon: LucideIcons.squarePlay,
               label: l10n.sectionVideoTypes,
@@ -2020,7 +2037,7 @@ class _ClipDurationRow extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: _settingHintGap),
         PenText(
           budget.platformLimitsVerified
               ? l10n.clipRecommendedHint(
@@ -2144,7 +2161,7 @@ class _UploadSizeRow extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: _settingHintGap),
         PenText(
           l10n.uploadRecommendedHint(
             _megabytes(budget.maxImageBytes),
@@ -2219,27 +2236,27 @@ class _PenSectionCard extends StatelessWidget {
     return PenCard(
       axis: PenAxis.column,
       stroke: null,
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 13),
+      // Không có gap thì nhãn nhóm, các hàng và nút ở cuối thẻ xếp sát 0pt và
+      // đọc thành một khối liền — mỗi con là một mục riêng nên phải có khe.
+      gap: _sectionRowGap,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 13),
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 2),
-          child: Row(
-            children: [
-              Icon(icon, size: 22, color: PenColors.ink),
-              const SizedBox(width: 12),
-              Expanded(
-                child: PenText(
-                  label.toUpperCase(),
-                  size: 14,
-                  color: PenColors.mut,
-                  weight: FontWeight.w700,
-                  letterSpacing: 0.6,
-                  softWrap: false,
-                  overflow: TextOverflow.ellipsis,
-                ),
+        Row(
+          children: [
+            Icon(icon, size: 22, color: PenColors.ink),
+            const SizedBox(width: 12),
+            Expanded(
+              child: PenText(
+                label.toUpperCase(),
+                size: 14,
+                color: PenColors.mut,
+                weight: FontWeight.w700,
+                letterSpacing: 0.6,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         ...children,
       ],
@@ -3122,76 +3139,28 @@ class _EcSheetFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sub = subtitle;
-    return ColoredBox(
-      color: Colors.transparent,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.of(context).maybePop(),
-              child: const ColoredBox(color: Colors.black54),
-            ),
+    // Khung này từng tự dựng lại panel: góc vuông, không kéo xuống được, và
+    // bọc SafeArea *chồng lên* padding đáy 28 nên đuôi sheet thừa một dải
+    // trắng. PenSheet đã có sẵn cả ba thứ — dùng lại thay vì sửa bản sao.
+    return PenSheet(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+      children: [
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: _t(16, FontWeight.w600, BrandColors.ink)),
+              if (sub != null) ...[
+                const SizedBox(height: 3),
+                Text(sub, style: _t(14, FontWeight.w400, BrandColors.mut)),
+              ],
+            ],
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: DecoratedBox(
-                decoration: ShapeDecoration(
-                  color: BrandColors.bg,
-                  shape: SmoothRectangleBorder(
-                    smoothness: ecCornerSmoothing,
-                    borderRadius: BorderRadius.zero,
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: BrandColors.line,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: _t(16, FontWeight.w600, BrandColors.ink),
-                            ),
-                            if (sub != null) ...[
-                              const SizedBox(height: 3),
-                              Text(
-                                sub,
-                                style: _t(14, FontWeight.w400, BrandColors.mut),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      ...children,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+        ...children,
+      ],
     );
   }
 }
@@ -3246,6 +3215,8 @@ class EcHomeStat {
     required this.value,
     required this.label,
     this.icon = LucideIcons.package,
+    this.accent = PenColors.primary,
+    this.tintValue = false,
     this.onTap,
   });
   final String value;
@@ -3256,6 +3227,14 @@ class EcHomeStat {
 
   /// The lucide glyph the design puts in the stat's tile.
   final IconData icon;
+
+  /// Colour of the glyph and its tile wash. One hue per stat in the design:
+  /// green for orders, light green for clips, amber for the upload backlog.
+  final Color accent;
+
+  /// Paints the number in [accent] too. The design only does this for "Chờ
+  /// tải", where a non-zero count is something to act on.
+  final bool tintValue;
 }
 
 /// An order row on HomeOrders.
@@ -3267,6 +3246,7 @@ class EcOrderRow {
     required this.videoCount,
     this.errorCount = 0,
     this.pendingCount = 0,
+    this.thumbUrl,
   });
 
   /// Tracking code.
@@ -3280,6 +3260,11 @@ class EcOrderRow {
   final int videoCount;
   final int errorCount;
   final int pendingCount;
+
+  /// Ảnh overview của đơn: poster frame của clip mới nhất (hoặc chính tấm ảnh
+  /// đính kèm). `null` khi chưa có clip nào lên xong — dòng rơi về glyph kiện
+  /// hàng.
+  final String? thumbUrl;
 }
 
 /// One selectable video type in the "Loại video" filter.
@@ -3302,7 +3287,12 @@ class EcVideoTypeOption {
 /// would silently hide matches sitting on the next page.
 @immutable
 class EcOrderFilters {
-  const EcOrderFilters({this.uploadState, this.fromTs, this.videoTypeId});
+  const EcOrderFilters({
+    this.uploadState,
+    this.fromTs,
+    this.toTs,
+    this.videoTypeId,
+  });
 
   /// `pending` | `error` | `done` — the backend's `upload_state` param.
   final String? uploadState;
@@ -3310,11 +3300,19 @@ class EcOrderFilters {
   /// Epoch ms lower bound on the order's creation time (`from`).
   final int? fromTs;
 
+  /// Epoch ms upper bound, inclusive (`to`). Null on the rolling windows
+  /// ("today", "last 7 days"), which run up to now and need no ceiling — it is
+  /// the closed ranges ("yesterday", a single picked date) that set it.
+  final int? toTs;
+
   /// Restricts to orders holding at least one clip of this type.
   final String? videoTypeId;
 
   bool get isEmpty =>
-      uploadState == null && fromTs == null && videoTypeId == null;
+      uploadState == null &&
+      fromTs == null &&
+      toTs == null &&
+      videoTypeId == null;
 }
 
 /// Vị trí của trang đang xem trong toàn bộ kết quả, cho thanh phân trang ở
@@ -3358,13 +3356,17 @@ class EcHomeOrdersScreen extends StatefulWidget {
         value: '0',
         label: 'Video đã quay',
         icon: LucideIcons.video,
+        accent: PenColors.success,
       ),
       EcHomeStat(
         value: '0',
         label: 'Chờ tải',
         icon: LucideIcons.cloudUpload,
+        accent: PenColors.warning,
+        tintValue: true,
       ),
     ],
+    this.platform,
     this.videoTypes = const [],
     this.searchHint = 'Nhập mã vận đơn',
     this.emptyText = 'Shop chưa có đơn nào',
@@ -3388,6 +3390,10 @@ class EcHomeOrdersScreen extends StatefulWidget {
   final String shopName;
   final List<EcOrderRow> orders;
   final List<EcHomeStat> stats;
+
+  /// Marketplace của shop (`shopee`, `tiktok`, …) — badge góc ảnh mỗi dòng.
+  /// Mọi đơn trên màn này đều thuộc một shop nên badge dùng chung.
+  final String? platform;
 
   /// Options for the "Loại video" chip — the shop's video types. An empty list
   /// leaves the chip with only its "all types" entry.
@@ -3457,30 +3463,59 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
   String? _timeWindow;
   String? _videoTypeId;
 
+  /// The day chosen through the date picker. Kept alongside [_timeWindow]
+  /// rather than encoded into it so re-opening the sheet can start the wheels
+  /// on the day already in force.
+  DateTime? _pickedDate;
+
+  /// Sheet value for "one specific day", the only option whose bounds come
+  /// from user input rather than the clock.
+  static const _timeWindowDate = 'date';
+
   @override
   void dispose() {
     _search.dispose();
     super.dispose();
   }
 
-  /// Midnight-today / rolling 7 or 30 days, as an epoch-ms lower bound. Today
-  /// starts at local midnight rather than "24h ago" so it means the same thing
-  /// as the date the rows are grouped under.
-  static int? _fromTsFor(String? window) {
+  /// Epoch-ms bounds for a window, as `(from, to)`.
+  ///
+  /// Day-shaped windows ("today", "yesterday", a picked date) snap to local
+  /// midnight so they mean the same thing as the date the rows are grouped
+  /// under; the rolling ones stay relative to the current instant. Only the
+  /// closed windows get a `to` — the rest run up to now.
+  ///
+  /// `to` is the last millisecond *inside* the day rather than the next
+  /// midnight: the backend compares with `created_at <= ?` (see `orderScope`),
+  /// so an exclusive bound would leak the following day's first order in.
+  static (int?, int?) _boundsFor(String? window, DateTime? picked) {
     final now = DateTime.now();
+    final midnight = DateTime(now.year, now.month, now.day);
+    int ms(DateTime d) => d.millisecondsSinceEpoch;
+    int endOfDay(DateTime d) => ms(DateTime(d.year, d.month, d.day + 1)) - 1;
+    final yesterday = midnight.subtract(const Duration(days: 1));
     return switch (window) {
-      'today' => DateTime(now.year, now.month, now.day).millisecondsSinceEpoch,
-      '7d' => now.subtract(const Duration(days: 7)).millisecondsSinceEpoch,
-      '30d' => now.subtract(const Duration(days: 30)).millisecondsSinceEpoch,
-      _ => null,
+      'today' => (ms(midnight), null),
+      'yesterday' => (ms(yesterday), endOfDay(yesterday)),
+      '7d' => (ms(now.subtract(const Duration(days: 7))), null),
+      '30d' => (ms(now.subtract(const Duration(days: 30))), null),
+      _timeWindowDate when picked != null => (
+        ms(DateTime(picked.year, picked.month, picked.day)),
+        endOfDay(picked),
+      ),
+      _ => (null, null),
     };
   }
 
-  EcOrderFilters get _filters => EcOrderFilters(
-    uploadState: _uploadState,
-    fromTs: _fromTsFor(_timeWindow),
-    videoTypeId: _videoTypeId,
-  );
+  EcOrderFilters get _filters {
+    final (from, to) = _boundsFor(_timeWindow, _pickedDate);
+    return EcOrderFilters(
+      uploadState: _uploadState,
+      fromTs: from,
+      toTs: to,
+      videoTypeId: _videoTypeId,
+    );
+  }
 
   List<_FilterOption> _statusOptions(AppLocalizations l10n) => [
     _FilterOption(null, l10n.filterStatusAll),
@@ -3492,9 +3527,19 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
   List<_FilterOption> _timeOptions(AppLocalizations l10n) => [
     _FilterOption(null, l10n.filterTimeAll),
     _FilterOption('today', l10n.filterTimeToday),
+    _FilterOption('yesterday', l10n.filterTimeYesterday),
     _FilterOption('7d', l10n.filterTime7d),
     _FilterOption('30d', l10n.filterTime30d),
+    // Once a day is in force the pill shows it instead of the generic prompt,
+    // so the chip still reads as the filter actually applied.
+    _FilterOption(
+      _timeWindowDate,
+      _pickedDate == null ? l10n.filterTimePickDate : _formatDay(_pickedDate!),
+    ),
   ];
+
+  /// `d/M/yyyy` — the shortest unambiguous form for a chip label.
+  static String _formatDay(DateTime d) => '${d.day}/${d.month}/${d.year}';
 
   List<_FilterOption> _typeOptions(AppLocalizations l10n) => [
     _FilterOption(null, l10n.filterTypeAll),
@@ -3516,6 +3561,23 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
 
   void _select(void Function(String?) apply, String? value) {
     setState(() => apply(value));
+    widget.onFiltersChanged?.call(_filters);
+  }
+
+  /// Time is the one filter whose selection can need a second step: picking a
+  /// specific day opens a date wheel, and backing out of that must leave the
+  /// previous window untouched rather than half-applying an empty one.
+  Future<void> _selectTime(String? value) async {
+    if (value != _timeWindowDate) {
+      _select((x) => _timeWindow = x, value);
+      return;
+    }
+    final picked = await _pickDay(context, _pickedDate ?? DateTime.now());
+    if (picked == null || !mounted) return;
+    setState(() {
+      _pickedDate = picked;
+      _timeWindow = _timeWindowDate;
+    });
     widget.onFiltersChanged?.call(_filters);
   }
 
@@ -3545,205 +3607,218 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
         _query.trim().isEmpty;
     return CupertinoPageScaffold(
       backgroundColor: PenColors.bg,
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _ShopHeader(
-              shopName: widget.shopName,
-              onBack: widget.onBack,
-              onShopTap: widget.onShopTap,
-            ),
-            Expanded(
-              child: RefreshIndicator.adaptive(
-                onRefresh: widget.onRefresh ?? () async {},
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // The three stat cards are equal height in the
-                      // design even when one label wraps, which inside a
-                      // scroll view needs an intrinsic pass.
-                      IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            for (var i = 0; i < widget.stats.length; i++) ...[
-                              if (i > 0) const SizedBox(width: 10),
-                              Expanded(
-                                child: _StatBox(stat: widget.stats[i]),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      // Khung F2-01 vẽ một ô duy nhất: icon kính lúp, ô nhập,
-                      // vạch ngăn 1pt rồi nút quét 40x40 *bên trong* ô — không
-                      // phải ô nhập cộng một nút vuông rời bên cạnh.
-                      PenBox(
-                        height: 56,
-                        fill: PenColors.card,
-                        stroke: PenColors.line,
-                        radius: 14,
-                        axis: PenAxis.row,
-                        gap: 10,
-                        cross: CrossAxisAlignment.center,
-                        padding: const EdgeInsets.only(left: 16, right: 8),
+      child: Stack(
+        children: [
+          // Dải xanh chạy hết bề ngang, luồn cả sau thanh trạng thái; header
+          // và ba thẻ số nằm đè lên nó.
+          const Align(
+            alignment: Alignment.topCenter,
+            child: PenBrandBanner(height: 178),
+          ),
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                _ShopHeader(
+                  shopName: widget.shopName,
+                  onBack: widget.onBack,
+                  onShopTap: widget.onShopTap,
+                ),
+                Expanded(
+                  child: RefreshIndicator.adaptive(
+                    onRefresh: widget.onRefresh ?? () async {},
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Icon(
-                            LucideIcons.search,
-                            size: 22,
-                            color: PenColors.mut,
-                          ),
-                          Expanded(
-                            child: CupertinoTextField(
-                              controller: _search,
-                              onChanged: (v) {
-                                setState(() => _query = v);
-                                widget.onSearchChanged?.call(v);
-                              },
-                              textInputAction: TextInputAction.search,
-                              padding: EdgeInsets.zero,
-                              decoration: const BoxDecoration(),
-                              placeholder: widget.searchHint,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: PenColors.ink,
-                              ),
-                              placeholderStyle: const TextStyle(
-                                fontSize: 16,
-                                color: PenColors.mut,
-                              ),
+                          // The three stat cards are equal height in the
+                          // design even when one label wraps, which inside a
+                          // scroll view needs an intrinsic pass.
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                for (
+                                  var i = 0;
+                                  i < widget.stats.length;
+                                  i++
+                                ) ...[
+                                  if (i > 0) const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _StatBox(stat: widget.stats[i]),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
-                          const PenBox(
-                            width: 1,
-                            height: 26,
-                            fill: PenColors.line,
+                          const SizedBox(height: 38),
+                          // Khung F2-01 vẽ một ô duy nhất: icon kính lúp, ô nhập,
+                          // vạch ngăn 1pt rồi nút quét 40x40 *bên trong* ô — không
+                          // phải ô nhập cộng một nút vuông rời bên cạnh.
+                          PenBox(
+                            height: 56,
+                            fill: PenColors.card,
+                            stroke: PenColors.line,
+                            radius: 14,
+                            axis: PenAxis.row,
+                            gap: 10,
+                            cross: CrossAxisAlignment.center,
+                            padding: const EdgeInsets.only(left: 16, right: 8),
+                            children: [
+                              const Icon(
+                                LucideIcons.search,
+                                size: 22,
+                                color: PenColors.mut,
+                              ),
+                              Expanded(
+                                child: CupertinoTextField(
+                                  controller: _search,
+                                  onChanged: (v) {
+                                    setState(() => _query = v);
+                                    widget.onSearchChanged?.call(v);
+                                  },
+                                  textInputAction: TextInputAction.search,
+                                  padding: EdgeInsets.zero,
+                                  decoration: const BoxDecoration(),
+                                  placeholder: widget.searchHint,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: PenColors.ink,
+                                  ),
+                                  placeholderStyle: const TextStyle(
+                                    fontSize: 16,
+                                    color: PenColors.mut,
+                                  ),
+                                ),
+                              ),
+                              const PenBox(
+                                width: 1,
+                                height: 26,
+                                fill: PenColors.line,
+                              ),
+                              EcTap(
+                                onTap: widget.onScan == null ? null : _onScan,
+                                child: const PenBox(
+                                  width: 40,
+                                  height: 40,
+                                  fill: PenColors.bg,
+                                  radius: 12,
+                                  axis: PenAxis.row,
+                                  main: MainAxisAlignment.center,
+                                  cross: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      LucideIcons.scanBarcode,
+                                      size: 22,
+                                      color: PenColors.ink,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          EcTap(
-                            onTap: widget.onScan == null ? null : _onScan,
-                            child: const PenBox(
-                              width: 40,
-                              height: 40,
-                              fill: PenColors.bg,
-                              radius: 12,
-                              axis: PenAxis.row,
-                              main: MainAxisAlignment.center,
-                              cross: CrossAxisAlignment.center,
+                          const SizedBox(height: 16),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
                               children: [
-                                Icon(
-                                  LucideIcons.scanBarcode,
-                                  size: 22,
-                                  color: PenColors.ink,
+                                _FilterChip(
+                                  name: l10n.filterStatusLabel,
+                                  options: _statusOptions(l10n),
+                                  selected: _uploadState,
+                                  onSelected: (v) =>
+                                      _select((x) => _uploadState = x, v),
+                                ),
+                                const SizedBox(width: 10),
+                                _FilterChip(
+                                  name: l10n.filterTimeLabel,
+                                  options: _timeOptions(l10n),
+                                  selected: _timeWindow,
+                                  onSelected: _selectTime,
+                                ),
+                                const SizedBox(width: 10),
+                                _FilterChip(
+                                  name: l10n.filterTypeLabel,
+                                  options: _typeOptions(l10n),
+                                  selected: _videoTypeId,
+                                  onSelected: (v) =>
+                                      _select((x) => _videoTypeId = x, v),
                                 ),
                               ],
                             ),
                           ),
+                          const SizedBox(height: 16),
+                          // With the filters applied server-side, an empty list
+                          // no longer means "this shop has no orders" — say
+                          // which of the two it is.
+                          if (visible.isEmpty)
+                            _OrdersEmpty(
+                              text: unfiltered
+                                  ? widget.emptyText
+                                  : l10n.ordersNotFound,
+                              hint: unfiltered ? null : l10n.ordersNotFoundHint,
+                            )
+                          else
+                            PenCard(
+                              axis: PenAxis.column,
+                              clip: true,
+                              // Design: padding [6,12]. PenBox vẽ viền đè lên mép
+                              // nên padding đo từ mép ngoài, không cộng thêm 1pt.
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 6,
+                                horizontal: 12,
+                              ),
+                              children: [
+                                for (var i = 0; i < visible.length; i++) ...[
+                                  if (i > 0)
+                                    const PenBox(
+                                      width: double.infinity,
+                                      height: 1,
+                                      fill: PenColors.line,
+                                    ),
+                                  _OrderTile(
+                                    order: visible[i],
+                                    platform: widget.platform,
+                                    onTap: widget.onOrderTap == null
+                                        ? null
+                                        : () => widget.onOrderTap!(visible[i]),
+                                  ),
+                                ],
+                                // Phân trang nằm trong thẻ, dưới một đường kẻ —
+                                // nó thuộc về danh sách chứ không trôi tự do
+                                // dưới đáy màn hình. Tìm kiếm trả về mọi kết quả
+                                // trong một lần nên không có trang để chuyển.
+                                if (showPager) ...[
+                                  const PenBox(
+                                    width: double.infinity,
+                                    height: 1,
+                                    fill: PenColors.line,
+                                  ),
+                                  _OrdersPager(
+                                    info: widget.pageInfo,
+                                    busy: widget.isPageLoading,
+                                    onPageChanged: widget.onPageChanged!,
+                                  ),
+                                ],
+                              ],
+                            ),
                         ],
                       ),
-                      const SizedBox(height: 13),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _FilterChip(
-                              name: l10n.filterStatusLabel,
-                              options: _statusOptions(l10n),
-                              selected: _uploadState,
-                              onSelected: (v) =>
-                                  _select((x) => _uploadState = x, v),
-                            ),
-                            const SizedBox(width: 10),
-                            _FilterChip(
-                              name: l10n.filterTimeLabel,
-                              options: _timeOptions(l10n),
-                              selected: _timeWindow,
-                              onSelected: (v) =>
-                                  _select((x) => _timeWindow = x, v),
-                            ),
-                            const SizedBox(width: 10),
-                            _FilterChip(
-                              showChevron: true,
-                              name: l10n.filterTypeLabel,
-                              options: _typeOptions(l10n),
-                              selected: _videoTypeId,
-                              onSelected: (v) =>
-                                  _select((x) => _videoTypeId = x, v),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      // With the filters applied server-side, an empty list
-                      // no longer means "this shop has no orders" — say
-                      // which of the two it is.
-                      if (visible.isEmpty)
-                        _OrdersEmpty(
-                          text: unfiltered
-                              ? widget.emptyText
-                              : l10n.ordersNotFound,
-                          hint: unfiltered ? null : l10n.ordersNotFoundHint,
-                        )
-                      else
-                        PenCard(
-                          axis: PenAxis.column,
-                          clip: true,
-                          // Design: padding [6,12]. PenBox vẽ viền đè lên mép
-                          // nên padding đo từ mép ngoài, không cộng thêm 1pt.
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 6,
-                            horizontal: 12,
-                          ),
-                          children: [
-                            for (var i = 0; i < visible.length; i++) ...[
-                              if (i > 0)
-                                const PenBox(
-                                  width: double.infinity,
-                                  height: 1,
-                                  fill: PenColors.line,
-                                ),
-                              _OrderTile(
-                                order: visible[i],
-                                onTap: widget.onOrderTap == null
-                                    ? null
-                                    : () => widget.onOrderTap!(visible[i]),
-                              ),
-                            ],
-                            // Phân trang nằm trong thẻ, dưới một đường kẻ —
-                            // nó thuộc về danh sách chứ không trôi tự do
-                            // dưới đáy màn hình. Tìm kiếm trả về mọi kết quả
-                            // trong một lần nên không có trang để chuyển.
-                            if (showPager) ...[
-                              const PenBox(
-                                width: double.infinity,
-                                height: 1,
-                                fill: PenColors.line,
-                              ),
-                              _OrdersPager(
-                                info: widget.pageInfo,
-                                busy: widget.isPageLoading,
-                                onPageChanged: widget.onPageChanged!,
-                              ),
-                            ],
-                          ],
-                        ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+                _Nav3Bar(
+                  activeIndex: 0,
+                  onOrders: widget.onNavOrders,
+                  onRecord: widget.onNavRecord,
+                  onAccount: widget.onNavAccount,
+                ),
+              ],
             ),
-            _Nav3Bar(
-              activeIndex: 0,
-              onOrders: widget.onNavOrders,
-              onRecord: widget.onNavRecord,
-              onAccount: widget.onNavAccount,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -3977,7 +4052,9 @@ class _StatBox extends StatelessWidget {
     final card = PenBox(
       fill: PenColors.card,
       stroke: PenColors.line,
-      radius: 14,
+      radius: 16,
+      // Thẻ đè lên dải xanh nên đổ bóng ám xanh, không phải bóng mực.
+      shadows: const [penBrandCardShadow],
       axis: PenAxis.column,
       gap: 8,
       // Khung F2-01 canh giữa cả hàng icon+số lẫn nhãn trong thẻ.
@@ -3995,12 +4072,13 @@ class _StatBox extends StatelessWidget {
             PenBox(
               width: 36,
               height: 36,
-              fill: PenColors.bg,
-              radius: 10,
+              // Wash of the stat's own hue at 10% — the design's `1A` alpha.
+              fill: stat.accent.withValues(alpha: 0.1),
+              radius: 11,
               axis: PenAxis.row,
               main: MainAxisAlignment.center,
               cross: CrossAxisAlignment.center,
-              children: [Icon(stat.icon, size: 19, color: PenColors.ink)],
+              children: [Icon(stat.icon, size: 19, color: stat.accent)],
             ),
             const SizedBox(width: 10),
             Flexible(
@@ -4010,7 +4088,7 @@ class _StatBox extends StatelessWidget {
                 child: PenText(
                   stat.value,
                   size: 24,
-                  color: PenColors.ink,
+                  color: stat.tintValue ? stat.accent : PenColors.ink,
                   weight: FontWeight.w800,
                   softWrap: false,
                 ),
@@ -4033,24 +4111,88 @@ class _StatBox extends StatelessWidget {
   }
 }
 
-/// A filter pill that opens an action sheet of [options] and shows the chosen
-/// one. [name] is the filter's dimension ("Thời gian"), used as the sheet title
-/// and the semantics label — all three pills read some flavour of "all" until
-/// touched, so without it they are indistinguishable to a screen reader.
+/// Asks for a single day on a Cupertino date wheel, returning null if the
+/// seller backs out.
+///
+/// Cupertino has no range picker and the orders list is queried a day at a
+/// time, so this deliberately stays single-date: the presets above it already
+/// cover every multi-day span the shop actually filters by.
+///
+/// The wheel writes to a local instead of popping straight from
+/// `onDateTimeChanged` — that callback fires on every scroll tick, so
+/// committing there would re-query for each day the wheel spins past.
+Future<DateTime?> _pickDay(BuildContext context, DateTime initial) {
+  final l10n = context.l10n;
+  var draft = initial;
+  return showCupertinoModalPopup<DateTime>(
+    context: context,
+    builder: (sheetContext) => Align(
+      alignment: Alignment.bottomCenter,
+      child: DecoratedBox(
+        // Bo hai góc trên như mọi sheet khác; đáy chừa chỗ cho home indicator.
+        decoration: const BoxDecoration(
+          color: PenColors.card,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 300,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      child: Text(
+                        l10n.commonCancel,
+                        style: _t(16, FontWeight.w500, BrandColors.ink),
+                      ),
+                    ),
+                    CupertinoButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(draft),
+                      child: Text(
+                        l10n.commonDone,
+                        style: _t(16, FontWeight.w600, BrandColors.dark),
+                      ),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.date,
+                    initialDateTime: initial,
+                    // Orders only exist in the past; letting the wheel run
+                    // forward would just offer days that always come back
+                    // empty.
+                    maximumDate: DateTime.now(),
+                    onDateTimeChanged: (value) => draft = value,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// A filter pill that opens an action sheet of [options]. [name] is the
+/// filter's dimension ("Thời gian"): the pill shows it alone while the filter
+/// is off and prefixes the chosen value with it once applied ("Thời gian: Hôm
+/// nay"), so a row of pills reads as the dimensions you can narrow by rather
+/// than three interchangeable flavours of "all".
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
     required this.name,
     required this.options,
     required this.selected,
     this.onSelected,
-    this.showChevron = false,
   });
   final String name;
   final List<_FilterOption> options;
-
-  /// The design only marks the video-type filter as a dropdown; the status and
-  /// time chips carry no trailing glyph.
-  final bool showChevron;
 
   /// Value of the current selection, or null when this filter is off.
   final String? selected;
@@ -4107,11 +4249,11 @@ class _FilterChip extends StatelessWidget {
       value: _current.label,
       button: true,
       child: PenChip(
-        label: _current.label,
+        label: _isActive ? '$name: ${_current.label}' : name,
         // An active filter is narrowing the list — the design marks that with
-        // the selected grey fill and a bold label, never a brand tint.
+        // the ink fill and a white label, never a brand tint.
         selected: _isActive,
-        trailing: showChevron ? LucideIcons.chevronDown : null,
+        trailing: LucideIcons.chevronDown,
         onTap: () => _pick(context),
       ),
     );
@@ -4119,8 +4261,9 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _OrderTile extends StatelessWidget {
-  const _OrderTile({required this.order, this.onTap});
+  const _OrderTile({required this.order, this.platform, this.onTap});
   final EcOrderRow order;
+  final String? platform;
   final VoidCallback? onTap;
 
   @override
@@ -4135,16 +4278,7 @@ class _OrderTile extends StatelessWidget {
         cross: CrossAxisAlignment.center,
         padding: const EdgeInsets.symmetric(vertical: 13),
         children: [
-          const PenBox(
-            width: 52,
-            height: 52,
-            fill: PenColors.bg,
-            radius: 14,
-            axis: PenAxis.row,
-            main: MainAxisAlignment.center,
-            cross: CrossAxisAlignment.center,
-            children: [PenParcelGlyph()],
-          ),
+          PenOrderThumb(imageUrl: order.thumbUrl, platform: platform),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -4201,12 +4335,12 @@ class _OrderTile extends StatelessWidget {
                 const Icon(
                   LucideIcons.video,
                   size: 19,
-                  color: PenColors.ink,
+                  color: PenColors.primary,
                 ),
                 PenText(
                   '${order.videoCount}',
                   size: 16,
-                  color: PenColors.ink,
+                  color: PenColors.primary,
                   weight: FontWeight.w700,
                   softWrap: false,
                 ),
