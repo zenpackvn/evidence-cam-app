@@ -7,6 +7,8 @@ import 'package:app_platform/app_platform.dart'
         AppVideoPlayerController,
         CrashReporter,
         GallerySaveService,
+        PermissionService,
+        WakelockPlus,
         ImagePicker,
         ImageSource,
         ShareService,
@@ -48,7 +50,8 @@ import 'package:flutter/cupertino.dart'
         CupertinoSlider,
         CupertinoTextThemeData,
         CupertinoThemeData,
-        showCupertinoDialog;
+        showCupertinoDialog,
+        showCupertinoModalPopup;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -115,11 +118,28 @@ class _EcAppState extends State<EcApp> {
   //
   // Initial value follows the device system language (English → en, anything
   // else → vi, the primary market). The picker overrides it for the session.
-  // ponytail: session-only; the unused LocaleBloc in lib/core/locale persists a
-  // choice to SharedPreferences — wire it here if the override must survive restart.
-  final ValueNotifier<EcAppLanguage> _language = ValueNotifier(
-    _systemLanguage(),
-  );
+  /// Ngôn ngữ đang dùng. Khởi tạo từ lựa chọn đã lưu, rơi về ngôn ngữ máy khi
+  /// người dùng chưa chọn bao giờ — trước đây chỉ sống trong phiên nên thoát
+  /// app là mất, người dùng phải chọn lại mỗi lần mở.
+  late final ValueNotifier<EcAppLanguage> _language = ValueNotifier(
+    _savedLanguage() ?? _systemLanguage(),
+  )..addListener(_persistLanguage);
+
+  static const _languagePrefKey = 'app.language';
+
+  static EcAppLanguage? _savedLanguage() {
+    final saved = _appMemory()?.getString(_languagePrefKey);
+    return switch (saved) {
+      'en' => EcAppLanguage.en,
+      'vi' => EcAppLanguage.vi,
+      _ => null,
+    };
+  }
+
+  void _persistLanguage() {
+    final code = _language.value == EcAppLanguage.en ? 'en' : 'vi';
+    unawaited(_appMemory()?.setString(_languagePrefKey, code));
+  }
 
   static EcAppLanguage _systemLanguage() =>
       WidgetsBinding.instance.platformDispatcher.locale.languageCode == 'en'
@@ -177,12 +197,18 @@ class _EcAppState extends State<EcApp> {
   void initState() {
     super.initState();
     _queue.load();
+    // Máy dựng trên bàn đóng hàng, người quay không chạm vào suốt cả ca — để
+    // màn tự tắt là camera preview ngủ theo và phiên quay đứt giữa chừng.
+    unawaited(WakelockPlus.enable().catchError((_) {}));
   }
 
   @override
   void dispose() {
+    unawaited(WakelockPlus.disable().catchError((_) {}));
     _router.dispose();
-    _language.dispose();
+    _language
+      ..removeListener(_persistLanguage)
+      ..dispose();
     _queue.dispose();
     _selectedShop.dispose();
     _recordingType.dispose();
@@ -673,6 +699,7 @@ class _AccountRouteState extends State<_AccountRoute> {
             },
             onQuotaTap: () => context.push('/quota'),
             onLanguageTap: () => context.push('/language'),
+            onEndQrTap: () => _showEndSessionQr(context),
             onChangePasswordTap: () => context.push('/change-password'),
             onDeleteAccount: () => context.push('/delete-account'),
             onLoginMethodsTap: () => context.push('/login-methods'),
@@ -1063,6 +1090,72 @@ bool _isOpenDossierConflict(Object error) =>
 /// Lightweight feedback so no button is a dead end: actions that don't (yet)
 /// have a dedicated screen confirm they fired.
 void _toast(BuildContext c, String msg) => ecToast(c, msg);
+
+/// Đảm bảo có quyền camera trước khi màn ghi hình khởi tạo thiết bị.
+///
+/// Chưa hỏi bao giờ thì hỏi. Đã từ chối vĩnh viễn thì hỏi lại cũng vô ích —
+/// hệ điều hành không hiện hộp thoại nữa — nên mở thẳng phần Cài đặt của app
+/// để người dùng bật tay.
+Future<bool> _ensureCameraPermission() async {
+  final permissions = _maybeGetIt<PermissionService>();
+  if (permissions == null) return true;
+  try {
+    if (await permissions.hasCameraPermission()) return true;
+    if (await permissions.requestCameraPermission()) return true;
+    await permissions.openAppSettingsPage();
+    return permissions.hasCameraPermission();
+  } on Object {
+    // Lỗi tầng quyền không được chặn màn hình — để bloc báo trạng thái camera.
+    return false;
+  }
+}
+
+/// Tờ QR "kết thúc phiên" để người dùng in ra dán ở bàn đóng hàng.
+///
+/// Ảnh là asset tĩnh vì nội dung mã (`kEndSessionQr`) là hằng số ghi cứng dùng
+/// chung cho mọi máy — không có gì phải sinh lúc chạy.
+void _showEndSessionQr(BuildContext context) {
+  final l10n = context.l10n;
+  showCupertinoModalPopup<void>(
+    context: context,
+    builder: (sheetContext) => PenSheet(
+      onDismiss: () => Navigator.of(sheetContext).pop(),
+      children: [
+        const SizedBox(height: 18),
+        PenText(
+          l10n.accountEndQrTitle,
+          size: 22,
+          color: PenColors.ink,
+          weight: FontWeight.w800,
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: ColoredBox(
+            color: PenColors.card,
+            child: Image.asset(
+              'assets/images/end_session_qr.png',
+              width: 220,
+              height: 220,
+              filterQuality: FilterQuality.none,
+              errorBuilder: (_, _, _) => const Icon(
+                LucideIcons.qrCode,
+                size: 96,
+                color: PenColors.mut,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        PenText(
+          l10n.accountEndQrNote,
+          size: 13,
+          color: PenColors.mut,
+        ),
+        const SizedBox(height: 20),
+      ],
+    ),
+  );
+}
 
 T? _maybeGetIt<T extends Object>() =>
     getIt.isRegistered<T>() ? getIt<T>() : null;
@@ -2498,8 +2591,14 @@ class _OrdersRouteState extends State<_OrdersRoute> {
                 // its evidence/error count — refresh this list on return so
                 // the card shown here doesn't keep showing stale counts (or
                 // an order that's now empty doesn't stay listed).
+                //
+                // `_refresh` chứ không phải `_loadFirst`: người dùng tìm một mã
+                // rồi mở nó ra, quay lại mà danh sách nhảy về trang đầu không
+                // lọc thì mất cả từ khoá lẫn vị trí đang đọc. `_refresh` nạp
+                // lại đúng thứ đang hiển thị — kết quả tìm nếu đang tìm, còn
+                // không thì đúng trang hiện tại.
                 widget.onOrderTap!(order).then((_) {
-                  if (mounted) _loadFirst();
+                  if (mounted) unawaited(_refresh());
                 });
               },
         onNavOrders: () {},
@@ -2613,6 +2712,15 @@ class _OrderRouteState extends State<_OrderRoute> {
 
   int get _pendingCount => _pendingTasks.length;
 
+  /// Bằng chứng đã lên server nhưng upload hỏng — R2 không có object, nên hồ
+  /// sơ khiếu nại sẽ thiếu đúng những clip này. Hàng chờ local (`_pendingTasks`)
+  /// không biết gì về chúng: task đã rời hàng chờ từ lâu, chỉ bản ghi trên
+  /// server còn giữ trạng thái lỗi. Cộng cả hai thì banner mới phản ánh đủ số
+  /// bằng chứng bị thiếu.
+  int _failedCount(OrderDetailDto detail) => detail.evidence
+      .where((e) => e.uploadStatus == 'error' || e.uploadStatus == 'quota_hold')
+      .length;
+
   /// "Thử lại" trên banner "còn N bằng chứng chưa upload". Banner nói về hàng
   /// chờ upload, nên nút phải đẩy lại chính những task đó — tải lại chi tiết
   /// đơn không gỡ được cái gì đang kẹt. Đọc chi tiết lại sau để timeline lấy
@@ -2658,7 +2766,7 @@ class _OrderRouteState extends State<_OrderRoute> {
           builder: (context, _) => EcOrderTimelineScreen(
             orderCode: data.detail.order.tracking,
             days: days,
-            pendingUploadCount: _pendingCount,
+            pendingUploadCount: _pendingCount + _failedCount(data.detail),
             onBack: widget.onBack,
             onVideoTap: (video) => widget.onOpenVideo
                 ?.call(
@@ -3615,6 +3723,8 @@ GoRouter _buildRouter(
                       );
                     }
                     return EcRecordRoute(
+                      shopName: shop.name,
+                      ensureCameraPermission: _ensureCameraPermission,
                       queueCount: _pendingUploads(queue),
                       initialType: recordingType.value,
                       initialResolution: shop.resolution,

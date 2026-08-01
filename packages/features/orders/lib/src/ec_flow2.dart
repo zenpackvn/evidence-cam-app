@@ -682,13 +682,18 @@ class _EcOrderTimelineHeader extends StatelessWidget {
       children: [
         PenBackButton(onTap: onBack),
         const SizedBox(width: 12),
+        // Tiêu đề cũng quay lại: mũi tên 42pt là đích bấm nhỏ khi người dùng
+        // đang cầm máy một tay, còn dải tiêu đề thì rộng gần hết bề ngang.
         Expanded(
-          child: PenText(
-            orderCode,
-            size: 24,
-            color: PenColors.ink,
-            weight: FontWeight.w800,
-            overflow: TextOverflow.ellipsis,
+          child: EcTap(
+            onTap: onBack,
+            child: PenText(
+              orderCode,
+              size: 24,
+              color: PenColors.ink,
+              weight: FontWeight.w800,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
         const SizedBox(width: 12),

@@ -307,6 +307,7 @@ class RecordingSessionBloc
     )
     onClipSaved,
     VoiceAnnouncerService? voiceAnnouncer,
+    CaptureToneService? captureTone,
     EcVideoFaststartService? faststart,
     Future<bool> Function(String code)? verifyReturnCode,
     Future<double?> Function()? checkFreeDiskSpaceMb,
@@ -318,6 +319,8 @@ class RecordingSessionBloc
        _scanner = scanner,
        _onClipSaved = onClipSaved,
        _voice = voiceAnnouncer ?? VoiceAnnouncerService(),
+       _tone = captureTone ?? CaptureToneService(),
+       _ownsTone = captureTone == null,
        _faststart = faststart ?? EcVideoFaststartService(),
        _verifyReturnCode = verifyReturnCode,
        _checkFreeDiskSpaceMb = checkFreeDiskSpaceMb ?? getFreeDiskSpaceMb,
@@ -350,6 +353,12 @@ class RecordingSessionBloc
   final BillScanner _scanner;
   final void Function(String, String, String, int) _onClipSaved;
   final VoiceAnnouncerService _voice;
+  final CaptureToneService _tone;
+
+  /// True when this bloc built its own [CaptureToneService] and must therefore
+  /// release the underlying player on close. A caller-supplied one is shared
+  /// (app-lifetime, like the voice announcer) and is not ours to dispose.
+  final bool _ownsTone;
   final EcVideoFaststartService _faststart;
   final Future<double?> Function() _checkFreeDiskSpaceMb;
   final Future<bool> Function(String code)? _verifyReturnCode;
@@ -410,6 +419,16 @@ class RecordingSessionBloc
 
   /// How long before the cap the warning fires.
   static const _nearLimitLead = Duration(minutes: 1);
+
+  /// Câu cảnh báo gần trần, đọc trần **thật của shop** thay vì con số cứng —
+  /// `maxRecording` đến từ `shop.clipBudget`, nên shop đặt 10 phút mà vẫn nghe
+  /// "mười lăm phút" là sai. Trần lẻ giây thì bỏ phần phút đi cho khỏi phải
+  /// đọc "hai phút ba mươi giây" giữa lúc đang đóng hàng.
+  String get _nearLimitSpeech {
+    final minutes = _maxRecording.inMinutes;
+    if (minutes < 1) return 'Video sắp tự chốt';
+    return 'Sắp chạm trần $minutes phút, video sẽ tự chốt';
+  }
 
   /// How long the just-closed order's code stays blocked from auto-starting a
   /// new clip, measured from the last frame it was seen in. The bill normally
@@ -584,14 +603,34 @@ class RecordingSessionBloc
     }
   }
 
-  /// Applies [idleScanMayStart] to [code], extending the block for as long as
-  /// the just-closed bill keeps showing up.
+  /// Applies [idleScanMayStart] to [code].
   ///
-  /// The window runs from the last frame the bill was seen in, not from the
-  /// moment its clip closed: a parcel left on the table must never re-arm,
-  /// while one taken away and later presented again should. Manual entry
-  /// deliberately bypasses this — typing a code is an explicit request to
-  /// record it.
+  /// Cửa sổ chặn chạy **cố định** từ lúc clip đóng, không gia hạn theo từng
+  /// khung hình còn thấy bill. Bản trước gia hạn liên tục, nên kiện hàng nằm
+  /// yên trên bàn bị chặn vĩnh viễn — quay lỗi muốn quay lại chính đơn đó thì
+  /// không cách nào bắt đầu được, phải nhấc kiện ra khỏi khung rồi đưa lại.
+  /// Nay hết [_reArmDelay] là mã cũ được nhận lại như mọi mã khác, đúng nhu cầu
+  /// quay lại khi lỡ quay hỏng; đổi lại, kiện bị bỏ quên trên bàn có thể tự
+  /// quay tiếp sau ngần ấy giây. Manual entry vẫn bỏ qua chặn hoàn toàn — gõ
+  /// tay là yêu cầu quay rõ ràng.
+  /// Tút báo "bắt đầu từ đây", rồi trả quyền điều khiển ngay để camera lăn.
+  ///
+  /// Chỉ chờ tiếng tút (120ms) — nó là mốc bắt đầu quay nên phải dứt trước
+  /// khung hình đầu. Câu "Đã bắt đầu quay" phát sau, chồng lên đoạn đầu clip;
+  /// đoạn đó được [EcVideoFaststartService] làm câm khi remux, nên người xem
+  /// lại không nghe thấy mà người quay vẫn được báo ngay.
+  ///
+  /// Best-effort như mọi thông báo khác: engine TTS hỏng hoặc thiếu asset thì
+  /// bỏ qua chứ không chặn việc ghi hình.
+  Future<void> _announceStart() async {
+    try {
+      await _tone.beep().timeout(const Duration(seconds: 2));
+    } on Object {
+      // Kệ — quay quan trọng hơn thông báo.
+    }
+    unawaited(_voice.speak('Đã bắt đầu quay'));
+  }
+
   bool _mayAutoStart(String code) {
     final mayStart = idleScanMayStart(
       code,
@@ -602,8 +641,6 @@ class RecordingSessionBloc
     if (mayStart) {
       _suppressedCode = null;
       _suppressedUntil = null;
-    } else {
-      _suppressedUntil = DateTime.now().add(_reArmDelay);
     }
     return mayStart;
   }
@@ -624,17 +661,22 @@ class RecordingSessionBloc
     // a new order (mirrors the manual-entry find-or-create flow) — this bloc
     // only needs to know whether recording may proceed for [code].
     if (state.typeLabel == 'Trả hàng' && _verifyReturnCode != null) {
-      // The rejected bill often stays framed for a while — without this, the
-      // dialog/announcement would re-fire every scan cooldown for as long as
-      // it's still in view.
-      if (_lastRejectedReturnCode == code) return;
-      final known = await _verifyReturnCode(code);
-      if (!known) {
-        _lastRejectedReturnCode = code;
-        unawaited(_voice.speak('Sai mã'));
-        return;
+      // Mã lạ chỉ được **báo tiếng**, không còn chặn quay. Hàng hoàn nhiều khi
+      // chưa có đơn trong hệ thống (khách trả thẳng, đơn tạo sau), mà chặn thì
+      // mất luôn bằng chứng mở kiện — thứ duy nhất không quay lại được. Người
+      // quay nghe "Sai mã" là biết phải đối chiếu sau, clip vẫn được lưu.
+      //
+      // Vẫn nhớ mã vừa cảnh báo để bill nằm trong khung không làm câu thông
+      // báo lặp lại mỗi nhịp quét.
+      if (_lastRejectedReturnCode != code) {
+        final known = await _verifyReturnCode(code);
+        if (!known) {
+          _lastRejectedReturnCode = code;
+          unawaited(_voice.speak('Sai mã'));
+        } else {
+          _lastRejectedReturnCode = null;
+        }
       }
-      _lastRejectedReturnCode = null;
     }
     await _beginRecording(code, emit);
   }
@@ -649,11 +691,13 @@ class RecordingSessionBloc
     try {
       await _serialized(() async {
         if (!_camera.isInitialized || _camera.isRecordingVideo) return;
-        // Spoken the instant the decision to record is made, not after the
-        // camera call below finishes — starting a capture session can itself
-        // take a few real seconds, and waiting for that made the
-        // announcement feel badly out of sync with the code being scanned.
-        unawaited(_voice.speak('Đã bắt đầu quay'));
+        // Thông báo phát XONG rồi mới lăn camera. Trước đây bắn kiểu
+        // `unawaited` cho nhanh, nhưng loa và mic cùng một máy: camera khởi
+        // động chồng lên lúc tiếng tút/câu nói còn đang phát, nên chúng bị thu
+        // thẳng vào clip và người xem lại nghe "đã bắt đầu quay" trong video.
+        // Chờ ở đây tốn hơn một giây trước khung hình đầu — chấp nhận được vì
+        // người quay vừa mới quét mã, chưa kịp thao tác gì.
+        await _announceStart();
         previewTransitioning.value = true;
         try {
           if (_camera.isStreamingImages) await _camera.stopImageStream();
@@ -778,13 +822,6 @@ class RecordingSessionBloc
         _cancelTimer();
         _nearLimitWarned = false;
         _capRequested = false;
-        // Spoken the instant the decision is made — stopVideoRecording below
-        // (muxing the clip) can itself take a real moment, and waiting for
-        // it made the announcement feel out of sync with the stop-QR/cap
-        // that triggered it.
-        unawaited(
-          _voice.speak(next != null ? 'Đã bắt đầu quay' : 'Đã dừng quay'),
-        );
         previewTransitioning.value = true;
         try {
           if (_camera.isRecordingVideo) {
@@ -801,23 +838,42 @@ class RecordingSessionBloc
               ),
             );
           }
-          if (next != null) await _startVideoWithScan();
+          // Thông báo nằm giữa hai clip — sau khi clip cũ đã chốt, trước khi
+          // clip mới lăn — nên không lọt vào clip nào. Phát trước lúc dừng thì
+          // mic còn mở và tiếng tút bị thu vào cuối clip vừa quay.
+          //
+          // Cutover chỉ kêu tút, không đọc tiếng: người quay đóng hàng liên
+          // tục, nghe lại nguyên câu ở mỗi đơn thành ồn hơn là hữu ích. Chỉ
+          // lần bắt đầu từ trạng thái nghỉ (`_beginRecording`) mới đọc cả câu.
+          if (next != null) {
+            // Tút bắn song song, KHÔNG chờ: chờ nó dứt là chèn thêm hơn trăm
+            // mili giây chết giữa hai clip, đúng cái khựng người quay thấy khi
+            // chuyển đơn. Tút lọt sang đầu clip mới cũng không sao — 2.5 giây
+            // đầu mỗi clip đã được làm câm lúc remux.
+            unawaited(_tone.beep());
+            await _startVideoWithScan();
+          } else {
+            // Về nghỉ thì không còn gì đang ghi, nên khỏi chờ câu nói.
+            unawaited(_voice.speak('Đã dừng quay'));
+          }
         } finally {
           previewTransitioning.value = false;
         }
         if (next != null) {
           if (isClosed) return;
+          // Không còn màn "Chuẩn bị ghi hình tiếp theo": clip mới đã lăn từ
+          // `_startVideoWithScan()` phía trên, nên chèn thêm 2 giây màn xác
+          // nhận chỉ che mất khung hình người quay đang cần nhìn. Tiếng tút đã
+          // báo máy nhận mã mới, vào thẳng màn quay là đủ.
           emit(
             state.copyWith(
               status: RecordingStatus.recording,
               code: next,
               elapsed: Duration.zero,
-              cutoverFromCode: closedCode,
-              cutoverFromDuration: closedElapsed,
+              clearCutover: true,
             ),
           );
           _startTimer();
-          _startCutoverTimer();
         } else if (!isClosed) {
           emit(state.copyWith(status: RecordingStatus.idle));
         }
@@ -863,7 +919,7 @@ class RecordingSessionBloc
     // looking at the countdown the view now shows, so the cap is spoken too.
     if (!_nearLimitWarned && elapsed >= nearLimitAt) {
       _nearLimitWarned = true;
-      unawaited(_voice.speak('Sắp chạm trần mười lăm phút, video sẽ tự chốt'));
+      unawaited(_voice.speak(_nearLimitSpeech));
     }
     // Hard cap: auto-close the clip at 15' so a forgotten session finalizes.
     if (!_capRequested && elapsed >= _maxRecording) {
@@ -1020,17 +1076,6 @@ class RecordingSessionBloc
     _timer = null;
   }
 
-  static const _cutoverDisplayDuration = Duration(
-    seconds: kCutoverDisplaySeconds,
-  );
-
-  void _startCutoverTimer() {
-    _cutoverTimer?.cancel();
-    _cutoverTimer = Timer(_cutoverDisplayDuration, () {
-      if (!isClosed) add(const RecordingCutoverExpired());
-    });
-  }
-
   @override
   Future<void> close() async {
     _cancelTimer();
@@ -1038,6 +1083,7 @@ class RecordingSessionBloc
     _cutoverTimer?.cancel();
     await _scanner.dispose();
     await _camera.dispose();
+    if (_ownsTone) await _tone.dispose();
     return super.close();
   }
 }

@@ -57,13 +57,26 @@ class EcVideoFaststartService {
   /// On success the source file is deleted: the remuxed copy replaces it and
   /// keeping both doubles temp usage on a phone that may already be low on
   /// storage.
+  /// Khoảng đầu clip bị tắt tiếng, tính từ khung hình đầu tiên.
+  ///
+  /// Loa và mic nằm trên cùng một máy, nên tiếng tút và câu "đã bắt đầu quay"
+  /// phát ngay lúc camera bắt đầu ghi đều bị thu vào clip. Người xem lại bằng
+  /// chứng không cần nghe hai âm đó, nên chúng bị làm câm ở đây thay vì phải
+  /// trì hoãn lúc bắt đầu quay.
+  static const _muteLeadSeconds = 2.5;
+
   Future<String> prepare(String inputPath) async {
     if (!File(inputPath).existsSync()) return inputPath;
     try {
       await _ensureReady();
       final outputPath = await _outputPathFor();
+      // Video vẫn `-c copy` (không giải mã lại, nhanh); chỉ luồng tiếng phải mã
+      // hoá lại vì `volume` là bộ lọc — không lọc được trên luồng đang copy.
+      // Clip bằng chứng ngắn nên chi phí mã hoá tiếng không đáng kể.
       final ok = await _run(
-        '-y -i "$inputPath" -c copy -movflags +faststart "$outputPath"',
+        '-y -i "$inputPath" -c:v copy '
+        '-af "volume=enable=\'lt(t,$_muteLeadSeconds)\':volume=0" '
+        '-c:a aac -movflags +faststart "$outputPath"',
       );
       if (!ok || !File(outputPath).existsSync()) return inputPath;
       await _deleteQuietly(inputPath);

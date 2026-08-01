@@ -28,6 +28,8 @@ dependencies:
   flutter_tts: ^4.2.5
   share_plus: ^13.1.0
   video_player: ^2.11.1
+  audioplayers: ^6.8.1
+  wakelock_plus: ^1.7.0
 
 dev_dependencies:
   flutter_test:

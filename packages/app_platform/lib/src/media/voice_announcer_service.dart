@@ -10,6 +10,11 @@ class VoiceAnnouncerService {
   VoiceAnnouncerService({FlutterTts? tts}) : _tts = tts ?? FlutterTts() {
     _tts.setLanguage('vi-VN').catchError((_) => false);
     _tts.setSpeechRate(0.5).catchError((_) => false);
+    // Makes `speak` complete when the utterance actually finishes, not when it
+    // is merely queued. The capture flow needs that: it waits for the
+    // start-of-recording announcement to end before rolling the camera, so the
+    // phone's own speaker doesn't get recorded into the evidence clip.
+    _tts.awaitSpeakCompletion(true).catchError((_) => false);
   }
 
   final FlutterTts _tts;

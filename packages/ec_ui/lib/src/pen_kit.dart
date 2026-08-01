@@ -8,6 +8,8 @@
 /// file first, then this.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Image;
 import 'package:flutter/widgets.dart';
@@ -909,7 +911,7 @@ class PenChip extends StatelessWidget {
 
 /// A bottom sheet the design's way: dimmed backdrop, top-rounded white panel,
 /// grabber, content. Tapping the backdrop pops the route.
-class PenSheet extends StatelessWidget {
+class PenSheet extends StatefulWidget {
   const PenSheet({
     required this.children,
     this.padding = const EdgeInsets.fromLTRB(22, 12, 22, 20),
@@ -921,7 +923,8 @@ class PenSheet extends StatelessWidget {
   final List<Widget> children;
   final EdgeInsets padding;
 
-  /// What tapping the backdrop does; defaults to popping the route.
+  /// What tapping the backdrop — or flinging the sheet down — does; defaults to
+  /// popping the route.
   final VoidCallback? onDismiss;
 
   /// The design's `Dim` rect behind the sheet. Dialogs over a light screen use
@@ -930,40 +933,85 @@ class PenSheet extends StatelessWidget {
   final Color dim;
 
   @override
+  State<PenSheet> createState() => _PenSheetState();
+}
+
+class _PenSheetState extends State<PenSheet> {
+  /// How far the user has dragged the sheet below its resting position.
+  double _dragOffset = 0;
+
+  /// Past this many logical pixels, letting go dismisses instead of snapping
+  /// back. A fast flick dismisses earlier — see [_onDragEnd].
+  static const _dismissDistance = 110.0;
+
+  /// Downward velocity (px/s) that counts as a flick regardless of distance.
+  static const _dismissVelocity = 700.0;
+
+  void _dismiss() {
+    final onDismiss = widget.onDismiss;
+    if (onDismiss != null) {
+      onDismiss();
+    } else {
+      Navigator.of(context).maybePop();
+    }
+  }
+
+  void _onDragUpdate(DragUpdateDetails d) {
+    // Clamp at 0 so the sheet can't be dragged up off its resting position.
+    setState(() => _dragOffset = math.max(0, _dragOffset + d.delta.dy));
+  }
+
+  void _onDragEnd(DragEndDetails d) {
+    final velocity = d.velocity.pixelsPerSecond.dy;
+    if (_dragOffset > _dismissDistance || velocity > _dismissVelocity) {
+      _dismiss();
+      return;
+    }
+    setState(() => _dragOffset = 0);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: onDismiss ?? () => Navigator.of(context).maybePop(),
-            child: ColoredBox(color: dim),
+            onTap: _dismiss,
+            child: ColoredBox(color: widget.dim),
           ),
         ),
         Align(
           alignment: Alignment.bottomCenter,
-          child: GestureDetector(
-            onTap: () {},
-            child: PenBox(
-              width: double.infinity,
-              fill: PenColors.card,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(14),
-              ),
-              axis: PenAxis.column,
-              hugMain: true,
-              padding: padding,
-              children: [
-                const Center(
-                  child: PenBox(
-                    width: 46,
-                    height: 5,
-                    fill: PenColors.line,
-                    radius: 3,
-                  ),
+          child: Transform.translate(
+            offset: Offset(0, _dragOffset),
+            child: GestureDetector(
+              onTap: () {},
+              // Vertical-only so a horizontal swipe still reaches anything
+              // scrollable inside the sheet.
+              onVerticalDragUpdate: _onDragUpdate,
+              onVerticalDragEnd: _onDragEnd,
+              child: PenBox(
+                width: double.infinity,
+                fill: PenColors.card,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(14),
                 ),
-                ...children,
-              ],
+                axis: PenAxis.column,
+                hugMain: true,
+                padding: widget.padding,
+                children: [
+                  const Center(
+                    child: PenBox(
+                      width: 46,
+                      height: 5,
+                      fill: PenColors.line,
+                      radius: 3,
+                    ),
+                  ),
+                  ...widget.children,
+                ],
+              ),
             ),
           ),
         ),

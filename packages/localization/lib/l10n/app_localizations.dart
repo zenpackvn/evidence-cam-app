@@ -2458,11 +2458,35 @@ abstract class AppLocalizations {
   /// **'Dispute dossier link'**
   String get dossierLinkTitle;
 
+  /// No description provided for @accountEndQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop-recording code'**
+  String get accountEndQr;
+
+  /// No description provided for @accountEndQrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop-recording code'**
+  String get accountEndQrTitle;
+
+  /// No description provided for @accountEndQrNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Print this and stick it on the packing table. Scanning it while recording closes the clip. The same code works on every device.'**
+  String get accountEndQrNote;
+
   /// Caption under the language screen illustration.
   ///
   /// In en, this message translates to:
   /// **'Every label, notification and dossier\nswitches to the language you pick.'**
   String get languageChangeScopeNote;
+
+  /// Inline error when Bắt đầu quay is tapped with an empty tracking-code field.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a tracking code before recording'**
+  String get manualEntryEmptyError;
 }
 
 class _AppLocalizationsDelegate

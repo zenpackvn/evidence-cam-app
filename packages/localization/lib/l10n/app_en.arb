@@ -865,8 +865,15 @@
   "@dossierLinkTitle": {
     "description": "Shareable dossier link card."
   },
+  "accountEndQr": "Stop-recording code",
+  "accountEndQrTitle": "Stop-recording code",
+  "accountEndQrNote": "Print this and stick it on the packing table. Scanning it while recording closes the clip. The same code works on every device.",
   "languageChangeScopeNote": "Every label, notification and dossier\nswitches to the language you pick.",
   "@languageChangeScopeNote": {
     "description": "Caption under the language screen illustration."
+  },
+  "manualEntryEmptyError": "Enter a tracking code before recording",
+  "@manualEntryEmptyError": {
+    "description": "Inline error when Bắt đầu quay is tapped with an empty tracking-code field."
   }
 }

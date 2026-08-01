@@ -1323,6 +1323,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dossierLinkTitle => 'Dispute dossier link';
 
   @override
+  String get accountEndQr => 'Stop-recording code';
+
+  @override
+  String get accountEndQrTitle => 'Stop-recording code';
+
+  @override
+  String get accountEndQrNote =>
+      'Print this and stick it on the packing table. Scanning it while recording closes the clip. The same code works on every device.';
+
+  @override
   String get languageChangeScopeNote =>
       'Every label, notification and dossier\nswitches to the language you pick.';
+
+  @override
+  String get manualEntryEmptyError => 'Enter a tracking code before recording';
 }

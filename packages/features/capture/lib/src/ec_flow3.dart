@@ -268,8 +268,6 @@ class EcCutoverBScreen extends StatelessWidget {
     this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.closedCode = 'SPXVN024567890',
-    this.countdownSeconds = 3,
-    this.countdownTotalSeconds = 3,
     this.newCode = 'SPXVN098765432',
     this.newMeta = 'Đóng hàng • 10:28',
     this.typeLabel = 'Đóng hàng',
@@ -293,8 +291,6 @@ class EcCutoverBScreen extends StatelessWidget {
   final String closedCode;
 
   /// Giây còn lại trước khi phiên kế tiếp bắt đầu, và tổng để vẽ vòng tiến độ.
-  final int countdownSeconds;
-  final int countdownTotalSeconds;
 
   final String newCode;
 
@@ -343,12 +339,10 @@ class EcCutoverBScreen extends StatelessWidget {
               _CamCodeBadge(code: closedCode),
               const SizedBox(height: 12),
               _SavedPill(text: context.l10n.cutoverSavedVideo),
-              const SizedBox(height: 119),
-              _CountdownRing(
-                seconds: countdownSeconds,
-                totalSeconds: countdownTotalSeconds,
-              ),
-              const SizedBox(height: 9),
+              // Không còn vòng đếm 3-2-1: cutover là chuyện tự động, người quay
+              // không phải canh tay theo con số nào — tiếng tút đã báo máy nhận
+              // mã mới, nên màn này chỉ cần nói rõ đơn vừa lưu và đơn kế tiếp.
+              const SizedBox(height: 128),
               Text(
                 context.l10n.cutoverPreparingNext,
                 style: _t(16, FontWeight.w400, BrandColors.card),
@@ -402,8 +396,6 @@ class _SavedPill extends StatelessWidget {
 
 /// Vòng đếm ngược trước khi phiên kế tiếp bắt đầu.
 ///
-/// Cung tiến độ chạy ngược chiều kim đồng hồ, khớp `sweepAngle: -250` của khung
-/// design ở mốc 3/3 giây; các mốc còn lại nội suy tuyến tính từ đó.
 class _CountdownRing extends StatelessWidget {
   const _CountdownRing({required this.seconds, required this.totalSeconds});
 
@@ -817,6 +809,7 @@ class _CamScaffold extends StatelessWidget {
             child: SafeArea(
               bottom: false,
               child: _CamHeader(
+                shopName: shopName,
                 queueCount: queueCount,
                 onBack: onBack,
                 onQueueTap: onQueueTap,
@@ -1051,11 +1044,16 @@ class _CamFooter extends StatelessWidget {
 
 class _CamHeader extends StatelessWidget {
   const _CamHeader({
+    required this.shopName,
     required this.queueCount,
     this.onBack,
     this.onQueueTap,
   });
 
+  /// Cửa hàng clip này sẽ được lưu vào. Người quay thường có nhiều shop, nên
+  /// tên phải nhìn thấy ngay trên viewfinder — quay xong mới phát hiện sai shop
+  /// thì clip đã nằm nhầm đơn.
+  final String shopName;
   final int queueCount;
   final VoidCallback? onBack;
   final VoidCallback? onQueueTap;
@@ -1087,7 +1085,18 @@ class _CamHeader extends StatelessWidget {
               ],
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 12),
+          Expanded(
+            child: PenText(
+              shopName,
+              size: 16,
+              color: PenColors.card,
+              weight: FontWeight.w700,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+            ),
+          ),
+          const SizedBox(width: 12),
           // ponytail: EcTap thay vì _Tap — _Tap thêm padding 4 làm lệch chip
           // so với thiết kế; ở đây chỉ cần vùng bấm.
           EcTap(
@@ -2013,7 +2022,20 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
     });
   }
 
-  void _submit() => widget.onManualSubmit?.call(_controller.text.trim());
+  /// Set once the user submits an empty field; cleared as soon as they type.
+  /// Blocking here rather than letting an empty code through keeps the capture
+  /// flow from opening a recording that can never be matched to an order.
+  bool _emptyError = false;
+
+  void _submit() {
+    final code = _controller.text.trim();
+    if (code.isEmpty) {
+      setState(() => _emptyError = true);
+      _focus.requestFocus();
+      return;
+    }
+    widget.onManualSubmit?.call(code);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2081,7 +2103,9 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
                         width: double.infinity,
                         height: 58,
                         fill: PenColors.card,
-                        stroke: PenColors.line,
+                        stroke: _emptyError
+                            ? PenColors.danger
+                            : PenColors.line,
                         radius: 14,
                         axis: PenAxis.row,
                         cross: CrossAxisAlignment.center,
@@ -2097,6 +2121,11 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
                               textInputAction: TextInputAction.done,
                               autocorrect: false,
                               textCapitalization: TextCapitalization.characters,
+                              onChanged: (_) {
+                                if (_emptyError) {
+                                  setState(() => _emptyError = false);
+                                }
+                              },
                               onSubmitted: (_) => _submit(),
                               style: const TextStyle(
                                 fontSize: 18,
@@ -2112,6 +2141,14 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
                         ],
                       ),
                     ),
+                    if (_emptyError) ...[
+                      const SizedBox(height: 8),
+                      PenText(
+                        l10n.manualEntryEmptyError,
+                        size: 13,
+                        color: PenColors.danger,
+                      ),
+                    ],
                     const SizedBox(height: 14),
                     Row(
                       children: [

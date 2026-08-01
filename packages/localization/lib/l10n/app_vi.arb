@@ -647,8 +647,15 @@
   "@dossierLinkTitle": {
     "description": "Shareable dossier link card."
   },
+  "accountEndQr": "Mã dừng quay",
+  "accountEndQrTitle": "Mã dừng quay",
+  "accountEndQrNote": "In tờ này dán ở bàn đóng hàng. Đang quay mà quét vào là chốt video ngay. Mã dùng chung cho mọi máy.",
   "languageChangeScopeNote": "Toàn bộ nhãn, thông báo và hồ sơ\nsẽ đổi sang ngôn ngữ bạn chọn.",
   "@languageChangeScopeNote": {
     "description": "Caption under the language screen illustration."
+  },
+  "manualEntryEmptyError": "Vui lòng nhập mã vận đơn trước khi quay",
+  "@manualEntryEmptyError": {
+    "description": "Inline error when Bắt đầu quay is tapped with an empty tracking-code field."
   }
 }

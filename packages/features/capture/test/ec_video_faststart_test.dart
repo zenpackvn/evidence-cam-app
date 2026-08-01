@@ -34,8 +34,12 @@ void main() {
       expect(result, isNot(clip.path));
       expect(File(result).existsSync(), isTrue);
       expect(clip.existsSync(), isFalse);
-      expect(issued, contains('-c copy'));
+      // Hình vẫn được copy nguyên (không giải mã lại); chỉ tiếng bị mã hoá lại
+      // để làm câm đoạn đầu chứa tút + "đã bắt đầu quay".
+      expect(issued, contains('-c:v copy'));
       expect(issued, contains('-movflags +faststart'));
+      expect(issued, contains('volume=0'));
+      expect(issued, contains('-c:a aac'));
     });
 
     test('keeps the original clip when ffmpeg fails', () async {

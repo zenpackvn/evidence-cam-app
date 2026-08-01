@@ -1317,6 +1317,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dossierLinkTitle => 'Link hồ sơ khiếu nại';
 
   @override
+  String get accountEndQr => 'Mã dừng quay';
+
+  @override
+  String get accountEndQrTitle => 'Mã dừng quay';
+
+  @override
+  String get accountEndQrNote =>
+      'In tờ này dán ở bàn đóng hàng. Đang quay mà quét vào là chốt video ngay. Mã dùng chung cho mọi máy.';
+
+  @override
   String get languageChangeScopeNote =>
       'Toàn bộ nhãn, thông báo và hồ sơ\nsẽ đổi sang ngôn ngữ bạn chọn.';
+
+  @override
+  String get manualEntryEmptyError => 'Vui lòng nhập mã vận đơn trước khi quay';
 }

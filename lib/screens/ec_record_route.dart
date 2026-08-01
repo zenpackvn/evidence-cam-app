@@ -43,6 +43,8 @@ class EcRecordRoute extends StatefulWidget {
     this.onSaved,
     this.verifyReturnCode,
     this.voiceAnnouncer,
+    this.shopName = '',
+    this.ensureCameraPermission,
     this.initialType = 'Đóng hàng',
     this.queueCount = 0,
     this.initialResolution = '720p',
@@ -51,6 +53,18 @@ class EcRecordRoute extends StatefulWidget {
     this.isActive,
     super.key,
   });
+
+  /// Cửa hàng đang chọn, hiện trên header camera — người quay nhiều shop cần
+  /// thấy clip sẽ vào đâu trước khi bấm quay. Rỗng thì header bỏ trống chỗ đó;
+  /// nhãn `Shop ABC` mặc định của các màn Flow 3 chỉ dành cho preview thiết kế.
+  final String shopName;
+
+  /// Xin quyền camera nếu chưa có, trả về `true` khi đã được cấp.
+  ///
+  /// Bắt buộc chạy trước khi khởi tạo camera: người dùng từ chối ở lần trước
+  /// thì plugin `camera` không tự hỏi lại, màn hình chỉ đứng im ở preview đen
+  /// mà không nói lý do.
+  final Future<bool> Function()? ensureCameraPermission;
 
   /// Called when the header back chevron is tapped.
   final VoidCallback? onBack;
@@ -108,8 +122,6 @@ class EcRecordRoute extends StatefulWidget {
 
   /// Pending upload count shown in the header (☁ n) — fed live from the queue.
   final int queueCount;
-
-  /// Shop currently clocked into at the app layer.
 
   /// Recording resolution from the shop's setting (`240p` / `480p` / `720p`);
   /// the rail pill cycles it while idle.
@@ -171,8 +183,41 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     // right as recording starts, with the phone never actually moved).
     // Stay on the app-wide portrait lock set in main.dart.
     if (widget.isActive?.value ?? true) {
-      _bloc.add(const RecordingInitRequested());
+      // Sau frame đầu — sheet cần một Navigator đã dựng xong.
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => unawaited(_startAfterTypeChosen()),
+      );
     }
+  }
+
+  /// Chọn loại video **xong** rồi mới dựng camera.
+  ///
+  /// Dựng camera trước thì máy quét chạy ngay và bill trong khung được nhận
+  /// luôn — clip đầu ca bị gán loại mặc định trong khi sheet chọn loại còn
+  /// đang mở. Chưa chọn thì không khởi tạo: màn hình đứng ở trạng thái chờ,
+  /// người quay bấm ô loại ở thanh dưới để chọn rồi camera mới lên.
+  Future<void> _startAfterTypeChosen() async {
+    await _ensureTypeChosen();
+    if (!mounted || !_typeChosen) return;
+    await _initWithPermission();
+  }
+
+  /// Xin quyền rồi mới khởi tạo camera. Không có callback (test, hoặc nền tảng
+  /// không cần quyền) thì khởi tạo thẳng như trước.
+  Future<void> _initWithPermission() async {
+    if (_cameraStarting) return;
+    _cameraStarting = true;
+    final ensure = widget.ensureCameraPermission;
+    if (ensure != null) {
+      try {
+        await ensure();
+      } on Object {
+        // Từ chối hay lỗi đều để bloc báo trạng thái camera như thường.
+      }
+      if (!mounted) return;
+    }
+    _bloc.add(const RecordingInitRequested());
+    _cameraStarting = false;
   }
 
   @override
@@ -189,21 +234,38 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     if (widget.isActive!.value) {
       if (_bloc.state.status != RecordingStatus.idle &&
           _bloc.state.status != RecordingStatus.recording) {
-        _bloc.add(const RecordingInitRequested());
+        unawaited(_startAfterTypeChosen());
       }
     } else {
       _bloc.add(const RecordingBackgrounded());
     }
   }
 
+  /// Đã nhả camera vì app bị đẩy xuống nền (cuộc gọi đến, kéo trung tâm thông
+  /// báo, chuyển app) và chưa dựng lại.
+  ///
+  /// Cần cờ riêng vì `RecordingBackgrounded` chốt clip xong thì trạng thái về
+  /// `idle` — trùng với `idle` lúc đang rảnh mà camera vẫn sống. Bản trước chỉ
+  /// dựng lại khi trạng thái *khác* `idle`, nên sau cuộc gọi camera không bao
+  /// giờ quay lại: người dùng thấy màn đen và tưởng app treo.
+  bool _releasedForBackground = false;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive) {
+      _releasedForBackground = true;
       _bloc.add(const RecordingBackgrounded());
-    } else if (state == AppLifecycleState.resumed &&
-        _bloc.state.status != RecordingStatus.idle &&
-        _bloc.state.status != RecordingStatus.recording) {
-      _bloc.add(const RecordingInitRequested());
+    } else if (state == AppLifecycleState.resumed) {
+      final needsCamera =
+          _releasedForBackground ||
+          (_bloc.state.status != RecordingStatus.idle &&
+              _bloc.state.status != RecordingStatus.recording);
+      _releasedForBackground = false;
+      // Tab khác đang hiển thị thì để `_onActiveChanged` lo — dựng camera ở
+      // đây sẽ bật nó lên trong lúc người dùng đang xem Vận đơn.
+      if (needsCamera && (widget.isActive?.value ?? true)) {
+        unawaited(_initWithPermission());
+      }
     }
   }
 
@@ -217,9 +279,35 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     }
   }
 
+  /// True sau khi người quay đã tự chọn loại video ít nhất một lần trong phiên.
+  ///
+  /// Bloc luôn có sẵn một loại mặc định để hiển thị, nên nếu không ép chọn thì
+  /// cả ca có thể bị gán nhầm loại mà không ai để ý — loại video là thứ quyết
+  /// định clip nằm ở mục nào trong hồ sơ khiếu nại.
+  bool _typeChosen = false;
+
+  /// Chặn hai lời gọi dựng camera chồng nhau — sheet chọn loại và vòng đời tab
+  /// có thể cùng kích hoạt trong một nhịp.
+  bool _cameraStarting = false;
+
   Future<void> _pickType() async {
     final type = await widget.onRequestType?.call();
-    if (type != null && type.isNotEmpty) _bloc.add(RecordingTypeChanged(type));
+    if (type != null && type.isNotEmpty) {
+      final first = !_typeChosen;
+      _typeChosen = true;
+      _bloc.add(RecordingTypeChanged(type));
+      // Đóng sheet lúc vào màn rồi chọn sau bằng ô loại ở thanh dưới — camera
+      // vẫn đang chờ, phải dựng lên ở đây, nếu không màn hình đứng mãi.
+      if (first && mounted) unawaited(_initWithPermission());
+    }
+  }
+
+  /// Mở sheet chọn loại ngay khi vào màn quay, nếu chưa chọn lần nào. Chặn ở
+  /// đây thay vì lúc quét mã: luồng quét là rảnh tay, dừng lại giữa chừng để
+  /// hỏi thì bill đã qua khung hình mất rồi.
+  Future<void> _ensureTypeChosen() async {
+    if (_typeChosen || !mounted) return;
+    await _pickType();
   }
 
   Future<void> _leaveAfterFinalizing(VoidCallback? action) async {
@@ -329,16 +417,9 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
     if (state.isRecording && closedCode != null) {
       return EcCutoverBScreen(
+        shopName: widget.shopName,
         queueCount: widget.queueCount,
         closedCode: closedCode,
-        // Vòng đếm phải đếm đúng cửa sổ thật của bloc (2 giây), không phải con
-        // số 3 vẽ trong khung design — người quay canh tay theo cái vòng này.
-        countdownTotalSeconds: kCutoverDisplaySeconds,
-        countdownSeconds:
-            (kCutoverDisplaySeconds - state.elapsed.inSeconds).clamp(
-              0,
-              kCutoverDisplaySeconds,
-            ),
         newCode: state.code,
         newMeta: '${state.typeLabel} • ${_formatClock(DateTime.now())}',
         typeLabel: state.typeLabel,
@@ -354,6 +435,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       if (state.elapsed >= _bloc.nearLimitAt) {
         final remaining = _bloc.maxRecording - state.elapsed;
         return EcNearLimitScreen(
+          shopName: widget.shopName,
           queueCount: widget.queueCount,
           warningText: context.l10n.nearClipLimitWarning(
             '${(widget.maxRecording.inSeconds / 60).round()}',
@@ -379,6 +461,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       }
       if (state.typeLabel == 'Trả hàng') {
         return EcReturnRecScreen(
+          shopName: widget.shopName,
           queueCount: widget.queueCount,
           code: state.code,
           duration: _formatElapsed(state.elapsed),
@@ -391,6 +474,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         );
       }
       return EcRecording2Screen(
+        shopName: widget.shopName,
         queueCount: widget.queueCount,
         code: state.code,
         elapsed: _formatElapsed(state.elapsed),
@@ -409,6 +493,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     }
 
     return EcWaitBill2Screen(
+      shopName: widget.shopName,
       queueCount: widget.queueCount,
       typeLabel: state.typeLabel,
       resolutionLabel: state.resolutionLabel,
@@ -452,7 +537,14 @@ class _CoverPreviewState extends State<_CoverPreview> {
   // landscape rebind glitch peek through on a real mid-range device
   // (Samsung SM-M146B) — mid-range camera HALs rebind slower than the
   // emulator/flagship hardware this was first tuned against.
-  static const _settleBuffer = Duration(milliseconds: 2200);
+  /// Thời gian giữ khung hình đông cứng sau khi camera rebind xong, để giấu
+  /// cú giật xoay hình mà plugin gây ra ở vài khung đầu.
+  ///
+  /// Từng để 2200ms — an toàn tuyệt đối nhưng người quay thấy màn hình đứng
+  /// hình gần hai giây rưỡi mỗi lần chuyển đơn, tưởng app treo. 700ms vẫn phủ
+  /// hết giai đoạn giật trong thử nghiệm mà không còn cảm giác khựng. Nếu thấy
+  /// preview loé lên bị xoay/xé hình lúc chuyển đơn thì nâng lại con số này.
+  static const _settleBuffer = Duration(milliseconds: 700);
   // How often a known-good frame is refreshed while live — frequent enough
   // that the frame on hand the instant a transition starts is always recent.
   static const _refreshInterval = Duration(milliseconds: 250);
@@ -545,6 +637,22 @@ class _CoverPreviewState extends State<_CoverPreview> {
           // touches the live layer while unmasked anyway, so nothing is
           // lost by skipping it entirely here.
           if (_masking) {
+            final frame = _lastGoodFrame;
+            if (frame == null) return const ColoredBox(color: Colors.black);
+            return FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: frame.width.toDouble(),
+                height: frame.height.toDouble(),
+                child: RawImage(image: frame),
+              ),
+            );
+          }
+          // Controller đã dispose (đổi độ phân giải, lật camera, app xuống nền,
+          // hoặc màn quay chờ người dùng chọn loại video) thì `buildPreview`
+          // ném CameraException ngay giữa lúc build. Một khung đen là đủ —
+          // controller mới lên là widget rebuild và preview trở lại.
+          if (!controller.value.isInitialized) {
             final frame = _lastGoodFrame;
             if (frame == null) return const ColoredBox(color: Colors.black);
             return FittedBox(

@@ -15,6 +15,9 @@ export 'src/logging/app_logger.dart';
 export 'src/media/camera_service.dart';
 export 'src/media/image_picker_service.dart';
 export 'src/media/video_player_service.dart';
+export 'package:wakelock_plus/wakelock_plus.dart';
+
+export 'src/media/capture_tone_service.dart';
 export 'src/media/voice_announcer_service.dart';
 export 'src/notifications/firebase_messaging_service.dart';
 export 'src/notifications/notifications_service.dart';
