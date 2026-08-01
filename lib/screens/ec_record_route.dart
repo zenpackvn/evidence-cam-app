@@ -259,6 +259,12 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive) {
       _releasedForBackground = true;
+      // Nhớ đơn đang quay TRƯỚC khi `RecordingBackgrounded` chốt clip và xoá
+      // `code` khỏi state — đây là thứ duy nhất còn lại để hỏi người quay có
+      // muốn quay tiếp đơn đó không sau khi nghe máy xong.
+      if (_bloc.state.isRecording && _bloc.state.code.isNotEmpty) {
+        _interruptedCode = _bloc.state.code;
+      }
       _bloc.add(const RecordingBackgrounded());
     } else if (state == AppLifecycleState.resumed) {
       final needsCamera =
@@ -269,8 +275,46 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       // Tab khác đang hiển thị thì để `_onActiveChanged` lo — dựng camera ở
       // đây sẽ bật nó lên trong lúc người dùng đang xem Vận đơn.
       if (needsCamera && (widget.isActive?.value ?? true)) {
-        unawaited(_initWithPermission());
+        unawaited(_initWithPermission().then((_) => _askResumeInterrupted()));
       }
+    }
+  }
+
+  /// Đơn đang quay dở lúc bị cuộc gọi/thông báo cắt ngang, chờ hỏi lại.
+  String? _interruptedCode;
+
+  /// Hỏi quay tiếp đơn dở hay kết thúc, sau khi app trở lại từ cuộc gọi.
+  ///
+  /// Clip dở đã được chốt và lưu lúc bị cắt ngang — không mất gì. Câu hỏi này
+  /// chỉ quyết định có mở clip MỚI cho cùng đơn đó hay về trạng thái nghỉ.
+  /// Hỏi thay vì tự quay tiếp: người quay có thể đã rời bàn, tự động ghi hình
+  /// trần nhà cả phút là vô nghĩa và tốn quota.
+  Future<void> _askResumeInterrupted() async {
+    final code = _interruptedCode;
+    _interruptedCode = null;
+    if (code == null || !mounted) return;
+    final l10n = context.l10n;
+    final resume = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(l10n.recordInterruptedTitle),
+        content: Text(l10n.recordInterruptedBody(code)),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.recordInterruptedFinish),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.recordInterruptedResume),
+          ),
+        ],
+      ),
+    );
+    if (resume ?? false) {
+      if (!mounted) return;
+      _bloc.add(RecordingManualCodeSubmitted(code));
     }
   }
 

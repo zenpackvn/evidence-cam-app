@@ -1384,6 +1384,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountEndQrSave => 'Lưu vào thư viện ảnh';
 
   @override
+  String get recordInterruptedTitle => 'Đã dừng quay';
+
+  @override
+  String recordInterruptedBody(String code) {
+    return 'Cuộc gọi đến đã cắt ngang clip của đơn $code. Phần vừa quay đã được lưu. Quay tiếp đơn này?';
+  }
+
+  @override
+  String get recordInterruptedResume => 'Tiếp tục';
+
+  @override
+  String get recordInterruptedFinish => 'Kết thúc';
+
+  @override
   String get accountEndQrNote =>
       'In tờ này dán ở bàn đóng hàng. Đang quay mà quét vào là chốt video ngay. Mã dùng chung cho mọi máy.';
 

@@ -1390,6 +1390,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountEndQrSave => 'Save to photo library';
 
   @override
+  String get recordInterruptedTitle => 'Recording stopped';
+
+  @override
+  String recordInterruptedBody(String code) {
+    return 'An incoming call interrupted the clip for $code. What was recorded is saved. Keep recording this order?';
+  }
+
+  @override
+  String get recordInterruptedResume => 'Continue';
+
+  @override
+  String get recordInterruptedFinish => 'Finish';
+
+  @override
   String get accountEndQrNote =>
       'Print this and stick it on the packing table. Scanning it while recording closes the clip. The same code works on every device.';
 

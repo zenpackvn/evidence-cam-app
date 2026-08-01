@@ -739,6 +739,13 @@
   "accountEndQrTitle": "Mã dừng quay",
   "accountEndQrShare": "Chia sẻ mã",
   "accountEndQrSave": "Lưu vào thư viện ảnh",
+  "recordInterruptedTitle": "Đã dừng quay",
+  "recordInterruptedBody": "Cuộc gọi đến đã cắt ngang clip của đơn {code}. Phần vừa quay đã được lưu. Quay tiếp đơn này?",
+  "@recordInterruptedBody": {
+    "placeholders": { "code": { "type": "String", "example": "SPX123" } }
+  },
+  "recordInterruptedResume": "Tiếp tục",
+  "recordInterruptedFinish": "Kết thúc",
   "accountEndQrNote": "In tờ này dán ở bàn đóng hàng. Đang quay mà quét vào là chốt video ngay. Mã dùng chung cho mọi máy.",
   "languageChangeScopeNote": "Toàn bộ nhãn, thông báo và hồ sơ\nsẽ đổi sang ngôn ngữ bạn chọn.",
   "@languageChangeScopeNote": {

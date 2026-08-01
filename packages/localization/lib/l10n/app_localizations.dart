@@ -2552,6 +2552,30 @@ abstract class AppLocalizations {
   /// **'Save to photo library'**
   String get accountEndQrSave;
 
+  /// No description provided for @recordInterruptedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording stopped'**
+  String get recordInterruptedTitle;
+
+  /// No description provided for @recordInterruptedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'An incoming call interrupted the clip for {code}. What was recorded is saved. Keep recording this order?'**
+  String recordInterruptedBody(String code);
+
+  /// No description provided for @recordInterruptedResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get recordInterruptedResume;
+
+  /// No description provided for @recordInterruptedFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get recordInterruptedFinish;
+
   /// No description provided for @accountEndQrNote.
   ///
   /// In en, this message translates to:
