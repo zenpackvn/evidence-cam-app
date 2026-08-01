@@ -18,6 +18,12 @@ const _fallbackBytesPerSecond = 250000;
 /// tới mức vô dụng làm bằng chứng.
 const kMinClipSeconds = 60;
 
+/// Khoảng hợp lệ của trần dung lượng mỗi tệp (FR-21). PHẢI khớp
+/// `MIN_UPLOAD_BYTES` / `MAX_UPLOAD_BYTES` của backend, nếu không sheet chào
+/// một mốc mà server trả về 400.
+const kMinUploadBytes = 1000000;
+const kMaxUploadBytes = 100000000;
+
 /// Ba mốc, và chỉ mốc giữa là do shop chọn:
 ///   * [recommendedSeconds] — dài nhất mà clip vẫn **đính thẳng lên form khiếu
 ///     nại của sàn** được. Backend suy ra từ dung lượng sàn cho phép ÷ bitrate
@@ -34,6 +40,7 @@ class ClipBudget {
     required this.planMaxSeconds,
     required this.maxImageBytes,
     required this.maxVideoBytes,
+    required this.uploadBytes,
     this.platformLimitsVerified = true,
   });
 
@@ -45,6 +52,7 @@ class ClipBudget {
     planMaxSeconds: 900,
     maxImageBytes: 10000000,
     maxVideoBytes: 30000000,
+    uploadBytes: 10000000,
   );
 
   /// Decimal MB, không phải MiB — sàn công bố "30 MB/video" theo nghĩa thập
@@ -61,6 +69,10 @@ class ClipBudget {
   final int maxImageBytes;
   final int maxVideoBytes;
 
+  /// Trần dung lượng một tệp bằng chứng shop đang áp dụng (FR-21). Backend đã
+  /// kẹp vào [kMinUploadBytes]..[kMaxUploadBytes], app dùng thẳng.
+  final int uploadBytes;
+
   /// false = giới hạn của sàn này chưa đối chiếu tài liệu Seller Center, đang
   /// mượn bộ thận trọng nhất. UI nói rõ để chủ shop không tin nhầm.
   final bool platformLimitsVerified;
@@ -70,16 +82,21 @@ class ClipBudget {
   /// Shop đã chỉnh vượt mức đính-thẳng-lên-sàn được → hiện cảnh báo vàng.
   bool get exceedsRecommended => seconds > recommendedSeconds;
 
+  /// Trần tệp shop đặt đã vượt giới hạn ảnh của sàn → cảnh báo vàng thứ hai:
+  /// tệp cỡ đó vẫn lưu được, chỉ là không đính thẳng lên form khiếu nại.
+  bool get exceedsRecommendedUpload => uploadBytes > maxImageBytes;
+
   /// Dung lượng ước tính của một clip dài [forSeconds] ở [resolution].
   static int estimatedBytes(int forSeconds, String resolution) =>
       forSeconds * (_bytesPerSecond[resolution] ?? _fallbackBytesPerSecond);
 
-  ClipBudget copyWith({int? seconds}) => ClipBudget(
+  ClipBudget copyWith({int? seconds, int? uploadBytes}) => ClipBudget(
     seconds: seconds ?? this.seconds,
     recommendedSeconds: recommendedSeconds,
     planMaxSeconds: planMaxSeconds,
     maxImageBytes: maxImageBytes,
     maxVideoBytes: maxVideoBytes,
+    uploadBytes: uploadBytes ?? this.uploadBytes,
     platformLimitsVerified: platformLimitsVerified,
   );
 }

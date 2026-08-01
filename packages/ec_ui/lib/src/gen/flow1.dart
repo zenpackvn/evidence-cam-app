@@ -3461,6 +3461,58 @@ class PenF109 extends StatelessWidget {
                     ),
                   ],
                 ),
+                PenBox(
+                  width: double.infinity,
+                  fill: const Color(0xFFFFFFFF),
+                  stroke: const Color(0xFFE4E4E4),
+                  radius: 10,
+                  axis: PenAxis.row,
+                  gap: 14,
+                  cross: CrossAxisAlignment.center,
+                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  children: [
+                    PenBox(
+                      width: 38,
+                      height: 38,
+                      fill: const Color(0xFFFCFCFC),
+                      radius: 10,
+                      axis: PenAxis.row,
+                      main: MainAxisAlignment.center,
+                      cross: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.fileUp,
+                          size: 22,
+                          color: const Color(0xFF161616),
+                        ),
+                      ],
+                    ),
+                    Expanded(
+                      child: PenText(
+                        'Dung lượng/tệp',
+                        size: 16,
+                        color: const Color(0xFF161616),
+                      ),
+                    ),
+                    PenText(
+                      '10 MB',
+                      size: 16,
+                      color: const Color(0xFF161616),
+                      weight: FontWeight.w600,
+                      softWrap: false,
+                    ),
+                    Icon(
+                      LucideIcons.chevronRight,
+                      size: 18,
+                      color: const Color(0xFF636363),
+                    ),
+                  ],
+                ),
+                PenText(
+                  'Đề xuất 10 MB — theo giới hạn ảnh đính kèm của Shopee',
+                  size: 12,
+                  color: const Color(0xFF636363),
+                ),
               ],
             ),
             PenBox(

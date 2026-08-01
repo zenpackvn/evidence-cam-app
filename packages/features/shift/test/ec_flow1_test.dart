@@ -342,6 +342,7 @@ void main() {
               planMaxSeconds: 900,
               maxImageBytes: 10000000,
               maxVideoBytes: 30000000,
+              uploadBytes: 10000000,
             ),
           ),
         );
@@ -374,6 +375,7 @@ void main() {
               planMaxSeconds: 900,
               maxImageBytes: 10000000,
               maxVideoBytes: 30000000,
+              uploadBytes: 10000000,
             ),
           ),
         );
@@ -404,12 +406,63 @@ void main() {
             planMaxSeconds: 900,
             maxImageBytes: 10000000,
             maxVideoBytes: 30000000,
+            uploadBytes: 10000000,
             platformLimitsVerified: false,
           ),
         ),
       );
       expect(find.textContaining('chưa xác minh'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('upload size row states the sàn limit, and warns above it', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          members: members,
+          videoTypes: videoTypes,
+          clipBudget: ClipBudget(
+            seconds: 120,
+            recommendedSeconds: 120,
+            planMaxSeconds: 900,
+            maxImageBytes: 10000000,
+            maxVideoBytes: 30000000,
+            uploadBytes: 25000000,
+          ),
+        ),
+      );
+      expect(find.text('Dung lượng/tệp'), findsOneWidget);
+      expect(find.text('25 MB'), findsOneWidget);
+      expect(
+        find.text('Đề xuất 10 MB — theo giới hạn ảnh đính kèm của Shopee'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Vượt mức đề xuất 10 MB của Shopee'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('upload size row opens the picker', (tester) async {
+      var tapped = false;
+      await _pump(
+        tester,
+        EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          members: members,
+          videoTypes: videoTypes,
+          onTapUploadSize: () => tapped = true,
+        ),
+      );
+      await tester.tap(find.text('Dung lượng/tệp'));
+      await tester.pump();
+      expect(tapped, isTrue);
     });
 
     testWidgets('clip duration row opens the picker', (tester) async {

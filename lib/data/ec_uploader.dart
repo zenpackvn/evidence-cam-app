@@ -13,13 +13,17 @@ import 'package:feature_capture/feature_capture.dart';
 import 'package:network/network.dart' show DioException, DioExceptionType;
 import 'package:video_thumbnail/video_thumbnail.dart';
 
-/// TEMPORARY (per shop owner request while the backend's quota rollout is
-/// still being tuned): treat a `quota_hold` response as success instead of
-/// failing the upload. The clip is still fully uploaded to R2 at this point —
-/// this only skips the app *reporting* the hold — but the backend may not
-/// actually keep/serve evidence it flagged as over-quota, so this must be
-/// flipped back to `false` once quota limits are ready to enforce again.
-const _ignoreQuotaHoldForTesting = true;
+/// Escape hatch from the quota rollout: when true, a `quota_hold` response is
+/// treated as success and the app never tells the seller their evidence is
+/// over-quota. The clip is still fully uploaded to R2 either way — this only
+/// skips the *reporting* — but a hold the seller never sees is a hold nobody
+/// acts on, and the evidence sits uncounted until retention deletes it.
+///
+/// Back to `false` now that the backend releases holds again (quota.ts
+/// `releaseHeldEvidence`): a held clip is picked up automatically once the plan
+/// is upgraded or retention frees room, so the "chờ quota" state the queue
+/// shows is temporary and actionable rather than a dead end.
+const _ignoreQuotaHoldForTesting = false;
 
 /// How long to wait for the backend to finalize an upload (`complete` /
 /// `multipart/complete`) — this runs after every byte is already on R2, so it

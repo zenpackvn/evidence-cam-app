@@ -1535,20 +1535,32 @@ abstract class AppLocalizations {
   /// No description provided for @queueFilterAll.
   ///
   /// In en, this message translates to:
-  /// **'All · {count}'**
+  /// **'All ({count})'**
   String queueFilterAll(int count);
 
   /// No description provided for @queueFilterUploading.
   ///
   /// In en, this message translates to:
-  /// **'Uploading · {count}'**
+  /// **'Uploading ({count})'**
   String queueFilterUploading(int count);
 
   /// No description provided for @queueFilterErrored.
   ///
   /// In en, this message translates to:
-  /// **'Errors · {count}'**
+  /// **'Errors ({count})'**
   String queueFilterErrored(int count);
+
+  /// No description provided for @queueFilterQuotaWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Quota wait ({count})'**
+  String queueFilterQuotaWait(int count);
+
+  /// No description provided for @queueSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{pending} videos waiting · {uploading} uploading · {errored} failed'**
+  String queueSummary(int pending, int uploading, int errored);
 
   /// No description provided for @uploadingProgress.
   ///
@@ -2379,6 +2391,64 @@ abstract class AppLocalizations {
     String platform,
     String limit,
   );
+
+  /// Shop detail / upload size cap (FR-21).
+  ///
+  /// In en, this message translates to:
+  /// **'Max size/file'**
+  String get shopDetailUploadSize;
+
+  /// Shop detail / upload size cap (FR-21).
+  ///
+  /// In en, this message translates to:
+  /// **'{megabytes} MB'**
+  String uploadSizeValue(String megabytes);
+
+  /// Shop detail / upload size cap (FR-21).
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended {megabytes} MB — {platform}\'s attachment limit'**
+  String uploadRecommendedHint(String megabytes, String platform);
+
+  /// Shop detail / upload size cap (FR-21).
+  ///
+  /// In en, this message translates to:
+  /// **'Over the {megabytes} MB recommendation for {platform} — a file up to {chosen} MB is still stored in full, but has to be sent as a dossier link instead of attached to the complaint form.'**
+  String uploadOverRecommendedWarning(
+    String megabytes,
+    String platform,
+    String chosen,
+  );
+
+  /// Shop detail / upload size cap (FR-21).
+  ///
+  /// In en, this message translates to:
+  /// **'Max size per file'**
+  String get uploadSizeTitle;
+
+  /// Shop detail / upload size cap (FR-21).
+  ///
+  /// In en, this message translates to:
+  /// **'Files over the cap are not attached; {megabytes} MB still attaches directly to {platform}'**
+  String uploadSizeSubtitle(String megabytes, String platform);
+
+  /// Shop detail / upload size cap (FR-21).
+  ///
+  /// In en, this message translates to:
+  /// **'{megabytes} MB (recommended)'**
+  String uploadSizeOptionRecommended(String megabytes);
+
+  /// Shop detail / upload size cap (FR-21).
+  ///
+  /// In en, this message translates to:
+  /// **'Max size/file: {megabytes} MB'**
+  String uploadSizeChanged(String megabytes);
+
+  /// Shop detail / upload size cap (FR-21).
+  ///
+  /// In en, this message translates to:
+  /// **'File is {megabytes} MB — over the shop\'s {limit} MB cap, not attached. Raise the cap in shop settings and try again.'**
+  String fileOverUploadCap(String megabytes, String limit);
 
   /// Recording: near-cap warning banner (FR-01).
   ///

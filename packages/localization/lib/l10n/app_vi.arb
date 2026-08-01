@@ -242,9 +242,11 @@
   "videoTypeGroupDefault": "Loại mặc định (bắt buộc)",
   "videoTypeGroupCustom": "Loại tùy chỉnh của shop",
   "manageVideoTypesNote": "Quản lý loại video — mở Chi tiết shop",
-  "queueFilterAll": "Tất cả · {count}",
-  "queueFilterUploading": "Đang tải · {count}",
-  "queueFilterErrored": "Lỗi · {count}",
+  "queueFilterAll": "Tất cả ({count})",
+  "queueFilterUploading": "Đang tải ({count})",
+  "queueFilterErrored": "Lỗi ({count})",
+  "queueFilterQuotaWait": "Chờ quota ({count})",
+  "queueSummary": "{pending} video đang chờ · {uploading} đang tải · {errored} lỗi",
   "uploadingProgress": "Đang tải {percent}%",
   "errorRetryCount": "Lỗi · Thử lại ({count})",
   "returnCodeMismatchBody": "{returnCode} không khớp mã vận đơn nào trong {shopName}. Kiểm tra lại mã, nhập tay hoặc xác nhận tạo vận đơn mới.",
@@ -578,6 +580,92 @@
           "type": "String"
         },
         "platform": {
+          "type": "String"
+        },
+        "limit": {
+          "type": "String"
+        }
+      }
+    },
+    "shopDetailUploadSize": "Dung lượng/tệp",
+    "@shopDetailUploadSize": {
+      "description": "Shop detail / upload size cap (FR-21)."
+    },
+    "uploadSizeValue": "{megabytes} MB",
+    "@uploadSizeValue": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        }
+      }
+    },
+    "uploadRecommendedHint": "Đề xuất {megabytes} MB — theo giới hạn ảnh đính kèm của {platform}",
+    "@uploadRecommendedHint": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        }
+      }
+    },
+    "uploadOverRecommendedWarning": "Vượt mức đề xuất {megabytes} MB của {platform} — tệp tới {chosen} MB vẫn lưu nguyên vẹn, nhưng phải gửi bằng link hồ sơ thay vì đính trực tiếp lên form khiếu nại.",
+    "@uploadOverRecommendedWarning": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        },
+        "chosen": {
+          "type": "String"
+        }
+      }
+    },
+    "uploadSizeTitle": "Dung lượng tối đa mỗi tệp",
+    "@uploadSizeTitle": {
+      "description": "Shop detail / upload size cap (FR-21)."
+    },
+    "uploadSizeSubtitle": "Tệp vượt trần sẽ không đính được; {megabytes} MB vẫn đính thẳng lên {platform}",
+    "@uploadSizeSubtitle": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        }
+      }
+    },
+    "uploadSizeOptionRecommended": "{megabytes} MB (đề xuất)",
+    "@uploadSizeOptionRecommended": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        }
+      }
+    },
+    "uploadSizeChanged": "Dung lượng/tệp: {megabytes} MB",
+    "@uploadSizeChanged": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        }
+      }
+    },
+    "fileOverUploadCap": "Tệp {megabytes} MB — vượt trần {limit} MB của shop nên chưa đính. Nâng trần trong Cài đặt shop rồi thử lại.",
+    "@fileOverUploadCap": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
           "type": "String"
         },
         "limit": {

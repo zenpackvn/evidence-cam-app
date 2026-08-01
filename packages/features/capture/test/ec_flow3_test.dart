@@ -179,7 +179,7 @@ void main() {
         const EcUploadQueueScreen(items: ecDefaultUploadItems),
       );
       expect(find.text('Hàng đợi upload'), findsOneWidget);
-      expect(find.text('Tất cả · 5'), findsOneWidget);
+      expect(find.text('Tất cả (5)'), findsOneWidget);
       expect(find.text('Đang tải 72%'), findsOneWidget);
       expect(find.text('Chờ upload'), findsOneWidget);
       expect(find.text('Đã upload'), findsOneWidget);
@@ -199,10 +199,32 @@ void main() {
           onUpgrade: () => upgraded = true,
         ),
       );
-      await tester.tap(find.text('Đang tải · 1'));
+      await tester.tap(find.text('Đang tải (1)'));
       await tester.tap(find.text('Nâng gói'));
       expect(selectedTab, 1);
       expect(upgraded, isTrue);
+    });
+
+    // FR-02 — Nhân viên không được xóa bằng chứng. Vai trò được chuyển xuống
+    // đây bằng cách bỏ trống `onDelete` (xem `_QueueRoute` ở lib/ec_app.dart),
+    // nên hàng đợi phải giấu hẳn nút xóa chứ không chỉ vô hiệu hóa nó.
+    testWidgets('hides the delete affordance when deleting is not allowed', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcUploadQueueScreen(items: ecDefaultUploadItems),
+      );
+      expect(find.bySemanticsLabel('Xóa'), findsNothing);
+
+      await _pump(
+        tester,
+        EcUploadQueueScreen(
+          items: ecDefaultUploadItems,
+          onDelete: (_) {},
+        ),
+      );
+      expect(find.bySemanticsLabel('Xóa'), findsWidgets);
     });
   });
 

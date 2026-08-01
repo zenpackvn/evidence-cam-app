@@ -18,6 +18,28 @@ import 'package:flutter_svg/flutter_svg.dart';
 /// where children are absolutely positioned by `x`/`y`.
 enum PenAxis { row, column, stack }
 
+/// ponytail: the `.pen` artboard runs hot against iOS norms — headings sit at
+/// 18–26pt where a native app uses 16–22, and frame padding at 16–26 where iOS
+/// uses 12–20. Rather than retouch ~20k generated lines that `pen2dart.py`
+/// would overwrite on the next run, the two knobs below rescale at the single
+/// runtime chokepoint every generated node already passes through.
+///
+/// Body text (<= [penTypePivot]) and icon/box geometry are already correct, so
+/// they are left untouched: a flat multiplier would drag 14pt body copy down to
+/// 12 and shrink hairlines and glyph boxes with it.
+///
+/// Set [penTypeCompress] and [penDensityScale] to `1` to render the artboard
+/// pixel-true again.
+const double penTypePivot = 14;
+const double penTypeCompress = 0.72;
+const double penDensityScale = 0.85;
+
+/// Compresses the top of the type scale toward the iOS ramp, leaving every
+/// size at or below [penTypePivot] exactly as the designer set it.
+double penTextSize(double size) => size <= penTypePivot
+    ? size
+    : penTypePivot + (size - penTypePivot) * penTypeCompress;
+
 /// A `frame` node: a box with optional fill, corner radius, 1px stroke, drop
 /// shadow, padding, and an auto-layout of [children] along [axis].
 class PenBox extends StatelessWidget {
@@ -85,7 +107,7 @@ class PenBox extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget? content = _content();
     if (padding != EdgeInsets.zero && content != null) {
-      content = Padding(padding: padding, child: content);
+      content = Padding(padding: padding * penDensityScale, child: content);
     }
 
     final hasBox =
@@ -167,7 +189,8 @@ class PenBox extends StatelessWidget {
 
   List<Widget> _gapped({required bool horizontal}) {
     if (gap <= 0 || children.length < 2) return children;
-    final spacer = horizontal ? SizedBox(width: gap) : SizedBox(height: gap);
+    final g = gap * penDensityScale;
+    final spacer = horizontal ? SizedBox(width: g) : SizedBox(height: g);
     return <Widget>[
       for (var i = 0; i < children.length; i++) ...[
         if (i > 0) spacer,
@@ -218,7 +241,7 @@ class PenText extends StatelessWidget {
       softWrap: softWrap,
       overflow: overflow,
       style: TextStyle(
-        fontSize: size,
+        fontSize: penTextSize(size),
         color: color,
         fontWeight: weight,
         height: lineHeight,

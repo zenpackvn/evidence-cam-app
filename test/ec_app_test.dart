@@ -832,6 +832,7 @@ class _ManageableShopRepository extends _DemoRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    int? maxUploadBytes,
   }) async {
     updatedResolution = resolution;
     updatedClipSeconds = maxClipSeconds;

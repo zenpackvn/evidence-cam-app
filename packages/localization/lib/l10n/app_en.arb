@@ -380,7 +380,7 @@
   "videoTypeGroupDefault": "Default types (required)",
   "videoTypeGroupCustom": "Shop's custom types",
   "manageVideoTypesNote": "Manage video types — open Shop details",
-  "queueFilterAll": "All · {count}",
+  "queueFilterAll": "All ({count})",
   "@queueFilterAll": {
     "placeholders": {
       "count": {
@@ -388,7 +388,7 @@
       }
     }
   },
-  "queueFilterUploading": "Uploading · {count}",
+  "queueFilterUploading": "Uploading ({count})",
   "@queueFilterUploading": {
     "placeholders": {
       "count": {
@@ -396,10 +396,32 @@
       }
     }
   },
-  "queueFilterErrored": "Errors · {count}",
+  "queueFilterErrored": "Errors ({count})",
   "@queueFilterErrored": {
     "placeholders": {
       "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFilterQuotaWait": "Quota wait ({count})",
+  "@queueFilterQuotaWait": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queueSummary": "{pending} videos waiting · {uploading} uploading · {errored} failed",
+  "@queueSummary": {
+    "placeholders": {
+      "pending": {
+        "type": "int"
+      },
+      "uploading": {
+        "type": "int"
+      },
+      "errored": {
         "type": "int"
       }
     }
@@ -796,6 +818,92 @@
           "type": "String"
         },
         "platform": {
+          "type": "String"
+        },
+        "limit": {
+          "type": "String"
+        }
+      }
+    },
+    "shopDetailUploadSize": "Max size/file",
+    "@shopDetailUploadSize": {
+      "description": "Shop detail / upload size cap (FR-21)."
+    },
+    "uploadSizeValue": "{megabytes} MB",
+    "@uploadSizeValue": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        }
+      }
+    },
+    "uploadRecommendedHint": "Recommended {megabytes} MB — {platform}'s attachment limit",
+    "@uploadRecommendedHint": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        }
+      }
+    },
+    "uploadOverRecommendedWarning": "Over the {megabytes} MB recommendation for {platform} — a file up to {chosen} MB is still stored in full, but has to be sent as a dossier link instead of attached to the complaint form.",
+    "@uploadOverRecommendedWarning": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        },
+        "chosen": {
+          "type": "String"
+        }
+      }
+    },
+    "uploadSizeTitle": "Max size per file",
+    "@uploadSizeTitle": {
+      "description": "Shop detail / upload size cap (FR-21)."
+    },
+    "uploadSizeSubtitle": "Files over the cap are not attached; {megabytes} MB still attaches directly to {platform}",
+    "@uploadSizeSubtitle": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        },
+        "platform": {
+          "type": "String"
+        }
+      }
+    },
+    "uploadSizeOptionRecommended": "{megabytes} MB (recommended)",
+    "@uploadSizeOptionRecommended": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        }
+      }
+    },
+    "uploadSizeChanged": "Max size/file: {megabytes} MB",
+    "@uploadSizeChanged": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
+          "type": "String"
+        }
+      }
+    },
+    "fileOverUploadCap": "File is {megabytes} MB — over the shop's {limit} MB cap, not attached. Raise the cap in shop settings and try again.",
+    "@fileOverUploadCap": {
+      "description": "Shop detail / upload size cap (FR-21).",
+      "placeholders": {
+        "megabytes": {
           "type": "String"
         },
         "limit": {

@@ -31,6 +31,7 @@ abstract interface class EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    int? maxUploadBytes,
   });
   Future<List<MemberDto>> members(String shopId);
   Future<void> addMember(
@@ -127,12 +128,14 @@ class RemoteEcRepository implements EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    int? maxUploadBytes,
   }) => _api.updateShop(
     shopId,
     name: name,
     platform: platform,
     resolution: resolution,
     maxClipSeconds: maxClipSeconds,
+    maxUploadBytes: maxUploadBytes,
   );
 
   @override
@@ -223,8 +226,7 @@ class RemoteEcRepository implements EcRepository {
       _api.getDossier(shopId, orderId);
 
   @override
-  String dossierShareUrl(String shareToken) =>
-      _api.dossierShareUrl(shareToken);
+  String dossierShareUrl(String shareToken) => _api.dossierShareUrl(shareToken);
 
   @override
   Future<void> deleteEvidence(
@@ -292,6 +294,7 @@ class FakeEcRepository implements EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    int? maxUploadBytes,
   }) async => ShopDto(
     id: shopId,
     name: name ?? 'Shop',
@@ -299,6 +302,7 @@ class FakeEcRepository implements EcRepository {
     resolution: resolution ?? '720p',
     role: 'owner',
     clipSeconds: maxClipSeconds ?? 120,
+    uploadBytes: maxUploadBytes ?? 10000000,
   );
 
   @override

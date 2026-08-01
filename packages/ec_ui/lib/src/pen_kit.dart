@@ -910,7 +910,8 @@ class PenChip extends StatelessWidget {
 }
 
 /// A bottom sheet the design's way: dimmed backdrop, top-rounded white panel,
-/// grabber, content. Tapping the backdrop pops the route.
+/// grabber, content. Tapping the backdrop — or dragging the panel down past
+/// [_dismissDistance] (or flicking it) — pops the route.
 class PenSheet extends StatefulWidget {
   const PenSheet({
     required this.children,
@@ -936,38 +937,28 @@ class PenSheet extends StatefulWidget {
   State<PenSheet> createState() => _PenSheetState();
 }
 
+/// How far down the panel must be dragged, or how fast it must be flicked,
+/// before letting go dismisses instead of snapping back.
+const _dismissDistance = 90.0;
+const _dismissVelocity = 700.0;
+
 class _PenSheetState extends State<PenSheet> {
-  /// How far the user has dragged the sheet below its resting position.
-  double _dragOffset = 0;
+  double _dy = 0;
+  bool _dragging = false;
 
-  /// Past this many logical pixels, letting go dismisses instead of snapping
-  /// back. A fast flick dismisses earlier — see [_onDragEnd].
-  static const _dismissDistance = 110.0;
+  void _dismiss() =>
+      (widget.onDismiss ?? () => Navigator.of(context).maybePop())();
 
-  /// Downward velocity (px/s) that counts as a flick regardless of distance.
-  static const _dismissVelocity = 700.0;
-
-  void _dismiss() {
-    final onDismiss = widget.onDismiss;
-    if (onDismiss != null) {
-      onDismiss();
-    } else {
-      Navigator.of(context).maybePop();
-    }
-  }
-
-  void _onDragUpdate(DragUpdateDetails d) {
-    // Clamp at 0 so the sheet can't be dragged up off its resting position.
-    setState(() => _dragOffset = math.max(0, _dragOffset + d.delta.dy));
-  }
-
-  void _onDragEnd(DragEndDetails d) {
-    final velocity = d.velocity.pixelsPerSecond.dy;
-    if (_dragOffset > _dismissDistance || velocity > _dismissVelocity) {
+  void _onDragEnd(DragEndDetails details) {
+    if (_dy > _dismissDistance ||
+        details.velocity.pixelsPerSecond.dy > _dismissVelocity) {
       _dismiss();
       return;
     }
-    setState(() => _dragOffset = 0);
+    setState(() {
+      _dragging = false;
+      _dy = 0;
+    });
   }
 
   @override
@@ -983,14 +974,29 @@ class _PenSheetState extends State<PenSheet> {
         ),
         Align(
           alignment: Alignment.bottomCenter,
-          child: Transform.translate(
-            offset: Offset(0, _dragOffset),
-            child: GestureDetector(
-              onTap: () {},
-              // Vertical-only so a horizontal swipe still reaches anything
-              // scrollable inside the sheet.
-              onVerticalDragUpdate: _onDragUpdate,
-              onVerticalDragEnd: _onDragEnd,
+          child: GestureDetector(
+            onTap: () {},
+            // ponytail: the whole panel is the drag target, which is fine while
+            // no sheet scrolls internally — if one ever does, move these
+            // handlers onto the grabber alone.
+            onVerticalDragUpdate: (d) => setState(() {
+              _dragging = true;
+              _dy = math.max(0, _dy + d.delta.dy);
+            }),
+            onVerticalDragEnd: _onDragEnd,
+            onVerticalDragCancel: () => setState(() {
+              _dragging = false;
+              _dy = 0;
+            }),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(end: _dy),
+              // Follow the finger 1:1 while dragging; ease back on release.
+              duration: _dragging
+                  ? Duration.zero
+                  : const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              builder: (_, dy, child) =>
+                  Transform.translate(offset: Offset(0, dy), child: child),
               child: PenBox(
                 width: double.infinity,
                 fill: PenColors.card,

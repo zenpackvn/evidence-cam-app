@@ -1557,6 +1557,7 @@ class EcUploadQueueScreen extends StatelessWidget {
     this.selectedTabIndex = 0,
     this.onBack,
     this.onUpgrade,
+    this.onSettings,
     this.onTabSelected,
     this.onRetry,
     this.onPause,
@@ -1569,6 +1570,10 @@ class EcUploadQueueScreen extends StatelessWidget {
   final int selectedTabIndex;
   final VoidCallback? onBack;
   final VoidCallback? onUpgrade;
+
+  /// F3-06's header gear. Optional: no upload-settings screen exists yet, so
+  /// the icon only appears once a caller has somewhere to send it.
+  final VoidCallback? onSettings;
   final ValueChanged<int>? onTabSelected;
 
   /// Called with an errored item when its "Thử lại" affordance is tapped.
@@ -1583,140 +1588,172 @@ class EcUploadQueueScreen extends StatelessWidget {
   /// Called with an item when its remove affordance is tapped.
   final ValueChanged<EcUploadItem>? onDelete;
 
-  /// Items shown under the selected tab (0 = all, 1 = uploading, 2 = error).
+  /// Items shown under the selected tab (0 = all, 1 = uploading, 2 = error,
+  /// 3 = quota wait) — the four filter chips F3-06 draws.
   List<EcUploadItem> get _visibleItems => switch (selectedTabIndex) {
-    1 => [
-      for (final i in items)
-        if (i.status == EcUploadStatus.uploading) i,
-    ],
-    2 => [
-      for (final i in items)
-        if (i.status == EcUploadStatus.error) i,
-    ],
+    1 => _withStatus(EcUploadStatus.uploading),
+    2 => _withStatus(EcUploadStatus.error),
+    3 => _withStatus(EcUploadStatus.quotaWait),
     _ => items,
   };
 
-  List<String> _tabs(BuildContext context) {
-    final uploading = items
-        .where((i) => i.status == EcUploadStatus.uploading)
-        .length;
-    final errored = items.where((i) => i.status == EcUploadStatus.error).length;
-    return [
-      context.l10n.queueFilterAll(items.length),
-      context.l10n.queueFilterUploading(uploading),
-      context.l10n.queueFilterErrored(errored),
-    ];
-  }
+  List<EcUploadItem> _withStatus(EcUploadStatus status) => [
+    for (final i in items)
+      if (i.status == status) i,
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final tabs = _tabs(context);
+    final l10n = context.l10n;
     final visible = _visibleItems;
-    final hasQuotaWait = items.any((i) => i.status == EcUploadStatus.quotaWait);
+    final uploading = _withStatus(EcUploadStatus.uploading).length;
+    final errored = _withStatus(EcUploadStatus.error).length;
+    final quotaWaiting = _withStatus(EcUploadStatus.quotaWait).length;
+    final pending = items.where((i) => i.status != EcUploadStatus.done).length;
+    final tabs = <({String label, Color color})>[
+      (label: l10n.queueFilterAll(items.length), color: BrandColors.ink),
+      (label: l10n.queueFilterUploading(uploading), color: BrandColors.ink),
+      (label: l10n.queueFilterErrored(errored), color: BrandColors.rec),
+      (label: l10n.queueFilterQuotaWait(quotaWaiting), color: BrandColors.ink),
+    ];
     return CupertinoPageScaffold(
       backgroundColor: BrandColors.bg,
       child: SafeArea(
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _Tap(
                     onTap: onBack,
                     child: const Icon(
-                      Icons.chevron_left,
-                      size: 20,
+                      LucideIcons.chevronLeft,
+                      size: 26,
                       color: BrandColors.ink,
                     ),
                   ),
-                  Text(
-                    context.l10n.uploadQueueTitle,
-                    style: _t(16, FontWeight.w600, BrandColors.ink),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        l10n.uploadQueueTitle,
+                        style: _t(24, FontWeight.w800, BrandColors.ink),
+                      ),
+                    ),
                   ),
+                  // F3-06 draws a gear here, but nothing routes to upload
+                  // settings yet — drawing it unconditionally would be a
+                  // button that does nothing.
+                  if (onSettings != null)
+                    _Tap(
+                      onTap: onSettings,
+                      child: const Icon(
+                        LucideIcons.settings,
+                        size: 25,
+                        color: BrandColors.ink,
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 26),
                 ],
               ),
             ),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              // ponytail: the whole page scrolls as one column so the footer
+              // note sits right under the card like the design, instead of
+              // being pinned to the bottom. A queue is tens of rows, not
+              // thousands — swap in a sliver list if that ever changes.
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Only real when something is actually waiting on quota —
                     // this used to render unconditionally, showing "out of
                     // quota" even when nothing was quota-blocked.
-                    if (hasQuotaWait)
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: BrandColors.soft,
-                          borderRadius: BorderRadius.circular(10),
+                    if (quotaWaiting > 0) ...[
+                      _QuotaBanner(onUpgrade: onUpgrade),
+                      const SizedBox(height: 16),
+                    ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Text(
+                        l10n.queueSummary(pending, uploading, errored),
+                        style: _t(
+                          12,
+                          FontWeight.w400,
+                          errored > 0 ? BrandColors.rec : BrandColors.mut,
                         ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                context.l10n.quotaExhaustedNote,
-                                style: _t(12, FontWeight.w400, BrandColors.ink),
-                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (var i = 0; i < tabs.length; i++) ...[
+                            if (i > 0) const SizedBox(width: 6),
+                            _UploadTab(
+                              label: tabs[i].label,
+                              color: tabs[i].color,
+                              selected: i == selectedTabIndex,
+                              onTap: () => onTabSelected?.call(i),
                             ),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: onUpgrade,
-                              child: Text(
-                                context.l10n.upgradePlanShort,
-                                style: _t(12, FontWeight.w600, BrandColors.ink),
-                              ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    if (visible.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 48),
+                        child: Center(
+                          child: Text(
+                            l10n.queueEmpty,
+                            style: _t(14, FontWeight.w400, BrandColors.mut),
+                          ),
+                        ),
+                      )
+                    else
+                      DecoratedBox(
+                        decoration: ecSquircleDecoration(
+                          radius: 14,
+                          color: BrandColors.card,
+                          shadows: const [
+                            BoxShadow(
+                              color: Color(0x12161616),
+                              offset: Offset(0, 2),
+                              blurRadius: 12,
                             ),
                           ],
                         ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < visible.length; i++) ...[
+                                if (i > 0)
+                                  Container(
+                                    height: 1,
+                                    color: BrandColors.line,
+                                  ),
+                                _UploadRow(
+                                  item: visible[i],
+                                  onRetry: onRetry,
+                                  onPause: onPause,
+                                  onResume: onResume,
+                                  onDelete: onDelete,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
-                    if (hasQuotaWait) const SizedBox(height: 12),
-                    SizedBox(
-                      height: 32,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: tabs.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
-                          return _UploadTab(
-                            label: tabs[index],
-                            selected: index == selectedTabIndex,
-                            onTap: () => onTabSelected?.call(index),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: visible.isEmpty
-                          ? Center(
-                              child: Text(
-                                context.l10n.queueEmpty,
-                                style: _t(14, FontWeight.w400, BrandColors.mut),
-                              ),
-                            )
-                          : ListView.separated(
-                              itemCount: visible.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 10),
-                              itemBuilder: (context, index) => _UploadRow(
-                                item: visible[index],
-                                onRetry: onRetry,
-                                onPause: onPause,
-                                onResume: onResume,
-                                onDelete: onDelete,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Center(
                       child: Text(
-                        context.l10n.queueAutoUploadNote,
-                        style: _t(12, FontWeight.w400, BrandColors.mut),
+                        l10n.queueAutoUploadNote,
+                        style: _t(14, FontWeight.w400, BrandColors.mut),
                       ),
                     ),
                   ],
@@ -1730,13 +1767,61 @@ class EcUploadQueueScreen extends StatelessWidget {
   }
 }
 
+/// F3-06's quota banner — soft grey card, info glyph, and a white "Nâng gói"
+/// button.
+class _QuotaBanner extends StatelessWidget {
+  const _QuotaBanner({this.onUpgrade});
+
+  final VoidCallback? onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+      decoration: ecSquircleDecoration(radius: 14, color: BrandColors.soft),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.info, size: 22, color: BrandColors.dark),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              context.l10n.quotaExhaustedNote,
+              style: _t(14, FontWeight.w400, BrandColors.ink),
+            ),
+          ),
+          const SizedBox(width: 12),
+          EcTap(
+            onTap: onUpgrade,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+              decoration: ecSquircleDecoration(
+                radius: 10,
+                color: BrandColors.card,
+                side: const BorderSide(color: BrandColors.line),
+              ),
+              child: Text(
+                context.l10n.upgradePlanShort,
+                style: _t(14, FontWeight.w600, BrandColors.dark),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A F3-06 filter chip: grey pill when selected, bare label when not. [color]
+/// is the label colour the design gives that filter (the "Lỗi" chip is red).
 class _UploadTab extends StatelessWidget {
   const _UploadTab({
     required this.label,
+    required this.color,
     required this.selected,
     this.onTap,
   });
   final String label;
+  final Color color;
   final bool selected;
   final VoidCallback? onTap;
 
@@ -1747,19 +1832,16 @@ class _UploadTab extends StatelessWidget {
       child: Container(
         decoration: ecSquircleDecoration(
           radius: 999,
-          color: selected ? BrandColors.dark : BrandColors.bg,
-          side: BorderSide(
-            color: selected ? BrandColors.dark : BrandColors.line,
-          ),
+          color: selected ? BrandColors.sidebarAccent : BrandColors.bg,
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 9),
           child: Text(
             label,
             style: _t(
               12,
-              FontWeight.w500,
-              selected ? Colors.white : BrandColors.mut,
+              selected ? FontWeight.w700 : FontWeight.w500,
+              color,
             ),
           ),
         ),
@@ -1797,45 +1879,52 @@ class _UploadRow extends StatelessWidget {
             item.status == EcUploadStatus.error ||
             item.status == EcUploadStatus.quotaWait);
     final canResume = onResume != null && item.status == EcUploadStatus.paused;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: ecSquircleDecoration(
-        radius: 12,
-        side: const BorderSide(color: BrandColors.line),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: BrandColors.soft,
-              borderRadius: BorderRadius.circular(8),
+            width: 48,
+            height: 48,
+            decoration: ecSquircleDecoration(
+              radius: 14,
+              color: _tileFill(item.status),
             ),
-            child: const Icon(
-              Icons.videocam_outlined,
-              size: 18,
-              color: BrandColors.mut,
+            child: Icon(
+              LucideIcons.video,
+              size: 24,
+              color: _tileInk(item.status),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   item.code,
-                  style: _t(14, FontWeight.w600, BrandColors.ink),
+                  overflow: TextOverflow.ellipsis,
+                  style: _t(16, FontWeight.w700, BrandColors.ink),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
                   '${item.typeLabel} · ${item.timeRange}',
                   overflow: TextOverflow.ellipsis,
                   style: _t(12, FontWeight.w400, BrandColors.mut),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  _statusLabel(context, item),
+                  overflow: TextOverflow.ellipsis,
+                  style: _t(12, FontWeight.w600, _statusInk(item.status)),
+                ),
+                if (item.status == EcUploadStatus.uploading) ...[
+                  const SizedBox(height: 7),
+                  _UploadProgressBar(percent: item.progressPercent ?? 0),
+                ],
                 if (item.status == EcUploadStatus.error &&
                     item.errorMessage != null) ...[
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Text(
                     item.errorMessage!,
                     maxLines: 2,
@@ -1846,13 +1935,9 @@ class _UploadRow extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: item.status == EcUploadStatus.error && onRetry != null
-                ? () => onRetry!(item)
-                : null,
-            child: _UploadStatusView(item: item),
+          _UploadStatusIcon(
+            item: item,
+            onRetry: onRetry,
           ),
           if (canPause)
             _RowIconButton(
@@ -1905,78 +1990,112 @@ class _RowIconButton extends StatelessWidget {
   }
 }
 
-class _UploadStatusView extends StatelessWidget {
-  const _UploadStatusView({required this.item});
+/// The full-width progress track F3-06 puts under an uploading row's status.
+class _UploadProgressBar extends StatelessWidget {
+  const _UploadProgressBar({required this.percent});
+  final int percent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 6,
+      decoration: ecSquircleDecoration(radius: 4, color: BrandColors.line),
+      child: FractionallySizedBox(
+        alignment: Alignment.centerLeft,
+        widthFactor: (percent.clamp(0, 100)) / 100,
+        child: DecoratedBox(
+          decoration: ecSquircleDecoration(radius: 4, color: BrandColors.ink),
+        ),
+      ),
+    );
+  }
+}
+
+/// The trailing glyph F3-06 gives each finished/blocked state. Uploading and
+/// waiting rows carry no icon — their progress line already says it.
+class _UploadStatusIcon extends StatelessWidget {
+  const _UploadStatusIcon({required this.item, this.onRetry});
   final EcUploadItem item;
+  final ValueChanged<EcUploadItem>? onRetry;
 
   @override
   Widget build(BuildContext context) {
     return switch (item.status) {
-      EcUploadStatus.uploading => Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            context.l10n.uploadingProgress(item.progressPercent ?? 0),
-            style: _t(12, FontWeight.w500, BrandColors.ink),
+      EcUploadStatus.done => Padding(
+        padding: const EdgeInsets.only(left: 13),
+        child: Container(
+          width: 26,
+          height: 26,
+          decoration: const BoxDecoration(
+            color: BrandColors.ring,
+            shape: BoxShape.circle,
           ),
-          const SizedBox(height: 4),
-          Container(
-            width: 70,
-            height: 6,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE2E2E2),
-              borderRadius: BorderRadius.circular(3),
+          child: const Icon(
+            LucideIcons.check,
+            size: 15,
+            color: BrandColors.onRec,
+          ),
+        ),
+      ),
+      EcUploadStatus.error => Padding(
+        padding: const EdgeInsets.only(left: 13),
+        child: EcTap(
+          onTap: onRetry == null ? null : () => onRetry!(item),
+          child: Semantics(
+            label: context.l10n.commonRetry,
+            button: true,
+            child: const Icon(
+              LucideIcons.refreshCw,
+              size: 22,
+              color: BrandColors.ink,
             ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: (item.progressPercent ?? 0) / 100,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: BrandColors.dark,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
           ),
-        ],
+        ),
       ),
-      EcUploadStatus.waiting => Text(
-        context.l10n.waitingUpload,
-        style: _t(12, FontWeight.w400, BrandColors.mut),
+      EcUploadStatus.quotaWait => const Padding(
+        padding: EdgeInsets.only(left: 13),
+        child: Icon(LucideIcons.clock3, size: 24, color: BrandColors.mut),
       ),
-      EcUploadStatus.done => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(LucideIcons.check, size: 12, color: BrandColors.ink),
-          const SizedBox(width: 4),
-          Text(
-            context.l10n.uploaded,
-            style: _t(12, FontWeight.w400, BrandColors.ink),
-          ),
-        ],
-      ),
-      EcUploadStatus.error => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.replay, size: 12, color: BrandColors.ink),
-          const SizedBox(width: 4),
-          Text(
-            context.l10n.errorRetryCount(item.retryCount ?? 0),
-            style: _t(12, FontWeight.w500, BrandColors.ink),
-          ),
-        ],
-      ),
-      EcUploadStatus.quotaWait => Text(
-        context.l10n.waitingQuota,
-        style: _t(12, FontWeight.w400, BrandColors.mut),
-      ),
-      EcUploadStatus.paused => Text(
-        context.l10n.pausedUpload,
-        style: _t(12, FontWeight.w400, BrandColors.mut),
-      ),
+      _ => const SizedBox.shrink(),
     };
   }
 }
+
+/// The row's status line, in the design's wording per state.
+String _statusLabel(BuildContext context, EcUploadItem item) =>
+    switch (item.status) {
+      EcUploadStatus.uploading => context.l10n.uploadingProgress(
+        item.progressPercent ?? 0,
+      ),
+      EcUploadStatus.waiting => context.l10n.waitingUpload,
+      EcUploadStatus.done => context.l10n.uploaded,
+      EcUploadStatus.error => context.l10n.errorRetryCount(
+        item.retryCount ?? 0,
+      ),
+      EcUploadStatus.quotaWait => context.l10n.waitingQuota,
+      EcUploadStatus.paused => context.l10n.pausedUpload,
+    };
+
+Color _statusInk(EcUploadStatus status) => switch (status) {
+  EcUploadStatus.error => BrandColors.rec,
+  EcUploadStatus.quotaWait => BrandColors.warning,
+  EcUploadStatus.uploading || EcUploadStatus.done => BrandColors.ink,
+  EcUploadStatus.waiting || EcUploadStatus.paused => BrandColors.mut,
+};
+
+/// Tint of the 48pt video tile — red for a failed clip, grey for one parked on
+/// quota, near-white otherwise.
+Color _tileFill(EcUploadStatus status) => switch (status) {
+  EcUploadStatus.error => BrandColors.recTint,
+  EcUploadStatus.quotaWait => BrandColors.line,
+  _ => BrandColors.bg,
+};
+
+Color _tileInk(EcUploadStatus status) => switch (status) {
+  EcUploadStatus.error => BrandColors.rec,
+  EcUploadStatus.quotaWait => BrandColors.mut,
+  _ => BrandColors.ink,
+};
 
 // --- ManualEntry ---------------------------------------------------------
 

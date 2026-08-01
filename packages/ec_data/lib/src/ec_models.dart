@@ -43,6 +43,7 @@ class ShopDto {
     this.planMaxClipSeconds = 900,
     this.maxImageBytes = 10000000,
     this.maxVideoBytes = 30000000,
+    this.uploadBytes = 10000000,
     this.platformLimitsVerified = true,
   });
 
@@ -57,6 +58,7 @@ class ShopDto {
     planMaxClipSeconds: _int(j['plan_max_clip_seconds'], 900),
     maxImageBytes: _int(j['max_image_bytes'], 10000000),
     maxVideoBytes: _int(j['max_video_bytes'], 30000000),
+    uploadBytes: _int(j['effective_upload_bytes'], 10000000),
     platformLimitsVerified: (j['platform_limits_verified'] as bool?) ?? true,
   );
 
@@ -75,6 +77,9 @@ class ShopDto {
   final int planMaxClipSeconds;
   final int maxImageBytes;
   final int maxVideoBytes;
+
+  /// Trần dung lượng một tệp bằng chứng đang áp dụng (FR-21).
+  final int uploadBytes;
   final bool platformLimitsVerified;
 }
 

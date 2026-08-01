@@ -1586,6 +1586,7 @@ ClipBudget _budgetFromDto(ShopDto shop) => ClipBudget(
   planMaxSeconds: shop.planMaxClipSeconds,
   maxImageBytes: shop.maxImageBytes,
   maxVideoBytes: shop.maxVideoBytes,
+  uploadBytes: shop.uploadBytes,
   platformLimitsVerified: shop.platformLimitsVerified,
 );
 
@@ -1673,6 +1674,21 @@ Future<void> _attachPhoto(
   // chuỗi bằng chứng phải nguyên gốc). Chỉ cảnh báo để CSKH biết phải gửi bằng
   // link hồ sơ thay vì đính thẳng lên form khiếu nại.
   final bytes = await File(path).length();
+  // Trần dung lượng/tệp của shop (FR-21) là chặn cứng, khác cảnh báo của sàn:
+  // chặn TRƯỚC khi vào hàng đợi, nếu không một tệp khổng lồ đã kịp đốt quota và
+  // dữ liệu di động rồi mới báo. Tệp gốc còn nguyên trong máy — chủ shop nâng
+  // trần rồi đính lại, không mất bằng chứng.
+  final cap = budget?.uploadBytes;
+  if (cap != null && bytes > cap) {
+    _toast(
+      context,
+      context.l10n.fileOverUploadCap(
+        ClipBudget.megabytesLabel(bytes),
+        ClipBudget.megabytesLabel(cap),
+      ),
+    );
+    return;
+  }
   await queue.enqueue(
     tracking: tracking,
     type: 'Ảnh đính kèm',
@@ -1916,6 +1932,7 @@ class _ShopDetailRoute extends StatefulWidget {
     this.onInviteMember,
     this.onTapResolution,
     this.onTapClipDuration,
+    this.onTapUploadSize,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
@@ -1928,6 +1945,7 @@ class _ShopDetailRoute extends StatefulWidget {
   final Future<void> Function()? onInviteMember;
   final Future<void> Function()? onTapResolution;
   final Future<void> Function()? onTapClipDuration;
+  final Future<void> Function()? onTapUploadSize;
   final Future<void> Function(EcVideoType type)? onEditType;
   final Future<void> Function(EcVideoType type)? onDeleteType;
   final Future<void> Function()? onAddType;
@@ -2003,6 +2021,11 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
           onTapClipDuration: widget.onTapClipDuration == null
               ? null
               : () => widget.onTapClipDuration!().then((_) {
+                  if (mounted) _retry();
+                }),
+          onTapUploadSize: widget.onTapUploadSize == null
+              ? null
+              : () => widget.onTapUploadSize!().then((_) {
                   if (mounted) _retry();
                 }),
           onEditType: widget.onEditType == null
@@ -3431,9 +3454,19 @@ class _RouteLoadError extends StatelessWidget {
 /// Upload-queue tab ("Hàng đợi upload"), driven live by [EcUploadQueue]: shows
 /// the real recorded clips with their upload status, tab filtering, and retry.
 class _QueueRoute extends StatefulWidget {
-  const _QueueRoute({required this.queue, this.onBack, this.onUpgrade});
+  const _QueueRoute({
+    required this.queue,
+    required this.canDelete,
+    this.onBack,
+    this.onUpgrade,
+  });
 
   final EcUploadQueue queue;
+
+  /// FR-02 — Nhân viên không được xóa bằng chứng, kể cả clip **chưa upload**
+  /// còn nằm trong hàng đợi trên máy: xóa ở đây là mất vĩnh viễn và backend
+  /// chưa có bản sao nào để chặn hộ.
+  final bool canDelete;
   final VoidCallback? onBack;
   final VoidCallback? onUpgrade;
 
@@ -3470,8 +3503,9 @@ class _QueueRouteState extends State<_QueueRoute> {
             final id = item.id;
             if (id != null) widget.queue.resume(id);
           },
-          onDelete: (item) =>
-              _confirmDeleteQueueItem(context, widget.queue, item),
+          onDelete: widget.canDelete
+              ? (item) => _confirmDeleteQueueItem(context, widget.queue, item)
+              : null,
         );
       },
     );
@@ -4065,6 +4099,9 @@ GoRouter _buildRouter(
         path: '/queue',
         builder: (c, s) => _QueueRoute(
           queue: queue,
+          // No shop resolved yet ⇒ treat as staff and hide the delete
+          // affordance; evidence is easier to re-record than to un-delete.
+          canDelete: (_selected(selectedShop)?.role ?? 'staff') != 'staff',
           onBack: () => _back(c, '/home'),
           onUpgrade: () => c.push('/quota'),
         ),
@@ -4159,6 +4196,8 @@ GoRouter _buildRouter(
                 c.push<void>('/resolution', extra: shop.id).then((_) {}),
             onTapClipDuration: () =>
                 c.push<void>('/clip-duration', extra: shop.id).then((_) {}),
+            onTapUploadSize: () =>
+                c.push<void>('/upload-size', extra: shop.id).then((_) {}),
             onEditType: (type) =>
                 c.push('/create-type', extra: (shop.id, type)).then((_) {}),
             onDeleteType: (type) =>
@@ -4359,6 +4398,43 @@ GoRouter _buildRouter(
                         c,
                         c.l10n.clipDurationChanged(
                           '${(updated.clipSeconds / 60).round()}',
+                        ),
+                      );
+                    })
+                    .catchError((Object error) {
+                      if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
+                    });
+              },
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/upload-size',
+        pageBuilder: (c, s) {
+          final shop = _selected(selectedShop);
+          final shopId = s.extra is String
+              ? s.extra! as String
+              : shop?.id ?? '';
+          return _modalPage(
+            s,
+            EcUploadSizeSheetScreen(
+              budget: shop?.clipBudget ?? ClipBudget.fallback,
+              platformLabel: _platformDisplayName(shop?.platform ?? 'other'),
+              onSelect: (bytes) {
+                repo
+                    .updateShop(shopId, maxUploadBytes: bytes)
+                    .then((updated) {
+                      if (!c.mounted) return;
+                      final current = _selected(selectedShop);
+                      if (current?.id == updated.id) {
+                        selectedShop.value = _shopFromDto(updated);
+                      }
+                      c.pop();
+                      _toast(
+                        c,
+                        c.l10n.uploadSizeChanged(
+                          ClipBudget.megabytesLabel(updated.uploadBytes),
                         ),
                       );
                     })

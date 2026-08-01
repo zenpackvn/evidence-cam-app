@@ -790,17 +790,27 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String queueFilterAll(int count) {
-    return 'Tất cả · $count';
+    return 'Tất cả ($count)';
   }
 
   @override
   String queueFilterUploading(int count) {
-    return 'Đang tải · $count';
+    return 'Đang tải ($count)';
   }
 
   @override
   String queueFilterErrored(int count) {
-    return 'Lỗi · $count';
+    return 'Lỗi ($count)';
+  }
+
+  @override
+  String queueFilterQuotaWait(int count) {
+    return 'Chờ quota ($count)';
+  }
+
+  @override
+  String queueSummary(int pending, int uploading, int errored) {
+    return '$pending video đang chờ · $uploading đang tải · $errored lỗi';
   }
 
   @override
@@ -1271,6 +1281,51 @@ class AppLocalizationsVi extends AppLocalizations {
     String limit,
   ) {
     return 'Ảnh $megabytes MB — vượt giới hạn $limit MB của $platform. Vẫn lưu nguyên vẹn; khi khiếu nại hãy gửi bằng link hồ sơ.';
+  }
+
+  @override
+  String get shopDetailUploadSize => 'Dung lượng/tệp';
+
+  @override
+  String uploadSizeValue(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String uploadRecommendedHint(String megabytes, String platform) {
+    return 'Đề xuất $megabytes MB — theo giới hạn ảnh đính kèm của $platform';
+  }
+
+  @override
+  String uploadOverRecommendedWarning(
+    String megabytes,
+    String platform,
+    String chosen,
+  ) {
+    return 'Vượt mức đề xuất $megabytes MB của $platform — tệp tới $chosen MB vẫn lưu nguyên vẹn, nhưng phải gửi bằng link hồ sơ thay vì đính trực tiếp lên form khiếu nại.';
+  }
+
+  @override
+  String get uploadSizeTitle => 'Dung lượng tối đa mỗi tệp';
+
+  @override
+  String uploadSizeSubtitle(String megabytes, String platform) {
+    return 'Tệp vượt trần sẽ không đính được; $megabytes MB vẫn đính thẳng lên $platform';
+  }
+
+  @override
+  String uploadSizeOptionRecommended(String megabytes) {
+    return '$megabytes MB (đề xuất)';
+  }
+
+  @override
+  String uploadSizeChanged(String megabytes) {
+    return 'Dung lượng/tệp: $megabytes MB';
+  }
+
+  @override
+  String fileOverUploadCap(String megabytes, String limit) {
+    return 'Tệp $megabytes MB — vượt trần $limit MB của shop nên chưa đính. Nâng trần trong Cài đặt shop rồi thử lại.';
   }
 
   @override

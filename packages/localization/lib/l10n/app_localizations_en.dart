@@ -794,17 +794,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String queueFilterAll(int count) {
-    return 'All · $count';
+    return 'All ($count)';
   }
 
   @override
   String queueFilterUploading(int count) {
-    return 'Uploading · $count';
+    return 'Uploading ($count)';
   }
 
   @override
   String queueFilterErrored(int count) {
-    return 'Errors · $count';
+    return 'Errors ($count)';
+  }
+
+  @override
+  String queueFilterQuotaWait(int count) {
+    return 'Quota wait ($count)';
+  }
+
+  @override
+  String queueSummary(int pending, int uploading, int errored) {
+    return '$pending videos waiting · $uploading uploading · $errored failed';
   }
 
   @override
@@ -1277,6 +1287,51 @@ class AppLocalizationsEn extends AppLocalizations {
     String limit,
   ) {
     return 'Photo is $megabytes MB — over $platform\'s $limit MB limit. Kept in full; send it via the dossier link.';
+  }
+
+  @override
+  String get shopDetailUploadSize => 'Max size/file';
+
+  @override
+  String uploadSizeValue(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String uploadRecommendedHint(String megabytes, String platform) {
+    return 'Recommended $megabytes MB — $platform\'s attachment limit';
+  }
+
+  @override
+  String uploadOverRecommendedWarning(
+    String megabytes,
+    String platform,
+    String chosen,
+  ) {
+    return 'Over the $megabytes MB recommendation for $platform — a file up to $chosen MB is still stored in full, but has to be sent as a dossier link instead of attached to the complaint form.';
+  }
+
+  @override
+  String get uploadSizeTitle => 'Max size per file';
+
+  @override
+  String uploadSizeSubtitle(String megabytes, String platform) {
+    return 'Files over the cap are not attached; $megabytes MB still attaches directly to $platform';
+  }
+
+  @override
+  String uploadSizeOptionRecommended(String megabytes) {
+    return '$megabytes MB (recommended)';
+  }
+
+  @override
+  String uploadSizeChanged(String megabytes) {
+    return 'Max size/file: $megabytes MB';
+  }
+
+  @override
+  String fileOverUploadCap(String megabytes, String limit) {
+    return 'File is $megabytes MB — over the shop\'s $limit MB cap, not attached. Raise the cap in shop settings and try again.';
   }
 
   @override

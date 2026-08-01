@@ -10,11 +10,33 @@ void main() {
         planMaxSeconds: 900,
         maxImageBytes: 10000000,
         maxVideoBytes: 30000000,
+        uploadBytes: 10000000,
       );
 
       expect(budget.exceedsRecommended, isFalse);
       expect(budget.copyWith(seconds: 300).exceedsRecommended, isTrue);
       expect(budget.copyWith(seconds: 60).exceedsRecommended, isFalse);
+    });
+
+    test('warns only once the upload cap passes the sàn attachment limit', () {
+      const budget = ClipBudget(
+        seconds: 120,
+        recommendedSeconds: 120,
+        planMaxSeconds: 900,
+        maxImageBytes: 10000000,
+        maxVideoBytes: 30000000,
+        uploadBytes: 10000000,
+      );
+
+      expect(budget.exceedsRecommendedUpload, isFalse);
+      expect(
+        budget.copyWith(uploadBytes: 25000000).exceedsRecommendedUpload,
+        isTrue,
+      );
+      expect(
+        budget.copyWith(uploadBytes: 5000000).exceedsRecommendedUpload,
+        isFalse,
+      );
     });
 
     test('estimates clip size from the resolution bitrate', () {
@@ -49,6 +71,7 @@ void main() {
         planMaxSeconds: 900,
         maxImageBytes: 1,
         maxVideoBytes: 1,
+        uploadBytes: 10000000,
       );
       expect(budget.maxRecording, const Duration(minutes: 5));
     });

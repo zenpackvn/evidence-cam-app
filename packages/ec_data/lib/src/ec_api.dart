@@ -80,6 +80,7 @@ class EcApi {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    int? maxUploadBytes,
   }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/api/shops/$shopId',
@@ -88,6 +89,7 @@ class EcApi {
         'platform': ?platform,
         'resolution': ?resolution,
         'max_clip_seconds': ?maxClipSeconds,
+        'max_upload_bytes': ?maxUploadBytes,
       },
     );
     return ShopDto.fromJson(res.data!);

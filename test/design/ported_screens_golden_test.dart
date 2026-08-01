@@ -325,21 +325,34 @@ void main() {
     'ported_f3_05_ceiling': EcNearLimitScreen(
       preview: _viewfinder('ec-viewfinder-long-recording'),
     ),
+    // Same four rows F3-06 draws, so the pair can be diffed state for state.
     'ported_f3_06_queue': const EcUploadQueueScreen(
       items: [
         EcUploadItem(
           code: 'SPXVN024567890',
-          typeLabel: 'Đóng hàng',
-          timeRange: '10:21 - 10:24',
+          typeLabel: 'Đóng hàng đi',
+          timeRange: '02:45 · 10:23',
           status: EcUploadStatus.uploading,
           progressPercent: 72,
         ),
         EcUploadItem(
           code: 'SPXVN098765432',
-          typeLabel: 'Trả hàng',
-          timeRange: '09:45 - 09:47',
+          typeLabel: 'Đóng hàng đi',
+          timeRange: '03:12 · 10:28',
+          status: EcUploadStatus.done,
+        ),
+        EcUploadItem(
+          code: 'SPXVN011122233',
+          typeLabel: 'Đơn vị vận chuyển',
+          timeRange: '01:05 · 10:40',
           status: EcUploadStatus.error,
           retryCount: 2,
+        ),
+        EcUploadItem(
+          code: 'SPXVN044556677',
+          typeLabel: 'Trả hàng',
+          timeRange: '04:20 · 10:55',
+          status: EcUploadStatus.quotaWait,
         ),
       ],
     ),

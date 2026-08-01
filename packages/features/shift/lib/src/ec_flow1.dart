@@ -1680,6 +1680,7 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onInviteMember,
     this.onTapResolution,
     this.onTapClipDuration,
+    this.onTapUploadSize,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
@@ -1697,6 +1698,7 @@ class EcShopDetailScreen extends StatelessWidget {
   final VoidCallback? onInviteMember;
   final VoidCallback? onTapResolution;
   final VoidCallback? onTapClipDuration;
+  final VoidCallback? onTapUploadSize;
   final ValueChanged<EcVideoType>? onEditType;
   final ValueChanged<EcVideoType>? onDeleteType;
   final VoidCallback? onAddType;
@@ -1876,6 +1878,11 @@ class EcShopDetailScreen extends StatelessWidget {
                   resolution: resolution,
                   onTap: onTapClipDuration,
                 ),
+                _UploadSizeRow(
+                  budget: clipBudget,
+                  platformLabel: platformLabel,
+                  onTap: onTapUploadSize,
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -2041,6 +2048,120 @@ class _ClipDurationRow extends StatelessWidget {
                     _megabytes(
                       ClipBudget.estimatedBytes(budget.seconds, resolution),
                     ),
+                  ),
+                  size: 12.5,
+                  color: _warnInk,
+                  weight: FontWeight.w600,
+                  lineHeight: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// "Dung lượng/tệp" row + the recommendation caption, and the same amber
+/// warning once the shop has raised the cap past what the marketplace accepts
+/// as a direct attachment (FR-21).
+class _UploadSizeRow extends StatelessWidget {
+  const _UploadSizeRow({
+    required this.budget,
+    required this.platformLabel,
+    this.onTap,
+  });
+
+  final ClipBudget budget;
+  final String platformLabel;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        EcTap(
+          onTap: onTap,
+          child: PenBox(
+            width: double.infinity,
+            fill: PenColors.card,
+            stroke: PenColors.line,
+            radius: 10,
+            axis: PenAxis.row,
+            gap: 14,
+            cross: CrossAxisAlignment.center,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            children: [
+              const PenBox(
+                width: 38,
+                height: 38,
+                fill: PenColors.bg,
+                radius: 10,
+                axis: PenAxis.row,
+                main: MainAxisAlignment.center,
+                cross: CrossAxisAlignment.center,
+                children: [
+                  Icon(LucideIcons.fileUp, size: 22, color: PenColors.ink),
+                ],
+              ),
+              Expanded(
+                child: PenText(
+                  l10n.shopDetailUploadSize,
+                  size: 16,
+                  color: PenColors.ink,
+                ),
+              ),
+              PenText(
+                l10n.uploadSizeValue(_megabytes(budget.uploadBytes)),
+                size: 16,
+                color: PenColors.ink,
+                weight: FontWeight.w600,
+                softWrap: false,
+              ),
+              const Icon(
+                LucideIcons.chevronRight,
+                size: 18,
+                color: PenColors.mut,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        PenText(
+          l10n.uploadRecommendedHint(
+            _megabytes(budget.maxImageBytes),
+            platformLabel,
+          ),
+          size: 12,
+          color: PenColors.mut,
+        ),
+        if (budget.exceedsRecommendedUpload) ...[
+          const SizedBox(height: 8),
+          PenBox(
+            width: double.infinity,
+            fill: _warnFill,
+            stroke: _warnStroke,
+            radius: 10,
+            axis: PenAxis.row,
+            gap: 10,
+            cross: CrossAxisAlignment.start,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            children: [
+              const Icon(
+                LucideIcons.triangleAlert,
+                size: 18,
+                color: _warnInk,
+              ),
+              Expanded(
+                child: PenText(
+                  l10n.uploadOverRecommendedWarning(
+                    _megabytes(budget.maxImageBytes),
+                    platformLabel,
+                    _megabytes(budget.uploadBytes),
                   ),
                   size: 12.5,
                   color: _warnInk,
@@ -2896,6 +3017,69 @@ class EcClipDurationSheetScreen extends StatelessWidget {
             color: PenColors.mut,
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// UploadSize — bottom sheet picking the shop's max size per uploaded file.
+///
+/// Mirrors [EcClipDurationSheetScreen]: the marketplace's own attachment limit
+/// is the recommendation, everything above it stays selectable and only carries
+/// the amber warning back on the shop-detail screen (FR-21).
+class EcUploadSizeSheetScreen extends StatelessWidget {
+  const EcUploadSizeSheetScreen({
+    required this.budget,
+    required this.platformLabel,
+    this.onSelect,
+    super.key,
+  });
+
+  final ClipBudget budget;
+  final String platformLabel;
+
+  /// Emits the chosen cap in **bytes**.
+  final ValueChanged<int>? onSelect;
+
+  /// Megabyte marks offered, inside the range the backend accepts. Coarse — a
+  /// shop picks "roughly how big", not an exact byte count.
+  static const _marks = [1, 5, 10, 25, 50, 100];
+
+  List<int> get _options {
+    final min = kMinUploadBytes ~/ 1000000;
+    final max = kMaxUploadBytes ~/ 1000000;
+    final marks = _marks.where((m) => m >= min && m <= max).toList();
+    // Mức đề xuất của sàn luôn phải chọn được, kể cả khi sàn công bố một con số
+    // không rơi vào mốc nào (vd 15 MB).
+    final recommended = budget.maxImageBytes ~/ 1000000;
+    if (recommended >= min &&
+        recommended <= max &&
+        !marks.contains(recommended)) {
+      marks
+        ..add(recommended)
+        ..sort();
+    }
+    return marks;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final selected = budget.uploadBytes ~/ 1000000;
+    final recommended = budget.maxImageBytes ~/ 1000000;
+    return _EcSheetFrame(
+      title: l10n.uploadSizeTitle,
+      subtitle: l10n.uploadSizeSubtitle('$recommended', platformLabel),
+      children: [
+        for (final m in _options)
+          _EcSheetActionRow(
+            icon: LucideIcons.fileUp,
+            label: m == recommended
+                ? l10n.uploadSizeOptionRecommended('$m')
+                : l10n.uploadSizeValue('$m'),
+            selected: m == selected,
+            onTap: () => onSelect?.call(m * 1000000),
+          ),
       ],
     );
   }
