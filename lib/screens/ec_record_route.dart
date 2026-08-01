@@ -207,17 +207,22 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   Future<void> _initWithPermission() async {
     if (_cameraStarting) return;
     _cameraStarting = true;
-    final ensure = widget.ensureCameraPermission;
-    if (ensure != null) {
-      try {
-        await ensure();
-      } on Object {
-        // Từ chối hay lỗi đều để bloc báo trạng thái camera như thường.
+    // `finally`: nhánh `!mounted` thoát sớm mà không trả cờ về thì mọi lần dựng
+    // camera sau đó — kể cả lần quay lại sau cuộc gọi — bị chặn im lặng.
+    try {
+      final ensure = widget.ensureCameraPermission;
+      if (ensure != null) {
+        try {
+          await ensure();
+        } on Object {
+          // Từ chối hay lỗi đều để bloc báo trạng thái camera như thường.
+        }
+        if (!mounted) return;
       }
-      if (!mounted) return;
+      _bloc.add(const RecordingInitRequested());
+    } finally {
+      _cameraStarting = false;
     }
-    _bloc.add(const RecordingInitRequested());
-    _cameraStarting = false;
   }
 
   @override

@@ -281,7 +281,12 @@ class EcUploadQueue extends ChangeNotifier {
           if (_isQuotaWait(error)) {
             task
               ..state = EcUploadState.quotaWait
-              ..progress = 0;
+              ..progress = 0
+              // Giữ nguyên câu server trả về. Trước đây nhánh này vứt bỏ nó,
+              // nên khi màn Quota báo còn thừa dung lượng mà clip vẫn bị từ
+              // chối thì không có cách nào biết server tính theo tiêu chí gì
+              // — người dùng chỉ thấy "chờ quota" chung chung.
+              ..errorMessage = error.toString();
           } else {
             task
               ..state = EcUploadState.error

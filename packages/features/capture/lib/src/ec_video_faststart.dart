@@ -73,9 +73,15 @@ class EcVideoFaststartService {
       // Video vẫn `-c copy` (không giải mã lại, nhanh); chỉ luồng tiếng phải mã
       // hoá lại vì `volume` là bộ lọc — không lọc được trên luồng đang copy.
       // Clip bằng chứng ngắn nên chi phí mã hoá tiếng không đáng kể.
+      // `afade` chứ không phải `volume=enable='lt(t,N)'`: FFmpegKit tách chuỗi
+      // lệnh theo kiểu shell nên dấu nháy đơn lồng trong biểu thức `enable` bị
+      // nuốt mất, filter hỏng, ffmpeg trả lỗi — và `prepare` vốn fail-safe nên
+      // im lặng trả về file gốc còn nguyên tiếng. `afade=t=in` chỉ dùng dấu hai
+      // chấm, không có ký tự nào cần escape: gain bằng 0 từ đầu clip tới `st`,
+      // rồi lên bình thường trong `d` giây.
       final ok = await _run(
         '-y -i "$inputPath" -c:v copy '
-        '-af "volume=enable=\'lt(t,$_muteLeadSeconds)\':volume=0" '
+        '-af afade=t=in:st=$_muteLeadSeconds:d=0.15 '
         '-c:a aac -movflags +faststart "$outputPath"',
       );
       if (!ok || !File(outputPath).existsSync()) return inputPath;

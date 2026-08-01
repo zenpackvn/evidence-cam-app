@@ -38,7 +38,7 @@ void main() {
       // để làm câm đoạn đầu chứa tút + "đã bắt đầu quay".
       expect(issued, contains('-c:v copy'));
       expect(issued, contains('-movflags +faststart'));
-      expect(issued, contains('volume=0'));
+      expect(issued, contains('afade=t=in:st='));
       expect(issued, contains('-c:a aac'));
     });
 
