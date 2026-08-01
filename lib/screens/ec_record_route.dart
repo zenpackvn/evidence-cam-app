@@ -44,7 +44,6 @@ class EcRecordRoute extends StatefulWidget {
     this.deviceConditions,
     this.verifyReturnCode,
     this.voiceAnnouncer,
-    this.shopName = '',
     this.ensureCameraPermission,
     this.initialType = 'Đóng hàng',
     this.queueCount = 0,
@@ -54,11 +53,6 @@ class EcRecordRoute extends StatefulWidget {
     this.isActive,
     super.key,
   });
-
-  /// Cửa hàng đang chọn, hiện trên header camera — người quay nhiều shop cần
-  /// thấy clip sẽ vào đâu trước khi bấm quay. Rỗng thì header bỏ trống chỗ đó;
-  /// nhãn `Shop ABC` mặc định của các màn Flow 3 chỉ dành cho preview thiết kế.
-  final String shopName;
 
   /// Xin quyền camera nếu chưa có, trả về `true` khi đã được cấp.
   ///
@@ -203,11 +197,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   ///
   /// Dựng camera trước thì máy quét chạy ngay và bill trong khung được nhận
   /// luôn — clip đầu ca bị gán loại mặc định trong khi sheet chọn loại còn
-  /// đang mở. Chưa chọn thì không khởi tạo: màn hình đứng ở trạng thái chờ,
-  /// người quay bấm ô loại ở thanh dưới để chọn rồi camera mới lên.
+  /// đang mở. Sheet đóng lại (chọn loại, hoặc gạt xuống để giữ loại mặc định)
+  /// thì camera mới lên.
   Future<void> _startAfterTypeChosen() async {
     await _ensureTypeChosen();
-    if (!mounted || !_typeChosen) return;
+    if (!mounted) return;
     await _initWithPermission();
   }
 
@@ -337,11 +331,12 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     }
   }
 
-  /// True sau khi người quay đã tự chọn loại video ít nhất một lần trong phiên.
+  /// True sau khi sheet chọn loại đã được hỏi một lần trong phiên — dù người
+  /// quay chọn hay gạt sheet xuống bỏ qua.
   ///
-  /// Bloc luôn có sẵn một loại mặc định để hiển thị, nên nếu không ép chọn thì
-  /// cả ca có thể bị gán nhầm loại mà không ai để ý — loại video là thứ quyết
-  /// định clip nằm ở mục nào trong hồ sơ khiếu nại.
+  /// Bỏ qua nghĩa là đồng ý với loại đang chọn sẵn (mặc định "Đóng hàng"),
+  /// nên vẫn tính là đã hỏi: không hỏi lại và camera lên bình thường. Trước
+  /// đây bỏ qua thì màn hình đứng chờ mãi vì camera không được dựng.
   bool _typeChosen = false;
 
   /// Chặn hai lời gọi dựng camera chồng nhau — sheet chọn loại và vòng đời tab
@@ -350,13 +345,12 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
   Future<void> _pickType() async {
     final type = await widget.onRequestType?.call();
+    // Gạt sheet xuống (hoặc chạm nền) = giữ loại đang chọn sẵn, không phải huỷ
+    // vào màn quay. Đằng nào cũng coi là đã hỏi xong, nên `_startAfterTypeChosen`
+    // dựng camera tiếp ngay sau đây.
+    _typeChosen = true;
     if (type != null && type.isNotEmpty) {
-      final first = !_typeChosen;
-      _typeChosen = true;
       _bloc.add(RecordingTypeChanged(type));
-      // Đóng sheet lúc vào màn rồi chọn sau bằng ô loại ở thanh dưới — camera
-      // vẫn đang chờ, phải dựng lên ở đây, nếu không màn hình đứng mãi.
-      if (first && mounted) unawaited(_initWithPermission());
     }
   }
 
@@ -475,7 +469,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
     if (state.isRecording && closedCode != null) {
       return EcCutoverBScreen(
-        shopName: widget.shopName,
         queueCount: widget.queueCount,
         closedCode: closedCode,
         newCode: state.code,
@@ -493,7 +486,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       if (state.elapsed >= _bloc.nearLimitAt) {
         final remaining = _bloc.maxRecording - state.elapsed;
         return EcNearLimitScreen(
-          shopName: widget.shopName,
           queueCount: widget.queueCount,
           warningText: context.l10n.nearClipLimitWarning(
             '${(widget.maxRecording.inSeconds / 60).round()}',
@@ -519,7 +511,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       }
       if (state.typeLabel == 'Trả hàng') {
         return EcReturnRecScreen(
-          shopName: widget.shopName,
           queueCount: widget.queueCount,
           code: state.code,
           duration: _formatElapsed(state.elapsed),
@@ -532,7 +523,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         );
       }
       return EcRecording2Screen(
-        shopName: widget.shopName,
         queueCount: widget.queueCount,
         code: state.code,
         elapsed: _formatElapsed(state.elapsed),
@@ -551,7 +541,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     }
 
     return EcWaitBill2Screen(
-      shopName: widget.shopName,
       queueCount: widget.queueCount,
       typeLabel: state.typeLabel,
       resolutionLabel: state.resolutionLabel,

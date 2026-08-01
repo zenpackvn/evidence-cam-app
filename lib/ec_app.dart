@@ -4020,7 +4020,6 @@ GoRouter _buildRouter(
                       );
                     }
                     return EcRecordRoute(
-                      shopName: shop.name,
                       ensureCameraPermission: _ensureCameraPermission,
                       queueCount: _pendingUploads(queue),
                       initialType: recordingType.value,
@@ -4041,60 +4040,69 @@ GoRouter _buildRouter(
                           c,
                           rootNavigator: true,
                         );
-                        final selected = await _showTypeSheet(
-                          c,
-                          repo: repo,
-                          shopId: shop.id,
-                          selectedType: recordingType.value,
-                        );
-                        if (selected == _manageVideoTypesResult) {
-                          await rootNavigator.push<void>(
-                            MaterialPageRoute(
-                              builder: (_) => _ShopDetailRoute(
-                                repo: repo,
-                                shop: shop,
-                                onBack: rootNavigator.maybePop,
-                                onMemberMore: (member) => router
-                                    .push(
-                                      '/member-actions',
-                                      extra: _MemberActionExtra(
-                                        shopId: shop.id,
-                                        member: member,
-                                      ),
-                                    )
-                                    .then((_) {}),
-                                onInviteMember: () => router
-                                    .push('/invite-member', extra: shop.id)
-                                    .then((_) {}),
-                                onTapResolution: () =>
-                                    router.push('/resolution', extra: shop.id),
-                                onEditType: (type) => router
-                                    .push(
-                                      '/create-type',
-                                      extra: (shop.id, type),
-                                    )
-                                    .then((_) {}),
-                                onDeleteType: (type) => router
-                                    .push(
-                                      '/confirm-delete',
-                                      extra: (shop.id, type),
-                                    )
-                                    .then((_) {}),
-                                onAddType: () => router
-                                    .push(
-                                      '/create-type',
-                                      extra: (shop.id, null),
-                                    )
-                                    .then((_) {}),
-                              ),
-                            ),
+                        // Vòng lặp chứ không thoát sau khi quản lý loại: màn
+                        // quay hiểu `null` là "bỏ qua, quay với loại mặc
+                        // định", nên trả null lúc vừa đi sửa danh sách sẽ
+                        // khoá luôn loại cũ mà không hỏi lại.
+                        while (true) {
+                          final selected = await _showTypeSheet(
+                            c,
+                            repo: repo,
+                            shopId: shop.id,
+                            selectedType: recordingType.value,
                           );
-                          return null;
+                          if (selected == _manageVideoTypesResult) {
+                            await rootNavigator.push<void>(
+                              MaterialPageRoute(
+                                builder: (_) => _ShopDetailRoute(
+                                  repo: repo,
+                                  shop: shop,
+                                  onBack: rootNavigator.maybePop,
+                                  onMemberMore: (member) => router
+                                      .push(
+                                        '/member-actions',
+                                        extra: _MemberActionExtra(
+                                          shopId: shop.id,
+                                          member: member,
+                                        ),
+                                      )
+                                      .then((_) {}),
+                                  onInviteMember: () => router
+                                      .push('/invite-member', extra: shop.id)
+                                      .then((_) {}),
+                                  onTapResolution: () => router.push(
+                                    '/resolution',
+                                    extra: shop.id,
+                                  ),
+                                  onEditType: (type) => router
+                                      .push(
+                                        '/create-type',
+                                        extra: (shop.id, type),
+                                      )
+                                      .then((_) {}),
+                                  onDeleteType: (type) => router
+                                      .push(
+                                        '/confirm-delete',
+                                        extra: (shop.id, type),
+                                      )
+                                      .then((_) {}),
+                                  onAddType: () => router
+                                      .push(
+                                        '/create-type',
+                                        extra: (shop.id, null),
+                                      )
+                                      .then((_) {}),
+                                ),
+                              ),
+                            );
+                            if (!c.mounted) return null;
+                            continue;
+                          }
+                          if (selected != null && selected.isNotEmpty) {
+                            recordingType.value = selected;
+                          }
+                          return selected;
                         }
-                        if (selected != null && selected.isNotEmpty) {
-                          recordingType.value = selected;
-                        }
-                        return selected;
                       },
                       onNavOrders: () => c.go('/home'),
                       onNavAccount: () => c.go('/account'),

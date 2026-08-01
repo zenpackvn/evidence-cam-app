@@ -1,10 +1,30 @@
 import 'package:app_platform/app_platform.dart';
 import 'package:evidence_cam/screens/ec_record_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
 
 void main() {
+  // `RecordingSessionBloc` hỏi dung lượng trống khi dựng camera; kênh
+  // `disk_space_plus` không có bản cài trong test nên lời gọi treo, khoá luôn
+  // mutex camera của bloc. Trả sẵn một con số để init chạy tới nơi.
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('disk_space_plus'),
+          (call) async => 4096.0,
+        );
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('disk_space_plus'),
+          null,
+        );
+  });
+
   testWidgets(
     'degrades to the idle screen when no camera is available',
     (tester) async {

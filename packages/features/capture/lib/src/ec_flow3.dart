@@ -11,6 +11,7 @@
 library;
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:app_ui/app_ui.dart';
 import 'package:ec_ui/ec_ui.dart';
@@ -28,7 +29,6 @@ TextStyle _t(double size, FontWeight weight, Color color) =>
 /// Idle recording screen — camera waiting for a bill to be framed.
 class EcWaitBill2Screen extends StatelessWidget {
   const EcWaitBill2Screen({
-    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.typeLabel = 'Đóng hàng',
     this.resolutionLabel = '720p',
@@ -45,7 +45,6 @@ class EcWaitBill2Screen extends StatelessWidget {
     super.key,
   });
 
-  final String shopName;
   final int queueCount;
   final String typeLabel;
   final String resolutionLabel;
@@ -66,7 +65,6 @@ class EcWaitBill2Screen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
-      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
@@ -181,7 +179,6 @@ class EcWaitBill2Screen extends StatelessWidget {
 /// it with an elapsed-time counter.
 class EcRecording2Screen extends StatelessWidget {
   const EcRecording2Screen({
-    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.code = 'SPXVN024567890',
     this.elapsed = '00:00',
@@ -201,7 +198,6 @@ class EcRecording2Screen extends StatelessWidget {
     super.key,
   });
 
-  final String shopName;
   final int queueCount;
   final String code;
 
@@ -227,7 +223,6 @@ class EcRecording2Screen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
-      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
@@ -265,7 +260,6 @@ class EcRecording2Screen extends StatelessWidget {
 /// Order-cutover transition screen — order A just closed, order B started.
 class EcCutoverBScreen extends StatelessWidget {
   const EcCutoverBScreen({
-    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.closedCode = 'SPXVN024567890',
     this.newCode = 'SPXVN098765432',
@@ -283,7 +277,6 @@ class EcCutoverBScreen extends StatelessWidget {
     super.key,
   });
 
-  final String shopName;
   final int queueCount;
 
   /// Mã vừa được chốt — khung F3-04 để nó ở pill trên cùng, đúng chỗ mã đang
@@ -313,7 +306,6 @@ class EcCutoverBScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
-      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
@@ -507,7 +499,6 @@ class _NextOrderCard extends StatelessWidget {
 /// the shop's setting (FR-18), so the caller passes the text.
 class EcNearLimitScreen extends StatelessWidget {
   const EcNearLimitScreen({
-    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.warningText = 'Sắp chạm trần 2 phút — video sẽ tự chốt',
     this.code = 'SPXVN024567890',
@@ -529,7 +520,6 @@ class EcNearLimitScreen extends StatelessWidget {
     super.key,
   });
 
-  final String shopName;
   final int queueCount;
   final String warningText;
   final String code;
@@ -555,7 +545,6 @@ class EcNearLimitScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
-      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
@@ -661,7 +650,6 @@ class _WarnBanner extends StatelessWidget {
 /// original order.
 class EcReturnRecScreen extends StatelessWidget {
   const EcReturnRecScreen({
-    this.shopName = 'Shop ABC',
     this.queueCount = 3,
     this.code = 'SPXVN088877766 (hoàn)',
     this.duration = '00:32',
@@ -679,7 +667,6 @@ class EcReturnRecScreen extends StatelessWidget {
     super.key,
   });
 
-  final String shopName;
   final int queueCount;
   final String code;
   final String duration;
@@ -698,7 +685,6 @@ class EcReturnRecScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CamScaffold(
-      shopName: shopName,
       queueCount: queueCount,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
@@ -745,7 +731,6 @@ class EcReturnRecScreen extends StatelessWidget {
 /// button).
 class _CamScaffold extends StatelessWidget {
   const _CamScaffold({
-    required this.shopName,
     required this.queueCount,
     required this.typeLabel,
     required this.resolutionLabel,
@@ -763,7 +748,6 @@ class _CamScaffold extends StatelessWidget {
     this.onStop,
   });
 
-  final String shopName;
   final int queueCount;
   final String typeLabel;
   final String resolutionLabel;
@@ -809,7 +793,6 @@ class _CamScaffold extends StatelessWidget {
             child: SafeArea(
               bottom: false,
               child: _CamHeader(
-                shopName: shopName,
                 queueCount: queueCount,
                 onBack: onBack,
                 onQueueTap: onQueueTap,
@@ -1044,16 +1027,11 @@ class _CamFooter extends StatelessWidget {
 
 class _CamHeader extends StatelessWidget {
   const _CamHeader({
-    required this.shopName,
     required this.queueCount,
     this.onBack,
     this.onQueueTap,
   });
 
-  /// Cửa hàng clip này sẽ được lưu vào. Người quay thường có nhiều shop, nên
-  /// tên phải nhìn thấy ngay trên viewfinder — quay xong mới phát hiện sai shop
-  /// thì clip đã nằm nhầm đơn.
-  final String shopName;
   final int queueCount;
   final VoidCallback? onBack;
   final VoidCallback? onQueueTap;
@@ -1085,18 +1063,7 @@ class _CamHeader extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: PenText(
-              shopName,
-              size: 16,
-              color: PenColors.card,
-              weight: FontWeight.w700,
-              overflow: TextOverflow.ellipsis,
-              softWrap: false,
-            ),
-          ),
-          const SizedBox(width: 12),
+          const Spacer(),
           // ponytail: EcTap thay vì _Tap — _Tap thêm padding 4 làm lệch chip
           // so với thiết kế; ở đây chỉ cần vùng bấm.
           EcTap(
@@ -2538,61 +2505,123 @@ class EcTypeSheetScreen extends StatelessWidget {
             bottom: 0,
             child: SafeArea(
               top: false,
-              child: DecoratedBox(
-                decoration: ShapeDecoration(
-                  color: BrandColors.bg,
-                  shape: SmoothRectangleBorder(
-                    smoothness: ecCornerSmoothing,
-                    borderRadius: BorderRadius.zero,
+              child: _DismissibleSheetPanel(
+                child: DecoratedBox(
+                  decoration: ShapeDecoration(
+                    color: BrandColors.bg,
+                    shape: SmoothRectangleBorder(
+                      smoothness: ecCornerSmoothing,
+                      borderRadius: BorderRadius.zero,
+                    ),
                   ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const _SheetHandle(),
-                      const SizedBox(height: 6),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 6, 4, 10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.l10n.videoTypeSheetTitle,
-                              style: _t(24, FontWeight.w800, BrandColors.ink),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              context.l10n.videoTypeSelectNote,
-                              style: _t(14, FontWeight.w400, BrandColors.mut),
-                            ),
-                          ],
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const _SheetHandle(),
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 6, 4, 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.l10n.videoTypeSheetTitle,
+                                style: _t(24, FontWeight.w800, BrandColors.ink),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                context.l10n.videoTypeSelectNote,
+                                style: _t(14, FontWeight.w400, BrandColors.mut),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      // Khung F3-09 chia danh sách làm hai nhóm có tiêu đề.
-                      // Không phải trang trí: nhóm trên là loại khoá cứng ai
-                      // cũng có, nhóm dưới là loại shop tự thêm và sửa/xoá
-                      // được — người dùng cần biết vì sao có cái bấm giữ được,
-                      // có cái không.
-                      ..._typeGroup(
-                        context.l10n.videoTypeGroupDefault,
-                        types.where((t) => t.locked),
-                      ),
-                      ..._typeGroup(
-                        context.l10n.videoTypeGroupCustom,
-                        types.where((t) => !t.locked),
-                      ),
-                      const SizedBox(height: 4),
-                      _ManageRow(onTap: onManageTypes),
-                    ],
+                        // Khung F3-09 chia danh sách làm hai nhóm có tiêu đề.
+                        // Không phải trang trí: nhóm trên là loại khoá cứng ai
+                        // cũng có, nhóm dưới là loại shop tự thêm và sửa/xoá
+                        // được — người dùng cần biết vì sao có cái bấm giữ được,
+                        // có cái không.
+                        ..._typeGroup(
+                          context.l10n.videoTypeGroupDefault,
+                          types.where((t) => t.locked),
+                        ),
+                        ..._typeGroup(
+                          context.l10n.videoTypeGroupCustom,
+                          types.where((t) => !t.locked),
+                        ),
+                        const SizedBox(height: 4),
+                        _ManageRow(onTap: onManageTypes),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Ngưỡng kéo/búng xuống để đóng sheet thay vì bật ngược lên.
+const _sheetDismissDistance = 90.0;
+const _sheetDismissVelocity = 700.0;
+
+/// Panel sheet kéo xuống được: theo ngón tay 1:1, quá [_sheetDismissDistance]
+/// (hoặc búng nhanh hơn [_sheetDismissVelocity]) thì pop route.
+///
+/// Cái grabber ở đầu sheet hứa là kéo được, nên phải kéo được thật — người
+/// quay không muốn chọn loại thì gạt sheet xuống là quay luôn với loại mặc
+/// định, khỏi phải nhắm vào vùng nền mờ hẹp phía trên.
+class _DismissibleSheetPanel extends StatefulWidget {
+  const _DismissibleSheetPanel({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_DismissibleSheetPanel> createState() => _DismissibleSheetPanelState();
+}
+
+class _DismissibleSheetPanelState extends State<_DismissibleSheetPanel> {
+  double _dy = 0;
+  bool _dragging = false;
+
+  void _reset() => setState(() {
+    _dragging = false;
+    _dy = 0;
+  });
+
+  void _onDragEnd(DragEndDetails details) {
+    if (_dy > _sheetDismissDistance ||
+        details.velocity.pixelsPerSecond.dy > _sheetDismissVelocity) {
+      unawaited(Navigator.of(context).maybePop());
+      return;
+    }
+    _reset();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      // Cả panel là vùng kéo — sheet này không có phần cuộn bên trong nên
+      // không tranh chấp cử chỉ.
+      onVerticalDragUpdate: (d) => setState(() {
+        _dragging = true;
+        _dy = math.max(0, _dy + d.delta.dy);
+      }),
+      onVerticalDragEnd: _onDragEnd,
+      onVerticalDragCancel: _reset,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(end: _dy),
+        duration: _dragging ? Duration.zero : const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        builder: (_, dy, child) =>
+            Transform.translate(offset: Offset(0, dy), child: child),
+        child: widget.child,
       ),
     );
   }
