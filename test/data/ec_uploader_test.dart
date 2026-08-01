@@ -598,46 +598,50 @@ void main() {
       expect(r2.calls.length, 2);
     });
 
-    test('sends the clip fingerprint on the single-PUT complete call', () async {
-      // Arrange
-      final (_, clip) = tempClip();
-      final bodies = <String, Object?>{};
-      final apiDio = Dio()
-        ..httpClientAdapter = _StubAdapter((o) {
-          bodies[o.path] = o.data;
-          if (o.path.endsWith('/video-types')) return _json('[]');
-          if (o.path.endsWith('/uploads/presign')) {
-            return _json(
-              '{"evidenceId":"ev1","key":"r2/ev1.mp4",'
-              '"uploadUrl":"https://r2.example/clip?sig=1"}',
-            );
-          }
-          if (o.path.endsWith('/complete')) return _json('{"status":"stored"}');
-          return _json('{"id":"ord1","tracking_raw":"SPX1","created_at":0}');
-        });
-      final uploader = ApiEvidenceUploader(
-        EcApi(apiDio),
-        put: _FakeR2((_) => 'etag').put,
-        extractThumbnail: (_) async => null,
-      );
+    test(
+      'sends the clip fingerprint on the single-PUT complete call',
+      () async {
+        // Arrange
+        final (_, clip) = tempClip();
+        final bodies = <String, Object?>{};
+        final apiDio = Dio()
+          ..httpClientAdapter = _StubAdapter((o) {
+            bodies[o.path] = o.data;
+            if (o.path.endsWith('/video-types')) return _json('[]');
+            if (o.path.endsWith('/uploads/presign')) {
+              return _json(
+                '{"evidenceId":"ev1","key":"r2/ev1.mp4",'
+                '"uploadUrl":"https://r2.example/clip?sig=1"}',
+              );
+            }
+            if (o.path.endsWith('/complete'))
+              return _json('{"status":"stored"}');
+            return _json('{"id":"ord1","tracking_raw":"SPX1","created_at":0}');
+          });
+        final uploader = ApiEvidenceUploader(
+          EcApi(apiDio),
+          put: _FakeR2((_) => 'etag').put,
+          extractThumbnail: (_) async => null,
+        );
 
-      // Act
-      await uploader.upload(
-        clip,
-        tracking: 'SPX1',
-        type: 'Đóng hàng',
-        shopId: 'shop1',
-      );
+        // Act
+        await uploader.upload(
+          clip,
+          tracking: 'SPX1',
+          type: 'Đóng hàng',
+          shopId: 'shop1',
+        );
 
-      // Assert — sha256 of the literal bytes written by tempClip().
-      final body =
-          bodies['/api/shops/shop1/orders/ord1/uploads/ev1/complete']!
-              as Map<String, Object?>;
-      expect(
-        body['sha256'],
-        sha256.convert(utf8.encode('video-bytes')).toString(),
-      );
-    });
+        // Assert — sha256 of the literal bytes written by tempClip().
+        final body =
+            bodies['/api/shops/shop1/orders/ord1/uploads/ev1/complete']!
+                as Map<String, Object?>;
+        expect(
+          body['sha256'],
+          sha256.convert(utf8.encode('video-bytes')).toString(),
+        );
+      },
+    );
 
     test('skips the poster entirely for a photo', () async {
       // Arrange
