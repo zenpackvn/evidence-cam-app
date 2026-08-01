@@ -130,7 +130,6 @@ Widget _over(Widget backdrop, Widget modal) => Stack(
 );
 
 const _accountBackdrop = EcAccountTabScreen(
-  shopName: 'Shop ABC',
   userName: 'Nguyễn Văn A',
   userEmail: 'nguyenvana@gmail.com',
 );
@@ -308,7 +307,6 @@ void main() {
       preview: _viewfinder('ec-viewfinder-rec'),
     ),
     'ported_f4_01_account': const EcAccountTabScreen(
-      shopName: 'Shop ABC',
       userName: 'Nguyễn Văn A',
       userEmail: 'nguyenvana@gmail.com',
     ),

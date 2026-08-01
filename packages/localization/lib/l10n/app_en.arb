@@ -454,6 +454,30 @@
   "registerCreateAccount": "Create account",
   "registerSameEmailNote": "The same email will automatically link to one account",
   "registerHaveAccountPrompt": "Already have an account? ",
+  "registerSuccessTitle": "Account created",
+  "registerSuccessVerifyMessage": "We sent a verification email to {email}. Check your inbox (including spam), then sign in.",
+  "@registerSuccessVerifyMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "you@example.com"
+      }
+    }
+  },
+  "registerSuccessMessage": "Your account is ready. Sign in with the email and password you just registered.",
+  "registerSuccessAction": "Sign in",
+  "loginNotVerifiedTitle": "Email not verified",
+  "loginNotVerifiedMessage": "Open the verification email sent to {email} (check spam too), follow the link, then sign in again.",
+  "@loginNotVerifiedMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "you@example.com"
+      }
+    }
+  },
+  "loginResendVerification": "Resend email",
+  "loginVerificationResent": "Verification email sent again",
   "forgotPasswordTitle": "Forgot password",
   "forgotPasswordSubtitle": "Enter your email to receive a password reset link",
   "forgotPasswordSubmit": "Send reset link",
@@ -498,6 +522,17 @@
   "removeFromShop": "Remove from shop",
   "resolutionAppliesNote": "Applies to the shop's newly recorded videos",
   "resolutionDefaultOption": "720p (default)",
+  "ordersSearchHint": "Enter tracking code",
+  "ordersEmpty": "This shop has no orders yet",
+  "recordAutoStopIn": "Auto-stops in {time}",
+  "@recordAutoStopIn": {
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "00:48"
+      }
+    }
+  },
   "ordersNotFound": "No orders found",
   "ordersNotFoundHint": "Double-check the tracking code and try again",
   "ordersPageRange": "{first}–{last} of {total} orders",

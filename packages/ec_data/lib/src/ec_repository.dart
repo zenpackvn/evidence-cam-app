@@ -223,8 +223,7 @@ class RemoteEcRepository implements EcRepository {
       _api.getDossier(shopId, orderId);
 
   @override
-  String dossierShareUrl(String shareToken) =>
-      _api.dossierShareUrl(shareToken);
+  String dossierShareUrl(String shareToken) => _api.dossierShareUrl(shareToken);
 
   @override
   Future<void> deleteEvidence(

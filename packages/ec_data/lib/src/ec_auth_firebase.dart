@@ -32,6 +32,7 @@ class FirebaseEcAuth implements EcAuth {
           displayName: u.displayName,
           phone: u.phoneNumber,
           providers: u.providerData.map((i) => i.providerId).toList(),
+          emailVerified: u.emailVerified,
         );
 
   User _requireUser() {
@@ -128,6 +129,17 @@ class FirebaseEcAuth implements EcAuth {
   Future<void> sendPasswordReset(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (error) {
+      throw _authException(error);
+    }
+  }
+
+  @override
+  Future<void> sendEmailVerification() async {
+    try {
+      final user = _requireUser();
+      if (user.emailVerified) return;
+      await user.sendEmailVerification();
     } on FirebaseAuthException catch (error) {
       throw _authException(error);
     }

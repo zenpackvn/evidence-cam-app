@@ -894,6 +894,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerHaveAccountPrompt => 'Already have an account? ';
 
   @override
+  String get registerSuccessTitle => 'Account created';
+
+  @override
+  String registerSuccessVerifyMessage(String email) {
+    return 'We sent a verification email to $email. Check your inbox (including spam), then sign in.';
+  }
+
+  @override
+  String get registerSuccessMessage =>
+      'Your account is ready. Sign in with the email and password you just registered.';
+
+  @override
+  String get registerSuccessAction => 'Sign in';
+
+  @override
+  String get loginNotVerifiedTitle => 'Email not verified';
+
+  @override
+  String loginNotVerifiedMessage(String email) {
+    return 'Open the verification email sent to $email (check spam too), follow the link, then sign in again.';
+  }
+
+  @override
+  String get loginResendVerification => 'Resend email';
+
+  @override
+  String get loginVerificationResent => 'Verification email sent again';
+
+  @override
   String get forgotPasswordTitle => 'Forgot password';
 
   @override
@@ -1035,6 +1064,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resolutionDefaultOption => '720p (default)';
+
+  @override
+  String get ordersSearchHint => 'Enter tracking code';
+
+  @override
+  String get ordersEmpty => 'This shop has no orders yet';
+
+  @override
+  String recordAutoStopIn(String time) {
+    return 'Auto-stops in $time';
+  }
 
   @override
   String get ordersNotFound => 'No orders found';

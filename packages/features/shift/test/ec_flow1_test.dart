@@ -13,8 +13,12 @@ import 'package:localization/localization.dart';
 /// install the delegates — without them `AppLocalizations.of` returns null and
 /// every screen in this file throws on build. Pinned to `vi`, which is what
 /// the expectations below are written against.
-Future<void> _pump(WidgetTester tester, Widget screen) {
-  tester.view.physicalSize = const Size(390, 844);
+Future<void> _pump(
+  WidgetTester tester,
+  Widget screen, {
+  Size size = const Size(390, 844),
+}) {
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
   return tester.pumpWidget(
@@ -457,6 +461,18 @@ void main() {
       expect(find.text('Tên loại video'), findsOneWidget);
       expect(find.text('Hủy'), findsOneWidget);
       expect(find.text('Tạo loại'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Máy Android phổ thông rộng 360pt, hẹp hơn khung design 390pt: hàng màu
+    // từng tràn ở đây vì ô màu cố định 44pt.
+    testWidgets('color row survives a 360pt-wide screen', (tester) async {
+      await _pump(
+        tester,
+        const EcCreateTypeScreen(),
+        size: const Size(360, 800),
+      );
+      expect(find.text('Màu sắc'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

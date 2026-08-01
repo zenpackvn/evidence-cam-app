@@ -91,15 +91,18 @@ class EcVideoFaststartService {
     final injected = _runner;
     if (injected != null) return injected(command);
     final completer = Completer<bool>();
-    FFmpegKit.executeAsync(command, onComplete: (session) {
-      var success = false;
-      try {
-        success = ReturnCode.isSuccess(session.getReturnCode());
-      } on Object {
-        success = false;
-      }
-      if (!completer.isCompleted) completer.complete(success);
-    });
+    FFmpegKit.executeAsync(
+      command,
+      onComplete: (session) {
+        var success = false;
+        try {
+          success = ReturnCode.isSuccess(session.getReturnCode());
+        } on Object {
+          success = false;
+        }
+        if (!completer.isCompleted) completer.complete(success);
+      },
+    );
     return completer.future;
   }
 }

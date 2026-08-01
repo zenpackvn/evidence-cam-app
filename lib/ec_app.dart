@@ -66,6 +66,12 @@ import 'screens/ec_record_route.dart';
 import 'screens/ec_scan_route.dart';
 
 const _lastShopIdKey = 'shop.last_id';
+const _languageKey = 'app.language';
+
+/// `extra` marking the one entry into `/shops` that may skip the picker: the
+/// splash resuming a session that is still signed in. Every other entry (a
+/// deliberate login, or backing out of the app shell) stops on the picker.
+const _resumedSession = 'resume';
 
 typedef PickAvatarPath = Future<String?> Function();
 
@@ -113,18 +119,36 @@ class _EcAppState extends State<EcApp> {
   // and language screen read/write this; `CupertinoApp.locale` follows it and
   // `AppLocalizations` renders `context.l10n.*` in the chosen language.
   //
-  // Initial value follows the device system language (English → en, anything
-  // else → vi, the primary market). The picker overrides it for the session.
-  // ponytail: session-only; the unused LocaleBloc in lib/core/locale persists a
-  // choice to SharedPreferences — wire it here if the override must survive restart.
+  // A previous pick wins; with none, the device system language decides
+  // (English → en, anything else → vi, the primary market). Every change is
+  // written back, so the choice survives restarts — otherwise an English phone
+  // silently flips the app back to English on the next launch.
   final ValueNotifier<EcAppLanguage> _language = ValueNotifier(
-    _systemLanguage(),
+    _storedLanguage() ?? _systemLanguage(),
   );
 
   static EcAppLanguage _systemLanguage() =>
       WidgetsBinding.instance.platformDispatcher.locale.languageCode == 'en'
       ? EcAppLanguage.en
       : EcAppLanguage.vi;
+
+  static EcAppLanguage? _storedLanguage() =>
+      switch (_appMemory()?.getString(_languageKey)) {
+        'en' => EcAppLanguage.en,
+        'vi' => EcAppLanguage.vi,
+        _ => null,
+      };
+
+  void _rememberLanguage() {
+    final memory = _appMemory();
+    if (memory == null) return;
+    unawaited(
+      memory.setString(
+        _languageKey,
+        _language.value == EcAppLanguage.en ? 'en' : 'vi',
+      ),
+    );
+  }
 
   // Offline upload queue for recorded clips. The uploader follows the live
   // presign/R2/complete flow when an API URL is set; otherwise clips persist
@@ -177,12 +201,15 @@ class _EcAppState extends State<EcApp> {
   void initState() {
     super.initState();
     _queue.load();
+    _language.addListener(_rememberLanguage);
   }
 
   @override
   void dispose() {
     _router.dispose();
-    _language.dispose();
+    _language
+      ..removeListener(_rememberLanguage)
+      ..dispose();
     _queue.dispose();
     _selectedShop.dispose();
     _recordingType.dispose();
@@ -238,6 +265,14 @@ class _EcAppState extends State<EcApp> {
   }
 }
 
+/// Whether this build can offer Apple sign-in.
+///
+/// `FirebaseEcAuth` gets its Apple credential from the native Apple ID sheet,
+/// which only exists on Apple platforms — the Android path would need the web
+/// OAuth flow (a service ID plus a redirect URL) that this app does not set up.
+/// So the option is hidden off-Apple rather than shown and always failing.
+final bool _appleSignInAvailable = Platform.isIOS || Platform.isMacOS;
+
 /// Login route — owns the email/password controllers and drives the auth seam
 /// (FR-15). Email/Google/Apple all sign in through [EcAuth] then go to the shop
 /// layer; today [FakeEcAuth] succeeds instantly, `FirebaseEcAuth` does it for real.
@@ -282,9 +317,15 @@ class _LoginRouteState extends State<_LoginRoute> {
     super.dispose();
   }
 
-  Future<void> _afterSignIn(Future<void> signIn) async {
+  Future<void> _afterSignIn(Future<EcUser> signIn) async {
     try {
-      await signIn;
+      final user = await signIn;
+      // Tài khoản email/mật khẩu chưa bấm link xác minh thì không được vào —
+      // nếu không thì email xác minh chỉ là thủ tục cho vui.
+      if (!user.emailVerified) {
+        await _blockUnverified(user);
+        return;
+      }
       await _credentials()?.save(
         email: _email.text.trim(),
         password: _password.text,
@@ -292,6 +333,49 @@ class _LoginRouteState extends State<_LoginRoute> {
       if (mounted) context.go('/shops', extra: 'forward');
     } on Object catch (error) {
       if (mounted) _toast(context, _authErrorText(context.l10n, error));
+    }
+  }
+
+  /// Dead end for an unverified account: explain, offer to send the link again
+  /// (only possible while still signed in), then drop the session.
+  Future<void> _blockUnverified(EcUser user) async {
+    final resend = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(context.l10n.loginNotVerifiedTitle),
+        content: Text(
+          context.l10n.loginNotVerifiedMessage(
+            user.email ?? _email.text.trim(),
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(context.l10n.commonClose),
+          ),
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(context.l10n.loginResendVerification),
+          ),
+        ],
+      ),
+    );
+    Object? resendError;
+    var resent = false;
+    if (resend ?? false) {
+      try {
+        await widget.auth.sendEmailVerification();
+        resent = true;
+      } on Object catch (error) {
+        resendError = error;
+      }
+    }
+    await widget.auth.signOut();
+    if (!mounted) return;
+    if (resent) {
+      _toast(context, context.l10n.loginVerificationResent);
+    } else if (resendError != null) {
+      _toast(context, _authErrorText(context.l10n, resendError));
     }
   }
 
@@ -313,6 +397,7 @@ class _LoginRouteState extends State<_LoginRoute> {
       widget.repo,
       widget.auth.signInWithApple(),
     ),
+    showApple: _appleSignInAvailable,
     onLanguage: () => _toggleLanguage(context, widget.language),
   );
 }
@@ -358,34 +443,95 @@ class _RegisterRouteState extends State<_RegisterRoute> {
     if (_saving) return;
     setState(() => _saving = true);
     try {
+      final email = _email.text.trim();
       await widget.auth.registerWithEmail(
-        email: _email.text.trim(),
+        email: email,
         password: _password.text,
         name: _name.text.trim(),
       );
-      await widget.auth.updateProfile(
-        name: _name.text.trim(),
-        phone: _phone.text.trim(),
-      );
-      await widget.repo.updateProfile(
+      // The mail goes out first, while the new account is signed in: the
+      // profile saves below talk to the Worker and used to take the whole
+      // registration down with them, leaving an account nobody could verify.
+      final verificationError = await _sendVerificationEmail();
+      final profileError = await _saveProfile(
         name: _name.text.trim(),
         phone: _phone.text.trim(),
       );
       // Requirement: land back on Login with the new credentials prefilled.
       // Remember them (keychain), then sign out of the auto-signed-in session
       // so the user completes the deliberate login step.
-      await _credentials()?.save(
-        email: _email.text.trim(),
-        password: _password.text,
-      );
+      await _credentials()?.save(email: email, password: _password.text);
       await widget.auth.signOut();
-      if (mounted) context.go('/login', extra: 'back');
+      if (!mounted) return;
+      // Confirm the account exists before bouncing back to Login — otherwise
+      // the screen just swaps and the registration looks like it did nothing.
+      await _confirmRegistered(
+        email: email,
+        verificationSent: verificationError == null,
+      );
+      if (!mounted) return;
+      // Say why the mail never left (or the profile never saved) rather than
+      // leaving the user waiting for a mail Firebase refused to send.
+      final problem = verificationError ?? profileError;
+      if (problem != null) {
+        _toast(context, _authErrorText(context.l10n, problem));
+      }
+      context.go('/login', extra: 'back');
     } on Object catch (error) {
       if (mounted) _toast(context, _authErrorText(context.l10n, error));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
+
+  /// Saves the name/phone through both seams, returning what went wrong or
+  /// null. The account already exists at this point, so a failure here is
+  /// reported rather than thrown — aborting would not undo the registration.
+  Future<Object?> _saveProfile({
+    required String name,
+    required String phone,
+  }) async {
+    try {
+      await widget.auth.updateProfile(name: name, phone: phone);
+      await widget.repo.updateProfile(name: name, phone: phone);
+      return null;
+    } on Object catch (error) {
+      return error;
+    }
+  }
+
+  /// Sends the address-verification mail and returns what went wrong, or null
+  /// when it went out. A failure here (rate limit, offline) must not undo a
+  /// successful registration, so it is reported instead of thrown.
+  Future<Object?> _sendVerificationEmail() async {
+    try {
+      await widget.auth.sendEmailVerification();
+      return null;
+    } on Object catch (error) {
+      return error;
+    }
+  }
+
+  Future<void> _confirmRegistered({
+    required String email,
+    required bool verificationSent,
+  }) => showCupertinoDialog<void>(
+    context: context,
+    builder: (dialogContext) => CupertinoAlertDialog(
+      title: Text(context.l10n.registerSuccessTitle),
+      content: Text(
+        verificationSent
+            ? context.l10n.registerSuccessVerifyMessage(email)
+            : context.l10n.registerSuccessMessage,
+      ),
+      actions: [
+        CupertinoDialogAction(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: Text(context.l10n.registerSuccessAction),
+        ),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) => EcRegisterScreen(
@@ -409,6 +555,7 @@ class _RegisterRouteState extends State<_RegisterRoute> {
       widget.repo,
       widget.auth.signInWithApple(),
     ),
+    showApple: _appleSignInAvailable,
     onLanguage: () => _toggleLanguage(context, widget.language),
     onViewPolicy: () => _toast(context, context.l10n.toastTermsPolicy),
   );
@@ -627,6 +774,9 @@ class _AccountRouteState extends State<_AccountRoute> {
     );
     if (confirmed != true || !mounted) return;
     await widget.auth.signOut();
+    // Same as signing out from the shop picker: drop the remembered shop so the
+    // next session starts from a clean pick.
+    await _forgetRememberedShop();
     if (mounted) context.go('/login', extra: 'back');
   }
 
@@ -642,7 +792,6 @@ class _AccountRouteState extends State<_AccountRoute> {
       builder: (context, _) {
         final user = widget.auth.currentUser;
         final language = widget.language.value;
-        final shop = widget.selectedShop.value;
         final linkedCount =
             1 +
             (user?.hasProvider(EcAuthProvider.google) ?? false ? 1 : 0) +
@@ -652,7 +801,6 @@ class _AccountRouteState extends State<_AccountRoute> {
           builder: (context, snap) => EcAccountTabScreen(
             userName: user?.displayName ?? context.l10n.accountNoName,
             userEmail: user?.email ?? '—',
-            shopName: shop?.name ?? context.l10n.accountNoShop,
             planLabel: snap.hasData
                 ? _planDisplayName(context.l10n, snap.data!.planCode)
                 : '—',
@@ -664,7 +812,6 @@ class _AccountRouteState extends State<_AccountRoute> {
                 ? context.l10n.accountCreatePassword
                 : context.l10n.accountChangePassword,
             avatarPath: _appMemory()?.getString(_avatarPathKey(user?.uid)),
-            onBack: () => context.go('/shops', extra: 'back'),
             onNavOrders: () => context.go('/home'),
             onNavCapture: () => context.go('/record'),
             onProfileTap: () async {
@@ -891,6 +1038,7 @@ class _LoginMethodsRoute extends StatelessWidget {
           email: user?.email ?? '—',
           googleLinked: google,
           appleLinked: apple,
+          showApple: _appleSignInAvailable,
           onBack: () => _back(context, '/account'),
           onToggleGoogle: () => _toggle(context, EcAuthProvider.google, google),
           onToggleApple: () => _toggle(context, EcAuthProvider.apple, apple),
@@ -1619,6 +1767,10 @@ class _ChooseShopRoute extends StatefulWidget {
   final VoidCallback? onManage;
   final VoidCallback? onCreateShop;
   final VoidCallback? onLogout;
+
+  /// Whether the screen may skip itself and enter a shop on its own. Only the
+  /// splash resuming a live session passes true — after a login the user picks,
+  /// even when the account has a single shop.
   final bool autoEnter;
 
   @override
@@ -2178,6 +2330,7 @@ class _OrdersRoute extends StatefulWidget {
     required this.shopName,
     this.evidenceCountOverrides,
     this.onBack,
+    this.onShopTap,
     this.onNavRecord,
     this.onNavAccount,
     this.onQueueTap,
@@ -2191,6 +2344,7 @@ class _OrdersRoute extends StatefulWidget {
   final String shopName;
   final _EvidenceCountOverrides? evidenceCountOverrides;
   final VoidCallback? onBack;
+  final VoidCallback? onShopTap;
   final VoidCallback? onNavRecord;
   final VoidCallback? onNavAccount;
   final VoidCallback? onQueueTap;
@@ -2483,7 +2637,10 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         shopName: widget.shopName,
         orders: rows,
         stats: _stats(widget.queue),
+        searchHint: context.l10n.ordersSearchHint,
+        emptyText: context.l10n.ordersEmpty,
         onBack: widget.onBack,
+        onShopTap: widget.onShopTap,
         onNavRecord: widget.onNavRecord,
         onNavAccount: widget.onNavAccount,
         onOrderTap: widget.onOrderTap == null
@@ -3470,7 +3627,9 @@ GoRouter _buildRouter(
         // routing to /login. A still-signed-in user goes straight to shop
         // selection, same destination a fresh login lands on.
         builder: (c, s) => EcSplashScreen(
-          onStart: () => c.go(auth.currentUser != null ? '/shops' : '/login'),
+          onStart: () => auth.currentUser != null
+              ? c.go('/shops', extra: _resumedSession)
+              : c.go('/login'),
         ),
       ),
       GoRoute(
@@ -3502,7 +3661,10 @@ GoRouter _buildRouter(
           s,
           _ChooseShopRoute(
             repo: repo,
-            autoEnter: s.extra != 'back',
+            // Chỉ phiên còn sống mở lại app mới vào thẳng shop gần nhất (đúng
+            // ghi chú trên màn này). Đăng nhập là hành động có chủ đích nên
+            // luôn dừng ở đây để người dùng chọn shop.
+            autoEnter: s.extra == _resumedSession,
             onSelect: (shop) {
               selectedShop.value = shop;
               _rememberShop(shop);
@@ -3589,6 +3751,10 @@ GoRouter _buildRouter(
                     shopName: shop.name,
                     evidenceCountOverrides: evidenceCountOverrides,
                     onBack: () => c.go('/shops', extra: 'back'),
+                    // Tên shop trên header là lối vào Chi tiết cửa hàng —
+                    // không thì màn F1-09 chỉ tới được qua đường vòng
+                    // Chọn cửa hàng → Quản lý cửa hàng.
+                    onShopTap: () => c.push('/shop-detail', extra: shop),
                     onNavRecord: () => c.go('/record'),
                     onNavAccount: () => c.go('/account'),
                     onQueueTap: () => c.push('/queue'),

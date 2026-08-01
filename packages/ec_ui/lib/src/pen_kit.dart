@@ -259,7 +259,11 @@ class _PenFieldState extends State<PenField> {
     if (widget.validator == null) return _build(null);
     return FormField<String>(
       initialValue: widget.controller?.text ?? '',
-      validator: widget.validator,
+      // Chấm theo text sống của controller: chữ điền sẵn bằng code (email/mật
+      // khẩu lấy từ keychain sau khi màn đã dựng) không bắn `onChanged`, nên
+      // giá trị trong FormField vẫn rỗng và validator báo "chưa nhập" dù ô
+      // đang hiện đầy chữ.
+      validator: (value) => widget.validator!(widget.controller?.text ?? value),
       autovalidateMode: AutovalidateMode.onUserInteraction,
       builder: _build,
     );
@@ -377,7 +381,9 @@ class _PenStackedFieldState extends State<PenStackedField> {
           ? _build(null)
           : FormField<String>(
               initialValue: _controller.text,
-              validator: widget.validator,
+              // Same as PenField: text set from code never reaches the
+              // FormField, so validate the controller itself.
+              validator: (value) => widget.validator!(_controller.text),
               autovalidateMode: AutovalidateMode.onUserInteraction,
               builder: _build,
             ),
@@ -837,10 +843,11 @@ class _Tab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Tab đang chọn chỉ khác nhau ở **màu** — theo yêu cầu của người dùng,
-    // cố ý lệch khung design. Gạch chân 34×3 và chữ w700 làm cột active cao
-    // và rộng hơn hàng xóm, kéo icon nhích lên ~5px so với các tab còn lại.
-    final color = active ? PenColors.ink : PenColors.mut;
+    // Tab đang chọn chỉ khác nhau ở **màu** — xanh lá thương hiệu
+    // (`--primary`), theo yêu cầu của người dùng, cố ý lệch khung design (bản
+    // vẽ tô đen). Gạch chân 34×3 và chữ w700 làm cột active cao và rộng hơn
+    // hàng xóm, kéo icon nhích lên ~5px so với các tab còn lại nên không dùng.
+    final color = active ? PenColors.primary : PenColors.mut;
     return EcTap(
       onTap: onTap,
       child: Column(

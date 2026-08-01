@@ -393,10 +393,14 @@ class _SimpleHeader extends StatelessWidget {
 /// lại — không có chip mây. Chip đó từng nằm ở đây và đẩy toàn bộ màn xuống
 /// 9pt so với design; lối vào hàng đợi upload giờ là thẻ "Chờ tải".
 class _ShopHeader extends StatelessWidget {
-  const _ShopHeader({required this.shopName, this.onBack});
+  const _ShopHeader({required this.shopName, this.onBack, this.onShopTap});
 
   final String shopName;
   final VoidCallback? onBack;
+
+  /// Chạm vào tên shop mở Chi tiết cửa hàng (F1-09). Header giữ nguyên khung
+  /// design — tên shop chính là nút, không thêm icon nào.
+  final VoidCallback? onShopTap;
 
   @override
   Widget build(BuildContext context) {
@@ -407,13 +411,16 @@ class _ShopHeader extends StatelessWidget {
           PenBackButton(onTap: onBack),
           const SizedBox(width: 14),
           Expanded(
-            child: PenText(
-              shopName,
-              size: 24,
-              color: PenColors.ink,
-              weight: FontWeight.w800,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
+            child: EcTap(
+              onTap: onShopTap,
+              child: PenText(
+                shopName,
+                size: 24,
+                color: PenColors.ink,
+                weight: FontWeight.w800,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
           // The upload-queue chip used to live here; the "Chờ tải" stat card
@@ -539,6 +546,7 @@ class EcRegisterScreen extends StatelessWidget {
     this.onViewPolicy,
     this.onGoogle,
     this.onApple,
+    this.showApple = true,
     this.onLogin,
     super.key,
   });
@@ -560,6 +568,10 @@ class EcRegisterScreen extends StatelessWidget {
   final VoidCallback? onViewPolicy;
   final VoidCallback? onGoogle;
   final VoidCallback? onApple;
+
+  /// Whether to offer Apple sign-up at all. False on platforms with no native
+  /// Apple ID sheet, where the button could only ever fail.
+  final bool showApple;
   final VoidCallback? onLogin;
 
   @override
@@ -669,12 +681,14 @@ class EcRegisterScreen extends StatelessWidget {
                     icon: const PenGoogleMark(),
                     onPressed: onGoogle,
                   ),
-                  const SizedBox(height: 12),
-                  PenOutlineButton(
-                    label: l10n.registerWithApple,
-                    icon: const PenAppleMark(),
-                    onPressed: onApple,
-                  ),
+                  if (showApple) ...[
+                    const SizedBox(height: 12),
+                    PenOutlineButton(
+                      label: l10n.registerWithApple,
+                      icon: const PenAppleMark(),
+                      onPressed: onApple,
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   PenPromptLink(
                     prompt: l10n.registerHaveAccountPrompt.trim(),
@@ -2356,21 +2370,30 @@ class EcCreateTypeScreen extends StatelessWidget {
                   onTap: onColorSelected == null
                       ? null
                       : () => onColorSelected!(i),
-                  child: PenBox(
-                    height: 48,
-                    stroke: i == selectedColor ? PenColors.line : null,
-                    strokeWidth: 2,
-                    radius: 999,
-                    axis: PenAxis.row,
-                    main: MainAxisAlignment.center,
-                    cross: CrossAxisAlignment.center,
-                    children: [
-                      PenEllipse(
-                        width: i == selectedColor ? 36 : 44,
-                        height: i == selectedColor ? 36 : 44,
-                        color: _colorChoices[i],
-                      ),
-                    ],
+                  // Khung 44pt của design chỉ vừa trên máy rộng ≥390pt; máy
+                  // 360pt thì mỗi ô chỉ còn ~42.7pt và hàng bị tràn. Bám trần
+                  // 44pt nhưng co theo ô để không máy nào tràn.
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final diameter = math.min(44.0, constraints.maxWidth);
+                      final size = i == selectedColor ? diameter - 8 : diameter;
+                      return PenBox(
+                        height: 48,
+                        stroke: i == selectedColor ? PenColors.line : null,
+                        strokeWidth: 2,
+                        radius: 999,
+                        axis: PenAxis.row,
+                        main: MainAxisAlignment.center,
+                        cross: CrossAxisAlignment.center,
+                        children: [
+                          PenEllipse(
+                            width: size,
+                            height: size,
+                            color: _colorChoices[i],
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -3162,6 +3185,7 @@ class EcHomeOrdersScreen extends StatefulWidget {
     this.searchHint = 'Nhập mã vận đơn',
     this.emptyText = 'Shop chưa có đơn nào',
     this.onBack,
+    this.onShopTap,
     this.onScan,
     this.onScanResult,
     this.onSearchChanged,
@@ -3190,6 +3214,9 @@ class EcHomeOrdersScreen extends StatefulWidget {
   /// matched nothing).
   final String emptyText;
   final VoidCallback? onBack;
+
+  /// Chạm vào tên shop trên header — mở Chi tiết cửa hàng.
+  final VoidCallback? onShopTap;
 
   /// Opens the barcode scanner; the returned code fills the search box.
   final Future<String?> Function()? onScan;
@@ -3338,7 +3365,11 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
         bottom: false,
         child: Column(
           children: [
-            _ShopHeader(shopName: widget.shopName, onBack: widget.onBack),
+            _ShopHeader(
+              shopName: widget.shopName,
+              onBack: widget.onBack,
+              onShopTap: widget.onShopTap,
+            ),
             Expanded(
               child: RefreshIndicator.adaptive(
                 onRefresh: widget.onRefresh ?? () async {},
@@ -3770,6 +3801,9 @@ class _StatBox extends StatelessWidget {
       hugMain: true,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
       children: [
+        // Ba thẻ chia đều bề ngang, nên ô hẹp lại theo máy và theo độ dài nhãn
+        // (bản tiếng Anh dài hơn tiếng Việt). Số và nhãn co lại vừa ô thay vì
+        // tràn/cắt cụt như trước.
         Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -3785,16 +3819,30 @@ class _StatBox extends StatelessWidget {
               children: [Icon(stat.icon, size: 19, color: PenColors.ink)],
             ),
             const SizedBox(width: 10),
-            PenText(
-              stat.value,
-              size: 24,
-              color: PenColors.ink,
-              weight: FontWeight.w800,
-              softWrap: false,
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: PenText(
+                  stat.value,
+                  size: 24,
+                  color: PenColors.ink,
+                  weight: FontWeight.w800,
+                  softWrap: false,
+                ),
+              ),
             ),
           ],
         ),
-        PenText(stat.label, size: 12, color: PenColors.mut, softWrap: false),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: PenText(
+            stat.label,
+            size: 12,
+            color: PenColors.mut,
+            softWrap: false,
+          ),
+        ),
       ],
     );
     return stat.onTap == null ? card : EcTap(onTap: stat.onTap, child: card);

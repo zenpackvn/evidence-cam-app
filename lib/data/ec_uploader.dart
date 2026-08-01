@@ -7,11 +7,15 @@ import 'package:crypto/crypto.dart' show sha256;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:ec_data/ec_data.dart';
 import 'package:feature_capture/feature_capture.dart';
+// `get_thumbnail_video` is the maintained fork of the abandoned
+// `video_thumbnail` (same library name and API); the original's Gradle script
+// still calls the removed `jcenter()` and cannot configure under Gradle 9.
+import 'package:get_thumbnail_video/index.dart';
+import 'package:get_thumbnail_video/video_thumbnail.dart';
 // The R2 leg no longer goes through Dio (see [_backgroundPut]), but the
 // `_api` calls around it still do, so their failures still arrive as
 // [DioException]s that [_friendlyMessage] has to translate.
 import 'package:network/network.dart' show DioException, DioExceptionType;
-import 'package:video_thumbnail/video_thumbnail.dart';
 
 /// TEMPORARY (per shop owner request while the backend's quota rollout is
 /// still being tuned): treat a `quota_hold` response as success instead of
@@ -119,12 +123,15 @@ const _thumbnailQuality = 60;
 /// Deliberately not ffmpeg: the bundled ffmpeg is the `base` build, which
 /// carries no JPEG encoder, and pulling in the full build to encode one small
 /// image would cost more app size than this plugin does.
-Future<String?> _platformThumbnail(String videoPath) => VideoThumbnail.thumbnailFile(
-  video: videoPath,
-  imageFormat: ImageFormat.JPEG,
-  maxWidth: _thumbnailMaxWidth,
-  quality: _thumbnailQuality,
-);
+Future<String?> _platformThumbnail(String videoPath) async {
+  final thumbnail = await VideoThumbnail.thumbnailFile(
+    video: videoPath,
+    imageFormat: ImageFormat.JPEG,
+    maxWidth: _thumbnailMaxWidth,
+    quality: _thumbnailQuality,
+  );
+  return thumbnail.path;
+}
 
 /// One PUT of a clip (or one [R2ByteRange] of it) to a presigned R2 URL,
 /// returning the response's `ETag` — multipart completion needs it.
@@ -337,7 +344,11 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     // Poster first: it is tens of KB against a clip's tens of MB, so sending it
     // up front means the order's timeline can show this evidence within a
     // second of recording, while the video itself is still climbing.
-    await _uploadThumbnailQuietly(file, presign.thumbUploadUrl, isPhoto: isPhoto);
+    await _uploadThumbnailQuietly(
+      file,
+      presign.thumbUploadUrl,
+      isPhoto: isPhoto,
+    );
     try {
       await _putWithRetry(
         () => _put(
@@ -387,7 +398,11 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       device: await _readDeviceLabel(),
       durationSeconds: durationSeconds,
     );
-    await _uploadThumbnailQuietly(file, created.thumbUploadUrl, isPhoto: isPhoto);
+    await _uploadThumbnailQuietly(
+      file,
+      created.thumbUploadUrl,
+      isPhoto: isPhoto,
+    );
     // Aborting deletes the multipart upload on R2 — only safe while nothing
     // has been "completed" yet. Once completeMultipartUpload has actually
     // been sent, the bytes may already be fully assembled server-side even

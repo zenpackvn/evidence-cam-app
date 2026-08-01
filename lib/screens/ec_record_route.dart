@@ -334,8 +334,8 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         // Vòng đếm phải đếm đúng cửa sổ thật của bloc (2 giây), không phải con
         // số 3 vẽ trong khung design — người quay canh tay theo cái vòng này.
         countdownTotalSeconds: kCutoverDisplaySeconds,
-        countdownSeconds:
-            (kCutoverDisplaySeconds - state.elapsed.inSeconds).clamp(
+        countdownSeconds: (kCutoverDisplaySeconds - state.elapsed.inSeconds)
+            .clamp(
               0,
               kCutoverDisplaySeconds,
             ),
@@ -360,9 +360,9 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           ),
           code: state.code,
           duration: _formatElapsed(state.elapsed),
-          countdownText:
-              'Tự chốt sau '
-              '${_formatElapsed(remaining.isNegative ? Duration.zero : remaining)}',
+          countdownText: context.l10n.recordAutoStopIn(
+            _formatElapsed(remaining.isNegative ? Duration.zero : remaining),
+          ),
           typeLabel: state.typeLabel,
           resolutionLabel: state.resolutionLabel,
           preview: preview,
