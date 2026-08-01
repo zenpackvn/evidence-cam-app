@@ -262,6 +262,10 @@ class EcUploadQueue extends ChangeNotifier {
             ..remoteUrl = url;
           succeeded = true;
           unawaited(_analytics?.trackUploadCompleted());
+          // Bytes đã nằm trên R2 và backend đã xác nhận, nên bản trên máy hết
+          // giá trị. Một ca đóng hàng sinh hàng trăm clip; giữ lại là lấp đầy
+          // bộ nhớ máy rồi chính việc quay bị chặn vì hết chỗ (FR-09).
+          unawaited(_deleteLocalFile(task.filePath));
         } on Object catch (error, stack) {
           // Non-fatal: the task stays queued and retries, but the *reason*
           // must reach Crashlytics — this is the only path a real-world
@@ -359,6 +363,21 @@ class EcUploadQueue extends ChangeNotifier {
     final dot = path.lastIndexOf('.');
     final slash = path.lastIndexOf('/');
     return dot > slash ? path.substring(dot) : '.mp4';
+  }
+}
+
+/// Xoá bản clip trên máy sau khi backend đã xác nhận lưu xong.
+///
+/// Best-effort: file đã bị dọn sẵn, đường dẫn không còn hợp lệ, hay quyền ghi
+/// bị từ chối đều không phải chuyện đáng làm hỏng một upload vốn đã thành
+/// công — hệ điều hành sẽ dọn thư mục tạm sau. Chỉ chạy khi `state` đã là
+/// `done`, nên không có đường nào mất clip chưa đẩy lên.
+Future<void> _deleteLocalFile(String path) async {
+  try {
+    final file = File(path);
+    if (file.existsSync()) await file.delete();
+  } on Object {
+    // Xem chú thích trên.
   }
 }
 
