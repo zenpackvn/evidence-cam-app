@@ -737,6 +737,8 @@
   },
   "accountEndQr": "Mã dừng quay",
   "accountEndQrTitle": "Mã dừng quay",
+  "accountEndQrShare": "Chia sẻ mã",
+  "accountEndQrSave": "Lưu vào thư viện ảnh",
   "accountEndQrNote": "In tờ này dán ở bàn đóng hàng. Đang quay mà quét vào là chốt video ngay. Mã dùng chung cho mọi máy.",
   "languageChangeScopeNote": "Toàn bộ nhãn, thông báo và hồ sơ\nsẽ đổi sang ngôn ngữ bạn chọn.",
   "@languageChangeScopeNote": {

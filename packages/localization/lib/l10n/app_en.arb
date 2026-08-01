@@ -975,6 +975,8 @@
   },
   "accountEndQr": "Stop-recording code",
   "accountEndQrTitle": "Stop-recording code",
+  "accountEndQrShare": "Share code",
+  "accountEndQrSave": "Save to photo library",
   "accountEndQrNote": "Print this and stick it on the packing table. Scanning it while recording closes the clip. The same code works on every device.",
   "languageChangeScopeNote": "Every label, notification and dossier\nswitches to the language you pick.",
   "@languageChangeScopeNote": {

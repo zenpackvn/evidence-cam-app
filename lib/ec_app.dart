@@ -699,7 +699,11 @@ class _AccountRouteState extends State<_AccountRoute> {
             },
             onQuotaTap: () => context.push('/quota'),
             onLanguageTap: () => context.push('/language'),
-            onEndQrTap: () => _showEndSessionQr(context),
+            onEndQrTap: () => _showEndSessionQr(
+              context,
+              share: _maybeGetIt<ShareService>(),
+              gallery: _maybeGetIt<GallerySaveService>(),
+            ),
             onChangePasswordTap: () => context.push('/change-password'),
             onDeleteAccount: () => context.push('/delete-account'),
             onLoginMethodsTap: () => context.push('/login-methods'),
@@ -1114,7 +1118,56 @@ Future<bool> _ensureCameraPermission() async {
 ///
 /// Ảnh là asset tĩnh vì nội dung mã (`kEndSessionQr`) là hằng số ghi cứng dùng
 /// chung cho mọi máy — không có gì phải sinh lúc chạy.
-void _showEndSessionQr(BuildContext context) {
+/// Đường dẫn asset của tờ QR, dùng chung cho phần hiển thị, chia sẻ và lưu.
+const _endQrAsset = 'assets/images/end_session_qr.png';
+
+/// Ghi tờ QR ra file tạm để chia sẻ — `shareFiles` cần đường dẫn thật, còn
+/// asset thì nằm trong bundle chứ không phải trên đĩa.
+Future<String> _writeEndQrToTemp() async {
+  final data = await rootBundle.load(_endQrAsset);
+  final dir = await getTemporaryDirectory();
+  final file = File('${dir.path}/evidencecam_ma_dung_quay.png');
+  await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
+  return file.path;
+}
+
+Future<void> _shareEndSessionQr(BuildContext context, ShareService? share) async {
+  final l10n = context.l10n;
+  if (share == null) {
+    _toast(context, l10n.toastShareFailed);
+    return;
+  }
+  try {
+    final path = await _writeEndQrToTemp();
+    await share.shareFiles(paths: [path], subject: l10n.accountEndQrTitle);
+  } on Object {
+    if (context.mounted) _toast(context, l10n.toastShareFailed);
+  }
+}
+
+Future<void> _saveEndSessionQr(
+  BuildContext context,
+  GallerySaveService? gallery,
+) async {
+  final l10n = context.l10n;
+  if (gallery == null) {
+    _toast(context, l10n.toastPhotoDownloadFailed);
+    return;
+  }
+  try {
+    final data = await rootBundle.load(_endQrAsset);
+    await gallery.savePng(data.buffer.asUint8List());
+    if (context.mounted) _toast(context, l10n.toastPhotoSavedToGallery);
+  } on Object {
+    if (context.mounted) _toast(context, l10n.toastPhotoDownloadFailed);
+  }
+}
+
+void _showEndSessionQr(
+  BuildContext context, {
+  ShareService? share,
+  GallerySaveService? gallery,
+}) {
   final l10n = context.l10n;
   showCupertinoModalPopup<void>(
     context: context,
@@ -1133,7 +1186,7 @@ void _showEndSessionQr(BuildContext context) {
           child: ColoredBox(
             color: PenColors.card,
             child: Image.asset(
-              'assets/images/end_session_qr.png',
+              _endQrAsset,
               width: 220,
               height: 220,
               filterQuality: FilterQuality.none,
@@ -1151,8 +1204,61 @@ void _showEndSessionQr(BuildContext context) {
           size: 13,
           color: PenColors.mut,
         ),
+        const SizedBox(height: 18),
+        PenCard(
+          axis: PenAxis.column,
+          clip: true,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          children: [
+            _EndQrActionRow(
+              icon: LucideIcons.share2,
+              label: l10n.accountEndQrShare,
+              onTap: () => unawaited(_shareEndSessionQr(sheetContext, share)),
+            ),
+            const PenBox(
+              width: double.infinity,
+              height: 1,
+              fill: PenColors.line,
+            ),
+            _EndQrActionRow(
+              icon: LucideIcons.download,
+              label: l10n.accountEndQrSave,
+              onTap: () => unawaited(_saveEndSessionQr(sheetContext, gallery)),
+            ),
+          ],
+        ),
         const SizedBox(height: 20),
       ],
+    ),
+  );
+}
+
+/// Một hàng hành động trong sheet mã dừng quay.
+class _EndQrActionRow extends StatelessWidget {
+  const _EndQrActionRow({
+    required this.icon,
+    required this.label,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: PenColors.ink),
+          const SizedBox(width: 12),
+          Expanded(
+            child: PenText(label, size: 15, color: PenColors.ink),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -2661,7 +2767,9 @@ class _OrderRoute extends StatefulWidget {
   final ShareService? share;
   final _EvidenceCountOverrides? evidenceCountOverrides;
   final VoidCallback? onBack;
-  final Future<void> Function(_VideoRouteExtra extra)? onOpenVideo;
+  /// Mở màn chi tiết bằng chứng; hoàn tất với `true` khi có thay đổi cần nạp
+  /// lại danh sách (xoá), `false` khi người dùng chỉ xem rồi đóng.
+  final Future<bool> Function(_VideoRouteExtra extra)? onOpenVideo;
 
   @override
   State<_OrderRoute> createState() => _OrderRouteState();
@@ -2801,8 +2909,11 @@ class _OrderRouteState extends State<_OrderRoute> {
                     video: _videoDetail(context.l10n, video),
                   ),
                 )
-                .then((_) {
-                  if (mounted) _retry();
+                // Chỉ nạp lại khi chi tiết báo có thay đổi. Kéo sheet xuống
+                // để đóng là thao tác xem xong, nạp lại chỉ làm danh sách
+                // nhấp nháy và cuộn về đầu vô cớ.
+                .then((changed) {
+                  if (changed && mounted) _retry();
                 }),
             onVideoMenu: (video) => widget.onOpenVideo
                 ?.call(
@@ -2814,8 +2925,11 @@ class _OrderRouteState extends State<_OrderRoute> {
                     video: _videoDetail(context.l10n, video),
                   ),
                 )
-                .then((_) {
-                  if (mounted) _retry();
+                // Chỉ nạp lại khi chi tiết báo có thay đổi. Kéo sheet xuống
+                // để đóng là thao tác xem xong, nạp lại chỉ làm danh sách
+                // nhấp nháy và cuộn về đầu vô cớ.
+                .then((changed) {
+                  if (changed && mounted) _retry();
                 }),
             onCopyCode: () => _copyText(
               context,
@@ -3892,10 +4006,17 @@ GoRouter _buildRouter(
             order: order,
             evidenceCountOverrides: evidenceCountOverrides,
             onBack: () => _back(c, '/home'),
-            onOpenVideo: (extra) => c.push(
-              extra.video.type == EcEvidenceType.image ? '/photo' : '/video',
-              extra: extra,
-            ),
+            // `push<bool>`: màn chi tiết trả `true` khi thực sự đổi dữ liệu
+            // (xoá bằng chứng). Chỉ đóng lại — kéo xuống hay bấm ra ngoài —
+            // thì trả null và danh sách khỏi nạp lại.
+            onOpenVideo: (extra) async =>
+                await c.push<bool>(
+                  extra.video.type == EcEvidenceType.image
+                      ? '/photo'
+                      : '/video',
+                  extra: extra,
+                ) ??
+                false,
           );
         },
       ),
@@ -4018,7 +4139,7 @@ GoRouter _buildRouter(
                             _toast(pageContext, c.l10n.toastVideoDeleted);
                           }
                           if (c.mounted) {
-                            c.pop();
+                            c.pop(true);
                           }
                         })
                         .catchError((Object error) {

@@ -1384,6 +1384,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountEndQrTitle => 'Stop-recording code';
 
   @override
+  String get accountEndQrShare => 'Share code';
+
+  @override
+  String get accountEndQrSave => 'Save to photo library';
+
+  @override
   String get accountEndQrNote =>
       'Print this and stick it on the packing table. Scanning it while recording closes the clip. The same code works on every device.';
 

@@ -1378,6 +1378,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountEndQrTitle => 'Mã dừng quay';
 
   @override
+  String get accountEndQrShare => 'Chia sẻ mã';
+
+  @override
+  String get accountEndQrSave => 'Lưu vào thư viện ảnh';
+
+  @override
   String get accountEndQrNote =>
       'In tờ này dán ở bàn đóng hàng. Đang quay mà quét vào là chốt video ngay. Mã dùng chung cho mọi máy.';
 

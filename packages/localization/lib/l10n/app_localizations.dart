@@ -2540,6 +2540,18 @@ abstract class AppLocalizations {
   /// **'Stop-recording code'**
   String get accountEndQrTitle;
 
+  /// No description provided for @accountEndQrShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share code'**
+  String get accountEndQrShare;
+
+  /// No description provided for @accountEndQrSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to photo library'**
+  String get accountEndQrSave;
+
   /// No description provided for @accountEndQrNote.
   ///
   /// In en, this message translates to:
