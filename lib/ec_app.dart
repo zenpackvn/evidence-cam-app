@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:analytics/analytics.dart';
 import 'package:app_platform/app_platform.dart'
@@ -1248,13 +1249,78 @@ Future<bool> _ensureCameraPermission() async {
 /// Đường dẫn asset của tờ QR, dùng chung cho phần hiển thị, chia sẻ và lưu.
 const _endQrAsset = 'assets/images/end_session_qr.png';
 
+/// Tờ QR đã ghép dòng thương hiệu, dựng một lần rồi dùng lại.
+Uint8List? _endQrPngCache;
+
+/// Vẽ [kEndSessionBrand] xuống dưới tờ QR rồi mã hoá lại thành PNG.
+///
+/// Phải ghép vào chính file ảnh chứ không chỉ vẽ trên UI: cả chia sẻ lẫn tải
+/// về đều gửi đi file, nên dòng chữ chỉ có trên màn hình thì tờ in ra vẫn là
+/// mã QR trần. Mã hoá hỏng thì trả lại ảnh gốc — mất dòng chữ còn hơn mất luôn
+/// tờ mã.
+Future<Uint8List> _endQrPngWithBrand() async {
+  final cached = _endQrPngCache;
+  if (cached != null) return cached;
+
+  final data = await rootBundle.load(_endQrAsset);
+  final assetBytes = data.buffer.asUint8List();
+  final codec = await ui.instantiateImageCodec(assetBytes);
+  final qr = (await codec.getNextFrame()).image;
+
+  const footerHeight = 200.0;
+  final width = qr.width.toDouble();
+  final height = qr.height + footerHeight;
+
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  // Nền trắng trước: asset là RGBA có vùng trong suốt, in ra nền đen thì mã
+  // không quét được.
+  canvas.drawRect(
+    Rect.fromLTWH(0, 0, width, height),
+    Paint()..color = Colors.white,
+  );
+  canvas.drawImage(qr, Offset.zero, Paint());
+
+  final label = TextPainter(
+    text: const TextSpan(
+      text: kEndSessionBrand,
+      style: TextStyle(
+        color: Color(0xFF161616),
+        fontSize: 96,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout(maxWidth: width);
+  label.paint(
+    canvas,
+    Offset(
+      (width - label.width) / 2,
+      qr.height + (footerHeight - label.height) / 2,
+    ),
+  );
+
+  final composed = await recorder.endRecording().toImage(
+    width.round(),
+    height.round(),
+  );
+  final png = await composed.toByteData(format: ui.ImageByteFormat.png);
+  qr.dispose();
+  composed.dispose();
+  label.dispose();
+
+  final bytes = png?.buffer.asUint8List() ?? assetBytes;
+  _endQrPngCache = bytes;
+  return bytes;
+}
+
 /// Ghi tờ QR ra file tạm để chia sẻ — `shareFiles` cần đường dẫn thật, còn
 /// asset thì nằm trong bundle chứ không phải trên đĩa.
 Future<String> _writeEndQrToTemp() async {
-  final data = await rootBundle.load(_endQrAsset);
+  final bytes = await _endQrPngWithBrand();
   final dir = await getTemporaryDirectory();
   final file = File('${dir.path}/evidencecam_ma_dung_quay.png');
-  await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
+  await file.writeAsBytes(bytes, flush: true);
   return file.path;
 }
 
@@ -1285,8 +1351,7 @@ Future<void> _saveEndSessionQr(
     return;
   }
   try {
-    final data = await rootBundle.load(_endQrAsset);
-    await gallery.savePng(data.buffer.asUint8List());
+    await gallery.savePng(await _endQrPngWithBrand());
     if (context.mounted) _toast(context, l10n.toastPhotoSavedToGallery);
   } on Object {
     if (context.mounted) _toast(context, l10n.toastPhotoDownloadFailed);
@@ -1315,16 +1380,29 @@ void _showEndSessionQr(
         Center(
           child: ColoredBox(
             color: PenColors.card,
-            child: Image.asset(
-              _endQrAsset,
-              width: 220,
-              height: 220,
-              filterQuality: FilterQuality.none,
-              errorBuilder: (_, _, _) => const Icon(
-                LucideIcons.qrCode,
-                size: 96,
-                color: PenColors.mut,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  _endQrAsset,
+                  width: 220,
+                  height: 220,
+                  filterQuality: FilterQuality.none,
+                  errorBuilder: (_, _, _) => const Icon(
+                    LucideIcons.qrCode,
+                    size: 96,
+                    color: PenColors.mut,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const PenText(
+                  kEndSessionBrand,
+                  size: 18,
+                  color: PenColors.ink,
+                  weight: FontWeight.w700,
+                ),
+                const SizedBox(height: 8),
+              ],
             ),
           ),
         ),

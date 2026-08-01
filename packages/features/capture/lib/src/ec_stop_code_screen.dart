@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import 'recording_session.dart' show kEndSessionQr;
+import 'recording_session.dart' show kEndSessionBrand, kEndSessionQr;
 
 TextStyle _t(double size, FontWeight weight, Color color) =>
     TextStyle(fontSize: size, fontWeight: weight, color: color, height: 1.4);
@@ -75,10 +75,20 @@ class EcStopCodeScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: QrImageView(
-                          data: kEndSessionQr,
-                          size: 220,
-                          backgroundColor: Colors.white,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            QrImageView(
+                              data: kEndSessionQr,
+                              size: 220,
+                              backgroundColor: Colors.white,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              kEndSessionBrand,
+                              style: _t(18, FontWeight.w700, BrandColors.ink),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 24),

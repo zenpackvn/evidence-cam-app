@@ -30,6 +30,13 @@ import 'ec_video_faststart.dart';
 /// ever need distinct end codes. Kept deliberately unlike any tracking number.
 const kEndSessionQr = 'EVIDENCECAM:END';
 
+/// Dòng thương hiệu in kèm dưới tờ mã dừng quay.
+///
+/// Tờ này được in ra dán ở bàn đóng hàng và được chia sẻ/tải về dưới dạng file
+/// ảnh, nên chữ phải nằm trong chính tấm ảnh — vẽ trên UI thôi thì file gửi đi
+/// vẫn là mã QR trần, người nhận không biết nó của đâu ra.
+const kEndSessionBrand = 'ZenPack.vn';
+
 /// Cửa sổ hiện màn xác nhận chuyển đơn (A→B) trước khi rơi về màn quay thường.
 ///
 /// Công khai vì màn hình vẽ vòng đếm ngược theo đúng con số này — vòng đếm mà
