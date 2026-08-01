@@ -382,7 +382,7 @@ class FakeEcRepository implements EcRepository {
     usedBytes: 12 * 1024 * 1024 * 1024,
     capBytes: 60 * 1024 * 1024 * 1024,
     remainingBytes: 48 * 1024 * 1024 * 1024,
-    retentionDays: 25,
+    retentionDays: 30,
   );
 
   @override

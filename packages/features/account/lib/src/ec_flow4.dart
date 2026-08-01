@@ -640,7 +640,7 @@ class EcQuotaScreen extends StatelessWidget {
     this.usedBytes = 0,
     this.remainingBytes,
     this.capBytes = 500 * 1024 * 1024,
-    this.retentionTotalDays = 20,
+    this.retentionTotalDays = 30,
     this.videoCount = 0,
     this.typeUsage = const [],
     this.onBack,

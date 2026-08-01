@@ -342,7 +342,7 @@ class QuotaDto {
     required this.usedBytes,
     required this.capBytes,
     required this.remainingBytes,
-    this.retentionDays = 20,
+    this.retentionDays = 30,
     this.canManagePlan = true,
   });
 
@@ -351,7 +351,7 @@ class QuotaDto {
     usedBytes: _int(j['used_bytes']),
     capBytes: _int(j['cap_bytes']),
     remainingBytes: _int(j['remaining_bytes']),
-    retentionDays: _intN(j['retention_days']) ?? 20,
+    retentionDays: _intN(j['retention_days']) ?? 30,
     canManagePlan: (j['can_manage_plan'] as bool?) ?? true,
   );
 
