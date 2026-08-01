@@ -11,65 +11,68 @@ void main() {
       stubAnalyticsService(analytics);
     });
 
-    test('trackBookmarkCreated logs normalized bookmark params', () async {
-      await analytics.trackBookmarkCreated(
-        bookmarkId: 'b-1',
-        tagCount: 2,
-        hasDescription: true,
+    test('trackClipRecorded logs the video type and duration', () async {
+      await analytics.trackClipRecorded(
+        videoType: 'dong_hang',
+        durationSeconds: 42,
       );
 
       final captured = verify(
         () => analytics.logEvent(
-          AnalyticsEvents.bookmarkCreated,
+          AnalyticsEvents.clipRecorded,
           parameters: captureAny(named: 'parameters'),
         ),
       ).captured.single;
 
       expect(captured, {
-        AnalyticsParams.bookmarkId: 'b-1',
-        AnalyticsParams.tagCount: 2,
-        AnalyticsParams.hasDescription: 1,
+        AnalyticsParams.videoType: 'dong_hang',
+        AnalyticsParams.durationSeconds: 42,
       });
     });
 
-    test('trackBookmarkDeleteFailed logs source and error type', () async {
-      await analytics.trackBookmarkDeleteFailed(
-        bookmarkId: 'b-1',
-        source: AnalyticsSources.list,
-        errorType: 'UnknownFailure',
-      );
+    test('trackClipRecorded omits duration when it is unknown', () async {
+      await analytics.trackClipRecorded(videoType: 'tra_hang');
 
       final captured = verify(
         () => analytics.logEvent(
-          AnalyticsEvents.bookmarkDeleteFailed,
+          AnalyticsEvents.clipRecorded,
           parameters: captureAny(named: 'parameters'),
         ),
       ).captured.single;
 
-      expect(captured, {
-        AnalyticsParams.bookmarkId: 'b-1',
-        AnalyticsParams.source: AnalyticsSources.list,
-        AnalyticsParams.errorType: 'UnknownFailure',
-      });
+      expect(captured, {AnalyticsParams.videoType: 'tra_hang'});
     });
 
-    test('trackBookmarkSearch logs query metadata only', () async {
-      await analytics.trackBookmarkSearch(queryLength: 5, resultCount: 3);
+    test('trackOrdersFiltered logs the chip and the result count', () async {
+      await analytics.trackOrdersFiltered(filter: 'hom_nay', resultCount: 12);
 
       final captured = verify(
         () => analytics.logEvent(
-          AnalyticsEvents.bookmarkSearch,
+          AnalyticsEvents.ordersFiltered,
           parameters: captureAny(named: 'parameters'),
         ),
       ).captured.single;
 
       expect(captured, {
-        AnalyticsParams.queryLength: 5,
-        AnalyticsParams.resultCount: 3,
+        AnalyticsParams.filter: 'hom_nay',
+        AnalyticsParams.resultCount: 12,
       });
     });
 
-    test('trackNotificationOpened logs payload size', () async {
+    test('trackScanFailed logs the error type', () async {
+      await analytics.trackScanFailed(errorType: 'khong_doc_duoc');
+
+      final captured = verify(
+        () => analytics.logEvent(
+          AnalyticsEvents.scanFailed,
+          parameters: captureAny(named: 'parameters'),
+        ),
+      ).captured.single;
+
+      expect(captured, {AnalyticsParams.errorType: 'khong_doc_duoc'});
+    });
+
+    test('trackNotificationOpened logs the payload size only', () async {
       await analytics.trackNotificationOpened(payloadKeyCount: 4);
 
       final captured = verify(
@@ -81,11 +84,88 @@ void main() {
 
       expect(captured, {AnalyticsParams.payloadKeyCount: 4});
     });
+  });
 
-    test('trackSignOut logs sign out event', () async {
-      await analytics.trackSignOut();
+  group('naming rules', () {
+    // Firebase silently drops an event whose name breaks these rules, so a
+    // typo would otherwise only show up as a hole in the reports weeks later.
+    final legal = RegExp(r'^[a-z][a-z0-9_]{0,39}$');
+    const reservedPrefixes = ['firebase_', 'google_', 'ga_'];
 
-      verify(() => analytics.logEvent(AnalyticsEvents.signOut)).called(1);
+    const events = [
+      AnalyticsEvents.loginFailed,
+      AnalyticsEvents.signOut,
+      AnalyticsEvents.emailVerificationSent,
+      AnalyticsEvents.accountDeleted,
+      AnalyticsEvents.shopCreated,
+      AnalyticsEvents.shopSelected,
+      AnalyticsEvents.memberInvited,
+      AnalyticsEvents.memberRemoved,
+      AnalyticsEvents.scanSucceeded,
+      AnalyticsEvents.scanFailed,
+      AnalyticsEvents.codeEnteredManually,
+      AnalyticsEvents.recordingStarted,
+      AnalyticsEvents.clipRecorded,
+      AnalyticsEvents.orderCutover,
+      AnalyticsEvents.nearClipLimit,
+      AnalyticsEvents.videoTypePicked,
+      AnalyticsEvents.videoTypeCreated,
+      AnalyticsEvents.uploadCompleted,
+      AnalyticsEvents.uploadFailed,
+      AnalyticsEvents.uploadRetried,
+      AnalyticsEvents.orderOpened,
+      AnalyticsEvents.videoOpened,
+      AnalyticsEvents.videoShared,
+      AnalyticsEvents.videoDeleted,
+      AnalyticsEvents.ordersFiltered,
+      AnalyticsEvents.paywallViewed,
+      AnalyticsEvents.purchaseStarted,
+      AnalyticsEvents.notificationOpened,
+    ];
+
+    const params = [
+      AnalyticsParams.errorType,
+      AnalyticsParams.source,
+      AnalyticsParams.method,
+      AnalyticsParams.platform,
+      AnalyticsParams.videoType,
+      AnalyticsParams.planCode,
+      AnalyticsParams.durationSeconds,
+      AnalyticsParams.filter,
+      AnalyticsParams.resultCount,
+      AnalyticsParams.attempt,
+      AnalyticsParams.payloadKeyCount,
+    ];
+
+    for (final (label, names) in [
+      ('event', events),
+      ('param', params),
+      ('screen', EcScreens.byRoute.values),
+    ]) {
+      test('every $label name is legal for Firebase', () {
+        for (final name in names) {
+          expect(legal.hasMatch(name), isTrue, reason: name);
+          for (final prefix in reservedPrefixes) {
+            expect(name.startsWith(prefix), isFalse, reason: name);
+          }
+        }
+      });
+
+      test('no two ${label}s share a name', () {
+        expect(names.toSet().length, names.length);
+      });
+    }
+
+    test('every screen name is prefixed man_', () {
+      for (final name in EcScreens.byRoute.values) {
+        expect(name, startsWith('man_'));
+      }
+    });
+
+    test('an unmapped route reports nothing', () {
+      expect(EcScreens.of('/khong-co-trong-bang'), isNull);
+      expect(EcScreens.of(null), isNull);
+      expect(EcScreens.of('/record'), 'man_ghi_hinh');
     });
   });
 }

@@ -4,6 +4,9 @@ import 'analytics_service.dart';
 export 'analytics_events.dart' show AnalyticsSources;
 
 extension AuthAnalytics on AnalyticsService {
+  /// `login` itself is a reserved Firebase event — log it with
+  /// [AnalyticsService.logLogin]. This is only the failure branch, which
+  /// Firebase has no name for.
   Future<void> trackLoginFailed({required String errorType}) {
     return logEvent(
       AnalyticsEvents.loginFailed,
@@ -13,175 +16,143 @@ extension AuthAnalytics on AnalyticsService {
 
   Future<void> trackSignOut() => logEvent(AnalyticsEvents.signOut);
 
+  Future<void> trackEmailVerificationSent() =>
+      logEvent(AnalyticsEvents.emailVerificationSent);
+
   Future<void> trackAccountDeleted() =>
       logEvent(AnalyticsEvents.accountDeleted);
 }
 
-extension ThemeAnalytics on AnalyticsService {
-  Future<void> trackThemeModeChanged(String mode) {
+extension ShopAnalytics on AnalyticsService {
+  Future<void> trackShopCreated({required String platform}) {
     return logEvent(
-      AnalyticsEvents.themeModeChanged,
-      parameters: {AnalyticsParams.themeMode: mode},
+      AnalyticsEvents.shopCreated,
+      parameters: {AnalyticsParams.platform: platform},
     );
   }
 
-  Future<void> trackThemeSchemeChanged(String scheme) {
+  Future<void> trackShopSelected({required String platform}) {
     return logEvent(
-      AnalyticsEvents.themeSchemeChanged,
-      parameters: {AnalyticsParams.themeScheme: scheme},
+      AnalyticsEvents.shopSelected,
+      parameters: {AnalyticsParams.platform: platform},
+    );
+  }
+
+  Future<void> trackMemberInvited() => logEvent(AnalyticsEvents.memberInvited);
+
+  Future<void> trackMemberRemoved() => logEvent(AnalyticsEvents.memberRemoved);
+}
+
+extension RecordingAnalytics on AnalyticsService {
+  Future<void> trackScanSucceeded() => logEvent(AnalyticsEvents.scanSucceeded);
+
+  /// [errorType] separates "read nothing" from "read a code we rejected" —
+  /// the two need different fixes on the packing table.
+  Future<void> trackScanFailed({required String errorType}) {
+    return logEvent(
+      AnalyticsEvents.scanFailed,
+      parameters: {AnalyticsParams.errorType: errorType},
+    );
+  }
+
+  Future<void> trackCodeEnteredManually() =>
+      logEvent(AnalyticsEvents.codeEnteredManually);
+
+  Future<void> trackRecordingStarted({required String videoType}) {
+    return logEvent(
+      AnalyticsEvents.recordingStarted,
+      parameters: {AnalyticsParams.videoType: videoType},
+    );
+  }
+
+  Future<void> trackClipRecorded({
+    required String videoType,
+    int? durationSeconds,
+  }) {
+    return logEvent(
+      AnalyticsEvents.clipRecorded,
+      parameters: {
+        AnalyticsParams.videoType: videoType,
+        if (durationSeconds != null)
+          AnalyticsParams.durationSeconds: durationSeconds,
+      },
+    );
+  }
+
+  /// Closing one order straight into the next without leaving the viewfinder —
+  /// the hands-free flow the whole product is sold on.
+  Future<void> trackOrderCutover() => logEvent(AnalyticsEvents.orderCutover);
+
+  Future<void> trackNearClipLimit() => logEvent(AnalyticsEvents.nearClipLimit);
+
+  Future<void> trackVideoTypePicked({required String videoType}) {
+    return logEvent(
+      AnalyticsEvents.videoTypePicked,
+      parameters: {AnalyticsParams.videoType: videoType},
+    );
+  }
+
+  Future<void> trackVideoTypeCreated() =>
+      logEvent(AnalyticsEvents.videoTypeCreated);
+}
+
+extension UploadAnalytics on AnalyticsService {
+  Future<void> trackUploadCompleted() =>
+      logEvent(AnalyticsEvents.uploadCompleted);
+
+  Future<void> trackUploadFailed({String? errorType}) {
+    return logEvent(
+      AnalyticsEvents.uploadFailed,
+      parameters: {
+        if (errorType != null) AnalyticsParams.errorType: errorType,
+      },
+    );
+  }
+
+  Future<void> trackUploadRetried({required int attempt}) {
+    return logEvent(
+      AnalyticsEvents.uploadRetried,
+      parameters: {AnalyticsParams.attempt: attempt},
     );
   }
 }
 
-extension BookmarkAnalytics on AnalyticsService {
-  Future<void> trackBookmarkViewed({
-    required String bookmarkId,
-    required int tagCount,
-    required bool hasDescription,
-  }) {
+extension EvidenceAnalytics on AnalyticsService {
+  Future<void> trackOrderOpened({required String source}) {
     return logEvent(
-      AnalyticsEvents.bookmarkViewed,
-      parameters: _bookmarkParams(
-        bookmarkId: bookmarkId,
-        tagCount: tagCount,
-        hasDescription: hasDescription,
-      ),
+      AnalyticsEvents.orderOpened,
+      parameters: {AnalyticsParams.source: source},
     );
   }
 
-  Future<void> trackBookmarkCreated({
-    required String bookmarkId,
-    required int tagCount,
-    required bool hasDescription,
-  }) {
+  Future<void> trackVideoOpened({required String source}) {
     return logEvent(
-      AnalyticsEvents.bookmarkCreated,
-      parameters: _bookmarkParams(
-        bookmarkId: bookmarkId,
-        tagCount: tagCount,
-        hasDescription: hasDescription,
-      ),
+      AnalyticsEvents.videoOpened,
+      parameters: {AnalyticsParams.source: source},
     );
   }
 
-  Future<void> trackBookmarkUpdated({
-    required String bookmarkId,
-    required int tagCount,
-    required bool hasDescription,
-  }) {
-    return logEvent(
-      AnalyticsEvents.bookmarkUpdated,
-      parameters: _bookmarkParams(
-        bookmarkId: bookmarkId,
-        tagCount: tagCount,
-        hasDescription: hasDescription,
-      ),
-    );
-  }
+  Future<void> trackVideoShared() => logEvent(AnalyticsEvents.videoShared);
 
-  Future<void> trackBookmarkDeleted({
-    required String bookmarkId,
-    required String source,
-  }) {
-    return logEvent(
-      AnalyticsEvents.bookmarkDeleted,
-      parameters: {
-        AnalyticsParams.bookmarkId: bookmarkId,
-        AnalyticsParams.source: source,
-      },
-    );
-  }
+  Future<void> trackVideoDeleted() => logEvent(AnalyticsEvents.videoDeleted);
 
-  Future<void> trackBookmarkDeleteFailed({
-    required String bookmarkId,
-    required String source,
-    required String errorType,
-  }) {
-    return logEvent(
-      AnalyticsEvents.bookmarkDeleteFailed,
-      parameters: {
-        AnalyticsParams.bookmarkId: bookmarkId,
-        AnalyticsParams.source: source,
-        AnalyticsParams.errorType: errorType,
-      },
-    );
-  }
-
-  Future<void> trackBookmarkShared({
-    required String bookmarkId,
-    required String source,
-  }) {
-    return logEvent(
-      AnalyticsEvents.bookmarkShared,
-      parameters: {
-        AnalyticsParams.bookmarkId: bookmarkId,
-        AnalyticsParams.source: source,
-      },
-    );
-  }
-
-  Future<void> trackBookmarkOpened({
-    required String bookmarkId,
-    required String source,
-  }) {
-    return logEvent(
-      AnalyticsEvents.bookmarkOpened,
-      parameters: {
-        AnalyticsParams.bookmarkId: bookmarkId,
-        AnalyticsParams.source: source,
-      },
-    );
-  }
-
-  Future<void> trackBookmarkSearch({
-    required int queryLength,
+  /// [filter] is which chip was used, not what the seller typed — an order
+  /// code is customer data and has no business in an analytics payload.
+  Future<void> trackOrdersFiltered({
+    required String filter,
     required int resultCount,
   }) {
     return logEvent(
-      AnalyticsEvents.bookmarkSearch,
+      AnalyticsEvents.ordersFiltered,
       parameters: {
-        AnalyticsParams.queryLength: queryLength,
+        AnalyticsParams.filter: filter,
         AnalyticsParams.resultCount: resultCount,
       },
     );
   }
-
-  Future<void> trackBookmarkSyncRetried() {
-    return logEvent(AnalyticsEvents.bookmarkSyncRetried);
-  }
 }
 
-extension NotificationAnalytics on AnalyticsService {
-  Future<void> trackNotificationOpened({required int payloadKeyCount}) {
-    return logEvent(
-      AnalyticsEvents.notificationOpened,
-      parameters: {AnalyticsParams.payloadKeyCount: payloadKeyCount},
-    );
-  }
-}
-
-extension ProfileAnalytics on AnalyticsService {
-  Future<void> trackUserIdCopied() {
-    return logEvent(
-      AnalyticsEvents.userIdCopied,
-      parameters: {AnalyticsParams.source: AnalyticsSources.profile},
-    );
-  }
-}
-
-extension EvidenceCamAnalytics on AnalyticsService {
-  Future<void> trackClipRecorded({required String recordingType}) {
-    return logEvent(
-      AnalyticsEvents.clipRecorded,
-      parameters: {AnalyticsParams.recordingType: recordingType},
-    );
-  }
-
-  Future<void> trackUploadCompleted() =>
-      logEvent(AnalyticsEvents.uploadCompleted);
-
-  Future<void> trackUploadFailed() => logEvent(AnalyticsEvents.uploadFailed);
-
+extension BillingAnalytics on AnalyticsService {
   Future<void> trackPaywallViewed() => logEvent(AnalyticsEvents.paywallViewed);
 
   Future<void> trackPurchaseStarted({required String planCode}) {
@@ -192,14 +163,11 @@ extension EvidenceCamAnalytics on AnalyticsService {
   }
 }
 
-Map<String, Object> _bookmarkParams({
-  required String bookmarkId,
-  required int tagCount,
-  required bool hasDescription,
-}) {
-  return {
-    AnalyticsParams.bookmarkId: bookmarkId,
-    AnalyticsParams.tagCount: tagCount,
-    AnalyticsParams.hasDescription: hasDescription ? 1 : 0,
-  };
+extension NotificationAnalytics on AnalyticsService {
+  Future<void> trackNotificationOpened({required int payloadKeyCount}) {
+    return logEvent(
+      AnalyticsEvents.notificationOpened,
+      parameters: {AnalyticsParams.payloadKeyCount: payloadKeyCount},
+    );
+  }
 }

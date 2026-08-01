@@ -2,6 +2,7 @@ import 'package:architecture/architecture.dart';
 import 'package:flutter/widgets.dart';
 import 'package:injectable/injectable.dart';
 
+import 'analytics_events.dart';
 import 'analytics_service.dart';
 
 @lazySingleton
@@ -30,8 +31,11 @@ class AnalyticsRouteObserver extends NavigatorObserver {
 
   void _track(Route<dynamic>? route) {
     if (route is! PageRoute) return;
-    final screenName = route.settings.name;
-    if (screenName == null || screenName.isEmpty) return;
+    // `settings.name` is the route's path (`/record`); the report wants the
+    // Vietnamese name. A path with no entry in the table is skipped rather
+    // than reported raw — see [EcScreens.of].
+    final screenName = EcScreens.of(route.settings.name);
+    if (screenName == null) return;
     _analytics.logScreenView(screenName: screenName).fire();
   }
 }

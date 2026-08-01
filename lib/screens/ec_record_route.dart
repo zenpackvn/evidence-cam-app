@@ -12,6 +12,7 @@ library;
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:analytics/analytics.dart';
 import 'package:app_platform/app_platform.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:flutter/cupertino.dart'
@@ -26,6 +27,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
+
+import '../app/di/injection.dart';
 
 /// The recording route mounted at `/record`. Callbacks stay routing-agnostic so
 /// the app shell owns navigation; [onRequestCode] returns the tracking code the
@@ -457,16 +460,42 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       canPop: false,
       child: BlocListener<RecordingSessionBloc, RecordingSessionState>(
         bloc: _bloc,
+        // Everything here is edge-triggered off the session state. Reporting
+        // from `build` instead would re-fire on every camera frame.
         listenWhen: (previous, current) =>
-            !previous.lowStorageWarning && current.lowStorageWarning,
-        listener: (context, state) =>
-            unawaited(_showLowStorageWarning(context)),
+            (!previous.lowStorageWarning && current.lowStorageWarning) ||
+            (!previous.isRecording && current.isRecording) ||
+            (previous.cutoverFromCode == null &&
+                current.cutoverFromCode != null) ||
+            (previous.elapsed < _bloc.nearLimitAt &&
+                current.elapsed >= _bloc.nearLimitAt),
+        listener: _onSessionEdge,
         child: BlocBuilder<RecordingSessionBloc, RecordingSessionState>(
           bloc: _bloc,
           builder: (context, state) => _buildScreen(state),
         ),
       ),
     );
+  }
+
+  /// One listener for every session transition worth reporting. [listenWhen]
+  /// above decides *whether* we are called; this decides *which* edge it was,
+  /// so each branch re-checks the condition that let it through.
+  void _onSessionEdge(BuildContext context, RecordingSessionState state) {
+    final analytics = getIt.isRegistered<AnalyticsService>()
+        ? getIt<AnalyticsService>()
+        : null;
+    if (state.lowStorageWarning) {
+      unawaited(_showLowStorageWarning(context));
+    }
+    if (state.cutoverFromCode != null) {
+      analytics?.trackOrderCutover();
+    } else if (state.isRecording) {
+      analytics?.trackRecordingStarted(videoType: state.typeLabel);
+    }
+    if (state.elapsed >= _bloc.nearLimitAt) {
+      analytics?.trackNearClipLimit();
+    }
   }
 
   Widget _buildScreen(RecordingSessionState state) {

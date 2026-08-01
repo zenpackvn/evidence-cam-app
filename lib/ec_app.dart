@@ -329,15 +329,20 @@ class _LoginRouteState extends State<_LoginRoute> {
       // Tài khoản email/mật khẩu chưa bấm link xác minh thì không được vào —
       // nếu không thì email xác minh chỉ là thủ tục cho vui.
       if (!user.emailVerified) {
+        _analytics()?.trackLoginFailed(errorType: 'chua_xac_minh_email');
         await _blockUnverified(user);
         return;
       }
+      // `login` is a reserved Firebase event, so it keeps its English name and
+      // goes through `logLogin` — that is what feeds the built-in funnel.
+      _analytics()?.logLogin(method: _AuthMethods.email);
       await _credentials()?.save(
         email: _email.text.trim(),
         password: _password.text,
       );
       if (mounted) context.go('/shops', extra: 'forward');
     } on Object catch (error) {
+      _analytics()?.trackLoginFailed(errorType: error.runtimeType.toString());
       if (mounted) _toast(context, _authErrorText(context.l10n, error));
     }
   }
@@ -372,6 +377,7 @@ class _LoginRouteState extends State<_LoginRoute> {
       try {
         await widget.auth.sendEmailVerification();
         resent = true;
+        _analytics()?.trackEmailVerificationSent();
       } on Object catch (error) {
         resendError = error;
       }
@@ -397,11 +403,13 @@ class _LoginRouteState extends State<_LoginRoute> {
       context,
       widget.repo,
       widget.auth.signInWithGoogle(),
+      method: _AuthMethods.google,
     ),
     onApple: () => _afterSocialSignIn(
       context,
       widget.repo,
       widget.auth.signInWithApple(),
+      method: _AuthMethods.apple,
     ),
     showApple: _appleSignInAvailable,
     onLanguage: () => _toggleLanguage(context, widget.language),
@@ -455,10 +463,15 @@ class _RegisterRouteState extends State<_RegisterRoute> {
         password: _password.text,
         name: _name.text.trim(),
       );
+      // `sign_up` is reserved, same deal as `login` above.
+      _analytics()?.logSignUp(signUpMethod: _AuthMethods.email);
       // The mail goes out first, while the new account is signed in: the
       // profile saves below talk to the Worker and used to take the whole
       // registration down with them, leaving an account nobody could verify.
       final verificationError = await _sendVerificationEmail();
+      if (verificationError == null) {
+        _analytics()?.trackEmailVerificationSent();
+      }
       final profileError = await _saveProfile(
         name: _name.text.trim(),
         phone: _phone.text.trim(),
@@ -555,11 +568,13 @@ class _RegisterRouteState extends State<_RegisterRoute> {
       context,
       widget.repo,
       widget.auth.signInWithGoogle(),
+      method: _AuthMethods.google,
     ),
     onApple: () => _afterSocialSignIn(
       context,
       widget.repo,
       widget.auth.signInWithApple(),
+      method: _AuthMethods.apple,
     ),
     showApple: _appleSignInAvailable,
     onLanguage: () => _toggleLanguage(context, widget.language),
@@ -618,19 +633,31 @@ class _ForgotRouteState extends State<_ForgotRoute> {
 Future<void> _afterSocialSignIn(
   BuildContext context,
   EcRepository repo,
-  Future<EcUser> signIn,
-) async {
+  Future<EcUser> signIn, {
+  required String method,
+}) async {
   try {
     await signIn;
+    _analytics()?.logLogin(method: method);
     if (!context.mounted) return;
     final needsPhone = await _accountNeedsPhone(repo);
     if (!context.mounted) return;
     context.go(needsPhone ? '/phone-setup' : '/shops', extra: 'forward');
   } on EcAuthCancelled {
-    // User backed out of the provider sheet — nothing to report.
+    // User backed out of the provider sheet — nothing to report, and nothing
+    // to log either: a cancel is not a failed login.
   } on Object catch (error) {
+    _analytics()?.trackLoginFailed(errorType: error.runtimeType.toString());
     if (context.mounted) _toast(context, _authErrorText(context.l10n, error));
   }
+}
+
+/// `method` values for Firebase's reserved `login` / `sign_up` events. English
+/// on purpose — these are Firebase's own dimension, not one of our labels.
+abstract final class _AuthMethods {
+  static const email = 'email';
+  static const google = 'google';
+  static const apple = 'apple';
 }
 
 /// Whether the signed-in account still needs a phone. The business phone lives
@@ -779,6 +806,7 @@ class _AccountRouteState extends State<_AccountRoute> {
       ),
     );
     if (confirmed != true || !mounted) return;
+    _analytics()?.trackSignOut();
     await widget.auth.signOut();
     // Same as signing out from the shop picker: drop the remembered shop so the
     // next session starts from a clean pick.
@@ -1182,6 +1210,7 @@ class _DeleteAccountRouteState extends State<_DeleteAccountRoute> {
       );
       await widget.auth.deleteAccount();
       await widget.repo.deleteAccount(force: true);
+      _analytics()?.trackAccountDeleted();
       // Forget the remembered credentials so the deleted account's password is
       // never prefilled on the login screen we return to.
       await _credentials()?.clear();
@@ -2694,6 +2723,24 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   Future<void> _applyFilters(EcOrderFilters filters) async {
     _filters = filters;
     await _loadFirst();
+    if (!mounted) return;
+    // Reported after the reload so the count is the filtered one — which chip
+    // returns nothing is the whole point of watching this event.
+    _analytics()?.trackOrdersFiltered(
+      filter: _filterLabel(filters),
+      resultCount: _page.total,
+    );
+  }
+
+  /// Which chips are active, as a stable name. Never the typed order code —
+  /// that is customer data.
+  String _filterLabel(EcOrderFilters filters) {
+    final active = [
+      if (filters.fromTs != null || filters.toTs != null) 'thoi_gian',
+      if (filters.videoTypeId != null) 'loai_video',
+      if (filters.uploadState != null) 'trang_thai',
+    ];
+    return active.isEmpty ? 'tat_ca' : active.join('_');
   }
 
   Future<void> _loadFirst({bool showSpinner = false}) async {
@@ -3179,9 +3226,16 @@ class _OrderRouteState extends State<_OrderRoute> {
             // lặng không làm gì.
             onShareDossierLink: data.dossierUrl == null
                 ? null
-                : () => unawaited(
-                    _shareDossierLink(context, widget.share, data.dossierUrl!),
-                  ),
+                : () {
+                    _analytics()?.trackVideoShared();
+                    unawaited(
+                      _shareDossierLink(
+                        context,
+                        widget.share,
+                        data.dossierUrl!,
+                      ),
+                    );
+                  },
             onAttachPhoto: () => _attachPhoto(
               context,
               widget.queue,
@@ -4032,11 +4086,13 @@ GoRouter _buildRouter(
             onSelect: (shop) {
               selectedShop.value = shop;
               _rememberShop(shop);
+              _analytics()?.trackShopSelected(platform: shop.platform);
               c.go('/home');
             },
             onManage: () => c.push('/shop-mgmt'),
             onCreateShop: () => c.push('/create-shop'),
             onLogout: () {
+              _analytics()?.trackSignOut();
               auth.signOut().then((_) async {
                 await _forgetRememberedShop();
                 if (c.mounted) c.go('/login', extra: 'back');
@@ -4065,6 +4121,7 @@ GoRouter _buildRouter(
           onCreated: (shop) {
             selectedShop.value = shop;
             _rememberShop(shop);
+            _analytics()?.trackShopCreated(platform: shop.platform);
             c.go('/home');
             _toast(c, c.l10n.toastShopCreated);
           },
@@ -4131,7 +4188,12 @@ GoRouter _buildRouter(
                     onNavRecord: () => c.go('/record'),
                     onNavAccount: () => c.go('/account'),
                     onQueueTap: () => c.push('/queue'),
-                    onOrderTap: (order) => c.push('/order', extra: order),
+                    onOrderTap: (order) {
+                      _analytics()?.trackOrderOpened(
+                        source: AnalyticsSources.list,
+                      );
+                      return c.push('/order', extra: order);
+                    },
                     onScan: () => c.push<String>('/scan'),
                   );
                 },
@@ -4253,7 +4315,10 @@ GoRouter _buildRouter(
                               ? null
                               : DeviceSample.encode(samples),
                         );
-                        _analytics()?.trackClipRecorded(recordingType: type);
+                        _analytics()?.trackClipRecorded(
+                          videoType: type,
+                          durationSeconds: durationSeconds,
+                        );
                         _toast(c, c.l10n.toastVideoQueued);
                       },
                     );
@@ -4576,6 +4641,7 @@ GoRouter _buildRouter(
           onCreate: () => c.push('/create-shop'),
           onInviteTap: () => _toast(c, c.l10n.toastInvitePending),
           onLogout: () {
+            _analytics()?.trackSignOut();
             auth.signOut().then((_) async {
               await _forgetRememberedShop();
               if (c.mounted) c.go('/login', extra: 'back');

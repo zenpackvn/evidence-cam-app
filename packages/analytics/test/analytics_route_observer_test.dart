@@ -14,19 +14,34 @@ void main() {
       observer = AnalyticsRouteObserver(analytics);
     });
 
-    test('tracks named page routes on push', () {
+    test('reports a route path under its Vietnamese screen name', () {
       final route = MaterialPageRoute<void>(
-        settings: const RouteSettings(name: 'home'),
+        settings: const RouteSettings(name: '/home'),
         builder: (_) => const SizedBox.shrink(),
       );
 
       observer.didPush(route, null);
 
-      verify(() => analytics.logScreenView(screenName: 'home')).called(1);
+      verify(
+        () => analytics.logScreenView(screenName: 'man_van_don'),
+      ).called(1);
     });
 
     test('ignores unnamed page routes', () {
       final route = MaterialPageRoute<void>(
+        builder: (_) => const SizedBox.shrink(),
+      );
+
+      observer.didPush(route, null);
+
+      verifyNever(
+        () => analytics.logScreenView(screenName: any(named: 'screenName')),
+      );
+    });
+
+    test('never reports a raw path for a route outside the table', () {
+      final route = MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/mot-man-chua-dat-ten'),
         builder: (_) => const SizedBox.shrink(),
       );
 
