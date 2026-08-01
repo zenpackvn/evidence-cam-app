@@ -312,9 +312,9 @@ class _PenFieldState extends State<PenField> {
               EcTap(
                 onTap: () => setState(() => _obscure = !_obscure),
                 child: Icon(
-                  // Icon reflects the field's *current* state: a slashed eye
-                  // while the text is hidden, an open eye once revealed.
-                  _obscure ? LucideIcons.eyeOff : LucideIcons.eye,
+                  // The design draws the *action*, not the state: an open
+                  // eye offers "reveal" while the text is hidden.
+                  _obscure ? LucideIcons.eye : LucideIcons.eyeOff,
                   size: 21,
                   color: PenColors.ink,
                 ),
@@ -357,19 +357,36 @@ class PenStackedField extends StatefulWidget {
 class _PenStackedFieldState extends State<PenStackedField> {
   late bool _obscure = widget.obscure;
 
+  /// The design only stacks label-over-value once the field has content; an
+  /// empty field is a single placeholder line. That needs the text to be
+  /// observable, so an uncontrolled field still gets a controller.
+  late final TextEditingController _controller =
+      widget.controller ?? TextEditingController();
+
+  @override
+  void dispose() {
+    if (widget.controller == null) _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (widget.validator == null) return _build(null);
-    return FormField<String>(
-      initialValue: widget.controller?.text ?? '',
-      validator: widget.validator,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      builder: _build,
+    return ListenableBuilder(
+      listenable: _controller,
+      builder: (context, _) => widget.validator == null
+          ? _build(null)
+          : FormField<String>(
+              initialValue: _controller.text,
+              validator: widget.validator,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              builder: _build,
+            ),
     );
   }
 
   Widget _build(FormFieldState<String>? state) {
     final error = state?.errorText;
+    final isEmpty = _controller.text.isEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -389,15 +406,22 @@ class _PenStackedFieldState extends State<PenStackedField> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  PenText(widget.label, size: 12, color: PenColors.mut),
-                  const SizedBox(height: 2),
+                  if (!isEmpty) ...[
+                    PenText(widget.label, size: 12, color: PenColors.mut),
+                    const SizedBox(height: 2),
+                  ],
                   CupertinoTextField(
-                    controller: widget.controller,
+                    controller: _controller,
                     onChanged: state?.didChange,
                     obscureText: _obscure,
                     keyboardType: widget.keyboardType,
                     padding: EdgeInsets.zero,
                     decoration: const BoxDecoration(),
+                    placeholder: widget.label,
+                    placeholderStyle: const TextStyle(
+                      fontSize: 14,
+                      color: PenColors.mut,
+                    ),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -411,7 +435,7 @@ class _PenStackedFieldState extends State<PenStackedField> {
               EcTap(
                 onTap: () => setState(() => _obscure = !_obscure),
                 child: Icon(
-                  _obscure ? LucideIcons.eyeOff : LucideIcons.eye,
+                  _obscure ? LucideIcons.eye : LucideIcons.eyeOff,
                   size: 20,
                   color: PenColors.mut,
                 ),
@@ -704,79 +728,6 @@ class PenBackButton extends StatelessWidget {
   }
 }
 
-/// The grey leaf-and-cloud artwork the entry screens pin to the bottom.
-class PenBottomDecor extends StatelessWidget {
-  const PenBottomDecor({super.key});
-
-  static const _cloud =
-      'M15 42c-9 0-15-7-15-14 0-8 6-14 13-14 2-8 10-14 18-14 9 0 17 7 19 15 '
-      '1 0 2-1 4-1 10 0 20 7 20 15 0 7-7 13-15 13z';
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Stack(
-        children: [
-          const Positioned(
-            right: 16,
-            bottom: 40,
-            child: PenPath(
-              _cloud,
-              viewBox: [0, 0, 74, 42],
-              width: 74,
-              height: 42,
-              color: PenColors.soft,
-            ),
-          ),
-          const Positioned(
-            left: 26,
-            bottom: 82,
-            child: PenEllipse(
-              width: 44,
-              height: 20,
-              color: PenColors.soft,
-              rotation: -18,
-            ),
-          ),
-          const Positioned(
-            left: 18,
-            bottom: 60,
-            child: PenEllipse(
-              width: 48,
-              height: 20,
-              color: PenColors.soft,
-              rotation: 8,
-            ),
-          ),
-          const Positioned(
-            left: 34,
-            bottom: 42,
-            child: PenEllipse(
-              width: 40,
-              height: 18,
-              color: PenColors.soft,
-              rotation: 26,
-            ),
-          ),
-          Positioned(
-            left: 38,
-            bottom: 40,
-            child: Transform.rotate(
-              angle: -8 * 3.1415926535897932 / 180,
-              child: const PenBox(
-                width: 3,
-                height: 56,
-                fill: PenColors.soft,
-                radius: 2,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// The isometric parcel glyph the design draws inside order-row tiles.
 class PenParcelGlyph extends StatelessWidget {
   const PenParcelGlyph({this.size = 34, super.key});
@@ -886,8 +837,9 @@ class _Tab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Tab đang chọn chỉ khác nhau ở **màu**: gạch chân và chữ đậm làm cột
-    // active cao/rộng hơn hàng xóm, kéo icon lệch lên so với các tab còn lại.
+    // Tab đang chọn chỉ khác nhau ở **màu** — theo yêu cầu của người dùng,
+    // cố ý lệch khung design. Gạch chân 34×3 và chữ w700 làm cột active cao
+    // và rộng hơn hàng xóm, kéo icon nhích lên ~5px so với các tab còn lại.
     final color = active ? PenColors.ink : PenColors.mut;
     return EcTap(
       onTap: onTap,
@@ -1224,6 +1176,7 @@ class PenCard extends StatelessWidget {
     this.padding = EdgeInsets.zero,
     this.fill = PenColors.card,
     this.stroke = PenColors.line,
+    this.strokeWidth = 1,
     this.radius = 14,
     this.lifted = true,
     this.cross,
@@ -1239,6 +1192,7 @@ class PenCard extends StatelessWidget {
   final EdgeInsets padding;
   final Color fill;
   final Color? stroke;
+  final double strokeWidth;
   final double radius;
   final bool lifted;
   final CrossAxisAlignment? cross;
@@ -1252,6 +1206,7 @@ class PenCard extends StatelessWidget {
       width: double.infinity,
       fill: fill,
       stroke: stroke,
+      strokeWidth: strokeWidth,
       radius: radius,
       shadows: lifted ? const [penCardShadow] : const [],
       axis: axis,
@@ -1310,6 +1265,7 @@ class PenHeader extends StatelessWidget {
     this.onBack,
     this.trailing,
     this.gap = 16,
+    this.backSize = 28,
     super.key,
   });
 
@@ -1318,11 +1274,15 @@ class PenHeader extends StatelessWidget {
   final Widget? trailing;
   final double gap;
 
+  /// Back-chevron point size. The design file draws 28 on most screens but 26
+  /// on flow 4's, and 2px shifts the whole title.
+  final double backSize;
+
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        PenBackButton(onTap: onBack, size: 28),
+        PenBackButton(onTap: onBack, size: backSize),
         SizedBox(width: gap),
         Expanded(
           child: PenText(
@@ -1417,15 +1377,16 @@ class PenGlobeIllustration extends StatelessWidget {
                 color: PenColors.soft,
               ),
             ),
-            Positioned(left: 0, top: 88, child: PenLeafSprig()),
             Positioned(
               left: 51,
               top: 8,
               child: _LangChipDeco(label: 'VI', selected: true),
             ),
+            // Right/bottom anchored like the design file: the chip hugs its
+            // label, so pinning its far edges is what keeps it in place.
             Positioned(
-              left: 203,
-              top: 106,
+              right: 97,
+              bottom: 154,
               child: _LangChipDeco(label: 'EN', selected: false),
             ),
           ],
@@ -1480,7 +1441,7 @@ class PenLeafSprig extends StatelessWidget {
               left: 8,
               top: 0,
               child: PenEllipse(
-                width: 44,
+                width: 46,
                 height: 20,
                 color: PenColors.soft,
                 rotation: -18,
@@ -1490,7 +1451,7 @@ class PenLeafSprig extends StatelessWidget {
               left: 0,
               top: 22,
               child: PenEllipse(
-                width: 48,
+                width: 50,
                 height: 20,
                 color: PenColors.soft,
                 rotation: 8,
@@ -1500,7 +1461,7 @@ class PenLeafSprig extends StatelessWidget {
               left: 16,
               top: 42,
               child: PenEllipse(
-                width: 40,
+                width: 42,
                 height: 18,
                 color: PenColors.soft,
                 rotation: 26,

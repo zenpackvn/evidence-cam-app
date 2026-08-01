@@ -55,6 +55,7 @@ class EcTimelineVideo {
     this.thumbUrl,
     this.type = EcEvidenceType.video,
     this.statusText,
+    this.statusTone = EcStatusTone.waiting,
     this.statusIcon,
     this.durationSeconds,
   });
@@ -85,12 +86,21 @@ class EcTimelineVideo {
   /// (evidence already fully uploaded).
   final String? statusText;
 
+  /// Màu của viên trạng thái. Tách khỏi [statusText] vì đoán tông từ nhãn đã
+  /// dịch là sai: "Waiting to upload" chứa "upload", "Đang chờ tải" chứa
+  /// "tải", và "Server-side processing error" không chứa "lỗi".
+  final EcStatusTone statusTone;
+
   /// Optional leading icon shown inside the status pill, e.g. a retry icon.
   final IconData? statusIcon;
 
   /// Recorded clip length in seconds; null for photos.
   final int? durationSeconds;
 }
+
+/// Năm tông viên trạng thái khung F2-02 vẽ: xong / đang tải / chờ / chờ quota
+/// / lỗi.
+enum EcStatusTone { done, uploading, waiting, quota, error }
 
 /// A day-grouped section of [EcOrderTimelineScreen]'s evidence timeline.
 class EcTimelineDay {
@@ -784,6 +794,7 @@ class _EcTimelineVideoRow extends StatelessWidget {
                       const SizedBox(height: 4),
                       _EcStatusBadge(
                         text: video.statusText!,
+                        tone: video.statusTone,
                         icon: video.statusIcon,
                       ),
                     ],
@@ -855,9 +866,10 @@ class _EcTimelineThumb extends StatelessWidget {
 }
 
 class _EcStatusBadge extends StatelessWidget {
-  const _EcStatusBadge({required this.text, this.icon});
+  const _EcStatusBadge({required this.text, required this.tone, this.icon});
 
   final String text;
+  final EcStatusTone tone;
   final IconData? icon;
 
   @override
@@ -890,24 +902,14 @@ class _EcStatusBadge extends StatelessWidget {
     );
   }
 
-  (Color, Color) get _palette {
-    final lower = text.toLowerCase();
-    if (lower.contains('lỗi') || lower.contains('fail')) {
-      return (const Color(0xFFF8E7E7), PenColors.danger);
-    }
-    if (lower.contains('quota')) {
-      return (PenColors.line, const Color(0xFFB6770B));
-    }
-    if (lower.contains('%') ||
-        lower.contains('tải') ||
-        lower.contains('load')) {
-      return (PenColors.line, PenColors.link);
-    }
-    if (lower.contains('chờ') || lower.contains('pending')) {
-      return (PenColors.line, PenColors.mut);
-    }
-    return (PenColors.soft, PenColors.success);
-  }
+  /// Đúng 5 viên khung F2-02 vẽ.
+  (Color, Color) get _palette => switch (tone) {
+    EcStatusTone.done => (PenColors.soft, PenColors.success),
+    EcStatusTone.uploading => (PenColors.line, PenColors.link),
+    EcStatusTone.waiting => (PenColors.line, PenColors.mut),
+    EcStatusTone.quota => (PenColors.line, const Color(0xFFB6770B)),
+    EcStatusTone.error => (const Color(0xFFF8E7E7), PenColors.danger),
+  };
 }
 
 class _EcAttachPhotoRow extends StatelessWidget {

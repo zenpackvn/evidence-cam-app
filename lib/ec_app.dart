@@ -31,6 +31,7 @@ import 'package:feature_orders/feature_orders.dart'
         EcEvidenceType,
         EcOrderTimelineScreen,
         EcPhotoDetailScreen,
+        EcStatusTone,
         EcTimelineDay,
         EcTimelineVideo,
         EcVideoDetail,
@@ -652,7 +653,6 @@ class _AccountRouteState extends State<_AccountRoute> {
             userName: user?.displayName ?? context.l10n.accountNoName,
             userEmail: user?.email ?? '—',
             shopName: shop?.name ?? context.l10n.accountNoShop,
-            queueCount: _pendingUploads(widget.queue),
             planLabel: snap.hasData
                 ? _planDisplayName(context.l10n, snap.data!.planCode)
                 : '—',
@@ -673,7 +673,6 @@ class _AccountRouteState extends State<_AccountRoute> {
             },
             onQuotaTap: () => context.push('/quota'),
             onLanguageTap: () => context.push('/language'),
-            onStopCodeTap: () => context.push('/stop-code'),
             onChangePasswordTap: () => context.push('/change-password'),
             onDeleteAccount: () => context.push('/delete-account'),
             onLoginMethodsTap: () => context.push('/login-methods'),
@@ -1683,6 +1682,7 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
           return EcNoShopScreen(
             onCreate: widget.onCreateShop ?? widget.onManage,
             onInviteTap: () => _toast(context, context.l10n.toastInvitePending),
+            onLogout: widget.onLogout,
           );
         }
         _autoSelectIfNeeded(shops);
@@ -2433,16 +2433,21 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       0,
       (total, order) => total + order.evidenceCount,
     );
+    // Ba icon là ba glyph khác nhau trong khung F2-01 (package / video /
+    // cloud-upload) — bỏ trống thì cả ba cùng ra package.
     return [
       EcHomeStat(value: '$todayOrders', label: context.l10n.statOrdersToday),
       EcHomeStat(
         value: '$evidenceCount',
         label: context.l10n.statVideosRecorded,
+        icon: LucideIcons.video,
       ),
       EcHomeStat(
         value: '${_pendingUploads(queue)}',
         label: context.l10n.statPendingUpload,
-        // Replaces the upload-queue chip that used to sit in the header.
+        icon: LucideIcons.cloudUpload,
+        // Header không còn chip mây (design không vẽ), nên thẻ này là lối vào
+        // màn hàng đợi upload.
         onTap: widget.onQueueTap,
       ),
     ];
@@ -2477,12 +2482,10 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       builder: (context, _) => EcHomeOrdersScreen(
         shopName: widget.shopName,
         orders: rows,
-        queueCount: _pendingUploads(widget.queue),
         stats: _stats(widget.queue),
         onBack: widget.onBack,
         onNavRecord: widget.onNavRecord,
         onNavAccount: widget.onNavAccount,
-        onQueueTap: widget.onQueueTap,
         onOrderTap: widget.onOrderTap == null
             ? null
             : (row) {
@@ -3156,6 +3159,15 @@ List<EcTimelineDay> _timelineDays(
                 : item.uploadStatus == 'expired'
                 ? _expiredLabel(l10n, item.retentionExpiresAt)
                 : _uploadStatusLabel(l10n, item.uploadStatus),
+            statusTone: switch (item.uploadStatus) {
+              'done' => EcStatusTone.done,
+              'error' => EcStatusTone.error,
+              'quota_hold' => EcStatusTone.quota,
+              // Hết hạn lưu trữ / đã xóa là kết thúc, không phải lỗi đang chờ
+              // xử lý — khung design không có viên riêng nên dùng xám trung
+              // tính thay vì đỏ.
+              _ => EcStatusTone.waiting,
+            },
             statusIcon: switch (item.uploadStatus) {
               'error' => Icons.refresh,
               'expired' => Icons.history_toggle_off,
@@ -3604,7 +3616,6 @@ GoRouter _buildRouter(
                     }
                     return EcRecordRoute(
                       queueCount: _pendingUploads(queue),
-                      shopName: shop.name,
                       initialType: recordingType.value,
                       initialResolution: shop.resolution,
                       maxRecording: shop.clipBudget.maxRecording,
@@ -4001,6 +4012,12 @@ GoRouter _buildRouter(
         builder: (c, s) => EcNoShopScreen(
           onCreate: () => c.push('/create-shop'),
           onInviteTap: () => _toast(c, c.l10n.toastInvitePending),
+          onLogout: () {
+            auth.signOut().then((_) async {
+              await _forgetRememberedShop();
+              if (c.mounted) c.go('/login', extra: 'back');
+            });
+          },
         ),
       ),
       GoRoute(

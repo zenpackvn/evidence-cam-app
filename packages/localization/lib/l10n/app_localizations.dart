@@ -1265,14 +1265,32 @@ abstract class AppLocalizations {
   /// No description provided for @captureFramePrompt.
   ///
   /// In en, this message translates to:
-  /// **'Place the bill in the frame to start'**
+  /// **'Scan the tracking code'**
   String get captureFramePrompt;
 
   /// No description provided for @captureCameraDownHint.
   ///
   /// In en, this message translates to:
-  /// **'Camera facing down at the table'**
+  /// **'Place the bill in the frame'**
   String get captureCameraDownHint;
+
+  /// No description provided for @cutoverSavedVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Video saved'**
+  String get cutoverSavedVideo;
+
+  /// No description provided for @cutoverPreparingNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting ready for the next one'**
+  String get cutoverPreparingNext;
+
+  /// No description provided for @cutoverNextOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Next order'**
+  String get cutoverNextOrder;
 
   /// No description provided for @lowStorageTitle.
   ///
@@ -1487,8 +1505,26 @@ abstract class AppLocalizations {
   /// No description provided for @videoTypeSelectNote.
   ///
   /// In en, this message translates to:
-  /// **'Choose a type for this recording session — add/edit/delete in Shop details'**
+  /// **'Pick the right type — add/edit/delete in Shop details'**
   String get videoTypeSelectNote;
+
+  /// No description provided for @videoTypeSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a video type'**
+  String get videoTypeSheetTitle;
+
+  /// No description provided for @videoTypeGroupDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default types (required)'**
+  String get videoTypeGroupDefault;
+
+  /// No description provided for @videoTypeGroupCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop\'s custom types'**
+  String get videoTypeGroupCustom;
 
   /// No description provided for @manageVideoTypesNote.
   ///

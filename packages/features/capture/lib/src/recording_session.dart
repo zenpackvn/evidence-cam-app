@@ -29,6 +29,12 @@ import 'ec_video_faststart.dart';
 /// ever need distinct end codes. Kept deliberately unlike any tracking number.
 const kEndSessionQr = 'EVIDENCECAM:END';
 
+/// Cửa sổ hiện màn xác nhận chuyển đơn (A→B) trước khi rơi về màn quay thường.
+///
+/// Công khai vì màn hình vẽ vòng đếm ngược theo đúng con số này — vòng đếm mà
+/// lệch với thời gian thật thì nó chỉ là trang trí.
+const kCutoverDisplaySeconds = 2;
+
 const _resolutions = ['240p', '480p', '720p'];
 
 /// What a scanned code means for a clip currently recording an order.
@@ -1014,9 +1020,9 @@ class RecordingSessionBloc
     _timer = null;
   }
 
-  /// How long the A→B cutover confirmation moment stays on screen before the
-  /// view falls back to the normal recording screen for the new code.
-  static const _cutoverDisplayDuration = Duration(seconds: 2);
+  static const _cutoverDisplayDuration = Duration(
+    seconds: kCutoverDisplaySeconds,
+  );
 
   void _startCutoverTimer() {
     _cutoverTimer?.cancel();

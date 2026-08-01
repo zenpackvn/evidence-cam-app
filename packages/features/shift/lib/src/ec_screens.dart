@@ -80,7 +80,8 @@ class EcSplashScreen extends StatelessWidget {
             top: 274,
             width: 330,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              // The design centres each tagline line inside the 330pt column.
+              crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
                 for (final line in [
@@ -169,7 +170,6 @@ class EcLoginScreen extends StatelessWidget {
     final l10n = context.l10n;
     return Form(
       child: PenScreen(
-        decorations: const [Positioned.fill(child: PenBottomDecor())],
         child: Stack(
           children: [
             Padding(

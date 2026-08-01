@@ -45,7 +45,6 @@ class EcRecordRoute extends StatefulWidget {
     this.voiceAnnouncer,
     this.initialType = 'Đóng hàng',
     this.queueCount = 0,
-    this.shopName = 'Shop',
     this.initialResolution = '720p',
     this.maxRecording = const Duration(minutes: 2),
     this.camera,
@@ -111,7 +110,6 @@ class EcRecordRoute extends StatefulWidget {
   final int queueCount;
 
   /// Shop currently clocked into at the app layer.
-  final String shopName;
 
   /// Recording resolution from the shop's setting (`240p` / `480p` / `720p`);
   /// the rail pill cycles it while idle.
@@ -280,6 +278,12 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     return '${two(d.inMinutes)}:${two(d.inSeconds % 60)}';
   }
 
+  /// Giờ treo tường `HH:mm` cho dòng phụ của thẻ "Đơn tiếp theo".
+  String _formatClock(DateTime t) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(t.hour)}:${two(t.minute)}';
+  }
+
   Future<void> _showLowStorageWarning(BuildContext context) async {
     await showCupertinoDialog<void>(
       context: context,
@@ -325,15 +329,18 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
     if (state.isRecording && closedCode != null) {
       return EcCutoverBScreen(
-        shopName: widget.shopName,
         queueCount: widget.queueCount,
-        closedSummary: context.l10n.cutoverClosedSummary(
-          closedCode,
-          _formatElapsed(state.cutoverFromDuration ?? Duration.zero),
-        ),
-        signalText: context.l10n.cutoverSignalText,
+        closedCode: closedCode,
+        // Vòng đếm phải đếm đúng cửa sổ thật của bloc (2 giây), không phải con
+        // số 3 vẽ trong khung design — người quay canh tay theo cái vòng này.
+        countdownTotalSeconds: kCutoverDisplaySeconds,
+        countdownSeconds:
+            (kCutoverDisplaySeconds - state.elapsed.inSeconds).clamp(
+              0,
+              kCutoverDisplaySeconds,
+            ),
         newCode: state.code,
-        newDuration: _formatElapsed(state.elapsed),
+        newMeta: '${state.typeLabel} • ${_formatClock(DateTime.now())}',
         typeLabel: state.typeLabel,
         resolutionLabel: state.resolutionLabel,
         preview: preview,
@@ -347,7 +354,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       if (state.elapsed >= _bloc.nearLimitAt) {
         final remaining = _bloc.maxRecording - state.elapsed;
         return EcNearLimitScreen(
-          shopName: widget.shopName,
           queueCount: widget.queueCount,
           warningText: context.l10n.nearClipLimitWarning(
             '${(widget.maxRecording.inSeconds / 60).round()}',
@@ -373,7 +379,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       }
       if (state.typeLabel == 'Trả hàng') {
         return EcReturnRecScreen(
-          shopName: widget.shopName,
           queueCount: widget.queueCount,
           code: state.code,
           duration: _formatElapsed(state.elapsed),
@@ -386,7 +391,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         );
       }
       return EcRecording2Screen(
-        shopName: widget.shopName,
         queueCount: widget.queueCount,
         code: state.code,
         elapsed: _formatElapsed(state.elapsed),
@@ -405,7 +409,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     }
 
     return EcWaitBill2Screen(
-      shopName: widget.shopName,
       queueCount: widget.queueCount,
       typeLabel: state.typeLabel,
       resolutionLabel: state.resolutionLabel,

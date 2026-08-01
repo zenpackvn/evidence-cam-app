@@ -651,10 +651,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get captureFramePrompt => 'Place the bill in the frame to start';
+  String get captureFramePrompt => 'Scan the tracking code';
 
   @override
-  String get captureCameraDownHint => 'Camera facing down at the table';
+  String get captureCameraDownHint => 'Place the bill in the frame';
+
+  @override
+  String get cutoverSavedVideo => 'Video saved';
+
+  @override
+  String get cutoverPreparingNext => 'Getting ready for the next one';
+
+  @override
+  String get cutoverNextOrder => 'Next order';
 
   @override
   String get lowStorageTitle => 'Storage almost full';
@@ -769,7 +778,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoTypeSelectNote =>
-      'Choose a type for this recording session — add/edit/delete in Shop details';
+      'Pick the right type — add/edit/delete in Shop details';
+
+  @override
+  String get videoTypeSheetTitle => 'Choose a video type';
+
+  @override
+  String get videoTypeGroupDefault => 'Default types (required)';
+
+  @override
+  String get videoTypeGroupCustom => 'Shop\'s custom types';
 
   @override
   String get manageVideoTypesNote => 'Manage video types — open Shop details';

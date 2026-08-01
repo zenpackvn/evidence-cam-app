@@ -387,21 +387,16 @@ class _SimpleHeader extends StatelessWidget {
   }
 }
 
-/// Shop header (`C/ShopHeader`): back arrow + shop name on the left, an
-/// upload-queue count chip on the right. Used by the main tabs (e.g.
-/// HomeOrders).
+/// Shop header (`C/ShopHeader`): back arrow + shop name, nothing else.
+///
+/// Khung F1-12/F2-01 chỉ có nút back, tên shop và một spacer chiếm phần còn
+/// lại — không có chip mây. Chip đó từng nằm ở đây và đẩy toàn bộ màn xuống
+/// 9pt so với design; lối vào hàng đợi upload giờ là thẻ "Chờ tải".
 class _ShopHeader extends StatelessWidget {
-  const _ShopHeader({
-    required this.shopName,
-    this.queueCount = 0,
-    this.onBack,
-    this.onQueueTap,
-  });
+  const _ShopHeader({required this.shopName, this.onBack});
 
   final String shopName;
-  final int queueCount;
   final VoidCallback? onBack;
-  final VoidCallback? onQueueTap;
 
   @override
   Widget build(BuildContext context) {
@@ -932,7 +927,6 @@ class EcChooseShopScreen extends StatelessWidget {
               if (i > 0) const SizedBox(height: 10),
               _ShopRow(
                 shop: shops[i],
-                selected: i == 0,
                 onTap: onSelect == null ? null : () => onSelect!(shops[i]),
               ),
             ],
@@ -1007,27 +1001,7 @@ class EcChooseShopScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            // The tap target used to be the glyph box of a 16pt line — a few
-            // points tall, so most taps missed it. Pad it out to a proper
-            // touch target and keep the label itself unchanged.
-            Center(
-              child: EcTap(
-                onTap: onLogout,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 14,
-                    horizontal: 28,
-                  ),
-                  child: PenText(
-                    l10n.accountSignOut,
-                    size: 16,
-                    color: PenColors.ink,
-                    weight: FontWeight.w700,
-                    softWrap: false,
-                  ),
-                ),
-              ),
-            ),
+            _LogoutRow(onTap: onLogout),
           ],
         ),
       ),
@@ -1039,17 +1013,14 @@ class EcChooseShopScreen extends StatelessWidget {
 /// selected row is filled `--secondary` grey (the design never tints it
 /// green).
 class _ShopRow extends StatelessWidget {
-  const _ShopRow({required this.shop, required this.selected, this.onTap});
+  const _ShopRow({required this.shop, this.onTap});
 
   final EcShopSummary shop;
-  final bool selected;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return PenCard(
-      fill: selected ? PenColors.soft : PenColors.card,
-      stroke: selected ? PenColors.soft : PenColors.line,
       gap: 16,
       padding: const EdgeInsets.all(14),
       onTap: onTap,
@@ -1089,10 +1060,48 @@ class _ShopRow extends StatelessWidget {
             ],
           ),
         ),
-        // The row navigates into the shop rather than toggling a choice, so
-        // it carries a chevron instead of the design's selection dot.
-        const Icon(LucideIcons.chevronRight, size: 21, color: PenColors.mut),
+        // Tapping a row goes straight into the shop, so the design ends it
+        // with a chevron — there is no confirm step a radio would feed.
+        const Icon(
+          LucideIcons.chevronRight,
+          size: 22,
+          color: PenColors.ink,
+        ),
       ],
+    );
+  }
+}
+
+/// The centred `log-out` + "Đăng xuất" row both shop-picking screens end on —
+/// the only way out of an account that has no shop to enter.
+class _LogoutRow extends StatelessWidget {
+  const _LogoutRow({this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    // Không padding thì vùng bấm chỉ cao bằng dòng 16pt — hầu hết cú chạm
+    // trượt ra ngoài.
+    return EcTap(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 28),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(LucideIcons.logOut, size: 18, color: PenColors.ink),
+            const SizedBox(width: 8),
+            PenText(
+              context.l10n.accountSignOut,
+              size: 16,
+              color: PenColors.ink,
+              weight: FontWeight.w700,
+              softWrap: false,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1100,9 +1109,15 @@ class _ShopRow extends StatelessWidget {
 /// NoShop — empty state shown when the account has no shop yet: create a
 /// new shop, or wait for an invite.
 class EcNoShopScreen extends StatelessWidget {
-  const EcNoShopScreen({this.onCreate, this.onInviteTap, super.key});
+  const EcNoShopScreen({
+    this.onCreate,
+    this.onInviteTap,
+    this.onLogout,
+    super.key,
+  });
   final VoidCallback? onCreate;
   final VoidCallback? onInviteTap;
+  final VoidCallback? onLogout;
 
   @override
   Widget build(BuildContext context) {
@@ -1198,6 +1213,8 @@ class EcNoShopScreen extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 24),
+            _LogoutRow(onTap: onLogout),
           ],
         ),
       ),
@@ -3121,14 +3138,13 @@ class EcOrderPage {
   bool get hasPages => pageCount > 1;
 }
 
-/// HomeOrders — the main "Vận đơn" tab: shop header with upload queue,
-/// quick stats, a tracking-code search box, the three filter chips, the order
-/// list and the bottom tab bar (Vận đơn active).
+/// HomeOrders — the main "Vận đơn" tab: shop header, quick stats, a
+/// tracking-code search box, the three filter chips, the order list and the
+/// bottom tab bar (Vận đơn active).
 class EcHomeOrdersScreen extends StatefulWidget {
   const EcHomeOrdersScreen({
     required this.shopName,
     required this.orders,
-    this.queueCount = 0,
     this.stats = const [
       EcHomeStat(value: '0', label: 'Vận đơn'),
       EcHomeStat(
@@ -3146,7 +3162,6 @@ class EcHomeOrdersScreen extends StatefulWidget {
     this.searchHint = 'Nhập mã vận đơn',
     this.emptyText = 'Shop chưa có đơn nào',
     this.onBack,
-    this.onQueueTap,
     this.onScan,
     this.onScanResult,
     this.onSearchChanged,
@@ -3164,7 +3179,6 @@ class EcHomeOrdersScreen extends StatefulWidget {
 
   final String shopName;
   final List<EcOrderRow> orders;
-  final int queueCount;
   final List<EcHomeStat> stats;
 
   /// Options for the "Loại video" chip — the shop's video types. An empty list
@@ -3176,7 +3190,6 @@ class EcHomeOrdersScreen extends StatefulWidget {
   /// matched nothing).
   final String emptyText;
   final VoidCallback? onBack;
-  final VoidCallback? onQueueTap;
 
   /// Opens the barcode scanner; the returned code fills the search box.
   final Future<String?> Function()? onScan;
@@ -3325,12 +3338,7 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
         bottom: false,
         child: Column(
           children: [
-            _ShopHeader(
-              shopName: widget.shopName,
-              queueCount: widget.queueCount,
-              onBack: widget.onBack,
-              onQueueTap: widget.onQueueTap,
-            ),
+            _ShopHeader(shopName: widget.shopName, onBack: widget.onBack),
             Expanded(
               child: RefreshIndicator.adaptive(
                 onRefresh: widget.onRefresh ?? () async {},
@@ -3357,59 +3365,57 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                         ),
                       ),
                       const SizedBox(height: 18),
-                      Row(
+                      // Khung F2-01 vẽ một ô duy nhất: icon kính lúp, ô nhập,
+                      // vạch ngăn 1pt rồi nút quét 40x40 *bên trong* ô — không
+                      // phải ô nhập cộng một nút vuông rời bên cạnh.
+                      PenBox(
+                        height: 56,
+                        fill: PenColors.card,
+                        stroke: PenColors.line,
+                        radius: 14,
+                        axis: PenAxis.row,
+                        gap: 10,
+                        cross: CrossAxisAlignment.center,
+                        padding: const EdgeInsets.only(left: 16, right: 8),
                         children: [
+                          const Icon(
+                            LucideIcons.search,
+                            size: 22,
+                            color: PenColors.mut,
+                          ),
                           Expanded(
-                            child: PenBox(
-                              height: 56,
-                              fill: PenColors.card,
-                              stroke: PenColors.line,
-                              radius: 14,
-                              axis: PenAxis.row,
-                              gap: 12,
-                              cross: CrossAxisAlignment.center,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
+                            child: CupertinoTextField(
+                              controller: _search,
+                              onChanged: (v) {
+                                setState(() => _query = v);
+                                widget.onSearchChanged?.call(v);
+                              },
+                              textInputAction: TextInputAction.search,
+                              padding: EdgeInsets.zero,
+                              decoration: const BoxDecoration(),
+                              placeholder: widget.searchHint,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: PenColors.ink,
                               ),
-                              children: [
-                                const Icon(
-                                  LucideIcons.search,
-                                  size: 22,
-                                  color: PenColors.mut,
-                                ),
-                                Expanded(
-                                  child: CupertinoTextField(
-                                    controller: _search,
-                                    onChanged: (v) {
-                                      setState(() => _query = v);
-                                      widget.onSearchChanged?.call(v);
-                                    },
-                                    textInputAction: TextInputAction.search,
-                                    padding: EdgeInsets.zero,
-                                    decoration: const BoxDecoration(),
-                                    placeholder: widget.searchHint,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: PenColors.ink,
-                                    ),
-                                    placeholderStyle: const TextStyle(
-                                      fontSize: 16,
-                                      color: PenColors.mut,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              placeholderStyle: const TextStyle(
+                                fontSize: 16,
+                                color: PenColors.mut,
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 11),
+                          const PenBox(
+                            width: 1,
+                            height: 26,
+                            fill: PenColors.line,
+                          ),
                           EcTap(
                             onTap: widget.onScan == null ? null : _onScan,
                             child: const PenBox(
-                              width: 56,
-                              height: 56,
-                              fill: PenColors.card,
-                              stroke: PenColors.line,
-                              radius: 14,
+                              width: 40,
+                              height: 40,
+                              fill: PenColors.bg,
+                              radius: 12,
                               axis: PenAxis.row,
                               main: MainAxisAlignment.center,
                               cross: CrossAxisAlignment.center,
@@ -3471,9 +3477,11 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                         PenCard(
                           axis: PenAxis.column,
                           clip: true,
+                          // Design: padding [6,12]. PenBox vẽ viền đè lên mép
+                          // nên padding đo từ mép ngoài, không cộng thêm 1pt.
                           padding: const EdgeInsets.symmetric(
                             vertical: 6,
-                            horizontal: 14,
+                            horizontal: 12,
                           ),
                           children: [
                             for (var i = 0; i < visible.length; i++) ...[
@@ -3757,7 +3765,8 @@ class _StatBox extends StatelessWidget {
       radius: 14,
       axis: PenAxis.column,
       gap: 8,
-      cross: CrossAxisAlignment.start,
+      // Khung F2-01 canh giữa cả hàng icon+số lẫn nhãn trong thẻ.
+      cross: CrossAxisAlignment.center,
       hugMain: true,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
       children: [
@@ -3890,7 +3899,7 @@ class _OrderTile extends StatelessWidget {
       child: PenBox(
         width: double.infinity,
         axis: PenAxis.row,
-        gap: 13,
+        gap: 12,
         cross: CrossAxisAlignment.center,
         padding: const EdgeInsets.symmetric(vertical: 13),
         children: [
@@ -3931,22 +3940,21 @@ class _OrderTile extends StatelessWidget {
           // the count is meaningless while evidence is missing.
           if (failed)
             PenBox(
-              stroke: PenColors.danger,
-              radius: 999,
               axis: PenAxis.row,
               gap: 6,
               cross: CrossAxisAlignment.center,
               hugMain: true,
-              padding: const EdgeInsets.symmetric(
-                vertical: 3,
-                horizontal: 9,
-              ),
               children: [
+                const Icon(
+                  LucideIcons.circleAlert,
+                  size: 19,
+                  color: PenColors.danger,
+                ),
                 PenText(
                   context.l10n.orderErrorCount(order.errorCount),
-                  size: 12,
+                  size: 14,
                   color: PenColors.danger,
-                  weight: FontWeight.w700,
+                  weight: FontWeight.w600,
                   softWrap: false,
                 ),
               ],

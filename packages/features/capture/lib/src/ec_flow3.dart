@@ -267,10 +267,11 @@ class EcCutoverBScreen extends StatelessWidget {
   const EcCutoverBScreen({
     this.shopName = 'Shop ABC',
     this.queueCount = 3,
-    this.closedSummary = 'Đã chốt mã vận đơn A (02:45)',
-    this.signalText = 'Âm báo + rung khi chuyển đơn',
+    this.closedCode = 'SPXVN024567890',
+    this.countdownSeconds = 3,
+    this.countdownTotalSeconds = 3,
     this.newCode = 'SPXVN098765432',
-    this.newDuration = '00:01',
+    this.newMeta = 'Đóng hàng • 10:28',
     this.typeLabel = 'Đóng hàng',
     this.resolutionLabel = '720p',
     this.preview,
@@ -286,10 +287,19 @@ class EcCutoverBScreen extends StatelessWidget {
 
   final String shopName;
   final int queueCount;
-  final String closedSummary;
-  final String signalText;
+
+  /// Mã vừa được chốt — khung F3-04 để nó ở pill trên cùng, đúng chỗ mã đang
+  /// quay vẫn đứng ở màn REC, nên mắt người quay không phải đi tìm.
+  final String closedCode;
+
+  /// Giây còn lại trước khi phiên kế tiếp bắt đầu, và tổng để vẽ vòng tiến độ.
+  final int countdownSeconds;
+  final int countdownTotalSeconds;
+
   final String newCode;
-  final String newDuration;
+
+  /// Dòng phụ của thẻ "Đơn tiếp theo": loại video • giờ, ví dụ `Đóng hàng • 10:28`.
+  final String newMeta;
   final String typeLabel;
   final String resolutionLabel;
 
@@ -319,38 +329,184 @@ class EcCutoverBScreen extends StatelessWidget {
       onManualEntry: onManualEntry,
       showStopButton: true,
       onStop: onStop,
-      centerArea: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(LucideIcons.check, size: 16, color: BrandColors.ink),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    closedSummary,
-                    overflow: TextOverflow.ellipsis,
-                    style: _t(14, FontWeight.w500, BrandColors.ink),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(signalText, style: _t(12, FontWeight.w400, BrandColors.mut)),
-            const SizedBox(height: 10),
-            _CamCodeBadge(code: newCode),
-            const SizedBox(height: 10),
-            Text(
-              newDuration,
-              style: _t(30, FontWeight.w600, BrandColors.ink),
-            ),
-          ],
+      // Khoảng cách lấy thẳng từ toạ độ khung F3-04 (CodePill y=76, SavedPill
+      // y=128, Countdown y=286, phụ đề y=381, NextCard y=426) chuyển thành hiệu
+      // số, để khung cao hơn 844px không dồn hết xuống đáy.
+      centerArea: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 76),
+              _CamCodeBadge(code: closedCode),
+              const SizedBox(height: 12),
+              _SavedPill(text: context.l10n.cutoverSavedVideo),
+              const SizedBox(height: 119),
+              _CountdownRing(
+                seconds: countdownSeconds,
+                totalSeconds: countdownTotalSeconds,
+              ),
+              const SizedBox(height: 9),
+              Text(
+                context.l10n.cutoverPreparingNext,
+                style: _t(16, FontWeight.w400, BrandColors.card),
+              ),
+              const SizedBox(height: 26),
+              _NextOrderCard(
+                label: context.l10n.cutoverNextOrder,
+                code: newCode,
+                meta: newMeta,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+/// Pill "Đã lưu video" — xác nhận clip vừa đóng đã nằm trong hàng đợi. Đây là
+/// điều duy nhất người quay cần biết trước khi tay họ chạm vào gói hàng kế tiếp.
+class _SavedPill extends StatelessWidget {
+  const _SavedPill({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => PenBox(
+    fill: const Color(0xCC161616),
+    stroke: const Color(0xFF636363),
+    strokeWidth: 1,
+    radius: 999,
+    axis: PenAxis.row,
+    gap: 9,
+    cross: CrossAxisAlignment.center,
+    // Pill ôm sát chữ như khung design; thiếu cờ này nó kéo hết bề ngang cột.
+    hugMain: true,
+    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 18),
+    children: [
+      const Icon(LucideIcons.check, size: 18, color: Color(0xFF67BB75)),
+      Flexible(
+        child: PenText(
+          text,
+          size: 16,
+          weight: FontWeight.w700,
+          color: PenColors.card,
+        ),
+      ),
+    ],
+  );
+}
+
+/// Vòng đếm ngược trước khi phiên kế tiếp bắt đầu.
+///
+/// Cung tiến độ chạy ngược chiều kim đồng hồ, khớp `sweepAngle: -250` của khung
+/// design ở mốc 3/3 giây; các mốc còn lại nội suy tuyến tính từ đó.
+class _CountdownRing extends StatelessWidget {
+  const _CountdownRing({required this.seconds, required this.totalSeconds});
+
+  final int seconds;
+  final int totalSeconds;
+
+  static const _fullSweep = -250.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = totalSeconds <= 0
+        ? 1.0
+        : (seconds.clamp(0, totalSeconds)) / totalSeconds;
+    return SizedBox(
+      width: 86,
+      height: 86,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const PenEllipse(
+            width: 86,
+            height: 86,
+            color: Color(0x80636363),
+            ring: 0.93,
+          ),
+          PenEllipse(
+            width: 86,
+            height: 86,
+            color: PenColors.ink,
+            ring: 0.93,
+            sweep: _fullSweep * ratio,
+          ),
+          const PenEllipse(width: 74, height: 74, color: Color(0x80161616)),
+          PenText(
+            '$seconds',
+            size: 36,
+            weight: FontWeight.w800,
+            color: PenColors.card,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Thẻ "Đơn tiếp theo" — mã của đơn sắp quay, viền xanh như khung design.
+class _NextOrderCard extends StatelessWidget {
+  const _NextOrderCard({
+    required this.label,
+    required this.code,
+    required this.meta,
+  });
+
+  final String label;
+  final String code;
+  final String meta;
+
+  @override
+  Widget build(BuildContext context) => PenBox(
+    width: double.infinity,
+    fill: const Color(0xCC161616),
+    stroke: const Color(0xFF1F9047),
+    strokeWidth: 1,
+    radius: 14,
+    axis: PenAxis.row,
+    gap: 14,
+    cross: CrossAxisAlignment.center,
+    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+    children: [
+      PenBox(
+        width: 46,
+        height: 46,
+        fill: const Color(0x99161616),
+        stroke: const Color(0xFFE4E4E4),
+        strokeWidth: 1,
+        radius: 999,
+        axis: PenAxis.row,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
+        children: const [
+          Icon(LucideIcons.package, size: 23, color: PenColors.card),
+        ],
+      ),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PenText(label, size: 12, color: const Color(0x99FFFFFF)),
+            PenText(
+              code,
+              size: 20,
+              weight: FontWeight.w700,
+              color: PenColors.card,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+            ),
+            PenText(meta, size: 12, color: const Color(0x80FFFFFF)),
+          ],
+        ),
+      ),
+    ],
+  );
 }
 
 // --- NearLimit ---------------------------------------------------------
@@ -562,16 +718,28 @@ class EcReturnRecScreen extends StatelessWidget {
       onManualEntry: onManualEntry,
       showStopButton: true,
       onStop: onStop,
-      centerArea: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _CamCodeBadge(code: code),
-            const SizedBox(height: 10),
-            Text(duration, style: _t(30, FontWeight.w600, BrandColors.ink)),
-            const SizedBox(height: 10),
-            Text(linkNote, style: _t(12, FontWeight.w400, BrandColors.mut)),
-          ],
+      // Khung F3-07 dựng giống hệt F3-03: mã và pill REC nằm ngay dưới header,
+      // không phải giữa khung ngắm. Quay trả hàng khác quay đóng gói ở chỗ có
+      // mã và loại video, không phải ở cách bố trí — nên dùng chung đúng khối
+      // này thay vì dựng riêng.
+      centerArea: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 76),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _CamCodeBadge(code: code),
+              const SizedBox(height: 10),
+              _RecRow(elapsed: duration),
+              // ⚠️ Lệch design có chủ ý: khung F3-07 không có dòng này. Giữ vì
+              // nó là thứ duy nhất nói cho nhân viên biết clip hoàn sẽ được nối
+              // về hồ sơ của mã gốc — bỏ đi là mất thông tin, không phải mất
+              // trang trí.
+              const SizedBox(height: 10),
+              Text(linkNote, style: _t(12, FontWeight.w400, BrandColors.mut)),
+            ],
+          ),
         ),
       ),
     );
@@ -590,7 +758,6 @@ class _CamScaffold extends StatelessWidget {
     required this.typeLabel,
     required this.resolutionLabel,
     required this.centerArea,
-    this.headerTitle,
     this.preview,
     this.onBack,
     this.onQueueTap,
@@ -610,8 +777,6 @@ class _CamScaffold extends StatelessWidget {
   final String resolutionLabel;
   final Widget centerArea;
 
-  /// Overrides the header text; normally left null so the shop name shows.
-  final String? headerTitle;
   final Widget? preview;
   final VoidCallback? onBack;
 
@@ -622,6 +787,7 @@ class _CamScaffold extends StatelessWidget {
   final VoidCallback? onFlipCamera;
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
+
   /// Framing brackets + sweeping scan line. Only the idle screen shows them —
   /// once recording starts the frame would just crop the operator's view.
   final bool showScanFrame;
@@ -651,7 +817,6 @@ class _CamScaffold extends StatelessWidget {
             child: SafeArea(
               bottom: false,
               child: _CamHeader(
-                title: headerTitle ?? shopName,
                 queueCount: queueCount,
                 onBack: onBack,
                 onQueueTap: onQueueTap,
@@ -886,15 +1051,11 @@ class _CamFooter extends StatelessWidget {
 
 class _CamHeader extends StatelessWidget {
   const _CamHeader({
-    required this.title,
     required this.queueCount,
     this.onBack,
     this.onQueueTap,
   });
 
-  /// The shop name, shown in the header in every recording state (a
-  /// clip is rolling).
-  final String title;
   final int queueCount;
   final VoidCallback? onBack;
   final VoidCallback? onQueueTap;
@@ -926,18 +1087,7 @@ class _CamHeader extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: PenText(
-              title,
-              size: 24,
-              color: PenColors.card,
-              weight: FontWeight.w800,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 12),
+          const Spacer(),
           // ponytail: EcTap thay vì _Tap — _Tap thêm padding 4 làm lệch chip
           // so với thiết kế; ở đây chỉ cần vùng bấm.
           EcTap(
@@ -2171,7 +2321,7 @@ const List<EcVideoType> ecDefaultVideoTypes = [
     locked: true,
   ),
   EcVideoType(
-    label: 'ĐV vận chuyển',
+    label: 'Đơn vị vận chuyển',
     icon: Icons.local_shipping_outlined,
     locked: true,
   ),
@@ -2193,6 +2343,27 @@ class EcTypeSheetScreen extends StatelessWidget {
   final String selectedType;
   final ValueChanged<String>? onSelectType;
   final VoidCallback? onManageTypes;
+
+  /// Tiêu đề nhóm + các hàng của nhóm. Nhóm rỗng thì biến mất hẳn — một shop
+  /// chưa tự thêm loại nào không nên thấy đề mục trống.
+  List<Widget> _typeGroup(String title, Iterable<EcVideoType> group) {
+    if (group.isEmpty) return const [];
+    return [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+        child: Text(title, style: _t(14, FontWeight.w400, BrandColors.mut)),
+      ),
+      for (final type in group)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _TypeSheetRow(
+            type: type,
+            selected: type.label == selectedType,
+            onTap: () => onSelectType?.call(type.label),
+          ),
+        ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2235,23 +2406,30 @@ class EcTypeSheetScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              context.l10n.videoTypeLabel,
-                              style: _t(16, FontWeight.w600, BrandColors.ink),
+                              context.l10n.videoTypeSheetTitle,
+                              style: _t(24, FontWeight.w800, BrandColors.ink),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               context.l10n.videoTypeSelectNote,
-                              style: _t(12, FontWeight.w400, BrandColors.mut),
+                              style: _t(14, FontWeight.w400, BrandColors.mut),
                             ),
                           ],
                         ),
                       ),
-                      for (final type in types)
-                        _TypeSheetRow(
-                          type: type,
-                          selected: type.label == selectedType,
-                          onTap: () => onSelectType?.call(type.label),
-                        ),
+                      // Khung F3-09 chia danh sách làm hai nhóm có tiêu đề.
+                      // Không phải trang trí: nhóm trên là loại khoá cứng ai
+                      // cũng có, nhóm dưới là loại shop tự thêm và sửa/xoá
+                      // được — người dùng cần biết vì sao có cái bấm giữ được,
+                      // có cái không.
+                      ..._typeGroup(
+                        context.l10n.videoTypeGroupDefault,
+                        types.where((t) => t.locked),
+                      ),
+                      ..._typeGroup(
+                        context.l10n.videoTypeGroupCustom,
+                        types.where((t) => !t.locked),
+                      ),
                       const SizedBox(height: 4),
                       _ManageRow(onTap: onManageTypes),
                     ],
@@ -2296,14 +2474,22 @@ class _TypeSheetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Khung F3-09 vẽ mỗi loại là một thẻ bo 14 có viền, không phải hàng ngăn
+    // bằng gạch chân — vùng chạm vì thế nhìn thấy được, quan trọng với người
+    // đang ôm thùng hàng bấm một tay.
     return EcTap(
       onTap: onTap,
       child: DecoratedBox(
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: BrandColors.line)),
+        decoration: ShapeDecoration(
+          color: BrandColors.card,
+          shape: SmoothRectangleBorder(
+            smoothness: ecCornerSmoothing,
+            borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(color: BrandColors.line),
+          ),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
           child: Row(
             children: [
               Flexible(

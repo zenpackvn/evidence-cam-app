@@ -117,7 +117,6 @@ void main() {
       const EcHomeOrdersScreen(
         shopName: 'Shop ABC',
         orders: _orders,
-        queueCount: 4,
       ),
     ),
   );

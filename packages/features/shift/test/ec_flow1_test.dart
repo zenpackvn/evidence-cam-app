@@ -47,8 +47,8 @@ void main() {
       expect(find.text('Nhập lại mật khẩu'), findsOneWidget);
       expect(find.text('Điều khoản sử dụng'), findsOneWidget);
       expect(find.text('Tạo tài khoản'), findsOneWidget);
-      expect(find.text('Đăng nhập với Google'), findsOneWidget);
-      expect(find.text('Đăng nhập với Apple'), findsOneWidget);
+      expect(find.text('Đăng ký với Google'), findsOneWidget);
+      expect(find.text('Đăng ký với Apple'), findsOneWidget);
       expect(find.text('Đăng nhập'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -128,10 +128,10 @@ void main() {
       expect(find.text('Quên mật khẩu'), findsOneWidget);
       // The design's email field carries a placeholder, not a label.
       expect(find.text('Nhập email của bạn'), findsOneWidget);
-      expect(find.text('Gửi link đặt lại'), findsOneWidget);
+      expect(find.text('Gửi liên kết đặt lại'), findsOneWidget);
       expect(find.text('Đăng nhập'), findsOneWidget);
       expect(
-        find.text('Đã gửi — kiểm tra hộp thư (kể cả mục spam)'),
+        find.text('Đã gửi — kiểm tra hộp thư, kể cả mục spam'),
         findsNothing,
       );
       expect(tester.takeException(), isNull);
@@ -142,7 +142,7 @@ void main() {
     ) async {
       await _pump(tester, const EcForgotPasswordScreen(sent: true));
       expect(
-        find.text('Đã gửi — kiểm tra hộp thư (kể cả mục spam)'),
+        find.text('Đã gửi — kiểm tra hộp thư, kể cả mục spam'),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
@@ -153,7 +153,7 @@ void main() {
       await _pump(tester, EcForgotPasswordScreen(onSend: () => sent = true));
       await tester.enterText(find.byType(CupertinoTextField), 'a@b.com');
       await tester.pump();
-      await tester.tap(find.text('Gửi link đặt lại'));
+      await tester.tap(find.text('Gửi liên kết đặt lại'));
       expect(sent, isTrue);
     });
   });
@@ -531,11 +531,11 @@ void main() {
         const EcHomeOrdersScreen(shopName: 'Shop ABC', orders: orders),
       );
       expect(find.text('Shop ABC'), findsOneWidget);
-      expect(find.text('Vận đơn'), findsOneWidget);
       expect(find.text('SPXVN024567890'), findsOneWidget);
       expect(find.text('SPXVN044556677'), findsOneWidget);
       expect(find.text('1 lỗi'), findsOneWidget);
-      expect(find.text('Vận đơn'), findsOneWidget);
+      // "Vận đơn" labels both the first stat card and the orders tab.
+      expect(find.text('Vận đơn'), findsNWidgets(2));
       expect(find.text('Ghi hình'), findsOneWidget);
       expect(find.text('Tài khoản'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -602,10 +602,9 @@ void main() {
         tester,
         const EcHomeOrdersScreen(shopName: 'Shop ABC', orders: orders),
       );
-      // Three chevron-down chips, each showing its own "no filter" value —
-      // they used to be three chips whose sheets offered a single option
-      // (themselves), which made two of the three dead controls.
-      expect(find.byIcon(LucideIcons.chevronDown), findsNWidgets(3));
+      // All three chips open a sheet, but the design only marks the
+      // video-type one with a chevron.
+      expect(find.byIcon(LucideIcons.chevronDown), findsOneWidget);
       expect(find.text('Tất cả'), findsOneWidget);
       expect(find.text('Mọi lúc'), findsOneWidget);
       expect(find.text('Loại video'), findsOneWidget);

@@ -24,7 +24,6 @@ Widget splashPreview() => _framed(const EcSplashScreen());
 Widget homeOrdersPreview() => _framed(
   const EcHomeOrdersScreen(
     shopName: 'Shop',
-    queueCount: 4,
     orders: [
       EcOrderRow(
         code: 'TRACKING-001',

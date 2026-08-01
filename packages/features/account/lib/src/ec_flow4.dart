@@ -28,7 +28,6 @@ class EcAccountTabScreen extends StatelessWidget {
     this.userName = 'Nguyễn Văn A',
     this.userEmail = 'nguyenvana@gmail.com',
     this.shopName = 'Shop ABC',
-    this.queueCount = 3,
     this.planLabel = 'Cơ bản',
     this.languageLabel = 'Tiếng Việt',
     this.loginMethodsLabel = '3 liên kết',
@@ -38,7 +37,6 @@ class EcAccountTabScreen extends StatelessWidget {
     this.onProfileTap,
     this.onQuotaTap,
     this.onLanguageTap,
-    this.onStopCodeTap,
     this.onChangePasswordTap,
     this.onLoginMethodsTap,
     this.onLogout,
@@ -51,7 +49,6 @@ class EcAccountTabScreen extends StatelessWidget {
   final String userName;
   final String userEmail;
   final String shopName;
-  final int queueCount;
   final String planLabel;
   final String languageLabel;
   final String loginMethodsLabel;
@@ -61,7 +58,6 @@ class EcAccountTabScreen extends StatelessWidget {
   final VoidCallback? onProfileTap;
   final VoidCallback? onQuotaTap;
   final VoidCallback? onLanguageTap;
-  final VoidCallback? onStopCodeTap;
   final VoidCallback? onChangePasswordTap;
   final VoidCallback? onLoginMethodsTap;
   final VoidCallback? onLogout;
@@ -345,9 +341,13 @@ class EcLanguageScreen extends StatelessWidget {
       // flowing after them.
       decorations: [
         const Positioned(left: 45, top: 392, child: PenGlobeIllustration()),
+        // The sprig hangs to the left of the globe's own box, so it is placed
+        // on the screen rather than inside the illustration (which would clip
+        // it).
+        const Positioned(left: 32, top: 486, child: PenLeafSprig()),
         Positioned(
           left: 45,
-          top: 582,
+          top: 542,
           child: SizedBox(
             width: 300,
             child: Column(
@@ -570,6 +570,16 @@ String ecHumanBytes(int b) {
 /// of this screen's copy is Vietnamese-first).
 String ecHumanBytesVi(int b) => ecHumanBytes(b).replaceAll('.', ',');
 
+/// Drops [used]'s unit when [cap] already carries the same one, so the ratio
+/// reads "Đã dùng 28,2 / 60 GB" the way the design writes it — not
+/// "28,2 GB / 60 GB".
+String _withoutSharedUnit(String used, String cap) {
+  final unit = ' ${cap.split(' ').last}';
+  return used.endsWith(unit)
+      ? used.substring(0, used.length - unit.length)
+      : used;
+}
+
 /// One video type's local storage footprint, used by [EcQuotaScreen]'s
 /// "Dung lượng theo loại" breakdown. Computed on-device from the upload
 /// queue's actual clip files, so it always agrees with what's really stored —
@@ -721,7 +731,10 @@ class EcQuotaScreen extends StatelessWidget {
                     _QuotaSummaryCard(
                       planLabel: planLabel,
                       remainingLabel: ecHumanBytesVi(_remainingBytes),
-                      usedLabel: ecHumanBytesVi(usedBytes),
+                      usedLabel: _withoutSharedUnit(
+                        ecHumanBytesVi(usedBytes),
+                        ecHumanBytesVi(capBytes),
+                      ),
                       capLabel: ecHumanBytesVi(capBytes),
                       usedPercent: _usedPercent,
                       usedFraction: _usedFraction,
@@ -972,10 +985,20 @@ class _QuotaSummaryCard extends StatelessWidget {
             child: Stack(
               children: [
                 const Positioned.fill(child: ColoredBox(color: _track)),
-                FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: usedFraction.clamp(0.0, 1.0),
-                  child: const ColoredBox(color: PenColors.success),
+                // `Positioned.fill`, not a bare child: a `Stack` hands
+                // non-positioned children *loose* constraints, so the fill
+                // would collapse to zero height and never paint.
+                Positioned.fill(
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: usedFraction.clamp(0.0, 1.0),
+                    // Rounded on its own, so the fill ends in a cap the way
+                    // the design draws it instead of a square edge.
+                    child: const PenBox(
+                      fill: PenColors.success,
+                      radius: 999,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1104,6 +1127,10 @@ class _QuotaBreakdownCard extends StatelessWidget {
             width: double.infinity,
             height: 10,
             child: Row(
+              // `stretch`, not the default `center`: a centered child gets
+              // loose height constraints and a bare `ColoredBox` collapses to
+              // nothing, leaving the bar invisible.
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (var i = 0; i < typeUsage.length; i++)
                   Expanded(
@@ -1247,6 +1274,14 @@ class _DialogFrame extends StatelessWidget {
                     width: width,
                     fill: PenColors.card,
                     radius: 14,
+                    // The design lifts every dialog off its scrim.
+                    shadows: const [
+                      BoxShadow(
+                        color: Color(0x1F161616),
+                        offset: Offset(0, 14),
+                        blurRadius: 36,
+                      ),
+                    ],
                     axis: PenAxis.column,
                     cross: CrossAxisAlignment.center,
                     hugMain: true,
@@ -1631,8 +1666,12 @@ class _DialogPasswordFieldState extends State<_DialogPasswordField> {
                       fontWeight: FontWeight.w700,
                       color: PenColors.ink,
                     ),
+                    // The weight has to be spelled out: `placeholderStyle`
+                    // inherits from `style` above, so the hint would come out
+                    // bold like the value.
                     placeholderStyle: const TextStyle(
                       fontSize: 14,
+                      fontWeight: FontWeight.w400,
                       color: PenColors.mut,
                     ),
                   ),
@@ -1734,7 +1773,7 @@ class _SimpleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PenHeader(title: title, onBack: onBack, gap: 14);
+    return PenHeader(title: title, onBack: onBack, gap: 14, backSize: 26);
   }
 }
 
@@ -2150,7 +2189,10 @@ class _LockedField extends StatelessWidget {
             const Icon(LucideIcons.lock, size: 21, color: PenColors.ink),
           ],
         ),
-        if (hint != null)
+        if (hint != null) ...[
+          // The design's field group carries a 9pt gap between all three of
+          // label / box / caption, on top of the caption's own 4pt padding.
+          const SizedBox(height: 9),
           PenBox(
             width: double.infinity,
             axis: PenAxis.row,
@@ -2164,6 +2206,7 @@ class _LockedField extends StatelessWidget {
               ),
             ],
           ),
+        ],
       ],
     );
   }
@@ -2187,8 +2230,9 @@ class _LanguageOption extends StatelessWidget {
     return PenCard(
       fill: selected ? PenColors.soft : PenColors.card,
       stroke: PenColors.line,
-      // The design thickens the border of the chosen language rather than
-      // tinting it — selection reads as ink, never as brand.
+      // The design both tints the chosen language and doubles its border —
+      // selection reads as ink, never as brand.
+      strokeWidth: selected ? 2 : 1,
       gap: 12,
       padding: const EdgeInsets.all(20),
       onTap: onTap,

@@ -648,10 +648,19 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get captureFramePrompt => 'Đưa bill vào khung để bắt đầu';
+  String get captureFramePrompt => 'Quét mã vận đơn';
 
   @override
-  String get captureCameraDownHint => 'Camera nhìn xuống bàn';
+  String get captureCameraDownHint => 'Đưa bill vào khung';
+
+  @override
+  String get cutoverSavedVideo => 'Đã lưu video';
+
+  @override
+  String get cutoverPreparingNext => 'Chuẩn bị ghi hình tiếp theo';
+
+  @override
+  String get cutoverNextOrder => 'Đơn tiếp theo';
 
   @override
   String get lowStorageTitle => 'Máy gần đầy bộ nhớ';
@@ -765,7 +774,16 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoTypeSelectNote =>
-      'Chọn loại cho phiên quay — thêm/sửa/xóa trong Chi tiết shop';
+      'Chọn loại phù hợp — thêm/sửa/xóa trong Chi tiết shop';
+
+  @override
+  String get videoTypeSheetTitle => 'Chọn loại video';
+
+  @override
+  String get videoTypeGroupDefault => 'Loại mặc định (bắt buộc)';
+
+  @override
+  String get videoTypeGroupCustom => 'Loại tùy chỉnh của shop';
 
   @override
   String get manageVideoTypesNote => 'Quản lý loại video — mở Chi tiết shop';
@@ -876,13 +894,13 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get forgotPasswordSubtitle =>
-      'Nhập email để nhận link đặt lại mật khẩu';
+      'Nhập email để nhận liên kết đặt lại mật khẩu';
 
   @override
-  String get forgotPasswordSubmit => 'Gửi link đặt lại';
+  String get forgotPasswordSubmit => 'Gửi liên kết đặt lại';
 
   @override
-  String get forgotPasswordSent => 'Đã gửi — kiểm tra hộp thư (kể cả mục spam)';
+  String get forgotPasswordSent => 'Đã gửi — kiểm tra hộp thư, kể cả mục spam';
 
   @override
   String get forgotPasswordRememberPrompt => 'Nhớ mật khẩu rồi? ';

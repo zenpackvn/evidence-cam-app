@@ -323,8 +323,11 @@
       }
     }
   },
-  "captureFramePrompt": "Place the bill in the frame to start",
-  "captureCameraDownHint": "Camera facing down at the table",
+  "captureFramePrompt": "Scan the tracking code",
+  "captureCameraDownHint": "Place the bill in the frame",
+  "cutoverSavedVideo": "Video saved",
+  "cutoverPreparingNext": "Getting ready for the next one",
+  "cutoverNextOrder": "Next order",
   "lowStorageTitle": "Storage almost full",
   "lowStorageBody": "This device is low on storage — an in-progress recording may not save fully. Free up some space before continuing to record.",
   "lowStorageAction": "Got it",
@@ -372,7 +375,10 @@
   "returnCodeMismatch": "Return code doesn't match",
   "enterCodeManually": "Enter code manually",
   "videoTypeLabel": "Video type",
-  "videoTypeSelectNote": "Choose a type for this recording session — add/edit/delete in Shop details",
+  "videoTypeSelectNote": "Pick the right type — add/edit/delete in Shop details",
+  "videoTypeSheetTitle": "Choose a video type",
+  "videoTypeGroupDefault": "Default types (required)",
+  "videoTypeGroupCustom": "Shop's custom types",
   "manageVideoTypesNote": "Manage video types — open Shop details",
   "queueFilterAll": "All · {count}",
   "@queueFilterAll": {

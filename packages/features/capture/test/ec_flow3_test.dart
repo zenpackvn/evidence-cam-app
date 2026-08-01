@@ -30,7 +30,7 @@ void _expectCameraBottomTabsHidden() {
 
 void main() {
   group('EcWaitBill2Screen', () {
-    testWidgets('shows idle hint, shop header and camera rail', (
+    testWidgets('shows idle hint, upload chip and camera rail', (
       tester,
     ) async {
       await _pump(
@@ -40,10 +40,12 @@ void main() {
           onManualEntry: () {},
         ),
       );
-      expect(find.text('Shop ABC'), findsOneWidget);
+      // The camera header is back button + upload chip only — no shop title.
+      expect(find.text('Shop ABC'), findsNothing);
       expect(find.text('3'), findsOneWidget);
-      expect(find.text('Đưa bill vào khung để bắt đầu'), findsOneWidget);
-      expect(find.text('Camera nhìn xuống bàn'), findsOneWidget);
+      // Hai dòng gợi ý lấy nguyên văn khung F3-01 (CenterHint > T và S).
+      expect(find.text('Quét mã vận đơn'), findsOneWidget);
+      expect(find.text('Đưa bill vào khung'), findsOneWidget);
       expect(find.text('Đóng hàng'), findsOneWidget);
       expect(find.text('1x'), findsOneWidget);
       expect(find.text('720p'), findsOneWidget);
@@ -121,11 +123,19 @@ void main() {
     testWidgets('shows closed order A summary and new order B badge', (
       tester,
     ) async {
-      await _pump(tester, const EcCutoverBScreen());
-      expect(find.text('Đã chốt mã vận đơn A (02:45)'), findsOneWidget);
-      expect(find.text('Âm báo + rung khi chuyển đơn'), findsOneWidget);
+      // queueCount lệch 3 có chủ ý: chip hàng đợi cũng hiện một con số, để mặc
+      // định thì `find.text('3')` không phân biệt được nó với vòng đếm ngược.
+      await _pump(tester, const EcCutoverBScreen(queueCount: 7));
+      // Khung F3-04: mã vừa chốt ở pill trên, xác nhận đã lưu, vòng đếm ngược,
+      // rồi thẻ đơn kế tiếp. Cả bốn đều là thông tin, không phải trang trí —
+      // thiếu cái nào là người quay mất một câu trả lời.
+      expect(find.text('SPXVN024567890'), findsOneWidget);
+      expect(find.text('Đã lưu video'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+      expect(find.text('Chuẩn bị ghi hình tiếp theo'), findsOneWidget);
+      expect(find.text('Đơn tiếp theo'), findsOneWidget);
       expect(find.text('SPXVN098765432'), findsOneWidget);
-      expect(find.text('00:01'), findsOneWidget);
+      expect(find.text('Đóng hàng • 10:28'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -259,9 +269,13 @@ void main() {
       tester,
     ) async {
       await _pump(tester, const EcTypeSheetScreen());
-      expect(find.text('Loại video'), findsOneWidget);
+      // Khung F3-09: tiêu đề đầy đủ, và loại được chia hai nhóm có đề mục.
+      expect(find.text('Chọn loại video'), findsOneWidget);
+      expect(find.text('Loại mặc định (bắt buộc)'), findsOneWidget);
+      // Chưa có loại tùy chỉnh nào thì đề mục nhóm đó phải biến mất hẳn.
+      expect(find.text('Loại tùy chỉnh của shop'), findsNothing);
       expect(find.text('Đóng hàng'), findsOneWidget);
-      expect(find.text('ĐV vận chuyển'), findsOneWidget);
+      expect(find.text('Đơn vị vận chuyển'), findsOneWidget);
       expect(find.text('Trả hàng'), findsOneWidget);
       expect(find.byIcon(LucideIcons.lock), findsNWidgets(3));
       expect(find.byIcon(LucideIcons.check), findsOneWidget);

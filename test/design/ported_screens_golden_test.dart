@@ -16,6 +16,7 @@ import 'package:flutter/services.dart' show FontLoader;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 import 'package:localization/localization.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 const _designSize = Size(390, 844);
 
@@ -45,6 +46,22 @@ const _sampleOrders = [
     type: 'Đơn vị vận chuyển',
     videoCount: 1,
     errorCount: 1,
+  ),
+];
+
+/// Ba con số khung F1-12/F2-01 in ra, để ảnh đối chiếu nói về layout chứ
+/// không về dữ liệu mẫu.
+const _sampleStats = [
+  shift.EcHomeStat(value: '24', label: 'Vận đơn'),
+  shift.EcHomeStat(
+    value: '38',
+    label: 'Video đã quay',
+    icon: LucideIcons.video,
+  ),
+  shift.EcHomeStat(
+    value: '4',
+    label: 'Chờ tải',
+    icon: LucideIcons.cloudUpload,
   ),
 ];
 
@@ -130,16 +147,19 @@ const _evidenceBackdrop = EcOrderTimelineScreen(
           time: '10:23',
           label: 'Đóng hàng',
           statusText: 'Đã upload',
+          statusTone: EcStatusTone.done,
         ),
         EcTimelineVideo(
           time: '10:35',
           label: 'Đơn vị vận chuyển',
           statusText: 'Đang tải 72%',
+          statusTone: EcStatusTone.uploading,
         ),
         EcTimelineVideo(
           time: '10:52',
           label: 'Ảnh kèm hàng',
           statusText: 'Chờ upload',
+          statusTone: EcStatusTone.waiting,
         ),
       ],
     ),
@@ -150,11 +170,13 @@ const _evidenceBackdrop = EcOrderTimelineScreen(
           time: '09:12',
           label: 'Trả hàng',
           statusText: 'Lỗi · Thử lại',
+          statusTone: EcStatusTone.error,
         ),
         EcTimelineVideo(
           time: '09:30',
           label: 'Cân hàng',
           statusText: 'Chờ quota',
+          statusTone: EcStatusTone.quota,
         ),
       ],
     ),
@@ -250,7 +272,7 @@ void main() {
     ),
     'ported_f1_12_orders_tab': const shift.EcHomeOrdersScreen(
       shopName: 'Shop ABC',
-      queueCount: 4,
+      stats: _sampleStats,
       orders: _sampleOrders,
       pageInfo: _ordersPage,
       onPageChanged: _noopPage,
@@ -259,7 +281,7 @@ void main() {
     // nên cùng một widget phải khớp cả hai.
     'ported_f2_01_orders': const shift.EcHomeOrdersScreen(
       shopName: 'Shop ABC',
-      queueCount: 4,
+      stats: _sampleStats,
       orders: _sampleOrders,
       pageInfo: _ordersPage,
       onPageChanged: _noopPage,
@@ -287,7 +309,6 @@ void main() {
     ),
     'ported_f4_01_account': const EcAccountTabScreen(
       shopName: 'Shop ABC',
-      queueCount: 3,
       userName: 'Nguyễn Văn A',
       userEmail: 'nguyenvana@gmail.com',
     ),
