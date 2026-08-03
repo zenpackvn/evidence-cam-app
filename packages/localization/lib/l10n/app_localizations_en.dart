@@ -1464,4 +1464,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get manualEntryEmptyError => 'Enter a tracking code before recording';
+
+  @override
+  String get appUpdateTitle => 'A new version is available';
+
+  @override
+  String get appUpdateMessage =>
+      'Update ZenPack for the latest fixes and features.';
+
+  @override
+  String get appUpdateNow => 'Update';
+
+  @override
+  String get appUpdateLater => 'Later';
 }

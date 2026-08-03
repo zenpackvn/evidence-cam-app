@@ -2677,6 +2677,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a tracking code before recording'**
   String get manualEntryEmptyError;
+
+  /// Fallback title of the update dialog when Remote Config supplies none.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version is available'**
+  String get appUpdateTitle;
+
+  /// Fallback body of the update dialog when Remote Config supplies none.
+  ///
+  /// In en, this message translates to:
+  /// **'Update ZenPack for the latest fixes and features.'**
+  String get appUpdateMessage;
+
+  /// No description provided for @appUpdateNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get appUpdateNow;
+
+  /// No description provided for @appUpdateLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get appUpdateLater;
 }
 
 class _AppLocalizationsDelegate

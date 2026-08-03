@@ -1458,4 +1458,16 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get manualEntryEmptyError => 'Vui lòng nhập mã vận đơn trước khi quay';
+
+  @override
+  String get appUpdateTitle => 'Đã có phiên bản mới';
+
+  @override
+  String get appUpdateMessage => 'Cập nhật ZenPack để dùng bản mới nhất.';
+
+  @override
+  String get appUpdateNow => 'Cập nhật';
+
+  @override
+  String get appUpdateLater => 'Để sau';
 }

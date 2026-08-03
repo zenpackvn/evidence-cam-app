@@ -792,5 +792,9 @@
   "manualEntryEmptyError": "Vui lòng nhập mã vận đơn trước khi quay",
   "@manualEntryEmptyError": {
     "description": "Inline error when Bắt đầu quay is tapped with an empty tracking-code field."
-  }
+  },
+  "appUpdateTitle": "Đã có phiên bản mới",
+  "appUpdateMessage": "Cập nhật ZenPack để dùng bản mới nhất.",
+  "appUpdateNow": "Cập nhật",
+  "appUpdateLater": "Để sau"
 }

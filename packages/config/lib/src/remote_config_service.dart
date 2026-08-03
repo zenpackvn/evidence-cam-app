@@ -4,6 +4,8 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
+import 'app_update.dart';
+
 /// Server-controlled feature flags. Each value pairs a Remote Config key with
 /// a compile-time default, so a read always returns something sensible even
 /// before (or without) a successful fetch.
@@ -19,18 +21,20 @@ enum FeatureFlag {
   final bool defaultValue;
 }
 
-/// Remote Config key holding the lowest app version the backend still
-/// supports, as a dotted string (e.g. `"1.7.0"`). Empty (the default) means
-/// "no forced update". Bump it in the Firebase console to force clients below
-/// it to upgrade; consumed by the app shell's force-update gate.
-const minSupportedVersionKey = 'min_supported_version';
-
 /// Reads remote configuration and feature flags. Implementations must apply
 /// [FeatureFlag] defaults so reads never block on the network.
 abstract class RemoteConfigService {
   /// Loads defaults and triggers a fetch/activate. Safe to call once at
   /// startup; failures are swallowed so they never block app launch.
   Future<void> init();
+
+  /// Completes when the startup fetch has finished (successfully or not).
+  ///
+  /// [init] deliberately does not await the network, so a read taken right
+  /// after it still sees compile-time defaults. Anything that must act on the
+  /// *server's* answer — the update gate — awaits this first, with its own
+  /// timeout. Never throws.
+  Future<void> get fetched;
 
   bool getBool(String key);
   String getString(String key);
@@ -47,6 +51,11 @@ class FirebaseRemoteConfigService implements RemoteConfigService {
 
   final FirebaseRemoteConfig _remoteConfig;
 
+  Future<void>? _fetch;
+
+  @override
+  Future<void> get fetched => _fetch ?? Future<void>.value();
+
   @override
   Future<void> init() async {
     try {
@@ -62,9 +71,10 @@ class FirebaseRemoteConfigService implements RemoteConfigService {
       );
       await _remoteConfig.setDefaults(<String, Object>{
         for (final flag in FeatureFlag.values) flag.key: flag.defaultValue,
-        minSupportedVersionKey: '',
+        appUpdateKey: '',
       });
-      unawaited(_fetchAndActivate());
+      _fetch = _fetchAndActivate();
+      unawaited(_fetch);
     } on Object catch (error) {
       _logError(error);
     }

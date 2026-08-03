@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.7.0+1
+version: 1.8.0+1
 
 environment:
   sdk: ^3.12.0
@@ -130,6 +130,10 @@ dependencies:
   uuid: ^4.5.3
 
   package_info_plus: ^10.1.0
+
+  # Opens the App Store / Play Store listing from the update gate. Already
+  # present transitively; declared here because the app imports it directly.
+  url_launcher: ^6.3.1
 
   # Real device model (e.g. "SM-M146B") sent up with each recording so the
   # evidence detail screen can show which phone recorded a clip instead of

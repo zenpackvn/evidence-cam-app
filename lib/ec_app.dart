@@ -65,6 +65,7 @@ import 'package:shared_contracts/shared_contracts.dart' show ClipBudget;
 import 'package:storage/storage.dart';
 
 import 'app/di/injection.dart';
+import 'app/update_gate.dart';
 import 'data/ec_uploader.dart';
 import 'data/platform_device_conditions.dart';
 import 'screens/ec_record_route.dart';
@@ -263,7 +264,9 @@ class _EcAppState extends State<EcApp> {
           child: GestureDetector(
             onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
             behavior: HitTestBehavior.opaque,
-            child: child,
+            // Above the router so a forced update covers every screen, and
+            // inside the localization delegates so its labels are translated.
+            child: UpdateGate(child: child ?? const SizedBox.shrink()),
           ),
         ),
       ),

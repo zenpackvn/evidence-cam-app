@@ -1038,5 +1038,15 @@
   "manualEntryEmptyError": "Enter a tracking code before recording",
   "@manualEntryEmptyError": {
     "description": "Inline error when Bắt đầu quay is tapped with an empty tracking-code field."
-  }
+  },
+  "appUpdateTitle": "A new version is available",
+  "@appUpdateTitle": {
+    "description": "Fallback title of the update dialog when Remote Config supplies none."
+  },
+  "appUpdateMessage": "Update ZenPack for the latest fixes and features.",
+  "@appUpdateMessage": {
+    "description": "Fallback body of the update dialog when Remote Config supplies none."
+  },
+  "appUpdateNow": "Update",
+  "appUpdateLater": "Later"
 }
