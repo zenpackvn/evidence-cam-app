@@ -4287,9 +4287,13 @@ GoRouter _buildRouter(
         // routing to /login. A still-signed-in user goes straight to shop
         // selection, same destination a fresh login lands on.
         builder: (c, s) => EcSplashScreen(
-          onStart: () => auth.currentUser != null
-              ? c.go('/shops', extra: _resumedSession)
-              : c.go('/login'),
+          // Luôn dừng ở màn chọn shop, kể cả khi phiên còn sống: mở app là
+          // bắt đầu một ca làm việc, mà người quay có thể đổi shop giữa các
+          // ca. Nhảy thẳng vào shop gần nhất là cách clip bị gán nhầm shop mà
+          // không ai để ý. Phiên đăng nhập vẫn được giữ nên không phải nhập
+          // lại tài khoản.
+          onStart: () =>
+              auth.currentUser != null ? c.go('/shops') : c.go('/login'),
         ),
       ),
       GoRoute(

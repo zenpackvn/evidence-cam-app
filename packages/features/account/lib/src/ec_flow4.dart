@@ -90,26 +90,28 @@ class EcAccountTabScreen extends StatelessWidget {
   final VoidCallback? onFeedback;
   final VoidCallback? onRateApp;
 
+  /// Chiều cao dải xanh, dùng cả ở chỗ vẽ lẫn chỗ tính trần khối cố định —
+  /// hai chỗ lệch nhau là sinh ra khe hở hoặc phần xanh bị đè.
+  static const _bannerHeight = 140.0;
+
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       backgroundColor: BrandColors.bg,
       child: Stack(
         children: [
-          // Design vẽ dải xanh cao 189 tính từ mép artboard, gồm cả hàng header
-          // mà màn này bỏ đi (xem doc ở trên) — trừ đúng 49pt của hàng đó để
-          // dải vẫn kết thúc ngay dưới thẻ hồ sơ như thiết kế.
+          // Dải xanh nằm dưới cùng lớp vẽ, thuộc phần cố định.
           const Align(
             alignment: Alignment.topCenter,
-            child: PenBrandBanner(height: 140),
+            child: PenBrandBanner(height: _bannerHeight),
           ),
           SafeArea(
             bottom: false,
             child: Column(
               children: [
-                // Thẻ tài khoản đứng yên: nó là danh tính của phiên đang dùng,
-                // cuộn mất đi thì người dùng không còn mốc nào xác nhận mình
-                // đang ở tài khoản nào giữa một danh sách cài đặt dài.
+                // Khối cố định: thẻ tài khoản trên nền dải xanh. Cùng kiểu bố
+                // cục với trang Vận đơn — phần trên đứng yên, phần dưới cuộn
+                // và DỪNG lại dưới nó, không trượt chồng lên.
                 Padding(
                   padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
                   child: _UserRow(
@@ -121,7 +123,6 @@ class EcAccountTabScreen extends StatelessWidget {
                 ),
                 Expanded(
                   child: SingleChildScrollView(
-                    // Design `Body`: padding [26, 18, 0, 18].
                     padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
