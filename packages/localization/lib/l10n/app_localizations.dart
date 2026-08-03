@@ -2690,6 +2690,138 @@ abstract class AppLocalizations {
   /// **'Or enter the size you want'**
   String get uploadSizeCustomLabel;
 
+  /// No description provided for @bundleBackendPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting on a backend endpoint for this'**
+  String get bundleBackendPending;
+
+  /// No description provided for @supportOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t open — check the app is installed'**
+  String get supportOpenFailed;
+
+  /// No description provided for @feedbackThanksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you!'**
+  String get feedbackThanksTitle;
+
+  /// No description provided for @feedbackThanksBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your feedback helps make ZenPack better.'**
+  String get feedbackThanksBody;
+
+  /// No description provided for @feedbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like to share with us?'**
+  String get feedbackTitle;
+
+  /// No description provided for @feedbackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your feedback...'**
+  String get feedbackHint;
+
+  /// No description provided for @feedbackSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send feedback'**
+  String get feedbackSend;
+
+  /// No description provided for @feedbackThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks for your feedback'**
+  String get feedbackThanks;
+
+  /// No description provided for @accountSectionAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'ABOUT'**
+  String get accountSectionAbout;
+
+  /// No description provided for @accountFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Send us feedback'**
+  String get accountFeedback;
+
+  /// No description provided for @accountFeedbackNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your thoughts to make ZenPack better'**
+  String get accountFeedbackNote;
+
+  /// No description provided for @accountRateApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the app'**
+  String get accountRateApp;
+
+  /// No description provided for @accountRateAppNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Support ZenPack development'**
+  String get accountRateAppNote;
+
+  /// No description provided for @supportFacebook.
+  ///
+  /// In en, this message translates to:
+  /// **'Message on Facebook'**
+  String get supportFacebook;
+
+  /// No description provided for @supportZalo.
+  ///
+  /// In en, this message translates to:
+  /// **'Message on Zalo'**
+  String get supportZalo;
+
+  /// No description provided for @supportCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call support'**
+  String get supportCall;
+
+  /// No description provided for @bundleCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get bundleCreate;
+
+  /// No description provided for @bundleSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String bundleSelected(int count);
+
+  /// No description provided for @bundleCreateLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Create link'**
+  String get bundleCreateLink;
+
+  /// No description provided for @bundleUploadDrive.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload to Drive'**
+  String get bundleUploadDrive;
+
+  /// No description provided for @limitClampedByServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan allows at most {value} — the system lowered it to that'**
+  String limitClampedByServer(String value);
+
+  /// No description provided for @sheetCustomMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter {min} {unit} or more'**
+  String sheetCustomMin(String min, String unit);
+
   /// No description provided for @sheetCustomRange.
   ///
   /// In en, this message translates to:

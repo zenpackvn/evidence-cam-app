@@ -1464,6 +1464,81 @@ class AppLocalizationsVi extends AppLocalizations {
   String get uploadSizeCustomLabel => 'Hoặc nhập dung lượng bạn muốn';
 
   @override
+  String get bundleBackendPending =>
+      'Chức năng này đang chờ backend mở endpoint';
+
+  @override
+  String get supportOpenFailed =>
+      'Không mở được, kiểm tra xem máy đã cài ứng dụng chưa';
+
+  @override
+  String get feedbackThanksTitle => 'Cảm ơn bạn!';
+
+  @override
+  String get feedbackThanksBody =>
+      'Phản hồi của bạn giúp ZenPack ngày càng tốt hơn.';
+
+  @override
+  String get feedbackTitle => 'Bạn muốn chia sẻ điều gì với chúng tôi?';
+
+  @override
+  String get feedbackHint => 'Nhập góp ý của bạn...';
+
+  @override
+  String get feedbackSend => 'Gửi góp ý';
+
+  @override
+  String get feedbackThanks => 'Cảm ơn bạn đã góp ý';
+
+  @override
+  String get accountSectionAbout => 'GIỚI THIỆU';
+
+  @override
+  String get accountFeedback => 'Góp ý với chúng tôi';
+
+  @override
+  String get accountFeedbackNote => 'Chia sẻ ý kiến để ZenPack tốt hơn';
+
+  @override
+  String get accountRateApp => 'Đánh giá ứng dụng';
+
+  @override
+  String get accountRateAppNote => 'Hỗ trợ phát triển ZenPack';
+
+  @override
+  String get supportFacebook => 'Nhắn Facebook';
+
+  @override
+  String get supportZalo => 'Nhắn Zalo';
+
+  @override
+  String get supportCall => 'Gọi hỗ trợ';
+
+  @override
+  String get bundleCreate => 'Tạo';
+
+  @override
+  String bundleSelected(int count) {
+    return 'Đã chọn $count bằng chứng';
+  }
+
+  @override
+  String get bundleCreateLink => 'Tạo link';
+
+  @override
+  String get bundleUploadDrive => 'Đẩy lên Drive';
+
+  @override
+  String limitClampedByServer(String value) {
+    return 'Gói hiện tại chỉ cho tối đa $value — hệ thống đã hạ về mức này';
+  }
+
+  @override
+  String sheetCustomMin(String min, String unit) {
+    return 'Nhập từ $min $unit trở lên';
+  }
+
+  @override
   String sheetCustomRange(String min, String max, String unit) {
     return 'Nhập từ $min đến $max $unit';
   }

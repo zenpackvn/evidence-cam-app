@@ -38,10 +38,9 @@ void main() {
         expect(clip.existsSync(), isFalse);
         // Hình vẫn được copy nguyên (không giải mã lại); chỉ tiếng bị mã hoá lại
         // để làm câm đoạn đầu chứa tút + "đã bắt đầu quay".
-        expect(issued, contains('-c:v copy'));
+        // Thuần remux: clip không có luồng tiếng nên không cần lọc gì.
+        expect(issued, contains('-c copy'));
         expect(issued, contains('-movflags +faststart'));
-        expect(issued, contains('afade=t=in:st='));
-        expect(issued, contains('-c:a aac'));
       },
     );
 

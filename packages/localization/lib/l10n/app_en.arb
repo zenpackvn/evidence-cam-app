@@ -1035,6 +1035,36 @@
   "unitMegabytes": "MB",
   "clipDurationCustomLabel": "Or enter the number of minutes you want",
   "uploadSizeCustomLabel": "Or enter the size you want",
+  "bundleBackendPending": "Waiting on a backend endpoint for this",
+  "supportOpenFailed": "Couldn’t open — check the app is installed",
+  "feedbackThanksTitle": "Thank you!",
+  "feedbackThanksBody": "Your feedback helps make ZenPack better.",
+  "feedbackTitle": "What would you like to share with us?",
+  "feedbackHint": "Type your feedback...",
+  "feedbackSend": "Send feedback",
+  "feedbackThanks": "Thanks for your feedback",
+  "accountSectionAbout": "ABOUT",
+  "accountFeedback": "Send us feedback",
+  "accountFeedbackNote": "Share your thoughts to make ZenPack better",
+  "accountRateApp": "Rate the app",
+  "accountRateAppNote": "Support ZenPack development",
+  "supportFacebook": "Message on Facebook",
+  "supportZalo": "Message on Zalo",
+  "supportCall": "Call support",
+  "bundleCreate": "Create",
+  "bundleSelected": "{count} selected",
+  "@bundleSelected": { "placeholders": { "count": { "type": "int" } } },
+  "bundleCreateLink": "Create link",
+  "bundleUploadDrive": "Upload to Drive",
+  "limitClampedByServer": "Your plan allows at most {value} — the system lowered it to that",
+  "@limitClampedByServer": { "placeholders": { "value": { "type": "String" } } },
+  "sheetCustomMin": "Enter {min} {unit} or more",
+  "@sheetCustomMin": {
+    "placeholders": {
+      "min": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
   "sheetCustomRange": "Enter between {min} and {max} {unit}",
   "@sheetCustomRange": {
     "placeholders": {

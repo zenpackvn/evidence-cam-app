@@ -3024,25 +3024,15 @@ class EcClipDurationSheetScreen extends StatelessWidget {
   /// worse than a short one.
   static const _marks = [1, 2, 3, 5, 8, 10, 15, 20, 25];
 
-  /// Trần phút chọn được. Lấy theo gói, nhưng không bao giờ thấp hơn 15 —
-  /// phiên quay tự chốt ở 15 phút, nên đó là mức trên có ý nghĩa; backend trả
-  /// về `planMaxSeconds` nhỏ hơn chỉ khiến chủ shop không đặt nổi mức mình cần.
-  int get _capMinutes {
-    final fromPlan = (budget.planMaxSeconds / 60).floor();
-    return fromPlan >= 15 ? fromPlan : 15;
-  }
-
+  /// Các mốc gợi ý, KHÔNG chặn theo gói.
+  ///
+  /// Shop trả tiền theo dung lượng thực dùng nên quay bao lâu là quyền của họ;
+  /// lọc bớt mốc chỉ khiến người cần mức cao không đặt nổi.
   List<int> get _options {
-    final capMinutes = _capMinutes;
-    final marks = _marks.where((m) => m <= capMinutes).toList();
+    final marks = [..._marks];
     final recommended = (budget.recommendedSeconds / 60).round();
-    // Mức đề xuất luôn phải chọn được, kể cả khi nó không rơi vào mốc nào.
-    if (recommended <= capMinutes && !marks.contains(recommended)) {
-      marks
-        ..add(recommended)
-        ..sort();
-    }
-    return marks;
+    if (recommended > 0 && !marks.contains(recommended)) marks.add(recommended);
+    return marks..sort();
   }
 
   @override
@@ -3057,28 +3047,28 @@ class EcClipDurationSheetScreen extends StatelessWidget {
         for (final m in _options)
           _EcSheetActionRow(
             icon: LucideIcons.timer,
-            label: m == recommended
-                ? l10n.clipDurationOptionRecommended('$m')
-                : l10n.clipDurationValue('$m'),
+            label: l10n.clipDurationValue('$m'),
             selected: m == selectedMinutes,
             onTap: () => onSelect?.call(m * 60),
+          ),
+        // Số tự nhập đứng riêng ở CUỐI danh sách gợi ý, không trộn vào giữa
+        // các mốc: nó là lựa chọn của riêng shop này, xếp lẫn vào thì mở sheet
+        // ra không phân biệt được đâu là mốc có sẵn, đâu là mức mình đã đặt.
+        if (!_options.contains(selectedMinutes))
+          _EcSheetActionRow(
+            icon: LucideIcons.timer,
+            label: l10n.clipDurationValue('$selectedMinutes'),
+            selected: true,
+            onTap: () => onSelect?.call(selectedMinutes * 60),
           ),
         _EcSheetCustomInput(
           label: l10n.clipDurationCustomLabel,
           unit: l10n.unitMinutes,
           min: 1,
-          max: _capMinutes,
           initial: selectedMinutes,
           onSubmit: (m) => onSelect?.call(m * 60),
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: PenText(
-            l10n.clipDurationPlanCap('$_capMinutes'),
-            size: 12,
-            color: PenColors.mut,
-          ),
-        ),
+
       ],
     );
   }
@@ -3107,21 +3097,14 @@ class EcUploadSizeSheetScreen extends StatelessWidget {
   /// shop picks "roughly how big", not an exact byte count.
   static const _marks = [1, 5, 10, 25, 50, 100];
 
+  /// Các mốc gợi ý, KHÔNG chặn theo khoảng backend công bố — xem lý do ở
+  /// [EcClipDurationSheetScreen._options]. Mức đề xuất của sàn và mức đang
+  /// dùng luôn có mặt, kể cả khi là số tự nhập không rơi vào mốc nào.
   List<int> get _options {
-    final min = kMinUploadBytes ~/ 1000000;
-    final max = kMaxUploadBytes ~/ 1000000;
-    final marks = _marks.where((m) => m >= min && m <= max).toList();
-    // Mức đề xuất của sàn luôn phải chọn được, kể cả khi sàn công bố một con số
-    // không rơi vào mốc nào (vd 15 MB).
+    final marks = [..._marks];
     final recommended = budget.maxImageBytes ~/ 1000000;
-    if (recommended >= min &&
-        recommended <= max &&
-        !marks.contains(recommended)) {
-      marks
-        ..add(recommended)
-        ..sort();
-    }
-    return marks;
+    if (recommended > 0 && !marks.contains(recommended)) marks.add(recommended);
+    return marks..sort();
   }
 
   @override
@@ -3136,17 +3119,22 @@ class EcUploadSizeSheetScreen extends StatelessWidget {
         for (final m in _options)
           _EcSheetActionRow(
             icon: LucideIcons.fileUp,
-            label: m == recommended
-                ? l10n.uploadSizeOptionRecommended('$m')
-                : l10n.uploadSizeValue('$m'),
+            label: l10n.uploadSizeValue('$m'),
             selected: m == selected,
             onTap: () => onSelect?.call(m * 1000000),
+          ),
+        // Xem chú thích ở sheet thời lượng: mức tự nhập đứng riêng ở cuối.
+        if (!_options.contains(selected))
+          _EcSheetActionRow(
+            icon: LucideIcons.fileUp,
+            label: l10n.uploadSizeValue('$selected'),
+            selected: true,
+            onTap: () => onSelect?.call(selected * 1000000),
           ),
         _EcSheetCustomInput(
           label: l10n.uploadSizeCustomLabel,
           unit: l10n.unitMegabytes,
           min: kMinUploadBytes ~/ 1000000,
-          max: kMaxUploadBytes ~/ 1000000,
           initial: selected,
           onSubmit: (m) => onSelect?.call(m * 1000000),
         ),
@@ -3167,15 +3155,17 @@ class _EcSheetCustomInput extends StatefulWidget {
     required this.label,
     required this.unit,
     required this.min,
-    required this.max,
     required this.initial,
     required this.onSubmit,
   });
 
   final String label;
   final String unit;
+
+  /// Giá trị nhỏ nhất chấp nhận được. **Không có trần**: shop trả tiền theo
+  /// dung lượng thực dùng, nên đặt bao nhiêu là quyền của họ — hết MB thì
+  /// backend báo lúc upload, chứ chặn sẵn ở đây là cản người muốn trả thêm.
   final int min;
-  final int max;
   final int initial;
 
   /// Nhận giá trị đã hợp lệ, theo đúng đơn vị hiển thị (phút hoặc MB).
@@ -3199,11 +3189,10 @@ class _EcSheetCustomInputState extends State<_EcSheetCustomInput> {
 
   void _submit() {
     final value = int.tryParse(_controller.text.trim());
-    if (value == null || value < widget.min || value > widget.max) {
+    if (value == null || value < widget.min) {
       setState(
-        () => _error = context.l10n.sheetCustomRange(
+        () => _error = context.l10n.sheetCustomMin(
           '${widget.min}',
-          '${widget.max}',
           widget.unit,
         ),
       );
@@ -3789,15 +3778,15 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                   onBack: widget.onBack,
                   onShopTap: widget.onShopTap,
                 ),
-                Expanded(
-                  child: RefreshIndicator.adaptive(
-                    onRefresh: widget.onRefresh ?? () async {},
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
+                // Phần cố định: thống kê, ô tìm và hàng lọc không cuộn
+                // theo danh sách. Hất danh sách lên mà bộ lọc trôi mất thì
+                // muốn đổi trạng thái phải cuộn ngược lên đầu — với đơn dài
+                // vài chục dòng đó là thao tác thừa mỗi lần lọc.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                           // The three stat cards are equal height in the
                           // design even when one label wraps, which inside a
                           // scroll view needs an intrinsic pass.
@@ -3914,6 +3903,18 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                               ],
                             ),
                           ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: RefreshIndicator.adaptive(
+                    onRefresh: widget.onRefresh ?? () async {},
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
                           const SizedBox(height: 16),
                           // With the filters applied server-side, an empty list
                           // no longer means "this shop has no orders" — say

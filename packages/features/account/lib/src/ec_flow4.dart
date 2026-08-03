@@ -13,6 +13,7 @@ import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart'
     show CupertinoPageScaffold, CupertinoTextField;
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:localization/localization.dart';
 import 'package:shared_contracts/shared_contracts.dart';
@@ -48,6 +49,11 @@ class EcAccountTabScreen extends StatelessWidget {
     this.onDeleteAccount,
     this.onNavOrders,
     this.onNavCapture,
+    this.onFacebook,
+    this.onZalo,
+    this.onCall,
+    this.onFeedback,
+    this.onRateApp,
     super.key,
   });
 
@@ -74,6 +80,15 @@ class EcAccountTabScreen extends StatelessWidget {
   final VoidCallback? onDeleteAccount;
   final VoidCallback? onNavOrders;
   final VoidCallback? onNavCapture;
+
+  /// Ba kênh hỗ trợ nổi ở góc trái dưới.
+  final VoidCallback? onFacebook;
+  final VoidCallback? onZalo;
+  final VoidCallback? onCall;
+
+  /// Mục "Giới thiệu": góp ý và đánh giá app trên store.
+  final VoidCallback? onFeedback;
+  final VoidCallback? onRateApp;
 
   @override
   Widget build(BuildContext context) {
@@ -153,6 +168,23 @@ class EcAccountTabScreen extends StatelessWidget {
                             ),
                           ],
                         ),
+                        _SectionHeader(context.l10n.accountSectionAbout),
+                        _SettingsGroup(
+                          rows: [
+                            _SettingsRow(
+                              icon: LucideIcons.messageSquareText,
+                              label: context.l10n.accountFeedback,
+                              subtitle: context.l10n.accountFeedbackNote,
+                              onTap: onFeedback,
+                            ),
+                            _SettingsRow(
+                              icon: LucideIcons.star,
+                              label: context.l10n.accountRateApp,
+                              subtitle: context.l10n.accountRateAppNote,
+                              onTap: onRateApp,
+                            ),
+                          ],
+                        ),
                         _AppFooter(version: appVersion),
                       ],
                     ),
@@ -164,6 +196,22 @@ class EcAccountTabScreen extends StatelessWidget {
                   onCapture: onNavCapture,
                 ),
               ],
+            ),
+          ),
+          // Cụm liên hệ nổi ở góc phải dưới. Nằm trong Stack nên nó không cuộn
+          // theo nội dung — người cần hỗ trợ thường đang bí, bắt họ cuộn tìm
+          // là thêm một rào nữa.
+          //
+          // Kê lên đúng chiều cao thanh tab (82) cộng vùng an toàn đáy máy, để
+          // nút dưới cùng không đè lên mục "Tài khoản" của thanh điều hướng —
+          // đè lên là bấm nhầm sang tab khác thay vì gọi hỗ trợ.
+          Positioned(
+            right: 16,
+            bottom: 82 + 12 + MediaQuery.paddingOf(context).bottom,
+            child: _SupportContactColumn(
+              onFacebook: onFacebook,
+              onZalo: onZalo,
+              onCall: onCall,
             ),
           ),
         ],
@@ -1902,6 +1950,315 @@ class _UserRow extends StatelessWidget {
   }
 }
 
+/// Ba nút liên hệ hỗ trợ, xếp dọc ở góc trái dưới trang Tài khoản.
+/// Sheet góp ý: một ô nhập nhiều dòng, đếm ký tự, và nút gửi.
+///
+/// Giới hạn [maxLength] ký tự có chủ đích — góp ý dài thành bài viết thì người
+/// đọc bên trong không xử lý nổi, mà người gửi cũng không biết mình đã vượt
+/// mức nào nếu không có bộ đếm.
+class EcFeedbackSheet extends StatefulWidget {
+  const EcFeedbackSheet({this.onSubmit, this.onClose, super.key});
+
+  /// Nhận nội dung góp ý đã cắt khoảng trắng thừa.
+  final ValueChanged<String>? onSubmit;
+  final VoidCallback? onClose;
+
+  static const maxLength = 300;
+
+  @override
+  State<EcFeedbackSheet> createState() => _EcFeedbackSheetState();
+}
+
+class _EcFeedbackSheetState extends State<EcFeedbackSheet> {
+  final _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeListener(_onChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onChanged() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final text = _controller.text.trim();
+    final canSend = text.isNotEmpty;
+    return PenSheet(
+      onDismiss: widget.onClose,
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      children: [
+        const SizedBox(height: 16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: PenText(
+                l10n.feedbackTitle,
+                size: 19,
+                color: PenColors.ink,
+                weight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(width: 12),
+            EcTap(
+              onTap: widget.onClose,
+              child: const Icon(
+                LucideIcons.x,
+                size: 22,
+                color: PenColors.mut,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        PenBox(
+          width: double.infinity,
+          height: 168,
+          fill: PenColors.card,
+          stroke: PenColors.line,
+          radius: 12,
+          axis: PenAxis.column,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          children: [
+            Expanded(
+              child: CupertinoTextField(
+                controller: _controller,
+                padding: EdgeInsets.zero,
+                decoration: const BoxDecoration(),
+                placeholder: l10n.feedbackHint,
+                maxLength: EcFeedbackSheet.maxLength,
+                maxLines: null,
+                expands: true,
+                textAlignVertical: TextAlignVertical.top,
+                keyboardType: TextInputType.multiline,
+                style: const TextStyle(fontSize: 16, color: PenColors.ink),
+                placeholderStyle: const TextStyle(
+                  fontSize: 16,
+                  color: PenColors.mut,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: PenText(
+            '${_controller.text.characters.length} / '
+            '${EcFeedbackSheet.maxLength}',
+            size: 13,
+            color: PenColors.mut,
+          ),
+        ),
+        const SizedBox(height: 12),
+        EcTap(
+          onTap: canSend ? () => widget.onSubmit?.call(text) : null,
+          child: Opacity(
+            opacity: canSend ? 1 : 0.45,
+            child: PenBox(
+              width: double.infinity,
+              height: 54,
+              fill: PenColors.primary,
+              radius: 14,
+              axis: PenAxis.row,
+              main: MainAxisAlignment.center,
+              cross: CrossAxisAlignment.center,
+              children: [
+                PenText(
+                  l10n.feedbackSend,
+                  size: 16,
+                  color: PenColors.card,
+                  weight: FontWeight.w700,
+                  softWrap: false,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Sheet xác nhận sau khi gửi góp ý.
+class EcFeedbackThanksSheet extends StatelessWidget {
+  const EcFeedbackThanksSheet({this.onClose, super.key});
+
+  final VoidCallback? onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return PenSheet(
+      onDismiss: onClose,
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      children: [
+        const SizedBox(height: 26),
+        Center(
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: const BoxDecoration(
+              color: PenColors.primary,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              LucideIcons.check,
+              size: 38,
+              color: PenColors.card,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Center(
+          child: PenText(
+            l10n.feedbackThanksTitle,
+            size: 20,
+            color: PenColors.ink,
+            weight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: PenText(
+            l10n.feedbackThanksBody,
+            size: 15,
+            color: PenColors.mut,
+            align: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 24),
+        EcTap(
+          onTap: onClose,
+          child: PenBox(
+            width: double.infinity,
+            height: 54,
+            fill: PenColors.primary,
+            radius: 14,
+            axis: PenAxis.row,
+            main: MainAxisAlignment.center,
+            cross: CrossAxisAlignment.center,
+            children: [
+              PenText(
+                l10n.commonClose,
+                size: 16,
+                color: PenColors.card,
+                weight: FontWeight.w700,
+                softWrap: false,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SupportContactColumn extends StatelessWidget {
+  const _SupportContactColumn({this.onFacebook, this.onZalo, this.onCall});
+
+  final VoidCallback? onFacebook;
+  final VoidCallback? onZalo;
+  final VoidCallback? onCall;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _SupportBubble(
+          onTap: onFacebook,
+          fill: const Color(0xFF1877F2),
+          semanticLabel: l10n.supportFacebook,
+          child: const FaIcon(
+            FontAwesomeIcons.facebookF,
+            size: 20,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _SupportBubble(
+          onTap: onZalo,
+          // Xanh thương hiệu Zalo, chữ trắng — đồng bộ với hai nút kia (nền
+          // màu, hình trắng). Bản trước để nền trắng chữ xanh nên nó chìm hẳn
+          // giữa Facebook và nút gọi.
+          fill: const Color(0xFF0068FF),
+          semanticLabel: l10n.supportZalo,
+          // Zalo không có trong bộ icon nào sẵn có; chữ trong vòng tròn là
+          // cách nhận diện chính thức của họ nên vẽ thẳng bằng text.
+          child: const Text(
+            'Zalo',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _SupportBubble(
+          onTap: onCall,
+          fill: const Color(0xFF5CA872),
+          semanticLabel: l10n.supportCall,
+          child: const Icon(LucideIcons.phone, size: 20, color: Colors.white),
+        ),
+      ],
+    );
+  }
+}
+
+class _SupportBubble extends StatelessWidget {
+  const _SupportBubble({
+    required this.child,
+    required this.fill,
+    required this.semanticLabel,
+    this.onTap,
+  });
+
+  final Widget child;
+  final Color fill;
+  final String semanticLabel;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: semanticLabel,
+    child: EcTap(
+      onTap: onTap,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: fill,
+          shape: BoxShape.circle,
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x33161616),
+              offset: Offset(0, 2),
+              blurRadius: 8,
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
+    ),
+  );
+}
+
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader(this.label, {this.top = 22});
 
@@ -1930,12 +2287,17 @@ class _SettingsRow extends StatelessWidget {
     required this.icon,
     required this.label,
     this.value,
+    this.subtitle,
     this.onTap,
   });
 
   final IconData icon;
   final String label;
   final String? value;
+
+  /// Dòng phụ dưới nhãn, giải thích hàng này làm gì. Null thì hàng giữ nguyên
+  /// dáng một dòng như các mục cài đặt còn lại.
+  final String? subtitle;
   final VoidCallback? onTap;
 
   @override
@@ -1950,7 +2312,19 @@ class _SettingsRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
           Icon(icon, size: 25, color: PenColors.ink),
-          Expanded(child: PenText(label, size: 16, color: PenColors.ink)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PenText(label, size: 16, color: PenColors.ink),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 3),
+                  PenText(subtitle!, size: 13, color: PenColors.mut),
+                ],
+              ],
+            ),
+          ),
           if (value != null)
             PenText(value!, size: 14, color: PenColors.ink, softWrap: false),
           const Icon(LucideIcons.chevronRight, size: 20, color: PenColors.mut),

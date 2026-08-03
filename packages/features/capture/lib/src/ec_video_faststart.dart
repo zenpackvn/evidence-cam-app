@@ -63,32 +63,16 @@ class EcVideoFaststartService {
   /// On success the source file is deleted: the remuxed copy replaces it and
   /// keeping both doubles temp usage on a phone that may already be low on
   /// storage.
-  /// Khoảng đầu clip bị tắt tiếng, tính từ khung hình đầu tiên.
-  ///
-  /// Loa và mic nằm trên cùng một máy, nên tiếng tút và câu "đã bắt đầu quay"
-  /// phát ngay lúc camera bắt đầu ghi đều bị thu vào clip. Người xem lại bằng
-  /// chứng không cần nghe hai âm đó, nên chúng bị làm câm ở đây thay vì phải
-  /// trì hoãn lúc bắt đầu quay.
-  static const _muteLeadSeconds = 2.5;
-
   Future<String> prepare(String inputPath) async {
     if (!File(inputPath).existsSync()) return inputPath;
     try {
       await _ensureReady();
       final outputPath = await _outputPathFor();
-      // Video vẫn `-c copy` (không giải mã lại, nhanh); chỉ luồng tiếng phải mã
-      // hoá lại vì `volume` là bộ lọc — không lọc được trên luồng đang copy.
-      // Clip bằng chứng ngắn nên chi phí mã hoá tiếng không đáng kể.
-      // `afade` chứ không phải `volume=enable='lt(t,N)'`: FFmpegKit tách chuỗi
-      // lệnh theo kiểu shell nên dấu nháy đơn lồng trong biểu thức `enable` bị
-      // nuốt mất, filter hỏng, ffmpeg trả lỗi — và `prepare` vốn fail-safe nên
-      // im lặng trả về file gốc còn nguyên tiếng. `afade=t=in` chỉ dùng dấu hai
-      // chấm, không có ký tự nào cần escape: gain bằng 0 từ đầu clip tới `st`,
-      // rồi lên bình thường trong `d` giây.
+      // Thuần remux `-c copy`: clip quay ra đã không có luồng âm thanh
+      // (`enableAudio: false` lúc khởi tạo camera), nên không còn gì để lọc —
+      // bộ lọc làm câm trước đây giờ chỉ khiến ffmpeg lỗi vì thiếu luồng tiếng.
       final ok = await _run(
-        '-y -i "$inputPath" -c:v copy '
-        '-af afade=t=in:st=$_muteLeadSeconds:d=0.15 '
-        '-c:a aac -movflags +faststart "$outputPath"',
+        '-y -i "$inputPath" -c copy -movflags +faststart "$outputPath"',
       );
       if (!ok || !File(outputPath).existsSync()) return inputPath;
       await _deleteQuietly(inputPath);

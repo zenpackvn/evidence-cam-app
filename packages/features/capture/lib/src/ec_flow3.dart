@@ -1041,27 +1041,31 @@ class _CamHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 22, 16, 0),
       child: Row(
         children: [
-          _Tap(
-            onTap: onBack,
-            tooltip: context.l10n.tooltipBack,
-            child: PenBox(
-              width: 42,
-              height: 42,
-              fill: const Color(0xBF161616),
-              stroke: PenColors.mut,
-              radius: 999,
-              axis: PenAxis.row,
-              main: MainAxisAlignment.center,
-              cross: CrossAxisAlignment.center,
-              children: const [
-                Icon(
-                  LucideIcons.chevronLeft,
-                  size: 22,
-                  color: PenColors.card,
-                ),
-              ],
+          // Nút back chỉ hiện khi có người nhận: màn quay bỏ nó đi vì lối ra
+          // đã nằm ở sheet chọn loại (bấm back ở đó là sang tab Vận đơn), và
+          // thanh tab dưới cùng vẫn luôn ở đó.
+          if (onBack != null)
+            _Tap(
+              onTap: onBack,
+              tooltip: context.l10n.tooltipBack,
+              child: PenBox(
+                width: 42,
+                height: 42,
+                fill: const Color(0xBF161616),
+                stroke: PenColors.mut,
+                radius: 999,
+                axis: PenAxis.row,
+                main: MainAxisAlignment.center,
+                cross: CrossAxisAlignment.center,
+                children: const [
+                  Icon(
+                    LucideIcons.chevronLeft,
+                    size: 22,
+                    color: PenColors.card,
+                  ),
+                ],
+              ),
             ),
-          ),
           const Spacer(),
           // ponytail: EcTap thay vì _Tap — _Tap thêm padding 4 làm lệch chip
           // so với thiết kế; ở đây chỉ cần vùng bấm.
@@ -2348,13 +2352,23 @@ class EcTypeSheetScreen extends StatelessWidget {
     this.selectedType = 'Đóng hàng',
     this.onSelectType,
     this.onManageTypes,
+    this.onBack,
+    this.dismissible = true,
     super.key,
   });
+
+  /// `false` khi sheet mở lúc vừa vào màn quay: chọn loại là bắt buộc nên
+  /// không vuốt xuống hay chạm nền để bỏ qua được, chỉ chọn hoặc bấm back.
+  final bool dismissible;
 
   final List<EcVideoType> types;
   final String selectedType;
   final ValueChanged<String>? onSelectType;
   final VoidCallback? onManageTypes;
+
+  /// Thoát mà không quay. Có mặt vì chọn loại là bắt buộc: không có lối này
+  /// thì người mở nhầm tab bị kẹt trong sheet, gạt xuống nó lại hiện ra.
+  final VoidCallback? onBack;
 
   /// Tiêu đề nhóm + các hàng của nhóm. Nhóm rỗng thì biến mất hẳn — một shop
   /// chưa tự thêm loại nào không nên thấy đề mục trống.
@@ -2384,6 +2398,8 @@ class EcTypeSheetScreen extends StatelessWidget {
     // này nằm trên preview camera.
     return PenSheet(
       dim: Colors.black54,
+      dismissible: dismissible,
+      showGrabber: false,
       padding: EdgeInsets.fromLTRB(
         16,
         12,
@@ -2397,17 +2413,37 @@ class EcTypeSheetScreen extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    context.l10n.videoTypeSheetTitle,
-                    style: _t(24, FontWeight.w800, BrandColors.ink),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    context.l10n.videoTypeSelectNote,
-                    style: _t(14, FontWeight.w400, BrandColors.mut),
+                  if (onBack != null) ...[
+                    EcTap(
+                      onTap: onBack,
+                      child: const Padding(
+                        padding: EdgeInsets.only(top: 4, right: 10),
+                        child: Icon(
+                          LucideIcons.chevronLeft,
+                          size: 26,
+                          color: BrandColors.ink,
+                        ),
+                      ),
+                    ),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.l10n.videoTypeSheetTitle,
+                          style: _t(24, FontWeight.w800, BrandColors.ink),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          context.l10n.videoTypeSelectNote,
+                          style: _t(14, FontWeight.w400, BrandColors.mut),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

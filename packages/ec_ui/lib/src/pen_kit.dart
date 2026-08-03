@@ -1056,8 +1056,22 @@ class PenSheet extends StatefulWidget {
     this.padding = const EdgeInsets.fromLTRB(22, 12, 22, 20),
     this.onDismiss,
     this.dim = const Color(0xA6636363),
+    this.dismissible = true,
+    this.showGrabber = true,
     super.key,
   });
+
+  /// Vẽ thanh kéo xám ở đỉnh sheet. Tắt khi sheet không kéo được, hoặc khi
+  /// thiết kế của màn đó không cần nó — thanh kéo là lời hứa "vuốt được", để
+  /// lại trên sheet không vuốt được là nói dối người dùng.
+  final bool showGrabber;
+
+  /// Cho phép đóng sheet bằng cách vuốt xuống hoặc chạm nền.
+  ///
+  /// `false` khi lựa chọn trong sheet là bắt buộc — lúc đó sheet phải có lối
+  /// thoát riêng (nút back), vì bịt cả hai đường mà không mở đường nào khác là
+  /// nhốt người dùng.
+  final bool dismissible;
 
   final List<Widget> children;
   final EdgeInsets padding;
@@ -1096,6 +1110,25 @@ class _PenSheetState extends State<PenSheet> {
   void _dismiss() =>
       (widget.onDismiss ?? () => Navigator.of(context).maybePop())();
 
+  /// Bấm nền: bàn phím đang mở thì hạ bàn phím, không thì đóng sheet.
+  ///
+  /// Người đang gõ mà chạm ra ngoài thường chỉ muốn cất bàn phím để đọc lại
+  /// những gì đã viết — đóng luôn sheet là mất trắng nội dung.
+  ///
+  /// Điều kiện là `viewInsets`, KHÔNG phải `primaryFocus.hasFocus`: trên màn
+  /// không có ô nhập nào, focus vẫn thuộc về scope của route nên `hasFocus`
+  /// luôn đúng — dùng nó thì cú bấm nền đầu tiên bị nuốt ở mọi sheet, kể cả
+  /// những sheet chẳng liên quan gì đến bàn phím. `viewInsets.bottom` chỉ khác
+  /// 0 khi bàn phím thật sự đang chiếm chỗ.
+  void _onBackdropTap() {
+    if (MediaQuery.viewInsetsOf(context).bottom > 0) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      return;
+    }
+    if (!widget.dismissible) return;
+    _dismiss();
+  }
+
   void _onDragEnd(DragEndDetails details) {
     if (_dy > _dismissDistance ||
         details.velocity.pixelsPerSecond.dy > _dismissVelocity) {
@@ -1115,12 +1148,18 @@ class _PenSheetState extends State<PenSheet> {
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: _dismiss,
+            onTap: _onBackdropTap,
             child: ColoredBox(color: widget.dim),
           ),
         ),
-        Align(
-          alignment: Alignment.bottomCenter,
+        // Đẩy cả tấm sheet lên đúng chiều cao bàn phím, nếu không ô nhập nằm
+        // khuất phía dưới và người gõ không thấy mình đang viết gì.
+        Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Align(
+            alignment: Alignment.bottomCenter,
           child: GestureDetector(
             // Chặn tap rơi xuống nền (đóng sheet) NHƯNG vẫn hạ bàn phím —
             // `onTap: () {}` cũ nuốt luôn đường tới bộ bỏ focus toàn app, nên
@@ -1129,11 +1168,13 @@ class _PenSheetState extends State<PenSheet> {
             // ponytail: cả tấm panel là vùng kéo. Scrollable bên trong (bánh xe
             // ngày, danh sách dài) vẫn thắng arena cử chỉ dọc vì nằm sâu hơn,
             // nên chưa cần tách riêng vùng grabber.
-            onVerticalDragUpdate: (d) => setState(() {
-              _dragging = true;
-              _dy = math.max(0, _dy + d.delta.dy);
-            }),
-            onVerticalDragEnd: _onDragEnd,
+            onVerticalDragUpdate: !widget.dismissible
+                ? null
+                : (d) => setState(() {
+                    _dragging = true;
+                    _dy = math.max(0, _dy + d.delta.dy);
+                  }),
+            onVerticalDragEnd: widget.dismissible ? _onDragEnd : null,
             onVerticalDragCancel: () => setState(() {
               _dragging = false;
               _dy = 0;
@@ -1157,15 +1198,42 @@ class _PenSheetState extends State<PenSheet> {
                 hugMain: true,
                 padding: widget.padding,
                 children: [
-                  const Center(
-                    child: PenBox(
-                      width: 46,
-                      height: 5,
-                      fill: PenColors.line,
-                      radius: 3,
+                  if (widget.showGrabber)
+                    const Center(
+                      child: PenBox(
+                        width: 46,
+                        height: 5,
+                        fill: PenColors.line,
+                        radius: 3,
+                      ),
+                    ),
+                  // Trần chiều cao + cho cuộn: sheet dài (bảng mốc giới hạn)
+                  // khi bị bàn phím đẩy lên sẽ tràn khỏi mép trên và người
+                  // dùng mất luôn phần đầu. Trần tính theo chỗ còn lại sau khi
+                  // trừ bàn phím, tai thỏ và chính thanh kéo phía trên.
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      // 78% chiều cao khả dụng, KHÔNG phải "gần hết màn": phần
+                      // padding của sheet, thanh kéo và vùng an toàn đáy đều
+                      // cộng thêm ngoài con số này, nên lấy sát quá thì panel
+                      // cao hơn màn hình. Panel tràn nằm ngoài vùng vẽ của
+                      // Stack: những hàng lọt ra ngoài vẫn nhìn thấy nhưng
+                      // không nhận được chạm — đúng kiểu "mốc 8 phút trở đi
+                      // bấm không ăn".
+                      maxHeight:
+                          (MediaQuery.sizeOf(context).height -
+                              MediaQuery.viewInsetsOf(context).bottom -
+                              MediaQuery.paddingOf(context).top) *
+                          0.78,
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: widget.children,
+                      ),
                     ),
                   ),
-                  ...widget.children,
                   // Nâng nội dung khỏi thanh home indicator. Cộng thêm chứ
                   // không thay thế, và chỉ phần còn thiếu — bọc SafeArea *và*
                   // giữ padding đáy là cách sinh ra khoảng trắng thừa ở đuôi
@@ -1175,6 +1243,7 @@ class _PenSheetState extends State<PenSheet> {
               ),
             ),
           ),
+        ),
         ),
       ],
     );

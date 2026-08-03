@@ -1471,6 +1471,79 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploadSizeCustomLabel => 'Or enter the size you want';
 
   @override
+  String get bundleBackendPending => 'Waiting on a backend endpoint for this';
+
+  @override
+  String get supportOpenFailed => 'Couldn’t open — check the app is installed';
+
+  @override
+  String get feedbackThanksTitle => 'Thank you!';
+
+  @override
+  String get feedbackThanksBody => 'Your feedback helps make ZenPack better.';
+
+  @override
+  String get feedbackTitle => 'What would you like to share with us?';
+
+  @override
+  String get feedbackHint => 'Type your feedback...';
+
+  @override
+  String get feedbackSend => 'Send feedback';
+
+  @override
+  String get feedbackThanks => 'Thanks for your feedback';
+
+  @override
+  String get accountSectionAbout => 'ABOUT';
+
+  @override
+  String get accountFeedback => 'Send us feedback';
+
+  @override
+  String get accountFeedbackNote =>
+      'Share your thoughts to make ZenPack better';
+
+  @override
+  String get accountRateApp => 'Rate the app';
+
+  @override
+  String get accountRateAppNote => 'Support ZenPack development';
+
+  @override
+  String get supportFacebook => 'Message on Facebook';
+
+  @override
+  String get supportZalo => 'Message on Zalo';
+
+  @override
+  String get supportCall => 'Call support';
+
+  @override
+  String get bundleCreate => 'Create';
+
+  @override
+  String bundleSelected(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get bundleCreateLink => 'Create link';
+
+  @override
+  String get bundleUploadDrive => 'Upload to Drive';
+
+  @override
+  String limitClampedByServer(String value) {
+    return 'Your plan allows at most $value — the system lowered it to that';
+  }
+
+  @override
+  String sheetCustomMin(String min, String unit) {
+    return 'Enter $min $unit or more';
+  }
+
+  @override
   String sheetCustomRange(String min, String max, String unit) {
     return 'Enter between $min and $max $unit';
   }

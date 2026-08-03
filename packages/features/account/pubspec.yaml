@@ -23,6 +23,7 @@ dependencies:
   # Declarative form-field validators (required/minLength/compose) used by the
   # profile + password forms; plugs into standard Form/FormField validators.
   form_builder_validators: ^11.0.0
+  font_awesome_flutter: ^11.0.0
 
 dev_dependencies:
   flutter_test:

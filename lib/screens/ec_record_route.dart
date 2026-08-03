@@ -87,7 +87,11 @@ class EcRecordRoute extends StatefulWidget {
 
   /// Asks for a video type (opens the type sheet); the chosen label is applied
   /// to the current/next recording. Returns `null` if dismissed.
-  final Future<String?> Function()? onRequestType;
+  /// Mở sheet chọn loại. `mandatory` bật ở lần mở tự động lúc vừa vào màn:
+  /// lúc đó chọn loại là bắt buộc nên sheet không cho vuốt xuống hay chạm nền
+  /// để bỏ qua — chỉ chọn, hoặc bấm back để sang tab Vận đơn.
+  final Future<String?> Function(BuildContext, {bool mandatory})?
+  onRequestType;
 
   /// Called when the settings icon is tapped.
   final VoidCallback? onSettings;
@@ -202,33 +206,54 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   /// luôn — clip đầu ca bị gán loại mặc định trong khi sheet chọn loại còn
   /// đang mở. Sheet đóng lại (chọn loại, hoặc gạt xuống để giữ loại mặc định)
   /// thì camera mới lên.
+  /// Hỏi loại video cho tới khi người quay chọn thật, rồi mới dựng camera.
+  ///
+  /// Bỏ qua sheet KHÔNG còn được coi là đồng ý loại mặc định: loại quyết định
+  /// clip nằm ở mục nào trong hồ sơ khiếu nại, gán nhầm thì phải quay lại cả
+  /// đơn. Nên chưa chọn thì chưa quay được — hỏi lại.
+  ///
+  /// Vòng lặp thoát khi rời tab hoặc widget bị gỡ, nên không có đường nào kẹt
+  /// người dùng trong một sheet không đóng được.
   Future<void> _startAfterTypeChosen() async {
-    await _ensureTypeChosen();
+    // Chờ khung hình hiện tại vẽ xong rồi mới đẩy sheet lên navigator. Gọi
+    // giữa nhịp chuyển tab thì navigator đang khoá và `push` ném
+    // `!_debugLocked` — lỗi lặp liên tục vì mỗi lượt hỏng lại kéo theo một
+    // lượt thử mới.
+    await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
+    await _ensureTypeChosen();
+    // Chưa chọn thì KHÔNG dựng camera và cũng KHÔNG hỏi lại ngay: hỏi vòng
+    // tròn thì người dùng bị nhốt trong sheet, không bấm back ra được. Màn
+    // chờ vẫn hiện với nút back và ô chọn loại ở thanh dưới — muốn quay thì
+    // chọn, không muốn thì thoát.
+    if (!mounted || !_typePicked) return;
     await _initWithPermission();
   }
 
   /// Xin quyền rồi mới khởi tạo camera. Không có callback (test, hoặc nền tảng
   /// không cần quyền) thì khởi tạo thẳng như trước.
-  Future<void> _initWithPermission() async {
-    if (_cameraStarting) return;
-    _cameraStarting = true;
-    // `finally`: nhánh `!mounted` thoát sớm mà không trả cờ về thì mọi lần dựng
-    // camera sau đó — kể cả lần quay lại sau cuộc gọi — bị chặn im lặng.
-    try {
-      final ensure = widget.ensureCameraPermission;
-      if (ensure != null) {
-        try {
-          await ensure();
-        } on Object {
-          // Từ chối hay lỗi đều để bloc báo trạng thái camera như thường.
-        }
-        if (!mounted) return;
+  Future<void> _initWithPermission() {
+    // Gộp về một lần chạy: hai nguồn (postFrame của initState và vòng đời tab)
+    // có thể gọi cùng nhịp, nhưng cả hai đều phải thấy camera lên khi xong.
+    return _cameraStart ??= _startCamera().whenComplete(() {
+      _cameraStart = null;
+    });
+  }
+
+  Future<void> _startCamera() async {
+    // Chốt thứ hai cho cùng một lỗi: mỗi lần dựng camera là một lượt quay mới,
+    // không có lý do gì máy quét còn bị treo từ lượt trước.
+    _bloc.scanSuspended = false;
+    final ensure = widget.ensureCameraPermission;
+    if (ensure != null) {
+      try {
+        await ensure();
+      } on Object {
+        // Từ chối hay lỗi đều để bloc báo trạng thái camera như thường.
       }
-      _bloc.add(const RecordingInitRequested());
-    } finally {
-      _cameraStarting = false;
+      if (!mounted) return;
     }
+    _bloc.add(const RecordingInitRequested());
   }
 
   @override
@@ -242,20 +267,43 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   /// Mirrors [didChangeAppLifecycleState]'s backgrounding/resume handling,
   /// but keyed off tab visibility instead of the whole app's lifecycle.
   void _onActiveChanged() {
-    if (widget.isActive!.value) {
-      if (_bloc.state.status != RecordingStatus.idle &&
-          _bloc.state.status != RecordingStatus.recording) {
-        // Quay lại tab = một lượt quay mới: loại video về mặc định và hỏi lại.
-        // Giữ nguyên loại của lần trước là cách clip bị gán sai loại nhiều
-        // nhất — người quay chuyển tab, quay tiếp, và không ai để ý ô loại ở
-        // thanh dưới vẫn là loại cũ.
-        _typeChosen = false;
-        _bloc.add(const RecordingTypeChanged(kEcDefaultVideoType));
-        unawaited(_startAfterTypeChosen());
-      }
-    } else {
+    if (!widget.isActive!.value) {
+      // Không tự đóng sheet ở đây: sheet bắt buộc có nền chắn nên người dùng
+      // không bấm được thanh tab khi nó đang mở — tab không thể đổi lúc đó.
+      // Bản trước gọi `pop()` mù lên navigator gốc, chạy đua với chính luồng
+      // đang đóng sheet và có nhịp pop nhầm route khác, để lại cờ kẹt khiến ô
+      // chọn loại bấm không ăn.
+      // Xoá CẢ HAI cờ ngay khi rời màn, không đợi lúc quay lại: như vậy lượt
+      // vào sau chắc chắn phải chọn loại, bất kể sự kiện nào tới trước —
+      // `_onActiveChanged` hay chốt trong `build`.
+      _typeAsked = false;
+      _typePicked = false;
+      // Lưới an toàn: cờ này chỉ để chặn mở chồng sheet. Nếu vì lý do nào đó
+      // nó còn kẹt (sheet treo trên navigator đã chết), rời màn giải phóng
+      // luôn — kẹt cờ làm hỏng hẳn tính năng, còn thả sớm cùng lắm cho mở
+      // thêm một sheet.
+      _typeSheetOpen = false;
+      _bloc.scanSuspended = false;
       _bloc.add(const RecordingBackgrounded());
+      return;
     }
+    // Mỗi lần vào tab là một lượt quay mới: xoá cả "đã hỏi" lẫn "đã chọn" nên
+    // luôn phải chọn lại loại. Giữ nguyên loại của lần trước là cách clip bị
+    // gán sai loại nhiều nhất — người quay chuyển tab, quay tiếp, và không ai
+    // để ý ô loại ở thanh dưới vẫn là loại cũ. Kể cả khi lượt trước đang quay
+    // dở: rời tab đã chốt clip, quay lại là bắt đầu từ đầu.
+    //
+    // Nằm NGOÀI điều kiện trạng thái camera: trước đây nó lồng trong nhánh
+    // "camera cần dựng lại", nên vào tab mà bloc còn `idle` (camera vẫn sống)
+    // thì không hỏi gì — bấm Ghi hình không thấy sheet đâu, mãi tới lượt sau
+    // mới bật ra.
+    _typeAsked = false;
+    _typePicked = false;
+    // Đây là ĐƯỜNG DUY NHẤT mở sheet tự động. Từng có thêm một chốt trong
+    // `build`, nhưng nó đẩy route ngay giữa nhịp dựng khung hình nên navigator
+    // đang khoá — `!_debugLocked` ném liên tục, mỗi lượt hỏng lại kéo theo một
+    // lượt thử mới.
+    unawaited(_startAfterTypeChosen());
   }
 
   /// Đã nhả camera vì app bị đẩy xuống nền (cuộc gọi đến, kéo trung tâm thông
@@ -341,24 +389,67 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   }
 
   /// True sau khi sheet chọn loại đã được hỏi một lần trong phiên — dù người
-  /// quay chọn hay gạt sheet xuống bỏ qua.
+  /// Đã MỞ sheet chọn loại lần nào chưa.
   ///
-  /// Bỏ qua nghĩa là đồng ý với loại đang chọn sẵn (mặc định "Đóng hàng"),
-  /// nên vẫn tính là đã hỏi: không hỏi lại và camera lên bình thường. Trước
-  /// đây bỏ qua thì màn hình đứng chờ mãi vì camera không được dựng.
-  bool _typeChosen = false;
+  /// Bật ngay lúc BẮT ĐẦU hỏi, không phải lúc sheet đóng. Chốt theo thời điểm
+  /// đóng thì trong suốt lúc sheet đang mở cờ vẫn `false`, và lời gọi thứ hai
+  /// (vòng đời tab bắn cùng nhịp với `initState`) mở thêm một sheet nữa chồng
+  /// lên — đóng cái trên xong vẫn còn cái dưới chặn hết thao tác, đúng triệu
+  /// chứng "bấm gì cũng không ăn" thi thoảng gặp.
+  ///
+  /// Bỏ qua sheet = đồng ý với loại mặc định, vẫn tính là đã hỏi nên camera
+  /// lên bình thường và không hỏi lại trong lượt đó.
+  bool _typeAsked = false;
 
-  /// Chặn hai lời gọi dựng camera chồng nhau — sheet chọn loại và vòng đời tab
-  /// có thể cùng kích hoạt trong một nhịp.
-  bool _cameraStarting = false;
+  /// Lời gọi dựng camera đang chạy. Lời gọi sau chờ chung future này thay vì
+  /// bỏ đi — bỏ đi thì có nhịp camera không bao giờ được dựng và màn đứng im.
+  Future<void>? _cameraStart;
 
-  Future<void> _pickType() async {
-    final type = await widget.onRequestType?.call();
-    // Gạt sheet xuống (hoặc chạm nền) = giữ loại đang chọn sẵn, không phải huỷ
-    // vào màn quay. Đằng nào cũng coi là đã hỏi xong, nên `_startAfterTypeChosen`
-    // dựng camera tiếp ngay sau đây.
-    _typeChosen = true;
+  /// Sheet chọn loại đang mở. Chỉ dùng để chặn mở chồng hai sheet — bấm ô loại
+  /// ở thanh dưới trong lúc sheet tự động còn mở.
+  bool _typeSheetOpen = false;
+
+  /// True khi người quay đã CHỌN THẬT một loại trong lượt này.
+  ///
+  /// Khác [_typeAsked] (chỉ ghi nhận đã mở sheet): camera chỉ lên khi cờ này
+  /// bật, nên bỏ qua sheet không có nghĩa là đồng ý một loại mặc định nào.
+  bool _typePicked = false;
+
+  Future<void> _pickType({bool mandatory = false}) async {
+    // Một sheet tại một thời điểm: bấm ô loại ở thanh dưới trong lúc sheet tự
+    // động còn đang mở sẽ chồng thêm cái nữa, đóng cái trên vẫn còn cái dưới
+    // chặn hết thao tác.
+    if (_typeSheetOpen) return;
+    // Máy quét phải im trong lúc sheet che khung ngắm: người quay đang chọn
+    // loại, không canh bill — bill lọt vào khung lúc đó mà máy tự mở clip là
+    // sai đơn, và họ chỉ phát hiện sau khi đã quay xong.
+    _bloc.scanSuspended = true;
+    _typeSheetOpen = true;
+    try {
+      await _pickTypeInner(mandatory: mandatory);
+    } finally {
+      _typeSheetOpen = false;
+      // Trả cờ VÔ ĐIỀU KIỆN, không kèm `mounted`: chỉ cần một nhịp widget bị
+      // gỡ đúng lúc sheet đóng là cờ kẹt ở `true` vĩnh viễn, máy quét câm, và
+      // triệu chứng là "chọn loại nào cũng không quay được" — không có gì trên
+      // màn hình chỉ ra nguyên nhân. Gán vào bloc đã đóng thì vô hại.
+      _bloc.scanSuspended = false;
+    }
+  }
+
+  Future<void> _pickTypeInner({bool mandatory = false}) async {
+    // Truyền context SỐNG của màn quay, không để bên gọi tự giữ context của
+    // route lúc dựng router: context cũ trỏ vào navigator không còn hiển thị,
+    // sheet mở ra không ai thấy và cũng không ai đóng được — `await` treo mãi,
+    // cờ `_typeSheetOpen` kẹt `true`, và từ đó cả sheet tự động lẫn ô chọn
+    // loại ở thanh dưới đều bấm không ăn.
+    if (!mounted) return;
+    final type = await widget.onRequestType?.call(
+      context,
+      mandatory: mandatory,
+    );
     if (type != null && type.isNotEmpty) {
+      _typePicked = true;
       _bloc.add(RecordingTypeChanged(type));
     }
   }
@@ -367,8 +458,14 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   /// đây thay vì lúc quét mã: luồng quét là rảnh tay, dừng lại giữa chừng để
   /// hỏi thì bill đã qua khung hình mất rồi.
   Future<void> _ensureTypeChosen() async {
-    if (_typeChosen || !mounted) return;
-    await _pickType();
+    // Kiểm tra `isActive` ngay tại đây chứ không chỉ lúc lên lịch: sheet đi qua
+    // navigator gốc nên nó hiện đè lên BẤT KỲ tab nào đang mở — mở nhầm lúc
+    // người dùng còn ở Vận đơn thì họ thấy hộp chọn loại quay bật ra vô cớ.
+    if (_typeAsked || !mounted || !(widget.isActive?.value ?? true)) return;
+    _typeAsked = true;
+    // Lần mở tự động lúc vào màn là bắt buộc; bấm ô loại ở thanh dưới thì
+    // không, vì lúc đó người quay đã chọn xong và chỉ muốn đổi.
+    await _pickType(mandatory: true);
   }
 
   Future<void> _leaveAfterFinalizing(VoidCallback? action) async {
@@ -386,6 +483,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         );
       }
       action?.call();
+      // Rời màn cũng là hết lượt: vào lại phải chọn loại từ đầu. `isActive`
+      // không đổi khi thoát bằng nút back (shell vẫn giữ nhánh này), nên nếu
+      // chỉ dựa vào `_onActiveChanged` thì lượt sau không ai hỏi.
+      _typePicked = false;
+      _typeAsked = false;
     } finally {
       _leaving = false;
     }

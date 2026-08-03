@@ -56,7 +56,9 @@ import 'package:flutter/cupertino.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';
 import 'package:network/network.dart' show Dio, DioException, DioExceptionType;
@@ -851,6 +853,11 @@ class _AccountRouteState extends State<_AccountRoute> {
             avatarPath: _appMemory()?.getString(_avatarPathKey(user?.uid)),
             onNavOrders: () => context.go('/home'),
             onNavCapture: () => context.go('/record'),
+            onFacebook: () => _openSupport(context, _kSupportFacebook),
+            onZalo: () => _openSupport(context, _kSupportZalo),
+            onCall: () => _openSupport(context, _kSupportPhone),
+            onFeedback: () => _showFeedbackSheet(context, widget.repo),
+            onRateApp: () => _openSupport(context, _kStoreListing),
             onProfileTap: () async {
               await context.push('/edit-profile');
               if (mounted) setState(() {});
@@ -1255,6 +1262,73 @@ bool _isOpenDossierConflict(Object error) =>
 /// have a dedicated screen confirm they fired.
 void _toast(BuildContext c, String msg) => ecToast(c, msg);
 
+// Kênh hỗ trợ hiện ở góc trái dưới trang Tài khoản.
+//
+// ponytail: hằng số tạm — chuyển sang Remote Config hoặc endpoint cấu hình khi
+// cần đổi số/trang mà không phải phát hành lại app.
+const _kSupportFacebook = 'https://m.me/zenpackvn';
+const _kSupportZalo = 'https://zalo.me/0888888888';
+const _kSupportPhone = 'tel:0888888888';
+
+/// Trang app trên store, mở bằng lược đồ riêng của từng nền tảng để nhảy thẳng
+/// vào mục đánh giá thay vì mở trình duyệt.
+final _kStoreListing = defaultTargetPlatform == TargetPlatform.iOS
+    ? 'https://apps.apple.com/app/id0000000000?action=write-review'
+    : 'market://details?id=com.aktechvn.zenpack';
+
+/// Mở sheet góp ý và gửi thẳng lên server.
+///
+/// Không chuyển sang ứng dụng thư: người dùng vừa gõ xong, đẩy họ sang app
+/// khác rồi bắt bấm gửi lần nữa là hai lần công cho một việc — và phần lớn bỏ
+/// dở ở bước đó.
+void _showFeedbackSheet(BuildContext context, EcRepository repo) {
+  showCupertinoModalPopup<void>(
+    context: context,
+    builder: (sheetContext) => EcFeedbackSheet(
+      onClose: () => Navigator.of(sheetContext).pop(),
+      onSubmit: (text) {
+        Navigator.of(sheetContext).pop();
+        // Gửi ở nền và cảm ơn ngay: góp ý không phải giao dịch, bắt người dùng
+        // ngồi chờ vòng quay mạng cho một việc họ không nhận lại gì là thừa.
+        unawaited(
+          repo
+              .sendFeedback(
+                message: text,
+                platform: defaultTargetPlatform.name,
+              )
+              .catchError((Object _) {
+                // Nuốt lỗi có chủ đích: người dùng đã được cảm ơn, hiện lỗi
+                // mạng lúc này chỉ gây hoang mang mà họ không sửa được gì.
+              }),
+        );
+        showCupertinoModalPopup<void>(
+          context: context,
+          builder: (thanksContext) => EcFeedbackThanksSheet(
+            onClose: () => Navigator.of(thanksContext).pop(),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+/// Mở một kênh hỗ trợ bằng app ngoài (Messenger, Zalo, trình quay số).
+///
+/// Máy chưa cài app tương ứng thì `launchUrl` ném hoặc trả false — báo toast
+/// thay vì im lặng, vì người bấm vào đây đang cần trợ giúp.
+Future<void> _openSupport(BuildContext context, String url) async {
+  final l10n = context.l10n;
+  try {
+    final ok = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!ok && context.mounted) _toast(context, l10n.supportOpenFailed);
+  } on Object {
+    if (context.mounted) _toast(context, l10n.supportOpenFailed);
+  }
+}
+
 /// Đảm bảo có quyền camera trước khi màn ghi hình khởi tạo thiết bị.
 ///
 /// Chưa hỏi bao giờ thì hỏi. Đã từ chối vĩnh viễn thì hỏi lại cũng vô ích —
@@ -1558,16 +1632,32 @@ Future<void> _downloadAndShareVideo(
   Dio dio,
   ShareService? share,
   GallerySaveService? gallery,
-  EcVideoDetail video,
-) async {
+  EcVideoDetail video, {
+  String tracking = '',
+}) async {
   final url = video.mediaUrl;
   if (url == null) return;
   try {
     _toast(context, context.l10n.toastDownloadingVideo);
     final dir = await getApplicationDocumentsDirectory();
     final filename = _safeFilename('${video.title}.mp4');
-    final path = '${dir.path}/$filename';
+    var path = '${dir.path}/$filename';
     await _downloadWithRetry(dio, url, path);
+    if (!context.mounted) return;
+    // Đóng dấu mã đơn / thời điểm / chặng quay lên góc trái trước khi giao file
+    // ra ngoài: rời khỏi app thì clip chỉ còn là một mp4 trần, người nhận không
+    // có cách nào biết nó của đơn nào. Hỏng dấu thì `stamp` trả lại bản gốc,
+    // người dùng vẫn cầm được file.
+    final stamped = await EcVideoStampService().stamp(
+      path,
+      lines: [
+        if (tracking.isNotEmpty) tracking,
+        video.recordedAt,
+        video.title,
+      ],
+    );
+    if (stamped != path) await _deleteQuietly(path);
+    path = stamped;
     if (!context.mounted) return;
     // gal's `put*` calls throw if the add-to-gallery permission was never
     // granted — request it first rather than let that surface as a generic
@@ -1743,10 +1833,11 @@ Future<String?> _showTypeSheet(
   required EcRepository repo,
   required String shopId,
   required String selectedType,
+  bool mandatory = false,
 }) {
   return showGeneralDialog<String>(
     context: context,
-    barrierDismissible: true,
+    barrierDismissible: !mandatory,
     barrierLabel: context.l10n.commonClose,
     barrierColor: Colors.black.withValues(alpha: 0.4),
     transitionDuration: const Duration(milliseconds: 200),
@@ -1754,8 +1845,10 @@ Future<String?> _showTypeSheet(
       repo: repo,
       shopId: shopId,
       selectedType: selectedType,
+      dismissible: !mandatory,
       onManageTypes: () =>
           Navigator.of(dialogContext).pop(_manageVideoTypesResult),
+      onBack: () => Navigator.of(dialogContext).pop(_typeSheetBackResult),
       onSelected: (type) => Navigator.of(dialogContext).pop(type),
     ),
     transitionBuilder: (_, animation, _, child) =>
@@ -1764,6 +1857,9 @@ Future<String?> _showTypeSheet(
 }
 
 const _manageVideoTypesResult = '__manage_video_types__';
+
+/// Người dùng bấm back trong sheet chọn loại: không quay nữa, sang tab Vận đơn.
+const _typeSheetBackResult = '__type_sheet_back__';
 
 /// Index of the `/record` [StatefulShellBranch] within the 3-tab shell
 /// (home, record, account) — see `_buildRouter`'s `StatefulShellRoute`.
@@ -1842,43 +1938,35 @@ Future<void> _forgetRememberedShop() async {
 /// has saved (from an earlier "Đóng hàng" clip)? Unlike manual entry, there is
 /// no "create a new order" fallback — a return that doesn't match anything is
 /// just wrong, and the user is warned and told to rescan.
+/// Cho phép quay clip "Trả hàng" cho [code], tạo đơn mới nếu shop chưa có.
+///
+/// Khớp một đơn đã có thì clip trả hàng nằm chung mã vận đơn với clip đóng
+/// hàng — mở mã ra thấy đủ cả hai chặng, đó là điểm chính của hồ sơ khiếu nại.
+///
+/// Không khớp thì **tự tạo đơn mới rồi quay tiếp**, không hỏi. Hàng hoàn nhiều
+/// khi chưa từng đi qua app này (khách trả thẳng, đơn đóng ở ca khác), mà cảnh
+/// mở kiện thì không quay lại được — dừng lại hỏi là mất bằng chứng ngay lúc
+/// cần nhất. Đơn mới vẫn lên hàng chờ upload và hiện ở tab Vận đơn như thường.
 Future<bool> _verifyReturnCode(
   BuildContext context,
   EcRepository repo,
   String shopId,
-  String shopName,
   String code,
 ) async {
   final key = normalizeTrackingCode(code);
   try {
     final matches = await repo.searchOrders(shopId, code);
-    final exists = matches.any((o) => normalizeTrackingCode(o.tracking) == key);
-    if (exists || !context.mounted) return exists;
-
-    // No match: offer the same two ways out as manual entry — retype the
-    // code, or confirm creating a new order for it — instead of a dead-end
-    // toast the packer has no action to take on.
-    final createNew = await showDialog<bool>(
-      context: context,
-      barrierColor: Colors.transparent,
-      builder: (dialogContext) => EcNoMatchScreen(
-        returnCode: code,
-        shopName: shopName,
-        onEnterManually: () => Navigator.of(dialogContext).pop(false),
-        onCreateNew: () => Navigator.of(dialogContext).pop(true),
-      ),
-    );
-    if (createNew != true || !context.mounted) return false;
-    try {
-      await repo.createOrder(shopId, code);
+    if (matches.any((o) => normalizeTrackingCode(o.tracking) == key)) {
       return true;
-    } on Object catch (error) {
-      if (context.mounted) _toast(context, _dataErrorText(context.l10n, error));
-      return false;
     }
+    await repo.createOrder(shopId, code);
+    return true;
   } on Object catch (error) {
+    // Tạo đơn hỏng (mất mạng, trùng mã) thì vẫn cho quay: clip nằm trong hàng
+    // chờ và gắn theo mã, lần upload sau server tự khớp hoặc tạo đơn. Chặn ở
+    // đây chỉ đổi một lỗi nền thành mất bằng chứng.
     if (context.mounted) _toast(context, _dataErrorText(context.l10n, error));
-    return false;
+    return true;
   }
 }
 
@@ -2529,6 +2617,8 @@ class _TypeSheetRoute extends StatefulWidget {
     required this.selectedType,
     required this.onManageTypes,
     required this.onSelected,
+    required this.onBack,
+    this.dismissible = true,
   });
 
   final EcRepository repo;
@@ -2536,6 +2626,8 @@ class _TypeSheetRoute extends StatefulWidget {
   final String selectedType;
   final VoidCallback onManageTypes;
   final ValueChanged<String> onSelected;
+  final VoidCallback onBack;
+  final bool dismissible;
 
   @override
   State<_TypeSheetRoute> createState() => _TypeSheetRouteState();
@@ -2560,6 +2652,8 @@ class _TypeSheetRouteState extends State<_TypeSheetRoute> {
           selectedType: widget.selectedType,
           onManageTypes: widget.onManageTypes,
           onSelectType: widget.onSelected,
+          onBack: widget.onBack,
+          dismissible: widget.dismissible,
         );
       },
     );
@@ -3185,6 +3279,7 @@ class _OrderRouteState extends State<_OrderRoute> {
                     orderId: widget.order.id,
                     evidenceId: video.id,
                     canDelete: widget.shop.role != 'staff',
+                    tracking: widget.order.tracking,
                     video: _videoDetail(context.l10n, video),
                   ),
                 )
@@ -3201,6 +3296,7 @@ class _OrderRouteState extends State<_OrderRoute> {
                     orderId: widget.order.id,
                     evidenceId: video.id,
                     canDelete: widget.shop.role != 'staff',
+                    tracking: widget.order.tracking,
                     video: _videoDetail(context.l10n, video),
                   ),
                 )
@@ -3227,6 +3323,14 @@ class _OrderRouteState extends State<_OrderRoute> {
             // Share sheet thật (share_plus đã có sẵn qua app_platform, dùng
             // cho chia sẻ video); thiếu DI thì rơi về clipboard chứ không im
             // lặng không làm gì.
+            // Hai hành động gộp bằng chứng chưa có endpoint: backend mới chỉ
+            // `getDossier` (đọc hồ sơ web admin đã tạo), chưa có đường tạo hồ
+            // sơ từ app hay đẩy Drive. Báo rõ thay vì để nút bấm im lặng —
+            // nút không phản hồi là kiểu hỏng khó đoán nhất.
+            onCreateLink: (picked) =>
+                _toast(context, context.l10n.bundleBackendPending),
+            onUploadDrive: (picked) =>
+                _toast(context, context.l10n.bundleBackendPending),
             onShareDossierLink: data.dossierUrl == null
                 ? null
                 : () {
@@ -3614,10 +3718,15 @@ class _VideoRouteExtra {
     required this.shopId,
     required this.orderId,
     required this.canDelete,
+    this.tracking = '',
     this.evidenceId,
   });
 
   final EcVideoDetail video;
+
+  /// Mã vận đơn, để đóng dấu lên clip lúc tải về — `EcVideoDetail` chỉ mang
+  /// thông tin của riêng clip, không biết nó thuộc đơn nào.
+  final String tracking;
   final String shopId;
   final String orderId;
   final String? evidenceId;
@@ -4231,9 +4340,13 @@ GoRouter _buildRouter(
                       onConfirmManualCode: (code) =>
                           _confirmManualTracking(c, repo, shop.id, code),
                       verifyReturnCode: (code) =>
-                          _verifyReturnCode(c, repo, shop.id, shop.name, code),
+                          _verifyReturnCode(c, repo, shop.id, code),
                       voiceAnnouncer: voice,
-                      onRequestType: () async {
+                      onRequestType:
+                          (
+                            BuildContext sheetContext, {
+                            bool mandatory = false,
+                          }) async {
                         final router = GoRouter.of(c);
                         final rootNavigator = Navigator.of(
                           c,
@@ -4245,11 +4358,23 @@ GoRouter _buildRouter(
                         // khoá luôn loại cũ mà không hỏi lại.
                         while (true) {
                           final selected = await _showTypeSheet(
-                            c,
+                            sheetContext,
                             repo: repo,
                             shopId: shop.id,
                             selectedType: recordingType.value,
+                            mandatory: mandatory,
                           );
+                          // Bấm back trong sheet: không quay nữa, sang thẳng
+                          // tab Vận đơn. Trả `null` để màn quay hiểu là chưa
+                          // chọn loại nên đừng dựng camera.
+                          //
+                          // Tab Vận đơn nằm ở `/home`, KHÔNG phải `/orders` —
+                          // `/orders` không tồn tại nên `go` im lặng không đi
+                          // đâu cả, đúng triệu chứng "bấm back không ra gì".
+                          if (selected == _typeSheetBackResult) {
+                            if (c.mounted) c.go('/home');
+                            return null;
+                          }
                           if (selected == _manageVideoTypesResult) {
                             await rootNavigator.push<void>(
                               MaterialPageRoute(
@@ -4437,6 +4562,7 @@ GoRouter _buildRouter(
                     share,
                     gallery,
                     video!,
+                    tracking: extra?.tracking ?? '',
                   );
                 },
                 onDelete: () async {
@@ -4603,6 +4729,7 @@ GoRouter _buildRouter(
               repo: repo,
               shopId: shop?.id ?? '',
               selectedType: selectedType,
+              onBack: () => c.pop(),
               onManageTypes: () {
                 c.pop();
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -4873,6 +5000,17 @@ GoRouter _buildRouter(
                 repo
                     .updateShop(shopId, maxClipSeconds: seconds)
                     .then((updated) {
+                      // Server có quyền kẹp giá trị theo gói. Im lặng nhận con
+                      // số đã kẹp là kiểu hỏng khó hiểu nhất: chủ shop gõ 20,
+                      // toast báo 15, và không ai nói cho họ biết vì sao.
+                      if (updated.clipSeconds != seconds && c.mounted) {
+                        _toast(
+                          c,
+                          c.l10n.limitClampedByServer(
+                            '${(updated.clipSeconds / 60).round()}',
+                          ),
+                        );
+                      }
                       if (!c.mounted) return;
                       final current = _selected(selectedShop);
                       if (current?.id == updated.id) {

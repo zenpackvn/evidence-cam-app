@@ -789,6 +789,36 @@
   "unitMegabytes": "MB",
   "clipDurationCustomLabel": "Hoặc nhập số phút bạn muốn",
   "uploadSizeCustomLabel": "Hoặc nhập dung lượng bạn muốn",
+  "bundleBackendPending": "Chức năng này đang chờ backend mở endpoint",
+  "supportOpenFailed": "Không mở được, kiểm tra xem máy đã cài ứng dụng chưa",
+  "feedbackThanksTitle": "Cảm ơn bạn!",
+  "feedbackThanksBody": "Phản hồi của bạn giúp ZenPack ngày càng tốt hơn.",
+  "feedbackTitle": "Bạn muốn chia sẻ điều gì với chúng tôi?",
+  "feedbackHint": "Nhập góp ý của bạn...",
+  "feedbackSend": "Gửi góp ý",
+  "feedbackThanks": "Cảm ơn bạn đã góp ý",
+  "accountSectionAbout": "GIỚI THIỆU",
+  "accountFeedback": "Góp ý với chúng tôi",
+  "accountFeedbackNote": "Chia sẻ ý kiến để ZenPack tốt hơn",
+  "accountRateApp": "Đánh giá ứng dụng",
+  "accountRateAppNote": "Hỗ trợ phát triển ZenPack",
+  "supportFacebook": "Nhắn Facebook",
+  "supportZalo": "Nhắn Zalo",
+  "supportCall": "Gọi hỗ trợ",
+  "bundleCreate": "Tạo",
+  "bundleSelected": "Đã chọn {count} bằng chứng",
+  "@bundleSelected": { "placeholders": { "count": { "type": "int" } } },
+  "bundleCreateLink": "Tạo link",
+  "bundleUploadDrive": "Đẩy lên Drive",
+  "limitClampedByServer": "Gói hiện tại chỉ cho tối đa {value} — hệ thống đã hạ về mức này",
+  "@limitClampedByServer": { "placeholders": { "value": { "type": "String" } } },
+  "sheetCustomMin": "Nhập từ {min} {unit} trở lên",
+  "@sheetCustomMin": {
+    "placeholders": {
+      "min": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
   "sheetCustomRange": "Nhập từ {min} đến {max} {unit}",
   "@sheetCustomRange": {
     "placeholders": {

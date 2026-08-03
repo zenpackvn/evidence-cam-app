@@ -87,6 +87,13 @@ abstract interface class EcRepository {
   /// được tạo/thu hồi ở web admin.
   Future<DossierDto?> dossier(String shopId, String orderId);
 
+  /// Gửi góp ý người dùng nhập trong app.
+  Future<void> sendFeedback({
+    required String message,
+    String? platform,
+    String? appVersion,
+  });
+
   /// URL công khai của [shareToken].
   String dossierShareUrl(String shareToken);
   Future<void> deleteEvidence(String shopId, String orderId, String evidenceId);
@@ -227,6 +234,17 @@ class RemoteEcRepository implements EcRepository {
   @override
   Future<DossierDto?> dossier(String shopId, String orderId) =>
       _api.getDossier(shopId, orderId);
+
+  @override
+  Future<void> sendFeedback({
+    required String message,
+    String? platform,
+    String? appVersion,
+  }) => _api.sendFeedback(
+    message: message,
+    platform: platform,
+    appVersion: appVersion,
+  );
 
   @override
   String dossierShareUrl(String shareToken) => _api.dossierShareUrl(shareToken);
@@ -426,6 +444,13 @@ class FakeEcRepository implements EcRepository {
 
   @override
   Future<DossierDto?> dossier(String shopId, String orderId) async => null;
+
+  @override
+  Future<void> sendFeedback({
+    required String message,
+    String? platform,
+    String? appVersion,
+  }) async {}
 
   @override
   String dossierShareUrl(String shareToken) => '';

@@ -372,6 +372,14 @@ class RecordingSessionBloc
   final VoiceAnnouncerService _voice;
   final CaptureToneService _tone;
 
+  /// Bỏ qua mọi mã quét được, kể cả mã bắt đầu quay lẫn mã cutover.
+  ///
+  /// Bật khi có tấm che phủ lên khung ngắm mà người quay đang thao tác —
+  /// hiện là sheet chọn loại video. Camera vẫn chạy để preview không giật,
+  /// nhưng bill lọt vào khung lúc đó là ngoài ý muốn: người quay đang nhìn
+  /// sheet chứ không canh bill, mà máy lại lẳng lặng mở clip cho mã đó.
+  bool scanSuspended = false;
+
   /// True when this bloc built its own [CaptureToneService] and must therefore
   /// release the underlying player on close. A caller-supplied one is shared
   /// (app-lifetime, like the voice announcer) and is not ours to dispose.
@@ -561,6 +569,11 @@ class RecordingSessionBloc
       description: _cameras[_cameraIndex],
       resolutionPreset: _presetFor(state.resolutionLabel),
       imageFormatGroup: BillScanner.imageFormatGroup,
+      // Bằng chứng đóng gói nằm ở hình, không ở tiếng: mic chỉ thu tạp âm kho
+      // và câu chuyện riêng của nhân viên. Tắt từ gốc thì clip không có luồng
+      // âm thanh nào — xem lại trong app, tải về máy hay gửi qua hồ sơ đều im,
+      // khỏi phải tắt tiếng ở từng chỗ. Cũng bớt dung lượng mỗi clip.
+      enableAudio: false,
     );
     try {
       // The phone sits propped up looking down at the packing table for this
@@ -594,7 +607,11 @@ class RecordingSessionBloc
   }
 
   Future<void> _onIdleFrame(CameraImage image) async {
-    if (state.status != RecordingStatus.idle ||
+    // `scanSuspended` chặn ngay từ khung hình, trước cả khi chạy nhận dạng:
+    // chặn ở tầng sự kiện thì máy vẫn giải mã từng khung rồi mới vứt kết quả —
+    // tốn pin vô ích, và chỉ cần một nhánh nào đó quên kiểm tra là mã lại lọt.
+    if (scanSuspended ||
+        state.status != RecordingStatus.idle ||
         _idleScanBusy ||
         _cameras.isEmpty) {
       return;
@@ -679,6 +696,7 @@ class RecordingSessionBloc
     RecordingCodeScanned event,
     Emitter<RecordingSessionState> emit,
   ) async {
+    if (scanSuspended) return;
     final code = event.code.trim();
     // A return clip's tracking code is checked against the shop's saved
     // orders first. [_verifyReturnCode] itself decides what "not found" means
@@ -777,7 +795,9 @@ class RecordingSessionBloc
   /// on those devices while the clip itself still records and the manual stop
   /// button still works.
   Future<void> _onRecordingFrame(CameraImage image) async {
-    if (state.status != RecordingStatus.recording ||
+    // Cùng lý do như `_onIdleFrame`: chặn từ khung hình, đừng giải mã rồi vứt.
+    if (scanSuspended ||
+        state.status != RecordingStatus.recording ||
         _recScanBusy ||
         _cameras.isEmpty) {
       return;
@@ -809,6 +829,7 @@ class RecordingSessionBloc
     RecordingFrameScanned event,
     Emitter<RecordingSessionState> emit,
   ) async {
+    if (scanSuspended) return;
     if (state.status != RecordingStatus.recording) return;
     switch (recordingFrameAction(event.code, state.code, endQr: _endQr)) {
       case RecordingFrameAction.endSession:
