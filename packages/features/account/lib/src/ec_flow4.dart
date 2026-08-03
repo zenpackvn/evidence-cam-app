@@ -107,19 +107,25 @@ class EcAccountTabScreen extends StatelessWidget {
             bottom: false,
             child: Column(
               children: [
+                // Thẻ tài khoản đứng yên: nó là danh tính của phiên đang dùng,
+                // cuộn mất đi thì người dùng không còn mốc nào xác nhận mình
+                // đang ở tài khoản nào giữa một danh sách cài đặt dài.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
+                  child: _UserRow(
+                    name: userName,
+                    email: userEmail,
+                    avatarPath: avatarPath,
+                    onTap: onProfileTap,
+                  ),
+                ),
                 Expanded(
                   child: SingleChildScrollView(
                     // Design `Body`: padding [26, 18, 0, 18].
-                    padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _UserRow(
-                          name: userName,
-                          email: userEmail,
-                          avatarPath: avatarPath,
-                          onTap: onProfileTap,
-                        ),
                         _SectionHeader(context.l10n.accountSectionApp, top: 38),
                         _SettingsGroup(
                           rows: [
