@@ -784,6 +784,19 @@
   },
   "recordInterruptedResume": "Tiếp tục",
   "recordInterruptedFinish": "Kết thúc",
+  "commonApply": "Áp dụng",
+  "unitMinutes": "phút",
+  "unitMegabytes": "MB",
+  "clipDurationCustomLabel": "Hoặc nhập số phút bạn muốn",
+  "uploadSizeCustomLabel": "Hoặc nhập dung lượng bạn muốn",
+  "sheetCustomRange": "Nhập từ {min} đến {max} {unit}",
+  "@sheetCustomRange": {
+    "placeholders": {
+      "min": { "type": "String" },
+      "max": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
   "accountEndQrNote": "In tờ này dán ở bàn đóng hàng. Đang quay mà quét vào là chốt video ngay. Mã dùng chung cho mọi máy.",
   "languageChangeScopeNote": "Toàn bộ nhãn, thông báo và hồ sơ\nsẽ đổi sang ngôn ngữ bạn chọn.",
   "@languageChangeScopeNote": {

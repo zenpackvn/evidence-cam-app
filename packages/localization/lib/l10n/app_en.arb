@@ -1030,6 +1030,19 @@
   },
   "recordInterruptedResume": "Continue",
   "recordInterruptedFinish": "Finish",
+  "commonApply": "Apply",
+  "unitMinutes": "min",
+  "unitMegabytes": "MB",
+  "clipDurationCustomLabel": "Or enter the number of minutes you want",
+  "uploadSizeCustomLabel": "Or enter the size you want",
+  "sheetCustomRange": "Enter between {min} and {max} {unit}",
+  "@sheetCustomRange": {
+    "placeholders": {
+      "min": { "type": "String" },
+      "max": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
   "accountEndQrNote": "Print this and stick it on the packing table. Scanning it while recording closes the clip. The same code works on every device.",
   "languageChangeScopeNote": "Every label, notification and dossier\nswitches to the language you pick.",
   "@languageChangeScopeNote": {

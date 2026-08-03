@@ -2660,6 +2660,42 @@ abstract class AppLocalizations {
   /// **'Finish'**
   String get recordInterruptedFinish;
 
+  /// No description provided for @commonApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get commonApply;
+
+  /// No description provided for @unitMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get unitMinutes;
+
+  /// No description provided for @unitMegabytes.
+  ///
+  /// In en, this message translates to:
+  /// **'MB'**
+  String get unitMegabytes;
+
+  /// No description provided for @clipDurationCustomLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Or enter the number of minutes you want'**
+  String get clipDurationCustomLabel;
+
+  /// No description provided for @uploadSizeCustomLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Or enter the size you want'**
+  String get uploadSizeCustomLabel;
+
+  /// No description provided for @sheetCustomRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter between {min} and {max} {unit}'**
+  String sheetCustomRange(String min, String max, String unit);
+
   /// No description provided for @accountEndQrNote.
   ///
   /// In en, this message translates to:

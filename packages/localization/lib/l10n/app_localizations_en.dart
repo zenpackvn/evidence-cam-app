@@ -1455,6 +1455,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recordInterruptedFinish => 'Finish';
 
   @override
+  String get commonApply => 'Apply';
+
+  @override
+  String get unitMinutes => 'min';
+
+  @override
+  String get unitMegabytes => 'MB';
+
+  @override
+  String get clipDurationCustomLabel =>
+      'Or enter the number of minutes you want';
+
+  @override
+  String get uploadSizeCustomLabel => 'Or enter the size you want';
+
+  @override
+  String sheetCustomRange(String min, String max, String unit) {
+    return 'Enter between $min and $max $unit';
+  }
+
+  @override
   String get accountEndQrNote =>
       'Print this and stick it on the packing table. Scanning it while recording closes the clip. The same code works on every device.';
 

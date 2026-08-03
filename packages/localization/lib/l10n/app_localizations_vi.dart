@@ -1449,6 +1449,26 @@ class AppLocalizationsVi extends AppLocalizations {
   String get recordInterruptedFinish => 'Kết thúc';
 
   @override
+  String get commonApply => 'Áp dụng';
+
+  @override
+  String get unitMinutes => 'phút';
+
+  @override
+  String get unitMegabytes => 'MB';
+
+  @override
+  String get clipDurationCustomLabel => 'Hoặc nhập số phút bạn muốn';
+
+  @override
+  String get uploadSizeCustomLabel => 'Hoặc nhập dung lượng bạn muốn';
+
+  @override
+  String sheetCustomRange(String min, String max, String unit) {
+    return 'Nhập từ $min đến $max $unit';
+  }
+
+  @override
   String get accountEndQrNote =>
       'In tờ này dán ở bàn đóng hàng. Đang quay mà quét vào là chốt video ngay. Mã dùng chung cho mọi máy.';
 

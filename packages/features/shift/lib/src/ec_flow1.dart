@@ -2272,8 +2272,13 @@ class _MemberRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Chủ shop không đổi vai trò được và cũng không gỡ khỏi shop được, nên màn
+    // quản lý thành viên mở ra chẳng có hành động nào — bấm vào là mở rồi đóng
+    // lại tay không. Bỏ luôn cả vùng bấm lẫn mũi tên để hàng này trông đúng
+    // bản chất: một dòng thông tin, không phải một mục bấm được.
+    final isOwner = member.roleCode == 'owner';
     return EcTap(
-      onTap: onTap,
+      onTap: isOwner ? null : onTap,
       child: PenBox(
         width: double.infinity,
         axis: PenAxis.row,
@@ -2316,11 +2321,12 @@ class _MemberRow extends StatelessWidget {
               ),
             ],
           ),
-          const Icon(
-            LucideIcons.chevronRight,
-            size: 18,
-            color: PenColors.mut,
-          ),
+          if (!isOwner)
+            const Icon(
+              LucideIcons.chevronRight,
+              size: 18,
+              color: PenColors.mut,
+            ),
         ],
       ),
     );
@@ -3018,8 +3024,16 @@ class EcClipDurationSheetScreen extends StatelessWidget {
   /// worse than a short one.
   static const _marks = [1, 2, 3, 5, 8, 10, 15, 20, 25];
 
+  /// Trần phút chọn được. Lấy theo gói, nhưng không bao giờ thấp hơn 15 —
+  /// phiên quay tự chốt ở 15 phút, nên đó là mức trên có ý nghĩa; backend trả
+  /// về `planMaxSeconds` nhỏ hơn chỉ khiến chủ shop không đặt nổi mức mình cần.
+  int get _capMinutes {
+    final fromPlan = (budget.planMaxSeconds / 60).floor();
+    return fromPlan >= 15 ? fromPlan : 15;
+  }
+
   List<int> get _options {
-    final capMinutes = (budget.planMaxSeconds / 60).floor();
+    final capMinutes = _capMinutes;
     final marks = _marks.where((m) => m <= capMinutes).toList();
     final recommended = (budget.recommendedSeconds / 60).round();
     // Mức đề xuất luôn phải chọn được, kể cả khi nó không rơi vào mốc nào.
@@ -3049,10 +3063,18 @@ class EcClipDurationSheetScreen extends StatelessWidget {
             selected: m == selectedMinutes,
             onTap: () => onSelect?.call(m * 60),
           ),
+        _EcSheetCustomInput(
+          label: l10n.clipDurationCustomLabel,
+          unit: l10n.unitMinutes,
+          min: 1,
+          max: _capMinutes,
+          initial: selectedMinutes,
+          onSubmit: (m) => onSelect?.call(m * 60),
+        ),
         Padding(
-          padding: const EdgeInsets.only(top: 4),
+          padding: const EdgeInsets.only(top: 8),
           child: PenText(
-            l10n.clipDurationPlanCap('${(budget.planMaxSeconds / 60).floor()}'),
+            l10n.clipDurationPlanCap('$_capMinutes'),
             size: 12,
             color: PenColors.mut,
           ),
@@ -3120,12 +3142,155 @@ class EcUploadSizeSheetScreen extends StatelessWidget {
             selected: m == selected,
             onTap: () => onSelect?.call(m * 1000000),
           ),
+        _EcSheetCustomInput(
+          label: l10n.uploadSizeCustomLabel,
+          unit: l10n.unitMegabytes,
+          min: kMinUploadBytes ~/ 1000000,
+          max: kMaxUploadBytes ~/ 1000000,
+          initial: selected,
+          onSubmit: (m) => onSelect?.call(m * 1000000),
+        ),
       ],
     );
   }
 }
 
 /// Shared bottom-sheet chrome for flow-1 sheets (dim scrim + rounded panel).
+/// Ô nhập tự do cho các sheet giới hạn (thời lượng clip, dung lượng tệp).
+///
+/// Các mốc bên trên chỉ là gợi ý — chủ shop nào cũng có thể có ràng buộc riêng
+/// mà một danh sách cố định không phủ hết, nên phải cho gõ thẳng con số. Giá
+/// trị ngoài khoảng [min]..[max] bị chặn tại chỗ kèm lý do, thay vì để backend
+/// từ chối sau khi người dùng đã rời màn.
+class _EcSheetCustomInput extends StatefulWidget {
+  const _EcSheetCustomInput({
+    required this.label,
+    required this.unit,
+    required this.min,
+    required this.max,
+    required this.initial,
+    required this.onSubmit,
+  });
+
+  final String label;
+  final String unit;
+  final int min;
+  final int max;
+  final int initial;
+
+  /// Nhận giá trị đã hợp lệ, theo đúng đơn vị hiển thị (phút hoặc MB).
+  final ValueChanged<int> onSubmit;
+
+  @override
+  State<_EcSheetCustomInput> createState() => _EcSheetCustomInputState();
+}
+
+class _EcSheetCustomInputState extends State<_EcSheetCustomInput> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initial.toString(),
+  );
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final value = int.tryParse(_controller.text.trim());
+    if (value == null || value < widget.min || value > widget.max) {
+      setState(
+        () => _error = context.l10n.sheetCustomRange(
+          '${widget.min}',
+          '${widget.max}',
+          widget.unit,
+        ),
+      );
+      return;
+    }
+    setState(() => _error = null);
+    widget.onSubmit(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PenText(widget.label, size: 13, color: PenColors.mut),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: PenBox(
+                  height: 48,
+                  fill: PenColors.card,
+                  stroke: _error == null ? PenColors.line : PenColors.danger,
+                  radius: 12,
+                  axis: PenAxis.row,
+                  cross: CrossAxisAlignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  children: [
+                    Expanded(
+                      child: CupertinoTextField(
+                        controller: _controller,
+                        padding: EdgeInsets.zero,
+                        decoration: const BoxDecoration(),
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        onChanged: (_) {
+                          if (_error != null) setState(() => _error = null);
+                        },
+                        onSubmitted: (_) => _submit(),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: PenColors.ink,
+                        ),
+                      ),
+                    ),
+                    PenText(widget.unit, size: 14, color: PenColors.mut),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              EcTap(
+                onTap: _submit,
+                child: PenBox(
+                  height: 48,
+                  fill: PenColors.primary,
+                  radius: 12,
+                  axis: PenAxis.row,
+                  main: MainAxisAlignment.center,
+                  cross: CrossAxisAlignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  children: [
+                    PenText(
+                      l10n.commonApply,
+                      size: 15,
+                      color: PenColors.card,
+                      weight: FontWeight.w700,
+                      softWrap: false,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: PenText(_error!, size: 12, color: PenColors.danger),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _EcSheetFrame extends StatelessWidget {
   const _EcSheetFrame({
     required this.title,

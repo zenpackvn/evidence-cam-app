@@ -1122,7 +1122,10 @@ class _PenSheetState extends State<PenSheet> {
         Align(
           alignment: Alignment.bottomCenter,
           child: GestureDetector(
-            onTap: () {},
+            // Chặn tap rơi xuống nền (đóng sheet) NHƯNG vẫn hạ bàn phím —
+            // `onTap: () {}` cũ nuốt luôn đường tới bộ bỏ focus toàn app, nên
+            // gõ xong bấm ra chỗ trống trong sheet thì bàn phím cứ đứng đó.
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
             // ponytail: cả tấm panel là vùng kéo. Scrollable bên trong (bánh xe
             // ngày, danh sách dài) vẫn thắng arena cử chỉ dọc vì nằm sâu hơn,
             // nên chưa cần tách riêng vùng grabber.
@@ -1197,7 +1200,9 @@ class PenDialog extends StatelessWidget {
         ),
         Center(
           child: GestureDetector(
-            onTap: () {},
+            // Xem chú thích ở PenSheet: chặn tap xuống nền nhưng vẫn hạ bàn
+            // phím, vì dialog cũng có ô nhập.
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
             child: SingleChildScrollView(
               child: PenBox(
                 width: 300,
