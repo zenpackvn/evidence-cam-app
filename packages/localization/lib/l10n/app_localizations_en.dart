@@ -1534,6 +1534,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bundleUploadDrive => 'Upload to Drive';
 
   @override
+  String get limitClampedTitle => 'Your plan does not allow this';
+
+  @override
+  String limitClampedBody(String want, String got) {
+    return 'You chose $want min but the system accepts at most $got min, and saved $got min. Upgrade your plan or contact support if you need more.';
+  }
+
+  @override
   String limitClampedByServer(String value) {
     return 'Your plan allows at most $value — the system lowered it to that';
   }

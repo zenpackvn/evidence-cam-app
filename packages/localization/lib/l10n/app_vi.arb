@@ -810,6 +810,11 @@
   "@bundleSelected": { "placeholders": { "count": { "type": "int" } } },
   "bundleCreateLink": "Tạo link",
   "bundleUploadDrive": "Đẩy lên Drive",
+  "limitClampedTitle": "Gói hiện tại không cho mức này",
+  "limitClampedBody": "Bạn chọn {want} phút nhưng hệ thống chỉ chấp nhận tối đa {got} phút, và đã lưu ở mức {got} phút. Nâng gói hoặc liên hệ hỗ trợ nếu cần mức cao hơn.",
+  "@limitClampedBody": {
+    "placeholders": { "want": { "type": "String" }, "got": { "type": "String" } }
+  },
   "limitClampedByServer": "Gói hiện tại chỉ cho tối đa {value} — hệ thống đã hạ về mức này",
   "@limitClampedByServer": { "placeholders": { "value": { "type": "String" } } },
   "sheetCustomMin": "Nhập từ {min} {unit} trở lên",

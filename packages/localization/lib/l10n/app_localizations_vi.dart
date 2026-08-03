@@ -1529,6 +1529,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get bundleUploadDrive => 'Đẩy lên Drive';
 
   @override
+  String get limitClampedTitle => 'Gói hiện tại không cho mức này';
+
+  @override
+  String limitClampedBody(String want, String got) {
+    return 'Bạn chọn $want phút nhưng hệ thống chỉ chấp nhận tối đa $got phút, và đã lưu ở mức $got phút. Nâng gói hoặc liên hệ hỗ trợ nếu cần mức cao hơn.';
+  }
+
+  @override
   String limitClampedByServer(String value) {
     return 'Gói hiện tại chỉ cho tối đa $value — hệ thống đã hạ về mức này';
   }

@@ -2810,6 +2810,18 @@ abstract class AppLocalizations {
   /// **'Upload to Drive'**
   String get bundleUploadDrive;
 
+  /// No description provided for @limitClampedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan does not allow this'**
+  String get limitClampedTitle;
+
+  /// No description provided for @limitClampedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You chose {want} min but the system accepts at most {got} min, and saved {got} min. Upgrade your plan or contact support if you need more.'**
+  String limitClampedBody(String want, String got);
+
   /// No description provided for @limitClampedByServer.
   ///
   /// In en, this message translates to:

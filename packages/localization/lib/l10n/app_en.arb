@@ -1056,6 +1056,11 @@
   "@bundleSelected": { "placeholders": { "count": { "type": "int" } } },
   "bundleCreateLink": "Create link",
   "bundleUploadDrive": "Upload to Drive",
+  "limitClampedTitle": "Your plan does not allow this",
+  "limitClampedBody": "You chose {want} min but the system accepts at most {got} min, and saved {got} min. Upgrade your plan or contact support if you need more.",
+  "@limitClampedBody": {
+    "placeholders": { "want": { "type": "String" }, "got": { "type": "String" } }
+  },
   "limitClampedByServer": "Your plan allows at most {value} — the system lowered it to that",
   "@limitClampedByServer": { "placeholders": { "value": { "type": "String" } } },
   "sheetCustomMin": "Enter {min} {unit} or more",

@@ -5027,10 +5027,29 @@ GoRouter _buildRouter(
                       // số đã kẹp là kiểu hỏng khó hiểu nhất: chủ shop gõ 20,
                       // toast báo 15, và không ai nói cho họ biết vì sao.
                       if (updated.clipSeconds != seconds && c.mounted) {
-                        _toast(
-                          c,
-                          c.l10n.limitClampedByServer(
-                            '${(updated.clipSeconds / 60).round()}',
+                        // Hộp thoại chứ không phải toast, và nêu CẢ HAI con
+                        // số: chủ shop gõ 20 rồi thấy 5, không có gì nói cho
+                        // họ biết ai đổi và đổi vì sao — dễ hiểu nhầm là app
+                        // hỏng. Đây là quyết định của server, phải nói rõ.
+                        unawaited(
+                          showCupertinoDialog<void>(
+                            context: c,
+                            builder: (dialogContext) => CupertinoAlertDialog(
+                              title: Text(c.l10n.limitClampedTitle),
+                              content: Text(
+                                c.l10n.limitClampedBody(
+                                  '${(seconds / 60).round()}',
+                                  '${(updated.clipSeconds / 60).round()}',
+                                ),
+                              ),
+                              actions: [
+                                CupertinoDialogAction(
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(),
+                                  child: Text(c.l10n.commonClose),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       }
