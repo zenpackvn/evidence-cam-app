@@ -47,6 +47,7 @@ import 'package:flutter/cupertino.dart'
         CupertinoApp,
         CupertinoButton,
         CupertinoDialogAction,
+        CupertinoPageRoute,
         CupertinoPageScaffold,
         CupertinoSlider,
         CupertinoTextThemeData,
@@ -56,7 +57,8 @@ import 'package:flutter/cupertino.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform;
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -1097,20 +1099,41 @@ class _QuotaRouteState extends State<_QuotaRoute> {
   /// gói chưa đổi thì báo "đang xử lý", KHÔNG báo lỗi: tiền đã trừ thật và
   /// webhook thường về ngay sau đó.
   Future<void> _upgrade(String currentPlanCode) async {
-    final billing = _billing();
-    if (billing == null) {
-      _toast(context, context.l10n.toastUpgradeComingSoon);
-      return;
-    }
     _analytics()?.trackPurchaseStarted(planCode: currentPlanCode);
     setState(() => _buying = true);
     try {
+      final billing = _billing();
       // Gắn phiên mua với tài khoản NGAY TRƯỚC khi mở paywall. RevenueCat gửi
       // uid này lên webhook; nếu mua khi chưa gắn thì giao dịch rơi vào một
       // người dùng ẩn danh và backend không biết cộng ngày cho ai.
-      await billing.start((await widget.repo.account()).uid);
-      final outcome = await billing.presentPaywall();
-      if (!mounted || outcome == EcPurchaseOutcome.cancelled) return;
+      //
+      // Cửa hàng vắng mặt (build thiếu khoá RevenueCat, hoặc mạng hỏng) KHÔNG
+      // chặn việc mở màn: paywall tự hiện trạng thái "chưa tải được bảng giá".
+      // Nút bấm không được dẫn tới ngõ cụt im lặng.
+      var offers = const <EcPlanOffer>[];
+      if (billing != null) {
+        try {
+          // repo.account() có thể ném (mất mạng, token hết hạn). Không được để
+          // nó chặn việc mở paywall — nút bấm mà không có gì xảy ra là lỗi tệ
+          // hơn việc hiện bảng giá rỗng.
+          if (await billing.start((await widget.repo.account()).uid)) {
+            offers = await billing.offers();
+          }
+        } on Object {
+          offers = const [];
+        }
+      }
+      if (!mounted) return;
+      final outcome = await Navigator.of(context).push<EcPurchaseOutcome>(
+        CupertinoPageRoute(
+          builder: (_) => _PaywallRoute(billing: billing, offers: offers),
+        ),
+      );
+      if (!mounted ||
+          outcome == null ||
+          outcome == EcPurchaseOutcome.cancelled) {
+        return;
+      }
       if (outcome == EcPurchaseOutcome.failed) {
         _toast(context, context.l10n.toastPurchaseFailed);
         return;
@@ -1571,6 +1594,123 @@ AnalyticsService? _analytics() => _maybeGetIt<AnalyticsService>();
 /// Vắng mặt khi build không khai `RC_IOS_API_KEY` (test, bản offline) — mọi
 /// đường mua gói phải chịu được `null` chứ không được giả định luôn có.
 EcBilling? _billing() => _maybeGetIt<EcBilling>();
+
+/// Giá mẫu khớp bảng giá đã tạo trên App Store Connect (bang-gia.md §4). CHỈ
+/// dùng khi cửa hàng không trả về gì — simulator, hoặc sản phẩm chưa được duyệt.
+/// Không bao giờ dùng để tính tiền: mua vẫn phải đi qua package thật.
+const _sampleOffers = <(String, String, String, double)>[
+  ('basic', '1m', '169.000 ₫', 169000),
+  ('saver', '1m', '319.000 ₫', 319000),
+  ('premium', '1m', '459.000 ₫', 459000),
+  ('basic', '6m', '939.000 ₫', 939000),
+  ('saver', '6m', '1.749.000 ₫', 1749000),
+  ('premium', '6m', '2.549.000 ₫', 2549000),
+  ('basic', '12m', '1.799.000 ₫', 1799000),
+  ('saver', '12m', '3.390.000 ₫', 3390000),
+  ('premium', '12m', '4.849.000 ₫', 4849000),
+];
+
+/// Mở paywall trực tiếp qua `--dart-define=EC_START=/paywall`.
+class _PaywallPreviewRoute extends StatefulWidget {
+  const _PaywallPreviewRoute({required this.billing});
+
+  final EcBilling? billing;
+
+  @override
+  State<_PaywallPreviewRoute> createState() => _PaywallPreviewRouteState();
+}
+
+class _PaywallPreviewRouteState extends State<_PaywallPreviewRoute> {
+  List<EcPlanOffer>? _offers;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final live = await widget.billing?.offers() ?? const <EcPlanOffer>[];
+    if (mounted) setState(() => _offers = live);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final live = _offers;
+    if (live == null) {
+      return const CupertinoPageScaffold(
+        child: Center(child: CupertinoActivityIndicator()),
+      );
+    }
+    if (live.isNotEmpty) {
+      return _PaywallRoute(billing: widget.billing, offers: live);
+    }
+    return EcPaywallScreen(
+      offers: [
+        for (final (plan, term, label, amount) in _sampleOffers)
+          EcPaywallOffer(
+            planCode: plan,
+            termKey: term,
+            priceLabel: label,
+            priceAmount: amount,
+          ),
+      ],
+      onBack: () => Navigator.of(context).maybePop(),
+    );
+  }
+}
+
+/// Bọc [EcPaywallScreen] với phần gọi cửa hàng. Màn hình thuần hiển thị, không
+/// biết gì về SDK — nhờ vậy test được mà không cần cửa hàng thật.
+///
+/// Đóng route trả về kết quả mua; phía gọi mới là chỗ chờ backend áp giao dịch,
+/// vì paywall đã đóng rồi mà vòng chờ vẫn phải chạy tiếp.
+class _PaywallRoute extends StatefulWidget {
+  const _PaywallRoute({required this.billing, required this.offers});
+
+  /// Null khi build không có khoá RevenueCat — màn vẫn mở, chỉ không mua được.
+  final EcBilling? billing;
+  final List<EcPlanOffer> offers;
+
+  @override
+  State<_PaywallRoute> createState() => _PaywallRouteState();
+}
+
+class _PaywallRouteState extends State<_PaywallRoute> {
+  bool _busy = false;
+
+  Future<void> _buy(EcPaywallOffer choice) async {
+    final billing = widget.billing;
+    if (billing == null) return;
+    final offer = widget.offers.firstWhere(
+      (o) => o.planCode == choice.planCode && o.termKey == choice.termKey,
+    );
+    setState(() => _busy = true);
+    final outcome = await billing.buy(offer);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    // Huỷ ở hộp thoại cửa hàng thì ở lại paywall — người dùng có thể đổi ý và
+    // chọn gói khác, đá họ ra ngoài là bắt bấm lại từ đầu.
+    if (outcome == EcPurchaseOutcome.cancelled) return;
+    Navigator.of(context).pop(outcome);
+  }
+
+  @override
+  Widget build(BuildContext context) => EcPaywallScreen(
+    busy: _busy,
+    offers: [
+      for (final o in widget.offers)
+        EcPaywallOffer(
+          planCode: o.planCode,
+          termKey: o.termKey,
+          priceLabel: o.priceLabel,
+          priceAmount: o.priceAmount,
+        ),
+    ],
+    onBack: () => Navigator.of(context).pop(EcPurchaseOutcome.cancelled),
+    onBuy: _buy,
+  );
+}
 
 CrashReporter? _crashReporter() => _maybeGetIt<CrashReporter>();
 
@@ -4332,87 +4472,90 @@ GoRouter _buildRouter(
                             BuildContext sheetContext, {
                             bool mandatory = false,
                           }) async {
-                        final router = GoRouter.of(c);
-                        final rootNavigator = Navigator.of(
-                          c,
-                          rootNavigator: true,
-                        );
-                        // Vòng lặp chứ không thoát sau khi quản lý loại: màn
-                        // quay hiểu `null` là "bỏ qua, quay với loại mặc
-                        // định", nên trả null lúc vừa đi sửa danh sách sẽ
-                        // khoá luôn loại cũ mà không hỏi lại.
-                        while (true) {
-                          final selected = await _showTypeSheet(
-                            sheetContext,
-                            repo: repo,
-                            shopId: shop.id,
-                            selectedType: recordingType.value,
-                            mandatory: mandatory,
-                          );
-                          // Bấm back trong sheet: không quay nữa, sang thẳng
-                          // tab Vận đơn. Trả `null` để màn quay hiểu là chưa
-                          // chọn loại nên đừng dựng camera.
-                          //
-                          // Tab Vận đơn nằm ở `/home`, KHÔNG phải `/orders` —
-                          // `/orders` không tồn tại nên `go` im lặng không đi
-                          // đâu cả, đúng triệu chứng "bấm back không ra gì".
-                          if (selected == _typeSheetBackResult) {
-                            if (c.mounted) c.go('/home');
-                            return null;
-                          }
-                          if (selected == _manageVideoTypesResult) {
-                            await rootNavigator.push<void>(
-                              MaterialPageRoute(
-                                builder: (_) => _ShopDetailRoute(
-                                  repo: repo,
-                                  shop: shop,
-                                  onBack: rootNavigator.maybePop,
-                                  onMemberMore: (member) => router
-                                      .push(
-                                        '/member-actions',
-                                        extra: _MemberActionExtra(
-                                          shopId: shop.id,
-                                          member: member,
-                                        ),
-                                      )
-                                      .then((_) {}),
-                                  onInviteMember: () => router
-                                      .push('/invite-member', extra: shop.id)
-                                      .then((_) {}),
-                                  onTapResolution: () => router.push(
-                                    '/resolution',
-                                    extra: shop.id,
-                                  ),
-                                  onEditType: (type) => router
-                                      .push(
-                                        '/create-type',
-                                        extra: (shop.id, type),
-                                      )
-                                      .then((_) {}),
-                                  onDeleteType: (type) => router
-                                      .push(
-                                        '/confirm-delete',
-                                        extra: (shop.id, type),
-                                      )
-                                      .then((_) {}),
-                                  onAddType: () => router
-                                      .push(
-                                        '/create-type',
-                                        extra: (shop.id, null),
-                                      )
-                                      .then((_) {}),
-                                ),
-                              ),
+                            final router = GoRouter.of(c);
+                            final rootNavigator = Navigator.of(
+                              c,
+                              rootNavigator: true,
                             );
-                            if (!c.mounted) return null;
-                            continue;
-                          }
-                          if (selected != null && selected.isNotEmpty) {
-                            recordingType.value = selected;
-                          }
-                          return selected;
-                        }
-                      },
+                            // Vòng lặp chứ không thoát sau khi quản lý loại: màn
+                            // quay hiểu `null` là "bỏ qua, quay với loại mặc
+                            // định", nên trả null lúc vừa đi sửa danh sách sẽ
+                            // khoá luôn loại cũ mà không hỏi lại.
+                            while (true) {
+                              final selected = await _showTypeSheet(
+                                sheetContext,
+                                repo: repo,
+                                shopId: shop.id,
+                                selectedType: recordingType.value,
+                                mandatory: mandatory,
+                              );
+                              // Bấm back trong sheet: không quay nữa, sang thẳng
+                              // tab Vận đơn. Trả `null` để màn quay hiểu là chưa
+                              // chọn loại nên đừng dựng camera.
+                              //
+                              // Tab Vận đơn nằm ở `/home`, KHÔNG phải `/orders` —
+                              // `/orders` không tồn tại nên `go` im lặng không đi
+                              // đâu cả, đúng triệu chứng "bấm back không ra gì".
+                              if (selected == _typeSheetBackResult) {
+                                if (c.mounted) c.go('/home');
+                                return null;
+                              }
+                              if (selected == _manageVideoTypesResult) {
+                                await rootNavigator.push<void>(
+                                  MaterialPageRoute(
+                                    builder: (_) => _ShopDetailRoute(
+                                      repo: repo,
+                                      shop: shop,
+                                      onBack: rootNavigator.maybePop,
+                                      onMemberMore: (member) => router
+                                          .push(
+                                            '/member-actions',
+                                            extra: _MemberActionExtra(
+                                              shopId: shop.id,
+                                              member: member,
+                                            ),
+                                          )
+                                          .then((_) {}),
+                                      onInviteMember: () => router
+                                          .push(
+                                            '/invite-member',
+                                            extra: shop.id,
+                                          )
+                                          .then((_) {}),
+                                      onTapResolution: () => router.push(
+                                        '/resolution',
+                                        extra: shop.id,
+                                      ),
+                                      onEditType: (type) => router
+                                          .push(
+                                            '/create-type',
+                                            extra: (shop.id, type),
+                                          )
+                                          .then((_) {}),
+                                      onDeleteType: (type) => router
+                                          .push(
+                                            '/confirm-delete',
+                                            extra: (shop.id, type),
+                                          )
+                                          .then((_) {}),
+                                      onAddType: () => router
+                                          .push(
+                                            '/create-type',
+                                            extra: (shop.id, null),
+                                          )
+                                          .then((_) {}),
+                                    ),
+                                  ),
+                                );
+                                if (!c.mounted) return null;
+                                continue;
+                              }
+                              if (selected != null && selected.isNotEmpty) {
+                                recordingType.value = selected;
+                              }
+                              return selected;
+                            }
+                          },
                       onNavOrders: () => c.go('/home'),
                       onNavAccount: () => c.go('/account'),
                       onSettings: () => c.push('/type-sheet'),
@@ -5080,6 +5223,15 @@ GoRouter _buildRouter(
           queue: queue,
           shopId: _selected(selectedShop)?.id,
         ),
+      ),
+      // Paywall mở thẳng, cho QA và cho ảnh chụp nộp App Review.
+      //
+      // Simulator không có StoreKit thật nên `offers()` trả rỗng và màn hình sẽ
+      // hiện "chưa tải được bảng giá" — vô dụng để chụp ảnh. Route này rơi về
+      // bảng giá mẫu khi cửa hàng im lặng, nên vẫn xem và chụp được.
+      GoRoute(
+        path: '/paywall',
+        builder: (c, s) => _PaywallPreviewRoute(billing: _billing()),
       ),
       GoRoute(
         path: '/language',

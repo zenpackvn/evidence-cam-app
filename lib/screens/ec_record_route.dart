@@ -99,8 +99,7 @@ class EcRecordRoute extends StatefulWidget {
   /// Mở sheet chọn loại. `mandatory` bật ở lần mở tự động lúc vừa vào màn:
   /// lúc đó chọn loại là bắt buộc nên sheet không cho vuốt xuống hay chạm nền
   /// để bỏ qua — chỉ chọn, hoặc bấm back để sang tab Vận đơn.
-  final Future<String?> Function(BuildContext, {bool mandatory})?
-  onRequestType;
+  final Future<String?> Function(BuildContext, {bool mandatory})? onRequestType;
 
   /// Called when the settings icon is tapped.
   final VoidCallback? onSettings;

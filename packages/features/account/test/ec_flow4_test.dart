@@ -84,7 +84,7 @@ void main() {
       expect(find.text('Thông tin tài khoản'), findsOneWidget);
       expect(find.text('Đổi ảnh đại diện'), findsOneWidget);
       expect(find.text('Họ tên'), findsOneWidget);
-      expect(find.text('Số điện thoại'), findsOneWidget);
+      expect(find.text('Số điện thoại (tùy chọn)'), findsOneWidget);
       expect(find.text('Email'), findsOneWidget);
       expect(find.text('nguyenvana@gmail.com'), findsOneWidget);
       expect(find.text('Lưu thay đổi'), findsOneWidget);
@@ -162,6 +162,18 @@ void main() {
       var upgraded = false;
       await _pump(tester, EcQuotaScreen(onUpgrade: () => upgraded = true));
       await tester.tap(find.text('Nâng cấp gói'));
+      expect(upgraded, isTrue);
+    });
+
+    testWidgets('pill "Nâng cấp" trong thẻ gói cũng mở đường nâng cấp', (
+      tester,
+    ) async {
+      // Màn có HAI chỗ nâng cấp: nút lớn dưới cùng và pill nhỏ cạnh tên gói.
+      // Pill là thứ người dùng chạm nhiều hơn vì nó nằm ngay tầm mắt, nhưng
+      // trước đây không có test nào canh nó.
+      var upgraded = false;
+      await _pump(tester, EcQuotaScreen(onUpgrade: () => upgraded = true));
+      await tester.tap(find.text('Nâng cấp'));
       expect(upgraded, isTrue);
     });
 

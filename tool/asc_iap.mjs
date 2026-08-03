@@ -11,11 +11,12 @@
 // productId KHÔNG XÓA ĐƯỢC sau khi tạo — dry-run là mặc định vì lý do đó.
 // Script idempotent: productId đã tồn tại thì bỏ qua, chạy lại bao nhiêu lần cũng được.
 //
-// ponytail: KHÔNG upload review screenshot. Apple đòi 1 ảnh/sản phẩm trước khi
-// nộp duyệt; luồng đó là 3 call nữa (reserve → PUT upload → PATCH uploaded).
-// Làm tay 9 lần trong ASC nhanh hơn viết, thêm vào đây khi số sản phẩm tăng.
+// Ảnh review: thêm `--screenshot <file.png>` để nạp cho cả 9 sản phẩm. Thiếu
+// ảnh thì sản phẩm kẹt ở MISSING_METADATA và StoreKit KHÔNG trả về nó, kể cả
+// sandbox — nên đây là điều kiện để test mua, không phải việc để dành lúc nộp.
 
-import { createSign } from 'node:crypto';
+import { createHash, createSign } from 'node:crypto';
+import { basename } from 'node:path';
 import { readFileSync } from 'node:fs';
 
 // Hầu hết endpoint nằm ở /v1, riêng TẠO in-app purchase là /v2 — /v1/inAppPurchases
@@ -117,11 +118,61 @@ export function pickPricePoint(pricePoints, targetVnd) {
   return { pricePoint: best, actual, drift };
 }
 
+// ---- Ảnh review ------------------------------------------------------------
+
+/// Nạp ảnh chụp màn hình cho App Review.
+///
+/// Không có ảnh này thì sản phẩm kẹt ở `MISSING_METADATA`, và **StoreKit không
+/// trả về sản phẩm ở trạng thái đó** — kể cả sandbox. Nên đây không phải việc
+/// làm cho đẹp lúc nộp duyệt, mà là điều kiện để test mua được.
+///
+/// Ba bước theo đúng luồng upload của Apple: xin chỗ → PUT từng phần → chốt
+/// bằng checksum.
+async function uploadReviewScreenshot(iapId, filePath) {
+  const bytes = readFileSync(filePath);
+  const reserved = await post('/inAppPurchaseAppStoreReviewScreenshots', {
+    data: {
+      type: 'inAppPurchaseAppStoreReviewScreenshots',
+      attributes: { fileName: basename(filePath), fileSize: bytes.length },
+      relationships: parent(iapId),
+    },
+  });
+
+  const shotId = reserved.data.id;
+  for (const op of reserved.data.attributes.uploadOperations) {
+    const res = await fetch(op.url, {
+      method: op.method,
+      headers: Object.fromEntries(
+        op.requestHeaders.map((h) => [h.name, h.value]),
+      ),
+      body: bytes.subarray(op.offset, op.offset + op.length),
+    });
+    if (!res.ok) throw new Error(`upload ${op.offset} → ${res.status}`);
+  }
+
+  // Apple chỉ coi ảnh là hợp lệ sau khi checksum khớp; thiếu bước này thì ảnh
+  // nằm đó nhưng sản phẩm vẫn thiếu metadata.
+  await call('PATCH', `/inAppPurchaseAppStoreReviewScreenshots/${shotId}`, {
+    data: {
+      type: 'inAppPurchaseAppStoreReviewScreenshots',
+      id: shotId,
+      attributes: {
+        uploaded: true,
+        sourceFileChecksum: createHash('md5').update(bytes).digest('hex'),
+      },
+    },
+  });
+}
+
 // ---- Luồng chính -----------------------------------------------------------
 
 async function main() {
   const apply = process.argv.includes('--apply');
   const bundleId = req('ASC_BUNDLE_ID');
+  // --screenshot <đường dẫn>: nạp cùng một ảnh cho cả 9 sản phẩm. Ảnh chỉ phục
+  // vụ reviewer, không hiện cho khách, nên dùng chung là đủ.
+  const shotFlag = process.argv.indexOf('--screenshot');
+  const shotPath = shotFlag === -1 ? null : process.argv[shotFlag + 1];
 
   const apps = await get(`/apps?filter[bundleId]=${encodeURIComponent(bundleId)}`);
   const app = apps.data[0];
@@ -221,11 +272,22 @@ async function main() {
       });
     }
 
+    if (shotPath &&
+        !(await getOrNull(rel(iapId, 'appStoreReviewScreenshot')))?.data) {
+      await uploadReviewScreenshot(iapId, shotPath);
+      note += ' +ảnh review';
+    }
+
     console.log(`✅ ${p.productId} — ${p.priceVnd.toLocaleString('vi')}đ${note}`);
   }
 
   if (!apply) console.log('\n(dry-run — thêm --apply để tạo thật)');
-  else console.log('\n⚠️  Còn phải làm tay: upload 1 review screenshot cho MỖI sản phẩm trong ASC trước khi nộp duyệt.');
+  else if (!shotPath) {
+    console.log(
+      '\n⚠️  Chưa nạp ảnh review → sản phẩm kẹt ở MISSING_METADATA và StoreKit\n' +
+      '   KHÔNG trả về chúng, kể cả sandbox. Chạy lại với --screenshot <file.png>.',
+    );
+  }
 }
 
 // Tự kiểm phần logic duy nhất có thể sai âm thầm: ghép giá.
