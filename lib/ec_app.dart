@@ -120,7 +120,7 @@ class EcApp extends StatefulWidget {
   State<EcApp> createState() => _EcAppState();
 }
 
-class _EcAppState extends State<EcApp> {
+class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
   late final EcAuth _auth = widget.auth ?? FakeEcAuth();
   // Single source of truth for the selected interface language. The account tab
   // and language screen read/write this; `CupertinoApp.locale` follows it and
@@ -206,6 +206,7 @@ class _EcAppState extends State<EcApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _queue.load();
     // Máy dựng trên bàn đóng hàng, người quay không chạm vào suốt cả ca — để
     // màn tự tắt là camera preview ngủ theo và phiên quay đứt giữa chừng.
@@ -214,6 +215,7 @@ class _EcAppState extends State<EcApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     unawaited(WakelockPlus.disable().catchError((_) {}));
     _router.dispose();
     _language
@@ -223,6 +225,27 @@ class _EcAppState extends State<EcApp> {
     _selectedShop.dispose();
     _recordingType.dispose();
     super.dispose();
+  }
+
+  /// True khi app đã bị đẩy hẳn xuống nền (người dùng rời đi thật).
+  bool _wasPaused = false;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _wasPaused = true;
+      return;
+    }
+    if (state != AppLifecycleState.resumed || !_wasPaused) return;
+    _wasPaused = false;
+    // Mở lại app là bắt đầu lại từ splash, không rơi thẳng vào màn đang dở.
+    // Phiên đăng nhập do Firebase giữ nên splash tự đưa thẳng sang chọn shop,
+    // không bắt đăng nhập lại.
+    //
+    // Chỉ bắt `paused` (rời app thật), KHÔNG bắt `inactive`: cuộc gọi đến hay
+    // kéo trung tâm thông báo cũng bắn `inactive`, reset ở đó thì đang quay
+    // dở bị đá về đầu chỉ vì một thông báo lướt qua.
+    _router.go('/');
   }
 
   @override
