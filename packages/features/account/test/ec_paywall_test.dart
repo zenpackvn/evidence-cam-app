@@ -1,3 +1,4 @@
+import 'package:ec_ui/ec_ui.dart';
 import 'package:feature_account/feature_account.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -64,11 +65,23 @@ Future<void> _pump(
   WidgetTester tester, {
   List<EcPaywallOffer> offers = _offers,
   void Function(EcPaywallOffer)? onBuy,
+  VoidCallback? onBack,
+  VoidCallback? onTerms,
+  VoidCallback? onPrivacy,
+  VoidCallback? onSync,
   bool busy = false,
 }) async {
   await tester.pumpWidget(
     CupertinoApp(
-      home: EcPaywallScreen(offers: offers, onBuy: onBuy, busy: busy),
+      home: EcPaywallScreen(
+        offers: offers,
+        onBuy: onBuy,
+        onBack: onBack,
+        onTerms: onTerms,
+        onPrivacy: onPrivacy,
+        onSync: onSync,
+        busy: busy,
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -143,6 +156,48 @@ void main() {
     await _pump(tester, offers: const []);
     expect(find.text('Chưa tải được bảng giá'), findsOneWidget);
     expect(find.text('Cơ bản'), findsNothing);
+  });
+
+  testWidgets('luôn có đường thoát khỏi paywall', (tester) async {
+    // Paywall không lối ra vừa là lý do App Review từ chối, vừa là ngõ cụt với
+    // người chỉ muốn xem giá. Trước đây `onBack` được khai nhưng không hề vẽ.
+    var backed = false;
+    await _pump(tester, onBack: () => backed = true);
+    await tester.tap(find.byType(PenBackButton));
+    await tester.pumpAndSettle();
+    expect(backed, isTrue);
+  });
+
+  testWidgets('có link Điều khoản và Chính sách, bấm được', (tester) async {
+    var terms = false;
+    var privacy = false;
+    await _pump(
+      tester,
+      onTerms: () => terms = true,
+      onPrivacy: () => privacy = true,
+    );
+    // Hai link nằm cuối trang, phải cuộn tới — giống hệt trên máy thật.
+    await tester.ensureVisible(find.text('Điều khoản sử dụng'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Điều khoản sử dụng'));
+    await tester.tap(find.text('Chính sách quyền riêng tư'));
+    await tester.pumpAndSettle();
+    expect(terms, isTrue);
+    expect(privacy, isTrue);
+  });
+
+  testWidgets('đường đồng bộ chỉ hiện khi mua được', (tester) async {
+    // Không có cửa hàng thì đồng bộ không cứu được gì — để lại chỉ tạo nút chết.
+    await _pump(tester);
+    expect(find.textContaining('Đồng bộ lại'), findsNothing);
+
+    var synced = false;
+    await _pump(tester, onSync: () => synced = true);
+    await tester.ensureVisible(find.textContaining('Đồng bộ lại'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Đồng bộ lại'));
+    await tester.pumpAndSettle();
+    expect(synced, isTrue);
   });
 
   testWidgets('KHÔNG dùng ngôn từ thuê bao ở bất kỳ đâu', (tester) async {

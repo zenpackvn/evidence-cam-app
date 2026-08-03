@@ -63,6 +63,9 @@ class EcPaywallScreen extends StatefulWidget {
     required this.offers,
     this.onBack,
     this.onBuy,
+    this.onTerms,
+    this.onPrivacy,
+    this.onSync,
     this.busy = false,
     this.initialTermKey = '6m',
     super.key,
@@ -71,6 +74,17 @@ class EcPaywallScreen extends StatefulWidget {
   final List<EcPaywallOffer> offers;
   final VoidCallback? onBack;
   final void Function(EcPaywallOffer offer)? onBuy;
+
+  /// Điều khoản sử dụng và Chính sách quyền riêng tư. Phải với tới được ngay từ
+  /// màn bán hàng, không bắt người dùng đi tìm trong Cài đặt.
+  final VoidCallback? onTerms;
+  final VoidCallback? onPrivacy;
+
+  /// Nạp lại biên nhận cho giao dịch bị rớt webhook. KHÔNG phải "khôi phục mua
+  /// hàng" — gói tiêu hao không lấy lại được trên máy mới, và Apple cũng không
+  /// đòi nút khôi phục cho loại này. Đây là đường cứu cho đúng một tình huống:
+  /// đã trừ tiền mà backend chưa cộng ngày.
+  final VoidCallback? onSync;
 
   /// Đang chờ cửa hàng hoặc chờ backend áp giao dịch — khoá nút để không mua
   /// hai lần.
@@ -130,6 +144,13 @@ class _EcPaywallScreenState extends State<EcPaywallScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Đường thoát. Paywall không có nút đóng vừa là lý do App Review từ
+            // chối, vừa là ngõ cụt với người chỉ muốn xem giá rồi quay ra.
+            Align(
+              alignment: Alignment.centerLeft,
+              child: PenBackButton(onTap: widget.onBack),
+            ),
+            const SizedBox(height: 6),
             const _PaywallHeader(),
             const SizedBox(height: 18),
             _TermPicker(
@@ -161,6 +182,12 @@ class _EcPaywallScreenState extends State<EcPaywallScreen> {
             const _BenefitList(),
             const SizedBox(height: 10),
             const _OneTimeNotice(),
+            const SizedBox(height: 12),
+            _LegalRow(
+              onTerms: widget.onTerms,
+              onPrivacy: widget.onPrivacy,
+              onSync: widget.onSync,
+            ),
             const SizedBox(height: 16),
           ],
         ),
@@ -498,6 +525,60 @@ class _OneTimeNotice extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Điều khoản, chính sách, và đường cứu giao dịch bị rớt webhook.
+class _LegalRow extends StatelessWidget {
+  const _LegalRow({this.onTerms, this.onPrivacy, this.onSync});
+
+  final VoidCallback? onTerms;
+  final VoidCallback? onPrivacy;
+  final VoidCallback? onSync;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (onSync != null) ...[
+          EcTap(
+            onTap: onSync,
+            child: const PenText(
+              'Đã thanh toán nhưng chưa được cộng ngày? Đồng bộ lại',
+              size: 13,
+              color: PenColors.link,
+              align: TextAlign.center,
+              weight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            EcTap(
+              onTap: onTerms,
+              child: const PenText(
+                'Điều khoản sử dụng',
+                size: 12,
+                color: PenColors.mut,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+            const PenText('   ·   ', size: 12, color: PenColors.mut),
+            EcTap(
+              onTap: onPrivacy,
+              child: const PenText(
+                'Chính sách quyền riêng tư',
+                size: 12,
+                color: PenColors.mut,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ],
         ),
       ],
     );

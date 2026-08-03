@@ -149,6 +149,25 @@ class EcBilling {
     }
   }
 
+  /// Nạp lại biên nhận của thiết bị lên RevenueCat.
+  ///
+  /// Dùng cho đúng một tình huống: cửa hàng đã trừ tiền nhưng backend chưa cộng
+  /// ngày (webhook rớt, máy mất mạng ngay sau khi mua). RevenueCat bắn lại
+  /// webhook cho những giao dịch nó thấy, và backend chống trùng theo
+  /// `transaction_id` nên gọi bao nhiêu lần cũng không cộng dư.
+  ///
+  /// Đây KHÔNG phải "khôi phục mua hàng": gói tiêu hao đã tiêu là hết, không
+  /// lấy lại được trên máy khác.
+  Future<bool> syncPurchases() async {
+    if (!_configured) return false;
+    try {
+      await Purchases.restorePurchases();
+      return true;
+    } on Object {
+      return false;
+    }
+  }
+
   /// Chờ backend áp xong giao dịch, bằng cách hỏi lại cho tới khi gói đổi.
   ///
   /// Cần thiết vì cửa hàng báo "đã mua" trước khi RevenueCat kịp gọi webhook về

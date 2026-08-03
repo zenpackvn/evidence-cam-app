@@ -1676,8 +1676,30 @@ class _PaywallRoute extends StatefulWidget {
   State<_PaywallRoute> createState() => _PaywallRouteState();
 }
 
+/// Trang điều khoản và chính sách trên web công ty. Apple đòi hai đường dẫn này
+/// với tới được từ màn bán hàng; để chúng ở đây thay vì hardcode trong package
+/// giao diện, vì đây là chuyện cấu hình sản phẩm chứ không phải chuyện dựng UI.
+const _kTermsUrl = 'https://zenpack.vn/terms';
+const _kPrivacyUrl = 'https://zenpack.vn/privacy';
+
 class _PaywallRouteState extends State<_PaywallRoute> {
   bool _busy = false;
+
+  /// Nạp lại biên nhận rồi chờ backend áp. Cứu đúng tình huống đã trừ tiền mà
+  /// chưa được cộng ngày; backend chống trùng theo mã giao dịch nên bấm nhiều
+  /// lần cũng không cộng dư.
+  Future<void> _sync() async {
+    final billing = widget.billing;
+    if (billing == null || _busy) return;
+    setState(() => _busy = true);
+    final ok = await billing.syncPurchases();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    _toast(
+      context,
+      ok ? context.l10n.toastPurchasePending : context.l10n.toastPurchaseFailed,
+    );
+  }
 
   Future<void> _buy(EcPaywallOffer choice) async {
     final billing = widget.billing;
@@ -1709,6 +1731,11 @@ class _PaywallRouteState extends State<_PaywallRoute> {
     ],
     onBack: () => Navigator.of(context).pop(EcPurchaseOutcome.cancelled),
     onBuy: _buy,
+    onTerms: () => _openSupport(context, _kTermsUrl),
+    onPrivacy: () => _openSupport(context, _kPrivacyUrl),
+    // Chỉ hiện đường đồng bộ khi thật sự mua được — không có cửa hàng thì nút
+    // đó không cứu được gì, để lại chỉ tạo thêm một nút chết.
+    onSync: widget.billing == null ? null : _sync,
   );
 }
 
