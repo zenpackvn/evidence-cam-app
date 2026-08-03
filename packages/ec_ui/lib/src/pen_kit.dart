@@ -1160,90 +1160,90 @@ class _PenSheetState extends State<PenSheet> {
           ),
           child: Align(
             alignment: Alignment.bottomCenter,
-          child: GestureDetector(
-            // Chặn tap rơi xuống nền (đóng sheet) NHƯNG vẫn hạ bàn phím —
-            // `onTap: () {}` cũ nuốt luôn đường tới bộ bỏ focus toàn app, nên
-            // gõ xong bấm ra chỗ trống trong sheet thì bàn phím cứ đứng đó.
-            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-            // ponytail: cả tấm panel là vùng kéo. Scrollable bên trong (bánh xe
-            // ngày, danh sách dài) vẫn thắng arena cử chỉ dọc vì nằm sâu hơn,
-            // nên chưa cần tách riêng vùng grabber.
-            onVerticalDragUpdate: !widget.dismissible
-                ? null
-                : (d) => setState(() {
-                    _dragging = true;
-                    _dy = math.max(0, _dy + d.delta.dy);
-                  }),
-            onVerticalDragEnd: widget.dismissible ? _onDragEnd : null,
-            onVerticalDragCancel: () => setState(() {
-              _dragging = false;
-              _dy = 0;
-            }),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(end: _dy),
-              // Follow the finger 1:1 while dragging; ease back on release.
-              duration: _dragging
-                  ? Duration.zero
-                  : const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              builder: (_, dy, child) =>
-                  Transform.translate(offset: Offset(0, dy), child: child),
-              child: PenBox(
-                width: double.infinity,
-                fill: PenColors.card,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(14),
-                ),
-                axis: PenAxis.column,
-                hugMain: true,
-                padding: widget.padding,
-                children: [
-                  if (widget.showGrabber)
-                    const Center(
-                      child: PenBox(
-                        width: 46,
-                        height: 5,
-                        fill: PenColors.line,
-                        radius: 3,
-                      ),
-                    ),
-                  // Trần chiều cao + cho cuộn: sheet dài (bảng mốc giới hạn)
-                  // khi bị bàn phím đẩy lên sẽ tràn khỏi mép trên và người
-                  // dùng mất luôn phần đầu. Trần tính theo chỗ còn lại sau khi
-                  // trừ bàn phím, tai thỏ và chính thanh kéo phía trên.
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      // 78% chiều cao khả dụng, KHÔNG phải "gần hết màn": phần
-                      // padding của sheet, thanh kéo và vùng an toàn đáy đều
-                      // cộng thêm ngoài con số này, nên lấy sát quá thì panel
-                      // cao hơn màn hình. Panel tràn nằm ngoài vùng vẽ của
-                      // Stack: những hàng lọt ra ngoài vẫn nhìn thấy nhưng
-                      // không nhận được chạm — đúng kiểu "mốc 8 phút trở đi
-                      // bấm không ăn".
-                      maxHeight:
-                          (MediaQuery.sizeOf(context).height -
-                              MediaQuery.viewInsetsOf(context).bottom -
-                              MediaQuery.paddingOf(context).top) *
-                          0.78,
-                    ),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisSize: MainAxisSize.min,
-                        children: widget.children,
-                      ),
-                    ),
+            child: GestureDetector(
+              // Chặn tap rơi xuống nền (đóng sheet) NHƯNG vẫn hạ bàn phím —
+              // `onTap: () {}` cũ nuốt luôn đường tới bộ bỏ focus toàn app, nên
+              // gõ xong bấm ra chỗ trống trong sheet thì bàn phím cứ đứng đó.
+              onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+              // ponytail: cả tấm panel là vùng kéo. Scrollable bên trong (bánh xe
+              // ngày, danh sách dài) vẫn thắng arena cử chỉ dọc vì nằm sâu hơn,
+              // nên chưa cần tách riêng vùng grabber.
+              onVerticalDragUpdate: !widget.dismissible
+                  ? null
+                  : (d) => setState(() {
+                      _dragging = true;
+                      _dy = math.max(0, _dy + d.delta.dy);
+                    }),
+              onVerticalDragEnd: widget.dismissible ? _onDragEnd : null,
+              onVerticalDragCancel: () => setState(() {
+                _dragging = false;
+                _dy = 0;
+              }),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(end: _dy),
+                // Follow the finger 1:1 while dragging; ease back on release.
+                duration: _dragging
+                    ? Duration.zero
+                    : const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                builder: (_, dy, child) =>
+                    Transform.translate(offset: Offset(0, dy), child: child),
+                child: PenBox(
+                  width: double.infinity,
+                  fill: PenColors.card,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(14),
                   ),
-                  // Nâng nội dung khỏi thanh home indicator. Cộng thêm chứ
-                  // không thay thế, và chỉ phần còn thiếu — bọc SafeArea *và*
-                  // giữ padding đáy là cách sinh ra khoảng trắng thừa ở đuôi
-                  // sheet.
-                  SizedBox(height: _bottomInset(context, widget.padding)),
-                ],
+                  axis: PenAxis.column,
+                  hugMain: true,
+                  padding: widget.padding,
+                  children: [
+                    if (widget.showGrabber)
+                      const Center(
+                        child: PenBox(
+                          width: 46,
+                          height: 5,
+                          fill: PenColors.line,
+                          radius: 3,
+                        ),
+                      ),
+                    // Trần chiều cao + cho cuộn: sheet dài (bảng mốc giới hạn)
+                    // khi bị bàn phím đẩy lên sẽ tràn khỏi mép trên và người
+                    // dùng mất luôn phần đầu. Trần tính theo chỗ còn lại sau khi
+                    // trừ bàn phím, tai thỏ và chính thanh kéo phía trên.
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        // 78% chiều cao khả dụng, KHÔNG phải "gần hết màn": phần
+                        // padding của sheet, thanh kéo và vùng an toàn đáy đều
+                        // cộng thêm ngoài con số này, nên lấy sát quá thì panel
+                        // cao hơn màn hình. Panel tràn nằm ngoài vùng vẽ của
+                        // Stack: những hàng lọt ra ngoài vẫn nhìn thấy nhưng
+                        // không nhận được chạm — đúng kiểu "mốc 8 phút trở đi
+                        // bấm không ăn".
+                        maxHeight:
+                            (MediaQuery.sizeOf(context).height -
+                                MediaQuery.viewInsetsOf(context).bottom -
+                                MediaQuery.paddingOf(context).top) *
+                            0.78,
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: widget.children,
+                        ),
+                      ),
+                    ),
+                    // Nâng nội dung khỏi thanh home indicator. Cộng thêm chứ
+                    // không thay thế, và chỉ phần còn thiếu — bọc SafeArea *và*
+                    // giữ padding đáy là cách sinh ra khoảng trắng thừa ở đuôi
+                    // sheet.
+                    SizedBox(height: _bottomInset(context, widget.padding)),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
         ),
       ],
     );

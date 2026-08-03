@@ -186,7 +186,7 @@ void main() {
         home: EcRecordRoute(
           camera: camera,
           isActive: active,
-          onRequestType: (_, {bool mandatory = false}) async {
+          onRequestType: (_, {mandatory = false}) async {
             typeRequests++;
             return 'Trả hàng';
           },
@@ -220,7 +220,7 @@ void main() {
         home: EcRecordRoute(
           camera: camera,
           onRequestCode: () async => 'SPXVN001',
-          onRequestType: (_, {bool mandatory = false}) async {
+          onRequestType: (_, {mandatory = false}) async {
             typeRequests++;
             return 'Đóng hàng';
           },
@@ -264,7 +264,7 @@ void main() {
         EcRecordRoute(
           permissions: permissions,
           camera: _FakeRecordingCamera(initiallyRecording: false),
-          onRequestType: (_, {bool mandatory = false}) async {
+          onRequestType: (_, {mandatory = false}) async {
             typeRequests++;
             return null;
           },

@@ -3070,7 +3070,6 @@ class EcClipDurationSheetScreen extends StatelessWidget {
           initial: selectedMinutes,
           onSubmit: (m) => onSelect?.call(m * 60),
         ),
-
       ],
     );
   }
@@ -3789,122 +3788,118 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                          // The three stat cards are equal height in the
-                          // design even when one label wraps, which inside a
-                          // scroll view needs an intrinsic pass.
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                for (
-                                  var i = 0;
-                                  i < widget.stats.length;
-                                  i++
-                                ) ...[
-                                  if (i > 0) const SizedBox(width: 10),
-                                  Expanded(
-                                    child: _StatBox(stat: widget.stats[i]),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 38),
-                          // Khung F2-01 vẽ một ô duy nhất: icon kính lúp, ô nhập,
-                          // vạch ngăn 1pt rồi nút quét 40x40 *bên trong* ô — không
-                          // phải ô nhập cộng một nút vuông rời bên cạnh.
-                          PenBox(
-                            height: 56,
-                            fill: PenColors.card,
-                            stroke: PenColors.line,
-                            radius: 14,
-                            axis: PenAxis.row,
-                            gap: 10,
-                            cross: CrossAxisAlignment.center,
-                            padding: const EdgeInsets.only(left: 16, right: 8),
-                            children: [
-                              const Icon(
-                                LucideIcons.search,
-                                size: 22,
-                                color: PenColors.mut,
-                              ),
+                      // The three stat cards are equal height in the
+                      // design even when one label wraps, which inside a
+                      // scroll view needs an intrinsic pass.
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var i = 0; i < widget.stats.length; i++) ...[
+                              if (i > 0) const SizedBox(width: 10),
                               Expanded(
-                                child: CupertinoTextField(
-                                  controller: _search,
-                                  onChanged: (v) {
-                                    setState(() => _query = v);
-                                    widget.onSearchChanged?.call(v);
-                                  },
-                                  textInputAction: TextInputAction.search,
-                                  padding: EdgeInsets.zero,
-                                  decoration: const BoxDecoration(),
-                                  placeholder: widget.searchHint,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: PenColors.ink,
-                                  ),
-                                  placeholderStyle: const TextStyle(
-                                    fontSize: 16,
-                                    color: PenColors.mut,
-                                  ),
-                                ),
-                              ),
-                              const PenBox(
-                                width: 1,
-                                height: 26,
-                                fill: PenColors.line,
-                              ),
-                              EcTap(
-                                onTap: widget.onScan == null ? null : _onScan,
-                                child: const PenBox(
-                                  width: 40,
-                                  height: 40,
-                                  fill: PenColors.bg,
-                                  radius: 12,
-                                  axis: PenAxis.row,
-                                  main: MainAxisAlignment.center,
-                                  cross: CrossAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      LucideIcons.scanBarcode,
-                                      size: 22,
-                                      color: PenColors.ink,
-                                    ),
-                                  ],
-                                ),
+                                child: _StatBox(stat: widget.stats[i]),
                               ),
                             ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 38),
+                      // Khung F2-01 vẽ một ô duy nhất: icon kính lúp, ô nhập,
+                      // vạch ngăn 1pt rồi nút quét 40x40 *bên trong* ô — không
+                      // phải ô nhập cộng một nút vuông rời bên cạnh.
+                      PenBox(
+                        height: 56,
+                        fill: PenColors.card,
+                        stroke: PenColors.line,
+                        radius: 14,
+                        axis: PenAxis.row,
+                        gap: 10,
+                        cross: CrossAxisAlignment.center,
+                        padding: const EdgeInsets.only(left: 16, right: 8),
+                        children: [
+                          const Icon(
+                            LucideIcons.search,
+                            size: 22,
+                            color: PenColors.mut,
                           ),
-                          const SizedBox(height: 16),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
+                          Expanded(
+                            child: CupertinoTextField(
+                              controller: _search,
+                              onChanged: (v) {
+                                setState(() => _query = v);
+                                widget.onSearchChanged?.call(v);
+                              },
+                              textInputAction: TextInputAction.search,
+                              padding: EdgeInsets.zero,
+                              decoration: const BoxDecoration(),
+                              placeholder: widget.searchHint,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: PenColors.ink,
+                              ),
+                              placeholderStyle: const TextStyle(
+                                fontSize: 16,
+                                color: PenColors.mut,
+                              ),
+                            ),
+                          ),
+                          const PenBox(
+                            width: 1,
+                            height: 26,
+                            fill: PenColors.line,
+                          ),
+                          EcTap(
+                            onTap: widget.onScan == null ? null : _onScan,
+                            child: const PenBox(
+                              width: 40,
+                              height: 40,
+                              fill: PenColors.bg,
+                              radius: 12,
+                              axis: PenAxis.row,
+                              main: MainAxisAlignment.center,
+                              cross: CrossAxisAlignment.center,
                               children: [
-                                _FilterChip(
-                                  name: l10n.filterStatusLabel,
-                                  options: _statusOptions(l10n),
-                                  selected: _uploadState,
-                                  onSelected: (v) =>
-                                      _select((x) => _uploadState = x, v),
-                                ),
-                                const SizedBox(width: 10),
-                                _FilterChip(
-                                  name: l10n.filterTimeLabel,
-                                  options: _timeOptions(l10n),
-                                  selected: _timeWindow,
-                                  onSelected: _selectTime,
-                                ),
-                                const SizedBox(width: 10),
-                                _FilterChip(
-                                  name: l10n.filterTypeLabel,
-                                  options: _typeOptions(l10n),
-                                  selected: _videoTypeId,
-                                  onSelected: (v) =>
-                                      _select((x) => _videoTypeId = x, v),
+                                Icon(
+                                  LucideIcons.scanBarcode,
+                                  size: 22,
+                                  color: PenColors.ink,
                                 ),
                               ],
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _FilterChip(
+                              name: l10n.filterStatusLabel,
+                              options: _statusOptions(l10n),
+                              selected: _uploadState,
+                              onSelected: (v) =>
+                                  _select((x) => _uploadState = x, v),
+                            ),
+                            const SizedBox(width: 10),
+                            _FilterChip(
+                              name: l10n.filterTimeLabel,
+                              options: _timeOptions(l10n),
+                              selected: _timeWindow,
+                              onSelected: _selectTime,
+                            ),
+                            const SizedBox(width: 10),
+                            _FilterChip(
+                              name: l10n.filterTypeLabel,
+                              options: _typeOptions(l10n),
+                              selected: _videoTypeId,
+                              onSelected: (v) =>
+                                  _select((x) => _videoTypeId = x, v),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),

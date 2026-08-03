@@ -109,9 +109,7 @@ class EcVideoStampService {
       );
     }
     const gap = 8.0;
-    final width = painters
-        .map((p) => p.width)
-        .reduce((a, b) => a > b ? a : b);
+    final width = painters.map((p) => p.width).reduce((a, b) => a > b ? a : b);
     final height =
         painters.map((p) => p.height).reduce((a, b) => a + b) +
         gap * (painters.length - 1);

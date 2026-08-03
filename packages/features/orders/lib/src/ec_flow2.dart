@@ -278,7 +278,8 @@ class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  if (widget.days.isEmpty) _EcTimelineEmpty(text: l10n.timelineEmpty),
+                  if (widget.days.isEmpty)
+                    _EcTimelineEmpty(text: l10n.timelineEmpty),
                   for (var d = 0; d < widget.days.length; d++) ...[
                     if (d > 0) const SizedBox(height: 16),
                     Padding(
@@ -1049,9 +1050,7 @@ class _EcTimelineVideoRow extends StatelessWidget {
               ),
               if (selecting)
                 Icon(
-                  picked
-                      ? LucideIcons.squareCheckBig
-                      : LucideIcons.square,
+                  picked ? LucideIcons.squareCheckBig : LucideIcons.square,
                   size: 20,
                   color: picked ? PenColors.primary : PenColors.mut,
                 )
