@@ -36,6 +36,17 @@ class AppLocalizationsVi extends AppLocalizations {
   String get toastUpgradeComingSoon => 'Nâng cấp gói — sắp ra mắt';
 
   @override
+  String get toastPurchaseApplied => 'Đã kích hoạt gói mới';
+
+  @override
+  String get toastPurchasePending =>
+      'Đã thanh toán. Gói sẽ được kích hoạt trong giây lát';
+
+  @override
+  String get toastPurchaseFailed =>
+      'Không hoàn tất được thanh toán. Vui lòng thử lại';
+
+  @override
   String get toastPendingDossierConfirm =>
       'Bạn còn hồ sơ khiếu nại đang mở, vui lòng xác nhận lại';
 
@@ -372,13 +383,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountFullNameRequired => 'Vui lòng nhập họ tên';
 
   @override
-  String get phoneLabel => 'Số điện thoại';
+  String get phoneOptionalLabel => 'Số điện thoại (tùy chọn)';
 
   @override
-  String get phoneHint => 'Nhập số điện thoại';
-
-  @override
-  String get phoneRequired => 'Vui lòng nhập số điện thoại';
+  String get phoneOptionalHint => 'Tùy chọn — chỉ dùng để hỗ trợ tài khoản';
 
   @override
   String get phoneInvalid => 'Số điện thoại không hợp lệ';
@@ -391,14 +399,27 @@ class AppLocalizationsVi extends AppLocalizations {
       'Email dùng để đăng nhập, không thể thay đổi';
 
   @override
-  String get phoneAddTitle => 'Thêm số điện thoại';
-
-  @override
-  String get phoneAddBody =>
-      'Tài khoản đăng nhập bằng Apple/Google chưa có số điện thoại. Vui lòng nhập số điện thoại để tiếp tục.';
-
-  @override
   String get commonContinue => 'Tiếp tục';
+
+  @override
+  String get commonLater => 'Để sau';
+
+  @override
+  String get cameraPermissionRationaleTitle => 'Cần quyền camera';
+
+  @override
+  String get cameraPermissionRationaleBody =>
+      'ZenPack cần camera để quay video bằng chứng đóng hàng cho đơn của bạn.';
+
+  @override
+  String get cameraPermissionDeniedTitle => 'Chưa thể quay video';
+
+  @override
+  String get cameraPermissionDeniedBody =>
+      'Chưa thể quay video vì ZenPack chưa được cấp quyền camera. Bạn vẫn xem, tìm kiếm và quản lý đơn hàng bình thường.';
+
+  @override
+  String get cameraPermissionOpenSettings => 'Mở Cài đặt';
 
   @override
   String get languageNameVietnamese => 'Tiếng Việt';
@@ -1192,9 +1213,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get registerFullNameRequired => 'Vui lòng nhập họ tên';
-
-  @override
-  String get registerPhone => 'Số điện thoại';
 
   @override
   String get registerAgreePrefix => 'Tôi đồng ý với';

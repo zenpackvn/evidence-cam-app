@@ -33,7 +33,7 @@ void main() {
           locale: Locale('vi'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: EcRecordRoute(),
+          home: EcRecordRoute(onRequestType: _picksType),
         ),
       );
       // The test environment has no camera plugin, so setup fails; let the
@@ -98,6 +98,7 @@ void main() {
           home: EcRecordRoute(
             camera: camera,
             onRequestCode: () async => 'SPXVN999',
+            onRequestType: _picksType,
             onConfirmManualCode: (code) async {
               requested = code == 'SPXVN999';
               return false;
@@ -137,6 +138,7 @@ void main() {
         home: EcRecordRoute(
           camera: camera,
           onRequestCode: () async => 'SPXVN001',
+          onRequestType: _picksType,
           onBack: () => left = true,
           onSaved: (path, tracking, _, _, _) {
             savedPath = path;
@@ -184,7 +186,7 @@ void main() {
         home: EcRecordRoute(
           camera: camera,
           isActive: active,
-          onRequestType: () async {
+          onRequestType: (_, {bool mandatory = false}) async {
             typeRequests++;
             return 'Trả hàng';
           },
@@ -218,15 +220,18 @@ void main() {
         home: EcRecordRoute(
           camera: camera,
           onRequestCode: () async => 'SPXVN001',
-          onRequestType: () async {
+          onRequestType: (_, {bool mandatory = false}) async {
             typeRequests++;
-            return 'Trả hàng';
+            return 'Đóng hàng';
           },
         ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
+    // Lần hỏi bắt buộc lúc vào màn là đường duy nhất camera lên được; mốc so
+    // sánh là con số sau nó, không phải 0.
+    final afterEntry = typeRequests;
 
     await tester.tap(find.byTooltip('Nhập mã vận đơn'));
     await tester.pump();
@@ -234,10 +239,146 @@ void main() {
 
     expect(find.byTooltip('Cài đặt loại video'), findsNothing);
     expect(find.byTooltip('Nhập mã vận đơn'), findsNothing);
-    expect(typeRequests, 0);
+    expect(typeRequests, afterEntry);
     expect(find.text('Đóng hàng'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  // Apple rejected the old flow for shoving the user into Settings the moment
+  // they tapped "Don't Allow". These three pin the replacement down.
+  testWidgets('explains before asking, and only asks on Tiếp tục', (
+    tester,
+  ) async {
+    var requests = 0;
+    var typeRequests = 0;
+    final permissions = _permissions(
+      status: PermissionStatus.denied,
+      onRequest: () {
+        requests++;
+        return PermissionStatus.granted;
+      },
+    );
+
+    await tester.pumpWidget(
+      _hostingRecordRoute(
+        EcRecordRoute(
+          permissions: permissions,
+          camera: _FakeRecordingCamera(initiallyRecording: false),
+          onRequestType: (_, {bool mandatory = false}) async {
+            typeRequests++;
+            return null;
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Nothing was asked yet — the OS prompt waits behind the explanation, and
+    // the type sheet stays shut until the camera is actually usable.
+    expect(requests, 0);
+    expect(typeRequests, 0);
+    expect(find.text('Cần quyền camera'), findsOneWidget);
+
+    await tester.tap(find.text('Tiếp tục'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(requests, 1);
+    expect(find.text('Cần quyền camera'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a fresh denial keeps the user in the app, no Settings', (
+    tester,
+  ) async {
+    var settingsOpened = 0;
+    final permissions = _permissions(
+      status: PermissionStatus.denied,
+      onRequest: () => PermissionStatus.permanentlyDenied,
+      onOpenSettings: () => settingsOpened++,
+    );
+
+    await tester.pumpWidget(
+      _hostingRecordRoute(EcRecordRoute(permissions: permissions)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.text('Tiếp tục'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Chưa thể quay video'), findsOneWidget);
+    expect(find.text('Để sau'), findsOneWidget);
+    // The two things Apple objected to: no jump to Settings, and no invitation
+    // to go there in the same breath as the refusal.
+    expect(settingsOpened, 0);
+    expect(find.text('Mở Cài đặt'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('coming back to the tab is what offers Settings', (tester) async {
+    var settingsOpened = 0;
+    final permissions = _permissions(
+      status: PermissionStatus.permanentlyDenied,
+      onRequest: () => PermissionStatus.permanentlyDenied,
+      onOpenSettings: () => settingsOpened++,
+    );
+
+    await tester.pumpWidget(
+      _hostingRecordRoute(EcRecordRoute(permissions: permissions)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Already refused for good: re-asking would be a no-op, so the screen goes
+    // straight to the blocked state — and now Settings is on offer, on tap.
+    expect(find.text('Chưa thể quay video'), findsOneWidget);
+    expect(settingsOpened, 0);
+    await tester.tap(find.text('Mở Cài đặt'));
+    await tester.pump();
+    expect(settingsOpened, 1);
+    expect(tester.takeException(), isNull);
+  });
+}
+
+/// Chọn một loại video ngay khi sheet bắt buộc bật lên lúc vào màn.
+///
+/// Camera chỉ dựng sau khi loại đã được chọn thật, nên test nào cần tới khung
+/// ngắm đều phải trả về một loại — bỏ qua sheet là ở lại màn chờ.
+Future<String?> _picksType(BuildContext _, {bool mandatory = false}) async =>
+    'Đóng hàng';
+
+/// Wraps a route in the minimum app scaffolding its Vietnamese copy needs.
+Widget _hostingRecordRoute(Widget route) => MaterialApp(
+  locale: const Locale('vi'),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: route,
+);
+
+/// A [PermissionService] whose camera answers are scripted: [status] is what a
+/// plain read returns, [onRequest] what the OS prompt would answer.
+///
+/// The prompt's answer sticks, like the real thing — a granted request has to
+/// leave later reads granted, or the screen bounces back to the explanation.
+PermissionService _permissions({
+  required PermissionStatus status,
+  required PermissionStatus Function() onRequest,
+  VoidCallback? onOpenSettings,
+}) {
+  var current = status;
+  return PermissionService.custom(
+    () async => PermissionStatus.denied,
+    () async => PermissionStatus.denied,
+    () async => false,
+    () async {
+      onOpenSettings?.call();
+      return true;
+    },
+    cameraStatus: () async => current,
+    requestCamera: () async => current = onRequest(),
+  );
 }
 
 /// A [CameraService] that pretends to be mid-recording without any hardware.

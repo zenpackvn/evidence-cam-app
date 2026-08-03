@@ -23,7 +23,6 @@ abstract final class EcScreens {
     '/': 'man_khoi_dong',
     '/login': 'man_dang_nhap',
     '/register': 'man_dang_ky',
-    '/phone-setup': 'man_them_so_dien_thoai',
     '/forgot': 'man_quen_mat_khau',
     '/shops': 'man_chon_cua_hang',
     '/no-shop': 'man_chua_co_cua_hang',

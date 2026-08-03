@@ -152,6 +152,24 @@ abstract class AppLocalizations {
   /// **'Plan upgrade — coming soon'**
   String get toastUpgradeComingSoon;
 
+  /// No description provided for @toastPurchaseApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'New plan activated'**
+  String get toastPurchaseApplied;
+
+  /// No description provided for @toastPurchasePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment received. Your plan will activate shortly'**
+  String get toastPurchasePending;
+
+  /// No description provided for @toastPurchaseFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment could not be completed. Please try again'**
+  String get toastPurchaseFailed;
+
   /// No description provided for @toastPendingDossierConfirm.
   ///
   /// In en, this message translates to:
@@ -776,23 +794,17 @@ abstract class AppLocalizations {
   /// **'Please enter your full name'**
   String get accountFullNameRequired;
 
-  /// No description provided for @phoneLabel.
+  /// No description provided for @phoneOptionalLabel.
   ///
   /// In en, this message translates to:
-  /// **'Phone number'**
-  String get phoneLabel;
+  /// **'Phone number (optional)'**
+  String get phoneOptionalLabel;
 
-  /// No description provided for @phoneHint.
+  /// No description provided for @phoneOptionalHint.
   ///
   /// In en, this message translates to:
-  /// **'Enter phone number'**
-  String get phoneHint;
-
-  /// No description provided for @phoneRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Please enter your phone number'**
-  String get phoneRequired;
+  /// **'Optional — for account support only'**
+  String get phoneOptionalHint;
 
   /// No description provided for @phoneInvalid.
   ///
@@ -812,23 +824,47 @@ abstract class AppLocalizations {
   /// **'Email used to sign in — cannot be changed'**
   String get accountEmailLockedHint;
 
-  /// No description provided for @phoneAddTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Add phone number'**
-  String get phoneAddTitle;
-
-  /// No description provided for @phoneAddBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Your Apple/Google account has no phone number yet. Please enter a phone number to continue.'**
-  String get phoneAddBody;
-
   /// No description provided for @commonContinue.
   ///
   /// In en, this message translates to:
   /// **'Continue'**
   String get commonContinue;
+
+  /// No description provided for @commonLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get commonLater;
+
+  /// No description provided for @cameraPermissionRationaleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera access needed'**
+  String get cameraPermissionRationaleTitle;
+
+  /// No description provided for @cameraPermissionRationaleBody.
+  ///
+  /// In en, this message translates to:
+  /// **'ZenPack needs the camera to record packing-evidence videos for your orders.'**
+  String get cameraPermissionRationaleBody;
+
+  /// No description provided for @cameraPermissionDeniedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t record yet'**
+  String get cameraPermissionDeniedTitle;
+
+  /// No description provided for @cameraPermissionDeniedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'ZenPack can\'t record video because camera access hasn\'t been granted. You can still browse, search and manage your orders.'**
+  String get cameraPermissionDeniedBody;
+
+  /// No description provided for @cameraPermissionOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get cameraPermissionOpenSettings;
 
   /// No description provided for @languageNameVietnamese.
   ///
@@ -2251,12 +2287,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter your full name'**
   String get registerFullNameRequired;
-
-  /// Register screen: registerPhone.
-  ///
-  /// In en, this message translates to:
-  /// **'Phone number'**
-  String get registerPhone;
 
   /// Register screen: registerAgreePrefix.
   ///

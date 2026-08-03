@@ -121,7 +121,10 @@ window_dump.xml
 **/fastlane/Preview.html
 **/fastlane/test_output/
 ios/fastlane/build/
-**/AuthKey_*.p8
+# MỌI khóa .p8, không chỉ AuthKey_*. App Store Connect API key, In-App Purchase
+# key và Subscription key đều là .p8 với tiền tố khác nhau — rule hẹp theo tên
+# từng loại đã để lọt SubscriptionKey_*.p8 vào git status một lần rồi.
+**/*.p8
 
 # -------------------------------------------------------------------------
 # Firebase

@@ -10,9 +10,9 @@ abstract interface class EcRepository {
   /// mỗi lần sửa cài đặt thay vì tin vào snapshot của route.
   Future<ShopDto> shop(String shopId);
 
-  /// The signed-in account (`GET /api/me`). Read after a social sign-in to tell
-  /// whether the business phone is already on file (it lives in D1, not Firebase
-  /// Auth) so a returning account skips the phone-setup step.
+  /// The signed-in account (`GET /api/me`). Name and the optional support phone
+  /// live in D1, not Firebase Auth, so the profile screen reads them from here.
+  /// The call also claims any shop invite addressed to this account's email.
   Future<AccountDto> account();
 
   Future<AccountDto> updateProfile({
@@ -277,7 +277,7 @@ class FakeEcRepository implements EcRepository {
     role: 'owner',
   );
 
-  // No backend → no phone on file, so social sign-ins land on phone-setup.
+  // No backend → a demo account with no phone, which is a perfectly usable one.
   @override
   Future<AccountDto> account() async =>
       const AccountDto(uid: 'fake-uid', email: 'demo@evidencecam.app');

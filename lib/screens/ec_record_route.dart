@@ -14,6 +14,14 @@ import 'dart:ui' as ui;
 
 import 'package:analytics/analytics.dart';
 import 'package:app_platform/app_platform.dart';
+import 'package:ec_ui/ec_ui.dart'
+    show
+        LucideIcons,
+        PenColors,
+        PenOutlineButton,
+        PenPrimaryButton,
+        PenScreen,
+        PenText;
 import 'package:feature_capture/feature_capture.dart';
 import 'package:flutter/cupertino.dart'
     show
@@ -47,7 +55,7 @@ class EcRecordRoute extends StatefulWidget {
     this.deviceConditions,
     this.verifyReturnCode,
     this.voiceAnnouncer,
-    this.ensureCameraPermission,
+    this.permissions,
     this.initialType = kEcDefaultVideoType,
     this.queueCount = 0,
     this.initialResolution = '720p',
@@ -57,12 +65,13 @@ class EcRecordRoute extends StatefulWidget {
     super.key,
   });
 
-  /// Xin quyền camera nếu chưa có, trả về `true` khi đã được cấp.
+  /// Tầng quyền của hệ điều hành. Null (test, nền tảng không có quyền) nghĩa là
+  /// coi như đã được cấp và dựng camera thẳng.
   ///
-  /// Bắt buộc chạy trước khi khởi tạo camera: người dùng từ chối ở lần trước
-  /// thì plugin `camera` không tự hỏi lại, màn hình chỉ đứng im ở preview đen
-  /// mà không nói lý do.
-  final Future<bool> Function()? ensureCameraPermission;
+  /// Quyền camera chỉ được hỏi ở đây — lúc người dùng thực sự vào màn quay —
+  /// và chỉ sau khi họ bấm "Tiếp tục" ở phần giải thích. Từ chối thì màn hình
+  /// nói rõ lý do và ở lại trong app; app không bao giờ tự mở Cài đặt.
+  final PermissionService? permissions;
 
   /// Called when the header back chevron is tapped.
   final VoidCallback? onBack;
@@ -195,65 +204,125 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     if (widget.isActive?.value ?? true) {
       // Sau frame đầu — sheet cần một Navigator đã dựng xong.
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => unawaited(_startAfterTypeChosen()),
+        (_) => unawaited(_startRecordingFlow()),
       );
     }
   }
 
-  /// Chọn loại video **xong** rồi mới dựng camera.
+  /// Vào màn quay = chuẩn bị quay: xin quyền camera trước, rồi chọn loại video,
+  /// rồi mới dựng camera.
   ///
-  /// Dựng camera trước thì máy quét chạy ngay và bill trong khung được nhận
-  /// luôn — clip đầu ca bị gán loại mặc định trong khi sheet chọn loại còn
-  /// đang mở. Sheet đóng lại (chọn loại, hoặc gạt xuống để giữ loại mặc định)
-  /// thì camera mới lên.
+  /// Thứ tự này là cố ý. Quyền hỏi ở đây chứ không lúc mở app, để hộp thoại của
+  /// iOS rơi đúng lúc người dùng đang định quay. Và sheet chọn loại chỉ mở sau
+  /// khi có quyền — hỏi loại video cho một cái camera chưa được phép bật thì vô
+  /// nghĩa. Camera lên sau cùng: dựng trước thì máy quét chạy ngay và bill trong
+  /// khung bị gán loại mặc định trong khi sheet còn đang mở.
+  Future<void> _startRecordingFlow() {
+    // Gộp về một lần chạy: hai nguồn (postFrame của initState và vòng đời tab)
+    // có thể gọi cùng nhịp, nhưng cả hai đều phải thấy camera lên khi xong.
+    return _cameraStart ??= _runRecordingFlow().whenComplete(() {
+      _cameraStart = null;
+    });
+  }
+
   /// Hỏi loại video cho tới khi người quay chọn thật, rồi mới dựng camera.
   ///
-  /// Bỏ qua sheet KHÔNG còn được coi là đồng ý loại mặc định: loại quyết định
-  /// clip nằm ở mục nào trong hồ sơ khiếu nại, gán nhầm thì phải quay lại cả
-  /// đơn. Nên chưa chọn thì chưa quay được — hỏi lại.
-  ///
-  /// Vòng lặp thoát khi rời tab hoặc widget bị gỡ, nên không có đường nào kẹt
-  /// người dùng trong một sheet không đóng được.
-  Future<void> _startAfterTypeChosen() async {
+  /// Bỏ qua sheet KHÔNG được coi là đồng ý loại mặc định: loại quyết định clip
+  /// nằm ở mục nào trong hồ sơ khiếu nại, gán nhầm thì phải quay lại cả đơn.
+  /// Nên chưa chọn thì chưa quay được — hỏi lại.
+  Future<void> _runRecordingFlow() async {
     // Chờ khung hình hiện tại vẽ xong rồi mới đẩy sheet lên navigator. Gọi
     // giữa nhịp chuyển tab thì navigator đang khoá và `push` ném
     // `!_debugLocked` — lỗi lặp liên tục vì mỗi lượt hỏng lại kéo theo một
     // lượt thử mới.
     await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
+    if (!await _ensureCameraAccess()) return;
     await _ensureTypeChosen();
     // Chưa chọn thì KHÔNG dựng camera và cũng KHÔNG hỏi lại ngay: hỏi vòng
     // tròn thì người dùng bị nhốt trong sheet, không bấm back ra được. Màn
     // chờ vẫn hiện với nút back và ô chọn loại ở thanh dưới — muốn quay thì
     // chọn, không muốn thì thoát.
     if (!mounted || !_typePicked) return;
-    await _initWithPermission();
-  }
-
-  /// Xin quyền rồi mới khởi tạo camera. Không có callback (test, hoặc nền tảng
-  /// không cần quyền) thì khởi tạo thẳng như trước.
-  Future<void> _initWithPermission() {
-    // Gộp về một lần chạy: hai nguồn (postFrame của initState và vòng đời tab)
-    // có thể gọi cùng nhịp, nhưng cả hai đều phải thấy camera lên khi xong.
-    return _cameraStart ??= _startCamera().whenComplete(() {
-      _cameraStart = null;
-    });
-  }
-
-  Future<void> _startCamera() async {
     // Chốt thứ hai cho cùng một lỗi: mỗi lần dựng camera là một lượt quay mới,
     // không có lý do gì máy quét còn bị treo từ lượt trước.
     _bloc.scanSuspended = false;
-    final ensure = widget.ensureCameraPermission;
-    if (ensure != null) {
-      try {
-        await ensure();
-      } on Object {
-        // Từ chối hay lỗi đều để bloc báo trạng thái camera như thường.
-      }
-      if (!mounted) return;
-    }
     _bloc.add(const RecordingInitRequested());
+  }
+
+  /// Trạng thái quyền camera hiện tại, quyết định màn hình nào được vẽ.
+  _CameraAccess _access = _CameraAccess.granted;
+
+  /// Có hiện nút "Mở Cài đặt" trên màn từ chối hay không.
+  ///
+  /// Chỉ bật khi người dùng **chủ động quay lại** màn quay và hệ điều hành cho
+  /// biết quyền đã bị từ chối vĩnh viễn. Ngay sau cú bấm "Don't Allow" thì
+  /// không: đẩy người ta sang Cài đặt lúc đó là không tôn trọng câu trả lời họ
+  /// vừa đưa ra (và là thứ Apple bắt lỗi).
+  bool _offerSettings = false;
+
+  /// Đọc trạng thái quyền, trả `true` khi được phép dựng camera.
+  ///
+  /// Không tự xin ở đây: chưa có quyền thì chỉ chuyển màn hình sang phần giải
+  /// thích, hộp thoại của hệ điều hành chờ người dùng bấm "Tiếp tục".
+  Future<bool> _ensureCameraAccess() async {
+    final permissions = widget.permissions;
+    if (permissions == null) return true;
+    final bool granted;
+    final bool permanentlyDenied;
+    try {
+      granted = await permissions.hasCameraPermission();
+      permanentlyDenied =
+          !granted && await permissions.isCameraPermanentlyDenied();
+    } on Object {
+      // Tầng quyền hỏng không được chặn màn hình — để bloc báo lỗi camera.
+      return true;
+    }
+    if (!mounted) return false;
+    if (granted) {
+      _setAccess(_CameraAccess.granted);
+      return true;
+    }
+    // Đã từ chối vĩnh viễn thì hỏi lại chỉ là lệnh rỗng — hệ điều hành không
+    // hiện hộp thoại nữa — nên bỏ qua phần giải thích và mở lối vào Cài đặt.
+    _setAccess(
+      permanentlyDenied ? _CameraAccess.blocked : _CameraAccess.rationale,
+      offerSettings: permanentlyDenied,
+    );
+    return false;
+  }
+
+  /// Người dùng bấm "Tiếp tục" ở phần giải thích → giờ mới hỏi hệ điều hành.
+  Future<void> _requestCameraAccess() async {
+    final permissions = widget.permissions;
+    if (permissions == null) return;
+    var granted = false;
+    try {
+      granted = await permissions.requestCameraPermission();
+    } on Object {
+      granted = false;
+    }
+    if (!mounted) return;
+    if (!granted) {
+      // Tôn trọng "Don't Allow": ở lại trong app, nói rõ hệ quả, không tự mở
+      // Cài đặt và chưa mời họ sang đó.
+      _setAccess(_CameraAccess.blocked);
+      return;
+    }
+    _setAccess(_CameraAccess.granted);
+    await _startRecordingFlow();
+  }
+
+  /// Chỉ chạy từ cú chạm vào nút "Mở Cài đặt" — không đường nào khác gọi nó.
+  void _openAppSettings() =>
+      unawaited(widget.permissions?.openAppSettingsPage() ?? Future.value());
+
+  void _setAccess(_CameraAccess access, {bool offerSettings = false}) {
+    if (_access == access && _offerSettings == offerSettings) return;
+    setState(() {
+      _access = access;
+      _offerSettings = offerSettings;
+    });
   }
 
   @override
@@ -303,7 +372,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     // `build`, nhưng nó đẩy route ngay giữa nhịp dựng khung hình nên navigator
     // đang khoá — `!_debugLocked` ném liên tục, mỗi lượt hỏng lại kéo theo một
     // lượt thử mới.
-    unawaited(_startAfterTypeChosen());
+    unawaited(_startRecordingFlow());
   }
 
   /// Đã nhả camera vì app bị đẩy xuống nền (cuộc gọi đến, kéo trung tâm thông
@@ -335,7 +404,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       // Tab khác đang hiển thị thì để `_onActiveChanged` lo — dựng camera ở
       // đây sẽ bật nó lên trong lúc người dùng đang xem Vận đơn.
       if (needsCamera && (widget.isActive?.value ?? true)) {
-        unawaited(_initWithPermission().then((_) => _askResumeInterrupted()));
+        unawaited(_startRecordingFlow().then((_) => _askResumeInterrupted()));
       }
     }
   }
@@ -601,6 +670,15 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   }
 
   Widget _buildScreen(RecordingSessionState state) {
+    if (_access != _CameraAccess.granted) {
+      return _CameraPermissionScreen(
+        access: _access,
+        offerSettings: _offerSettings,
+        onContinue: _requestCameraAccess,
+        onLater: widget.onNavOrders ?? widget.onBack,
+        onOpenSettings: _openAppSettings,
+      );
+    }
     final preview = _buildPreview(state);
     final closedCode = state.cutoverFromCode;
 
@@ -883,6 +961,100 @@ class _CoverPreviewState extends State<_CoverPreview> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Trạng thái quyền camera của màn quay.
+enum _CameraAccess {
+  /// Có quyền — vẽ màn quay như thường.
+  granted,
+
+  /// Chưa hỏi bao giờ: giải thích ngắn rồi mới hỏi khi người dùng đồng ý.
+  rationale,
+
+  /// Đã từ chối: nói rõ hệ quả, cho lối đi tiếp, và ở lại trong app.
+  blocked,
+}
+
+/// Màn hình thay cho khung ngắm khi chưa có quyền camera.
+///
+/// Hai vai: giải thích *trước* khi hỏi (Apple yêu cầu người dùng biết mình
+/// đang đồng ý cho cái gì), và báo hệ quả *sau* khi từ chối mà không ép buộc —
+/// nút "Để sau" đưa họ về danh sách vận đơn, phần còn lại của app vẫn dùng
+/// được bình thường.
+class _CameraPermissionScreen extends StatelessWidget {
+  const _CameraPermissionScreen({
+    required this.access,
+    required this.offerSettings,
+    required this.onContinue,
+    required this.onLater,
+    required this.onOpenSettings,
+  });
+
+  final _CameraAccess access;
+  final bool offerSettings;
+  final VoidCallback onContinue;
+  final VoidCallback? onLater;
+  final VoidCallback onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final blocked = access == _CameraAccess.blocked;
+    return PenScreen(
+      scrollable: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(26, 24, 26, 26),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Spacer(),
+            Icon(
+              blocked ? LucideIcons.videoOff : LucideIcons.video,
+              size: 44,
+              color: PenColors.mut,
+            ),
+            const SizedBox(height: 16),
+            PenText(
+              blocked
+                  ? l10n.cameraPermissionDeniedTitle
+                  : l10n.cameraPermissionRationaleTitle,
+              size: 22,
+              weight: FontWeight.w700,
+              color: PenColors.ink,
+              align: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            PenText(
+              blocked
+                  ? l10n.cameraPermissionDeniedBody
+                  : l10n.cameraPermissionRationaleBody,
+              size: 15,
+              color: PenColors.mut,
+              align: TextAlign.center,
+            ),
+            const Spacer(),
+            if (!blocked)
+              PenPrimaryButton(
+                label: l10n.commonContinue,
+                onPressed: onContinue,
+              )
+            else ...[
+              // Nút mở Cài đặt chỉ có mặt khi người dùng quay lại màn quay sau
+              // lần từ chối, không phải ngay sau cú bấm "Don't Allow".
+              if (offerSettings) ...[
+                PenPrimaryButton(
+                  label: l10n.cameraPermissionOpenSettings,
+                  onPressed: onOpenSettings,
+                ),
+                const SizedBox(height: 12),
+              ],
+              PenOutlineButton(label: l10n.commonLater, onPressed: onLater),
+            ],
+          ],
+        ),
       ),
     );
   }

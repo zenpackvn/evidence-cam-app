@@ -429,13 +429,11 @@ class _LoginRouteState extends State<_LoginRoute> {
     onForgot: () => context.push('/forgot'),
     onGoogle: () => _afterSocialSignIn(
       context,
-      widget.repo,
       widget.auth.signInWithGoogle(),
       method: _AuthMethods.google,
     ),
     onApple: () => _afterSocialSignIn(
       context,
-      widget.repo,
       widget.auth.signInWithApple(),
       method: _AuthMethods.apple,
     ),
@@ -594,13 +592,11 @@ class _RegisterRouteState extends State<_RegisterRoute> {
     onRegister: _policyAccepted && !_saving ? _register : null,
     onGoogle: () => _afterSocialSignIn(
       context,
-      widget.repo,
       widget.auth.signInWithGoogle(),
       method: _AuthMethods.google,
     ),
     onApple: () => _afterSocialSignIn(
       context,
-      widget.repo,
       widget.auth.signInWithApple(),
       method: _AuthMethods.apple,
     ),
@@ -655,12 +651,13 @@ class _ForgotRouteState extends State<_ForgotRoute> {
   );
 }
 
-/// After an Apple/Google sign-in, force phone capture only when the account has
-/// no phone on file yet. A returning account whose business phone is already
-/// saved (D1, read via [EcRepository.account]) skips straight to shop selection.
+/// After an Apple/Google sign-in, go straight to shop selection.
+///
+/// Email is the identity; the phone is an optional support contact only, so
+/// nothing here asks for one — it is edited from Tài khoản → Hồ sơ whenever the
+/// user feels like it, and never gates recording, uploading or anything else.
 Future<void> _afterSocialSignIn(
   BuildContext context,
-  EcRepository repo,
   Future<EcUser> signIn, {
   required String method,
 }) async {
@@ -668,9 +665,7 @@ Future<void> _afterSocialSignIn(
     await signIn;
     _analytics()?.logLogin(method: method);
     if (!context.mounted) return;
-    final needsPhone = await _accountNeedsPhone(repo);
-    if (!context.mounted) return;
-    context.go(needsPhone ? '/phone-setup' : '/shops', extra: 'forward');
+    context.go('/shops', extra: 'forward');
   } on EcAuthCancelled {
     // User backed out of the provider sheet — nothing to report, and nothing
     // to log either: a cancel is not a failed login.
@@ -686,60 +681,6 @@ abstract final class _AuthMethods {
   static const email = 'email';
   static const google = 'google';
   static const apple = 'apple';
-}
-
-/// Whether the signed-in account still needs a phone. The business phone lives
-/// in D1 (tech-spec §7), not Firebase Auth, so read it through the repository.
-/// If the read fails we can't confirm one exists, so ask rather than skip.
-Future<bool> _accountNeedsPhone(EcRepository repo) async {
-  try {
-    final account = await repo.account();
-    return (account.phone ?? '').trim().isEmpty;
-  } on Object {
-    return true;
-  }
-}
-
-/// Forced phone capture after a social sign-in with no phone on the account.
-/// Saves through the seam, then continues to shop selection.
-class _PhoneSetupRoute extends StatefulWidget {
-  const _PhoneSetupRoute({required this.auth, required this.repo});
-
-  final EcAuth auth;
-  final EcRepository repo;
-
-  @override
-  State<_PhoneSetupRoute> createState() => _PhoneSetupRouteState();
-}
-
-class _PhoneSetupRouteState extends State<_PhoneSetupRoute> {
-  final _phone = TextEditingController();
-
-  @override
-  void dispose() {
-    _phone.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    // The screen's inline Form guarantees a valid phone before this fires.
-    final phone = _phone.text.trim();
-    try {
-      // ponytail: with FirebaseEcAuth the phone lands in D1, not Firebase Auth
-      // (tech-spec §7) — persists once that profile endpoint is wired; today the
-      // FakeEcAuth binding keeps it in memory so the gate clears.
-      await widget.auth.updateProfile(phone: phone);
-      await widget.repo.updateProfile(phone: phone);
-      if (!mounted) return;
-      context.go('/shops', extra: 'forward');
-    } on Object catch (error) {
-      if (mounted) _toast(context, _authErrorText(context.l10n, error));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) =>
-      EcPhoneSetupScreen(phoneController: _phone, onContinue: _save);
 }
 
 /// Turns an auth/backend failure into a user-facing line. [EcAuthException]
@@ -1140,12 +1081,56 @@ class _QuotaRoute extends StatefulWidget {
 }
 
 class _QuotaRouteState extends State<_QuotaRoute> {
-  late final Future<QuotaDto> _quota = widget.repo.quota(shopId: widget.shopId);
+  late Future<QuotaDto> _quota = widget.repo.quota(shopId: widget.shopId);
+  bool _buying = false;
 
   @override
   void initState() {
     super.initState();
     _analytics()?.trackPaywallViewed();
+  }
+
+  /// Mở paywall RevenueCat rồi chờ backend áp xong giao dịch.
+  ///
+  /// Cửa hàng báo "đã mua" TRƯỚC khi RevenueCat kịp gọi webhook về backend, nên
+  /// không thể đọc lại gói ngay — phải hỏi lại vài giây. Hết thời gian chờ mà
+  /// gói chưa đổi thì báo "đang xử lý", KHÔNG báo lỗi: tiền đã trừ thật và
+  /// webhook thường về ngay sau đó.
+  Future<void> _upgrade(String currentPlanCode) async {
+    final billing = _billing();
+    if (billing == null) {
+      _toast(context, context.l10n.toastUpgradeComingSoon);
+      return;
+    }
+    _analytics()?.trackPurchaseStarted(planCode: currentPlanCode);
+    setState(() => _buying = true);
+    try {
+      // Gắn phiên mua với tài khoản NGAY TRƯỚC khi mở paywall. RevenueCat gửi
+      // uid này lên webhook; nếu mua khi chưa gắn thì giao dịch rơi vào một
+      // người dùng ẩn danh và backend không biết cộng ngày cho ai.
+      await billing.start((await widget.repo.account()).uid);
+      final outcome = await billing.presentPaywall();
+      if (!mounted || outcome == EcPurchaseOutcome.cancelled) return;
+      if (outcome == EcPurchaseOutcome.failed) {
+        _toast(context, context.l10n.toastPurchaseFailed);
+        return;
+      }
+      final applied = await EcBilling.waitForPlanChange(
+        fetchPlanCode: () async =>
+            (await widget.repo.quota(shopId: widget.shopId)).planCode,
+        previousPlanCode: currentPlanCode,
+      );
+      if (!mounted) return;
+      setState(() => _quota = widget.repo.quota(shopId: widget.shopId));
+      _toast(
+        context,
+        applied
+            ? context.l10n.toastPurchaseApplied
+            : context.l10n.toastPurchasePending,
+      );
+    } finally {
+      if (mounted) setState(() => _buying = false);
+    }
   }
 
   /// Groups this shop's clips by [UploadTask.type], summing each clip's
@@ -1206,10 +1191,7 @@ class _QuotaRouteState extends State<_QuotaRoute> {
           typeUsage: typeUsage,
           canManagePlan: quota.canManagePlan,
           onBack: () => _back(context, '/account'),
-          onUpgrade: () {
-            _analytics()?.trackPurchaseStarted(planCode: quota.planCode);
-            _toast(context, context.l10n.toastUpgradeComingSoon);
-          },
+          onUpgrade: _buying ? null : () => _upgrade(quota.planCode),
           onPaymentHistoryTap: () =>
               _toast(context, context.l10n.toastUpgradeComingSoon),
         );
@@ -1349,25 +1331,6 @@ Future<void> _openSupport(BuildContext context, String url) async {
     if (!ok && context.mounted) _toast(context, l10n.supportOpenFailed);
   } on Object {
     if (context.mounted) _toast(context, l10n.supportOpenFailed);
-  }
-}
-
-/// Đảm bảo có quyền camera trước khi màn ghi hình khởi tạo thiết bị.
-///
-/// Chưa hỏi bao giờ thì hỏi. Đã từ chối vĩnh viễn thì hỏi lại cũng vô ích —
-/// hệ điều hành không hiện hộp thoại nữa — nên mở thẳng phần Cài đặt của app
-/// để người dùng bật tay.
-Future<bool> _ensureCameraPermission() async {
-  final permissions = _maybeGetIt<PermissionService>();
-  if (permissions == null) return true;
-  try {
-    if (await permissions.hasCameraPermission()) return true;
-    if (await permissions.requestCameraPermission()) return true;
-    await permissions.openAppSettingsPage();
-    return permissions.hasCameraPermission();
-  } on Object {
-    // Lỗi tầng quyền không được chặn màn hình — để bloc báo trạng thái camera.
-    return false;
   }
 }
 
@@ -1604,6 +1567,10 @@ T? _maybeGetIt<T extends Object>() =>
     getIt.isRegistered<T>() ? getIt<T>() : null;
 
 AnalyticsService? _analytics() => _maybeGetIt<AnalyticsService>();
+
+/// Vắng mặt khi build không khai `RC_IOS_API_KEY` (test, bản offline) — mọi
+/// đường mua gói phải chịu được `null` chứ không được giả định luôn có.
+EcBilling? _billing() => _maybeGetIt<EcBilling>();
 
 CrashReporter? _crashReporter() => _maybeGetIt<CrashReporter>();
 
@@ -4198,11 +4165,6 @@ GoRouter _buildRouter(
             _RegisterRoute(auth: auth, repo: repo, language: language),
       ),
       GoRoute(
-        path: '/phone-setup',
-        pageBuilder: (c, s) =>
-            _directionalPage(s, _PhoneSetupRoute(auth: auth, repo: repo)),
-      ),
-      GoRoute(
         path: '/forgot',
         builder: (c, s) => _ForgotRoute(auth: auth, language: language),
       ),
@@ -4351,7 +4313,7 @@ GoRouter _buildRouter(
                       );
                     }
                     return EcRecordRoute(
-                      ensureCameraPermission: _ensureCameraPermission,
+                      permissions: _maybeGetIt<PermissionService>(),
                       queueCount: _pendingUploads(queue),
                       initialType: recordingType.value,
                       initialResolution: shop.resolution,

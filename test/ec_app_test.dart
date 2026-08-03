@@ -51,16 +51,16 @@ void main() {
   /// Signs in and enters [shop] from the picker — a login always stops there
   /// now, so tests that want to be inside the app have to pick. Pass a null
   /// [shop] to stay on the picker.
-  Future<void> signInWithGoogleAndPhone(
+  ///
+  /// No phone step in between: the number is an optional support contact, so
+  /// a social sign-in goes straight from the provider to the shop picker.
+  Future<void> signInWithGoogle(
     WidgetTester tester, {
     String? shop = 'Shop ABC',
   }) async {
     await tester.tap(find.text('Bắt đầu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Đăng nhập với Google'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(EditableText).first, '0912345678');
-    await tester.tap(find.text('Tiếp tục'));
     await tester.pumpAndSettle();
     if (shop == null) return;
     await tester.tap(find.text(shop).first);
@@ -83,7 +83,7 @@ void main() {
 
       // Splash
       expect(find.text('ZenPack'), findsOneWidget);
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogle(tester);
 
       // One-shop accounts auto-enter Home; the orders tab shows a sample order.
       expect(find.textContaining('SPXVN'), findsWidgets);
@@ -103,7 +103,7 @@ void main() {
       final repo = _OrderLoadFailingRepository();
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
-      await signInWithGoogleAndPhone(tester, shop: 'Live Shop');
+      await signInWithGoogle(tester, shop: 'Live Shop');
 
       expect(repo.ordersShopId, 'live-shop');
       expect(find.text('Không tải được đơn hàng'), findsOneWidget);
@@ -210,7 +210,7 @@ void main() {
   );
 
   testWidgets(
-    'social sign-in skips phone-setup when the account already has a phone',
+    'social sign-in never asks for a phone, even with none on file',
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
       notDisposed: {
         'ImageStreamCompleterHandle': 1,
@@ -218,18 +218,19 @@ void main() {
       },
     ),
     (tester) async {
-      await pumpPhoneSizedApp(
-        tester,
-        const EcApp(repo: _PhoneOnFileRepository()),
-      );
+      // The demo account has no phone — the case that used to be bounced to a
+      // phone-capture step. Email is the identity; the phone is an optional
+      // support contact and must never sit between sign-in and the app.
+      await pumpPhoneSizedApp(tester, const EcApp(repo: _DemoRepository()));
 
       await tester.tap(find.text('Bắt đầu'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Đăng nhập với Google'));
       await tester.pumpAndSettle();
 
-      // No phone-setup step (no 'Tiếp tục'); it goes straight to the picker.
+      // Straight to the shop picker: no phone step ('Tiếp tục'/'Bỏ qua').
       expect(find.text('Tiếp tục'), findsNothing);
+      expect(find.text('Bỏ qua'), findsNothing);
       await tester.tap(find.text('Shop ABC'));
       await tester.pumpAndSettle();
       expect(find.textContaining('SPXVN'), findsWidgets);
@@ -251,7 +252,7 @@ void main() {
     (tester) async {
       await pumpPhoneSizedApp(tester, const EcApp(repo: _DemoRepository()));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogle(tester);
 
       // Orders tab header — the shop name itself is the entry to F1-09.
       await tester.tap(find.text('Shop ABC'));
@@ -315,7 +316,7 @@ void main() {
       addTearDown(getIt.reset);
       await pumpPhoneSizedApp(tester, const EcApp(repo: _TwoShopRepository()));
 
-      await signInWithGoogleAndPhone(tester, shop: null);
+      await signInWithGoogle(tester, shop: null);
       await tester.tap(find.text('Shop XYZ').first);
       await tester.pumpAndSettle();
 
@@ -400,7 +401,7 @@ void main() {
     (tester) async {
       await pumpPhoneSizedApp(tester, const EcApp(repo: _DemoRepository()));
 
-      await signInWithGoogleAndPhone(tester, shop: null);
+      await signInWithGoogle(tester, shop: null);
 
       // The picker, not the shop: entering is the user's call.
       expect(find.text('Chọn cửa hàng'), findsOneWidget);
@@ -457,7 +458,7 @@ void main() {
     (tester) async {
       await pumpPhoneSizedApp(tester, const EcApp(repo: _TwoShopRepository()));
 
-      await signInWithGoogleAndPhone(tester, shop: null);
+      await signInWithGoogle(tester, shop: null);
       await tester.tap(find.text('Shop XYZ').first);
       await tester.pumpAndSettle();
 
@@ -479,7 +480,7 @@ void main() {
       final repo = _ProfileRepository();
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogle(tester);
       await tester.tap(find.text('Tài khoản').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Người dùng Demo'));
@@ -516,7 +517,7 @@ void main() {
         ),
       );
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogle(tester);
       await tester.tap(find.text('Tài khoản').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Người dùng Demo'));
@@ -550,7 +551,7 @@ void main() {
     (tester) async {
       await pumpPhoneSizedApp(tester, EcApp(repo: _QuotaRepository()));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogle(tester);
       await tester.tap(find.text('Tài khoản').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Gói cước & Quota'));
@@ -573,7 +574,7 @@ void main() {
       final repo = _DeleteConflictRepository();
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogle(tester);
       await tester.tap(find.text('Tài khoản').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Xóa tài khoản'));
@@ -616,7 +617,7 @@ void main() {
       final repo = _DioConflictRepository();
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogle(tester);
       await tester.tap(find.text('Tài khoản').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Xóa tài khoản'));
@@ -657,7 +658,7 @@ void main() {
         EcApp(auth: auth, repo: const _DemoRepository()),
       );
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogle(tester);
       expect(auth.currentUser!.hasPassword, isFalse);
       await tester.tap(find.text('Tài khoản').last);
       await tester.pumpAndSettle();
@@ -690,7 +691,7 @@ void main() {
       final repo = _CreateShopRepository();
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
-      await signInWithGoogleAndPhone(tester, shop: null);
+      await signInWithGoogle(tester, shop: null);
       await tester.tap(find.text('Tạo shop mới (tên + sàn)'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(EditableText).first, 'Shop Mới');
@@ -722,7 +723,7 @@ void main() {
       final repo = _ManageableShopRepository();
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogle(tester);
       await tester.tap(find.byType(PenBackButton).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Quản lý cửa hàng'));
@@ -754,7 +755,7 @@ void main() {
       final repo = _ManageableShopRepository();
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogle(tester);
       await tester.tap(find.byType(PenBackButton).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Quản lý cửa hàng'));
@@ -791,7 +792,7 @@ void main() {
     (tester) async {
       await pumpPhoneSizedApp(tester, const EcApp(repo: _DemoRepository()));
 
-      await signInWithGoogleAndPhone(tester);
+      await signInWithGoogle(tester);
       await tester.tap(find.text('Ghi hình').last);
       await tester.pump(const Duration(seconds: 1));
 
@@ -1106,17 +1107,6 @@ class _ManageableShopRepository extends _DemoRepository {
       inviteToken: 'tok',
     );
   }
-}
-
-class _PhoneOnFileRepository extends _DemoRepository {
-  const _PhoneOnFileRepository();
-
-  @override
-  Future<AccountDto> account() async => const AccountDto(
-    uid: 'fake-uid',
-    email: 'demo@evidencecam.app',
-    phone: '0912345678',
-  );
 }
 
 class _DemoRepository extends FakeEcRepository {

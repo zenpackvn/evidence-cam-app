@@ -74,13 +74,13 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>This app requires camera access to take photos and videos for your bookmarks.</string>
+	<string>ZenPack sử dụng camera để quét mã vận đơn và quay video quá trình đóng gói làm bằng chứng cho đơn hàng. / ZenPack uses the camera to scan tracking codes and record packing-evidence videos for your orders.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>This app requires microphone access to record audio when capturing video for bookmarks.</string>
+	<string>ZenPack ghi âm kèm video đóng gói để đoạn bằng chứng có đủ hình và tiếng. / ZenPack records audio together with the packing video so the evidence clip has both picture and sound.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app requires photo library access to let you select images and videos for bookmarks.</string>
+	<string>ZenPack cần quyền này để bạn chọn ảnh có sẵn làm bằng chứng cho đơn hàng. / ZenPack needs this so you can attach existing photos as evidence for an order.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>This app requires write access to the photo library to save captured media.</string>
+	<string>ZenPack lưu video và ảnh bằng chứng bạn tải về vào thư viện của máy. / ZenPack saves the evidence videos and photos you download to your device library.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

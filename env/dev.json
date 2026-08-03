@@ -1,5 +1,6 @@
 {
   "FLAVOR": "dev",
   "API_BASE_URL": "https://api.zenpack.vn",
-  "API_TIMEOUT_SECONDS": 10
+  "API_TIMEOUT_SECONDS": 10,
+  "RC_IOS_API_KEY": "appl_jZPlACvnjGPKioYVCbFwWVJYpTw"
 }

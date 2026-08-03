@@ -106,6 +106,15 @@ class PermissionService {
     return _cameraRationale();
   }
 
+  /// Whether the OS will no longer show the camera prompt: the user denied it
+  /// for good (iOS: any single "Don't Allow"; Android: a second denial) or a
+  /// policy blocks it. Requesting again would be a silent no-op, so callers
+  /// offer the Settings route instead of re-asking.
+  Future<bool> isCameraPermanentlyDenied() async {
+    final status = await cameraStatus();
+    return status.isPermanentlyDenied || status.isRestricted;
+  }
+
   Future<PermissionStatus> galleryStatus() {
     if (kIsWeb) return Future.value(PermissionStatus.denied);
     return _galleryStatus();

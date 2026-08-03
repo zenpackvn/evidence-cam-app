@@ -36,6 +36,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toastUpgradeComingSoon => 'Plan upgrade — coming soon';
 
   @override
+  String get toastPurchaseApplied => 'New plan activated';
+
+  @override
+  String get toastPurchasePending =>
+      'Payment received. Your plan will activate shortly';
+
+  @override
+  String get toastPurchaseFailed =>
+      'Payment could not be completed. Please try again';
+
+  @override
   String get toastPendingDossierConfirm =>
       'You still have an open claim dossier, please confirm again';
 
@@ -374,13 +385,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountFullNameRequired => 'Please enter your full name';
 
   @override
-  String get phoneLabel => 'Phone number';
+  String get phoneOptionalLabel => 'Phone number (optional)';
 
   @override
-  String get phoneHint => 'Enter phone number';
-
-  @override
-  String get phoneRequired => 'Please enter your phone number';
+  String get phoneOptionalHint => 'Optional — for account support only';
 
   @override
   String get phoneInvalid => 'Invalid phone number';
@@ -393,14 +401,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Email used to sign in — cannot be changed';
 
   @override
-  String get phoneAddTitle => 'Add phone number';
-
-  @override
-  String get phoneAddBody =>
-      'Your Apple/Google account has no phone number yet. Please enter a phone number to continue.';
-
-  @override
   String get commonContinue => 'Continue';
+
+  @override
+  String get commonLater => 'Later';
+
+  @override
+  String get cameraPermissionRationaleTitle => 'Camera access needed';
+
+  @override
+  String get cameraPermissionRationaleBody =>
+      'ZenPack needs the camera to record packing-evidence videos for your orders.';
+
+  @override
+  String get cameraPermissionDeniedTitle => 'Can\'t record yet';
+
+  @override
+  String get cameraPermissionDeniedBody =>
+      'ZenPack can\'t record video because camera access hasn\'t been granted. You can still browse, search and manage your orders.';
+
+  @override
+  String get cameraPermissionOpenSettings => 'Open Settings';
 
   @override
   String get languageNameVietnamese => 'Vietnamese';
@@ -1199,9 +1220,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get registerFullNameRequired => 'Please enter your full name';
-
-  @override
-  String get registerPhone => 'Phone number';
 
   @override
   String get registerAgreePrefix => 'I agree to the';

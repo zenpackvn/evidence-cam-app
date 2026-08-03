@@ -93,7 +93,7 @@ void main() {
       expect(find.text('Đăng ký'), findsOneWidget);
       expect(find.text('Họ tên'), findsOneWidget);
       expect(find.text('Email'), findsOneWidget);
-      expect(find.text('Số điện thoại'), findsOneWidget);
+      expect(find.text('Số điện thoại (tùy chọn)'), findsOneWidget);
       expect(find.text('Mật khẩu'), findsOneWidget);
       expect(find.text('Nhập lại mật khẩu'), findsOneWidget);
       expect(find.text('Điều khoản sử dụng'), findsOneWidget);

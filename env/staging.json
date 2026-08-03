@@ -1,5 +1,6 @@
 {
   "FLAVOR": "staging",
   "API_BASE_URL": "https://api.zenpack.vn",
-  "API_TIMEOUT_SECONDS": 20
+  "API_TIMEOUT_SECONDS": 20,
+  "RC_IOS_API_KEY": "appl_jZPlACvnjGPKioYVCbFwWVJYpTw"
 }

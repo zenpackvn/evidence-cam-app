@@ -86,3 +86,8 @@ class _BearerTokenInterceptor extends Interceptor {
     handler.next(options);
   }
 }
+
+/// SDK key công khai của RevenueCat cho bản iOS (`appl_…`). Đây là khoá **công
+/// khai** — nó chỉ định danh app với RevenueCat, không ký được giao dịch nào,
+/// nên nằm trong bundle là đúng chỗ. Khoá bí mật (`sk_…`) tuyệt đối không.
+const kRevenueCatIosKey = String.fromEnvironment('RC_IOS_API_KEY');

@@ -621,9 +621,11 @@ class EcRegisterScreen extends StatelessWidget {
                     ]),
                   ),
                   const SizedBox(height: 8),
+                  // Không bắt buộc và không chặn gì: email là danh tính, số
+                  // điện thoại chỉ để hỗ trợ tài khoản khi cần liên hệ.
                   PenStackedField(
                     icon: LucideIcons.phone,
-                    label: l10n.registerPhone,
+                    label: l10n.phoneOptionalLabel,
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
                   ),

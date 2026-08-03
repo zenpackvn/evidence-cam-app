@@ -327,8 +327,8 @@ class EcEditProfileScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
                       _Field(
-                        label: context.l10n.phoneLabel,
-                        hint: context.l10n.phoneHint,
+                        label: context.l10n.phoneOptionalLabel,
+                        hint: context.l10n.phoneOptionalHint,
                         controller: phoneController,
                         keyboardType: TextInputType.phone,
                         // Phone is optional here, but must be well-formed
@@ -359,69 +359,6 @@ class EcEditProfileScreen extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Forced phone capture shown right after an Apple/Google sign-in when the
-/// account has no phone (those providers don't supply one). No back action —
-/// the user must enter a number to continue. Presentational: data-in,
-/// callbacks-out.
-class EcPhoneSetupScreen extends StatelessWidget {
-  const EcPhoneSetupScreen({this.phoneController, this.onContinue, super.key});
-
-  final TextEditingController? phoneController;
-  final VoidCallback? onContinue;
-
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      child: PopScope(
-        canPop: false,
-        child: CupertinoPageScaffold(
-          backgroundColor: BrandColors.bg,
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 24),
-                  Text(
-                    context.l10n.phoneAddTitle,
-                    style: _t(24, FontWeight.w600, BrandColors.ink),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    context.l10n.phoneAddBody,
-                    style: _t(14, FontWeight.w400, BrandColors.mut),
-                  ),
-                  const SizedBox(height: 24),
-                  _Field(
-                    label: context.l10n.phoneLabel,
-                    hint: context.l10n.phoneHint,
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                    validator: FormBuilderValidators.compose([
-                      FormBuilderValidators.required(
-                        errorText: context.l10n.phoneRequired,
-                      ),
-                      FormBuilderValidators.phoneNumber(
-                        errorText: context.l10n.phoneInvalid,
-                      ),
-                    ]),
-                  ),
-                  const Spacer(),
-                  _ValidatedPrimaryButton(
-                    label: context.l10n.commonContinue,
-                    onValid: onContinue,
-                  ),
-                ],
-              ),
-            ),
           ),
         ),
       ),

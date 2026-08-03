@@ -90,6 +90,15 @@ Future<void> main() async {
         // then; otherwise fall back to the fake so the journey still runs. The
         // repository comes from EC_API_URL/API_BASE_URL (empty offline seam when unset).
         final ecAuth = kFirebaseEnabled ? FirebaseEcAuth() : FakeEcAuth();
+
+        // Thanh toán trong ứng dụng. Chỉ đăng ký khi build có khai khoá công
+        // khai của RevenueCat — không có khoá thì mọi nút mua gói tự rơi về
+        // nhánh "chưa hỗ trợ" thay vì nổ lúc chạy.
+        if (kRevenueCatIosKey.isNotEmpty) {
+          getIt.registerSingleton<EcBilling>(
+            EcBilling(apiKey: kRevenueCatIosKey),
+          );
+        }
         // Evidence clips persist in ObjectBox (opened by the @preResolve store
         // module during configureDependencies), so the upload queue survives
         // restarts — the single source of truth (FR-08/FR-09).
