@@ -1266,9 +1266,9 @@ void _toast(BuildContext c, String msg) => ecToast(c, msg);
 //
 // ponytail: hằng số tạm — chuyển sang Remote Config hoặc endpoint cấu hình khi
 // cần đổi số/trang mà không phải phát hành lại app.
-const _kSupportFacebook = 'https://m.me/zenpackvn';
-const _kSupportZalo = 'https://zalo.me/0888888888';
-const _kSupportPhone = 'tel:0888888888';
+const _kSupportFacebook = 'https://facebook.com/zenpack.vn';
+const _kSupportZalo = 'https://zalo.me/0383539856';
+const _kSupportPhone = 'tel:0383539856';
 
 /// Trang app trên store, mở bằng lược đồ riêng của từng nền tảng để nhảy thẳng
 /// vào mục đánh giá thay vì mở trình duyệt.
