@@ -891,9 +891,13 @@ class _RecordingAuth extends FakeEcAuth {
   }
 
   @override
-  Future<EcUser> updateProfile({String? name, String? phone}) async {
+  Future<EcUser> updateProfile({
+    String? name,
+    String? phone,
+    String? photoUrl,
+  }) async {
     updatedPhone = phone;
-    return super.updateProfile(name: name, phone: phone);
+    return super.updateProfile(name: name, phone: phone, photoUrl: photoUrl);
   }
 
   @override
@@ -1077,6 +1081,8 @@ class _ManageableShopRepository extends _DemoRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    int? maxImageBytes,
+    int? maxVideoBytes,
     int? maxUploadBytes,
   }) async {
     updatedResolution = resolution;
