@@ -99,6 +99,16 @@ Future<void> main() async {
         if (kRevenueCatKey.isNotEmpty) {
           getIt.registerSingleton<EcBilling>(EcBilling(apiKey: kRevenueCatKey));
         }
+        // Góp ý đi thẳng sang CMS dùng chung (tenant zenpack), không qua backend
+        // EvidenceCam.
+        //
+        // ponytail: build khai `EC_FEEDBACK_URL` rỗng thì không đăng ký và
+        // `_sendFeedback` lặng lẽ bỏ qua — nút vẫn hiện và vẫn cảm ơn người
+        // dùng. Chấp nhận được vì mặc định là một origin thật, chỉ bản offline
+        // cố ý mới rơi vào nhánh này; cần chặt hơn thì truyền cờ xuống
+        // EcAccountScreen để ẩn hẳn mục đó.
+        final feedback = buildFeedback();
+        if (feedback != null) getIt.registerSingleton<EcFeedback>(feedback);
         // Evidence clips persist in ObjectBox (opened by the @preResolve store
         // module during configureDependencies), so the upload queue survives
         // restarts — the single source of truth (FR-08/FR-09).

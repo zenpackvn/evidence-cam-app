@@ -114,24 +114,6 @@ class EcApi {
     data: {'account_uid': accountUid, 'role': role},
   );
 
-  /// Gửi góp ý của người dùng về hệ thống.
-  ///
-  /// `platform` và `app_version` đi kèm để người đọc góp ý biết ngay bối cảnh
-  /// mà không phải hỏi lại — phần lớn góp ý là về một hành vi cụ thể trên một
-  /// phiên bản cụ thể.
-  Future<void> sendFeedback({
-    required String message,
-    String? platform,
-    String? appVersion,
-  }) => _dio.post<void>(
-    '/api/feedback',
-    data: {
-      'message': message,
-      if (platform != null) 'platform': platform,
-      if (appVersion != null) 'app_version': appVersion,
-    },
-  );
-
   Future<ShopInviteDto> sendShopInvite(
     String shopId, {
     required String contact,

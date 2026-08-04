@@ -12,6 +12,7 @@ import 'package:network/network.dart'
 
 import 'ec_api.dart';
 import 'ec_auth.dart';
+import 'ec_feedback.dart';
 import 'ec_repository.dart';
 
 /// Production API origin — where a build lands when no dart-define points it
@@ -33,6 +34,23 @@ const kApiBaseUrl = String.fromEnvironment(
     defaultValue: kDefaultApiBaseUrl,
   ),
 );
+
+/// Origin của Zentam CMS nhận góp ý, phân giải lúc biên dịch:
+/// `EC_FEEDBACK_URL` → `FEEDBACK_BASE_URL` trong file env → mặc định.
+///
+/// Rỗng nghĩa là build này KHÔNG gửi góp ý đi đâu cả (test, bản offline) — bên
+/// gọi kiểm và tự bỏ nút, xem [buildFeedback].
+const kFeedbackBaseUrl = String.fromEnvironment(
+  'EC_FEEDBACK_URL',
+  defaultValue: String.fromEnvironment(
+    'FEEDBACK_BASE_URL',
+    defaultValue: kDefaultFeedbackBaseUrl,
+  ),
+);
+
+/// Client gửi góp ý, hoặc `null` khi build không cấu hình đích đến.
+EcFeedback? buildFeedback({String url = kFeedbackBaseUrl}) =>
+    url.isEmpty ? null : EcFeedback(baseUrl: url);
 
 /// Builds the data source.
 ///

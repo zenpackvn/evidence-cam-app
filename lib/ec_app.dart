@@ -64,6 +64,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';
 import 'package:network/network.dart' show Dio, DioException, DioExceptionType;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_contracts/shared_contracts.dart' show ClipBudget;
 import 'package:storage/storage.dart';
@@ -822,7 +823,7 @@ class _AccountRouteState extends State<_AccountRoute> {
             onFacebook: () => _openSupport(context, _kSupportFacebook),
             onZalo: () => _openSupport(context, _kSupportZalo),
             onCall: () => _openSupport(context, _kSupportPhone),
-            onFeedback: () => _showFeedbackSheet(context, widget.repo),
+            onFeedback: () => _showFeedbackSheet(context),
             onRateApp: () => _openSupport(context, _kStoreListing),
             onProfileTap: () async {
               await context.push('/edit-profile');
@@ -1309,7 +1310,7 @@ final _kStoreListing = defaultTargetPlatform == TargetPlatform.iOS
 /// Không chuyển sang ứng dụng thư: người dùng vừa gõ xong, đẩy họ sang app
 /// khác rồi bắt bấm gửi lần nữa là hai lần công cho một việc — và phần lớn bỏ
 /// dở ở bước đó.
-void _showFeedbackSheet(BuildContext context, EcRepository repo) {
+void _showFeedbackSheet(BuildContext context) {
   showCupertinoModalPopup<void>(
     context: context,
     builder: (sheetContext) => EcFeedbackSheet(
@@ -1318,17 +1319,7 @@ void _showFeedbackSheet(BuildContext context, EcRepository repo) {
         Navigator.of(sheetContext).pop();
         // Gửi ở nền và cảm ơn ngay: góp ý không phải giao dịch, bắt người dùng
         // ngồi chờ vòng quay mạng cho một việc họ không nhận lại gì là thừa.
-        unawaited(
-          repo
-              .sendFeedback(
-                message: text,
-                platform: defaultTargetPlatform.name,
-              )
-              .catchError((Object _) {
-                // Nuốt lỗi có chủ đích: người dùng đã được cảm ơn, hiện lỗi
-                // mạng lúc này chỉ gây hoang mang mà họ không sửa được gì.
-              }),
-        );
+        unawaited(_sendFeedback(text));
         showCupertinoModalPopup<void>(
           context: context,
           builder: (thanksContext) => EcFeedbackThanksSheet(
@@ -1338,6 +1329,46 @@ void _showFeedbackSheet(BuildContext context, EcRepository repo) {
       },
     ),
   );
+}
+
+/// Đẩy một góp ý lên Zentam CMS, thử lại một lần khi hỏng tạm thời.
+///
+/// Người dùng đã được cảm ơn và đóng sheet trước khi hàm này chạy xong, nên
+/// mọi lỗi đều nuốt: hiện một thông báo mạng lúc này chỉ gây hoang mang cho
+/// việc họ không sửa được. Đổi lại phải thử lại — im lặng đánh rơi góp ý là
+/// mất hẳn, không ai biết để gửi lại.
+///
+/// [EcFeedbackRejected] thì KHÔNG thử lại: CMS chê nội dung, gửi lại y nguyên
+/// cũng hỏng y như vậy.
+Future<void> _sendFeedback(String message) async {
+  final feedback = _maybeGetIt<EcFeedback>();
+  if (feedback == null) return;
+  final source = EcFeedback.sourceFor(await _appVersion());
+  for (var attempt = 0; attempt < 2; attempt++) {
+    try {
+      await feedback.send(message: message, source: source);
+      return;
+    } on EcFeedbackRejected catch (error, stackTrace) {
+      // Ghi lại: CMS chê nội dung nghĩa là app đang gửi sai hình, và người dùng
+      // thì không bao giờ thấy lỗi này để báo lại.
+      unawaited(
+        _crashReporter()?.recordError(error, stackTrace) ?? Future.value(),
+      );
+      return;
+    } on Object {
+      // Lần đầu hỏng thì nghỉ một nhịp rồi thử lại; lần hai hỏng thì thôi.
+      if (attempt == 0) await Future<void>.delayed(const Duration(seconds: 3));
+    }
+  }
+}
+
+/// Phiên bản app, rỗng khi không đọc được — góp ý vẫn phải gửi đi được.
+Future<String> _appVersion() async {
+  try {
+    return (await PackageInfo.fromPlatform()).version;
+  } on Object {
+    return '';
+  }
 }
 
 /// Mở một kênh hỗ trợ bằng app ngoài (Messenger, Zalo, trình quay số).
