@@ -68,6 +68,7 @@ const _videoDetail = EcVideoDetail(
   device: 'iPhone 12 · app 1.0',
   fileSize: '48,2 MB',
   uploadStatus: 'Đã upload ✓',
+  mediaUrl: 'https://cdn.example.com/evidence/video-1.mp4',
 );
 
 void main() {
@@ -92,6 +93,7 @@ void main() {
       expect(find.text('Đang tải 72%'), findsOneWidget);
       expect(find.text('Lỗi · Thử lại'), findsOneWidget);
       expect(find.text('Đính kèm ảnh vào đơn'), findsOneWidget);
+      expect(find.text('Tạo link'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -158,6 +160,7 @@ void main() {
       expect(find.text('Trạng thái upload'), findsOneWidget);
       expect(find.text('Đã upload ✓'), findsOneWidget);
       expect(find.text('Phát video'), findsOneWidget);
+      expect(find.text('Sao chép link'), findsOneWidget);
       expect(find.text('Tải video về máy'), findsOneWidget);
       expect(find.text('Xóa video'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -170,11 +173,13 @@ void main() {
       var downloaded = false;
       var deleted = false;
       var closed = false;
+      var copiedLink = false;
       await _pump(
         tester,
         EcVideoDetailScreen(
           video: _videoDetail,
           onPlay: () => played = true,
+          onCopyLink: () => copiedLink = true,
           onDownload: () => downloaded = true,
           onDelete: () => deleted = true,
           onClose: () => closed = true,
@@ -182,14 +187,37 @@ void main() {
       );
 
       await tester.tap(find.text('Phát video'));
+      await tester.tap(find.text('Sao chép link'));
       await tester.tap(find.text('Tải video về máy'));
       await tester.tap(find.text('Xóa video'));
       await tester.tapAt(const Offset(195, 100));
 
       expect(played, isTrue);
+      expect(copiedLink, isTrue);
       expect(downloaded, isTrue);
       expect(deleted, isTrue);
       expect(closed, isTrue);
+    });
+
+    testWidgets('hides copy link action until uploaded media has a url', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcVideoDetailScreen(
+          video: EcVideoDetail(
+            title: 'Đang upload',
+            duration: '00:12',
+            recordedAt: '23/07/2026 · 10:23',
+            recordedBy: 'Trần Thị B (Nhân viên)',
+            device: 'iPhone 12 · app 1.0',
+            uploadStatus: 'Đang tải',
+          ),
+        ),
+      );
+
+      expect(find.text('Sao chép link'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
   });
 }

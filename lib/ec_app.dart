@@ -1830,27 +1830,6 @@ class _PaywallRouteState extends State<_PaywallRoute> {
 
 CrashReporter? _crashReporter() => _maybeGetIt<CrashReporter>();
 
-/// FR-07: đưa link hồ sơ ra share sheet. Không có [share] (DI vắng, hoặc
-/// test) thì chép vào clipboard — im lặng không làm gì mới là thứ không chấp
-/// nhận được với một nút đang hiện trên màn.
-Future<void> _shareDossierLink(
-  BuildContext context,
-  ShareService? share,
-  String url,
-) async {
-  final l10n = context.l10n;
-  try {
-    if (share == null) {
-      await Clipboard.setData(ClipboardData(text: url));
-      if (context.mounted) _toast(context, l10n.toastCopiedShareLink);
-      return;
-    }
-    await share.share(text: url, subject: l10n.dossierLinkTitle);
-  } on Object {
-    if (context.mounted) _toast(context, l10n.toastShareFailed);
-  }
-}
-
 /// Chỉ có hai ngôn ngữ, nên nút quả địa cầu ở màn trước-đăng-nhập lật thẳng
 /// chứ không đẩy sang màn `/language` (màn đó back về `/account`, chưa đăng
 /// nhập thì không có chỗ mà về).
@@ -3640,26 +3619,10 @@ class _OrderRouteState extends State<_OrderRoute> {
     } on Object {
       // Keep whatever we have — evidence still renders, just without names.
     }
-    // FR-07: link hồ sơ khiếu nại, nếu web admin đã tạo cho đơn này. Best
-    // effort — nhân viên bị 403 ở endpoint này, và không có link thì thẻ chỉ
-    // ẩn đi chứ không được làm hỏng cả màn.
-    String? dossierUrl;
-    try {
-      final dossier = await widget.repo.dossier(
-        widget.shop.id,
-        widget.order.id,
-      );
-      if (dossier != null && !dossier.revoked) {
-        dossierUrl = widget.repo.dossierShareUrl(dossier.shareToken);
-      }
-    } on Object {
-      // Không có quyền hoặc mạng lỗi — coi như chưa có link.
-    }
     return _OrderDetailData(
       detail: detail,
       videoTypes: types,
       memberNames: memberNames,
-      dossierUrl: dossierUrl,
     );
   }
 
@@ -3777,36 +3740,6 @@ class _OrderRouteState extends State<_OrderRoute> {
               context.l10n.labelTrackingCode,
             ),
             onRetryUpload: () => unawaited(_retryPendingUploads()),
-            dossierUrl: data.dossierUrl,
-            onCopyDossierLink: data.dossierUrl == null
-                ? null
-                : () => _copyText(
-                    context,
-                    data.dossierUrl!,
-                    context.l10n.dossierLinkTitle,
-                  ),
-            // Share sheet thật (share_plus đã có sẵn qua app_platform, dùng
-            // cho chia sẻ video); thiếu DI thì rơi về clipboard chứ không im
-            // lặng không làm gì.
-            // ponytail: backend ĐÃ có `POST /api/shops/:id/orders/:orderId/
-            // dossier` (idempotent, trả đúng link cũ nếu gọi lại), nhưng
-            // `EcApi` chưa bọc nó nên chỗ này vẫn báo chờ. Nối vào là thêm một
-            // `createDossier` cạnh `getDossier` rồi gọi ở đây.
-            // Đường "Đẩy lên Drive" đã gỡ khỏi giao diện — không có gì đứng sau.
-            onCreateLink: (picked) =>
-                _toast(context, context.l10n.bundleBackendPending),
-            onShareDossierLink: data.dossierUrl == null
-                ? null
-                : () {
-                    _analytics()?.trackVideoShared();
-                    unawaited(
-                      _shareDossierLink(
-                        context,
-                        widget.share,
-                        data.dossierUrl!,
-                      ),
-                    );
-                  },
             onAttachPhoto: () => _attachPhoto(
               context,
               widget.queue,
@@ -3827,15 +3760,10 @@ class _OrderDetailData {
     required this.detail,
     required this.videoTypes,
     this.memberNames = const {},
-    this.dossierUrl,
   });
 
   final OrderDetailDto detail;
   final List<VideoTypeDto> videoTypes;
-
-  /// Link công khai của hồ sơ khiếu nại, `null` khi đơn chưa có hoặc đã bị
-  /// thu hồi — thẻ link chỉ hiện khi có giá trị.
-  final String? dossierUrl;
 
   /// Account uid -> display name (name, else email), for resolving
   /// [EvidenceDto.createdByUid] to something readable.
@@ -5189,6 +5117,14 @@ GoRouter _buildRouter(
                     ),
                 canDelete: extra?.canDelete ?? false,
                 onClose: () => c.pop(),
+                onCopyLink: () {
+                  final url = extra?.video.mediaUrl;
+                  if (url == null) {
+                    _toast(pageContext, c.l10n.toastVideoNoPlayLink);
+                    return;
+                  }
+                  _copyText(pageContext, url, c.l10n.assetLinkTitle);
+                },
                 onPlay: () {
                   final url = extra?.video.mediaUrl;
                   if (url == null || videoPlayer == null) {
@@ -5323,6 +5259,14 @@ GoRouter _buildRouter(
                       uploadStatus: '—',
                     ),
                 onClose: () => c.pop(),
+                onCopyLink: () {
+                  final url = extra?.video.mediaUrl;
+                  if (url == null) {
+                    _toast(pageContext, c.l10n.toastPhotoNoDownloadLink);
+                    return;
+                  }
+                  _copyText(pageContext, url, c.l10n.assetLinkTitle);
+                },
                 onDownload: () {
                   final photo = extra?.video;
                   if (photo == null) return;

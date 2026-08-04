@@ -8,7 +8,6 @@
   "toastInfoSaved": "Đã lưu thông tin",
   "toastPasswordCreated": "Đã tạo mật khẩu",
   "toastPasswordChanged": "Đã đổi mật khẩu",
-  "toastUpgradeComingSoon": "Nâng cấp gói — sắp ra mắt",
   "toastPurchaseApplied": "Đã kích hoạt gói mới",
   "toastPurchasePending": "Đã thanh toán. Gói sẽ được kích hoạt trong giây lát",
   "toastPurchaseFailed": "Không hoàn tất được thanh toán. Vui lòng thử lại",
@@ -209,6 +208,8 @@
   "detailSize": "Dung lượng",
   "detailUploadStatus": "Trạng thái upload",
   "detailPlayVideo": "Phát video",
+  "detailCopyAssetLink": "Sao chép link",
+  "assetLinkTitle": "Link bằng chứng",
   "detailDownloadVideo": "Tải video về máy",
   "detailDownloadNote": "Chỉ Chủ/QL shop · dùng khi sàn yêu cầu file gốc",
   "detailDownloadPhoto": "Tải ảnh về máy",
@@ -220,7 +221,7 @@
   "deleteVideoConfirmAction": "Xóa vĩnh viễn",
   "ordersErrorCount": "· {count} lỗi",
   "ordersPendingCount": "· {count} chờ",
-  "ordersPendingEvidenceWarning": "{count} bằng chứng chưa upload · link hồ sơ sẽ thiếu",
+  "ordersPendingEvidenceWarning": "{count} bằng chứng chưa upload · chưa có link để sao chép",
   "captureFramePrompt": "Quét mã vận đơn",
   "captureCameraDownHint": "Đưa bill vào khung",
   "cutoverSavedVideo": "Đã lưu video",
@@ -825,7 +826,6 @@
   "unitMegabytes": "MB",
   "clipDurationCustomLabel": "Hoặc nhập số phút bạn muốn",
   "uploadSizeCustomLabel": "Hoặc nhập dung lượng bạn muốn (không giới hạn)",
-  "bundleBackendPending": "Chức năng này đang chờ backend mở endpoint",
   "supportOpenFailed": "Không mở được, kiểm tra xem máy đã cài ứng dụng chưa",
   "feedbackThanksTitle": "Cảm ơn bạn!",
   "feedbackThanksBody": "Phản hồi của bạn giúp ZenPack ngày càng tốt hơn.",
@@ -841,17 +841,6 @@
   "supportFacebook": "Nhắn Facebook",
   "supportZalo": "Nhắn Zalo",
   "supportCall": "Gọi hỗ trợ",
-  "bundleCreate": "Tạo",
-  "bundleSelected": "Đã chọn {count} bằng chứng",
-  "@bundleSelected": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "bundleCreateLink": "Tạo link",
-  "bundleUploadDrive": "Đẩy lên Drive",
   "limitClampedTitle": "Gói hiện tại không cho mức này",
   "limitClampedBody": "Bạn chọn {want} phút nhưng hệ thống chỉ chấp nhận tối đa {got} phút, và đã lưu ở mức {got} phút. Nâng gói hoặc liên hệ hỗ trợ nếu cần mức cao hơn.",
   "@limitClampedBody": {

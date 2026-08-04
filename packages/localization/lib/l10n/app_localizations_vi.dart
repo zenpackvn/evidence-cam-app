@@ -33,9 +33,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get toastPasswordChanged => 'Đã đổi mật khẩu';
 
   @override
-  String get toastUpgradeComingSoon => 'Nâng cấp gói — sắp ra mắt';
-
-  @override
   String get toastPurchaseApplied => 'Đã kích hoạt gói mới';
 
   @override
@@ -646,6 +643,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get detailPlayVideo => 'Phát video';
 
   @override
+  String get detailCopyAssetLink => 'Sao chép link';
+
+  @override
+  String get assetLinkTitle => 'Link bằng chứng';
+
+  @override
   String get detailDownloadVideo => 'Tải video về máy';
 
   @override
@@ -687,7 +690,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String ordersPendingEvidenceWarning(int count) {
-    return '$count bằng chứng chưa upload · link hồ sơ sẽ thiếu';
+    return '$count bằng chứng chưa upload · chưa có link để sao chép';
   }
 
   @override
@@ -1517,10 +1520,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Hoặc nhập dung lượng bạn muốn (không giới hạn)';
 
   @override
-  String get bundleBackendPending =>
-      'Chức năng này đang chờ backend mở endpoint';
-
-  @override
   String get supportOpenFailed =>
       'Không mở được, kiểm tra xem máy đã cài ứng dụng chưa';
 
@@ -1566,20 +1565,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get supportCall => 'Gọi hỗ trợ';
-
-  @override
-  String get bundleCreate => 'Tạo';
-
-  @override
-  String bundleSelected(int count) {
-    return 'Đã chọn $count bằng chứng';
-  }
-
-  @override
-  String get bundleCreateLink => 'Tạo link';
-
-  @override
-  String get bundleUploadDrive => 'Đẩy lên Drive';
 
   @override
   String get limitClampedTitle => 'Gói hiện tại không cho mức này';

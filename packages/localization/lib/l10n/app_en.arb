@@ -8,7 +8,6 @@
   "toastInfoSaved": "Info saved",
   "toastPasswordCreated": "Password created",
   "toastPasswordChanged": "Password changed",
-  "toastUpgradeComingSoon": "Plan upgrade — coming soon",
   "toastPurchaseApplied": "New plan activated",
   "toastPurchasePending": "Payment received. Your plan will activate shortly",
   "toastPurchaseFailed": "Payment could not be completed. Please try again",
@@ -322,6 +321,8 @@
   "detailSize": "Size",
   "detailUploadStatus": "Upload status",
   "detailPlayVideo": "Play video",
+  "detailCopyAssetLink": "Copy link",
+  "assetLinkTitle": "Evidence link",
   "detailDownloadVideo": "Download video",
   "detailDownloadNote": "Owner/manager only · for when the marketplace asks for the original file",
   "detailDownloadPhoto": "Download photo",
@@ -347,7 +348,7 @@
       }
     }
   },
-  "ordersPendingEvidenceWarning": "{count} evidence not uploaded · the dossier link will be incomplete",
+  "ordersPendingEvidenceWarning": "{count} evidence not uploaded · no copyable link yet",
   "@ordersPendingEvidenceWarning": {
     "placeholders": {
       "count": {
@@ -1071,7 +1072,6 @@
   "unitMegabytes": "MB",
   "clipDurationCustomLabel": "Or enter the number of minutes you want",
   "uploadSizeCustomLabel": "Or enter any size you want (no limit)",
-  "bundleBackendPending": "Waiting on a backend endpoint for this",
   "supportOpenFailed": "Couldn’t open — check the app is installed",
   "feedbackThanksTitle": "Thank you!",
   "feedbackThanksBody": "Your feedback helps make ZenPack better.",
@@ -1087,17 +1087,6 @@
   "supportFacebook": "Message on Facebook",
   "supportZalo": "Message on Zalo",
   "supportCall": "Call support",
-  "bundleCreate": "Create",
-  "bundleSelected": "{count} selected",
-  "@bundleSelected": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "bundleCreateLink": "Create link",
-  "bundleUploadDrive": "Upload to Drive",
   "limitClampedTitle": "Your plan does not allow this",
   "limitClampedBody": "You chose {want} min but the system accepts at most {got} min, and saved {got} min. Upgrade your plan or contact support if you need more.",
   "@limitClampedBody": {

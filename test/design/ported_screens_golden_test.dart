@@ -137,7 +137,6 @@ const _accountBackdrop = EcAccountTabScreen(
 const _evidenceBackdrop = EcOrderTimelineScreen(
   orderCode: 'SPXVN024567890',
   pendingUploadCount: 4,
-  dossierUrl: 'zenpack.vn/r/abc123...',
   days: [
     EcTimelineDay(
       date: '23/07/2026',

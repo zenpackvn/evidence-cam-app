@@ -146,12 +146,6 @@ abstract class AppLocalizations {
   /// **'Password changed'**
   String get toastPasswordChanged;
 
-  /// No description provided for @toastUpgradeComingSoon.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan upgrade — coming soon'**
-  String get toastUpgradeComingSoon;
-
   /// No description provided for @toastPurchaseApplied.
   ///
   /// In en, this message translates to:
@@ -1262,6 +1256,18 @@ abstract class AppLocalizations {
   /// **'Play video'**
   String get detailPlayVideo;
 
+  /// No description provided for @detailCopyAssetLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get detailCopyAssetLink;
+
+  /// No description provided for @assetLinkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence link'**
+  String get assetLinkTitle;
+
   /// No description provided for @detailDownloadVideo.
   ///
   /// In en, this message translates to:
@@ -1331,7 +1337,7 @@ abstract class AppLocalizations {
   /// No description provided for @ordersPendingEvidenceWarning.
   ///
   /// In en, this message translates to:
-  /// **'{count} evidence not uploaded · the dossier link will be incomplete'**
+  /// **'{count} evidence not uploaded · no copyable link yet'**
   String ordersPendingEvidenceWarning(int count);
 
   /// No description provided for @captureFramePrompt.
@@ -2780,12 +2786,6 @@ abstract class AppLocalizations {
   /// **'Or enter any size you want (no limit)'**
   String get uploadSizeCustomLabel;
 
-  /// No description provided for @bundleBackendPending.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting on a backend endpoint for this'**
-  String get bundleBackendPending;
-
   /// No description provided for @supportOpenFailed.
   ///
   /// In en, this message translates to:
@@ -2875,30 +2875,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Call support'**
   String get supportCall;
-
-  /// No description provided for @bundleCreate.
-  ///
-  /// In en, this message translates to:
-  /// **'Create'**
-  String get bundleCreate;
-
-  /// No description provided for @bundleSelected.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} selected'**
-  String bundleSelected(int count);
-
-  /// No description provided for @bundleCreateLink.
-  ///
-  /// In en, this message translates to:
-  /// **'Create link'**
-  String get bundleCreateLink;
-
-  /// No description provided for @bundleUploadDrive.
-  ///
-  /// In en, this message translates to:
-  /// **'Upload to Drive'**
-  String get bundleUploadDrive;
 
   /// No description provided for @limitClampedTitle.
   ///

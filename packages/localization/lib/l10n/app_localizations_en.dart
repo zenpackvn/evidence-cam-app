@@ -33,9 +33,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toastPasswordChanged => 'Password changed';
 
   @override
-  String get toastUpgradeComingSoon => 'Plan upgrade — coming soon';
-
-  @override
   String get toastPurchaseApplied => 'New plan activated';
 
   @override
@@ -649,6 +646,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailPlayVideo => 'Play video';
 
   @override
+  String get detailCopyAssetLink => 'Copy link';
+
+  @override
+  String get assetLinkTitle => 'Evidence link';
+
+  @override
   String get detailDownloadVideo => 'Download video';
 
   @override
@@ -690,7 +693,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String ordersPendingEvidenceWarning(int count) {
-    return '$count evidence not uploaded · the dossier link will be incomplete';
+    return '$count evidence not uploaded · no copyable link yet';
   }
 
   @override
@@ -1523,9 +1526,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploadSizeCustomLabel => 'Or enter any size you want (no limit)';
 
   @override
-  String get bundleBackendPending => 'Waiting on a backend endpoint for this';
-
-  @override
   String get supportOpenFailed => 'Couldn’t open — check the app is installed';
 
   @override
@@ -1570,20 +1570,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get supportCall => 'Call support';
-
-  @override
-  String get bundleCreate => 'Create';
-
-  @override
-  String bundleSelected(int count) {
-    return '$count selected';
-  }
-
-  @override
-  String get bundleCreateLink => 'Create link';
-
-  @override
-  String get bundleUploadDrive => 'Upload to Drive';
 
   @override
   String get limitClampedTitle => 'Your plan does not allow this';
