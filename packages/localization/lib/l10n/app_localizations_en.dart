@@ -1365,6 +1365,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get shopDetailImageSize => 'Image size';
+
+  @override
+  String get shopDetailVideoSize => 'Video size';
+
+  @override
   String get shopDetailUploadSize => 'Max size/file';
 
   @override
@@ -1384,6 +1390,17 @@ class AppLocalizationsEn extends AppLocalizations {
     String chosen,
   ) {
     return 'Over the $megabytes MB recommendation for $platform — a file up to $chosen MB is still stored in full, but has to be sent as a dossier link instead of attached to the complaint form.';
+  }
+
+  @override
+  String get uploadSizeTitleVideo => 'Max size per video';
+
+  @override
+  String get uploadSizeTitleImage => 'Max size per photo';
+
+  @override
+  String uploadSizeDefaultValue(String value) {
+    return '$value MB (default)';
   }
 
   @override
@@ -1492,7 +1509,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Or enter the number of minutes you want';
 
   @override
-  String get uploadSizeCustomLabel => 'Or enter the size you want';
+  String get uploadSizeCustomLabel => 'Or enter any size you want (no limit)';
 
   @override
   String get bundleBackendPending => 'Waiting on a backend endpoint for this';

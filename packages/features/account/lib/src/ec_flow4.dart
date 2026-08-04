@@ -94,39 +94,34 @@ class EcAccountTabScreen extends StatelessWidget {
   /// hai chỗ lệch nhau là sinh ra khe hở hoặc phần xanh bị đè.
   static const _bannerHeight = 140.0;
 
+  /// Chiều cao khối cố định tính từ mép dưới tai thỏ: lề trên 26 + thẻ tài
+  /// khoản (đệm 16 mỗi phía quanh nội dung cao 62).
+  ///
+  /// Vùng cuộn lấy đúng số này làm lề trên. Lấy theo [_bannerHeight] như bản
+  /// trước là sai: đáy thẻ nằm thấp hơn đáy dải xanh, nên mục đầu tiên bị thẻ
+  /// che mất một phần ngay khi chưa cuộn.
+  static const _headerBlockHeight = 26.0 + 62.0 + 32.0;
+
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       backgroundColor: BrandColors.bg,
       child: Stack(
         children: [
-          // Dải xanh nằm dưới cùng lớp vẽ, thuộc phần cố định.
-          const Align(
-            alignment: Alignment.topCenter,
-            child: PenBrandBanner(height: _bannerHeight),
-          ),
-          SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                // Khối cố định: thẻ tài khoản trên nền dải xanh. Cùng kiểu bố
-                // cục với trang Vận đơn — phần trên đứng yên, phần dưới cuộn
-                // và DỪNG lại dưới nó, không trượt chồng lên.
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
-                  child: _UserRow(
-                    name: userName,
-                    email: userEmail,
-                    avatarPath: avatarPath,
-                    onTap: onProfileTap,
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
+          // Vùng cuộn chiếm toàn màn và vẽ TRƯỚC, nên nội dung trượt lên là
+          // chui xuống dưới dải xanh lẫn thẻ tài khoản. Lề trên đúng bằng đáy
+          // thẻ nên lúc chưa cuộn không có gì bị che.
+          Positioned.fill(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                18,
+                MediaQuery.paddingOf(context).top + _headerBlockHeight,
+                18,
+                0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                         _SectionHeader(context.l10n.accountSectionApp, top: 38),
                         _SettingsGroup(
                           rows: [
@@ -192,29 +187,51 @@ class EcAccountTabScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        _AppFooter(version: appVersion),
-                      ],
-                    ),
-                  ),
-                ),
-                _BottomNav(
-                  active: _NavTab.account,
-                  onOrders: onNavOrders,
-                  onCapture: onNavCapture,
-                ),
-              ],
+                  _AppFooter(version: appVersion),
+                  // Chừa chỗ cho thanh tab nổi bên dưới, nếu không mục cuối
+                  // nằm khuất sau nó. Cùng nguồn số với chỗ kê nút liên hệ.
+                  SizedBox(height: PenTabBar.heightOf(context) + 16),
+                ],
+              ),
+            ),
+          ),
+          // Dải xanh khoá, vẽ SAU vùng cuộn nên nội dung chui xuống dưới nó.
+          const Align(
+            alignment: Alignment.topCenter,
+            child: PenBrandBanner(height: _bannerHeight),
+          ),
+          // Thẻ tài khoản khoá, nằm trên cùng.
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
+              child: _UserRow(
+                name: userName,
+                email: userEmail,
+                avatarPath: avatarPath,
+                onTap: onProfileTap,
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: _BottomNav(
+              active: _NavTab.account,
+              onOrders: onNavOrders,
+              onCapture: onNavCapture,
             ),
           ),
           // Cụm liên hệ nổi ở góc phải dưới. Nằm trong Stack nên nó không cuộn
           // theo nội dung — người cần hỗ trợ thường đang bí, bắt họ cuộn tìm
           // là thêm một rào nữa.
           //
-          // Kê lên đúng chiều cao thanh tab (82) cộng vùng an toàn đáy máy, để
-          // nút dưới cùng không đè lên mục "Tài khoản" của thanh điều hướng —
-          // đè lên là bấm nhầm sang tab khác thay vì gọi hỗ trợ.
+          // Kê lên đúng chiều cao thật của thanh tab, để nút dưới cùng không
+          // đè lên mục "Tài khoản" — đè lên là bấm nhầm sang tab khác thay vì
+          // gọi hỗ trợ. Lấy từ `PenTabBar.heightOf` chứ không chép số: bản
+          // trước chép 82 trong khi thanh cao 92, lệch đúng 10pt.
           Positioned(
             right: 16,
-            bottom: 82 + 12 + MediaQuery.paddingOf(context).bottom,
+            bottom: PenTabBar.heightOf(context) + 12,
             child: _SupportContactColumn(
               onFacebook: onFacebook,
               onZalo: onZalo,
@@ -513,7 +530,11 @@ class EcLoginMethodsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _LoginMethodRow(
-                      icon: Icons.mail_outline,
+                      icon: const Icon(
+                        Icons.mail_outline,
+                        size: 24,
+                        color: BrandColors.ink,
+                      ),
                       name: 'Email',
                       detail: email,
                       linked: true,
@@ -521,7 +542,13 @@ class EcLoginMethodsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     _LoginMethodRow(
-                      icon: Icons.g_mobiledata,
+                      // `Icons.g_mobiledata` chỉ vẽ chữ "G" trần, nhìn như
+                      // thiếu icon chứ không phải logo Google.
+                      icon: const FaIcon(
+                        FontAwesomeIcons.google,
+                        size: 20,
+                        color: BrandColors.ink,
+                      ),
                       name: 'Google',
                       detail: googleLinked
                           ? context.l10n.linkLinked
@@ -532,7 +559,11 @@ class EcLoginMethodsScreen extends StatelessWidget {
                     if (showApple || appleLinked) ...[
                       const SizedBox(height: 10),
                       _LoginMethodRow(
-                        icon: Icons.apple,
+                        icon: const Icon(
+                          Icons.apple,
+                          size: 24,
+                          color: BrandColors.ink,
+                        ),
                         name: 'Apple',
                         detail: appleLinked
                             ? context.l10n.linkLinked
@@ -568,7 +599,7 @@ class _LoginMethodRow extends StatelessWidget {
     this.isIdentity = false,
     this.onToggle,
   });
-  final IconData icon;
+  final Widget icon;
   final String name;
   final String detail;
   final bool linked;
@@ -585,7 +616,10 @@ class _LoginMethodRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 24, color: BrandColors.ink),
+          // Nhận thẳng widget: logo Google nằm ở bộ Font Awesome (`FaIcon`),
+          // còn Apple/Email dùng bộ Material — hai kiểu `IconData` khác nhau
+          // nên không gói chung một tham số được.
+          SizedBox(width: 26, child: Center(child: icon)),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -1813,6 +1847,40 @@ class _SimpleHeader extends StatelessWidget {
   }
 }
 
+/// Ảnh đại diện từ đường dẫn file trên máy HOẶC URL công khai.
+///
+/// Hai nguồn vì ảnh vừa chọn nằm trên máy (hiện ngay, không chờ mạng), còn
+/// máy mới hay sau khi cài lại app thì chỉ có URL trên hồ sơ Firebase.
+/// `null` khi không dựng được, để chỗ gọi rơi về icon mặc định.
+Widget? _avatarImage(String? path, {required double size}) {
+  if (path == null || path.isEmpty) return null;
+  if (path.startsWith('http')) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+      ),
+    );
+  }
+  final file = File(path);
+  if (!file.existsSync()) return null;
+  return SizedBox(
+    width: size,
+    height: size,
+    child: Image.file(
+      file,
+      fit: BoxFit.cover,
+      // Avatar được ghi đè lên cùng đường dẫn mỗi lần đổi, nên riêng đường dẫn
+      // không đủ làm khoá bộ nhớ đệm — thiếu dòng này thì ảnh mới vẫn hiện bản
+      // cũ cho tới khi khởi động lại app.
+      key: ValueKey(file.lastModifiedSync()),
+    ),
+  );
+}
+
 class _UserRow extends StatelessWidget {
   const _UserRow({
     required this.name,
@@ -1828,9 +1896,7 @@ class _UserRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final path = avatarPath;
-    final file = path == null ? null : File(path);
-    final hasLocalFile = file?.existsSync() ?? false;
+    final image = _avatarImage(avatarPath, size: 62);
     return PenCard(
       stroke: null,
       gap: 16,
@@ -1850,20 +1916,8 @@ class _UserRow extends StatelessWidget {
           main: MainAxisAlignment.center,
           cross: CrossAxisAlignment.center,
           children: [
-            if (!hasLocalFile)
-              const Icon(LucideIcons.user, size: 34, color: PenColors.ink)
-            else
-              SizedBox.expand(
-                child: Image.file(
-                  file!,
-                  fit: BoxFit.cover,
-                  // Avatars are re-saved to the same path each time, so the
-                  // path alone isn't a valid cache key — without this, a
-                  // freshly changed photo keeps showing the stale decoded
-                  // image until the app restarts.
-                  key: ValueKey(file.lastModifiedSync()),
-                ),
-              ),
+            image ??
+                const Icon(LucideIcons.user, size: 34, color: PenColors.ink),
           ],
         ),
         Expanded(
@@ -2363,8 +2417,9 @@ class _AvatarPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final path = avatarPath;
-    final file = path == null ? null : File(path);
+    final file = path == null || path.startsWith('http') ? null : File(path);
     final hasLocalFile = file?.existsSync() ?? false;
+    final image = _avatarImage(path, size: 124);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -2389,20 +2444,12 @@ class _AvatarPicker extends StatelessWidget {
                   main: MainAxisAlignment.center,
                   cross: CrossAxisAlignment.center,
                   children: [
-                    if (!hasLocalFile)
-                      const Icon(
-                        LucideIcons.user,
-                        size: 56,
-                        color: PenColors.ink,
-                      )
-                    else
-                      SizedBox.expand(
-                        child: Image.file(
-                          file!,
-                          fit: BoxFit.cover,
-                          key: ValueKey(file.lastModifiedSync()),
+                    image ??
+                        const Icon(
+                          LucideIcons.user,
+                          size: 56,
+                          color: PenColors.ink,
                         ),
-                      ),
                   ],
                 ),
               ),

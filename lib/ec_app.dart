@@ -817,7 +817,10 @@ class _AccountRouteState extends State<_AccountRoute> {
             passwordActionLabel: user?.hasPassword == false
                 ? context.l10n.accountCreatePassword
                 : context.l10n.accountChangePassword,
-            avatarPath: _appMemory()?.getString(_avatarPathKey(user?.uid)),
+            // Ưu tiên bản trên máy (hiện ngay, không chờ mạng); chưa có thì
+            // dùng URL trên hồ sơ Firebase — đường này phục vụ máy mới hoặc
+            // sau khi cài lại app.
+            avatarPath: _rememberedAvatar(user?.uid) ?? user?.photoUrl,
             onNavOrders: () => context.go('/home'),
             onNavCapture: () => context.go('/record'),
             onFacebook: () => _openSupport(context, _kSupportFacebook),
@@ -914,25 +917,40 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
     final name = _name.text.trim();
     final phone = _phone.text.trim();
     try {
-      await widget.auth.updateProfile(name: name, phone: phone);
       var avatarPath = _avatarPath;
       if (avatarPath != null) {
         avatarPath = await _persistAvatarFile(
           avatarPath,
           widget.auth.currentUser?.uid,
         );
+        // Nhớ bản trên máy TRƯỚC mọi lời gọi mạng: ảnh đã nằm sẵn đó, không lý
+        // do gì để một lỗi mạng làm mất lựa chọn của người dùng. Bản này cũng
+        // là thứ hiển thị ngay trong lúc chờ tải lên.
+        await _rememberAvatar(widget.auth.currentUser?.uid, avatarPath);
       }
+
+      // Tải ảnh lên rồi ghi URL công khai vào hồ sơ Firebase — nhờ vậy ảnh
+      // theo tài khoản, đăng nhập máy nào cũng có. Tải hỏng (backend chưa mở
+      // endpoint, mất mạng) thì bỏ qua: tên và SĐT vẫn lưu được, ảnh vẫn hiện
+      // từ bản trên máy.
+      String? avatarUrl;
+      if (avatarPath != null) {
+        try {
+          avatarUrl = await widget.repo.uploadAvatar(avatarPath);
+        } on Object {
+          avatarUrl = null;
+        }
+      }
+      await widget.auth.updateProfile(
+        name: name,
+        phone: phone,
+        photoUrl: avatarUrl,
+      );
       await widget.repo.updateProfile(
         name: name,
         phone: phone,
-        avatarUrl: avatarPath,
+        avatarUrl: avatarUrl ?? avatarPath,
       );
-      if (avatarPath != null) {
-        await _appMemory()?.setString(
-          _avatarPathKey(widget.auth.currentUser?.uid),
-          avatarPath,
-        );
-      }
       if (!mounted) return;
       context.pop();
       _toast(context, context.l10n.toastInfoSaved);
@@ -1826,6 +1844,30 @@ Future<void> _copyText(BuildContext context, String text, String label) async {
   if (context.mounted) _toast(context, context.l10n.copiedLabel(label));
 }
 
+/// Ba dòng nung vào clip lúc xuất, khớp với lớp chữ của màn ghi hình.
+///
+/// Giờ nung là mốc BẮT ĐẦU quay, đứng im suốt clip: ffmpeg chỉ chạy được đồng
+/// hồ đếm bằng `drawtext`, mà bộ lọc đó đòi một file font nằm sẵn trên đĩa —
+/// app không đóng gói font nào, nên chữ có dấu sẽ hỏng. Mốc bắt đầu cũng là
+/// mốc có nghĩa nhất với người nhận bằng chứng.
+///
+/// Thiếu mốc epoch (bằng chứng cũ) thì lùi về chuỗi đã định dạng sẵn, còn hơn
+/// giao ra một clip không có giờ nào.
+List<String> _stampLines(EcVideoDetail video, String tracking) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  final at = video.capturedAtMs;
+  final code = tracking.isNotEmpty ? tracking : (video.tracking ?? '');
+  if (at == null) {
+    return [video.recordedAt, if (code.isNotEmpty) code];
+  }
+  final d = DateTime.fromMillisecondsSinceEpoch(at);
+  return [
+    '${two(d.day)}/${two(d.month)}/${d.year}',
+    '${two(d.hour)}:${two(d.minute)}:${two(d.second)}',
+    if (code.isNotEmpty) code,
+  ];
+}
+
 Future<void> _downloadAndShareVideo(
   BuildContext context,
   Dio dio,
@@ -1843,17 +1885,13 @@ Future<void> _downloadAndShareVideo(
     var path = '${dir.path}/$filename';
     await _downloadWithRetry(dio, url, path);
     if (!context.mounted) return;
-    // Đóng dấu mã đơn / thời điểm / chặng quay lên góc trái trước khi giao file
-    // ra ngoài: rời khỏi app thì clip chỉ còn là một mp4 trần, người nhận không
-    // có cách nào biết nó của đơn nào. Hỏng dấu thì `stamp` trả lại bản gốc,
-    // người dùng vẫn cầm được file.
+    // Nung đúng ba dòng màn ghi hình đã hiện — ngày, giờ đến giây, mã vận đơn
+    // — trước khi giao file ra ngoài: rời khỏi app thì clip chỉ còn là một mp4
+    // trần, người nhận không có cách nào biết nó của đơn nào. Hỏng dấu thì
+    // `stamp` trả lại bản gốc, người dùng vẫn cầm được file.
     final stamped = await EcVideoStampService().stamp(
       path,
-      lines: [
-        if (tracking.isNotEmpty) tracking,
-        video.recordedAt,
-        video.title,
-      ],
+      lines: _stampLines(video, tracking),
     );
     if (stamped != path) await _deleteQuietly(path);
     path = stamped;
@@ -2213,12 +2251,89 @@ Future<bool> _confirmManualTracking(
   }
 }
 
+/// Khoá lưu trần dung lượng người dùng tự đặt, theo từng shop.
+String _sizeKey(String shopId, EcUploadKind kind) =>
+    'shop.$shopId.max${kind == EcUploadKind.image ? 'Image' : 'Video'}Bytes';
+
+/// Ảnh đại diện vừa chọn, giữ trong bộ nhớ tiến trình.
+///
+/// Cùng lý do với [_sizeCapCache]: `KeyValueStore` lấy qua service locator có
+/// thể chưa đăng ký, lúc đó `setString` im lặng không làm gì và ảnh vừa chọn
+/// biến mất ngay khi trang Tài khoản dựng lại.
+final _avatarCache = <String, String>{};
+
+Future<void> _rememberAvatar(String? uid, String path) {
+  final key = _avatarPathKey(uid);
+  _avatarCache[key] = path;
+  return _appMemory()?.setString(key, path) ?? Future<void>.value();
+}
+
+String? _rememberedAvatar(String? uid) {
+  final key = _avatarPathKey(uid);
+  final cached = _avatarCache[key];
+  if (cached != null) return cached;
+  final saved = _appMemory()?.getString(key);
+  if (saved != null) _avatarCache[key] = saved;
+  return saved;
+}
+
+/// Trần dung lượng người dùng vừa đặt, giữ trong bộ nhớ tiến trình.
+///
+/// Có bản nhớ này vì `KeyValueStore` lấy qua service locator có thể chưa đăng
+/// ký — lúc đó `setString` im lặng không làm gì và lựa chọn biến mất ngay khi
+/// màn cài đặt nạp lại, không một dấu hiệu nào. Map này luôn có mặt nên trong
+/// phiên hiện tại con số chắc chắn hiển thị đúng; đĩa chỉ là lớp bền hoá thêm.
+final _sizeCapCache = <String, int>{};
+
+/// Ghi nhớ trần vừa đặt.
+///
+/// `PATCH /api/shops/{id}` hiện chưa nhận `max_image_bytes`/`max_video_bytes`,
+/// nên con số gửi lên không quay về trong phản hồi và màn cài đặt lại hiện 0
+/// như chưa đặt gì. Nhớ tại chỗ để lựa chọn có hiệu lực ngay; lời gọi API vẫn
+/// giữ nguyên nên khi backend mở hai trường đó, server thành nguồn chuẩn.
+Future<void> _rememberSizeCap(String shopId, EcUploadKind kind, int bytes) {
+  final key = _sizeKey(shopId, kind);
+  _sizeCapCache[key] = bytes;
+  return _appMemory()?.setString(key, '$bytes') ?? Future<void>.value();
+}
+
+int _rememberedSizeCap(String shopId, EcUploadKind kind, int fromServer) {
+  // Lựa chọn của người dùng THẮNG giá trị server.
+  //
+  // Bản trước ưu tiên server, nhưng `max_video_bytes`/`max_image_bytes` mà
+  // server trả về là trần của SÀN (30MB, 5MB) chứ không phải mức shop đặt —
+  // nó luôn khác 0, nên con số vừa nhập không bao giờ được dùng và màn cài
+  // đặt cứ hiện 30 như chưa đổi gì. Khi backend nhận hai trường đó thật thì
+  // đảo lại thứ tự này.
+  final key = _sizeKey(shopId, kind);
+  final cached = _sizeCapCache[key];
+  if (cached != null) return cached;
+  final saved = _appMemory()?.getString(key);
+  final parsed = int.tryParse(saved ?? '');
+  if (parsed != null) {
+    _sizeCapCache[key] = parsed;
+    return parsed;
+  }
+  // Chưa đặt gì thì lấy mức đề xuất của LOẠI, KHÔNG lấy con số server trả.
+  // Server trả trần của sàn — với ảnh nó là 10MB, trong khi mức đề xuất của
+  // app là 5MB; hiện 10 làm người dùng tưởng shop đã đặt mức đó.
+  return kind.defaultMegabytes * 1000000;
+}
+
 ClipBudget _budgetFromDto(ShopDto shop) => ClipBudget(
   seconds: shop.clipSeconds,
   recommendedSeconds: shop.recommendedClipSeconds,
   planMaxSeconds: shop.planMaxClipSeconds,
-  maxImageBytes: shop.maxImageBytes,
-  maxVideoBytes: shop.maxVideoBytes,
+  maxImageBytes: _rememberedSizeCap(
+    shop.id,
+    EcUploadKind.image,
+    shop.maxImageBytes,
+  ),
+  maxVideoBytes: _rememberedSizeCap(
+    shop.id,
+    EcUploadKind.video,
+    shop.maxVideoBytes,
+  ),
   uploadBytes: shop.uploadBytes,
   platformLimitsVerified: shop.platformLimitsVerified,
 );
@@ -2574,7 +2689,8 @@ class _ShopDetailRoute extends StatefulWidget {
     this.onInviteMember,
     this.onTapResolution,
     this.onTapClipDuration,
-    this.onTapUploadSize,
+    this.onTapImageSize,
+    this.onTapVideoSize,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
@@ -2587,7 +2703,8 @@ class _ShopDetailRoute extends StatefulWidget {
   final Future<void> Function()? onInviteMember;
   final Future<void> Function()? onTapResolution;
   final Future<void> Function()? onTapClipDuration;
-  final Future<void> Function()? onTapUploadSize;
+  final Future<void> Function()? onTapImageSize;
+  final Future<void> Function()? onTapVideoSize;
   final Future<void> Function(EcVideoType type)? onEditType;
   final Future<void> Function(EcVideoType type)? onDeleteType;
   final Future<void> Function()? onAddType;
@@ -2665,9 +2782,14 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
               : () => widget.onTapClipDuration!().then((_) {
                   if (mounted) _retry();
                 }),
-          onTapUploadSize: widget.onTapUploadSize == null
+          onTapImageSize: widget.onTapImageSize == null
               ? null
-              : () => widget.onTapUploadSize!().then((_) {
+              : () => widget.onTapImageSize!().then((_) {
+                  if (mounted) _retry();
+                }),
+          onTapVideoSize: widget.onTapVideoSize == null
+              ? null
+              : () => widget.onTapVideoSize!().then((_) {
                   if (mounted) _retry();
                 }),
           onEditType: widget.onEditType == null
@@ -2986,12 +3108,22 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   /// hiển thị trang bị dọn sạch để thanh phân trang biến mất.
   static const _unpaged = EcOrderPage();
 
-  EcOrderPage _pageOf(OrderPageDto dto) => EcOrderPage(
-    page: dto.page,
-    total: dto.total,
-    pageSize: dto.pageSize,
-    shown: dto.items.length,
-  );
+  /// Chuyển trang từ backend sang mô hình của danh sách.
+  ///
+  /// Tổng số đơn bị KẸP lại khi trang trả về chưa đầy: một trang thiếu chỗ là
+  /// trang cuối, không thể có trang sau. Header `X-Total-Count` đếm theo phạm
+  /// vi riêng của backend nên có lúc lớn hơn số đơn thật sự lọc ra — tin thẳng
+  /// vào nó là vẽ ra trang 2, trang 3 rỗng cho một danh sách 3 mã.
+  EcOrderPage _pageOf(OrderPageDto dto) {
+    final shown = dto.items.length;
+    final lastIfShort = (dto.page - 1) * dto.pageSize + shown;
+    return EcOrderPage(
+      page: dto.page,
+      total: shown < dto.pageSize ? lastIfShort : dto.total,
+      pageSize: dto.pageSize,
+      shown: shown,
+    );
+  }
 
   @override
   void initState() {
@@ -3207,6 +3339,9 @@ class _OrdersRouteState extends State<_OrdersRoute> {
           : _hhmm(DateTime.fromMillisecondsSinceEpoch(capturedAt)),
       type: o.latestType ?? l10n.orderNoEvidence,
       videoCount: _evidenceCount(o),
+      // Ưu tiên lần quay gần nhất; đơn chưa có bằng chứng thì lấy lúc tạo đơn.
+      // Dùng cho việc lọc theo khoảng thời gian ngay tại chỗ.
+      capturedAtMs: capturedAt ?? o.createdAt,
       errorCount: _errorCount(o),
       pendingCount: o.pendingCount,
       thumbUrl: o.latestThumbUrl,
@@ -3483,7 +3618,11 @@ class _OrderRouteState extends State<_OrderRoute> {
                     evidenceId: video.id,
                     canDelete: widget.shop.role != 'staff',
                     tracking: widget.order.tracking,
-                    video: _videoDetail(context.l10n, video),
+                    video: _videoDetail(
+                      context.l10n,
+                      video,
+                      tracking: widget.order.tracking,
+                    ),
                   ),
                 )
                 // Chỉ nạp lại khi chi tiết báo có thay đổi. Kéo sheet xuống
@@ -3500,7 +3639,11 @@ class _OrderRouteState extends State<_OrderRoute> {
                     evidenceId: video.id,
                     canDelete: widget.shop.role != 'staff',
                     tracking: widget.order.tracking,
-                    video: _videoDetail(context.l10n, video),
+                    video: _videoDetail(
+                      context.l10n,
+                      video,
+                      tracking: widget.order.tracking,
+                    ),
                   ),
                 )
                 // Chỉ nạp lại khi chi tiết báo có thay đổi. Kéo sheet xuống
@@ -3612,8 +3755,13 @@ class _VideoPlayerRoute extends StatefulWidget {
     required this.recordedAt,
     required this.url,
     required this.service,
+    this.capturedAtMs,
+    this.tracking,
     this.onBack,
   });
+
+  final int? capturedAtMs;
+  final String? tracking;
 
   final String title;
 
@@ -3628,48 +3776,107 @@ class _VideoPlayerRoute extends StatefulWidget {
   State<_VideoPlayerRoute> createState() => _VideoPlayerRouteState();
 }
 
-/// Nhãn mã vận đơn + giờ quay vẽ đè lên khung hình lúc phát.
+/// Ngày / giờ / mã vận đơn vẽ đè lên khung hình lúc phát lại.
 ///
-/// Thay cho việc nung chữ vào file lúc quay: nung chữ bắt buộc phải encode lại
+/// Dựng lại đúng khối mà màn ghi hình hiện ở góc phải, trừ nút back và chip
+/// tải lên — hai thứ đó là điều khiển của app, không phải thông tin bằng
+/// chứng. Xem lại clip phải đọc được y như lúc quay.
+///
+/// Vẽ lúc phát chứ không nung vào file: nung chữ bắt buộc phải encode lại
 /// video, tức là file không còn là chuỗi byte gốc từ cảm biến — đúng thứ FR-07
-/// cấm. Vẽ lúc phát giữ file nguyên vẹn mà ảnh chụp màn hình gửi sàn vẫn mang
-/// đủ mã và giờ.
-///
-/// ponytail: chỉ hai dữ kiện. Pin và trạng thái mạng mà bản nung chữ cũ có thì
-/// chưa bao giờ được lưu lại, nên không dựng lại được ở đây — muốn có thì phải
-/// ghi chúng lúc quay trước đã.
+/// cấm. Bản tải về / gửi đi mới nung, và nung đúng ba dòng này.
 class _PlaybackStamp extends StatelessWidget {
-  const _PlaybackStamp({required this.title, required this.recordedAt});
+  const _PlaybackStamp({
+    required this.title,
+    required this.recordedAt,
+    required this.position,
+    this.capturedAtMs,
+    this.tracking,
+  });
 
   final String title;
   final String recordedAt;
 
-  static const _style = TextStyle(
+  /// Vị trí đang phát, cộng vào [capturedAtMs] để đồng hồ chạy theo clip thay
+  /// vì đứng im ở giây bấm quay.
+  final Duration position;
+  final int? capturedAtMs;
+  final String? tracking;
+
+  static TextStyle _style(double size, FontWeight weight) => TextStyle(
     color: Colors.white,
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
-    shadows: [
-      Shadow(color: Color(0xE6000000), blurRadius: 3, offset: Offset(0, 1)),
+    fontSize: size,
+    height: 1.25,
+    fontWeight: weight,
+    shadows: const [
+      Shadow(color: Color(0xCC000000), blurRadius: 6),
+      Shadow(color: Color(0x99000000), offset: Offset(0, 1)),
     ],
   );
 
+  static String _two(int n) => n.toString().padLeft(2, '0');
+
   @override
-  Widget build(BuildContext context) => Positioned(
-    top: 8,
-    left: 8,
-    right: 8,
-    child: IgnorePointer(
-      child: Row(
-        children: [
-          Flexible(
-            child: Text(title, overflow: TextOverflow.ellipsis, style: _style),
+  Widget build(BuildContext context) {
+    final startedAt = capturedAtMs;
+    // Bằng chứng cũ không lưu mốc epoch — giữ nguyên nhãn một dòng cũ thay vì
+    // dựng một đồng hồ bịa từ chuỗi đã định dạng sẵn.
+    if (startedAt == null) {
+      return Positioned(
+        top: 8,
+        left: 8,
+        right: 8,
+        child: IgnorePointer(
+          child: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: _style(12, FontWeight.w600),
+                ),
+              ),
+              const Spacer(),
+              Text(recordedAt, style: _style(12, FontWeight.w600)),
+            ],
           ),
-          const Spacer(),
-          Text(recordedAt, style: _style),
-        ],
+        ),
+      );
+    }
+    final now = DateTime.fromMillisecondsSinceEpoch(
+      startedAt,
+    ).add(position);
+    final code = tracking ?? '';
+    return Positioned(
+      top: 8,
+      right: 8,
+      child: IgnorePointer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${_two(now.day)}/${_two(now.month)}/${now.year}',
+              style: _style(15, FontWeight.w500),
+              softWrap: false,
+            ),
+            Text(
+              '${_two(now.hour)}:${_two(now.minute)}:${_two(now.second)}',
+              style: _style(22, FontWeight.w700),
+              softWrap: false,
+            ),
+            if (code.isNotEmpty)
+              Text(
+                code,
+                style: _style(15, FontWeight.w600),
+                softWrap: false,
+                overflow: TextOverflow.visible,
+              ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
@@ -3819,6 +4026,9 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                                   _PlaybackStamp(
                                     title: widget.title,
                                     recordedAt: widget.recordedAt,
+                                    capturedAtMs: widget.capturedAtMs,
+                                    tracking: widget.tracking,
+                                    position: value.position,
                                   ),
                                   AnimatedOpacity(
                                     opacity: value.isPlaying ? 0 : 1,
@@ -3941,7 +4151,14 @@ class _VideoPlayerRouteExtra {
     required this.recordedAt,
     required this.url,
     required this.videoPlayerService,
+    this.capturedAtMs,
+    this.tracking,
   });
+
+  /// Mốc quay + mã vận đơn, để lớp chữ lúc phát dựng lại đúng cái màn ghi hình
+  /// đã hiện.
+  final int? capturedAtMs;
+  final String? tracking;
 
   final String title;
 
@@ -4015,6 +4232,7 @@ List<EcTimelineDay> _timelineDays(
               'expired' => Icons.history_toggle_off,
               _ => null,
             },
+            capturedAtMs: item.capturedAt,
             recordedAt: '${_dateLabel(captured)} · ${_hhmm(captured)}',
             recordedBy:
                 (item.createdByUid == null
@@ -4064,17 +4282,22 @@ String _expiredLabel(AppLocalizations l10n, int? retentionExpiresAt) {
   return l10n.expiredOnDate(_dateLabel(expired));
 }
 
-EcVideoDetail _videoDetail(AppLocalizations l10n, EcTimelineVideo video) =>
-    EcVideoDetail(
-      title: video.label,
-      duration: _durationLabel(video.durationSeconds),
-      recordedAt: video.recordedAt ?? video.time,
-      recordedBy: video.recordedBy ?? l10n.recordedByFallback,
-      device: video.device ?? l10n.deviceUnknown,
-      uploadStatus: video.uploadStatus ?? l10n.uploadStatusDone,
-      mediaUrl: video.mediaUrl,
-      type: video.type,
-    );
+EcVideoDetail _videoDetail(
+  AppLocalizations l10n,
+  EcTimelineVideo video, {
+  String tracking = '',
+}) => EcVideoDetail(
+  capturedAtMs: video.capturedAtMs,
+  tracking: tracking,
+  title: video.label,
+  duration: _durationLabel(video.durationSeconds),
+  recordedAt: video.recordedAt ?? video.time,
+  recordedBy: video.recordedBy ?? l10n.recordedByFallback,
+  device: video.device ?? l10n.deviceUnknown,
+  uploadStatus: video.uploadStatus ?? l10n.uploadStatusDone,
+  mediaUrl: video.mediaUrl,
+  type: video.type,
+);
 
 /// Formats a recorded clip length as `mm:ss`. Photos and evidence captured
 /// before this field existed have no duration — falls back to `—`.
@@ -4592,6 +4815,28 @@ GoRouter _buildRouter(
                                             ),
                                           )
                                           .then((_) {}),
+                                      // Đường vào thứ hai của màn chi tiết cửa
+                                      // hàng (từ sheet chọn loại). Thiếu hai
+                                      // callback này thì hai hàng dung lượng
+                                      // vẫn vẽ ra nhưng bấm không ra gì.
+                                      onTapImageSize: () => router
+                                          .push<void>(
+                                            '/upload-size',
+                                            extra: (
+                                              shop.id,
+                                              EcUploadKind.image,
+                                            ),
+                                          )
+                                          .then((_) {}),
+                                      onTapVideoSize: () => router
+                                          .push<void>(
+                                            '/upload-size',
+                                            extra: (
+                                              shop.id,
+                                              EcUploadKind.video,
+                                            ),
+                                          )
+                                          .then((_) {}),
                                       onInviteMember: () => router
                                           .push(
                                             '/invite-member',
@@ -4749,6 +4994,8 @@ GoRouter _buildRouter(
                     extra: _VideoPlayerRouteExtra(
                       title: extra!.video.title,
                       recordedAt: extra.video.recordedAt,
+                      capturedAtMs: extra.video.capturedAtMs,
+                      tracking: extra.tracking,
                       url: url,
                       videoPlayerService: videoPlayer,
                     ),
@@ -4902,6 +5149,8 @@ GoRouter _buildRouter(
           return _VideoPlayerRoute(
             title: extra.title,
             recordedAt: extra.recordedAt,
+            capturedAtMs: extra.capturedAtMs,
+            tracking: extra.tracking,
             url: extra.url,
             service: extra.videoPlayerService,
             onBack: () => c.pop(),
@@ -5012,8 +5261,18 @@ GoRouter _buildRouter(
                 c.push<void>('/resolution', extra: shop.id).then((_) {}),
             onTapClipDuration: () =>
                 c.push<void>('/clip-duration', extra: shop.id).then((_) {}),
-            onTapUploadSize: () =>
-                c.push<void>('/upload-size', extra: shop.id).then((_) {}),
+            onTapImageSize: () => c
+                .push<void>(
+                  '/upload-size',
+                  extra: (shop.id, EcUploadKind.image),
+                )
+                .then((_) {}),
+            onTapVideoSize: () => c
+                .push<void>(
+                  '/upload-size',
+                  extra: (shop.id, EcUploadKind.video),
+                )
+                .then((_) {}),
             onEditType: (type) =>
                 c.push('/create-type', extra: (shop.id, type)).then((_) {}),
             onDeleteType: (type) =>
@@ -5259,34 +5518,67 @@ GoRouter _buildRouter(
         path: '/upload-size',
         pageBuilder: (c, s) {
           final shop = _selected(selectedShop);
-          final shopId = s.extra is String
-              ? s.extra! as String
-              : shop?.id ?? '';
+          // `extra` mang theo CẢ id shop lẫn loại bằng chứng.
+          //
+          // Trước đây chỉ mang loại, còn id lấy từ `selectedShop` — mà màn chi
+          // tiết cửa hàng mở được cả khi `selectedShop` chưa đặt, lúc đó id là
+          // chuỗi rỗng. Ghi vào khoá `shop..maxVideoBytes` rồi đọc ở khoá
+          // `shop.<id thật>.maxVideoBytes`: hai khoá khác nhau nên con số vừa
+          // nhập không bao giờ đọc lại được.
+          final extra = s.extra;
+          final (shopId, kind) = extra is (String, EcUploadKind)
+              ? extra
+              : (shop?.id ?? '', EcUploadKind.video);
           return _modalPage(
             s,
             EcUploadSizeSheetScreen(
               budget: shop?.clipBudget ?? ClipBudget.fallback,
               platformLabel: _platformDisplayName(shop?.platform ?? 'other'),
-              onSelect: (bytes) {
-                repo
-                    .updateShop(shopId, maxUploadBytes: bytes)
-                    .then((updated) {
-                      if (!c.mounted) return;
-                      final current = _selected(selectedShop);
-                      if (current?.id == updated.id) {
-                        selectedShop.value = _shopFromDto(updated);
-                      }
-                      c.pop();
-                      _toast(
-                        c,
-                        c.l10n.uploadSizeChanged(
-                          ClipBudget.megabytesLabel(updated.uploadBytes),
-                        ),
-                      );
-                    })
-                    .catchError((Object error) {
-                      if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
-                    });
+              kind: kind,
+              // Đọc thẳng từ bản nhớ, không qua `selectedShop`: biến đó không
+              // được làm mới sau khi lưu nên sheet mở lại sẽ hiện mức mặc
+              // định thay vì con số vừa nhập.
+              currentMb: _rememberedSizeCap(shopId, kind, 0) ~/ 1000000,
+              onSelect: (bytes) async {
+                final id = shopId.isEmpty ? (shop?.id ?? '') : shopId;
+                assert(id.isNotEmpty, 'thiếu shopId khi lưu trần dung lượng');
+                // Ghi nhớ rồi ĐÓNG NGAY, không chờ server.
+                //
+                // Bản trước chỉ đóng sheet trong nhánh thành công của
+                // `updateShop`. Backend chưa nhận `max_image_bytes` /
+                // `max_video_bytes` nên lời gọi ném lỗi, nhánh đó không bao
+                // giờ chạy — bấm "Áp dụng" xong sheet đứng im, nhìn y như nút
+                // hỏng.
+                await _rememberSizeCap(id, kind, bytes);
+                if (!c.mounted) return;
+                c.pop();
+                _toast(
+                  c,
+                  c.l10n.uploadSizeChanged(ClipBudget.megabytesLabel(bytes)),
+                );
+                // Đồng bộ ngầm: thành công thì server thành nguồn chuẩn, hỏng
+                // thì bản nhớ tại chỗ vẫn giữ lựa chọn của người dùng.
+                unawaited(
+                  repo
+                      .updateShop(
+                        id,
+                        maxImageBytes: kind == EcUploadKind.image
+                            ? bytes
+                            : null,
+                        maxVideoBytes: kind == EcUploadKind.video
+                            ? bytes
+                            : null,
+                      )
+                      .then((updated) {
+                        final current = _selected(selectedShop);
+                        if (current?.id == updated.id) {
+                          selectedShop.value = _shopFromDto(updated);
+                        }
+                      })
+                      .catchError((Object _) {
+                        // Xem trên: lựa chọn đã nằm trong bản nhớ tại chỗ.
+                      }),
+                );
               },
             ),
           );

@@ -1,6 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 
-import 'package:network/network.dart' show Dio, Options, Response;
+import 'package:network/network.dart' show Dio, Headers, Options, Response;
 
 import 'ec_models.dart';
 
@@ -11,6 +12,14 @@ import 'ec_models.dart';
 ///
 /// Presentational screens wire to live data by calling the matching method here
 /// once the Worker URL is set.
+String _avatarContentTypeOf(String path) {
+  final lower = path.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.heic')) return 'image/heic';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  return 'image/jpeg';
+}
+
 class EcApi {
   const EcApi(this._dio);
 
@@ -83,6 +92,8 @@ class EcApi {
     String? resolution,
     int? maxClipSeconds,
     int? maxUploadBytes,
+    int? maxImageBytes,
+    int? maxVideoBytes,
   }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/api/shops/$shopId',
@@ -92,6 +103,11 @@ class EcApi {
         'resolution': ?resolution,
         'max_clip_seconds': ?maxClipSeconds,
         'max_upload_bytes': ?maxUploadBytes,
+        // Trần riêng cho ảnh và cho video. Trước đây chỉ có một trần chung,
+        // nhưng ảnh đính kèm nhẹ hơn clip cả bậc — dùng chung một con số thì
+        // hoặc ảnh được nới quá tay, hoặc video bị siết oan.
+        'max_image_bytes': ?maxImageBytes,
+        'max_video_bytes': ?maxVideoBytes,
       },
     );
     return ShopDto.fromJson(res.data!);
@@ -275,6 +291,35 @@ class EcApi {
     } on Object {
       return null;
     }
+  }
+
+  /// PUT thẳng nội dung file lên một URL đã ký sẵn.
+  ///
+  /// URL tuyệt đối nên Dio bỏ qua `baseUrl`; không gửi kèm header xác thực của
+  /// app vì chữ ký đã nằm trong chính URL, thêm vào chỉ khiến R2 từ chối.
+  Future<void> putFile(String uploadUrl, File file) async {
+    final bytes = await file.readAsBytes();
+    await _dio.put<void>(
+      uploadUrl,
+      data: Stream.fromIterable([bytes]),
+      options: Options(
+        headers: {Headers.contentLengthHeader: bytes.length},
+        contentType: _avatarContentTypeOf(file.path),
+      ),
+    );
+  }
+
+  /// Xin chỗ tải ảnh đại diện lên.
+  ///
+  /// ponytail: endpoint này backend CHƯA mở. Hợp đồng mong đợi:
+  /// `POST /api/account/avatar/presign` với `{contentType}` và trả về
+  /// `{uploadUrl, publicUrl}` — cùng khuôn với presign bằng chứng.
+  Future<AvatarUploadDto> presignAvatar({required String contentType}) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/account/avatar/presign',
+      data: {'contentType': contentType},
+    );
+    return AvatarUploadDto.fromJson(res.data!);
   }
 
   Future<PresignDto> presignUpload(

@@ -993,34 +993,10 @@ class EcChooseShopScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
             ],
-            EcTap(
-              onTap: onAddShop,
-              child: PenBox(
-                width: double.infinity,
-                height: 58,
-                fill: PenColors.bg,
-                stroke: PenColors.line,
-                radius: 14,
-                axis: PenAxis.row,
-                gap: 12,
-                main: MainAxisAlignment.center,
-                cross: CrossAxisAlignment.center,
-                children: [
-                  const Icon(LucideIcons.plus, size: 22, color: PenColors.ink),
-                  Flexible(
-                    child: PenText(
-                      l10n.shopAddNew,
-                      size: 16,
-                      color: PenColors.link,
-                      weight: FontWeight.w600,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
+            // Không còn hàng "Tạo shop mới" ở đây: việc tạo shop đã nằm trong
+            // Quản lý cửa hàng. Hai lối vào cho cùng một việc chỉ làm màn chọn
+            // shop dài thêm mà không cho thêm khả năng nào.
+            const SizedBox(height: 8),
             _LogoutRow(onTap: onLogout),
           ],
         ),
@@ -1698,7 +1674,6 @@ const _sectionRowGap = 12.0;
 /// Khe giữa một hàng cài đặt và dòng chú thích "Đề xuất …" của chính nó. Phải
 /// nhỏ hơn [_sectionRowGap] sau khi nhân tỉ lệ, nếu không chú thích nằm lửng
 /// giữa hai hàng và không biết thuộc hàng nào.
-const _settingHintGap = 6.0;
 
 class EcShopDetailScreen extends StatelessWidget {
   const EcShopDetailScreen({
@@ -1714,6 +1689,8 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onTapResolution,
     this.onTapClipDuration,
     this.onTapUploadSize,
+    this.onTapImageSize,
+    this.onTapVideoSize,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
@@ -1732,6 +1709,11 @@ class EcShopDetailScreen extends StatelessWidget {
   final VoidCallback? onTapResolution;
   final VoidCallback? onTapClipDuration;
   final VoidCallback? onTapUploadSize;
+
+  /// Trần riêng cho ảnh và cho video. Rỗng thì hàng vẫn hiện nhưng bấm không
+  /// ra gì — bên gọi phải nối cả hai.
+  final VoidCallback? onTapImageSize;
+  final VoidCallback? onTapVideoSize;
   final ValueChanged<EcVideoType>? onEditType;
   final ValueChanged<EcVideoType>? onDeleteType;
   final VoidCallback? onAddType;
@@ -1852,69 +1834,21 @@ class EcShopDetailScreen extends StatelessWidget {
               icon: LucideIcons.settings,
               label: l10n.sectionShopSettings,
               children: [
-                EcTap(
-                  onTap: onTapResolution,
-                  child: PenBox(
-                    width: double.infinity,
-                    fill: PenColors.card,
-                    stroke: PenColors.line,
-                    radius: 10,
-                    axis: PenAxis.row,
-                    gap: 14,
-                    cross: CrossAxisAlignment.center,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 12,
-                    ),
-                    children: [
-                      const PenBox(
-                        width: 38,
-                        height: 38,
-                        fill: PenColors.bg,
-                        radius: 10,
-                        axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          Icon(
-                            LucideIcons.video,
-                            size: 22,
-                            color: PenColors.ink,
-                          ),
-                        ],
-                      ),
-                      Expanded(
-                        child: PenText(
-                          l10n.shopDetailResolution,
-                          size: 16,
-                          color: PenColors.ink,
-                        ),
-                      ),
-                      PenText(
-                        resolution,
-                        size: 16,
-                        color: PenColors.ink,
-                        weight: FontWeight.w600,
-                        softWrap: false,
-                      ),
-                      const Icon(
-                        LucideIcons.chevronRight,
-                        size: 18,
-                        color: PenColors.mut,
-                      ),
-                    ],
-                  ),
-                ),
-                _ClipDurationRow(
+                // Đã bỏ "Độ phân giải quay" và "Thời lượng video" khỏi màn
+                // này. Độ phân giải đổi được ngay trên thanh dưới màn quay,
+                // còn thời lượng thì gói quyết định và server kẹp lại — để ở
+                // đây chỉ tạo cảm giác đặt được mà thực tế không.
+                _UploadSizeRow(
                   budget: clipBudget,
                   platformLabel: platformLabel,
-                  resolution: resolution,
-                  onTap: onTapClipDuration,
+                  kind: EcUploadKind.video,
+                  onTap: onTapVideoSize ?? onTapUploadSize,
                 ),
                 _UploadSizeRow(
                   budget: clipBudget,
                   platformLabel: platformLabel,
-                  onTap: onTapUploadSize,
+                  kind: EcUploadKind.image,
+                  onTap: onTapImageSize,
                 ),
               ],
             ),
@@ -1969,146 +1903,25 @@ class EcShopDetailScreen extends StatelessWidget {
   }
 }
 
-/// "Thời lượng/video" row + the recommendation caption + the amber warning that
-/// appears only once the shop has raised the cap past what the marketplace
-/// accepts as a direct attachment (FR-18, FR-19).
-class _ClipDurationRow extends StatelessWidget {
-  const _ClipDurationRow({
-    required this.budget,
-    required this.platformLabel,
-    required this.resolution,
-    this.onTap,
-  });
-
-  final ClipBudget budget;
-  final String platformLabel;
-  final String resolution;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final minutes = _minutes(budget.seconds);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        EcTap(
-          onTap: onTap,
-          child: PenBox(
-            width: double.infinity,
-            fill: PenColors.card,
-            stroke: PenColors.line,
-            radius: 10,
-            axis: PenAxis.row,
-            gap: 14,
-            cross: CrossAxisAlignment.center,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            children: [
-              const PenBox(
-                width: 38,
-                height: 38,
-                fill: PenColors.bg,
-                radius: 10,
-                axis: PenAxis.row,
-                main: MainAxisAlignment.center,
-                cross: CrossAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.timer, size: 22, color: PenColors.ink),
-                ],
-              ),
-              Expanded(
-                child: PenText(
-                  l10n.shopDetailClipDuration,
-                  size: 16,
-                  color: PenColors.ink,
-                ),
-              ),
-              PenText(
-                l10n.clipDurationValue(minutes),
-                size: 16,
-                color: PenColors.ink,
-                weight: FontWeight.w600,
-                softWrap: false,
-              ),
-              const Icon(
-                LucideIcons.chevronRight,
-                size: 18,
-                color: PenColors.mut,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: _settingHintGap),
-        PenText(
-          budget.platformLimitsVerified
-              ? l10n.clipRecommendedHint(
-                  _minutes(budget.recommendedSeconds),
-                  platformLabel,
-                  _megabytes(budget.maxVideoBytes),
-                  resolution,
-                )
-              : l10n.clipRecommendedHintUnverified(
-                  _minutes(budget.recommendedSeconds),
-                  platformLabel,
-                ),
-          size: 12,
-          color: PenColors.mut,
-        ),
-        if (budget.exceedsRecommended) ...[
-          const SizedBox(height: 8),
-          PenBox(
-            width: double.infinity,
-            fill: _warnFill,
-            stroke: _warnStroke,
-            radius: 10,
-            axis: PenAxis.row,
-            gap: 10,
-            cross: CrossAxisAlignment.start,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            children: [
-              const Icon(
-                LucideIcons.triangleAlert,
-                size: 18,
-                color: _warnInk,
-              ),
-              Expanded(
-                child: PenText(
-                  l10n.clipOverRecommendedWarning(
-                    _minutes(budget.recommendedSeconds),
-                    platformLabel,
-                    minutes,
-                    _megabytes(
-                      ClipBudget.estimatedBytes(budget.seconds, resolution),
-                    ),
-                  ),
-                  size: 12.5,
-                  color: _warnInk,
-                  weight: FontWeight.w600,
-                  lineHeight: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// "Dung lượng/tệp" row + the recommendation caption, and the same amber
-/// warning once the shop has raised the cap past what the marketplace accepts
-/// as a direct attachment (FR-21).
 class _UploadSizeRow extends StatelessWidget {
   const _UploadSizeRow({
     required this.budget,
     required this.platformLabel,
+    required this.kind,
     this.onTap,
   });
 
   final ClipBudget budget;
   final String platformLabel;
+
+  /// Ảnh hay video — quyết định nhãn, con số hiện ra và mức đề xuất.
+  final EcUploadKind kind;
   final VoidCallback? onTap;
+
+  int get _currentBytes => switch (kind) {
+    EcUploadKind.image => budget.maxImageBytes,
+    EcUploadKind.video => budget.maxVideoBytes,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -2143,13 +1956,16 @@ class _UploadSizeRow extends StatelessWidget {
               ),
               Expanded(
                 child: PenText(
-                  l10n.shopDetailUploadSize,
+                  switch (kind) {
+                    EcUploadKind.image => l10n.shopDetailImageSize,
+                    EcUploadKind.video => l10n.shopDetailVideoSize,
+                  },
                   size: 16,
                   color: PenColors.ink,
                 ),
               ),
               PenText(
-                l10n.uploadSizeValue(_megabytes(budget.uploadBytes)),
+                l10n.uploadSizeValue(_megabytes(_currentBytes)),
                 size: 16,
                 color: PenColors.ink,
                 weight: FontWeight.w600,
@@ -2163,48 +1979,9 @@ class _UploadSizeRow extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: _settingHintGap),
-        PenText(
-          l10n.uploadRecommendedHint(
-            _megabytes(budget.maxImageBytes),
-            platformLabel,
-          ),
-          size: 12,
-          color: PenColors.mut,
-        ),
-        if (budget.exceedsRecommendedUpload) ...[
-          const SizedBox(height: 8),
-          PenBox(
-            width: double.infinity,
-            fill: _warnFill,
-            stroke: _warnStroke,
-            radius: 10,
-            axis: PenAxis.row,
-            gap: 10,
-            cross: CrossAxisAlignment.start,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            children: [
-              const Icon(
-                LucideIcons.triangleAlert,
-                size: 18,
-                color: _warnInk,
-              ),
-              Expanded(
-                child: PenText(
-                  l10n.uploadOverRecommendedWarning(
-                    _megabytes(budget.maxImageBytes),
-                    platformLabel,
-                    _megabytes(budget.uploadBytes),
-                  ),
-                  size: 12.5,
-                  color: _warnInk,
-                  weight: FontWeight.w600,
-                  lineHeight: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ],
+        // Không còn dòng "đề xuất X MB" lẫn cảnh báo vượt mức ở đây: hàng
+        // này chỉ cần trả lời một câu — shop đang đặt trần bao nhiêu. Mức đề
+        // xuất đã nằm sẵn trong sheet, còn chuyện vượt mức sàn tính sau.
       ],
     );
   }
@@ -2213,8 +1990,6 @@ class _UploadSizeRow extends StatelessWidget {
 /// Amber of the design file's warn bar (F3-05) — the one warning colour the
 /// EvidenceCam DNA has; reused here so the two screens read as the same system.
 const _warnInk = Color(0xFFB6770B);
-const _warnFill = Color(0x14B6770B);
-const _warnStroke = Color(0x4DB6770B);
 
 String _minutes(int seconds) => '${(seconds / 60).round()}';
 
@@ -3080,10 +2855,26 @@ class EcClipDurationSheetScreen extends StatelessWidget {
 /// Mirrors [EcClipDurationSheetScreen]: the marketplace's own attachment limit
 /// is the recommendation, everything above it stays selectable and only carries
 /// the amber warning back on the shop-detail screen (FR-21).
+/// Loại bằng chứng mà sheet dung lượng đang đặt trần.
+enum EcUploadKind {
+  /// Ảnh đính kèm — nhẹ hơn clip cả bậc nên đề xuất thấp hơn hẳn.
+  image(5),
+
+  /// Clip quay — mức sàn công bố phổ biến là 30MB.
+  video(30);
+
+  const EcUploadKind(this.defaultMegabytes);
+
+  /// Mức đề xuất mặc định khi backend chưa trả con số riêng cho loại này.
+  final int defaultMegabytes;
+}
+
 class EcUploadSizeSheetScreen extends StatelessWidget {
   const EcUploadSizeSheetScreen({
     required this.budget,
     required this.platformLabel,
+    required this.kind,
+    required this.currentMb,
     this.onSelect,
     super.key,
   });
@@ -3091,46 +2882,46 @@ class EcUploadSizeSheetScreen extends StatelessWidget {
   final ClipBudget budget;
   final String platformLabel;
 
+  /// Ảnh hay video — quyết định mức đề xuất và mức đang áp dụng.
+  final EcUploadKind kind;
+
+  /// Trần shop đang đặt, tính bằng MB. Bên gọi truyền thẳng vào thay vì để
+  /// sheet tự đọc từ `budget`: `budget` đi qua `selectedShop`, mà biến đó
+  /// không được làm mới sau khi lưu nên sheet mở lại luôn hiện mức mặc định
+  /// chứ không phải con số người dùng vừa nhập.
+  final int currentMb;
+
   /// Emits the chosen cap in **bytes**.
   final ValueChanged<int>? onSelect;
 
-  /// Megabyte marks offered, inside the range the backend accepts. Coarse — a
-  /// shop picks "roughly how big", not an exact byte count.
-  static const _marks = [1, 5, 10, 25, 50, 100];
+  int get _currentMb => currentMb;
 
-  /// Các mốc gợi ý, KHÔNG chặn theo khoảng backend công bố — xem lý do ở
-  /// [EcClipDurationSheetScreen._options]. Mức đề xuất của sàn và mức đang
-  /// dùng luôn có mặt, kể cả khi là số tự nhập không rơi vào mốc nào.
-  List<int> get _options {
-    final marks = [..._marks];
-    final recommended = budget.maxImageBytes ~/ 1000000;
-    if (recommended > 0 && !marks.contains(recommended)) marks.add(recommended);
-    return marks..sort();
-  }
+  /// Chỉ MỘT mức đề xuất, cộng mức đang dùng nếu khác.
+  ///
+  /// Bảng mốc 1/5/10/25/50/100 cũ là phỏng đoán — shop không chọn "khoảng
+  /// chừng", họ có con số của riêng mình. Một mức đề xuất để bấm nhanh, còn
+  /// lại gõ thẳng.
+  List<int> get _options => [kind.defaultMegabytes];
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final selected = budget.uploadBytes ~/ 1000000;
-    final recommended = budget.maxImageBytes ~/ 1000000;
+    final selected = _currentMb;
     return _EcSheetFrame(
-      title: l10n.uploadSizeTitle,
-      subtitle: l10n.uploadSizeSubtitle('$recommended', platformLabel),
+      title: switch (kind) {
+        EcUploadKind.image => l10n.uploadSizeTitleImage,
+        EcUploadKind.video => l10n.uploadSizeTitleVideo,
+      },
       children: [
         for (final m in _options)
           _EcSheetActionRow(
             icon: LucideIcons.fileUp,
-            label: l10n.uploadSizeValue('$m'),
+            // Dấu tích chỉ nằm ở mức mặc định khi shop ĐANG đặt đúng mức đó.
+            // Nhập số riêng là dấu tích rời đi — nếu không, hai con số cùng
+            // được tích và không biết mức nào đang áp dụng.
+            label: l10n.uploadSizeDefaultValue('$m'),
             selected: m == selected,
             onTap: () => onSelect?.call(m * 1000000),
-          ),
-        // Xem chú thích ở sheet thời lượng: mức tự nhập đứng riêng ở cuối.
-        if (!_options.contains(selected))
-          _EcSheetActionRow(
-            icon: LucideIcons.fileUp,
-            label: l10n.uploadSizeValue('$selected'),
-            selected: true,
-            onTap: () => onSelect?.call(selected * 1000000),
           ),
         _EcSheetCustomInput(
           label: l10n.uploadSizeCustomLabel,
@@ -3399,6 +3190,7 @@ class EcOrderRow {
     required this.time,
     required this.type,
     required this.videoCount,
+    this.capturedAtMs,
     this.errorCount = 0,
     this.pendingCount = 0,
     this.thumbUrl,
@@ -3413,6 +3205,10 @@ class EcOrderRow {
   /// Video type label, e.g. "Đóng hàng đi".
   final String type;
   final int videoCount;
+
+  /// Mốc thời gian đơn được tạo, epoch ms. Cần cho việc lọc theo khoảng thời
+  /// gian ngay tại chỗ — [time] chỉ có `HH:mm` nên không suy ra ngày được.
+  final int? capturedAtMs;
   final int errorCount;
   final int pendingCount;
 
@@ -3702,21 +3498,56 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
     for (final type in widget.videoTypes) _FilterOption(type.id, type.name),
   ];
 
-  /// Orders as handed in. Filtering is the backend's job (see
-  /// [EcOrderFilters]); the only local narrowing left is the search box, and
-  /// only while the parent isn't running the search server-side itself.
+  /// Orders as handed in, thu hẹp theo ô tìm kiếm.
+  ///
+  /// Lọc tại chỗ chạy KỂ CẢ khi cha đã gọi tìm kiếm phía server. Bản trước tin
+  /// hẳn vào server và trả nguyên danh sách, nhưng `/api/shops/{id}/orders`
+  /// đang bỏ qua tham số `q` — gõ một mã vẫn ra toàn bộ đơn. Server lọc đúng
+  /// thì bước này không đổi gì; server bỏ sót thì người dùng vẫn chỉ thấy mã
+  /// mình gõ.
   List<EcOrderRow> get _visibleOrders {
-    if (widget.onSearchChanged != null) return widget.orders;
     final query = _query.trim().toLowerCase();
-    if (query.isEmpty) return widget.orders;
-    return widget.orders
-        .where((order) => order.code.toLowerCase().contains(query))
-        .toList();
+    final from = _filters.fromTs;
+    final to = _filters.toTs;
+    if (query.isEmpty && from == null && to == null) return widget.orders;
+    return widget.orders.where((order) {
+      if (query.isNotEmpty && !order.code.toLowerCase().contains(query)) {
+        return false;
+      }
+      // Mã tra được và khoảng thời gian KẾT HỢP với nhau, không loại trừ.
+      //
+      // Tìm kiếm phía server bỏ qua bộ lọc, nên kết quả trả về gồm cả đơn
+      // ngoài khoảng đang chọn. Người dùng tra một mã rồi đổi ngày là để hỏi
+      // "mã này có trong ngày đó không" — trả về đúng khi có, rỗng khi không.
+      if (from == null && to == null) return true;
+      final at = order.capturedAtMs;
+      // Không có mốc thời gian thì không chứng minh được đơn nằm trong ngày
+      // đang chọn — ẩn đi. Hiện lên là phá đúng câu hỏi người dùng đang đặt:
+      // ngày này có mã đó hay không.
+      if (at == null) return false;
+      if (from != null && at < from) return false;
+      // `to` là mili-giây cuối CÙNG NGÀY (xem `_boundsFor`), nên so sánh phải
+      // là `>`; thiếu chặn trên thì đổi sang ngày khác vẫn thấy nguyên mã cũ.
+      if (to != null && at > to) return false;
+      return true;
+    }).toList();
   }
 
   void _select(void Function(String?) apply, String? value) {
     setState(() => apply(value));
+    _applyFilters();
+  }
+
+  /// Báo bộ lọc mới, rồi CHẠY LẠI tìm kiếm nếu ô tìm còn mã.
+  ///
+  /// Đổi bộ lọc làm phía app nạp lại trang đầu mà không kèm từ khoá, trong khi
+  /// widget vẫn giữ mã để lọc tại chỗ — mã đó thường không nằm trong trang
+  /// đầu nên danh sách ra rỗng. Người dùng vừa tra một đơn thì đổi khoảng thời
+  /// gian là để xem chính đơn đó, không phải để mất nó; nên giữ mã và tra lại.
+  void _applyFilters() {
     widget.onFiltersChanged?.call(_filters);
+    final query = _query.trim();
+    if (query.isNotEmpty) widget.onSearchChanged?.call(query);
   }
 
   /// Time is the one filter whose selection can need a second step: picking a
@@ -3733,7 +3564,7 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
       _pickedDate = picked;
       _timeWindow = _timeWindowDate;
     });
-    widget.onFiltersChanged?.call(_filters);
+    _applyFilters();
   }
 
   /// Opens the scanner and, if a code comes back, drops it into the search box.
@@ -4423,6 +4254,15 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
+/// `dd/MM/yyyy` cho dòng phụ của hàng đơn; `null` khi đơn chưa có mốc thời
+/// gian nào, để chỗ gọi bỏ hẳn phần ngày thay vì in một chỗ trống.
+String? _dayLabel(int? epochMs) {
+  if (epochMs == null) return null;
+  final d = DateTime.fromMillisecondsSinceEpoch(epochMs);
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(d.day)}/${two(d.month)}/${d.year}';
+}
+
 class _OrderTile extends StatelessWidget {
   const _OrderTile({required this.order, this.platform, this.onTap});
   final EcOrderRow order;
@@ -4457,7 +4297,14 @@ class _OrderTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 PenText(
-                  '${order.time} · ${order.type}',
+                  // Ngày đứng TRƯỚC giờ và loại: danh sách trải dài nhiều
+                  // ngày, mà chỉ có `10:23` thì không biết của hôm nào —
+                  // người tra đơn khiếu nại cần ngày hơn cần phút.
+                  [
+                    ?_dayLabel(order.capturedAtMs),
+                    order.time,
+                    order.type,
+                  ].join(' · '),
                   size: 12,
                   color: PenColors.mut,
                   overflow: TextOverflow.ellipsis,

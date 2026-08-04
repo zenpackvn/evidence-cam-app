@@ -41,8 +41,8 @@ class ShopDto {
     this.clipSeconds = 120,
     this.recommendedClipSeconds = 120,
     this.planMaxClipSeconds = 900,
-    this.maxImageBytes = 10000000,
-    this.maxVideoBytes = 30000000,
+    this.maxImageBytes = 0,
+    this.maxVideoBytes = 0,
     this.uploadBytes = 10000000,
     this.platformLimitsVerified = true,
   });
@@ -56,8 +56,11 @@ class ShopDto {
     clipSeconds: _int(j['effective_clip_seconds'], 120),
     recommendedClipSeconds: _int(j['recommended_clip_seconds'], 120),
     planMaxClipSeconds: _int(j['plan_max_clip_seconds'], 900),
-    maxImageBytes: _int(j['max_image_bytes'], 10000000),
-    maxVideoBytes: _int(j['max_video_bytes'], 30000000),
+    // 0 = shop chưa đặt trần riêng cho loại này. Trước đây mặc định ngầm
+    // 10MB/30MB nên màn cài đặt luôn hiện một con số như thể đã đặt rồi,
+    // không phân biệt được "đã chọn 30MB" với "chưa chọn gì".
+    maxImageBytes: _int(j['max_image_bytes'], 0),
+    maxVideoBytes: _int(j['max_video_bytes'], 0),
     uploadBytes: _int(j['effective_upload_bytes'], 10000000),
     platformLimitsVerified: (j['platform_limits_verified'] as bool?) ?? true,
   );
@@ -372,6 +375,24 @@ class QuotaDto {
   /// Chỉ chủ shop mới đổi được gói — gói cước gắn với tài khoản trả tiền.
   /// Quản lý/nhân viên xem được gói đang chi phối ca làm nhưng không mua.
   final bool canManagePlan;
+}
+
+/// Chỗ tải ảnh đại diện lên, theo cùng cơ chế presign của bằng chứng: server
+/// cấp một URL ghi tạm, app PUT thẳng file lên đó, rồi dùng [publicUrl] làm
+/// địa chỉ hiển thị lâu dài.
+class AvatarUploadDto {
+  const AvatarUploadDto({required this.uploadUrl, required this.publicUrl});
+
+  factory AvatarUploadDto.fromJson(Map<String, dynamic> j) => AvatarUploadDto(
+    uploadUrl: j['uploadUrl'] as String,
+    publicUrl: j['publicUrl'] as String,
+  );
+
+  /// URL ghi một lần, app PUT nội dung ảnh lên đây.
+  final String uploadUrl;
+
+  /// URL đọc công khai, lưu vào hồ sơ Firebase và server.
+  final String publicUrl;
 }
 
 class PresignDto {

@@ -1359,6 +1359,12 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get shopDetailImageSize => 'Dung lượng ảnh';
+
+  @override
+  String get shopDetailVideoSize => 'Dung lượng video';
+
+  @override
   String get shopDetailUploadSize => 'Dung lượng/tệp';
 
   @override
@@ -1378,6 +1384,17 @@ class AppLocalizationsVi extends AppLocalizations {
     String chosen,
   ) {
     return 'Vượt mức đề xuất $megabytes MB của $platform — tệp tới $chosen MB vẫn lưu nguyên vẹn, nhưng phải gửi bằng link hồ sơ thay vì đính trực tiếp lên form khiếu nại.';
+  }
+
+  @override
+  String get uploadSizeTitleVideo => 'Dung lượng tối đa mỗi video';
+
+  @override
+  String get uploadSizeTitleImage => 'Dung lượng tối đa mỗi ảnh';
+
+  @override
+  String uploadSizeDefaultValue(String value) {
+    return '$value MB (mặc định)';
   }
 
   @override
@@ -1485,7 +1502,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get clipDurationCustomLabel => 'Hoặc nhập số phút bạn muốn';
 
   @override
-  String get uploadSizeCustomLabel => 'Hoặc nhập dung lượng bạn muốn';
+  String get uploadSizeCustomLabel =>
+      'Hoặc nhập dung lượng bạn muốn (không giới hạn)';
 
   @override
   String get bundleBackendPending =>

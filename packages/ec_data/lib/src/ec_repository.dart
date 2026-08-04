@@ -1,8 +1,19 @@
+import 'dart:io';
+
 import 'ec_api.dart';
 import 'ec_models.dart';
 
 /// The seam screens read through. Production binds [RemoteEcRepository] once
 /// the Worker base URL is set; tests may bind [FakeEcRepository].
+/// Đoán `Content-Type` từ đuôi file — server cần biết để lưu đúng kiểu.
+String _avatarContentType(String path) {
+  final lower = path.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.heic')) return 'image/heic';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  return 'image/jpeg';
+}
+
 abstract interface class EcRepository {
   Future<List<ShopDto>> shops();
 
@@ -14,6 +25,9 @@ abstract interface class EcRepository {
   /// live in D1, not Firebase Auth, so the profile screen reads them from here.
   /// The call also claims any shop invite addressed to this account's email.
   Future<AccountDto> account();
+
+  /// Tải ảnh đại diện lên và trả về URL đọc công khai.
+  Future<String> uploadAvatar(String filePath);
 
   Future<AccountDto> updateProfile({
     String? name,
@@ -31,6 +45,8 @@ abstract interface class EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    int? maxImageBytes,
+    int? maxVideoBytes,
     int? maxUploadBytes,
   });
   Future<List<MemberDto>> members(String shopId);
@@ -116,6 +132,15 @@ class RemoteEcRepository implements EcRepository {
   }) => _api.updateProfile(name: name, phone: phone, avatarUrl: avatarUrl);
 
   @override
+  Future<String> uploadAvatar(String filePath) async {
+    final slot = await _api.presignAvatar(
+      contentType: _avatarContentType(filePath),
+    );
+    await _api.putFile(slot.uploadUrl, File(filePath));
+    return slot.publicUrl;
+  }
+
+  @override
   Future<ShopDto> createShop({
     required String name,
     required String platform,
@@ -129,6 +154,8 @@ class RemoteEcRepository implements EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    int? maxImageBytes,
+    int? maxVideoBytes,
     int? maxUploadBytes,
   }) => _api.updateShop(
     shopId,
@@ -136,6 +163,8 @@ class RemoteEcRepository implements EcRepository {
     platform: platform,
     resolution: resolution,
     maxClipSeconds: maxClipSeconds,
+    maxImageBytes: maxImageBytes,
+    maxVideoBytes: maxVideoBytes,
     maxUploadBytes: maxUploadBytes,
   );
 
@@ -265,6 +294,9 @@ class FakeEcRepository implements EcRepository {
       const AccountDto(uid: 'fake-uid', email: 'demo@evidencecam.app');
 
   @override
+  @override
+  Future<String> uploadAvatar(String filePath) async => filePath;
+
   Future<AccountDto> updateProfile({
     String? name,
     String? phone,
@@ -297,6 +329,8 @@ class FakeEcRepository implements EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    int? maxImageBytes,
+    int? maxVideoBytes,
     int? maxUploadBytes,
   }) async => ShopDto(
     id: shopId,

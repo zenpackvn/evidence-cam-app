@@ -31,6 +31,7 @@ class FirebaseEcAuth implements EcAuth {
           email: u.email,
           displayName: u.displayName,
           phone: u.phoneNumber,
+          photoUrl: u.photoURL,
           providers: u.providerData.map((i) => i.providerId).toList(),
           emailVerified: u.emailVerified,
         );
@@ -149,9 +150,17 @@ class FirebaseEcAuth implements EcAuth {
   Future<void> signOut() => _auth.signOut();
 
   @override
-  Future<EcUser> updateProfile({String? name, String? phone}) async {
+  Future<EcUser> updateProfile({
+    String? name,
+    String? phone,
+    String? photoUrl,
+  }) async {
     final u = _requireUser();
     if (name != null) await u.updateDisplayName(name);
+    // Ảnh đại diện nằm trên Firebase Auth như tên: nhờ vậy nó theo tài khoản,
+    // đăng nhập máy nào cũng có. `photoUrl` phải là URL đọc công khai —
+    // `updatePhotoURL` không nhận đường dẫn file trên máy.
+    if (photoUrl != null) await u.updatePhotoURL(photoUrl);
     // ponytail: business phone lives in D1 (tech-spec §7), not Firebase Auth —
     // wire to the profile endpoint when it lands; ignored here.
     await u.reload();

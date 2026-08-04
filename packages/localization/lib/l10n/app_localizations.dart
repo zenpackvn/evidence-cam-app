@@ -2518,6 +2518,18 @@ abstract class AppLocalizations {
     String limit,
   );
 
+  /// No description provided for @shopDetailImageSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Image size'**
+  String get shopDetailImageSize;
+
+  /// No description provided for @shopDetailVideoSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Video size'**
+  String get shopDetailVideoSize;
+
   /// Shop detail / upload size cap (FR-21).
   ///
   /// In en, this message translates to:
@@ -2545,6 +2557,24 @@ abstract class AppLocalizations {
     String platform,
     String chosen,
   );
+
+  /// No description provided for @uploadSizeTitleVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Max size per video'**
+  String get uploadSizeTitleVideo;
+
+  /// No description provided for @uploadSizeTitleImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Max size per photo'**
+  String get uploadSizeTitleImage;
+
+  /// No description provided for @uploadSizeDefaultValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} MB (default)'**
+  String uploadSizeDefaultValue(String value);
 
   /// Shop detail / upload size cap (FR-21).
   ///
@@ -2729,7 +2759,7 @@ abstract class AppLocalizations {
   /// No description provided for @uploadSizeCustomLabel.
   ///
   /// In en, this message translates to:
-  /// **'Or enter the size you want'**
+  /// **'Or enter any size you want (no limit)'**
   String get uploadSizeCustomLabel;
 
   /// No description provided for @bundleBackendPending.
