@@ -159,7 +159,8 @@ void main() {
           'id': 'o1',
           'tracking_raw': 'SPXVN1',
           'created_at': 111,
-          'evidence_count': 2,
+          'evidence_count': 5,
+          'video_count': 2,
           'last_captured_at': 222,
           'latest_type': 'Đóng hàng',
           'error_count': 1,
@@ -173,6 +174,12 @@ void main() {
     expect(order.latestType, 'Đóng hàng');
     expect(order.lastCapturedAt, 222);
     expect(order.errorCount, 1);
+    // Số video KHÁC số bản ghi bằng chứng: ảnh, clip hỏng và clip đã xoá vẫn
+    // nằm trong `evidence_count` nhưng không mở ra xem được.
+    expect(order.evidenceCount, 5);
+    expect(order.videoCount, 2);
+    // Không có header tổng thì cộng tạm trang đang xem.
+    expect(page.totalVideos, 2);
     // Không có header phân trang thì trang này là tất cả — thà mất thanh
     // phân trang còn hơn vẽ ra số trang bịa.
     expect(page.total, 1);
@@ -198,6 +205,7 @@ void main() {
         ],
         headers: Headers.fromMap({
           'x-total-count': ['128'],
+          'x-total-videos': ['640'],
           'x-page-size': ['10'],
         }),
         requestOptions: RequestOptions(path: '/api/shops/s1/orders'),
@@ -210,6 +218,8 @@ void main() {
     expect(page.pageCount, 13);
     expect(page.firstIndex, 11);
     expect(page.lastIndex, 20);
+    // Tổng của cả shop, không phải tổng 10 dòng đang xem.
+    expect(page.totalVideos, 640);
   });
 
   test('getOrder parses playable evidence URLs', () async {
@@ -241,6 +251,46 @@ void main() {
 
     expect(detail.evidence.single.url, 'https://cdn.example/e1.mp4');
   });
+
+  test(
+    'listMembers parses pending invites, which carry no account_uid',
+    () async {
+      when(
+        () => dio.get<List<dynamic>>(
+          '/api/shops/s1/members',
+          queryParameters: null,
+        ),
+      ).thenAnswer(
+        (_) async => _res('/api/shops/s1/members', <dynamic>[
+          {
+            'account_uid': 'u1',
+            'role': 'owner',
+            'name': 'Chủ shop',
+            'email': 'owner@b.co',
+            'status': 'active',
+            'invite_contact': null,
+            'invite_id': null,
+          },
+          {
+            'account_uid': null,
+            'role': 'staff',
+            'name': null,
+            'email': null,
+            'status': 'pending',
+            'invite_contact': 'moi@b.co',
+            'invite_id': 'i1',
+          },
+        ]),
+      );
+
+      final members = await api.listMembers('s1');
+
+      expect(members.first.accountUid, 'u1');
+      expect(members.last.accountUid, isNull);
+      expect(members.last.status, 'pending');
+      expect(members.last.inviteContact, 'moi@b.co');
+    },
+  );
 
   test('member mutations call the shop member endpoints', () async {
     when(

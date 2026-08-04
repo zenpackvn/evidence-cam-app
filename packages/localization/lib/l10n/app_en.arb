@@ -12,6 +12,7 @@
   "toastPurchaseApplied": "New plan activated",
   "toastPurchasePending": "Payment received. Your plan will activate shortly",
   "toastPurchaseFailed": "Payment could not be completed. Please try again",
+  "purchaseSuccessTitle": "Payment successful 🎉",
   "toastPendingDossierConfirm": "You still have an open claim dossier, please confirm again",
   "toastCopiedShareLink": "Share link copied",
   "toastShareFailed": "Couldn't share, try again later",
@@ -77,6 +78,15 @@
   "roleOwner": "Owner",
   "roleManager": "Manager",
   "roleStaff": "Staff",
+  "memberInvitePending": "{role} · invited",
+  "@memberInvitePending": {
+    "description": "Role line for a still-pending invite in the member list.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
   "planFree": "Free",
   "planBasic": "Basic",
   "planSaver": "Saver",
@@ -194,7 +204,11 @@
   "quotaSubtitle": "Track the storage you are using",
   "quotaRemainingAmount": "{amount} remaining",
   "@quotaRemainingAmount": {
-    "placeholders": { "amount": { "type": "String" } }
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   },
   "quotaStorage": "Storage",
   "quotaUpgradePlan": "Upgrade plan",
@@ -757,226 +771,232 @@
   "@shopDetailResolution": {
     "description": "Shop detail: shopDetailResolution."
   },
-    "shopDetailClipDuration": "Max length/video",
-    "@shopDetailClipDuration": {
-      "description": "Shop detail / clip budget (FR-17..FR-20)."
-    },
-    "clipDurationValue": "{minutes} min",
-    "@clipDurationValue": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        }
+  "shopDetailClipDuration": "Max length/video",
+  "@shopDetailClipDuration": {
+    "description": "Shop detail / clip budget (FR-17..FR-20)."
+  },
+  "clipDurationValue": "{minutes} min",
+  "@clipDurationValue": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
       }
-    },
-    "clipRecommendedHint": "Recommended {minutes} min — for {platform} ({megabytes} MB/video) + {resolution}",
-    "@clipRecommendedHint": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        },
-        "megabytes": {
-          "type": "String"
-        },
-        "resolution": {
-          "type": "String"
-        }
+    }
+  },
+  "clipRecommendedHint": "Recommended {minutes} min — for {platform} ({megabytes} MB/video) + {resolution}",
+  "@clipRecommendedHint": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
+      },
+      "megabytes": {
+        "type": "String"
+      },
+      "resolution": {
+        "type": "String"
       }
-    },
-    "clipRecommendedHintUnverified": "Recommended {minutes} min — {platform} limits unconfirmed, using the safest known values",
-    "@clipRecommendedHintUnverified": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        }
+    }
+  },
+  "clipRecommendedHintUnverified": "Recommended {minutes} min — {platform} limits unconfirmed, using the safest known values",
+  "@clipRecommendedHintUnverified": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
       }
-    },
-    "clipOverRecommendedWarning": "Over the {minutes}-min recommendation for {platform} — a {chosen}-min video is ~{megabytes} MB, so it has to be sent as a dossier link instead of attached to the complaint form.",
-    "@clipOverRecommendedWarning": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        },
-        "chosen": {
-          "type": "String"
-        },
-        "megabytes": {
-          "type": "String"
-        }
+    }
+  },
+  "clipOverRecommendedWarning": "Over the {minutes}-min recommendation for {platform} — a {chosen}-min video is ~{megabytes} MB, so it has to be sent as a dossier link instead of attached to the complaint form.",
+  "@clipOverRecommendedWarning": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
+      },
+      "chosen": {
+        "type": "String"
+      },
+      "megabytes": {
+        "type": "String"
       }
-    },
-    "clipDurationTitle": "Max length per video",
-    "@clipDurationTitle": {
-      "description": "Shop detail / clip budget (FR-17..FR-20)."
-    },
-    "clipDurationSubtitle": "Auto-closes at this length; {minutes} min still attaches directly to {platform}",
-    "@clipDurationSubtitle": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        }
+    }
+  },
+  "clipDurationTitle": "Max length per video",
+  "@clipDurationTitle": {
+    "description": "Shop detail / clip budget (FR-17..FR-20)."
+  },
+  "clipDurationSubtitle": "Auto-closes at this length; {minutes} min still attaches directly to {platform}",
+  "@clipDurationSubtitle": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
       }
-    },
-    "clipDurationOptionRecommended": "{minutes} min (recommended)",
-    "@clipDurationOptionRecommended": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        }
+    }
+  },
+  "clipDurationOptionRecommended": "{minutes} min (recommended)",
+  "@clipDurationOptionRecommended": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
       }
-    },
-    "clipDurationPlanCap": "Your plan allows up to {minutes} min",
-    "@clipDurationPlanCap": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        }
+    }
+  },
+  "clipDurationPlanCap": "Your plan allows up to {minutes} min",
+  "@clipDurationPlanCap": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
       }
-    },
-    "clipDurationChanged": "Max length/video: {minutes} min",
-    "@clipDurationChanged": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        }
+    }
+  },
+  "clipDurationChanged": "Max length/video: {minutes} min",
+  "@clipDurationChanged": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
       }
-    },
-    "imageOverPlatformLimit": "Photo is {megabytes} MB — over {platform}'s {limit} MB limit. Kept in full; send it via the dossier link.",
-    "@imageOverPlatformLimit": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        },
-        "limit": {
-          "type": "String"
-        }
+    }
+  },
+  "imageOverPlatformLimit": "Photo is {megabytes} MB — over {platform}'s {limit} MB limit. Kept in full; send it via the dossier link.",
+  "@imageOverPlatformLimit": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
       }
-    },
-    "shopDetailImageSize": "Image size",
+    }
+  },
+  "shopDetailImageSize": "Image size",
   "shopDetailVideoSize": "Video size",
   "shopDetailUploadSize": "Max size/file",
-    "@shopDetailUploadSize": {
-      "description": "Shop detail / upload size cap (FR-21)."
-    },
-    "uploadSizeValue": "{megabytes} MB",
-    "@uploadSizeValue": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        }
+  "@shopDetailUploadSize": {
+    "description": "Shop detail / upload size cap (FR-21)."
+  },
+  "uploadSizeValue": "{megabytes} MB",
+  "@uploadSizeValue": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
       }
-    },
-    "uploadRecommendedHint": "Recommended {megabytes} MB — {platform}'s attachment limit",
-    "@uploadRecommendedHint": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        }
+    }
+  },
+  "uploadRecommendedHint": "Recommended {megabytes} MB — {platform}'s attachment limit",
+  "@uploadRecommendedHint": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
       }
-    },
-    "uploadOverRecommendedWarning": "Over the {megabytes} MB recommendation for {platform} — a file up to {chosen} MB is still stored in full, but has to be sent as a dossier link instead of attached to the complaint form.",
-    "@uploadOverRecommendedWarning": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        },
-        "chosen": {
-          "type": "String"
-        }
+    }
+  },
+  "uploadOverRecommendedWarning": "Over the {megabytes} MB recommendation for {platform} — a file up to {chosen} MB is still stored in full, but has to be sent as a dossier link instead of attached to the complaint form.",
+  "@uploadOverRecommendedWarning": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
+      },
+      "chosen": {
+        "type": "String"
       }
-    },
-    "uploadSizeTitleVideo": "Max size per video",
+    }
+  },
+  "uploadSizeTitleVideo": "Max size per video",
   "uploadSizeTitleImage": "Max size per photo",
   "uploadSizeDefaultValue": "{value} MB (default)",
-  "@uploadSizeDefaultValue": { "placeholders": { "value": { "type": "String" } } },
+  "@uploadSizeDefaultValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "uploadSizeTitle": "Max size per file",
-    "@uploadSizeTitle": {
-      "description": "Shop detail / upload size cap (FR-21)."
-    },
-    "uploadSizeSubtitle": "Files over the cap are not attached; {megabytes} MB still attaches directly to {platform}",
-    "@uploadSizeSubtitle": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        }
+  "@uploadSizeTitle": {
+    "description": "Shop detail / upload size cap (FR-21)."
+  },
+  "uploadSizeSubtitle": "Files over the cap are not attached; {megabytes} MB still attaches directly to {platform}",
+  "@uploadSizeSubtitle": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
       }
-    },
-    "uploadSizeOptionRecommended": "{megabytes} MB (recommended)",
-    "@uploadSizeOptionRecommended": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        }
+    }
+  },
+  "uploadSizeOptionRecommended": "{megabytes} MB (recommended)",
+  "@uploadSizeOptionRecommended": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
       }
-    },
-    "uploadSizeChanged": "Max size/file: {megabytes} MB",
-    "@uploadSizeChanged": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        }
+    }
+  },
+  "uploadSizeChanged": "Max size/file: {megabytes} MB",
+  "@uploadSizeChanged": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
       }
-    },
-    "fileOverUploadCap": "File is {megabytes} MB — over the shop's {limit} MB cap, not attached. Raise the cap in shop settings and try again.",
-    "@fileOverUploadCap": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        },
-        "limit": {
-          "type": "String"
-        }
+    }
+  },
+  "fileOverUploadCap": "File is {megabytes} MB — over the shop's {limit} MB cap, not attached. Raise the cap in shop settings and try again.",
+  "@fileOverUploadCap": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
       }
-    },
-    "nearClipLimitWarning": "Nearing the {minutes}-min cap — the video will close itself",
-    "@nearClipLimitWarning": {
-      "description": "Recording: near-cap warning banner (FR-01).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        }
+    }
+  },
+  "nearClipLimitWarning": "Nearing the {minutes}-min cap — the video will close itself",
+  "@nearClipLimitWarning": {
+    "description": "Recording: near-cap warning banner (FR-01).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
       }
-    },
+    }
+  },
   "shopDetailAddType": "Add a type (enter a name)",
   "@shopDetailAddType": {
     "description": "Shop detail: shopDetailAddType."
@@ -1037,7 +1057,12 @@
   "recordInterruptedTitle": "Recording stopped",
   "recordInterruptedBody": "An incoming call interrupted the clip for {code}. What was recorded is saved. Keep recording this order?",
   "@recordInterruptedBody": {
-    "placeholders": { "code": { "type": "String", "example": "SPX123" } }
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "SPX123"
+      }
+    }
   },
   "recordInterruptedResume": "Continue",
   "recordInterruptedFinish": "Finish",
@@ -1064,29 +1089,58 @@
   "supportCall": "Call support",
   "bundleCreate": "Create",
   "bundleSelected": "{count} selected",
-  "@bundleSelected": { "placeholders": { "count": { "type": "int" } } },
+  "@bundleSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "bundleCreateLink": "Create link",
   "bundleUploadDrive": "Upload to Drive",
   "limitClampedTitle": "Your plan does not allow this",
   "limitClampedBody": "You chose {want} min but the system accepts at most {got} min, and saved {got} min. Upgrade your plan or contact support if you need more.",
   "@limitClampedBody": {
-    "placeholders": { "want": { "type": "String" }, "got": { "type": "String" } }
+    "placeholders": {
+      "want": {
+        "type": "String"
+      },
+      "got": {
+        "type": "String"
+      }
+    }
   },
   "limitClampedByServer": "Your plan allows at most {value} — the system lowered it to that",
-  "@limitClampedByServer": { "placeholders": { "value": { "type": "String" } } },
+  "@limitClampedByServer": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "sheetCustomMin": "Enter {min} {unit} or more",
   "@sheetCustomMin": {
     "placeholders": {
-      "min": { "type": "String" },
-      "unit": { "type": "String" }
+      "min": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
     }
   },
   "sheetCustomRange": "Enter between {min} and {max} {unit}",
   "@sheetCustomRange": {
     "placeholders": {
-      "min": { "type": "String" },
-      "max": { "type": "String" },
-      "unit": { "type": "String" }
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
     }
   },
   "accountEndQrNote": "Print this and stick it on the packing table. Scanning it while recording closes the clip. The same code works on every device.",
@@ -1107,5 +1161,19 @@
     "description": "Fallback body of the update dialog when Remote Config supplies none."
   },
   "appUpdateNow": "Update",
-  "appUpdateLater": "Later"
+  "appUpdateLater": "Later",
+  "paymentHistoryEmptyTitle": "No transactions yet",
+  "paymentHistoryEmptyBody": "Plan upgrades will show up here.",
+  "paymentStatusPaid": "Paid",
+  "paymentStatusPending": "Awaiting payment",
+  "paymentStatusCancelled": "Cancelled",
+  "paymentStatusExpired": "Expired",
+  "paymentStatusRefunded": "Refunded",
+  "paymentSourcePayos": "Web payment",
+  "paymentSourceSepay": "Bank transfer",
+  "paymentSourceAppStore": "In-app purchase",
+  "paymentSandboxNote": "Sandbox test transaction, not a real payment.",
+  "planTerm1m": "1 month",
+  "planTerm6m": "6 months",
+  "planTerm12m": "12 months"
 }

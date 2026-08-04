@@ -83,6 +83,9 @@ abstract interface class EcRepository {
   Future<void> deleteVideoType(String shopId, String typeId);
   Future<QuotaDto> quota({String? shopId});
 
+  /// Lịch sử thanh toán của tài khoản đang đăng nhập, mới nhất trước.
+  Future<List<PaymentDto>> payments();
+
   /// Page [page] (1-based) of orders, newest first. [uploadState] /
   /// [fromTs]–[toTs] / [videoTypeId] are the "Vận đơn" tab's three filters; they are applied by
   /// the backend because the list is paged and a client-side filter would only
@@ -223,6 +226,9 @@ class RemoteEcRepository implements EcRepository {
 
   @override
   Future<QuotaDto> quota({String? shopId}) => _api.getQuota(shopId: shopId);
+
+  @override
+  Future<List<PaymentDto>> payments() => _api.listPayments();
 
   @override
   Future<OrderPageDto> orders(
@@ -421,6 +427,9 @@ class FakeEcRepository implements EcRepository {
     remainingBytes: 48 * 1024 * 1024 * 1024,
     retentionDays: 30,
   );
+
+  @override
+  Future<List<PaymentDto>> payments() async => const [];
 
   @override
   Future<OrderPageDto> orders(

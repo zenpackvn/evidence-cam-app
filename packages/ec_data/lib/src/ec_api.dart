@@ -70,6 +70,13 @@ class EcApi {
     QuotaDto.fromJson,
   );
 
+  /// Lịch sử thanh toán của chính tài khoản đang đăng nhập, mới nhất trước.
+  ///
+  /// Backend đã gộp sẵn cả ba đường thu (PayOS / chuyển khoản cũ / App Store)
+  /// — client không ghép, không sắp xếp lại.
+  Future<List<PaymentDto>> listPayments() =>
+      _getList('/api/payments', PaymentDto.fromJson);
+
   // --- shops / members (FR-05) ---
   Future<List<ShopDto>> listShops() => _getList('/api/shops', ShopDto.fromJson);
 
@@ -231,6 +238,11 @@ class EcApi {
       // Thiếu header (proxy cắt, backend cũ) thì coi trang này là tất cả —
       // thà mất thanh phân trang còn hơn vẽ ra số trang bịa.
       total: _header(res, 'x-total-count') ?? items.length,
+      // Backend cũ không gửi header này — cộng tạm trang đang xem còn hơn hiện
+      // 0, dù nó chỉ là con số của trang.
+      totalVideos:
+          _header(res, 'x-total-videos') ??
+          items.fold(0, (sum, o) => sum + o.videoCount),
       page: page,
       pageSize: pageSize,
     );

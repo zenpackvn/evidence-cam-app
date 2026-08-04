@@ -170,6 +170,12 @@ abstract class AppLocalizations {
   /// **'Payment could not be completed. Please try again'**
   String get toastPurchaseFailed;
 
+  /// No description provided for @purchaseSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment successful 🎉'**
+  String get purchaseSuccessTitle;
+
   /// No description provided for @toastPendingDossierConfirm.
   ///
   /// In en, this message translates to:
@@ -415,6 +421,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Staff'**
   String get roleStaff;
+
+  /// Role line for a still-pending invite in the member list.
+  ///
+  /// In en, this message translates to:
+  /// **'{role} · invited'**
+  String memberInvitePending(String role);
 
   /// No description provided for @planFree.
   ///
@@ -2959,6 +2971,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Later'**
   String get appUpdateLater;
+
+  /// No description provided for @paymentHistoryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions yet'**
+  String get paymentHistoryEmptyTitle;
+
+  /// No description provided for @paymentHistoryEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan upgrades will show up here.'**
+  String get paymentHistoryEmptyBody;
+
+  /// No description provided for @paymentStatusPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get paymentStatusPaid;
+
+  /// No description provided for @paymentStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting payment'**
+  String get paymentStatusPending;
+
+  /// No description provided for @paymentStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get paymentStatusCancelled;
+
+  /// No description provided for @paymentStatusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get paymentStatusExpired;
+
+  /// No description provided for @paymentStatusRefunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded'**
+  String get paymentStatusRefunded;
+
+  /// No description provided for @paymentSourcePayos.
+  ///
+  /// In en, this message translates to:
+  /// **'Web payment'**
+  String get paymentSourcePayos;
+
+  /// No description provided for @paymentSourceSepay.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank transfer'**
+  String get paymentSourceSepay;
+
+  /// No description provided for @paymentSourceAppStore.
+  ///
+  /// In en, this message translates to:
+  /// **'In-app purchase'**
+  String get paymentSourceAppStore;
+
+  /// No description provided for @paymentSandboxNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Sandbox test transaction, not a real payment.'**
+  String get paymentSandboxNote;
+
+  /// No description provided for @planTerm1m.
+  ///
+  /// In en, this message translates to:
+  /// **'1 month'**
+  String get planTerm1m;
+
+  /// No description provided for @planTerm6m.
+  ///
+  /// In en, this message translates to:
+  /// **'6 months'**
+  String get planTerm6m;
+
+  /// No description provided for @planTerm12m.
+  ///
+  /// In en, this message translates to:
+  /// **'12 months'**
+  String get planTerm12m;
 }
 
 class _AppLocalizationsDelegate

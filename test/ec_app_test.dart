@@ -563,6 +563,35 @@ void main() {
   );
 
   testWidgets(
+    'account tab re-reads the plan after coming back from quota',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': null,
+        'ValueNotifier<EcUser?>': 1,
+        'ValueNotifier<bool>': null,
+        '_EvidenceCountOverrides': null,
+      },
+    ),
+    (tester) async {
+      // Gói đổi giữa chừng — đúng thứ xảy ra khi vừa thanh toán xong ở trang
+      // quota; tab Tài khoản phải hỏi lại chứ không giữ nhãn gói đã cache.
+      await pumpPhoneSizedApp(tester, EcApp(repo: _UpgradingQuotaRepository()));
+
+      await signInWithGoogle(tester);
+      await tester.tap(find.text('Tài khoản').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Cơ bản'), findsWidgets);
+
+      await tester.tap(find.text('Gói cước & Quota'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(PenBackButton).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cao cấp'), findsWidgets);
+    },
+  );
+
+  testWidgets(
     'delete account retries with force only after sent-dossier warning',
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
       notDisposed: {
@@ -1000,6 +1029,24 @@ class _QuotaRepository extends _DemoRepository {
     remainingBytes: 12 * 1024 * 1024 * 1024,
     retentionDays: 25,
   );
+}
+
+/// Trả `basic` cho lần hỏi đầu, `premium` cho mọi lần sau — giả lập gói vừa
+/// được kích hoạt trong lúc người dùng đang ở trang quota.
+class _UpgradingQuotaRepository extends _DemoRepository {
+  var _calls = 0;
+
+  @override
+  Future<QuotaDto> quota({String? shopId}) async {
+    _calls += 1;
+    return QuotaDto(
+      planCode: _calls == 1 ? 'basic' : 'premium',
+      usedBytes: 48 * 1024 * 1024 * 1024,
+      capBytes: 60 * 1024 * 1024 * 1024,
+      remainingBytes: 12 * 1024 * 1024 * 1024,
+      retentionDays: 25,
+    );
+  }
 }
 
 class _DeleteConflictRepository extends _DemoRepository {

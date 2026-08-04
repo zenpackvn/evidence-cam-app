@@ -88,23 +88,36 @@ class ShopDto {
 
 class MemberDto {
   const MemberDto({
-    required this.accountUid,
     required this.role,
+    this.accountUid,
     this.name,
     this.email,
+    this.status = 'active',
+    this.inviteContact,
   });
 
   factory MemberDto.fromJson(Map<String, dynamic> j) => MemberDto(
-    accountUid: j['account_uid'] as String,
     role: j['role'] as String,
+    accountUid: j['account_uid'] as String?,
     name: j['name'] as String?,
     email: j['email'] as String?,
+    status: (j['status'] as String?) ?? 'active',
+    inviteContact: j['invite_contact'] as String?,
   );
 
-  final String accountUid;
+  /// `null` ở hàng `status == 'pending'` — lời mời chưa khớp tài khoản nào,
+  /// nên chưa có uid. Backend cố tình trả những hàng này để người mời thấy
+  /// đã mời ai.
+  final String? accountUid;
   final String role;
   final String? name;
   final String? email;
+
+  /// `active` = đã trong shop; `pending` = mới có lời mời.
+  final String status;
+
+  /// Email/SĐT đã được mời. Chỉ có ở hàng `pending`.
+  final String? inviteContact;
 }
 
 class ShopInviteDto {
@@ -158,18 +171,22 @@ class OrderSummaryDto {
     required this.tracking,
     required this.createdAt,
     required this.evidenceCount,
+    int? videoCount,
     this.lastCapturedAt,
     this.latestType,
     this.errorCount = 0,
     this.pendingCount = 0,
     this.latestThumbUrl,
-  });
+  }) : videoCount = videoCount ?? evidenceCount;
 
   factory OrderSummaryDto.fromJson(Map<String, dynamic> j) => OrderSummaryDto(
     id: j['id'] as String,
     tracking: j['tracking_raw'] as String,
     createdAt: _int(j['created_at']),
     evidenceCount: _int(j['evidence_count']),
+    // Backend cũ chưa có trường này — rơi về `evidence_count` để bản app mới
+    // chạy được với server chưa deploy, dù con số vẫn đếm rộng như trước.
+    videoCount: _intN(j['video_count']),
     lastCapturedAt: _intN(j['last_captured_at']),
     latestType: j['latest_type'] as String?,
     errorCount: _int(j['error_count']),
@@ -180,7 +197,15 @@ class OrderSummaryDto {
   final String id;
   final String tracking;
   final int createdAt;
+
+  /// Mọi bản ghi bằng chứng từng có của đơn — kể cả ảnh, clip hỏng và clip đã
+  /// xoá. Dùng để biết đơn còn dữ liệu gì không, KHÔNG dùng làm số video.
   final int evidenceCount;
+
+  /// Video còn tồn tại — con số "N video" hiện trên dòng. Nhỏ hơn
+  /// [evidenceCount] khi đơn có ảnh đính kèm, clip upload hỏng, hết hạn lưu
+  /// trữ hoặc đã bị xoá.
+  final int videoCount;
   final int? lastCapturedAt;
   final String? latestType;
   final int errorCount;
@@ -202,10 +227,16 @@ class OrderPageDto {
     required this.total,
     required this.page,
     required this.pageSize,
+    this.totalVideos = 0,
   });
 
   final List<OrderSummaryDto> items;
   final int total;
+
+  /// Tổng video của **mọi** đơn khớp bộ lọc, không riêng trang này — thẻ
+  /// "Video đã quay" phải lấy từ đây. Cộng `videoCount` của các dòng đang hiện
+  /// chỉ ra con số của một trang (tối đa 10 đơn), không phải của cả shop.
+  final int totalVideos;
 
   /// 1-based, đúng trang vừa yêu cầu.
   final int page;
@@ -375,6 +406,63 @@ class QuotaDto {
   /// Chỉ chủ shop mới đổi được gói — gói cước gắn với tài khoản trả tiền.
   /// Quản lý/nhân viên xem được gói đang chi phối ca làm nhưng không mua.
   final bool canManagePlan;
+}
+
+/// Một lần trả tiền, gộp từ ba đường thu của backend (`GET /api/payments`).
+///
+/// Người dùng không cần biết tiền đi qua PayOS, chuyển khoản hay App Store —
+/// nhưng [source] vẫn hiện ra vì nó quyết định họ phải hỏi ai khi cần hóa đơn
+/// hay khiếu nại: mua trong ứng dụng thì Apple giữ, không phải mình.
+class PaymentDto {
+  const PaymentDto({
+    required this.id,
+    required this.source,
+    required this.planCode,
+    required this.status,
+    required this.createdAt,
+    this.term,
+    this.days,
+    this.amount,
+    this.paidAt,
+    this.sandbox = false,
+  });
+
+  factory PaymentDto.fromJson(Map<String, dynamic> j) => PaymentDto(
+    id: (j['id'] as String?) ?? '',
+    source: (j['source'] as String?) ?? 'payos',
+    planCode: (j['plan_code'] as String?) ?? 'free',
+    status: (j['status'] as String?) ?? 'pending',
+    createdAt: _int(j['created_at']),
+    term: j['term'] as String?,
+    days: _intN(j['days']),
+    amount: _intN(j['amount']),
+    paidAt: _intN(j['paid_at']),
+    sandbox: (j['sandbox'] as bool?) ?? false,
+  );
+
+  /// Mã đối soát của nguồn tương ứng — người dùng đọc mã này cho CSKH.
+  final String id;
+
+  /// `payos` | `sepay` | `appstore`.
+  final String source;
+  final String planCode;
+
+  /// `1m`/`6m`/`12m`, null với SePay và mua trong ứng dụng.
+  final String? term;
+  final int? days;
+
+  /// VND. **Null với mua trong ứng dụng** — App Store giữ điểm giá theo từng
+  /// SKU nên backend không có con số nào đứng tên được. UI phải chịu được null
+  /// chứ không được thay bằng 0.
+  final int? amount;
+
+  /// `paid` | `pending` | `cancelled` | `expired` | `refunded`.
+  final String status;
+  final int createdAt;
+  final int? paidAt;
+
+  /// Giao dịch thử của App Store sandbox — không phải tiền thật.
+  final bool sandbox;
 }
 
 /// Chỗ tải ảnh đại diện lên, theo cùng cơ chế presign của bằng chứng: server

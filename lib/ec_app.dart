@@ -755,7 +755,8 @@ class _AccountRoute extends StatefulWidget {
 
 class _AccountRouteState extends State<_AccountRoute> {
   // Fetched once; stored so rebuilds (user/language changes) don't refetch.
-  late final Future<QuotaDto> _quota = widget.repo.quota(
+  // Chỉ hỏi lại khi quay về từ trang quota — chỗ duy nhất gói có thể vừa đổi.
+  late Future<QuotaDto> _quota = widget.repo.quota(
     shopId: widget.selectedShop.value?.id,
   );
 
@@ -833,7 +834,17 @@ class _AccountRouteState extends State<_AccountRoute> {
               await context.push('/edit-profile');
               if (mounted) setState(() {});
             },
-            onQuotaTap: () => context.push('/quota'),
+            onQuotaTap: () async {
+              await context.push('/quota');
+              if (!mounted) return;
+              // Thân khối, KHÔNG phải arrow: closure của setState mà trả về
+              // Future thì Flutter ném assertion và bỏ luôn lượt dựng lại.
+              setState(() {
+                _quota = widget.repo.quota(
+                  shopId: widget.selectedShop.value?.id,
+                );
+              });
+            },
             onLanguageTap: () => context.push('/language'),
             onEndQrTap: () => _showEndSessionQr(
               context,
@@ -1164,17 +1175,30 @@ class _QuotaRouteState extends State<_QuotaRoute> {
         previousPlanCode: currentPlanCode,
       );
       if (!mounted) return;
-      // Thân khối, không mũi tên: `=> _quota = ...` trả về chính cái Future
-      // vừa gán, mà setState cấm callback trả về Future — Flutter ném lỗi và
-      // Crashlytics ghi nhận mỗi lần nâng gói thành công.
+      // Nạp lại quota TRƯỚC khi mở hộp thoại, để lúc người dùng bấm Đóng thì
+      // trang phía sau đã là số liệu của gói mới, không phải gói cũ.
+      //
+      // Thân khối, KHÔNG phải arrow: closure của setState mà trả về Future thì
+      // Flutter ném assertion và bỏ luôn lượt dựng lại — trang đứng im ở gói cũ.
       setState(() {
         _quota = widget.repo.quota(shopId: widget.shopId);
       });
-      _toast(
-        context,
-        applied
-            ? context.l10n.toastPurchaseApplied
-            : context.l10n.toastPurchasePending,
+      await showCupertinoDialog<void>(
+        context: context,
+        builder: (dialogContext) => CupertinoAlertDialog(
+          title: Text(context.l10n.purchaseSuccessTitle),
+          content: Text(
+            applied
+                ? context.l10n.toastPurchaseApplied
+                : context.l10n.toastPurchasePending,
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(context.l10n.commonClose),
+            ),
+          ],
+        ),
       );
     } finally {
       if (mounted) setState(() => _buying = false);
@@ -1240,8 +1264,7 @@ class _QuotaRouteState extends State<_QuotaRoute> {
           canManagePlan: quota.canManagePlan,
           onBack: () => _back(context, '/account'),
           onUpgrade: _buying ? null : () => _upgrade(quota.planCode),
-          onPaymentHistoryTap: () =>
-              _toast(context, context.l10n.toastUpgradeComingSoon),
+          onPaymentHistoryTap: () => context.push('/payment-history'),
         );
       },
     );
@@ -2886,12 +2909,21 @@ class _ShopDetailData {
   final List<EcVideoType> videoTypes;
 }
 
+/// Hàng `pending` chưa có tài khoản: không uid, không tên, không email — chỉ
+/// có địa chỉ đã mời. Hiện nó kèm nhãn "đã mời" để không lẫn với người đã vào.
 EcShopMember _memberFromDto(AppLocalizations l10n, MemberDto member) =>
     EcShopMember(
       accountUid: member.accountUid,
       roleCode: member.role,
-      name: member.name ?? member.email ?? member.accountUid,
-      role: _roleDisplayName(l10n, member.role),
+      name:
+          member.name ??
+          member.email ??
+          member.inviteContact ??
+          member.accountUid ??
+          '',
+      role: member.status == 'pending'
+          ? l10n.memberInvitePending(_roleDisplayName(l10n, member.role))
+          : _roleDisplayName(l10n, member.role),
     );
 
 /// Loại tự đặt mang icon người tạo đã chọn; ba loại mặc định (và loại tạo
@@ -3182,6 +3214,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       total: shown < dto.pageSize ? lastIfShort : dto.total,
       pageSize: dto.pageSize,
       shown: shown,
+      totalVideos: dto.totalVideos,
     );
   }
 
@@ -3384,8 +3417,8 @@ class _OrdersRouteState extends State<_OrdersRoute> {
 
   /// The server's own count, unless a fresher one is known from actually
   /// having opened this order (see `_EvidenceCountOverrides`).
-  int _evidenceCount(OrderSummaryDto o) =>
-      widget.evidenceCountOverrides?[o.tracking]?.$1 ?? o.evidenceCount;
+  int _videoCount(OrderSummaryDto o) =>
+      widget.evidenceCountOverrides?[o.tracking]?.$1 ?? o.videoCount;
 
   int _errorCount(OrderSummaryDto o) =>
       widget.evidenceCountOverrides?[o.tracking]?.$2 ?? o.errorCount;
@@ -3398,7 +3431,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
           ? '—'
           : _hhmm(DateTime.fromMillisecondsSinceEpoch(capturedAt)),
       type: o.latestType ?? l10n.orderNoEvidence,
-      videoCount: _evidenceCount(o),
+      videoCount: _videoCount(o),
       // Ưu tiên lần quay gần nhất; đơn chưa có bằng chứng thì lấy lúc tạo đơn.
       // Dùng cho việc lọc theo khoảng thời gian ngay tại chỗ.
       capturedAtMs: capturedAt ?? o.createdAt,
@@ -3409,21 +3442,24 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   }
 
   List<EcHomeStat> _stats(EcUploadQueue queue) {
-    final today = DateTime.now();
-    final todayOrders = _orders.where((order) {
-      final created = DateTime.fromMillisecondsSinceEpoch(order.createdAt);
-      return _sameLocalDate(created, today);
-    }).length;
-    final evidenceCount = _orders.fold<int>(
-      0,
-      (total, order) => total + order.evidenceCount,
-    );
+    // Hai thẻ đầu nói về CẢ shop (đúng hơn: cả tập đơn khớp bộ lọc), nên phải
+    // lấy tổng của server. Cộng `_orders` là cộng đúng một trang — tối đa 10
+    // đơn — nên shop có 102 đơn vẫn hiện "10", và số video thì hiện tổng của
+    // 10 đơn đó. Đó chính là con số sai người dùng nhìn thấy.
+    //
+    // Tìm kiếm là ngoại lệ: backend trả hết một lần, không phân trang
+    // (`_unpaged` ⇒ `shown == 0`), nên lúc đó cộng tại chỗ mới là đúng.
+    final paged = _page.shown > 0;
+    final orderCount = paged ? _page.total : _orders.length;
+    final videoCount = paged
+        ? _page.totalVideos
+        : _orders.fold<int>(0, (total, order) => total + order.videoCount);
     // Ba icon là ba glyph khác nhau trong khung F2-01 (package / video /
     // cloud-upload) — bỏ trống thì cả ba cùng ra package.
     return [
-      EcHomeStat(value: '$todayOrders', label: context.l10n.statOrdersToday),
+      EcHomeStat(value: '$orderCount', label: context.l10n.statOrdersToday),
       EcHomeStat(
-        value: '$evidenceCount',
+        value: '$videoCount',
         label: context.l10n.statVideosRecorded,
         icon: LucideIcons.video,
         accent: PenColors.success,
@@ -3457,10 +3493,13 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         onRetry: () => _loadFirst(showSpinner: true),
       );
     }
-    // An order every clip has been deleted from is an empty shell — nothing
-    // left to review, so it shouldn't linger in the list at all.
-    final visibleOrders = _orders.where((o) => _evidenceCount(o) > 0).toList();
-    final rows = visibleOrders.map((o) => _toRow(context.l10n, o)).toList();
+    // Mọi đơn server trả về đều được vẽ. Bộ lọc "ẩn đơn không còn bằng chứng"
+    // trước đây làm số dòng lệch với "1–10 / N" (thanh phân trang đếm theo
+    // server), mà lại chẳng ẩn được đúng thứ nó nói: xoá clip chỉ đổi
+    // `upload_status`, bản ghi vẫn còn nên `evidence_count` không hề giảm. Đơn
+    // rỗng giờ hiện với 0 video — đó là sự thật, và web cũng cố tình nêu chúng
+    // ra ở mục "đơn cần xử lý".
+    final rows = _orders.map((o) => _toRow(context.l10n, o)).toList();
     return ListenableBuilder(
       listenable: Listenable.merge([
         widget.queue,
@@ -3481,9 +3520,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         onOrderTap: widget.onOrderTap == null
             ? null
             : (row) {
-                final matches = visibleOrders.where(
-                  (o) => o.tracking == row.code,
-                );
+                final matches = _orders.where((o) => o.tracking == row.code);
                 if (matches.isEmpty) return;
                 final order = matches.first;
                 // Deleting evidence inside the order detail screen changes
@@ -3560,11 +3597,18 @@ class _OrderRouteState extends State<_OrderRoute> {
     // _EvidenceCountOverrides' doc comment). Report the true, live numbers
     // from the data already being fetched here so that list corrects itself
     // without needing its own extra request.
-    final live = detail.evidence.where((e) => e.uploadStatus != 'deleted');
+    // Cùng định nghĩa với `VIDEO_LIVE` của backend (services/orders.ts) — nếu
+    // hai bên đếm khác nhau thì mở một đơn ra rồi quay lại là con số trên dòng
+    // tự nhảy.
+    final liveVideos = detail.evidence.where(
+      (e) =>
+          e.kind == 'video' &&
+          !const {'deleted', 'expired', 'error'}.contains(e.uploadStatus),
+    );
     widget.evidenceCountOverrides?.report(
       widget.order.tracking,
-      live.length,
-      live.where((e) => e.uploadStatus == 'error').length,
+      liveVideos.length,
+      detail.evidence.where((e) => e.uploadStatus == 'error').length,
     );
     final types = await widget.repo.videoTypes(widget.shop.id);
     // "Người quay" was showing the raw Firebase uid — resolve it to whoever
@@ -3590,7 +3634,8 @@ class _OrderRouteState extends State<_OrderRoute> {
       memberNames = {
         ...memberNames,
         for (final m in members)
-          if ((m.name ?? m.email) != null) m.accountUid: (m.name ?? m.email)!,
+          if (m.accountUid != null && (m.name ?? m.email) != null)
+            m.accountUid!: (m.name ?? m.email)!,
       };
     } on Object {
       // Keep whatever we have — evidence still renders, just without names.
@@ -3797,16 +3842,12 @@ class _OrderDetailData {
   final Map<String, String> memberNames;
 }
 
-/// Corrects the orders list's evidence/error counts against reality.
+/// Corrects the orders list's video/error counts against reality.
 ///
-/// `listOrders`' per-order `evidence_count`/`error_count` are server-computed
-/// totals that, as observed live, are never decremented when a clip is
-/// deleted (deleteEvidence only removes the row; nothing recomputes the
-/// order's own aggregate) — so the list keeps showing however many clips
-/// were *ever* recorded, not however many still exist. The order detail
-/// screen already fetches the full evidence list to render itself; this
-/// captures the true, live count from that same fetch and lets the orders
-/// list use it instead, with no extra network calls.
+/// Cần đến nó vì trang danh sách được nạp một lần rồi nằm đó: xoá một clip
+/// trong màn chi tiết không làm `video_count`/`error_count` của trang đã tải
+/// tự cập nhật. Màn chi tiết dù sao cũng phải tải toàn bộ bằng chứng để vẽ
+/// chính nó, nên số đúng được lấy luôn từ lần tải đó — không tốn thêm request.
 class _EvidenceCountOverrides extends ChangeNotifier {
   final Map<String, (int count, int errorCount)> _byTracking = {};
 
@@ -4332,6 +4373,100 @@ String _dateLabel(DateTime d) {
   return '${two(d.day)}/${two(d.month)}/${d.year}';
 }
 
+/// Màn lịch sử thanh toán. Đọc một lần khi mở, có nút thử lại khi mạng hỏng.
+///
+/// Không cache: người dùng vào đây đúng lúc muốn kiểm tra một giao dịch vừa
+/// trả — đọc lại từ server mỗi lần mở là thứ họ mong đợi.
+class _PaymentHistoryRoute extends StatefulWidget {
+  const _PaymentHistoryRoute({required this.repo});
+
+  final EcRepository repo;
+
+  @override
+  State<_PaymentHistoryRoute> createState() => _PaymentHistoryRouteState();
+}
+
+class _PaymentHistoryRouteState extends State<_PaymentHistoryRoute> {
+  late Future<List<PaymentDto>> _future = widget.repo.payments();
+
+  // Thân khối, KHÔNG phải arrow: closure của setState mà trả về Future thì
+  // Flutter ném assertion và bỏ luôn lượt dựng lại — nút "Thử lại" thành nút
+  // chết.
+  void _retry() {
+    setState(() {
+      _future = widget.repo.payments();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return FutureBuilder<List<PaymentDto>>(
+      future: _future,
+      builder: (context, snap) => EcPaymentHistoryScreen(
+        loading: snap.connectionState == ConnectionState.waiting,
+        errorMessage: snap.hasError ? _dataErrorText(l10n, snap.error!) : null,
+        entries: (snap.data ?? const <PaymentDto>[])
+            .map((p) => _paymentEntry(l10n, p))
+            .toList(),
+        onBack: () => _back(context, '/quota'),
+        onRetry: _retry,
+      ),
+    );
+  }
+}
+
+EcPaymentEntry _paymentEntry(AppLocalizations l10n, PaymentDto p) {
+  final plan = _planDisplayName(l10n, p.planCode);
+  final term = _termLabel(l10n, p.term);
+  return EcPaymentEntry(
+    id: p.id,
+    title: term == null ? plan : '$plan · $term',
+    status: _paymentStatus(p.status),
+    dateLabel: _dateLabel(
+      DateTime.fromMillisecondsSinceEpoch(p.createdAt).toLocal(),
+    ),
+    sourceLabel: switch (p.source) {
+      'sepay' => l10n.paymentSourceSepay,
+      'appstore' => l10n.paymentSourceAppStore,
+      _ => l10n.paymentSourcePayos,
+    },
+    // Backend trả null khi không biết giá (mua trong ứng dụng). Giữ nguyên
+    // null tới tận UI thay vì đổi thành 0 — xem [PaymentDto.amount].
+    amountLabel: p.amount == null ? null : _vndLabel(p.amount!),
+    sandbox: p.sandbox,
+  );
+}
+
+/// `1m`/`6m`/`12m` → nhãn đọc được; null giữ nguyên null (SePay và App Store
+/// không có thời hạn để hiện).
+String? _termLabel(AppLocalizations l10n, String? term) => switch (term) {
+  '1m' => l10n.planTerm1m,
+  '6m' => l10n.planTerm6m,
+  '12m' => l10n.planTerm12m,
+  _ => null,
+};
+
+EcPaymentStatus _paymentStatus(String raw) => switch (raw) {
+  'paid' => EcPaymentStatus.paid,
+  'cancelled' => EcPaymentStatus.cancelled,
+  'expired' => EcPaymentStatus.expired,
+  'refunded' => EcPaymentStatus.refunded,
+  _ => EcPaymentStatus.pending,
+};
+
+/// `1569000` → `1.569.000 ₫`. Dấu chấm phân nhóm nghìn theo cách viết tiền
+/// Việt Nam, không dùng dấu phẩy kiểu Anh–Mỹ.
+String _vndLabel(int amount) {
+  final digits = amount.abs().toString();
+  final buffer = StringBuffer();
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write('.');
+    buffer.write(digits[i]);
+  }
+  return '${amount < 0 ? '-' : ''}$buffer ₫';
+}
+
 String _kindLabel(AppLocalizations l10n, String kind) =>
     kind == 'photo' ? l10n.kindPhoto : l10n.kindVideo;
 
@@ -4609,9 +4744,6 @@ String _hhmm(DateTime d) {
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(d.hour)}:${two(d.minute)}';
 }
-
-bool _sameLocalDate(DateTime a, DateTime b) =>
-    a.year == b.year && a.month == b.month && a.day == b.day;
 
 GoRouter _buildRouter(
   EcRepository repo,
@@ -5665,6 +5797,10 @@ GoRouter _buildRouter(
           queue: queue,
           shopId: _selected(selectedShop)?.id,
         ),
+      ),
+      GoRoute(
+        path: '/payment-history',
+        builder: (c, s) => _PaymentHistoryRoute(repo: repo),
       ),
       // Paywall mở thẳng, cho QA và cho ảnh chụp nộp App Review.
       //

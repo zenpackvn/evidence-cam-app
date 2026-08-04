@@ -47,6 +47,9 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không hoàn tất được thanh toán. Vui lòng thử lại';
 
   @override
+  String get purchaseSuccessTitle => 'Thanh toán thành công 🎉';
+
+  @override
   String get toastPendingDossierConfirm =>
       'Bạn còn hồ sơ khiếu nại đang mở, vui lòng xác nhận lại';
 
@@ -176,6 +179,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get roleStaff => 'Nhân viên';
+
+  @override
+  String memberInvitePending(String role) {
+    return '$role · đã mời';
+  }
 
   @override
   String get planFree => 'Miễn phí';
@@ -1618,4 +1626,47 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get appUpdateLater => 'Để sau';
+
+  @override
+  String get paymentHistoryEmptyTitle => 'Chưa có giao dịch nào';
+
+  @override
+  String get paymentHistoryEmptyBody => 'Các lần nâng cấp gói sẽ hiện ở đây.';
+
+  @override
+  String get paymentStatusPaid => 'Đã thanh toán';
+
+  @override
+  String get paymentStatusPending => 'Chờ thanh toán';
+
+  @override
+  String get paymentStatusCancelled => 'Đã hủy';
+
+  @override
+  String get paymentStatusExpired => 'Hết hạn';
+
+  @override
+  String get paymentStatusRefunded => 'Đã hoàn tiền';
+
+  @override
+  String get paymentSourcePayos => 'Thanh toán web';
+
+  @override
+  String get paymentSourceSepay => 'Chuyển khoản';
+
+  @override
+  String get paymentSourceAppStore => 'Mua trong ứng dụng';
+
+  @override
+  String get paymentSandboxNote =>
+      'Giao dịch thử (sandbox), không phải tiền thật.';
+
+  @override
+  String get planTerm1m => '1 tháng';
+
+  @override
+  String get planTerm6m => '6 tháng';
+
+  @override
+  String get planTerm12m => '12 tháng';
 }

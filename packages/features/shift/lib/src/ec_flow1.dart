@@ -3333,6 +3333,7 @@ class EcOrderPage {
     this.total = 0,
     this.pageSize = 10,
     this.shown = 0,
+    this.totalVideos = 0,
   });
 
   /// 1-based.
@@ -3340,6 +3341,9 @@ class EcOrderPage {
   final int total;
   final int pageSize;
   final int shown;
+
+  /// Tổng video của mọi đơn khớp bộ lọc, không riêng trang này.
+  final int totalVideos;
 
   int get pageCount => total <= 0 ? 1 : (total + pageSize - 1) ~/ pageSize;
 

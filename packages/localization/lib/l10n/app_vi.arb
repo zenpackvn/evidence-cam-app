@@ -12,6 +12,7 @@
   "toastPurchaseApplied": "Đã kích hoạt gói mới",
   "toastPurchasePending": "Đã thanh toán. Gói sẽ được kích hoạt trong giây lát",
   "toastPurchaseFailed": "Không hoàn tất được thanh toán. Vui lòng thử lại",
+  "purchaseSuccessTitle": "Thanh toán thành công 🎉",
   "toastPendingDossierConfirm": "Bạn còn hồ sơ khiếu nại đang mở, vui lòng xác nhận lại",
   "toastCopiedShareLink": "Đã sao chép link để chia sẻ",
   "toastShareFailed": "Không chia sẻ được, thử lại sau",
@@ -53,6 +54,15 @@
   "roleOwner": "Chủ shop",
   "roleManager": "Quản lý",
   "roleStaff": "Nhân viên",
+  "memberInvitePending": "{role} · đã mời",
+  "@memberInvitePending": {
+    "description": "Vai trò của một lời mời còn treo trong danh sách thành viên.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
   "planFree": "Miễn phí",
   "planBasic": "Cơ bản",
   "planSaver": "Tiết kiệm",
@@ -146,7 +156,11 @@
   "quotaSubtitle": "Theo dõi dung lượng đang dùng",
   "quotaRemainingAmount": "{amount} còn lại",
   "@quotaRemainingAmount": {
-    "placeholders": { "amount": { "type": "String" } }
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   },
   "quotaStorage": "Lưu trữ",
   "quotaUpgradePlan": "Nâng cấp gói",
@@ -511,226 +525,232 @@
   "@shopDetailResolution": {
     "description": "Shop detail: shopDetailResolution."
   },
-    "shopDetailClipDuration": "Thời lượng/video",
-    "@shopDetailClipDuration": {
-      "description": "Shop detail / clip budget (FR-17..FR-20)."
-    },
-    "clipDurationValue": "{minutes} phút",
-    "@clipDurationValue": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        }
+  "shopDetailClipDuration": "Thời lượng/video",
+  "@shopDetailClipDuration": {
+    "description": "Shop detail / clip budget (FR-17..FR-20)."
+  },
+  "clipDurationValue": "{minutes} phút",
+  "@clipDurationValue": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
       }
-    },
-    "clipRecommendedHint": "Đề xuất {minutes} phút — theo {platform} ({megabytes} MB/video) + {resolution}",
-    "@clipRecommendedHint": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        },
-        "megabytes": {
-          "type": "String"
-        },
-        "resolution": {
-          "type": "String"
-        }
+    }
+  },
+  "clipRecommendedHint": "Đề xuất {minutes} phút — theo {platform} ({megabytes} MB/video) + {resolution}",
+  "@clipRecommendedHint": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
+      },
+      "megabytes": {
+        "type": "String"
+      },
+      "resolution": {
+        "type": "String"
       }
-    },
-    "clipRecommendedHintUnverified": "Đề xuất {minutes} phút — giới hạn của {platform} chưa xác minh, đang dùng mức chung thận trọng nhất",
-    "@clipRecommendedHintUnverified": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        }
+    }
+  },
+  "clipRecommendedHintUnverified": "Đề xuất {minutes} phút — giới hạn của {platform} chưa xác minh, đang dùng mức chung thận trọng nhất",
+  "@clipRecommendedHintUnverified": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
       }
-    },
-    "clipOverRecommendedWarning": "Vượt mức đề xuất {minutes} phút của {platform} — video {chosen} phút nặng ~{megabytes} MB, phải gửi bằng link hồ sơ thay vì đính trực tiếp lên form khiếu nại.",
-    "@clipOverRecommendedWarning": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        },
-        "chosen": {
-          "type": "String"
-        },
-        "megabytes": {
-          "type": "String"
-        }
+    }
+  },
+  "clipOverRecommendedWarning": "Vượt mức đề xuất {minutes} phút của {platform} — video {chosen} phút nặng ~{megabytes} MB, phải gửi bằng link hồ sơ thay vì đính trực tiếp lên form khiếu nại.",
+  "@clipOverRecommendedWarning": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
+      },
+      "chosen": {
+        "type": "String"
+      },
+      "megabytes": {
+        "type": "String"
       }
-    },
-    "clipDurationTitle": "Thời lượng tối đa mỗi video",
-    "@clipDurationTitle": {
-      "description": "Shop detail / clip budget (FR-17..FR-20)."
-    },
-    "clipDurationSubtitle": "Chạm mốc này là tự chốt; {minutes} phút vẫn đính thẳng lên {platform} được",
-    "@clipDurationSubtitle": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        }
+    }
+  },
+  "clipDurationTitle": "Thời lượng tối đa mỗi video",
+  "@clipDurationTitle": {
+    "description": "Shop detail / clip budget (FR-17..FR-20)."
+  },
+  "clipDurationSubtitle": "Chạm mốc này là tự chốt; {minutes} phút vẫn đính thẳng lên {platform} được",
+  "@clipDurationSubtitle": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
       }
-    },
-    "clipDurationOptionRecommended": "{minutes} phút (đề xuất)",
-    "@clipDurationOptionRecommended": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        }
+    }
+  },
+  "clipDurationOptionRecommended": "{minutes} phút (đề xuất)",
+  "@clipDurationOptionRecommended": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
       }
-    },
-    "clipDurationPlanCap": "Gói của bạn cho tối đa {minutes} phút",
-    "@clipDurationPlanCap": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        }
+    }
+  },
+  "clipDurationPlanCap": "Gói của bạn cho tối đa {minutes} phút",
+  "@clipDurationPlanCap": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
       }
-    },
-    "clipDurationChanged": "Thời lượng/video: {minutes} phút",
-    "@clipDurationChanged": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        }
+    }
+  },
+  "clipDurationChanged": "Thời lượng/video: {minutes} phút",
+  "@clipDurationChanged": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
       }
-    },
-    "imageOverPlatformLimit": "Ảnh {megabytes} MB — vượt giới hạn {limit} MB của {platform}. Vẫn lưu nguyên vẹn; khi khiếu nại hãy gửi bằng link hồ sơ.",
-    "@imageOverPlatformLimit": {
-      "description": "Shop detail / clip budget (FR-17..FR-20).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        },
-        "limit": {
-          "type": "String"
-        }
+    }
+  },
+  "imageOverPlatformLimit": "Ảnh {megabytes} MB — vượt giới hạn {limit} MB của {platform}. Vẫn lưu nguyên vẹn; khi khiếu nại hãy gửi bằng link hồ sơ.",
+  "@imageOverPlatformLimit": {
+    "description": "Shop detail / clip budget (FR-17..FR-20).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
       }
-    },
-    "shopDetailImageSize": "Dung lượng ảnh",
+    }
+  },
+  "shopDetailImageSize": "Dung lượng ảnh",
   "shopDetailVideoSize": "Dung lượng video",
   "shopDetailUploadSize": "Dung lượng/tệp",
-    "@shopDetailUploadSize": {
-      "description": "Shop detail / upload size cap (FR-21)."
-    },
-    "uploadSizeValue": "{megabytes} MB",
-    "@uploadSizeValue": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        }
+  "@shopDetailUploadSize": {
+    "description": "Shop detail / upload size cap (FR-21)."
+  },
+  "uploadSizeValue": "{megabytes} MB",
+  "@uploadSizeValue": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
       }
-    },
-    "uploadRecommendedHint": "Đề xuất {megabytes} MB — theo giới hạn ảnh đính kèm của {platform}",
-    "@uploadRecommendedHint": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        }
+    }
+  },
+  "uploadRecommendedHint": "Đề xuất {megabytes} MB — theo giới hạn ảnh đính kèm của {platform}",
+  "@uploadRecommendedHint": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
       }
-    },
-    "uploadOverRecommendedWarning": "Vượt mức đề xuất {megabytes} MB của {platform} — tệp tới {chosen} MB vẫn lưu nguyên vẹn, nhưng phải gửi bằng link hồ sơ thay vì đính trực tiếp lên form khiếu nại.",
-    "@uploadOverRecommendedWarning": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        },
-        "chosen": {
-          "type": "String"
-        }
+    }
+  },
+  "uploadOverRecommendedWarning": "Vượt mức đề xuất {megabytes} MB của {platform} — tệp tới {chosen} MB vẫn lưu nguyên vẹn, nhưng phải gửi bằng link hồ sơ thay vì đính trực tiếp lên form khiếu nại.",
+  "@uploadOverRecommendedWarning": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
+      },
+      "chosen": {
+        "type": "String"
       }
-    },
-    "uploadSizeTitleVideo": "Dung lượng tối đa mỗi video",
+    }
+  },
+  "uploadSizeTitleVideo": "Dung lượng tối đa mỗi video",
   "uploadSizeTitleImage": "Dung lượng tối đa mỗi ảnh",
   "uploadSizeDefaultValue": "{value} MB (mặc định)",
-  "@uploadSizeDefaultValue": { "placeholders": { "value": { "type": "String" } } },
+  "@uploadSizeDefaultValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "uploadSizeTitle": "Dung lượng tối đa mỗi tệp",
-    "@uploadSizeTitle": {
-      "description": "Shop detail / upload size cap (FR-21)."
-    },
-    "uploadSizeSubtitle": "Tệp vượt trần sẽ không đính được; {megabytes} MB vẫn đính thẳng lên {platform}",
-    "@uploadSizeSubtitle": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        },
-        "platform": {
-          "type": "String"
-        }
+  "@uploadSizeTitle": {
+    "description": "Shop detail / upload size cap (FR-21)."
+  },
+  "uploadSizeSubtitle": "Tệp vượt trần sẽ không đính được; {megabytes} MB vẫn đính thẳng lên {platform}",
+  "@uploadSizeSubtitle": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "platform": {
+        "type": "String"
       }
-    },
-    "uploadSizeOptionRecommended": "{megabytes} MB (đề xuất)",
-    "@uploadSizeOptionRecommended": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        }
+    }
+  },
+  "uploadSizeOptionRecommended": "{megabytes} MB (đề xuất)",
+  "@uploadSizeOptionRecommended": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
       }
-    },
-    "uploadSizeChanged": "Dung lượng/tệp: {megabytes} MB",
-    "@uploadSizeChanged": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        }
+    }
+  },
+  "uploadSizeChanged": "Dung lượng/tệp: {megabytes} MB",
+  "@uploadSizeChanged": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
       }
-    },
-    "fileOverUploadCap": "Tệp {megabytes} MB — vượt trần {limit} MB của shop nên chưa đính. Nâng trần trong Cài đặt shop rồi thử lại.",
-    "@fileOverUploadCap": {
-      "description": "Shop detail / upload size cap (FR-21).",
-      "placeholders": {
-        "megabytes": {
-          "type": "String"
-        },
-        "limit": {
-          "type": "String"
-        }
+    }
+  },
+  "fileOverUploadCap": "Tệp {megabytes} MB — vượt trần {limit} MB của shop nên chưa đính. Nâng trần trong Cài đặt shop rồi thử lại.",
+  "@fileOverUploadCap": {
+    "description": "Shop detail / upload size cap (FR-21).",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
       }
-    },
-    "nearClipLimitWarning": "Sắp chạm trần {minutes} phút — video sẽ tự chốt",
-    "@nearClipLimitWarning": {
-      "description": "Recording: near-cap warning banner (FR-01).",
-      "placeholders": {
-        "minutes": {
-          "type": "String"
-        }
+    }
+  },
+  "nearClipLimitWarning": "Sắp chạm trần {minutes} phút — video sẽ tự chốt",
+  "@nearClipLimitWarning": {
+    "description": "Recording: near-cap warning banner (FR-01).",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
       }
-    },
+    }
+  },
   "shopDetailAddType": "Thêm loại (nhập tên)",
   "@shopDetailAddType": {
     "description": "Shop detail: shopDetailAddType."
@@ -791,7 +811,12 @@
   "recordInterruptedTitle": "Đã dừng quay",
   "recordInterruptedBody": "Cuộc gọi đến đã cắt ngang clip của đơn {code}. Phần vừa quay đã được lưu. Quay tiếp đơn này?",
   "@recordInterruptedBody": {
-    "placeholders": { "code": { "type": "String", "example": "SPX123" } }
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "SPX123"
+      }
+    }
   },
   "recordInterruptedResume": "Tiếp tục",
   "recordInterruptedFinish": "Kết thúc",
@@ -818,29 +843,58 @@
   "supportCall": "Gọi hỗ trợ",
   "bundleCreate": "Tạo",
   "bundleSelected": "Đã chọn {count} bằng chứng",
-  "@bundleSelected": { "placeholders": { "count": { "type": "int" } } },
+  "@bundleSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "bundleCreateLink": "Tạo link",
   "bundleUploadDrive": "Đẩy lên Drive",
   "limitClampedTitle": "Gói hiện tại không cho mức này",
   "limitClampedBody": "Bạn chọn {want} phút nhưng hệ thống chỉ chấp nhận tối đa {got} phút, và đã lưu ở mức {got} phút. Nâng gói hoặc liên hệ hỗ trợ nếu cần mức cao hơn.",
   "@limitClampedBody": {
-    "placeholders": { "want": { "type": "String" }, "got": { "type": "String" } }
+    "placeholders": {
+      "want": {
+        "type": "String"
+      },
+      "got": {
+        "type": "String"
+      }
+    }
   },
   "limitClampedByServer": "Gói hiện tại chỉ cho tối đa {value} — hệ thống đã hạ về mức này",
-  "@limitClampedByServer": { "placeholders": { "value": { "type": "String" } } },
+  "@limitClampedByServer": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "sheetCustomMin": "Nhập từ {min} {unit} trở lên",
   "@sheetCustomMin": {
     "placeholders": {
-      "min": { "type": "String" },
-      "unit": { "type": "String" }
+      "min": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
     }
   },
   "sheetCustomRange": "Nhập từ {min} đến {max} {unit}",
   "@sheetCustomRange": {
     "placeholders": {
-      "min": { "type": "String" },
-      "max": { "type": "String" },
-      "unit": { "type": "String" }
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
     }
   },
   "accountEndQrNote": "In tờ này dán ở bàn đóng hàng. Đang quay mà quét vào là chốt video ngay. Mã dùng chung cho mọi máy.",
@@ -855,5 +909,19 @@
   "appUpdateTitle": "Đã có phiên bản mới",
   "appUpdateMessage": "Cập nhật ZenPack để dùng bản mới nhất.",
   "appUpdateNow": "Cập nhật",
-  "appUpdateLater": "Để sau"
+  "appUpdateLater": "Để sau",
+  "paymentHistoryEmptyTitle": "Chưa có giao dịch nào",
+  "paymentHistoryEmptyBody": "Các lần nâng cấp gói sẽ hiện ở đây.",
+  "paymentStatusPaid": "Đã thanh toán",
+  "paymentStatusPending": "Chờ thanh toán",
+  "paymentStatusCancelled": "Đã hủy",
+  "paymentStatusExpired": "Hết hạn",
+  "paymentStatusRefunded": "Đã hoàn tiền",
+  "paymentSourcePayos": "Thanh toán web",
+  "paymentSourceSepay": "Chuyển khoản",
+  "paymentSourceAppStore": "Mua trong ứng dụng",
+  "paymentSandboxNote": "Giao dịch thử (sandbox), không phải tiền thật.",
+  "planTerm1m": "1 tháng",
+  "planTerm6m": "6 tháng",
+  "planTerm12m": "12 tháng"
 }
