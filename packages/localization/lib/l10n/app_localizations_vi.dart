@@ -1359,6 +1359,12 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get shopDetailImageSize => 'Dung lượng ảnh';
+
+  @override
+  String get shopDetailVideoSize => 'Dung lượng video';
+
+  @override
   String get shopDetailUploadSize => 'Dung lượng/tệp';
 
   @override

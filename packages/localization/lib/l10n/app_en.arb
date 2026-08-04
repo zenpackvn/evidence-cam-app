@@ -875,7 +875,9 @@
         }
       }
     },
-    "shopDetailUploadSize": "Max size/file",
+    "shopDetailImageSize": "Image size",
+  "shopDetailVideoSize": "Video size",
+  "shopDetailUploadSize": "Max size/file",
     "@shopDetailUploadSize": {
       "description": "Shop detail / upload size cap (FR-21)."
     },

@@ -993,34 +993,10 @@ class EcChooseShopScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
             ],
-            EcTap(
-              onTap: onAddShop,
-              child: PenBox(
-                width: double.infinity,
-                height: 58,
-                fill: PenColors.bg,
-                stroke: PenColors.line,
-                radius: 14,
-                axis: PenAxis.row,
-                gap: 12,
-                main: MainAxisAlignment.center,
-                cross: CrossAxisAlignment.center,
-                children: [
-                  const Icon(LucideIcons.plus, size: 22, color: PenColors.ink),
-                  Flexible(
-                    child: PenText(
-                      l10n.shopAddNew,
-                      size: 16,
-                      color: PenColors.link,
-                      weight: FontWeight.w600,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
+            // Không còn hàng "Tạo shop mới" ở đây: việc tạo shop đã nằm trong
+            // Quản lý cửa hàng. Hai lối vào cho cùng một việc chỉ làm màn chọn
+            // shop dài thêm mà không cho thêm khả năng nào.
+            const SizedBox(height: 8),
             _LogoutRow(onTap: onLogout),
           ],
         ),
@@ -1698,7 +1674,6 @@ const _sectionRowGap = 12.0;
 /// Khe giữa một hàng cài đặt và dòng chú thích "Đề xuất …" của chính nó. Phải
 /// nhỏ hơn [_sectionRowGap] sau khi nhân tỉ lệ, nếu không chú thích nằm lửng
 /// giữa hai hàng và không biết thuộc hàng nào.
-const _settingHintGap = 6.0;
 
 class EcShopDetailScreen extends StatelessWidget {
   const EcShopDetailScreen({
@@ -1714,6 +1689,8 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onTapResolution,
     this.onTapClipDuration,
     this.onTapUploadSize,
+    this.onTapImageSize,
+    this.onTapVideoSize,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
@@ -1732,6 +1709,11 @@ class EcShopDetailScreen extends StatelessWidget {
   final VoidCallback? onTapResolution;
   final VoidCallback? onTapClipDuration;
   final VoidCallback? onTapUploadSize;
+
+  /// Trần riêng cho ảnh và cho video. Rỗng thì hàng vẫn hiện nhưng bấm không
+  /// ra gì — bên gọi phải nối cả hai.
+  final VoidCallback? onTapImageSize;
+  final VoidCallback? onTapVideoSize;
   final ValueChanged<EcVideoType>? onEditType;
   final ValueChanged<EcVideoType>? onDeleteType;
   final VoidCallback? onAddType;
@@ -1852,69 +1834,21 @@ class EcShopDetailScreen extends StatelessWidget {
               icon: LucideIcons.settings,
               label: l10n.sectionShopSettings,
               children: [
-                EcTap(
-                  onTap: onTapResolution,
-                  child: PenBox(
-                    width: double.infinity,
-                    fill: PenColors.card,
-                    stroke: PenColors.line,
-                    radius: 10,
-                    axis: PenAxis.row,
-                    gap: 14,
-                    cross: CrossAxisAlignment.center,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 12,
-                    ),
-                    children: [
-                      const PenBox(
-                        width: 38,
-                        height: 38,
-                        fill: PenColors.bg,
-                        radius: 10,
-                        axis: PenAxis.row,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          Icon(
-                            LucideIcons.video,
-                            size: 22,
-                            color: PenColors.ink,
-                          ),
-                        ],
-                      ),
-                      Expanded(
-                        child: PenText(
-                          l10n.shopDetailResolution,
-                          size: 16,
-                          color: PenColors.ink,
-                        ),
-                      ),
-                      PenText(
-                        resolution,
-                        size: 16,
-                        color: PenColors.ink,
-                        weight: FontWeight.w600,
-                        softWrap: false,
-                      ),
-                      const Icon(
-                        LucideIcons.chevronRight,
-                        size: 18,
-                        color: PenColors.mut,
-                      ),
-                    ],
-                  ),
-                ),
-                _ClipDurationRow(
+                // Đã bỏ "Độ phân giải quay" và "Thời lượng video" khỏi màn
+                // này. Độ phân giải đổi được ngay trên thanh dưới màn quay,
+                // còn thời lượng thì gói quyết định và server kẹp lại — để ở
+                // đây chỉ tạo cảm giác đặt được mà thực tế không.
+                _UploadSizeRow(
                   budget: clipBudget,
                   platformLabel: platformLabel,
-                  resolution: resolution,
-                  onTap: onTapClipDuration,
+                  kind: EcUploadKind.video,
+                  onTap: onTapVideoSize ?? onTapUploadSize,
                 ),
                 _UploadSizeRow(
                   budget: clipBudget,
                   platformLabel: platformLabel,
-                  onTap: onTapUploadSize,
+                  kind: EcUploadKind.image,
+                  onTap: onTapImageSize,
                 ),
               ],
             ),
@@ -1969,146 +1903,25 @@ class EcShopDetailScreen extends StatelessWidget {
   }
 }
 
-/// "Thời lượng/video" row + the recommendation caption + the amber warning that
-/// appears only once the shop has raised the cap past what the marketplace
-/// accepts as a direct attachment (FR-18, FR-19).
-class _ClipDurationRow extends StatelessWidget {
-  const _ClipDurationRow({
-    required this.budget,
-    required this.platformLabel,
-    required this.resolution,
-    this.onTap,
-  });
-
-  final ClipBudget budget;
-  final String platformLabel;
-  final String resolution;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final minutes = _minutes(budget.seconds);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        EcTap(
-          onTap: onTap,
-          child: PenBox(
-            width: double.infinity,
-            fill: PenColors.card,
-            stroke: PenColors.line,
-            radius: 10,
-            axis: PenAxis.row,
-            gap: 14,
-            cross: CrossAxisAlignment.center,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            children: [
-              const PenBox(
-                width: 38,
-                height: 38,
-                fill: PenColors.bg,
-                radius: 10,
-                axis: PenAxis.row,
-                main: MainAxisAlignment.center,
-                cross: CrossAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.timer, size: 22, color: PenColors.ink),
-                ],
-              ),
-              Expanded(
-                child: PenText(
-                  l10n.shopDetailClipDuration,
-                  size: 16,
-                  color: PenColors.ink,
-                ),
-              ),
-              PenText(
-                l10n.clipDurationValue(minutes),
-                size: 16,
-                color: PenColors.ink,
-                weight: FontWeight.w600,
-                softWrap: false,
-              ),
-              const Icon(
-                LucideIcons.chevronRight,
-                size: 18,
-                color: PenColors.mut,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: _settingHintGap),
-        PenText(
-          budget.platformLimitsVerified
-              ? l10n.clipRecommendedHint(
-                  _minutes(budget.recommendedSeconds),
-                  platformLabel,
-                  _megabytes(budget.maxVideoBytes),
-                  resolution,
-                )
-              : l10n.clipRecommendedHintUnverified(
-                  _minutes(budget.recommendedSeconds),
-                  platformLabel,
-                ),
-          size: 12,
-          color: PenColors.mut,
-        ),
-        if (budget.exceedsRecommended) ...[
-          const SizedBox(height: 8),
-          PenBox(
-            width: double.infinity,
-            fill: _warnFill,
-            stroke: _warnStroke,
-            radius: 10,
-            axis: PenAxis.row,
-            gap: 10,
-            cross: CrossAxisAlignment.start,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            children: [
-              const Icon(
-                LucideIcons.triangleAlert,
-                size: 18,
-                color: _warnInk,
-              ),
-              Expanded(
-                child: PenText(
-                  l10n.clipOverRecommendedWarning(
-                    _minutes(budget.recommendedSeconds),
-                    platformLabel,
-                    minutes,
-                    _megabytes(
-                      ClipBudget.estimatedBytes(budget.seconds, resolution),
-                    ),
-                  ),
-                  size: 12.5,
-                  color: _warnInk,
-                  weight: FontWeight.w600,
-                  lineHeight: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// "Dung lượng/tệp" row + the recommendation caption, and the same amber
-/// warning once the shop has raised the cap past what the marketplace accepts
-/// as a direct attachment (FR-21).
 class _UploadSizeRow extends StatelessWidget {
   const _UploadSizeRow({
     required this.budget,
     required this.platformLabel,
+    required this.kind,
     this.onTap,
   });
 
   final ClipBudget budget;
   final String platformLabel;
+
+  /// Ảnh hay video — quyết định nhãn, con số hiện ra và mức đề xuất.
+  final EcUploadKind kind;
   final VoidCallback? onTap;
+
+  int get _currentBytes => switch (kind) {
+    EcUploadKind.image => budget.maxImageBytes,
+    EcUploadKind.video => budget.maxVideoBytes,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -2143,13 +1956,16 @@ class _UploadSizeRow extends StatelessWidget {
               ),
               Expanded(
                 child: PenText(
-                  l10n.shopDetailUploadSize,
+                  switch (kind) {
+                    EcUploadKind.image => l10n.shopDetailImageSize,
+                    EcUploadKind.video => l10n.shopDetailVideoSize,
+                  },
                   size: 16,
                   color: PenColors.ink,
                 ),
               ),
               PenText(
-                l10n.uploadSizeValue(_megabytes(budget.uploadBytes)),
+                l10n.uploadSizeValue(_megabytes(_currentBytes)),
                 size: 16,
                 color: PenColors.ink,
                 weight: FontWeight.w600,
@@ -2163,48 +1979,9 @@ class _UploadSizeRow extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: _settingHintGap),
-        PenText(
-          l10n.uploadRecommendedHint(
-            _megabytes(budget.maxImageBytes),
-            platformLabel,
-          ),
-          size: 12,
-          color: PenColors.mut,
-        ),
-        if (budget.exceedsRecommendedUpload) ...[
-          const SizedBox(height: 8),
-          PenBox(
-            width: double.infinity,
-            fill: _warnFill,
-            stroke: _warnStroke,
-            radius: 10,
-            axis: PenAxis.row,
-            gap: 10,
-            cross: CrossAxisAlignment.start,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            children: [
-              const Icon(
-                LucideIcons.triangleAlert,
-                size: 18,
-                color: _warnInk,
-              ),
-              Expanded(
-                child: PenText(
-                  l10n.uploadOverRecommendedWarning(
-                    _megabytes(budget.maxImageBytes),
-                    platformLabel,
-                    _megabytes(budget.uploadBytes),
-                  ),
-                  size: 12.5,
-                  color: _warnInk,
-                  weight: FontWeight.w600,
-                  lineHeight: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ],
+        // Không còn dòng "đề xuất X MB" lẫn cảnh báo vượt mức ở đây: hàng
+        // này chỉ cần trả lời một câu — shop đang đặt trần bao nhiêu. Mức đề
+        // xuất đã nằm sẵn trong sheet, còn chuyện vượt mức sàn tính sau.
       ],
     );
   }
@@ -2213,8 +1990,6 @@ class _UploadSizeRow extends StatelessWidget {
 /// Amber of the design file's warn bar (F3-05) — the one warning colour the
 /// EvidenceCam DNA has; reused here so the two screens read as the same system.
 const _warnInk = Color(0xFFB6770B);
-const _warnFill = Color(0x14B6770B);
-const _warnStroke = Color(0x4DB6770B);
 
 String _minutes(int seconds) => '${(seconds / 60).round()}';
 
@@ -3080,10 +2855,25 @@ class EcClipDurationSheetScreen extends StatelessWidget {
 /// Mirrors [EcClipDurationSheetScreen]: the marketplace's own attachment limit
 /// is the recommendation, everything above it stays selectable and only carries
 /// the amber warning back on the shop-detail screen (FR-21).
+/// Loại bằng chứng mà sheet dung lượng đang đặt trần.
+enum EcUploadKind {
+  /// Ảnh đính kèm — nhẹ hơn clip cả bậc nên đề xuất thấp hơn hẳn.
+  image(5),
+
+  /// Clip quay — mức sàn công bố phổ biến là 30MB.
+  video(30);
+
+  const EcUploadKind(this.defaultMegabytes);
+
+  /// Mức đề xuất mặc định khi backend chưa trả con số riêng cho loại này.
+  final int defaultMegabytes;
+}
+
 class EcUploadSizeSheetScreen extends StatelessWidget {
   const EcUploadSizeSheetScreen({
     required this.budget,
     required this.platformLabel,
+    required this.kind,
     this.onSelect,
     super.key,
   });
@@ -3091,28 +2881,38 @@ class EcUploadSizeSheetScreen extends StatelessWidget {
   final ClipBudget budget;
   final String platformLabel;
 
+  /// Ảnh hay video — quyết định mức đề xuất và mức đang áp dụng.
+  final EcUploadKind kind;
+
   /// Emits the chosen cap in **bytes**.
   final ValueChanged<int>? onSelect;
 
-  /// Megabyte marks offered, inside the range the backend accepts. Coarse — a
-  /// shop picks "roughly how big", not an exact byte count.
-  static const _marks = [1, 5, 10, 25, 50, 100];
+  int get _currentMb => switch (kind) {
+    EcUploadKind.image => budget.maxImageBytes ~/ 1000000,
+    EcUploadKind.video => budget.maxVideoBytes ~/ 1000000,
+  };
 
-  /// Các mốc gợi ý, KHÔNG chặn theo khoảng backend công bố — xem lý do ở
-  /// [EcClipDurationSheetScreen._options]. Mức đề xuất của sàn và mức đang
-  /// dùng luôn có mặt, kể cả khi là số tự nhập không rơi vào mốc nào.
+  int get _recommendedMb {
+    final fromServer = _currentMb;
+    return fromServer > 0 ? fromServer : kind.defaultMegabytes;
+  }
+
+  /// Chỉ MỘT mức đề xuất, cộng mức đang dùng nếu khác.
+  ///
+  /// Bảng mốc 1/5/10/25/50/100 cũ là phỏng đoán — shop không chọn "khoảng
+  /// chừng", họ có con số của riêng mình. Một mức đề xuất để bấm nhanh, còn
+  /// lại gõ thẳng.
   List<int> get _options {
-    final marks = [..._marks];
-    final recommended = budget.maxImageBytes ~/ 1000000;
-    if (recommended > 0 && !marks.contains(recommended)) marks.add(recommended);
-    return marks..sort();
+    final options = <int>{kind.defaultMegabytes};
+    if (_currentMb > 0) options.add(_currentMb);
+    return options.toList()..sort();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final selected = budget.uploadBytes ~/ 1000000;
-    final recommended = budget.maxImageBytes ~/ 1000000;
+    final selected = _currentMb;
+    final recommended = _recommendedMb;
     return _EcSheetFrame(
       title: l10n.uploadSizeTitle,
       subtitle: l10n.uploadSizeSubtitle('$recommended', platformLabel),

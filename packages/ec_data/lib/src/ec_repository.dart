@@ -31,6 +31,8 @@ abstract interface class EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    int? maxImageBytes,
+    int? maxVideoBytes,
     int? maxUploadBytes,
   });
   Future<List<MemberDto>> members(String shopId);
@@ -136,6 +138,8 @@ class RemoteEcRepository implements EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    int? maxImageBytes,
+    int? maxVideoBytes,
     int? maxUploadBytes,
   }) => _api.updateShop(
     shopId,
@@ -143,6 +147,8 @@ class RemoteEcRepository implements EcRepository {
     platform: platform,
     resolution: resolution,
     maxClipSeconds: maxClipSeconds,
+    maxImageBytes: maxImageBytes,
+    maxVideoBytes: maxVideoBytes,
     maxUploadBytes: maxUploadBytes,
   );
 
@@ -315,6 +321,8 @@ class FakeEcRepository implements EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    int? maxImageBytes,
+    int? maxVideoBytes,
     int? maxUploadBytes,
   }) async => ShopDto(
     id: shopId,

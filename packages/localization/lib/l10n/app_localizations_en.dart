@@ -1365,6 +1365,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get shopDetailImageSize => 'Image size';
+
+  @override
+  String get shopDetailVideoSize => 'Video size';
+
+  @override
   String get shopDetailUploadSize => 'Max size/file';
 
   @override

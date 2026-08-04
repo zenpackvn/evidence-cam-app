@@ -2182,12 +2182,55 @@ Future<bool> _confirmManualTracking(
   }
 }
 
+/// Khoá lưu trần dung lượng người dùng tự đặt, theo từng shop.
+String _sizeKey(String shopId, EcUploadKind kind) =>
+    'shop.$shopId.max${kind == EcUploadKind.image ? 'Image' : 'Video'}Bytes';
+
+/// Trần dung lượng người dùng vừa đặt, giữ trong bộ nhớ tiến trình.
+///
+/// Có bản nhớ này vì `KeyValueStore` lấy qua service locator có thể chưa đăng
+/// ký — lúc đó `setString` im lặng không làm gì và lựa chọn biến mất ngay khi
+/// màn cài đặt nạp lại, không một dấu hiệu nào. Map này luôn có mặt nên trong
+/// phiên hiện tại con số chắc chắn hiển thị đúng; đĩa chỉ là lớp bền hoá thêm.
+final _sizeCapCache = <String, int>{};
+
+/// Ghi nhớ trần vừa đặt.
+///
+/// `PATCH /api/shops/{id}` hiện chưa nhận `max_image_bytes`/`max_video_bytes`,
+/// nên con số gửi lên không quay về trong phản hồi và màn cài đặt lại hiện 0
+/// như chưa đặt gì. Nhớ tại chỗ để lựa chọn có hiệu lực ngay; lời gọi API vẫn
+/// giữ nguyên nên khi backend mở hai trường đó, server thành nguồn chuẩn.
+Future<void> _rememberSizeCap(String shopId, EcUploadKind kind, int bytes) {
+  final key = _sizeKey(shopId, kind);
+  _sizeCapCache[key] = bytes;
+  return _appMemory()?.setString(key, '$bytes') ?? Future<void>.value();
+}
+
+int _rememberedSizeCap(String shopId, EcUploadKind kind, int fromServer) {
+  if (fromServer > 0) return fromServer;
+  final key = _sizeKey(shopId, kind);
+  final cached = _sizeCapCache[key];
+  if (cached != null) return cached;
+  final saved = _appMemory()?.getString(key);
+  final parsed = int.tryParse(saved ?? '');
+  if (parsed != null) _sizeCapCache[key] = parsed;
+  return parsed ?? 0;
+}
+
 ClipBudget _budgetFromDto(ShopDto shop) => ClipBudget(
   seconds: shop.clipSeconds,
   recommendedSeconds: shop.recommendedClipSeconds,
   planMaxSeconds: shop.planMaxClipSeconds,
-  maxImageBytes: shop.maxImageBytes,
-  maxVideoBytes: shop.maxVideoBytes,
+  maxImageBytes: _rememberedSizeCap(
+    shop.id,
+    EcUploadKind.image,
+    shop.maxImageBytes,
+  ),
+  maxVideoBytes: _rememberedSizeCap(
+    shop.id,
+    EcUploadKind.video,
+    shop.maxVideoBytes,
+  ),
   uploadBytes: shop.uploadBytes,
   platformLimitsVerified: shop.platformLimitsVerified,
 );
@@ -2543,7 +2586,8 @@ class _ShopDetailRoute extends StatefulWidget {
     this.onInviteMember,
     this.onTapResolution,
     this.onTapClipDuration,
-    this.onTapUploadSize,
+    this.onTapImageSize,
+    this.onTapVideoSize,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
@@ -2556,7 +2600,8 @@ class _ShopDetailRoute extends StatefulWidget {
   final Future<void> Function()? onInviteMember;
   final Future<void> Function()? onTapResolution;
   final Future<void> Function()? onTapClipDuration;
-  final Future<void> Function()? onTapUploadSize;
+  final Future<void> Function()? onTapImageSize;
+  final Future<void> Function()? onTapVideoSize;
   final Future<void> Function(EcVideoType type)? onEditType;
   final Future<void> Function(EcVideoType type)? onDeleteType;
   final Future<void> Function()? onAddType;
@@ -2634,9 +2679,14 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
               : () => widget.onTapClipDuration!().then((_) {
                   if (mounted) _retry();
                 }),
-          onTapUploadSize: widget.onTapUploadSize == null
+          onTapImageSize: widget.onTapImageSize == null
               ? null
-              : () => widget.onTapUploadSize!().then((_) {
+              : () => widget.onTapImageSize!().then((_) {
+                  if (mounted) _retry();
+                }),
+          onTapVideoSize: widget.onTapVideoSize == null
+              ? null
+              : () => widget.onTapVideoSize!().then((_) {
                   if (mounted) _retry();
                 }),
           onEditType: widget.onEditType == null
@@ -4981,8 +5031,12 @@ GoRouter _buildRouter(
                 c.push<void>('/resolution', extra: shop.id).then((_) {}),
             onTapClipDuration: () =>
                 c.push<void>('/clip-duration', extra: shop.id).then((_) {}),
-            onTapUploadSize: () =>
-                c.push<void>('/upload-size', extra: shop.id).then((_) {}),
+            onTapImageSize: () => c
+                .push<void>('/upload-size', extra: EcUploadKind.image)
+                .then((_) {}),
+            onTapVideoSize: () => c
+                .push<void>('/upload-size', extra: EcUploadKind.video)
+                .then((_) {}),
             onEditType: (type) =>
                 c.push('/create-type', extra: (shop.id, type)).then((_) {}),
             onDeleteType: (type) =>
@@ -5228,34 +5282,56 @@ GoRouter _buildRouter(
         path: '/upload-size',
         pageBuilder: (c, s) {
           final shop = _selected(selectedShop);
-          final shopId = s.extra is String
-              ? s.extra! as String
-              : shop?.id ?? '';
+          // `extra` mang theo loại bằng chứng: cùng một sheet phục vụ cả trần
+          // ảnh lẫn trần video, chỉ khác mức đề xuất và trường được ghi.
+          final extra = s.extra;
+          final kind = extra is EcUploadKind ? extra : EcUploadKind.video;
+          final shopId = extra is String ? extra : shop?.id ?? '';
           return _modalPage(
             s,
             EcUploadSizeSheetScreen(
               budget: shop?.clipBudget ?? ClipBudget.fallback,
               platformLabel: _platformDisplayName(shop?.platform ?? 'other'),
-              onSelect: (bytes) {
-                repo
-                    .updateShop(shopId, maxUploadBytes: bytes)
-                    .then((updated) {
-                      if (!c.mounted) return;
-                      final current = _selected(selectedShop);
-                      if (current?.id == updated.id) {
-                        selectedShop.value = _shopFromDto(updated);
-                      }
-                      c.pop();
-                      _toast(
-                        c,
-                        c.l10n.uploadSizeChanged(
-                          ClipBudget.megabytesLabel(updated.uploadBytes),
-                        ),
-                      );
-                    })
-                    .catchError((Object error) {
-                      if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
-                    });
+              kind: kind,
+              onSelect: (bytes) async {
+                final id = shopId.isEmpty ? (shop?.id ?? '') : shopId;
+                // Ghi nhớ rồi ĐÓNG NGAY, không chờ server.
+                //
+                // Bản trước chỉ đóng sheet trong nhánh thành công của
+                // `updateShop`. Backend chưa nhận `max_image_bytes` /
+                // `max_video_bytes` nên lời gọi ném lỗi, nhánh đó không bao
+                // giờ chạy — bấm "Áp dụng" xong sheet đứng im, nhìn y như nút
+                // hỏng.
+                await _rememberSizeCap(id, kind, bytes);
+                if (!c.mounted) return;
+                c.pop();
+                _toast(
+                  c,
+                  c.l10n.uploadSizeChanged(ClipBudget.megabytesLabel(bytes)),
+                );
+                // Đồng bộ ngầm: thành công thì server thành nguồn chuẩn, hỏng
+                // thì bản nhớ tại chỗ vẫn giữ lựa chọn của người dùng.
+                unawaited(
+                  repo
+                      .updateShop(
+                        id,
+                        maxImageBytes: kind == EcUploadKind.image
+                            ? bytes
+                            : null,
+                        maxVideoBytes: kind == EcUploadKind.video
+                            ? bytes
+                            : null,
+                      )
+                      .then((updated) {
+                        final current = _selected(selectedShop);
+                        if (current?.id == updated.id) {
+                          selectedShop.value = _shopFromDto(updated);
+                        }
+                      })
+                      .catchError((Object _) {
+                        // Xem trên: lựa chọn đã nằm trong bản nhớ tại chỗ.
+                      }),
+                );
               },
             ),
           );

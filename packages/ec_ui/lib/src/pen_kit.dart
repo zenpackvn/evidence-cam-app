@@ -933,15 +933,33 @@ class PenTabBar extends StatelessWidget {
   /// Icon + label per tab, plus what to do when it is tapped.
   final List<(IconData, String, VoidCallback?)> tabs;
 
+  /// Chiều cao phần nội dung, chưa cộng vùng an toàn đáy máy.
+  ///
+  /// Từng để 92 theo khung design, nhưng khung đó vẽ cho máy không có thanh
+  /// vuốt home — cộng thêm vùng an toàn vào là thanh dày quá mức, chiếm chỗ
+  /// của nội dung. 56 là mức sát sàn: icon 22 + khoảng 2 + nhãn 11 mất 35, còn
+  /// lại vừa đủ đệm trên dưới. Thấp hơn nữa thì nhãn chạm mép.
+  static const contentHeight = 56.0;
+
+  /// Chiều cao thật của thanh trên máy hiện tại. Màn nào cần kê thứ gì lên
+  /// trên thanh (nút nổi, nội dung cuộn) thì lấy số này, đừng chép tay —
+  /// chép tay là nguồn của những con số lệch nhau vài pixel.
+  static double heightOf(BuildContext context) =>
+      contentHeight + MediaQuery.paddingOf(context).bottom;
+
   @override
   Widget build(BuildContext context) {
+    // Cộng vùng an toàn vào chiều cao VÀ vào đệm dưới: thiếu nó thì thanh vuốt
+    // home của iPhone đè lên nhãn tab, chữ bị cắt và khoảng trắng trên/dưới
+    // lệch hẳn nhau.
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
     return PenBox(
       width: double.infinity,
-      height: 92,
+      height: contentHeight + safeBottom,
       fill: PenColors.card,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
       axis: PenAxis.row,
-      padding: const EdgeInsets.fromLTRB(10, 16, 10, 0),
+      padding: EdgeInsets.fromLTRB(10, 6, 10, safeBottom),
       children: [
         for (var i = 0; i < tabs.length; i++)
           Expanded(

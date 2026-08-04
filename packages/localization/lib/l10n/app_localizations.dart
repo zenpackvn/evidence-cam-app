@@ -2518,6 +2518,18 @@ abstract class AppLocalizations {
     String limit,
   );
 
+  /// No description provided for @shopDetailImageSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Image size'**
+  String get shopDetailImageSize;
+
+  /// No description provided for @shopDetailVideoSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Video size'**
+  String get shopDetailVideoSize;
+
   /// Shop detail / upload size cap (FR-21).
   ///
   /// In en, this message translates to:

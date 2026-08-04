@@ -189,8 +189,8 @@ class EcAccountTabScreen extends StatelessWidget {
                         ),
                   _AppFooter(version: appVersion),
                   // Chừa chỗ cho thanh tab nổi bên dưới, nếu không mục cuối
-                  // nằm khuất sau nó.
-                  SizedBox(height: 100 + MediaQuery.paddingOf(context).bottom),
+                  // nằm khuất sau nó. Cùng nguồn số với chỗ kê nút liên hệ.
+                  SizedBox(height: PenTabBar.heightOf(context) + 16),
                 ],
               ),
             ),
@@ -225,12 +225,13 @@ class EcAccountTabScreen extends StatelessWidget {
           // theo nội dung — người cần hỗ trợ thường đang bí, bắt họ cuộn tìm
           // là thêm một rào nữa.
           //
-          // Kê lên đúng chiều cao thanh tab (82) cộng vùng an toàn đáy máy, để
-          // nút dưới cùng không đè lên mục "Tài khoản" của thanh điều hướng —
-          // đè lên là bấm nhầm sang tab khác thay vì gọi hỗ trợ.
+          // Kê lên đúng chiều cao thật của thanh tab, để nút dưới cùng không
+          // đè lên mục "Tài khoản" — đè lên là bấm nhầm sang tab khác thay vì
+          // gọi hỗ trợ. Lấy từ `PenTabBar.heightOf` chứ không chép số: bản
+          // trước chép 82 trong khi thanh cao 92, lệch đúng 10pt.
           Positioned(
             right: 16,
-            bottom: 82 + 12 + MediaQuery.paddingOf(context).bottom,
+            bottom: PenTabBar.heightOf(context) + 12,
             child: _SupportContactColumn(
               onFacebook: onFacebook,
               onZalo: onZalo,

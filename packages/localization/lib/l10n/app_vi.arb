@@ -629,7 +629,9 @@
         }
       }
     },
-    "shopDetailUploadSize": "Dung lượng/tệp",
+    "shopDetailImageSize": "Dung lượng ảnh",
+  "shopDetailVideoSize": "Dung lượng video",
+  "shopDetailUploadSize": "Dung lượng/tệp",
     "@shopDetailUploadSize": {
       "description": "Shop detail / upload size cap (FR-21)."
     },
