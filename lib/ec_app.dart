@@ -1813,6 +1813,30 @@ Future<void> _copyText(BuildContext context, String text, String label) async {
   if (context.mounted) _toast(context, context.l10n.copiedLabel(label));
 }
 
+/// Ba dòng nung vào clip lúc xuất, khớp với lớp chữ của màn ghi hình.
+///
+/// Giờ nung là mốc BẮT ĐẦU quay, đứng im suốt clip: ffmpeg chỉ chạy được đồng
+/// hồ đếm bằng `drawtext`, mà bộ lọc đó đòi một file font nằm sẵn trên đĩa —
+/// app không đóng gói font nào, nên chữ có dấu sẽ hỏng. Mốc bắt đầu cũng là
+/// mốc có nghĩa nhất với người nhận bằng chứng.
+///
+/// Thiếu mốc epoch (bằng chứng cũ) thì lùi về chuỗi đã định dạng sẵn, còn hơn
+/// giao ra một clip không có giờ nào.
+List<String> _stampLines(EcVideoDetail video, String tracking) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  final at = video.capturedAtMs;
+  final code = tracking.isNotEmpty ? tracking : (video.tracking ?? '');
+  if (at == null) {
+    return [video.recordedAt, if (code.isNotEmpty) code];
+  }
+  final d = DateTime.fromMillisecondsSinceEpoch(at);
+  return [
+    '${two(d.day)}/${two(d.month)}/${d.year}',
+    '${two(d.hour)}:${two(d.minute)}:${two(d.second)}',
+    if (code.isNotEmpty) code,
+  ];
+}
+
 Future<void> _downloadAndShareVideo(
   BuildContext context,
   Dio dio,
@@ -1830,17 +1854,13 @@ Future<void> _downloadAndShareVideo(
     var path = '${dir.path}/$filename';
     await _downloadWithRetry(dio, url, path);
     if (!context.mounted) return;
-    // Đóng dấu mã đơn / thời điểm / chặng quay lên góc trái trước khi giao file
-    // ra ngoài: rời khỏi app thì clip chỉ còn là một mp4 trần, người nhận không
-    // có cách nào biết nó của đơn nào. Hỏng dấu thì `stamp` trả lại bản gốc,
-    // người dùng vẫn cầm được file.
+    // Nung đúng ba dòng màn ghi hình đã hiện — ngày, giờ đến giây, mã vận đơn
+    // — trước khi giao file ra ngoài: rời khỏi app thì clip chỉ còn là một mp4
+    // trần, người nhận không có cách nào biết nó của đơn nào. Hỏng dấu thì
+    // `stamp` trả lại bản gốc, người dùng vẫn cầm được file.
     final stamped = await EcVideoStampService().stamp(
       path,
-      lines: [
-        if (tracking.isNotEmpty) tracking,
-        video.recordedAt,
-        video.title,
-      ],
+      lines: _stampLines(video, tracking),
     );
     if (stamped != path) await _deleteQuietly(path);
     path = stamped;
@@ -3057,12 +3077,22 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   /// hiển thị trang bị dọn sạch để thanh phân trang biến mất.
   static const _unpaged = EcOrderPage();
 
-  EcOrderPage _pageOf(OrderPageDto dto) => EcOrderPage(
-    page: dto.page,
-    total: dto.total,
-    pageSize: dto.pageSize,
-    shown: dto.items.length,
-  );
+  /// Chuyển trang từ backend sang mô hình của danh sách.
+  ///
+  /// Tổng số đơn bị KẸP lại khi trang trả về chưa đầy: một trang thiếu chỗ là
+  /// trang cuối, không thể có trang sau. Header `X-Total-Count` đếm theo phạm
+  /// vi riêng của backend nên có lúc lớn hơn số đơn thật sự lọc ra — tin thẳng
+  /// vào nó là vẽ ra trang 2, trang 3 rỗng cho một danh sách 3 mã.
+  EcOrderPage _pageOf(OrderPageDto dto) {
+    final shown = dto.items.length;
+    final lastIfShort = (dto.page - 1) * dto.pageSize + shown;
+    return EcOrderPage(
+      page: dto.page,
+      total: shown < dto.pageSize ? lastIfShort : dto.total,
+      pageSize: dto.pageSize,
+      shown: shown,
+    );
+  }
 
   @override
   void initState() {
@@ -3557,7 +3587,11 @@ class _OrderRouteState extends State<_OrderRoute> {
                     evidenceId: video.id,
                     canDelete: widget.shop.role != 'staff',
                     tracking: widget.order.tracking,
-                    video: _videoDetail(context.l10n, video),
+                    video: _videoDetail(
+                      context.l10n,
+                      video,
+                      tracking: widget.order.tracking,
+                    ),
                   ),
                 )
                 // Chỉ nạp lại khi chi tiết báo có thay đổi. Kéo sheet xuống
@@ -3574,7 +3608,11 @@ class _OrderRouteState extends State<_OrderRoute> {
                     evidenceId: video.id,
                     canDelete: widget.shop.role != 'staff',
                     tracking: widget.order.tracking,
-                    video: _videoDetail(context.l10n, video),
+                    video: _videoDetail(
+                      context.l10n,
+                      video,
+                      tracking: widget.order.tracking,
+                    ),
                   ),
                 )
                 // Chỉ nạp lại khi chi tiết báo có thay đổi. Kéo sheet xuống
@@ -3686,8 +3724,13 @@ class _VideoPlayerRoute extends StatefulWidget {
     required this.recordedAt,
     required this.url,
     required this.service,
+    this.capturedAtMs,
+    this.tracking,
     this.onBack,
   });
+
+  final int? capturedAtMs;
+  final String? tracking;
 
   final String title;
 
@@ -3702,48 +3745,107 @@ class _VideoPlayerRoute extends StatefulWidget {
   State<_VideoPlayerRoute> createState() => _VideoPlayerRouteState();
 }
 
-/// Nhãn mã vận đơn + giờ quay vẽ đè lên khung hình lúc phát.
+/// Ngày / giờ / mã vận đơn vẽ đè lên khung hình lúc phát lại.
 ///
-/// Thay cho việc nung chữ vào file lúc quay: nung chữ bắt buộc phải encode lại
+/// Dựng lại đúng khối mà màn ghi hình hiện ở góc phải, trừ nút back và chip
+/// tải lên — hai thứ đó là điều khiển của app, không phải thông tin bằng
+/// chứng. Xem lại clip phải đọc được y như lúc quay.
+///
+/// Vẽ lúc phát chứ không nung vào file: nung chữ bắt buộc phải encode lại
 /// video, tức là file không còn là chuỗi byte gốc từ cảm biến — đúng thứ FR-07
-/// cấm. Vẽ lúc phát giữ file nguyên vẹn mà ảnh chụp màn hình gửi sàn vẫn mang
-/// đủ mã và giờ.
-///
-/// ponytail: chỉ hai dữ kiện. Pin và trạng thái mạng mà bản nung chữ cũ có thì
-/// chưa bao giờ được lưu lại, nên không dựng lại được ở đây — muốn có thì phải
-/// ghi chúng lúc quay trước đã.
+/// cấm. Bản tải về / gửi đi mới nung, và nung đúng ba dòng này.
 class _PlaybackStamp extends StatelessWidget {
-  const _PlaybackStamp({required this.title, required this.recordedAt});
+  const _PlaybackStamp({
+    required this.title,
+    required this.recordedAt,
+    required this.position,
+    this.capturedAtMs,
+    this.tracking,
+  });
 
   final String title;
   final String recordedAt;
 
-  static const _style = TextStyle(
+  /// Vị trí đang phát, cộng vào [capturedAtMs] để đồng hồ chạy theo clip thay
+  /// vì đứng im ở giây bấm quay.
+  final Duration position;
+  final int? capturedAtMs;
+  final String? tracking;
+
+  static TextStyle _style(double size, FontWeight weight) => TextStyle(
     color: Colors.white,
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
-    shadows: [
-      Shadow(color: Color(0xE6000000), blurRadius: 3, offset: Offset(0, 1)),
+    fontSize: size,
+    height: 1.25,
+    fontWeight: weight,
+    shadows: const [
+      Shadow(color: Color(0xCC000000), blurRadius: 6),
+      Shadow(color: Color(0x99000000), offset: Offset(0, 1)),
     ],
   );
 
+  static String _two(int n) => n.toString().padLeft(2, '0');
+
   @override
-  Widget build(BuildContext context) => Positioned(
-    top: 8,
-    left: 8,
-    right: 8,
-    child: IgnorePointer(
-      child: Row(
-        children: [
-          Flexible(
-            child: Text(title, overflow: TextOverflow.ellipsis, style: _style),
+  Widget build(BuildContext context) {
+    final startedAt = capturedAtMs;
+    // Bằng chứng cũ không lưu mốc epoch — giữ nguyên nhãn một dòng cũ thay vì
+    // dựng một đồng hồ bịa từ chuỗi đã định dạng sẵn.
+    if (startedAt == null) {
+      return Positioned(
+        top: 8,
+        left: 8,
+        right: 8,
+        child: IgnorePointer(
+          child: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: _style(12, FontWeight.w600),
+                ),
+              ),
+              const Spacer(),
+              Text(recordedAt, style: _style(12, FontWeight.w600)),
+            ],
           ),
-          const Spacer(),
-          Text(recordedAt, style: _style),
-        ],
+        ),
+      );
+    }
+    final now = DateTime.fromMillisecondsSinceEpoch(
+      startedAt,
+    ).add(position);
+    final code = tracking ?? '';
+    return Positioned(
+      top: 8,
+      right: 8,
+      child: IgnorePointer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${_two(now.day)}/${_two(now.month)}/${now.year}',
+              style: _style(15, FontWeight.w500),
+              softWrap: false,
+            ),
+            Text(
+              '${_two(now.hour)}:${_two(now.minute)}:${_two(now.second)}',
+              style: _style(22, FontWeight.w700),
+              softWrap: false,
+            ),
+            if (code.isNotEmpty)
+              Text(
+                code,
+                style: _style(15, FontWeight.w600),
+                softWrap: false,
+                overflow: TextOverflow.visible,
+              ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
@@ -3893,6 +3995,9 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                                   _PlaybackStamp(
                                     title: widget.title,
                                     recordedAt: widget.recordedAt,
+                                    capturedAtMs: widget.capturedAtMs,
+                                    tracking: widget.tracking,
+                                    position: value.position,
                                   ),
                                   AnimatedOpacity(
                                     opacity: value.isPlaying ? 0 : 1,
@@ -4015,7 +4120,14 @@ class _VideoPlayerRouteExtra {
     required this.recordedAt,
     required this.url,
     required this.videoPlayerService,
+    this.capturedAtMs,
+    this.tracking,
   });
+
+  /// Mốc quay + mã vận đơn, để lớp chữ lúc phát dựng lại đúng cái màn ghi hình
+  /// đã hiện.
+  final int? capturedAtMs;
+  final String? tracking;
 
   final String title;
 
@@ -4089,6 +4201,7 @@ List<EcTimelineDay> _timelineDays(
               'expired' => Icons.history_toggle_off,
               _ => null,
             },
+            capturedAtMs: item.capturedAt,
             recordedAt: '${_dateLabel(captured)} · ${_hhmm(captured)}',
             recordedBy:
                 (item.createdByUid == null
@@ -4138,17 +4251,22 @@ String _expiredLabel(AppLocalizations l10n, int? retentionExpiresAt) {
   return l10n.expiredOnDate(_dateLabel(expired));
 }
 
-EcVideoDetail _videoDetail(AppLocalizations l10n, EcTimelineVideo video) =>
-    EcVideoDetail(
-      title: video.label,
-      duration: _durationLabel(video.durationSeconds),
-      recordedAt: video.recordedAt ?? video.time,
-      recordedBy: video.recordedBy ?? l10n.recordedByFallback,
-      device: video.device ?? l10n.deviceUnknown,
-      uploadStatus: video.uploadStatus ?? l10n.uploadStatusDone,
-      mediaUrl: video.mediaUrl,
-      type: video.type,
-    );
+EcVideoDetail _videoDetail(
+  AppLocalizations l10n,
+  EcTimelineVideo video, {
+  String tracking = '',
+}) => EcVideoDetail(
+  capturedAtMs: video.capturedAtMs,
+  tracking: tracking,
+  title: video.label,
+  duration: _durationLabel(video.durationSeconds),
+  recordedAt: video.recordedAt ?? video.time,
+  recordedBy: video.recordedBy ?? l10n.recordedByFallback,
+  device: video.device ?? l10n.deviceUnknown,
+  uploadStatus: video.uploadStatus ?? l10n.uploadStatusDone,
+  mediaUrl: video.mediaUrl,
+  type: video.type,
+);
 
 /// Formats a recorded clip length as `mm:ss`. Photos and evidence captured
 /// before this field existed have no duration — falls back to `—`.
@@ -4845,6 +4963,8 @@ GoRouter _buildRouter(
                     extra: _VideoPlayerRouteExtra(
                       title: extra!.video.title,
                       recordedAt: extra.video.recordedAt,
+                      capturedAtMs: extra.video.capturedAtMs,
+                      tracking: extra.tracking,
                       url: url,
                       videoPlayerService: videoPlayer,
                     ),
@@ -4998,6 +5118,8 @@ GoRouter _buildRouter(
           return _VideoPlayerRoute(
             title: extra.title,
             recordedAt: extra.recordedAt,
+            capturedAtMs: extra.capturedAtMs,
+            tracking: extra.tracking,
             url: extra.url,
             service: extra.videoPlayerService,
             onBack: () => c.pop(),

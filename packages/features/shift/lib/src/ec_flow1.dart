@@ -3508,7 +3508,8 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
   List<EcOrderRow> get _visibleOrders {
     final query = _query.trim().toLowerCase();
     final from = _filters.fromTs;
-    if (query.isEmpty && from == null) return widget.orders;
+    final to = _filters.toTs;
+    if (query.isEmpty && from == null && to == null) return widget.orders;
     return widget.orders.where((order) {
       if (query.isNotEmpty && !order.code.toLowerCase().contains(query)) {
         return false;
@@ -3518,8 +3519,16 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
       // Tìm kiếm phía server bỏ qua bộ lọc, nên kết quả trả về gồm cả đơn
       // ngoài khoảng đang chọn. Người dùng tra một mã rồi đổi ngày là để hỏi
       // "mã này có trong ngày đó không" — trả về đúng khi có, rỗng khi không.
+      if (from == null && to == null) return true;
       final at = order.capturedAtMs;
-      if (from != null && at != null && at < from) return false;
+      // Không có mốc thời gian thì không chứng minh được đơn nằm trong ngày
+      // đang chọn — ẩn đi. Hiện lên là phá đúng câu hỏi người dùng đang đặt:
+      // ngày này có mã đó hay không.
+      if (at == null) return false;
+      if (from != null && at < from) return false;
+      // `to` là mili-giây cuối CÙNG NGÀY (xem `_boundsFor`), nên so sánh phải
+      // là `>`; thiếu chặn trên thì đổi sang ngày khác vẫn thấy nguyên mã cũ.
+      if (to != null && at > to) return false;
       return true;
     }).toList();
   }

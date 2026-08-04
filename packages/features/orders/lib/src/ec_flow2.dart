@@ -58,9 +58,14 @@ class EcTimelineVideo {
     this.statusTone = EcStatusTone.waiting,
     this.statusIcon,
     this.durationSeconds,
+    this.capturedAtMs,
   });
 
   final String? id;
+
+  /// Mốc quay, epoch-ms. [time] chỉ có `HH:mm` nên không dựng lại được đồng hồ
+  /// chạy theo giây mà màn ghi hình và dấu đóng vào clip đều cần.
+  final int? capturedAtMs;
 
   /// Time the evidence was captured, e.g. `10:23`.
   final String time;
@@ -125,7 +130,16 @@ class EcVideoDetail {
     this.fileSize,
     this.mediaUrl,
     this.type = EcEvidenceType.video,
+    this.capturedAtMs,
+    this.tracking,
   });
+
+  /// Mốc quay, epoch-ms — gốc của đồng hồ chạy lúc phát lại và của dấu đóng
+  /// vào clip khi xuất. `null` với bằng chứng cũ chưa có trường này.
+  final int? capturedAtMs;
+
+  /// Mã vận đơn của bằng chứng, để hiện lại đúng như lúc quay.
+  final String? tracking;
 
   /// Video type label, e.g. `Đóng hàng đi`.
   final String title;
@@ -826,7 +840,10 @@ class _EcBundleSection extends StatelessWidget {
           children: [
             const Icon(LucideIcons.plus, size: 20, color: PenColors.ink),
             PenText(
-              l10n.bundleCreate,
+              // Nói thẳng ra cái sắp nhận được. Từ khi "Đẩy lên Drive" tạm gỡ
+              // thì gộp bằng chứng chỉ còn một đường ra là link, nên "Tạo"
+              // chung chung bắt người dùng bấm vào mới biết mình được gì.
+              l10n.bundleCreateLink,
               size: 15,
               color: PenColors.ink,
               weight: FontWeight.w600,
@@ -861,7 +878,7 @@ class _EcBundleSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        // ponytail: chỉ còn đường tạo link. Nút "Đẩy lên Drive" tạm gỡ vì chưa
+        // Chỉ còn đường tạo link. Nút "Đẩy lên Drive" tạm gỡ vì chưa
         // có gì đứng sau nó — chuỗi l10n `bundleUploadDrive` vẫn giữ, dựng lại
         // là thêm một `_BundleAction` nữa ở đây.
         _BundleAction(

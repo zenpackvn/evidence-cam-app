@@ -234,19 +234,16 @@ class EcRecording2Screen extends StatelessWidget {
       onResolution: onResolution,
       showStopButton: true,
       onStop: onStop,
-      // The design stacks the code and REC pills just under the header,
-      // not in the middle of the viewfinder.
+      stampCode: code,
+      // Chỉ còn pill REC dưới header: mã vận đơn đã nằm trong khối mốc thời
+      // gian góc phải, để giữa khung ngắm hai lần là che mất cảnh đang quay.
       centerArea: SafeArea(
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.only(top: 76),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              _CamCodeBadge(code: code),
-              const SizedBox(height: 10),
-              _RecRow(elapsed: elapsed),
-            ],
+            children: [_RecRow(elapsed: elapsed)],
           ),
         ),
       ),
@@ -695,8 +692,9 @@ class EcReturnRecScreen extends StatelessWidget {
       onManualEntry: onManualEntry,
       showStopButton: true,
       onStop: onStop,
-      // Khung F3-07 dựng giống hệt F3-03: mã và pill REC nằm ngay dưới header,
-      // không phải giữa khung ngắm. Quay trả hàng khác quay đóng gói ở chỗ có
+      stampCode: code,
+      // Khung F3-07 dựng giống hệt F3-03: pill REC nằm ngay dưới header, mã ở
+      // khối mốc thời gian góc phải. Quay trả hàng khác quay đóng gói ở chỗ có
       // mã và loại video, không phải ở cách bố trí — nên dùng chung đúng khối
       // này thay vì dựng riêng.
       centerArea: SafeArea(
@@ -706,8 +704,6 @@ class EcReturnRecScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _CamCodeBadge(code: code),
-              const SizedBox(height: 10),
               _RecRow(elapsed: duration),
               // ⚠️ Lệch design có chủ ý: khung F3-07 không có dòng này. Giữ vì
               // nó là thứ duy nhất nói cho nhân viên biết clip hoàn sẽ được nối
@@ -745,12 +741,16 @@ class _CamScaffold extends StatelessWidget {
     this.showScanFrame = false,
     this.showStopButton = false,
     this.onStop,
+    this.stampCode,
   });
 
   final int queueCount;
   final String typeLabel;
   final String resolutionLabel;
   final Widget centerArea;
+
+  /// Mã vận đơn đang quay; `null` ở màn chờ, lúc đó header không có khối mốc.
+  final String? stampCode;
 
   final Widget? preview;
   final VoidCallback? onBack;
@@ -793,6 +793,7 @@ class _CamScaffold extends StatelessWidget {
               bottom: false,
               child: _CamHeader(
                 queueCount: queueCount,
+                stampCode: stampCode,
                 onBack: onBack,
                 onQueueTap: onQueueTap,
               ),
@@ -1027,81 +1028,109 @@ class _CamFooter extends StatelessWidget {
 class _CamHeader extends StatelessWidget {
   const _CamHeader({
     required this.queueCount,
+    this.stampCode,
     this.onBack,
     this.onQueueTap,
   });
 
   final int queueCount;
+  final String? stampCode;
   final VoidCallback? onBack;
   final VoidCallback? onQueueTap;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 22, 16, 0),
-      child: Row(
+      // Sát mép trên hết mức: khối mốc thời gian bên phải cao hơn một nút bấm,
+      // đẩy xuống nữa là nó ăn vào khung ngắm.
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+      // Stack chứ không phải Row: khối mốc thời gian được phép lấn sang nửa
+      // trái khi mã dài, thay vì bị bóp lại rồi xuống dòng. Trong Row nó phải
+      // chia phần rộng với nút back và chip mây.
+      //
+      // `Clip.none` là bắt buộc: Stack cao bằng hàng nút (50) còn khối mốc ba
+      // dòng cao hơn thế, cắt mặc định là nuốt mất đúng dòng mã vận đơn.
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // Nút back chỉ hiện khi có người nhận: màn quay bỏ nó đi vì lối ra
-          // đã nằm ở sheet chọn loại (bấm back ở đó là sang tab Vận đơn), và
-          // thanh tab dưới cùng vẫn luôn ở đó.
-          if (onBack != null)
-            _Tap(
-              onTap: onBack,
-              tooltip: context.l10n.tooltipBack,
-              child: PenBox(
-                width: 42,
-                height: 42,
-                fill: const Color(0xBF161616),
-                stroke: PenColors.mut,
-                radius: 999,
-                axis: PenAxis.row,
-                main: MainAxisAlignment.center,
-                cross: CrossAxisAlignment.center,
-                children: const [
-                  Icon(
-                    LucideIcons.chevronLeft,
-                    size: 22,
-                    color: PenColors.card,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Nút back chỉ hiện khi có người nhận: màn quay bỏ nó đi vì lối
+              // ra đã nằm ở sheet chọn loại (bấm back ở đó là sang tab Vận
+              // đơn), và thanh tab dưới cùng vẫn luôn ở đó.
+              if (onBack != null)
+                _Tap(
+                  onTap: onBack,
+                  tooltip: context.l10n.tooltipBack,
+                  child: PenBox(
+                    width: 42,
+                    height: 42,
+                    fill: const Color(0xBF161616),
+                    stroke: PenColors.mut,
+                    radius: 999,
+                    axis: PenAxis.row,
+                    main: MainAxisAlignment.center,
+                    cross: CrossAxisAlignment.center,
+                    children: const [
+                      Icon(
+                        LucideIcons.chevronLeft,
+                        size: 22,
+                        color: PenColors.card,
+                      ),
+                    ],
                   ),
-                ],
+                ),
+              if (onBack != null) const SizedBox(width: 2),
+              // Đệm 4 giống hệt `_Tap` bọc nút back: nếu không, hai khối cùng
+              // cao 42 nhưng nút back bị đẩy xuống 4 còn chip thì không, nhìn
+              // ra ngay là chip cao hơn. 2 + 4 + 4 = khoảng cách thấy được 10.
+              Padding(
+                padding: const EdgeInsets.all(4),
+                child: EcTap(
+                  onTap: onQueueTap,
+                  child: _QueueChip(count: queueCount),
+                ),
               ),
-            ),
-          const Spacer(),
-          // ponytail: EcTap thay vì _Tap — _Tap thêm padding 4 làm lệch chip
-          // so với thiết kế; ở đây chỉ cần vùng bấm.
-          EcTap(
-            onTap: onQueueTap,
-            child: _QueueChip(count: queueCount),
+            ],
           ),
+          if (stampCode case final code?)
+            Positioned(right: 0, top: 0, child: _RecStamp(code: code)),
         ],
       ),
     );
   }
 }
 
-/// Live date/time readout under the header — lets the seller confirm the
-/// clip's timestamp without leaving the camera screen.
-class _LiveClock extends StatefulWidget {
-  const _LiveClock();
+/// Mốc thời gian + mã vận đơn ở góc phải khi đang quay.
+///
+/// Lặp lại đúng ba dòng mà [EcVideoStampService] đóng vào khung hình lúc xuất
+/// clip, nên người quay nhìn thấy trước cái mà người nhận bằng chứng sẽ đọc —
+/// sai ngày giờ máy hay quay nhầm mã thì lộ ra ngay tại chỗ, không phải đợi
+/// đến lúc tải về mới biết.
+class _RecStamp extends StatefulWidget {
+  const _RecStamp({required this.code});
+
+  final String code;
 
   @override
-  State<_LiveClock> createState() => _LiveClockState();
+  State<_RecStamp> createState() => _RecStampState();
 }
 
-class _LiveClockState extends State<_LiveClock> {
-  late Timer _timer;
+class _RecStampState extends State<_RecStamp> {
+  late final Timer _tick;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    _tick.cancel();
     super.dispose();
   }
 
@@ -1110,16 +1139,49 @@ class _LiveClockState extends State<_LiveClock> {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final date = '${_two(now.day)}/${_two(now.month)}/${now.year}';
-    return Padding(
-      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(date, style: _t(12, FontWeight.w500, BrandColors.mut)),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '${_two(now.day)}/${_two(now.month)}/${now.year}',
+          style: _stampStyle(15, FontWeight.w500),
+          softWrap: false,
+        ),
+        // Có cả giây: hai clip liền nhau của cùng một ca chỉ khác nhau ở đây.
+        Text(
+          '${_two(now.hour)}:${_two(now.minute)}:${_two(now.second)}',
+          style: _stampStyle(22, FontWeight.w700),
+          softWrap: false,
+        ),
+        // Một hàng, không cắt bằng `...` và không xuống dòng: một mã vận đơn
+        // thiếu đuôi thì vô dụng. Mã dài thì để nó dài sang trái.
+        Text(
+          widget.code,
+          style: _stampStyle(15, FontWeight.w600),
+          softWrap: false,
+          overflow: TextOverflow.visible,
+        ),
+      ],
     );
   }
 }
+
+/// Chữ trắng nổi thẳng trên khung ngắm, không có nền.
+///
+/// Nền là cảnh đóng gói nên sáng tối thất thường — bóng đổ tối dưới chữ là
+/// thứ duy nhất giữ cho nó đọc được trên cả nền trắng lẫn nền tối, thay cho
+/// cái khung đã bỏ. Cùng cách xử lý với dấu đóng vào clip lúc xuất.
+TextStyle _stampStyle(double size, FontWeight weight) => TextStyle(
+  fontSize: size,
+  height: 1.25,
+  color: PenColors.card,
+  fontWeight: weight,
+  shadows: const [
+    Shadow(color: Color(0xCC000000), blurRadius: 6),
+    Shadow(color: Color(0x99000000), offset: Offset(0, 1)),
+  ],
+);
 
 class _QueueChip extends StatelessWidget {
   const _QueueChip({required this.count});
@@ -1128,6 +1190,9 @@ class _QueueChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PenBox(
+      // Cùng chiều cao với nút back (42) để hai cái thẳng hàng cả trên lẫn
+      // dưới — chip tự co theo chữ thì thấp hơn và nhìn ra ngay là lệch.
+      height: 42,
       fill: const Color(0xBF161616),
       stroke: PenColors.mut,
       radius: 999,
@@ -1135,7 +1200,7 @@ class _QueueChip extends StatelessWidget {
       gap: 8,
       cross: CrossAxisAlignment.center,
       hugMain: true,
-      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 15),
+      padding: const EdgeInsets.symmetric(horizontal: 15),
       children: [
         const Icon(
           LucideIcons.cloudUpload,
