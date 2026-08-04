@@ -290,6 +290,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorLoadShopDetail => 'Couldn\'t load shop details';
 
   @override
+  String get errorLoadMembers => 'Couldn\'t load the member list';
+
+  @override
   String get errorLoadOrders => 'Couldn\'t load orders';
 
   @override

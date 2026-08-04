@@ -1694,12 +1694,23 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
+    this.membersError = false,
+    this.onRetryMembers,
     super.key,
   });
 
   final String shopName;
   final String platformLabel;
   final List<EcShopMember> members;
+
+  /// Đọc danh sách thành viên hỏng.
+  ///
+  /// Tách hẳn khỏi "[members] rỗng": một cửa hàng luôn có ít nhất người tạo ra
+  /// nó, nên danh sách trống đọc ra là mất chủ shop chứ không phải chưa tải
+  /// được. Bật cờ này thì phần thành viên báo lỗi kèm nút thử lại, phần còn
+  /// lại của màn hình vẫn dùng bình thường.
+  final bool membersError;
+  final VoidCallback? onRetryMembers;
   final List<EcVideoType> videoTypes;
   final String resolution;
   final ClipBudget clipBudget;
@@ -1768,20 +1779,23 @@ class EcShopDetailScreen extends StatelessWidget {
               icon: LucideIcons.users,
               label: l10n.sectionMembers,
               children: [
-                for (var i = 0; i < members.length; i++) ...[
-                  if (i > 0)
-                    const PenBox(
-                      width: double.infinity,
-                      height: 1,
-                      fill: PenColors.line,
+                if (membersError)
+                  _MembersErrorRow(onRetry: onRetryMembers)
+                else
+                  for (var i = 0; i < members.length; i++) ...[
+                    if (i > 0)
+                      const PenBox(
+                        width: double.infinity,
+                        height: 1,
+                        fill: PenColors.line,
+                      ),
+                    _MemberRow(
+                      member: members[i],
+                      onTap: onMemberMore == null
+                          ? null
+                          : () => onMemberMore!(members[i]),
                     ),
-                  _MemberRow(
-                    member: members[i],
-                    onTap: onMemberMore == null
-                        ? null
-                        : () => onMemberMore!(members[i]),
-                  ),
-                ],
+                  ],
                 EcTap(
                   onTap: onInviteMember,
                   child: PenBox(
@@ -2036,6 +2050,49 @@ class _PenSectionCard extends StatelessWidget {
           ],
         ),
         ...children,
+      ],
+    );
+  }
+}
+
+/// Chỗ của danh sách thành viên khi đọc hỏng — nói rõ là chưa tải được, kèm
+/// đường thử lại. Thà thừa một dòng chữ còn hơn để trống và bị đọc thành
+/// "cửa hàng này không có ai".
+class _MembersErrorRow extends StatelessWidget {
+  const _MembersErrorRow({this.onRetry});
+
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return PenBox(
+      width: double.infinity,
+      axis: PenAxis.row,
+      gap: 12,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      children: [
+        const Icon(LucideIcons.triangleAlert, size: 20, color: PenColors.mut),
+        Expanded(
+          child: PenText(
+            l10n.errorLoadMembers,
+            size: 14,
+            color: PenColors.mut,
+            lineHeight: 1.4,
+          ),
+        ),
+        if (onRetry != null)
+          EcTap(
+            onTap: onRetry,
+            child: PenText(
+              l10n.commonRetry,
+              size: 14,
+              color: PenColors.link,
+              weight: FontWeight.w700,
+              softWrap: false,
+            ),
+          ),
       ],
     );
   }

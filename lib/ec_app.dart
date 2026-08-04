@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -1163,7 +1164,12 @@ class _QuotaRouteState extends State<_QuotaRoute> {
         previousPlanCode: currentPlanCode,
       );
       if (!mounted) return;
-      setState(() => _quota = widget.repo.quota(shopId: widget.shopId));
+      // Thân khối, không mũi tên: `=> _quota = ...` trả về chính cái Future
+      // vừa gán, mà setState cấm callback trả về Future — Flutter ném lỗi và
+      // Crashlytics ghi nhận mỗi lần nâng gói thành công.
+      setState(() {
+        _quota = widget.repo.quota(shopId: widget.shopId);
+      });
       _toast(
         context,
         applied
@@ -2716,20 +2722,67 @@ class _ShopDetailRoute extends StatefulWidget {
 class _ShopDetailRouteState extends State<_ShopDetailRoute> {
   late Future<_ShopDetailData> _detail = _load();
 
+  /// Ba lời gọi độc lập nhau, nhưng hỏng thì không được im lặng.
+  ///
+  /// `await` nối tiếp cả ba (bản đầu) khiến một endpoint hỏng là cả màn chi
+  /// tiết thành trang "không tải được". Cho tất cả rơi về rỗng (bản thứ hai)
+  /// còn tệ hơn: danh sách thành viên trống đọc ra thành "mất chủ shop" — một
+  /// khẳng định sai về quyền sở hữu, chứ không phải một màn thiếu dữ liệu.
+  ///
+  /// Nên chia theo mức nguy hiểm của việc đoán sai:
+  /// - **thành viên** hỏng → ném lên cho màn báo lỗi. Rỗng ở đây là một câu
+  ///   trả lời về việc ai sở hữu cửa hàng, không được bịa.
+  /// - **thông tin shop** hỏng → lùi về snapshot của màn quản lý; ở đó là tên,
+  ///   sàn, độ phân giải thật, không có gì bịa ra.
+  /// - **loại video** hỏng → rỗng, đúng như spec, và người dùng nhận ra ngay
+  ///   vì màn này có sẵn nút thêm loại.
   Future<_ShopDetailData> _load() async {
     final l10n = context.l10n;
+    final results = await Future.wait([
+      _orLog('shop', () => widget.repo.shop(widget.shop.id)),
+      _orLog('members', () => widget.repo.members(widget.shop.id)),
+      _orLog('video-types', () => widget.repo.videoTypes(widget.shop.id)),
+    ]);
+    final members = results[1] as List<MemberDto>?;
     return _ShopDetailData(
-      // Đọc lại shop, không dùng snapshot của route: đổi độ phân giải hay thời
-      // lượng xong quay về là mức đề xuất + cảnh báo phải đúng ngay.
-      shop: await widget.repo.shop(widget.shop.id),
-      members: (await widget.repo.members(
-        widget.shop.id,
-      )).map((m) => _memberFromDto(l10n, m)).toList(),
-      videoTypes: (await widget.repo.videoTypes(
-        widget.shop.id,
-      )).map(_videoTypeFromDto).toList(),
+      shop: (results[0] as ShopDto?) ?? _snapshotDto(),
+      members: (members ?? const [])
+          .map((m) => _memberFromDto(l10n, m))
+          .toList(),
+      membersFailed: members == null,
+      videoTypes: ((results[2] as List<VideoTypeDto>?) ?? const [])
+          .map(_videoTypeFromDto)
+          .toList(),
     );
   }
+
+  Future<T?> _orLog<T>(String what, Future<T> Function() run) async {
+    try {
+      return await run();
+    } on Object catch (error, stack) {
+      developer.log(
+        'shop detail: $what failed',
+        name: 'zenpack.shop',
+        level: 1000,
+        error: error,
+        stackTrace: stack,
+      );
+      return null;
+    }
+  }
+
+  /// Bản shop dựng lại từ snapshot của route, dùng khi đọc lại shop hỏng.
+  ///
+  /// Ngân sách clip không nằm trong [EcShopSummary] dưới dạng số thô nên các
+  /// trường đó về mặc định của DTO — màn hình vẫn dựng được, chỉ là mức đề
+  /// xuất hiển thị theo mặc định cho tới lần đọc lại thành công.
+  ShopDto _snapshotDto() => ShopDto(
+    id: widget.shop.id,
+    name: widget.shop.name,
+    platform: widget.shop.platform,
+    resolution: widget.shop.resolution,
+    role: widget.shop.role,
+  );
 
   /// Kết quả tốt gần nhất — giữ màn hình đứng yên trong lúc làm mới ngầm.
   _ShopDetailData? _last;
@@ -2755,6 +2808,8 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
       builder: (context, detail) {
         _last = detail;
         return EcShopDetailScreen(
+          membersError: detail.membersFailed,
+          onRetryMembers: _retry,
           shopName: detail.shop.name,
           platformLabel: _platformDisplayName(detail.shop.platform),
           resolution: detail.shop.resolution,
@@ -2818,7 +2873,12 @@ class _ShopDetailData {
     required this.shop,
     required this.members,
     required this.videoTypes,
+    this.membersFailed = false,
   });
+
+  /// Đọc thành viên hỏng — phân biệt với cửa hàng thật sự không có ai, thứ
+  /// không tồn tại vì cửa hàng nào cũng có người tạo ra nó.
+  final bool membersFailed;
 
   final ShopDto shop;
 
@@ -3511,15 +3571,29 @@ class _OrderRouteState extends State<_OrderRoute> {
     // that account actually is (name, else email) so it reads like a person
     // instead of a token. Best-effort: an empty map just falls back to the
     // uid, same as before, rather than failing the whole screen.
-    var memberNames = const <String, String>{};
+    var memberNames = <String, String>{};
+    // Tên trên chính tài khoản đang đăng nhập, đặt trước danh sách thành viên.
+    //
+    // Clip người ta xem lại nhiều nhất là clip của chính mình, mà tên mình thì
+    // không cần hỏi cửa hàng mới biết. Quan trọng hơn: `/members` hỏng là cả
+    // map rỗng, lúc đó dòng "Người quay" rơi về một nhãn chung chung dù app
+    // đang biết thừa người quay là ai.
+    try {
+      final me = await widget.repo.account();
+      final myName = me.name ?? me.email;
+      if (myName != null && myName.isNotEmpty) memberNames[me.uid] = myName;
+    } on Object {
+      // Không đọc được tài khoản thì vẫn còn đường qua danh sách thành viên.
+    }
     try {
       final members = await widget.repo.members(widget.shop.id);
       memberNames = {
+        ...memberNames,
         for (final m in members)
           if ((m.name ?? m.email) != null) m.accountUid: (m.name ?? m.email)!,
       };
     } on Object {
-      // Keep the empty map — evidence still renders, just without names.
+      // Keep whatever we have — evidence still renders, just without names.
     }
     // FR-07: link hồ sơ khiếu nại, nếu web admin đã tạo cho đơn này. Best
     // effort — nhân viên bị 403 ở endpoint này, và không có link thì thẻ chỉ

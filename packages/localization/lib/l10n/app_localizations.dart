@@ -620,6 +620,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t load shop details'**
   String get errorLoadShopDetail;
 
+  /// No description provided for @errorLoadMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the member list'**
+  String get errorLoadMembers;
+
   /// No description provided for @errorLoadOrders.
   ///
   /// In en, this message translates to:

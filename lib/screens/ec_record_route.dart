@@ -875,6 +875,23 @@ class _CoverPreviewState extends State<_CoverPreview> {
     }
   }
 
+  /// Khung đứng gần nhất, dùng mỗi khi luồng camera sống không vẽ được.
+  ///
+  /// Đen tuyền chỉ khi chưa từng bắt được khung nào — người quay thấy cảnh
+  /// đứng hình dễ chịu hơn nhiều so với màn tối chớp một nhịp.
+  Widget _frozenFrame() {
+    final frame = _lastGoodFrame;
+    if (frame == null) return const ColoredBox(color: Colors.black);
+    return FittedBox(
+      fit: BoxFit.cover,
+      child: SizedBox(
+        width: frame.width.toDouble(),
+        height: frame.height.toDouble(),
+        child: RawImage(image: frame),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _unmaskTimer?.cancel();
@@ -897,33 +914,24 @@ class _CoverPreviewState extends State<_CoverPreview> {
           // frame lands on top of it. The periodic refresh below only
           // touches the live layer while unmasked anyway, so nothing is
           // lost by skipping it entirely here.
-          if (_masking) {
-            final frame = _lastGoodFrame;
-            if (frame == null) return const ColoredBox(color: Colors.black);
-            return FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: frame.width.toDouble(),
-                height: frame.height.toDouble(),
-                child: RawImage(image: frame),
-              ),
-            );
-          }
+          if (_masking) return _frozenFrame();
           // Controller đã dispose (đổi độ phân giải, lật camera, app xuống nền,
           // hoặc màn quay chờ người dùng chọn loại video) thì `buildPreview`
-          // ném CameraException ngay giữa lúc build. Một khung đen là đủ —
-          // controller mới lên là widget rebuild và preview trở lại.
-          if (!controller.value.isInitialized) {
-            final frame = _lastGoodFrame;
-            if (frame == null) return const ColoredBox(color: Colors.black);
-            return FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: frame.width.toDouble(),
-                height: frame.height.toDouble(),
-                child: RawImage(image: frame),
-              ),
-            );
+          // ném CameraException ngay giữa lúc build. Khung đứng gần nhất là
+          // đủ — controller mới lên là widget rebuild và preview trở lại.
+          if (!controller.value.isInitialized) return _frozenFrame();
+          final Widget livePreview;
+          try {
+            livePreview = defaultTargetPlatform == TargetPlatform.android
+                ? CameraPreview(controller)
+                : controller.buildPreview();
+          } on CameraException {
+            // `value.isInitialized` KHÔNG bắt được controller đã dispose:
+            // package:camera giữ `_isDisposed` riêng, không có getter công
+            // khai, và `buildPreview` ném vì cờ đó chứ không vì cờ kia. Một
+            // controller vừa dispose xong vẫn báo đã khởi tạo, lọt qua guard
+            // trên và làm hỏng nguyên khung hình đang dựng.
+            return _frozenFrame();
           }
           // Only the live preview's rotation is affected by the
           // recording-start rebind, not the recorded file — so the correction
@@ -951,9 +959,7 @@ class _CoverPreviewState extends State<_CoverPreview> {
                     // recordingOrientation bị đọc là landscape (điện thoại nằm
                     // gần phẳng trên bàn), làm preview méo/quay dù file quay ra
                     // vẫn đúng. SizedBox trên đã dựng sẵn khung 9:16 đúng rồi.
-                    child: defaultTargetPlatform == TargetPlatform.android
-                        ? CameraPreview(controller)
-                        : controller.buildPreview(),
+                    child: livePreview,
                   ),
                 ),
               ),

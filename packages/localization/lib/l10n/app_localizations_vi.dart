@@ -288,6 +288,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get errorLoadShopDetail => 'Không tải được chi tiết shop';
 
   @override
+  String get errorLoadMembers => 'Không tải được danh sách thành viên';
+
+  @override
   String get errorLoadOrders => 'Không tải được đơn hàng';
 
   @override

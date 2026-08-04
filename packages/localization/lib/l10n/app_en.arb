@@ -119,6 +119,7 @@
   "errorLoadShopList": "Couldn't load the shop list",
   "errorLoadShopMgmt": "Couldn't load shop management",
   "errorLoadShopDetail": "Couldn't load shop details",
+  "errorLoadMembers": "Couldn't load the member list",
   "errorLoadOrders": "Couldn't load orders",
   "errorLoadOrderDetail": "Couldn't load order details",
   "noShopSelectedOrdersDetail": "Please choose a shop before viewing orders.",

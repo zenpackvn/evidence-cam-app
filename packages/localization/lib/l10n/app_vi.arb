@@ -87,6 +87,7 @@
   "errorLoadShopList": "Không tải được danh sách shop",
   "errorLoadShopMgmt": "Không tải được quản lý shop",
   "errorLoadShopDetail": "Không tải được chi tiết shop",
+  "errorLoadMembers": "Không tải được danh sách thành viên",
   "errorLoadOrders": "Không tải được đơn hàng",
   "errorLoadOrderDetail": "Không tải được chi tiết đơn",
   "noShopSelectedOrdersDetail": "Vui lòng chọn shop trước khi xem đơn hàng.",
