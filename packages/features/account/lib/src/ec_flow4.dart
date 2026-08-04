@@ -122,71 +122,71 @@ class EcAccountTabScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                        _SectionHeader(context.l10n.accountSectionApp, top: 38),
-                        _SettingsGroup(
-                          rows: [
-                            _SettingsRow(
-                              icon: LucideIcons.creditCard,
-                              label: context.l10n.accountPlanQuota,
-                              value: planLabel,
-                              onTap: onQuotaTap,
-                            ),
-                            _SettingsRow(
-                              icon: LucideIcons.globe,
-                              label: context.l10n.accountLanguage,
-                              value: languageLabel,
-                              onTap: onLanguageTap,
-                            ),
-                            _SettingsRow(
-                              icon: LucideIcons.qrCode,
-                              label: context.l10n.accountEndQr,
-                              onTap: onEndQrTap,
-                            ),
-                          ],
-                        ),
-                        _SectionHeader(context.l10n.accountSectionSecurity),
-                        _SettingsGroup(
-                          rows: [
-                            _SettingsRow(
-                              icon: LucideIcons.lock,
-                              label: passwordActionLabel,
-                              onTap: onChangePasswordTap,
-                            ),
-                            _SettingsRow(
-                              icon: LucideIcons.keyRound,
-                              label: context.l10n.accountLoginMethods,
-                              value: loginMethodsLabel,
-                              onTap: onLoginMethodsTap,
-                            ),
-                            _SettingsRow(
-                              icon: LucideIcons.logOut,
-                              label: context.l10n.accountSignOut,
-                              onTap: onLogout,
-                            ),
-                            _SettingsRow(
-                              icon: LucideIcons.trash2,
-                              label: context.l10n.accountDeleteAccount,
-                              onTap: onDeleteAccount,
-                            ),
-                          ],
-                        ),
-                        _SectionHeader(context.l10n.accountSectionAbout),
-                        _SettingsGroup(
-                          rows: [
-                            _SettingsRow(
-                              icon: LucideIcons.messageSquareText,
-                              label: context.l10n.accountFeedback,
-                              subtitle: context.l10n.accountFeedbackNote,
-                              onTap: onFeedback,
-                            ),
-                            _SettingsRow(
-                              icon: LucideIcons.star,
-                              label: context.l10n.accountRateApp,
-                              subtitle: context.l10n.accountRateAppNote,
-                              onTap: onRateApp,
-                            ),
-                          ],
-                        ),
+                  _SectionHeader(context.l10n.accountSectionApp, top: 38),
+                  _SettingsGroup(
+                    rows: [
+                      _SettingsRow(
+                        icon: LucideIcons.creditCard,
+                        label: context.l10n.accountPlanQuota,
+                        value: planLabel,
+                        onTap: onQuotaTap,
+                      ),
+                      _SettingsRow(
+                        icon: LucideIcons.globe,
+                        label: context.l10n.accountLanguage,
+                        value: languageLabel,
+                        onTap: onLanguageTap,
+                      ),
+                      _SettingsRow(
+                        icon: LucideIcons.qrCode,
+                        label: context.l10n.accountEndQr,
+                        onTap: onEndQrTap,
+                      ),
+                    ],
+                  ),
+                  _SectionHeader(context.l10n.accountSectionSecurity),
+                  _SettingsGroup(
+                    rows: [
+                      _SettingsRow(
+                        icon: LucideIcons.lock,
+                        label: passwordActionLabel,
+                        onTap: onChangePasswordTap,
+                      ),
+                      _SettingsRow(
+                        icon: LucideIcons.keyRound,
+                        label: context.l10n.accountLoginMethods,
+                        value: loginMethodsLabel,
+                        onTap: onLoginMethodsTap,
+                      ),
+                      _SettingsRow(
+                        icon: LucideIcons.logOut,
+                        label: context.l10n.accountSignOut,
+                        onTap: onLogout,
+                      ),
+                      _SettingsRow(
+                        icon: LucideIcons.trash2,
+                        label: context.l10n.accountDeleteAccount,
+                        onTap: onDeleteAccount,
+                      ),
+                    ],
+                  ),
+                  _SectionHeader(context.l10n.accountSectionAbout),
+                  _SettingsGroup(
+                    rows: [
+                      _SettingsRow(
+                        icon: LucideIcons.messageSquareText,
+                        label: context.l10n.accountFeedback,
+                        subtitle: context.l10n.accountFeedbackNote,
+                        onTap: onFeedback,
+                      ),
+                      _SettingsRow(
+                        icon: LucideIcons.star,
+                        label: context.l10n.accountRateApp,
+                        subtitle: context.l10n.accountRateAppNote,
+                        onTap: onRateApp,
+                      ),
+                    ],
+                  ),
                   _AppFooter(version: appVersion),
                   // Chừa chỗ cho thanh tab nổi bên dưới, nếu không mục cuối
                   // nằm khuất sau nó. Cùng nguồn số với chỗ kê nút liên hệ.
