@@ -94,39 +94,34 @@ class EcAccountTabScreen extends StatelessWidget {
   /// hai chỗ lệch nhau là sinh ra khe hở hoặc phần xanh bị đè.
   static const _bannerHeight = 140.0;
 
+  /// Chiều cao khối cố định tính từ mép dưới tai thỏ: lề trên 26 + thẻ tài
+  /// khoản (đệm 16 mỗi phía quanh nội dung cao 62).
+  ///
+  /// Vùng cuộn lấy đúng số này làm lề trên. Lấy theo [_bannerHeight] như bản
+  /// trước là sai: đáy thẻ nằm thấp hơn đáy dải xanh, nên mục đầu tiên bị thẻ
+  /// che mất một phần ngay khi chưa cuộn.
+  static const _headerBlockHeight = 26.0 + 62.0 + 32.0;
+
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       backgroundColor: BrandColors.bg,
       child: Stack(
         children: [
-          // Dải xanh nằm dưới cùng lớp vẽ, thuộc phần cố định.
-          const Align(
-            alignment: Alignment.topCenter,
-            child: PenBrandBanner(height: _bannerHeight),
-          ),
-          SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                // Khối cố định: thẻ tài khoản trên nền dải xanh. Cùng kiểu bố
-                // cục với trang Vận đơn — phần trên đứng yên, phần dưới cuộn
-                // và DỪNG lại dưới nó, không trượt chồng lên.
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
-                  child: _UserRow(
-                    name: userName,
-                    email: userEmail,
-                    avatarPath: avatarPath,
-                    onTap: onProfileTap,
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
+          // Vùng cuộn chiếm toàn màn và vẽ TRƯỚC, nên nội dung trượt lên là
+          // chui xuống dưới dải xanh lẫn thẻ tài khoản. Lề trên đúng bằng đáy
+          // thẻ nên lúc chưa cuộn không có gì bị che.
+          Positioned.fill(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                18,
+                MediaQuery.paddingOf(context).top + _headerBlockHeight,
+                18,
+                0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                         _SectionHeader(context.l10n.accountSectionApp, top: 38),
                         _SettingsGroup(
                           rows: [
@@ -192,17 +187,38 @@ class EcAccountTabScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        _AppFooter(version: appVersion),
-                      ],
-                    ),
-                  ),
-                ),
-                _BottomNav(
-                  active: _NavTab.account,
-                  onOrders: onNavOrders,
-                  onCapture: onNavCapture,
-                ),
-              ],
+                  _AppFooter(version: appVersion),
+                  // Chừa chỗ cho thanh tab nổi bên dưới, nếu không mục cuối
+                  // nằm khuất sau nó.
+                  SizedBox(height: 100 + MediaQuery.paddingOf(context).bottom),
+                ],
+              ),
+            ),
+          ),
+          // Dải xanh khoá, vẽ SAU vùng cuộn nên nội dung chui xuống dưới nó.
+          const Align(
+            alignment: Alignment.topCenter,
+            child: PenBrandBanner(height: _bannerHeight),
+          ),
+          // Thẻ tài khoản khoá, nằm trên cùng.
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
+              child: _UserRow(
+                name: userName,
+                email: userEmail,
+                avatarPath: avatarPath,
+                onTap: onProfileTap,
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: _BottomNav(
+              active: _NavTab.account,
+              onOrders: onNavOrders,
+              onCapture: onNavCapture,
             ),
           ),
           // Cụm liên hệ nổi ở góc phải dưới. Nằm trong Stack nên nó không cuộn
