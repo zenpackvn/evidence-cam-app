@@ -186,6 +186,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planBasic => 'Basic';
 
   @override
+  String get planSaver => 'Saver';
+
+  @override
+  String get planPremium => 'Premium';
+
+  @override
   String get roleOther => 'Other';
 
   @override

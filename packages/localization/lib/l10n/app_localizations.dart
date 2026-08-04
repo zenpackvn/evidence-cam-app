@@ -428,6 +428,18 @@ abstract class AppLocalizations {
   /// **'Basic'**
   String get planBasic;
 
+  /// No description provided for @planSaver.
+  ///
+  /// In en, this message translates to:
+  /// **'Saver'**
+  String get planSaver;
+
+  /// No description provided for @planPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get planPremium;
+
   /// No description provided for @roleOther.
   ///
   /// In en, this message translates to:

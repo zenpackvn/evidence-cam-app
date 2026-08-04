@@ -55,6 +55,8 @@
   "roleStaff": "Nhân viên",
   "planFree": "Miễn phí",
   "planBasic": "Cơ bản",
+  "planSaver": "Tiết kiệm",
+  "planPremium": "Cao cấp",
   "roleOther": "Khác",
   "roleUnknown": "Không rõ",
   "memberFallbackName": "Thành viên",

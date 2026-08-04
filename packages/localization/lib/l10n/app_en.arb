@@ -79,6 +79,8 @@
   "roleStaff": "Staff",
   "planFree": "Free",
   "planBasic": "Basic",
+  "planSaver": "Saver",
+  "planPremium": "Premium",
   "roleOther": "Other",
   "roleUnknown": "Unknown",
   "memberFallbackName": "Member",

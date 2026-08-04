@@ -412,7 +412,7 @@ class _LoginRouteState extends State<_LoginRoute> {
         resendError = error;
       }
     }
-    await widget.auth.signOut();
+    await _signOutAll(widget.auth);
     if (!mounted) return;
     if (resent) {
       _toast(context, context.l10n.loginVerificationResent);
@@ -508,7 +508,7 @@ class _RegisterRouteState extends State<_RegisterRoute> {
       // Remember them (keychain), then sign out of the auto-signed-in session
       // so the user completes the deliberate login step.
       await _credentials()?.save(email: email, password: _password.text);
-      await widget.auth.signOut();
+      await _signOutAll(widget.auth);
       if (!mounted) return;
       // Confirm the account exists before bouncing back to Login — otherwise
       // the screen just swaps and the registration looks like it did nothing.
@@ -778,7 +778,7 @@ class _AccountRouteState extends State<_AccountRoute> {
     );
     if (confirmed != true || !mounted) return;
     _analytics()?.trackSignOut();
-    await widget.auth.signOut();
+    await _signOutAll(widget.auth);
     // Same as signing out from the shop picker: drop the remembered shop so the
     // next session starts from a clean pick.
     await _forgetRememberedShop();
@@ -1586,6 +1586,17 @@ class _EndQrActionRow extends StatelessWidget {
   );
 }
 
+/// Đăng xuất khỏi TẤT CẢ: tài khoản và phiên mua hàng.
+///
+/// Bỏ [EcBilling.signOut] là để lại một lỗi tiền: RevenueCat vẫn giữ
+/// `app_user_id` của người trước trên thiết bị này, nên người đăng nhập sau mà
+/// mua gói thì webhook gửi về uid CŨ — tiền của người này, ngày cộng cho người
+/// kia. Máy dùng chung ở kho là chuyện bình thường, không phải trường hợp hiếm.
+Future<void> _signOutAll(EcAuth auth) async {
+  await auth.signOut();
+  await _billing()?.signOut();
+}
+
 T? _maybeGetIt<T extends Object>() =>
     getIt.isRegistered<T>() ? getIt<T>() : null;
 
@@ -2238,6 +2249,10 @@ String _planDisplayName(AppLocalizations l10n, String planCode) =>
     switch (planCode) {
       'free' => l10n.planFree,
       'basic' => l10n.planBasic,
+      'saver' => l10n.planSaver,
+      'premium' => l10n.planPremium,
+      // Mã lạ thì hiện nguyên mã: sai còn hơn im lặng gọi nhầm tên gói người
+      // dùng đang trả tiền. Nhưng 4 mã trên phải khớp PLANS ở backend.
       _ => planCode,
     };
 
@@ -3480,13 +3495,12 @@ class _OrderRouteState extends State<_OrderRoute> {
             // Share sheet thật (share_plus đã có sẵn qua app_platform, dùng
             // cho chia sẻ video); thiếu DI thì rơi về clipboard chứ không im
             // lặng không làm gì.
-            // Hai hành động gộp bằng chứng chưa có endpoint: backend mới chỉ
-            // `getDossier` (đọc hồ sơ web admin đã tạo), chưa có đường tạo hồ
-            // sơ từ app hay đẩy Drive. Báo rõ thay vì để nút bấm im lặng —
-            // nút không phản hồi là kiểu hỏng khó đoán nhất.
+            // ponytail: backend ĐÃ có `POST /api/shops/:id/orders/:orderId/
+            // dossier` (idempotent, trả đúng link cũ nếu gọi lại), nhưng
+            // `EcApi` chưa bọc nó nên chỗ này vẫn báo chờ. Nối vào là thêm một
+            // `createDossier` cạnh `getDossier` rồi gọi ở đây.
+            // Đường "Đẩy lên Drive" đã gỡ khỏi giao diện — không có gì đứng sau.
             onCreateLink: (picked) =>
-                _toast(context, context.l10n.bundleBackendPending),
-            onUploadDrive: (picked) =>
                 _toast(context, context.l10n.bundleBackendPending),
             onShareDossierLink: data.dossierUrl == null
                 ? null
@@ -4361,7 +4375,7 @@ GoRouter _buildRouter(
             onCreateShop: () => c.push('/create-shop'),
             onLogout: () {
               _analytics()?.trackSignOut();
-              auth.signOut().then((_) async {
+              _signOutAll(auth).then((_) async {
                 await _forgetRememberedShop();
                 if (c.mounted) c.go('/login', extra: 'back');
               });
@@ -4931,7 +4945,7 @@ GoRouter _buildRouter(
           onInviteTap: () => _toast(c, c.l10n.toastInvitePending),
           onLogout: () {
             _analytics()?.trackSignOut();
-            auth.signOut().then((_) async {
+            _signOutAll(auth).then((_) async {
               await _forgetRememberedShop();
               if (c.mounted) c.go('/login', extra: 'back');
             });

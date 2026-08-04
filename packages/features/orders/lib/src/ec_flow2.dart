@@ -173,7 +173,6 @@ class EcOrderTimelineScreen extends StatefulWidget {
     this.onCopyDossierLink,
     this.onShareDossierLink,
     this.onCreateLink,
-    this.onUploadDrive,
     super.key,
   });
 
@@ -213,9 +212,6 @@ class EcOrderTimelineScreen extends StatefulWidget {
 
   /// Gộp các bằng chứng đã chọn thành một link chia sẻ.
   final ValueChanged<List<EcTimelineVideo>>? onCreateLink;
-
-  /// Đẩy các bằng chứng đã chọn lên Google Drive.
-  final ValueChanged<List<EcTimelineVideo>>? onUploadDrive;
 
   @override
   State<EcOrderTimelineScreen> createState() => _EcOrderTimelineScreenState();
@@ -353,9 +349,6 @@ class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
               onCreateLink: _picked.isEmpty
                   ? null
                   : () => widget.onCreateLink?.call(_pickedVideos),
-              onUploadDrive: _picked.isEmpty
-                  ? null
-                  : () => widget.onUploadDrive?.call(_pickedVideos),
             ),
           ),
         ],
@@ -795,10 +788,9 @@ class _EcOrderTimelineHeader extends StatelessWidget {
   }
 }
 
-/// Khối "Tạo" ở cuối màn vận đơn: chọn bằng chứng rồi gộp thành link hoặc đẩy
-/// lên Drive.
+/// Khối "Tạo" ở cuối màn vận đơn: chọn bằng chứng rồi gộp thành link chia sẻ.
 ///
-/// Hai hành động chỉ bật khi đã tick ít nhất một mục — gộp một bộ rỗng không có
+/// Hành động chỉ bật khi đã tick ít nhất một mục — gộp một bộ rỗng không có
 /// nghĩa gì, và nút bấm được nhưng không làm gì là kiểu hỏng khó hiểu nhất.
 class _EcBundleSection extends StatelessWidget {
   const _EcBundleSection({
@@ -807,7 +799,6 @@ class _EcBundleSection extends StatelessWidget {
     this.onStart,
     this.onCancel,
     this.onCreateLink,
-    this.onUploadDrive,
   });
 
   final bool selecting;
@@ -815,7 +806,6 @@ class _EcBundleSection extends StatelessWidget {
   final VoidCallback? onStart;
   final VoidCallback? onCancel;
   final VoidCallback? onCreateLink;
-  final VoidCallback? onUploadDrive;
 
   @override
   Widget build(BuildContext context) {
@@ -871,17 +861,14 @@ class _EcBundleSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
+        // ponytail: chỉ còn đường tạo link. Nút "Đẩy lên Drive" tạm gỡ vì chưa
+        // có gì đứng sau nó — chuỗi l10n `bundleUploadDrive` vẫn giữ, dựng lại
+        // là thêm một `_BundleAction` nữa ở đây.
         _BundleAction(
           icon: LucideIcons.link,
           label: l10n.bundleCreateLink,
           onTap: onCreateLink,
           primary: true,
-        ),
-        const SizedBox(height: 9),
-        _BundleAction(
-          icon: LucideIcons.upload,
-          label: l10n.bundleUploadDrive,
-          onTap: onUploadDrive,
         ),
       ],
     );

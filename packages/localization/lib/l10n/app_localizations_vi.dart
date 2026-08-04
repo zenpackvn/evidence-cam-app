@@ -184,6 +184,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get planBasic => 'Cơ bản';
 
   @override
+  String get planSaver => 'Tiết kiệm';
+
+  @override
+  String get planPremium => 'Cao cấp';
+
+  @override
   String get roleOther => 'Khác';
 
   @override

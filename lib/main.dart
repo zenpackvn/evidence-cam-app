@@ -94,10 +94,10 @@ Future<void> main() async {
         // Thanh toán trong ứng dụng. Chỉ đăng ký khi build có khai khoá công
         // khai của RevenueCat — không có khoá thì mọi nút mua gói tự rơi về
         // nhánh "chưa hỗ trợ" thay vì nổ lúc chạy.
-        if (kRevenueCatIosKey.isNotEmpty) {
-          getIt.registerSingleton<EcBilling>(
-            EcBilling(apiKey: kRevenueCatIosKey),
-          );
+        // Khoá phải khớp NỀN TẢNG: `appl_…` cho iOS, `goog_…` cho Android.
+        // Dùng nhầm khoá thì SDK vẫn khởi tạo được nhưng mua bán hỏng im lặng.
+        if (kRevenueCatKey.isNotEmpty) {
+          getIt.registerSingleton<EcBilling>(EcBilling(apiKey: kRevenueCatKey));
         }
         // Evidence clips persist in ObjectBox (opened by the @preResolve store
         // module during configureDependencies), so the upload queue survives
