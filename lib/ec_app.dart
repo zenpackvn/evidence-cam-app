@@ -816,7 +816,10 @@ class _AccountRouteState extends State<_AccountRoute> {
             passwordActionLabel: user?.hasPassword == false
                 ? context.l10n.accountCreatePassword
                 : context.l10n.accountChangePassword,
-            avatarPath: _appMemory()?.getString(_avatarPathKey(user?.uid)),
+            // Ưu tiên bản trên máy (hiện ngay, không chờ mạng); chưa có thì
+            // dùng URL trên hồ sơ Firebase — đường này phục vụ máy mới hoặc
+            // sau khi cài lại app.
+            avatarPath: _rememberedAvatar(user?.uid) ?? user?.photoUrl,
             onNavOrders: () => context.go('/home'),
             onNavCapture: () => context.go('/record'),
             onFacebook: () => _openSupport(context, _kSupportFacebook),
@@ -913,25 +916,40 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
     final name = _name.text.trim();
     final phone = _phone.text.trim();
     try {
-      await widget.auth.updateProfile(name: name, phone: phone);
       var avatarPath = _avatarPath;
       if (avatarPath != null) {
         avatarPath = await _persistAvatarFile(
           avatarPath,
           widget.auth.currentUser?.uid,
         );
+        // Nhớ bản trên máy TRƯỚC mọi lời gọi mạng: ảnh đã nằm sẵn đó, không lý
+        // do gì để một lỗi mạng làm mất lựa chọn của người dùng. Bản này cũng
+        // là thứ hiển thị ngay trong lúc chờ tải lên.
+        await _rememberAvatar(widget.auth.currentUser?.uid, avatarPath);
       }
+
+      // Tải ảnh lên rồi ghi URL công khai vào hồ sơ Firebase — nhờ vậy ảnh
+      // theo tài khoản, đăng nhập máy nào cũng có. Tải hỏng (backend chưa mở
+      // endpoint, mất mạng) thì bỏ qua: tên và SĐT vẫn lưu được, ảnh vẫn hiện
+      // từ bản trên máy.
+      String? avatarUrl;
+      if (avatarPath != null) {
+        try {
+          avatarUrl = await widget.repo.uploadAvatar(avatarPath);
+        } on Object {
+          avatarUrl = null;
+        }
+      }
+      await widget.auth.updateProfile(
+        name: name,
+        phone: phone,
+        photoUrl: avatarUrl,
+      );
       await widget.repo.updateProfile(
         name: name,
         phone: phone,
-        avatarUrl: avatarPath,
+        avatarUrl: avatarUrl ?? avatarPath,
       );
-      if (avatarPath != null) {
-        await _appMemory()?.setString(
-          _avatarPathKey(widget.auth.currentUser?.uid),
-          avatarPath,
-        );
-      }
       if (!mounted) return;
       context.pop();
       _toast(context, context.l10n.toastInfoSaved);
@@ -2186,6 +2204,28 @@ Future<bool> _confirmManualTracking(
 String _sizeKey(String shopId, EcUploadKind kind) =>
     'shop.$shopId.max${kind == EcUploadKind.image ? 'Image' : 'Video'}Bytes';
 
+/// Ảnh đại diện vừa chọn, giữ trong bộ nhớ tiến trình.
+///
+/// Cùng lý do với [_sizeCapCache]: `KeyValueStore` lấy qua service locator có
+/// thể chưa đăng ký, lúc đó `setString` im lặng không làm gì và ảnh vừa chọn
+/// biến mất ngay khi trang Tài khoản dựng lại.
+final _avatarCache = <String, String>{};
+
+Future<void> _rememberAvatar(String? uid, String path) {
+  final key = _avatarPathKey(uid);
+  _avatarCache[key] = path;
+  return _appMemory()?.setString(key, path) ?? Future<void>.value();
+}
+
+String? _rememberedAvatar(String? uid) {
+  final key = _avatarPathKey(uid);
+  final cached = _avatarCache[key];
+  if (cached != null) return cached;
+  final saved = _appMemory()?.getString(key);
+  if (saved != null) _avatarCache[key] = saved;
+  return saved;
+}
+
 /// Trần dung lượng người dùng vừa đặt, giữ trong bộ nhớ tiến trình.
 ///
 /// Có bản nhớ này vì `KeyValueStore` lấy qua service locator có thể chưa đăng
@@ -2207,14 +2247,26 @@ Future<void> _rememberSizeCap(String shopId, EcUploadKind kind, int bytes) {
 }
 
 int _rememberedSizeCap(String shopId, EcUploadKind kind, int fromServer) {
-  if (fromServer > 0) return fromServer;
+  // Lựa chọn của người dùng THẮNG giá trị server.
+  //
+  // Bản trước ưu tiên server, nhưng `max_video_bytes`/`max_image_bytes` mà
+  // server trả về là trần của SÀN (30MB, 5MB) chứ không phải mức shop đặt —
+  // nó luôn khác 0, nên con số vừa nhập không bao giờ được dùng và màn cài
+  // đặt cứ hiện 30 như chưa đổi gì. Khi backend nhận hai trường đó thật thì
+  // đảo lại thứ tự này.
   final key = _sizeKey(shopId, kind);
   final cached = _sizeCapCache[key];
   if (cached != null) return cached;
   final saved = _appMemory()?.getString(key);
   final parsed = int.tryParse(saved ?? '');
-  if (parsed != null) _sizeCapCache[key] = parsed;
-  return parsed ?? 0;
+  if (parsed != null) {
+    _sizeCapCache[key] = parsed;
+    return parsed;
+  }
+  // Chưa đặt gì thì lấy mức đề xuất của LOẠI, KHÔNG lấy con số server trả.
+  // Server trả trần của sàn — với ảnh nó là 10MB, trong khi mức đề xuất của
+  // app là 5MB; hiện 10 làm người dùng tưởng shop đã đặt mức đó.
+  return kind.defaultMegabytes * 1000000;
 }
 
 ClipBudget _budgetFromDto(ShopDto shop) => ClipBudget(
@@ -3226,6 +3278,9 @@ class _OrdersRouteState extends State<_OrdersRoute> {
           : _hhmm(DateTime.fromMillisecondsSinceEpoch(capturedAt)),
       type: o.latestType ?? l10n.orderNoEvidence,
       videoCount: _evidenceCount(o),
+      // Ưu tiên lần quay gần nhất; đơn chưa có bằng chứng thì lấy lúc tạo đơn.
+      // Dùng cho việc lọc theo khoảng thời gian ngay tại chỗ.
+      capturedAtMs: capturedAt ?? o.createdAt,
       errorCount: _errorCount(o),
       pendingCount: o.pendingCount,
       thumbUrl: o.latestThumbUrl,
@@ -4611,6 +4666,28 @@ GoRouter _buildRouter(
                                             ),
                                           )
                                           .then((_) {}),
+                                      // Đường vào thứ hai của màn chi tiết cửa
+                                      // hàng (từ sheet chọn loại). Thiếu hai
+                                      // callback này thì hai hàng dung lượng
+                                      // vẫn vẽ ra nhưng bấm không ra gì.
+                                      onTapImageSize: () => router
+                                          .push<void>(
+                                            '/upload-size',
+                                            extra: (
+                                              shop.id,
+                                              EcUploadKind.image,
+                                            ),
+                                          )
+                                          .then((_) {}),
+                                      onTapVideoSize: () => router
+                                          .push<void>(
+                                            '/upload-size',
+                                            extra: (
+                                              shop.id,
+                                              EcUploadKind.video,
+                                            ),
+                                          )
+                                          .then((_) {}),
                                       onInviteMember: () => router
                                           .push(
                                             '/invite-member',
@@ -5032,10 +5109,16 @@ GoRouter _buildRouter(
             onTapClipDuration: () =>
                 c.push<void>('/clip-duration', extra: shop.id).then((_) {}),
             onTapImageSize: () => c
-                .push<void>('/upload-size', extra: EcUploadKind.image)
+                .push<void>(
+                  '/upload-size',
+                  extra: (shop.id, EcUploadKind.image),
+                )
                 .then((_) {}),
             onTapVideoSize: () => c
-                .push<void>('/upload-size', extra: EcUploadKind.video)
+                .push<void>(
+                  '/upload-size',
+                  extra: (shop.id, EcUploadKind.video),
+                )
                 .then((_) {}),
             onEditType: (type) =>
                 c.push('/create-type', extra: (shop.id, type)).then((_) {}),
@@ -5282,19 +5365,30 @@ GoRouter _buildRouter(
         path: '/upload-size',
         pageBuilder: (c, s) {
           final shop = _selected(selectedShop);
-          // `extra` mang theo loại bằng chứng: cùng một sheet phục vụ cả trần
-          // ảnh lẫn trần video, chỉ khác mức đề xuất và trường được ghi.
+          // `extra` mang theo CẢ id shop lẫn loại bằng chứng.
+          //
+          // Trước đây chỉ mang loại, còn id lấy từ `selectedShop` — mà màn chi
+          // tiết cửa hàng mở được cả khi `selectedShop` chưa đặt, lúc đó id là
+          // chuỗi rỗng. Ghi vào khoá `shop..maxVideoBytes` rồi đọc ở khoá
+          // `shop.<id thật>.maxVideoBytes`: hai khoá khác nhau nên con số vừa
+          // nhập không bao giờ đọc lại được.
           final extra = s.extra;
-          final kind = extra is EcUploadKind ? extra : EcUploadKind.video;
-          final shopId = extra is String ? extra : shop?.id ?? '';
+          final (shopId, kind) = extra is (String, EcUploadKind)
+              ? extra
+              : (shop?.id ?? '', EcUploadKind.video);
           return _modalPage(
             s,
             EcUploadSizeSheetScreen(
               budget: shop?.clipBudget ?? ClipBudget.fallback,
               platformLabel: _platformDisplayName(shop?.platform ?? 'other'),
               kind: kind,
+              // Đọc thẳng từ bản nhớ, không qua `selectedShop`: biến đó không
+              // được làm mới sau khi lưu nên sheet mở lại sẽ hiện mức mặc
+              // định thay vì con số vừa nhập.
+              currentMb: _rememberedSizeCap(shopId, kind, 0) ~/ 1000000,
               onSelect: (bytes) async {
                 final id = shopId.isEmpty ? (shop?.id ?? '') : shopId;
+                assert(id.isNotEmpty, 'thiếu shopId khi lưu trần dung lượng');
                 // Ghi nhớ rồi ĐÓNG NGAY, không chờ server.
                 //
                 // Bản trước chỉ đóng sheet trong nhánh thành công của

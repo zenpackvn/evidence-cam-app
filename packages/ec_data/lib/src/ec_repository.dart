@@ -1,8 +1,19 @@
+import 'dart:io';
+
 import 'ec_api.dart';
 import 'ec_models.dart';
 
 /// The seam screens read through. Production binds [RemoteEcRepository] once
 /// the Worker base URL is set; tests may bind [FakeEcRepository].
+/// Đoán `Content-Type` từ đuôi file — server cần biết để lưu đúng kiểu.
+String _avatarContentType(String path) {
+  final lower = path.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.heic')) return 'image/heic';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  return 'image/jpeg';
+}
+
 abstract interface class EcRepository {
   Future<List<ShopDto>> shops();
 
@@ -14,6 +25,9 @@ abstract interface class EcRepository {
   /// live in D1, not Firebase Auth, so the profile screen reads them from here.
   /// The call also claims any shop invite addressed to this account's email.
   Future<AccountDto> account();
+
+  /// Tải ảnh đại diện lên và trả về URL đọc công khai.
+  Future<String> uploadAvatar(String filePath);
 
   Future<AccountDto> updateProfile({
     String? name,
@@ -123,6 +137,15 @@ class RemoteEcRepository implements EcRepository {
     String? phone,
     String? avatarUrl,
   }) => _api.updateProfile(name: name, phone: phone, avatarUrl: avatarUrl);
+
+  @override
+  Future<String> uploadAvatar(String filePath) async {
+    final slot = await _api.presignAvatar(
+      contentType: _avatarContentType(filePath),
+    );
+    await _api.putFile(slot.uploadUrl, File(filePath));
+    return slot.publicUrl;
+  }
 
   @override
   Future<ShopDto> createShop({
@@ -289,6 +312,9 @@ class FakeEcRepository implements EcRepository {
       const AccountDto(uid: 'fake-uid', email: 'demo@evidencecam.app');
 
   @override
+  @override
+  Future<String> uploadAvatar(String filePath) async => filePath;
+
   Future<AccountDto> updateProfile({
     String? name,
     String? phone,

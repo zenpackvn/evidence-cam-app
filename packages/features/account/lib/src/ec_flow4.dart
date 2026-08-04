@@ -530,7 +530,11 @@ class EcLoginMethodsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _LoginMethodRow(
-                      icon: Icons.mail_outline,
+                      icon: const Icon(
+                        Icons.mail_outline,
+                        size: 24,
+                        color: BrandColors.ink,
+                      ),
                       name: 'Email',
                       detail: email,
                       linked: true,
@@ -538,7 +542,13 @@ class EcLoginMethodsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     _LoginMethodRow(
-                      icon: Icons.g_mobiledata,
+                      // `Icons.g_mobiledata` chỉ vẽ chữ "G" trần, nhìn như
+                      // thiếu icon chứ không phải logo Google.
+                      icon: const FaIcon(
+                        FontAwesomeIcons.google,
+                        size: 20,
+                        color: BrandColors.ink,
+                      ),
                       name: 'Google',
                       detail: googleLinked
                           ? context.l10n.linkLinked
@@ -549,7 +559,11 @@ class EcLoginMethodsScreen extends StatelessWidget {
                     if (showApple || appleLinked) ...[
                       const SizedBox(height: 10),
                       _LoginMethodRow(
-                        icon: Icons.apple,
+                        icon: const Icon(
+                          Icons.apple,
+                          size: 24,
+                          color: BrandColors.ink,
+                        ),
                         name: 'Apple',
                         detail: appleLinked
                             ? context.l10n.linkLinked
@@ -585,7 +599,7 @@ class _LoginMethodRow extends StatelessWidget {
     this.isIdentity = false,
     this.onToggle,
   });
-  final IconData icon;
+  final Widget icon;
   final String name;
   final String detail;
   final bool linked;
@@ -602,7 +616,10 @@ class _LoginMethodRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 24, color: BrandColors.ink),
+          // Nhận thẳng widget: logo Google nằm ở bộ Font Awesome (`FaIcon`),
+          // còn Apple/Email dùng bộ Material — hai kiểu `IconData` khác nhau
+          // nên không gói chung một tham số được.
+          SizedBox(width: 26, child: Center(child: icon)),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -1830,6 +1847,40 @@ class _SimpleHeader extends StatelessWidget {
   }
 }
 
+/// Ảnh đại diện từ đường dẫn file trên máy HOẶC URL công khai.
+///
+/// Hai nguồn vì ảnh vừa chọn nằm trên máy (hiện ngay, không chờ mạng), còn
+/// máy mới hay sau khi cài lại app thì chỉ có URL trên hồ sơ Firebase.
+/// `null` khi không dựng được, để chỗ gọi rơi về icon mặc định.
+Widget? _avatarImage(String? path, {required double size}) {
+  if (path == null || path.isEmpty) return null;
+  if (path.startsWith('http')) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+      ),
+    );
+  }
+  final file = File(path);
+  if (!file.existsSync()) return null;
+  return SizedBox(
+    width: size,
+    height: size,
+    child: Image.file(
+      file,
+      fit: BoxFit.cover,
+      // Avatar được ghi đè lên cùng đường dẫn mỗi lần đổi, nên riêng đường dẫn
+      // không đủ làm khoá bộ nhớ đệm — thiếu dòng này thì ảnh mới vẫn hiện bản
+      // cũ cho tới khi khởi động lại app.
+      key: ValueKey(file.lastModifiedSync()),
+    ),
+  );
+}
+
 class _UserRow extends StatelessWidget {
   const _UserRow({
     required this.name,
@@ -1845,9 +1896,7 @@ class _UserRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final path = avatarPath;
-    final file = path == null ? null : File(path);
-    final hasLocalFile = file?.existsSync() ?? false;
+    final image = _avatarImage(avatarPath, size: 62);
     return PenCard(
       stroke: null,
       gap: 16,
@@ -1867,20 +1916,8 @@ class _UserRow extends StatelessWidget {
           main: MainAxisAlignment.center,
           cross: CrossAxisAlignment.center,
           children: [
-            if (!hasLocalFile)
-              const Icon(LucideIcons.user, size: 34, color: PenColors.ink)
-            else
-              SizedBox.expand(
-                child: Image.file(
-                  file!,
-                  fit: BoxFit.cover,
-                  // Avatars are re-saved to the same path each time, so the
-                  // path alone isn't a valid cache key — without this, a
-                  // freshly changed photo keeps showing the stale decoded
-                  // image until the app restarts.
-                  key: ValueKey(file.lastModifiedSync()),
-                ),
-              ),
+            image ??
+                const Icon(LucideIcons.user, size: 34, color: PenColors.ink),
           ],
         ),
         Expanded(
@@ -2380,8 +2417,9 @@ class _AvatarPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final path = avatarPath;
-    final file = path == null ? null : File(path);
+    final file = path == null || path.startsWith('http') ? null : File(path);
     final hasLocalFile = file?.existsSync() ?? false;
+    final image = _avatarImage(path, size: 124);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -2406,20 +2444,12 @@ class _AvatarPicker extends StatelessWidget {
                   main: MainAxisAlignment.center,
                   cross: CrossAxisAlignment.center,
                   children: [
-                    if (!hasLocalFile)
-                      const Icon(
-                        LucideIcons.user,
-                        size: 56,
-                        color: PenColors.ink,
-                      )
-                    else
-                      SizedBox.expand(
-                        child: Image.file(
-                          file!,
-                          fit: BoxFit.cover,
-                          key: ValueKey(file.lastModifiedSync()),
+                    image ??
+                        const Icon(
+                          LucideIcons.user,
+                          size: 56,
+                          color: PenColors.ink,
                         ),
-                      ),
                   ],
                 ),
               ),

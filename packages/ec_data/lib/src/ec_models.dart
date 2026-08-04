@@ -377,6 +377,24 @@ class QuotaDto {
   final bool canManagePlan;
 }
 
+/// Chỗ tải ảnh đại diện lên, theo cùng cơ chế presign của bằng chứng: server
+/// cấp một URL ghi tạm, app PUT thẳng file lên đó, rồi dùng [publicUrl] làm
+/// địa chỉ hiển thị lâu dài.
+class AvatarUploadDto {
+  const AvatarUploadDto({required this.uploadUrl, required this.publicUrl});
+
+  factory AvatarUploadDto.fromJson(Map<String, dynamic> j) => AvatarUploadDto(
+    uploadUrl: j['uploadUrl'] as String,
+    publicUrl: j['publicUrl'] as String,
+  );
+
+  /// URL ghi một lần, app PUT nội dung ảnh lên đây.
+  final String uploadUrl;
+
+  /// URL đọc công khai, lưu vào hồ sơ Firebase và server.
+  final String publicUrl;
+}
+
 class PresignDto {
   const PresignDto({
     required this.evidenceId,

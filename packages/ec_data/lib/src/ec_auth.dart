@@ -15,6 +15,7 @@ class EcUser {
     this.email,
     this.displayName,
     this.phone,
+    this.photoUrl,
     this.providers = const [],
     this.emailVerified = true,
   });
@@ -23,6 +24,10 @@ class EcUser {
   final String? email;
   final String? displayName;
   final String? phone;
+
+  /// URL đọc công khai của ảnh đại diện, lấy từ Firebase Auth. Nhờ nằm ở đó
+  /// nên ảnh theo tài khoản chứ không theo máy.
+  final String? photoUrl;
   final List<String> providers;
 
   /// Whether the email address has been confirmed through the verification
@@ -40,6 +45,7 @@ class EcUser {
   EcUser copyWith({
     String? displayName,
     String? phone,
+    String? photoUrl,
     List<String>? providers,
     bool? emailVerified,
   }) => EcUser(
@@ -47,6 +53,7 @@ class EcUser {
     email: email,
     displayName: displayName ?? this.displayName,
     phone: phone ?? this.phone,
+    photoUrl: photoUrl ?? this.photoUrl,
     providers: providers ?? this.providers,
     emailVerified: emailVerified ?? this.emailVerified,
   );
@@ -105,7 +112,7 @@ abstract interface class EcAuth {
   Future<void> signOut();
 
   /// Update the display name and/or phone of the current user.
-  Future<EcUser> updateProfile({String? name, String? phone});
+  Future<EcUser> updateProfile({String? name, String? phone, String? photoUrl});
 
   /// Change the password, re-checking [currentPassword] first.
   Future<void> updatePassword({
@@ -203,8 +210,15 @@ class FakeEcAuth implements EcAuth {
   Future<void> signOut() async => _user.value = null;
 
   @override
-  Future<EcUser> updateProfile({String? name, String? phone}) async =>
-      _user.value = _require().copyWith(displayName: name, phone: phone);
+  Future<EcUser> updateProfile({
+    String? name,
+    String? phone,
+    String? photoUrl,
+  }) async => _user.value = _require().copyWith(
+    displayName: name,
+    phone: phone,
+    photoUrl: photoUrl,
+  );
 
   @override
   Future<void> updatePassword({

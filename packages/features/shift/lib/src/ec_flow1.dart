@@ -2874,6 +2874,7 @@ class EcUploadSizeSheetScreen extends StatelessWidget {
     required this.budget,
     required this.platformLabel,
     required this.kind,
+    required this.currentMb,
     this.onSelect,
     super.key,
   });
@@ -2884,53 +2885,43 @@ class EcUploadSizeSheetScreen extends StatelessWidget {
   /// Ảnh hay video — quyết định mức đề xuất và mức đang áp dụng.
   final EcUploadKind kind;
 
+  /// Trần shop đang đặt, tính bằng MB. Bên gọi truyền thẳng vào thay vì để
+  /// sheet tự đọc từ `budget`: `budget` đi qua `selectedShop`, mà biến đó
+  /// không được làm mới sau khi lưu nên sheet mở lại luôn hiện mức mặc định
+  /// chứ không phải con số người dùng vừa nhập.
+  final int currentMb;
+
   /// Emits the chosen cap in **bytes**.
   final ValueChanged<int>? onSelect;
 
-  int get _currentMb => switch (kind) {
-    EcUploadKind.image => budget.maxImageBytes ~/ 1000000,
-    EcUploadKind.video => budget.maxVideoBytes ~/ 1000000,
-  };
-
-  int get _recommendedMb {
-    final fromServer = _currentMb;
-    return fromServer > 0 ? fromServer : kind.defaultMegabytes;
-  }
+  int get _currentMb => currentMb;
 
   /// Chỉ MỘT mức đề xuất, cộng mức đang dùng nếu khác.
   ///
   /// Bảng mốc 1/5/10/25/50/100 cũ là phỏng đoán — shop không chọn "khoảng
   /// chừng", họ có con số của riêng mình. Một mức đề xuất để bấm nhanh, còn
   /// lại gõ thẳng.
-  List<int> get _options {
-    final options = <int>{kind.defaultMegabytes};
-    if (_currentMb > 0) options.add(_currentMb);
-    return options.toList()..sort();
-  }
+  List<int> get _options => [kind.defaultMegabytes];
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final selected = _currentMb;
-    final recommended = _recommendedMb;
     return _EcSheetFrame(
-      title: l10n.uploadSizeTitle,
-      subtitle: l10n.uploadSizeSubtitle('$recommended', platformLabel),
+      title: switch (kind) {
+        EcUploadKind.image => l10n.uploadSizeTitleImage,
+        EcUploadKind.video => l10n.uploadSizeTitleVideo,
+      },
       children: [
         for (final m in _options)
           _EcSheetActionRow(
             icon: LucideIcons.fileUp,
-            label: l10n.uploadSizeValue('$m'),
+            // Dấu tích chỉ nằm ở mức mặc định khi shop ĐANG đặt đúng mức đó.
+            // Nhập số riêng là dấu tích rời đi — nếu không, hai con số cùng
+            // được tích và không biết mức nào đang áp dụng.
+            label: l10n.uploadSizeDefaultValue('$m'),
             selected: m == selected,
             onTap: () => onSelect?.call(m * 1000000),
-          ),
-        // Xem chú thích ở sheet thời lượng: mức tự nhập đứng riêng ở cuối.
-        if (!_options.contains(selected))
-          _EcSheetActionRow(
-            icon: LucideIcons.fileUp,
-            label: l10n.uploadSizeValue('$selected'),
-            selected: true,
-            onTap: () => onSelect?.call(selected * 1000000),
           ),
         _EcSheetCustomInput(
           label: l10n.uploadSizeCustomLabel,
@@ -3199,6 +3190,7 @@ class EcOrderRow {
     required this.time,
     required this.type,
     required this.videoCount,
+    this.capturedAtMs,
     this.errorCount = 0,
     this.pendingCount = 0,
     this.thumbUrl,
@@ -3213,6 +3205,10 @@ class EcOrderRow {
   /// Video type label, e.g. "Đóng hàng đi".
   final String type;
   final int videoCount;
+
+  /// Mốc thời gian đơn được tạo, epoch ms. Cần cho việc lọc theo khoảng thời
+  /// gian ngay tại chỗ — [time] chỉ có `HH:mm` nên không suy ra ngày được.
+  final int? capturedAtMs;
   final int errorCount;
   final int pendingCount;
 
@@ -3502,21 +3498,47 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
     for (final type in widget.videoTypes) _FilterOption(type.id, type.name),
   ];
 
-  /// Orders as handed in. Filtering is the backend's job (see
-  /// [EcOrderFilters]); the only local narrowing left is the search box, and
-  /// only while the parent isn't running the search server-side itself.
+  /// Orders as handed in, thu hẹp theo ô tìm kiếm.
+  ///
+  /// Lọc tại chỗ chạy KỂ CẢ khi cha đã gọi tìm kiếm phía server. Bản trước tin
+  /// hẳn vào server và trả nguyên danh sách, nhưng `/api/shops/{id}/orders`
+  /// đang bỏ qua tham số `q` — gõ một mã vẫn ra toàn bộ đơn. Server lọc đúng
+  /// thì bước này không đổi gì; server bỏ sót thì người dùng vẫn chỉ thấy mã
+  /// mình gõ.
   List<EcOrderRow> get _visibleOrders {
-    if (widget.onSearchChanged != null) return widget.orders;
     final query = _query.trim().toLowerCase();
-    if (query.isEmpty) return widget.orders;
-    return widget.orders
-        .where((order) => order.code.toLowerCase().contains(query))
-        .toList();
+    final from = _filters.fromTs;
+    if (query.isEmpty && from == null) return widget.orders;
+    return widget.orders.where((order) {
+      if (query.isNotEmpty && !order.code.toLowerCase().contains(query)) {
+        return false;
+      }
+      // Mã tra được và khoảng thời gian KẾT HỢP với nhau, không loại trừ.
+      //
+      // Tìm kiếm phía server bỏ qua bộ lọc, nên kết quả trả về gồm cả đơn
+      // ngoài khoảng đang chọn. Người dùng tra một mã rồi đổi ngày là để hỏi
+      // "mã này có trong ngày đó không" — trả về đúng khi có, rỗng khi không.
+      final at = order.capturedAtMs;
+      if (from != null && at != null && at < from) return false;
+      return true;
+    }).toList();
   }
 
   void _select(void Function(String?) apply, String? value) {
     setState(() => apply(value));
+    _applyFilters();
+  }
+
+  /// Báo bộ lọc mới, rồi CHẠY LẠI tìm kiếm nếu ô tìm còn mã.
+  ///
+  /// Đổi bộ lọc làm phía app nạp lại trang đầu mà không kèm từ khoá, trong khi
+  /// widget vẫn giữ mã để lọc tại chỗ — mã đó thường không nằm trong trang
+  /// đầu nên danh sách ra rỗng. Người dùng vừa tra một đơn thì đổi khoảng thời
+  /// gian là để xem chính đơn đó, không phải để mất nó; nên giữ mã và tra lại.
+  void _applyFilters() {
     widget.onFiltersChanged?.call(_filters);
+    final query = _query.trim();
+    if (query.isNotEmpty) widget.onSearchChanged?.call(query);
   }
 
   /// Time is the one filter whose selection can need a second step: picking a
@@ -3533,7 +3555,7 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
       _pickedDate = picked;
       _timeWindow = _timeWindowDate;
     });
-    widget.onFiltersChanged?.call(_filters);
+    _applyFilters();
   }
 
   /// Opens the scanner and, if a code comes back, drops it into the search box.
@@ -4223,6 +4245,15 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
+/// `dd/MM/yyyy` cho dòng phụ của hàng đơn; `null` khi đơn chưa có mốc thời
+/// gian nào, để chỗ gọi bỏ hẳn phần ngày thay vì in một chỗ trống.
+String? _dayLabel(int? epochMs) {
+  if (epochMs == null) return null;
+  final d = DateTime.fromMillisecondsSinceEpoch(epochMs);
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(d.day)}/${two(d.month)}/${d.year}';
+}
+
 class _OrderTile extends StatelessWidget {
   const _OrderTile({required this.order, this.platform, this.onTap});
   final EcOrderRow order;
@@ -4257,7 +4288,14 @@ class _OrderTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 PenText(
-                  '${order.time} · ${order.type}',
+                  // Ngày đứng TRƯỚC giờ và loại: danh sách trải dài nhiều
+                  // ngày, mà chỉ có `10:23` thì không biết của hôm nào —
+                  // người tra đơn khiếu nại cần ngày hơn cần phút.
+                  [
+                    ?_dayLabel(order.capturedAtMs),
+                    order.time,
+                    order.type,
+                  ].join(' · '),
                   size: 12,
                   color: PenColors.mut,
                   overflow: TextOverflow.ellipsis,

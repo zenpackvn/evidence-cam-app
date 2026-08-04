@@ -917,7 +917,11 @@
         }
       }
     },
-    "uploadSizeTitle": "Max size per file",
+    "uploadSizeTitleVideo": "Max size per video",
+  "uploadSizeTitleImage": "Max size per photo",
+  "uploadSizeDefaultValue": "{value} MB (default)",
+  "@uploadSizeDefaultValue": { "placeholders": { "value": { "type": "String" } } },
+  "uploadSizeTitle": "Max size per file",
     "@uploadSizeTitle": {
       "description": "Shop detail / upload size cap (FR-21)."
     },
@@ -1040,7 +1044,7 @@
   "unitMinutes": "min",
   "unitMegabytes": "MB",
   "clipDurationCustomLabel": "Or enter the number of minutes you want",
-  "uploadSizeCustomLabel": "Or enter the size you want",
+  "uploadSizeCustomLabel": "Or enter any size you want (no limit)",
   "bundleBackendPending": "Waiting on a backend endpoint for this",
   "supportOpenFailed": "Couldn’t open — check the app is installed",
   "feedbackThanksTitle": "Thank you!",

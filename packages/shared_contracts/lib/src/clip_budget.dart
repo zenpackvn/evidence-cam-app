@@ -50,7 +50,9 @@ class ClipBudget {
     seconds: 120,
     recommendedSeconds: 120,
     planMaxSeconds: 900,
-    maxImageBytes: 10000000,
+    // Ảnh đính kèm nhẹ hơn clip cả bậc — 5MB là mức đề xuất, 10MB cũ chỉ là
+    // trần chung cũ dùng lại cho ảnh.
+    maxImageBytes: 5000000,
     maxVideoBytes: 30000000,
     uploadBytes: 10000000,
   );

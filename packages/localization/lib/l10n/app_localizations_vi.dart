@@ -1387,6 +1387,17 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get uploadSizeTitleVideo => 'Dung lượng tối đa mỗi video';
+
+  @override
+  String get uploadSizeTitleImage => 'Dung lượng tối đa mỗi ảnh';
+
+  @override
+  String uploadSizeDefaultValue(String value) {
+    return '$value MB (mặc định)';
+  }
+
+  @override
   String get uploadSizeTitle => 'Dung lượng tối đa mỗi tệp';
 
   @override
@@ -1491,7 +1502,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get clipDurationCustomLabel => 'Hoặc nhập số phút bạn muốn';
 
   @override
-  String get uploadSizeCustomLabel => 'Hoặc nhập dung lượng bạn muốn';
+  String get uploadSizeCustomLabel =>
+      'Hoặc nhập dung lượng bạn muốn (không giới hạn)';
 
   @override
   String get bundleBackendPending =>

@@ -1393,6 +1393,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get uploadSizeTitleVideo => 'Max size per video';
+
+  @override
+  String get uploadSizeTitleImage => 'Max size per photo';
+
+  @override
+  String uploadSizeDefaultValue(String value) {
+    return '$value MB (default)';
+  }
+
+  @override
   String get uploadSizeTitle => 'Max size per file';
 
   @override
@@ -1498,7 +1509,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Or enter the number of minutes you want';
 
   @override
-  String get uploadSizeCustomLabel => 'Or enter the size you want';
+  String get uploadSizeCustomLabel => 'Or enter any size you want (no limit)';
 
   @override
   String get bundleBackendPending => 'Waiting on a backend endpoint for this';
