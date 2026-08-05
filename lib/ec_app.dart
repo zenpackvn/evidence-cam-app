@@ -2546,8 +2546,25 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
   /// Kết quả tốt gần nhất — giữ màn hình đứng yên trong lúc làm mới ngầm.
   List<EcShopSummary>? _last;
 
+  /// Danh sách shop, có nhận giúp lời mời khi rỗng.
+  ///
+  /// `GET /api/me` là chỗ backend khớp lời mời treo với email/SĐT của tài khoản
+  /// (`claimPendingInvitesForAccount`). Web gọi nó ở mỗi lần đăng nhập; app chỉ
+  /// gọi lúc đăng ký và ở màn hồ sơ — nên người **đã có tài khoản từ trước** rồi
+  /// mới được mời sẽ đăng nhập vào và mắc kẹt ở màn "chưa có shop" vĩnh viễn.
+  ///
+  /// Chỉ gọi khi danh sách rỗng: đó đúng là trường hợp hỏng, và người đã có shop
+  /// không phải trả thêm một vòng mạng cho mỗi lần mở màn này.
   Future<List<EcShopSummary>> _loadShops() async {
-    final shops = await widget.repo.shops();
+    var shops = await widget.repo.shops();
+    if (shops.isEmpty) {
+      try {
+        await widget.repo.account();
+        shops = await widget.repo.shops();
+      } on Object {
+        // Không nhận được thì vẫn hiện màn "chưa có shop" như cũ.
+      }
+    }
     return shops.map(_shopFromDto).toList();
   }
 
@@ -2933,21 +2950,28 @@ class _ShopDetailData {
 }
 
 /// Hàng `pending` chưa có tài khoản: không uid, không tên, không email — chỉ
-/// có địa chỉ đã mời. Hiện nó kèm nhãn "đã mời" để không lẫn với người đã vào.
-EcShopMember _memberFromDto(AppLocalizations l10n, MemberDto member) =>
-    EcShopMember(
-      accountUid: member.accountUid,
-      roleCode: member.role,
-      name:
-          member.name ??
-          member.email ??
-          member.inviteContact ??
-          member.accountUid ??
-          '',
-      role: member.status == 'pending'
-          ? l10n.memberInvitePending(_roleDisplayName(l10n, member.role))
-          : _roleDisplayName(l10n, member.role),
-    );
+/// có địa chỉ đã mời. Nhãn trạng thái lấy theo `invite_status`, không theo
+/// `status`: chủ shop và người được thêm thẳng không đi qua lời mời nào, gắn
+/// nhãn mời cho họ là nói sai.
+EcShopMember _memberFromDto(AppLocalizations l10n, MemberDto member) {
+  final role = _roleDisplayName(l10n, member.role);
+  return EcShopMember(
+    accountUid: member.accountUid,
+    inviteId: member.inviteId,
+    roleCode: member.role,
+    name:
+        member.name ??
+        member.email ??
+        member.inviteContact ??
+        member.accountUid ??
+        '',
+    role: switch (member.inviteStatus) {
+      'sent' => l10n.memberInviteSent(role),
+      'accepted' => l10n.memberInviteAccepted(role),
+      _ => role,
+    },
+  );
+}
 
 /// Loại tự đặt mang icon người tạo đã chọn; ba loại mặc định (và loại tạo
 /// trước khi màn chọn icon được nối dây) rơi về icon suy từ tên.
@@ -5642,18 +5666,33 @@ GoRouter _buildRouter(
               c.pop();
               _toast(c, c.l10n.toastNoMemberToUpdate);
             },
+            // Lời mời còn treo không có uid — gỡ nó là `DELETE /invites/:id`,
+            // thứ cũng làm link trong email chết ngay. Trước đây nhánh này đòi
+            // uid nên hàng "đã mời" không xóa nổi, chỉ báo "không có ai để sửa".
             onRemove: () async {
               final extra = s.extra;
+              final inviteId = extra is _MemberActionExtra
+                  ? extra.member.inviteId
+                  : null;
+              final uid = extra is _MemberActionExtra
+                  ? extra.member.accountUid
+                  : null;
               if (extra is _MemberActionExtra &&
-                  extra.member.accountUid != null) {
+                  (inviteId != null || uid != null)) {
                 try {
-                  await repo.removeMember(
-                    extra.shopId,
-                    extra.member.accountUid!,
-                  );
+                  if (inviteId != null) {
+                    await repo.revokeShopInvite(extra.shopId, inviteId);
+                  } else {
+                    await repo.removeMember(extra.shopId, uid!);
+                  }
                   if (!c.mounted) return;
                   c.pop();
-                  _toast(c, c.l10n.toastMemberRemoved);
+                  _toast(
+                    c,
+                    inviteId != null
+                        ? c.l10n.toastInviteRevoked
+                        : c.l10n.toastMemberRemoved,
+                  );
                 } on Object catch (error) {
                   if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
                 }

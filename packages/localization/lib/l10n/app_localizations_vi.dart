@@ -139,6 +139,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đã gỡ khỏi shop (video đã quay vẫn upload nốt)';
 
   @override
+  String get toastInviteRevoked =>
+      'Đã xóa lời mời — link trong email hết tác dụng';
+
+  @override
   String copiedLabel(String label) {
     return 'Đã sao chép $label';
   }
@@ -178,8 +182,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get roleStaff => 'Nhân viên';
 
   @override
-  String memberInvitePending(String role) {
-    return '$role · đã mời';
+  String memberInviteSent(String role) {
+    return '$role · đã gửi lời mời';
+  }
+
+  @override
+  String memberInviteAccepted(String role) {
+    return '$role · đã nhận lời mời';
   }
 
   @override
@@ -1098,6 +1107,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get emailOrPhone => 'Email hoặc số điện thoại';
 
   @override
+  String get contactRequired => 'Nhập email hoặc số điện thoại.';
+
+  @override
+  String get contactInvalid => 'Nhập đúng một email hoặc một số điện thoại.';
+
+  @override
   String get addMemberSubmit => 'Thêm';
 
   @override
@@ -1108,6 +1123,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get removeFromShop => 'Gỡ khỏi shop';
+
+  @override
+  String get revokeInvite => 'Xóa lời mời';
 
   @override
   String get resolutionAppliesNote => 'Áp dụng cho video quay mới của shop';

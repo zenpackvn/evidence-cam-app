@@ -42,6 +42,7 @@
   "toastRoleChangedStaff": "Role changed: Staff",
   "toastNoMemberToUpdate": "No member to update",
   "toastMemberRemoved": "Removed from shop (recorded videos still finish uploading)",
+  "toastInviteRevoked": "Invitation deleted — the emailed link no longer works",
   "copiedLabel": "Copied {label}",
   "@copiedLabel": {
     "placeholders": {
@@ -77,9 +78,18 @@
   "roleOwner": "Owner",
   "roleManager": "Manager",
   "roleStaff": "Staff",
-  "memberInvitePending": "{role} · invited",
-  "@memberInvitePending": {
-    "description": "Role line for a still-pending invite in the member list.",
+  "memberInviteSent": "{role} · invite sent",
+  "@memberInviteSent": {
+    "description": "Role line for an invite that has been emailed but not redeemed.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "memberInviteAccepted": "{role} · invite accepted",
+  "@memberInviteAccepted": {
+    "description": "Role line for a member who joined by redeeming an invite.",
     "placeholders": {
       "role": {
         "type": "String"
@@ -571,10 +581,13 @@
   "addMemberTitle": "Add member",
   "addMemberBody": "Enter the email or phone number of a registered account to add them to the shop.",
   "emailOrPhone": "Email or phone number",
+  "contactRequired": "Enter an email or phone number.",
+  "contactInvalid": "Enter one valid email address or phone number.",
   "addMemberSubmit": "Add",
   "setAsManager": "Set as shop manager",
   "setAsStaff": "Set as staff",
   "removeFromShop": "Remove from shop",
+  "revokeInvite": "Delete invitation",
   "resolutionAppliesNote": "Applies to the shop's newly recorded videos",
   "resolutionDefaultOption": "720p (default)",
   "ordersSearchHint": "Enter tracking code",

@@ -54,6 +54,60 @@ void main() {
       expect(find.byType(PenSheet), findsOneWidget);
     });
 
+    // Lời mời chưa ai nhận không có tài khoản để đổi vai trò — hai dòng đó bấm
+    // vào chỉ báo lỗi. Việc duy nhất làm được là xóa lời mời.
+    testWidgets('lời mời còn treo chỉ có hành động xóa lời mời', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcMemberActionsScreen(
+          member: EcShopMember(
+            name: 'moi@test.co',
+            role: 'Nhân viên · đã gửi lời mời',
+            inviteId: 'inv-1',
+          ),
+        ),
+      );
+
+      expect(find.text('Xóa lời mời'), findsOneWidget);
+      expect(find.text('Gỡ khỏi shop'), findsNothing);
+      expect(find.text('Đặt làm quản lý shop'), findsNothing);
+    });
+
+    // Gõ sai định dạng thì backend vẫn tạo lời mời, nhưng mailer bỏ qua contact
+    // không có '@' — lời mời treo mãi và không ai được báo gì.
+    testWidgets('màn mời chặn contact sai định dạng, không gọi API', (
+      tester,
+    ) async {
+      EcMemberInvite? sent;
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+      await _pump(
+        tester,
+        EcInviteMemberScreen(
+          contactController: controller,
+          onInvite: (invite) => sent = invite,
+        ),
+      );
+
+      await tester.enterText(find.byType(CupertinoTextField), 'nguyen van a');
+      await tester.tap(find.text('Thêm'));
+      await tester.pump();
+      expect(sent, isNull);
+      expect(find.text('Nhập đúng một email hoặc một số điện thoại.'), findsOne);
+
+      await tester.enterText(
+        find.byType(CupertinoTextField),
+        '+84 90 123 4567',
+      );
+      await tester.tap(find.text('Thêm'));
+      await tester.pump();
+      // Gửi đi bản đã chuẩn hoá: `accounts.phone` lưu dạng 0…, so chuỗi thô là
+      // không khớp được tài khoản nào.
+      expect(sent?.contact, '0901234567');
+    });
+
     testWidgets('dragging the sheet down dismisses it', (tester) async {
       var dismissed = false;
       await _pump(

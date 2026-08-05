@@ -60,6 +60,11 @@ abstract interface class EcRepository {
     required String contact,
     required String role,
   });
+
+  /// Thu hồi lời mời còn treo. Hàng `pending` không có uid nên gỡ nó là việc
+  /// của lời mời, không phải của [removeMember].
+  Future<void> revokeShopInvite(String shopId, String inviteId);
+
   Future<void> updateMemberRole(
     String shopId, {
     required String accountUid,
@@ -187,6 +192,10 @@ class RemoteEcRepository implements EcRepository {
     required String contact,
     required String role,
   }) => _api.sendShopInvite(shopId, contact: contact, role: role);
+
+  @override
+  Future<void> revokeShopInvite(String shopId, String inviteId) =>
+      _api.revokeShopInvite(shopId, inviteId);
 
   @override
   Future<void> updateMemberRole(
@@ -373,6 +382,9 @@ class FakeEcRepository implements EcRepository {
     status: 'pending',
     inviteToken: 'fake-token',
   );
+
+  @override
+  Future<void> revokeShopInvite(String shopId, String inviteId) async {}
 
   @override
   Future<void> updateMemberRole(

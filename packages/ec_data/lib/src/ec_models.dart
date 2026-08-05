@@ -94,6 +94,8 @@ class MemberDto {
     this.email,
     this.status = 'active',
     this.inviteContact,
+    this.inviteId,
+    this.inviteStatus,
   });
 
   /// `account_uid` phải NHẬN NULL.
@@ -109,6 +111,8 @@ class MemberDto {
     email: j['email'] as String?,
     status: (j['status'] as String?) ?? 'active',
     inviteContact: j['invite_contact'] as String?,
+    inviteId: j['invite_id'] as String?,
+    inviteStatus: j['invite_status'] as String?,
   );
 
   /// `null` ở hàng `status == 'pending'` — lời mời chưa khớp tài khoản nào,
@@ -124,6 +128,14 @@ class MemberDto {
 
   /// Email/SĐT đã được mời. Chỉ có ở hàng `pending`.
   final String? inviteContact;
+
+  /// Chỉ có ở hàng `pending`: id để gọi `DELETE /shops/:id/invites/:inviteId`.
+  /// Hàng pending không có uid nên đây là khóa duy nhất định danh được nó.
+  final String? inviteId;
+
+  /// `sent` = đã gửi mail, chưa ai nhận · `accepted` = đã nhận · `null` = không
+  /// qua lời mời nào (chủ shop, hoặc người được thêm thẳng).
+  final String? inviteStatus;
 }
 
 class ShopInviteDto {
@@ -152,6 +164,7 @@ class ShopInviteDto {
   final String status;
   final String inviteToken;
 }
+
 
 class OrderDto {
   const OrderDto({

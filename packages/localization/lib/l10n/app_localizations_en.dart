@@ -141,6 +141,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Removed from shop (recorded videos still finish uploading)';
 
   @override
+  String get toastInviteRevoked =>
+      'Invitation deleted — the emailed link no longer works';
+
+  @override
   String copiedLabel(String label) {
     return 'Copied $label';
   }
@@ -180,8 +184,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roleStaff => 'Staff';
 
   @override
-  String memberInvitePending(String role) {
-    return '$role · invited';
+  String memberInviteSent(String role) {
+    return '$role · invite sent';
+  }
+
+  @override
+  String memberInviteAccepted(String role) {
+    return '$role · invite accepted';
   }
 
   @override
@@ -1103,6 +1112,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emailOrPhone => 'Email or phone number';
 
   @override
+  String get contactRequired => 'Enter an email or phone number.';
+
+  @override
+  String get contactInvalid => 'Enter one valid email address or phone number.';
+
+  @override
   String get addMemberSubmit => 'Add';
 
   @override
@@ -1113,6 +1128,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get removeFromShop => 'Remove from shop';
+
+  @override
+  String get revokeInvite => 'Delete invitation';
 
   @override
   String get resolutionAppliesNote =>

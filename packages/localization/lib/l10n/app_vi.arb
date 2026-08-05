@@ -42,6 +42,7 @@
   "toastRoleChangedStaff": "Đã đổi vai trò: Nhân viên",
   "toastNoMemberToUpdate": "Không có thành viên để cập nhật",
   "toastMemberRemoved": "Đã gỡ khỏi shop (video đã quay vẫn upload nốt)",
+  "toastInviteRevoked": "Đã xóa lời mời — link trong email hết tác dụng",
   "copiedLabel": "Đã sao chép {label}",
   "labelTrackingCode": "mã vận đơn",
   "resolutionChanged": "Độ phân giải: {value}",
@@ -53,9 +54,18 @@
   "roleOwner": "Chủ shop",
   "roleManager": "Quản lý",
   "roleStaff": "Nhân viên",
-  "memberInvitePending": "{role} · đã mời",
-  "@memberInvitePending": {
-    "description": "Vai trò của một lời mời còn treo trong danh sách thành viên.",
+  "memberInviteSent": "{role} · đã gửi lời mời",
+  "@memberInviteSent": {
+    "description": "Vai trò của một lời mời đã gửi mail nhưng chưa ai nhận.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "memberInviteAccepted": "{role} · đã nhận lời mời",
+  "@memberInviteAccepted": {
+    "description": "Vai trò của người đã vào shop bằng cách nhận lời mời.",
     "placeholders": {
       "role": {
         "type": "String"
@@ -360,10 +370,13 @@
   "addMemberTitle": "Thêm thành viên",
   "addMemberBody": "Nhập email hoặc số điện thoại của tài khoản đã đăng ký để thêm vào shop.",
   "emailOrPhone": "Email hoặc số điện thoại",
+  "contactRequired": "Nhập email hoặc số điện thoại.",
+  "contactInvalid": "Nhập đúng một email hoặc một số điện thoại.",
   "addMemberSubmit": "Thêm",
   "setAsManager": "Đặt làm Quản lý shop",
   "setAsStaff": "Đặt làm Nhân viên",
   "removeFromShop": "Gỡ khỏi shop",
+  "revokeInvite": "Xóa lời mời",
   "resolutionAppliesNote": "Áp dụng cho video quay mới của shop",
   "resolutionDefaultOption": "720p (mặc định)",
   "ordersSearchHint": "Nhập mã vận đơn",

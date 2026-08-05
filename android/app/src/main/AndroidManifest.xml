@@ -36,14 +36,14 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Deep Links (App Links) -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="http" android:host="yourdomain.com" />
-                <data android:scheme="https" />
-            </intent-filter>
+            <!--
+              KHÔNG khai báo App Links. Link mời trong email cố tình mở bằng
+              trình duyệt: người nhận đăng nhập trên console rồi bấm xác nhận,
+              shop hiện ra trong app ở lần đọc danh sách kế tiếp. Thêm
+              intent-filter ở đây là phải kèm assetlinks.json trên zenpack.vn và
+              fingerprint khóa ký của Play — cả một dây phụ thuộc cho một lối vào
+              đã chạy sẵn.
+            -->
         </activity>
         <meta-data
             android:name="firebase_messaging_auto_init_enabled"

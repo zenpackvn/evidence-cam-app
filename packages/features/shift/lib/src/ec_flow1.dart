@@ -29,6 +29,8 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:localization/localization.dart';
 import 'package:shared_contracts/shared_contracts.dart';
 
+import 'invite_contact.dart';
+
 // Shared text style (Inter is inherited from the CupertinoApp text theme).
 TextStyle _t(double size, FontWeight weight, Color color) =>
     TextStyle(fontSize: size, fontWeight: weight, color: color, height: 1.3);
@@ -1633,11 +1635,16 @@ class EcShopMember {
     required this.role,
     this.accountUid,
     this.roleCode,
+    this.inviteId,
   });
   final String name;
   final String role;
   final String? accountUid;
   final String? roleCode;
+
+  /// Có giá trị = hàng này là lời mời còn treo, chưa khớp tài khoản nào. Đổi
+  /// vai trò không áp vào đâu được; việc duy nhất làm được là xóa lời mời.
+  final String? inviteId;
 }
 
 /// A configurable video type on the ShopDetail screen. The three built-in
@@ -2649,9 +2656,17 @@ class EcInviteMemberScreen extends StatefulWidget {
 
 class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
   String _role = 'Nhân viên';
+  final _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: _buildDialog(context),
+    );
+  }
+
+  Widget _buildDialog(BuildContext context) {
     return _EcDialogFrame(
       children: [
         Text(
@@ -2666,6 +2681,16 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
           label: context.l10n.emailOrPhone,
           hint: 'ban@email.com',
           controller: widget.contactController,
+          keyboardType: TextInputType.emailAddress,
+          // Gõ sai định dạng thì backend vẫn nhận và tạo một lời mời không bao
+          // giờ tới được ai — chặn ngay tại đây thay vì để nó chết âm thầm.
+          validator: (value) {
+            final contact = (value ?? '').trim();
+            if (contact.isEmpty) return context.l10n.contactRequired;
+            return isInviteContact(contact)
+                ? null
+                : context.l10n.contactInvalid;
+          },
         ),
         Text('Vai trò', style: _t(14, FontWeight.w500, BrandColors.ink)),
         _RoleOption(
@@ -2693,9 +2718,16 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
               child: _EcPrimaryButton(
                 label: context.l10n.addMemberSubmit,
                 onPressed: () {
-                  final contact = widget.contactController?.text.trim() ?? '';
-                  if (contact.isEmpty) return;
-                  widget.onInvite?.call(EcMemberInvite(contact, _role));
+                  // Chốt cửa theo controller — đó mới là chuỗi sẽ gửi đi.
+                  // `FormField` chỉ cập nhật khi người dùng gõ (`onChanged`),
+                  // nên lấy nó làm cửa là hai nguồn sự thật khác nhau. Vẫn gọi
+                  // `validate()` để dòng lỗi được vẽ ra.
+                  _formKey.currentState?.validate();
+                  final contact = widget.contactController?.text ?? '';
+                  if (!isInviteContact(contact.trim())) return;
+                  widget.onInvite?.call(
+                    EcMemberInvite(inviteContactOf(contact), _role),
+                  );
                 },
               ),
             ),
@@ -2788,25 +2820,34 @@ class EcMemberActionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isManager = member.role.contains('Quản lý');
+    // Lời mời chưa ai nhận thì không có tài khoản để đổi vai trò — bày hai dòng
+    // đó ra chỉ để bấm vào là báo lỗi. Còn đúng một việc: xóa lời mời.
+    final isPendingInvite = member.inviteId != null;
     return _EcSheetFrame(
       title: member.name,
       subtitle: context.l10n.memberCurrentRole(member.role),
       children: [
+        if (!isPendingInvite) ...[
+          _EcSheetActionRow(
+            icon: Icons.shield_outlined,
+            label: context.l10n.setAsManager,
+            selected: isManager,
+            onTap: onSetManager,
+          ),
+          _EcSheetActionRow(
+            icon: Icons.person_outline,
+            label: context.l10n.setAsStaff,
+            selected: !isManager,
+            onTap: onSetStaff,
+          ),
+        ],
         _EcSheetActionRow(
-          icon: Icons.shield_outlined,
-          label: context.l10n.setAsManager,
-          selected: isManager,
-          onTap: onSetManager,
-        ),
-        _EcSheetActionRow(
-          icon: Icons.person_outline,
-          label: context.l10n.setAsStaff,
-          selected: !isManager,
-          onTap: onSetStaff,
-        ),
-        _EcSheetActionRow(
-          icon: Icons.person_remove_outlined,
-          label: context.l10n.removeFromShop,
+          icon: isPendingInvite
+              ? Icons.delete_outline
+              : Icons.person_remove_outlined,
+          label: isPendingInvite
+              ? context.l10n.revokeInvite
+              : context.l10n.removeFromShop,
           destructive: true,
           onTap: onRemove,
         ),

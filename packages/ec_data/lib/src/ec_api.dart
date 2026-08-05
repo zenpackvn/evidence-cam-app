@@ -149,6 +149,11 @@ class EcApi {
     return ShopInviteDto.fromJson(res.data!);
   }
 
+  /// Thu hồi lời mời còn treo — link trong email chết ngay.
+  Future<void> revokeShopInvite(String shopId, String inviteId) =>
+      _dio.delete<void>('/api/shops/$shopId/invites/$inviteId');
+
+
   Future<void> updateMemberRole(
     String shopId, {
     required String accountUid,

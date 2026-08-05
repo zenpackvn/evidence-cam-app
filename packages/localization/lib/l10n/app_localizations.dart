@@ -350,6 +350,12 @@ abstract class AppLocalizations {
   /// **'Removed from shop (recorded videos still finish uploading)'**
   String get toastMemberRemoved;
 
+  /// No description provided for @toastInviteRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation deleted — the emailed link no longer works'**
+  String get toastInviteRevoked;
+
   /// No description provided for @copiedLabel.
   ///
   /// In en, this message translates to:
@@ -416,11 +422,17 @@ abstract class AppLocalizations {
   /// **'Staff'**
   String get roleStaff;
 
-  /// Role line for a still-pending invite in the member list.
+  /// Role line for an invite that has been emailed but not redeemed.
   ///
   /// In en, this message translates to:
-  /// **'{role} · invited'**
-  String memberInvitePending(String role);
+  /// **'{role} · invite sent'**
+  String memberInviteSent(String role);
+
+  /// Role line for a member who joined by redeeming an invite.
+  ///
+  /// In en, this message translates to:
+  /// **'{role} · invite accepted'**
+  String memberInviteAccepted(String role);
 
   /// No description provided for @planFree.
   ///
@@ -2072,6 +2084,18 @@ abstract class AppLocalizations {
   /// **'Email or phone number'**
   String get emailOrPhone;
 
+  /// No description provided for @contactRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an email or phone number.'**
+  String get contactRequired;
+
+  /// No description provided for @contactInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter one valid email address or phone number.'**
+  String get contactInvalid;
+
   /// No description provided for @addMemberSubmit.
   ///
   /// In en, this message translates to:
@@ -2095,6 +2119,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove from shop'**
   String get removeFromShop;
+
+  /// No description provided for @revokeInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete invitation'**
+  String get revokeInvite;
 
   /// No description provided for @resolutionAppliesNote.
   ///
