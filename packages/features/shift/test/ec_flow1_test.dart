@@ -95,7 +95,10 @@ void main() {
       await tester.tap(find.text('Thêm'));
       await tester.pump();
       expect(sent, isNull);
-      expect(find.text('Nhập đúng một email hoặc một số điện thoại.'), findsOne);
+      expect(
+        find.text('Nhập đúng một email hoặc một số điện thoại.'),
+        findsOne,
+      );
 
       await tester.enterText(
         find.byType(CupertinoTextField),

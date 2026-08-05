@@ -165,7 +165,6 @@ class ShopInviteDto {
   final String inviteToken;
 }
 
-
 class OrderDto {
   const OrderDto({
     required this.id,

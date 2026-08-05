@@ -20,7 +20,14 @@ void main() {
     });
 
     test('từ chối thứ không phải email cũng không phải SĐT', () {
-      for (final bad in ['', 'nguyen van a', 'abc@', '@x.com', '12345', 'x y']) {
+      for (final bad in [
+        '',
+        'nguyen van a',
+        'abc@',
+        '@x.com',
+        '12345',
+        'x y',
+      ]) {
         expect(isInviteContact(bad), isFalse, reason: bad);
       }
     });
