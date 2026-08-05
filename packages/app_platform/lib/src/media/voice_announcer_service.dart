@@ -15,9 +15,46 @@ class VoiceAnnouncerService {
     // start-of-recording announcement to end before rolling the camera, so the
     // phone's own speaker doesn't get recorded into the evidence clip.
     _tts.awaitSpeakCompletion(true).catchError((_) => false);
+    // Khai báo phiên âm thanh riêng cho TTS.
+    //
+    // Không khai thì câu nói im bặt mỗi khi thứ khác giành phiên: ffmpeg chạy
+    // nung tem sau mỗi clip là một, cuộc gọi đến là hai. `mixWithOthers` cho
+    // nó chen vào cùng, `duckOthers` hạ tiếng nền xuống trong lúc đọc.
+    _tts
+        .setIosAudioCategory(
+          IosTextToSpeechAudioCategory.playback,
+          [
+            IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+            IosTextToSpeechAudioCategoryOptions.duckOthers,
+            IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+          ],
+          IosTextToSpeechAudioMode.voicePrompt,
+        )
+        .catchError((_) {});
   }
 
   final FlutterTts _tts;
+
+  /// Khai báo lại phiên âm thanh sau khi bị hệ điều hành thu hồi.
+  ///
+  /// Cuộc gọi đến làm iOS TẮT phiên âm thanh của app. Nó không tự bật lại khi
+  /// app quay về, nên mọi tiếng sau đó im bặt — khai lại một lần lúc trở lại là
+  /// đủ. Best-effort như mọi thứ khác trong lớp này.
+  Future<void> reactivate() async {
+    try {
+      await _tts.setIosAudioCategory(
+        IosTextToSpeechAudioCategory.playback,
+        [
+          IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+          IosTextToSpeechAudioCategoryOptions.duckOthers,
+          IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+        ],
+        IosTextToSpeechAudioMode.voicePrompt,
+      );
+    } on Object {
+      // Không khai lại được thì cùng lắm mất tiếng, không được làm hỏng gì.
+    }
+  }
 
   /// Speaks [text] aloud. `flutter_tts.speak` already interrupts whatever is
   /// currently playing before starting the new utterance — an extra `stop()`

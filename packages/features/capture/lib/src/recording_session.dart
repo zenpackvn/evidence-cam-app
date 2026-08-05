@@ -1116,6 +1116,12 @@ class RecordingSessionBloc
     });
   }
 
+  /// Khai báo lại phiên âm thanh sau khi cuộc gọi thu hồi nó.
+  ///
+  /// Gọi lúc app quay về từ nền. Không gọi thì nghe máy xong là app câm hẳn:
+  /// mất cả tiếng tút lẫn mọi câu thông báo, cho tới khi khởi động lại app.
+  Future<void> restoreAudio() => _voice.reactivate();
+
   /// Nói to là việc quay đã bị cắt ngang.
   ///
   /// Gọi lúc app ĐÃ trở lại, không phải lúc bị đẩy xuống nền: dưới nền thì loa

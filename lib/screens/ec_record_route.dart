@@ -40,6 +40,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
 
 import '../app/di/injection.dart';
+import '../ec_app.dart'
+    show ecPendingRecordCode, ecRecordingInProgress, ecRememberPendingRecord;
 
 /// The recording route mounted at `/record`. Callbacks stay routing-agnostic so
 /// the app shell owns navigation; [onRequestCode] returns the tracking code the
@@ -251,6 +253,25 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     // không có lý do gì máy quét còn bị treo từ lượt trước.
     _bloc.scanSuspended = false;
     _bloc.add(const RecordingInitRequested());
+    await _offerPendingRecord();
+  }
+
+  /// Hỏi quay tiếp đơn còn dở từ lượt trước, kể cả sau khi app bị iOS giết.
+  ///
+  /// Đọc từ đĩa nên sống qua cả lần khởi động lại. Người quay nghe điện thoại
+  /// xong mở lại app là được hỏi ngay, không phải nhớ mình đang dở đơn nào rồi
+  /// đi quét lại mã.
+  Future<void> _offerPendingRecord() async {
+    // Hộp thoại cuộc gọi còn trên màn thì nó đã lo rồi — mở chồng cái thứ hai
+    // hỏi đúng câu đó là loạn.
+    if (_callDialogOpen) return;
+    final code = ecPendingRecordCode();
+    if (code == null || code.isEmpty || !mounted) return;
+    if (_bloc.state.isRecording) return;
+    unawaited(ecRememberPendingRecord(null));
+    _interruptedCode = code;
+    _cutByBackground = true;
+    await _askResumeInterrupted();
   }
 
   /// Trạng thái quyền camera hiện tại, quyết định màn hình nào được vẽ.
@@ -333,6 +354,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     WidgetsBinding.instance.removeObserver(this);
     widget.isActive?.removeListener(_onActiveChanged);
     unawaited(_callSub?.cancel());
+    ecRecordingInProgress.value = false;
     unawaited(_bloc.close());
     super.dispose();
   }
@@ -412,9 +434,18 @@ class _EcRecordRouteState extends State<EcRecordRoute>
               _bloc.state.status == RecordingStatus.interrupted)) {
         _interruptedCode = _bloc.state.code;
         _cutByBackground = true;
+        // Giữ màn ghi hình sống qua lúc app trở lại — xem cờ này ở
+        // `_EcAppState.didChangeAppLifecycleState`.
+        ecRecordingInProgress.value = true;
+        // Và ghi xuống đĩa: iOS hay giết hẳn app đang giữ camera khi có cuộc
+        // gọi. Lúc quay lại là tiến trình mới, cờ trong bộ nhớ đã mất sạch.
+        unawaited(ecRememberPendingRecord(_bloc.state.code));
       }
       _bloc.add(const RecordingBackgrounded());
     } else if (state == AppLifecycleState.resumed) {
+      // Cuộc gọi tắt phiên âm thanh của app và iOS không tự bật lại. Khai lại
+      // ngay khi trở về, trước mọi tiếng tút hay câu nói sau đó.
+      unawaited(_bloc.restoreAudio());
       final needsCamera =
           _releasedForBackground ||
           (_bloc.state.status != RecordingStatus.idle &&
@@ -513,15 +544,30 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         ),
       );
       if (!mounted) return;
-      // Nghe máy giữa chừng: clip đã bị chốt ở nhánh vòng đời (app xuống nền
-      // thật), hộp thoại này không còn gì để quyết nữa.
-      if (_bloc.state.status != RecordingStatus.interrupted) return;
-      if (keepRecording ?? true) {
+      final code = _interruptedCode;
+      final stillOpen = _bloc.state.status == RecordingStatus.interrupted;
+      if (!(keepRecording ?? true)) {
+        // "Kết thúc": chốt clip nếu nó còn mở. Nghe máy xong thì iOS đã chốt
+        // hộ rồi, lúc đó không còn gì phải làm.
+        if (stillOpen) _bloc.add(const RecordingStopRequested());
+      } else if (stillOpen) {
+        // Chưa ai nghe máy — nối thẳng vào chính clip đó.
         await _resumeOrAsk();
-      } else {
-        _interruptedCode = null;
-        _bloc.add(const RecordingStopRequested());
+        return;
+      } else if (!_bloc.state.isRecording &&
+          code != null &&
+          code.isNotEmpty) {
+        // Đã nghe máy: iOS thu hồi phiên ghi và clip bị chốt trong lúc app ở
+        // nền. "Tiếp tục" giờ nghĩa là mở clip mới cho ĐÚNG đơn đó — không
+        // bắt quét lại mã. Thiếu nhánh này thì nút bấm không ra gì, và nhìn
+        // ra đúng như "phải quay lại từ đầu".
+        await _startRecordingFlow();
+        if (!mounted) return;
+        _bloc.add(RecordingManualCodeSubmitted(code));
       }
+      _interruptedCode = null;
+      _cutByBackground = false;
+      unawaited(ecRememberPendingRecord(null));
     } finally {
       _callDialogOpen = false;
     }
@@ -575,6 +621,8 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     final wasCut = _cutByBackground;
     _interruptedCode = null;
     _cutByBackground = false;
+    ecRecordingInProgress.value = false;
+    unawaited(ecRememberPendingRecord(null));
     if (code == null || !wasCut || !mounted) return;
     final l10n = context.l10n;
     final paused = _bloc.state.status == RecordingStatus.interrupted;

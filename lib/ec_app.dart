@@ -242,12 +242,16 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     }
     if (state != AppLifecycleState.resumed || !_wasPaused) return;
     _wasPaused = false;
-    // Đang ở màn ghi hình thì GIỮ NGUYÊN. Cuộc gọi đến làm app xuống nền thật,
-    // reset về splash ở đây là màn quay bị huỷ trước khi kịp hỏi người quay có
-    // muốn quay tiếp hay không — đúng thứ họ cần nhất ngay lúc nghe máy xong.
-    if (_router.routerDelegate.currentConfiguration.uri.path == '/record') {
-      return;
-    }
+    // Đang có lượt quay dở thì GIỮ NGUYÊN màn hình.
+    //
+    // Nghe điện thoại là app xuống nền thật; reset về splash lúc quay lại sẽ
+    // huỷ màn ghi hình trước khi kịp hỏi người quay có muốn quay tiếp không —
+    // và họ phải quét lại mã từ đầu, đúng thứ vừa làm dở dang.
+    //
+    // Dùng cờ tường minh chứ KHÔNG đọc đường dẫn router: trong shell nhiều
+    // tab, đường dẫn hiện hành không phải lúc nào cũng là '/record', nên chốt
+    // chặn cũ trượt và app vẫn nhảy về splash.
+    if (ecRecordingInProgress.value) return;
     // Mở lại app là bắt đầu lại từ splash, không rơi thẳng vào màn đang dở.
     // Phiên đăng nhập do Firebase giữ nên splash tự đưa thẳng sang chọn shop,
     // không bắt đăng nhập lại.
@@ -2314,6 +2318,29 @@ Future<bool> _confirmManualTracking(
 /// Khoá lưu trần dung lượng người dùng tự đặt, theo từng shop.
 String _sizeKey(String shopId, EcUploadKind kind) =>
     'shop.$shopId.max${kind == EcUploadKind.image ? 'Image' : 'Video'}Bytes';
+
+/// Khoá lưu đơn đang quay dở lúc bị cắt ngang.
+///
+/// Ghi xuống ĐĨA chứ không giữ trong bộ nhớ: quay video + camera + cuộc gọi là
+/// lúc máy tốn RAM nhất, iOS hay giết thẳng app nền. Lúc quay lại là một tiến
+/// trình mới, mọi cờ trong bộ nhớ đã mất — chỉ thứ nằm trên đĩa mới nói được
+/// rằng còn một đơn đang quay dở.
+const ecPendingRecordKey = 'record.interrupted_code';
+
+String? ecPendingRecordCode() => _appMemory()?.getString(ecPendingRecordKey);
+
+Future<void> ecRememberPendingRecord(String? code) =>
+    (code == null || code.isEmpty
+        ? _appMemory()?.remove(ecPendingRecordKey)
+        : _appMemory()?.setString(ecPendingRecordKey, code)) ??
+    Future<void>.value();
+
+/// Màn ghi hình đang giữ một lượt quay dở (đang quay, hoặc vừa bị cắt ngang
+/// và chưa hỏi lại người quay).
+///
+/// Chỉ dùng để chặn việc app tự đưa về splash khi quay lại từ nền — xem
+/// `_EcAppState.didChangeAppLifecycleState`.
+final ValueNotifier<bool> ecRecordingInProgress = ValueNotifier(false);
 
 /// Ảnh đại diện vừa chọn, giữ trong bộ nhớ tiến trình.
 ///
