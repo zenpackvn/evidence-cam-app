@@ -457,13 +457,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
             'status=${_bloc.state.status}', name: 'zenpack.call');
         if (event != 'incoming' || !mounted) return;
         if (!_bloc.state.isRecording || _bloc.state.code.isEmpty) return;
-        // Tạm dừng NGAY lúc chuông reo, không đợi bắt máy: quay tiếp cảnh
-        // người quay quay ra nghe điện thoại thì clip vừa vô nghĩa vừa tốn
-        // dung lượng.
-        // KHÔNG dừng quay. Chuông reo mà chưa ai nghe máy thì app vẫn chạy
-        // bình thường và phiên ghi vẫn sống — dừng ở đây là tự cắt clip của
-        // mình vì một cuộc gọi có thể người quay còn chẳng buồn bắt.
-        //
+        _interruptedCode = _bloc.state.code;
         // Đọc to ngay lúc này, không đợi lúc quay lại app: người quay đang cúi
         // xuống thùng hàng, đây là giây họ cần biết có chuyện xảy ra.
         unawaited(_bloc.announceInterrupted());
@@ -486,15 +480,17 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   /// Đang mở hộp thoại cuộc gọi — chặn mở chồng khi có cuộc thứ hai gọi tới.
   bool _callDialogOpen = false;
 
-  /// Hỏi ngay lúc chuông reo, TRONG LÚC VẪN ĐANG QUAY.
+  /// Tạm dừng clip rồi hỏi, ngay lúc chuông reo.
   ///
-  /// "Tiếp tục" không phải thao tác nối lại gì cả — clip chưa từng dừng, nút
-  /// đó chỉ đóng hộp thoại. "Kết thúc" mới chốt clip. Đây là khác biệt so với
-  /// hộp thoại sau cuộc gọi ĐÃ NGHE: lúc đó iOS đã thu hồi phiên ghi và clip
-  /// buộc phải chốt, không còn lựa chọn nào.
+  /// TẠM DỪNG, không chốt: file vẫn mở nên "Tiếp tục" nối thẳng vào chính clip
+  /// đó, không sinh ra file thứ hai. Và không quay tiếp trong lúc chuông reo —
+  /// đoạn người quay ngẩng lên nhìn điện thoại chẳng là bằng chứng của gì.
+  ///
+  /// "Kết thúc" mới chốt clip.
   Future<void> _showCallDialog() async {
     if (_callDialogOpen || !mounted) return;
     _callDialogOpen = true;
+    _bloc.add(const RecordingInterrupted());
     final l10n = context.l10n;
     try {
       final keepRecording = await showCupertinoDialog<bool>(
@@ -517,10 +513,15 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         ),
       );
       if (!mounted) return;
-      // Người dùng nghe máy giữa chừng: clip đã bị chốt ở nhánh vòng đời, hộp
-      // thoại này không còn nghĩa gì nữa.
-      if (!_bloc.state.isRecording) return;
-      if (!(keepRecording ?? true)) _bloc.add(const RecordingStopRequested());
+      // Nghe máy giữa chừng: clip đã bị chốt ở nhánh vòng đời (app xuống nền
+      // thật), hộp thoại này không còn gì để quyết nữa.
+      if (_bloc.state.status != RecordingStatus.interrupted) return;
+      if (keepRecording ?? true) {
+        await _resumeOrAsk();
+      } else {
+        _interruptedCode = null;
+        _bloc.add(const RecordingStopRequested());
+      }
     } finally {
       _callDialogOpen = false;
     }
@@ -533,6 +534,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   /// có cuộc gọi) là bloc chốt clip về nghỉ, mà lúc đó chẳng còn gì để hỏi
   /// người quay. Nhìn ra đúng như "có cuộc gọi là dừng quay, không báo gì".
   Future<void> _resumeOrAsk() async {
+    final code = _interruptedCode;
     _bloc.add(const RecordingResumeRequested());
     await Future<void>.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
@@ -542,10 +544,21 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       _cutByBackground = false;
       return;
     }
-    // Không nối được: dựng lại camera rồi hỏi, vì "Tiếp tục" bây giờ nghĩa là
-    // mở clip mới cho cùng đơn.
+    // Nối không được (iOS đã thu hồi phiên ghi). Phần đã quay được bloc chốt
+    // và lưu, giờ dựng lại camera.
     await _startRecordingFlow();
-    await _askResumeInterrupted();
+    if (!mounted) return;
+    // Chưa hỏi lần nào thì hỏi. Còn nếu người quay vừa bấm "Tiếp tục" ở hộp
+    // thoại cuộc gọi thì họ đã trả lời rồi — hỏi lại đúng câu đó là phiền, cứ
+    // mở thẳng clip mới cho đơn đang dở.
+    if (_cutByBackground) {
+      await _askResumeInterrupted();
+      return;
+    }
+    _interruptedCode = null;
+    if (code != null && code.isNotEmpty) {
+      _bloc.add(RecordingManualCodeSubmitted(code));
+    }
   }
 
   /// Hỏi quay tiếp hay kết thúc, sau khi app trở lại từ cuộc gọi.
