@@ -40,8 +40,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
 
 import '../app/di/injection.dart';
-import '../ec_app.dart'
-    show ecPendingRecordCode, ecRecordingInProgress, ecRememberPendingRecord;
+import '../ec_app.dart' show ecPendingRecordCode, ecRememberPendingRecord;
 
 /// The recording route mounted at `/record`. Callbacks stay routing-agnostic so
 /// the app shell owns navigation; [onRequestCode] returns the tracking code the
@@ -354,7 +353,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     WidgetsBinding.instance.removeObserver(this);
     widget.isActive?.removeListener(_onActiveChanged);
     unawaited(_callSub?.cancel());
-    ecRecordingInProgress.value = false;
     unawaited(_bloc.close());
     super.dispose();
   }
@@ -412,9 +410,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    developer.log('LIFECYCLE $state status=${_bloc.state.status} '
-        'cut=$_cutByBackground code=${_interruptedCode ?? "-"}',
-        name: 'zenpack.call');
+    developer.log(
+      'LIFECYCLE $state status=${_bloc.state.status} '
+      'cut=$_cutByBackground code=${_interruptedCode ?? "-"}',
+      name: 'zenpack.call',
+    );
     // Hai mức, vì hai mức đó khác nhau về chuyện mất hay không mất bằng chứng.
     //
     // `inactive` = có thứ gì đó che lên app nhưng app CHƯA bị treo: chuông
@@ -434,9 +434,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
               _bloc.state.status == RecordingStatus.interrupted)) {
         _interruptedCode = _bloc.state.code;
         _cutByBackground = true;
-        // Giữ màn ghi hình sống qua lúc app trở lại — xem cờ này ở
-        // `_EcAppState.didChangeAppLifecycleState`.
-        ecRecordingInProgress.value = true;
         // Và ghi xuống đĩa: iOS hay giết hẳn app đang giữ camera khi có cuộc
         // gọi. Lúc quay lại là tiến trình mới, cờ trong bộ nhớ đã mất sạch.
         unawaited(ecRememberPendingRecord(_bloc.state.code));
@@ -484,8 +481,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     if (!Platform.isIOS) return;
     _callSub = _callChannel.receiveBroadcastStream().listen(
       (event) {
-        developer.log('CALL event=$event mounted=$mounted '
-            'status=${_bloc.state.status}', name: 'zenpack.call');
+        developer.log(
+          'CALL event=$event mounted=$mounted '
+          'status=${_bloc.state.status}',
+          name: 'zenpack.call',
+        );
         if (event != 'incoming' || !mounted) return;
         if (!_bloc.state.isRecording || _bloc.state.code.isEmpty) return;
         _interruptedCode = _bloc.state.code;
@@ -554,9 +554,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         // Chưa ai nghe máy — nối thẳng vào chính clip đó.
         await _resumeOrAsk();
         return;
-      } else if (!_bloc.state.isRecording &&
-          code != null &&
-          code.isNotEmpty) {
+      } else if (!_bloc.state.isRecording && code != null && code.isNotEmpty) {
         // Đã nghe máy: iOS thu hồi phiên ghi và clip bị chốt trong lúc app ở
         // nền. "Tiếp tục" giờ nghĩa là mở clip mới cho ĐÚNG đơn đó — không
         // bắt quét lại mã. Thiếu nhánh này thì nút bấm không ra gì, và nhìn
@@ -615,13 +613,15 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   /// Hỏi thay vì tự quay tiếp: người quay có thể đã rời bàn, tự động ghi hình
   /// trần nhà cả phút là vô nghĩa và tốn quota.
   Future<void> _askResumeInterrupted() async {
-    developer.log('ASK code=${_interruptedCode ?? "-"} cut=$_cutByBackground '
-        'status=${_bloc.state.status}', name: 'zenpack.call');
+    developer.log(
+      'ASK code=${_interruptedCode ?? "-"} cut=$_cutByBackground '
+      'status=${_bloc.state.status}',
+      name: 'zenpack.call',
+    );
     final code = _interruptedCode;
     final wasCut = _cutByBackground;
     _interruptedCode = null;
     _cutByBackground = false;
-    ecRecordingInProgress.value = false;
     unawaited(ecRememberPendingRecord(null));
     if (code == null || !wasCut || !mounted) return;
     final l10n = context.l10n;

@@ -231,36 +231,16 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  /// True khi app đã bị đẩy hẳn xuống nền (người dùng rời đi thật).
-  bool _wasPaused = false;
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      _wasPaused = true;
-      return;
-    }
-    if (state != AppLifecycleState.resumed || !_wasPaused) return;
-    _wasPaused = false;
-    // Đang có lượt quay dở thì GIỮ NGUYÊN màn hình.
-    //
-    // Nghe điện thoại là app xuống nền thật; reset về splash lúc quay lại sẽ
-    // huỷ màn ghi hình trước khi kịp hỏi người quay có muốn quay tiếp không —
-    // và họ phải quét lại mã từ đầu, đúng thứ vừa làm dở dang.
-    //
-    // Dùng cờ tường minh chứ KHÔNG đọc đường dẫn router: trong shell nhiều
-    // tab, đường dẫn hiện hành không phải lúc nào cũng là '/record', nên chốt
-    // chặn cũ trượt và app vẫn nhảy về splash.
-    if (ecRecordingInProgress.value) return;
-    // Mở lại app là bắt đầu lại từ splash, không rơi thẳng vào màn đang dở.
-    // Phiên đăng nhập do Firebase giữ nên splash tự đưa thẳng sang chọn shop,
-    // không bắt đăng nhập lại.
-    //
-    // Chỉ bắt `paused` (rời app thật), KHÔNG bắt `inactive`: cuộc gọi đến hay
-    // kéo trung tâm thông báo cũng bắn `inactive`, reset ở đó thì đang quay
-    // dở bị đá về đầu chỉ vì một thông báo lướt qua.
-    _router.go('/');
-  }
+  // Vòng đời app KHÔNG còn đưa người dùng về splash.
+  //
+  // Rời app rồi quay lại (app còn sống) là phải thấy đúng màn đang dở — đó là
+  // thao tác đọc một tin nhắn rồi quay lại làm tiếp, không phải bắt đầu ca mới.
+  // Bản trước reset về '/' ở đây nên nghe điện thoại xong là mất sạch chỗ đang
+  // đứng.
+  //
+  // Mở lại app từ đầu (đã bị tắt hẳn) thì splash tự lo: đã đăng nhập thì vào
+  // thẳng shop gần nhất rồi ra tab Vận đơn, chưa đăng nhập thì về màn đăng
+  // nhập. Xem route '/' và '/shops'.
 
   @override
   Widget build(BuildContext context) {
@@ -2334,13 +2314,6 @@ Future<void> ecRememberPendingRecord(String? code) =>
         ? _appMemory()?.remove(ecPendingRecordKey)
         : _appMemory()?.setString(ecPendingRecordKey, code)) ??
     Future<void>.value();
-
-/// Màn ghi hình đang giữ một lượt quay dở (đang quay, hoặc vừa bị cắt ngang
-/// và chưa hỏi lại người quay).
-///
-/// Chỉ dùng để chặn việc app tự đưa về splash khi quay lại từ nền — xem
-/// `_EcAppState.didChangeAppLifecycleState`.
-final ValueNotifier<bool> ecRecordingInProgress = ValueNotifier(false);
 
 /// Ảnh đại diện vừa chọn, giữ trong bộ nhớ tiến trình.
 ///
@@ -4882,13 +4855,12 @@ GoRouter _buildRouter(
         // routing to /login. A still-signed-in user goes straight to shop
         // selection, same destination a fresh login lands on.
         builder: (c, s) => EcSplashScreen(
-          // Luôn dừng ở màn chọn shop, kể cả khi phiên còn sống: mở app là
-          // bắt đầu một ca làm việc, mà người quay có thể đổi shop giữa các
-          // ca. Nhảy thẳng vào shop gần nhất là cách clip bị gán nhầm shop mà
-          // không ai để ý. Phiên đăng nhập vẫn được giữ nên không phải nhập
-          // lại tài khoản.
-          onStart: () =>
-              auth.currentUser != null ? c.go('/shops') : c.go('/login'),
+          // Đã đăng nhập thì vào thẳng shop gần nhất rồi ra tab Vận đơn;
+          // `/shops` tự chọn hộ nhờ `_resumedSession` (xem route '/shops').
+          // Chưa đăng nhập mới đi từ màn đăng nhập.
+          onStart: () => auth.currentUser != null
+              ? c.go('/shops', extra: _resumedSession)
+              : c.go('/login'),
         ),
       ),
       GoRoute(
