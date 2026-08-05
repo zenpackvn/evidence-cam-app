@@ -330,21 +330,34 @@ class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
           // Trước đây nó nằm cuối danh sách bằng chứng: đơn có vài chục clip
           // thì phải cuộn hết mới bấm được, trong khi đính ảnh là việc làm bất
           // cứ lúc nào chứ không phải sau khi xem xong.
-          if (!_selecting)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
-              child: _EcAttachPhotoRow(onTap: widget.onAttachPhoto),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
-            child: _EcBundleSection(
-              selecting: _selecting,
-              pickedCount: _picked.length,
-              onStart: () => setState(() => _selecting = true),
-              onCancel: _exitSelection,
-              onCreateLink: _picked.isEmpty
-                  ? null
-                  : () => widget.onCreateLink?.call(_pickedVideos),
+          // Cả hai hàng ghim nằm TRONG vùng an toàn.
+          //
+          // Trước đó chúng nằm ngoài, nên hàng dưới cùng ("Tạo link") bị đẩy
+          // xuống dưới thanh điều hướng của máy — không tràn khung, không báo
+          // lỗi, chỉ là không ai nhìn thấy nó.
+          SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!_selecting)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+                    child: _EcAttachPhotoRow(onTap: widget.onAttachPhoto),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
+                  child: _EcBundleSection(
+                    selecting: _selecting,
+                    pickedCount: _picked.length,
+                    onStart: () => setState(() => _selecting = true),
+                    onCancel: _exitSelection,
+                    onCreateLink: _picked.isEmpty
+                        ? null
+                        : () => widget.onCreateLink?.call(_pickedVideos),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
