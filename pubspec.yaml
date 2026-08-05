@@ -284,14 +284,19 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-# EcVideoFaststartService (feature_capture) only remuxes finished clips
-# (`-c copy -movflags +faststart`) — that needs the mp4 demuxer/muxer and no
-# codec, encoder or font rendering at all, so the smallest bundle covers it.
-# ("min" is not a valid type here; the build hook accepts debug, base, full,
-# audio, video, video_hw.) It was "full" while the service still burned a
-# `drawtext` overlay, which needed libfreetype; dropping that dropped the
-# bundled codec set with it. Raising this again means someone reintroduced
-# transcoding — check FR-07 before you do.
+# Hai thứ dùng ffmpeg: EcVideoFaststartService chỉ remux (`-c copy`, không cần
+# codec nào), còn EcVideoStampService thì nung chữ vào khung hình nên BUỘC phải
+# mã hoá lại. ("min" không phải type hợp lệ; build hook nhận debug, base, full,
+# audio, video, video_hw.)
+#
+# Vẫn giữ "base" + gpl:false dù có transcode, vì bộ mã hoá phần cứng của hệ
+# điều hành (mediacodec trên Android, videotoolbox trên Apple) đã nằm sẵn trong
+# bản "base" — xem `_encoders` trong ec_video_stamp.dart. Nâng lên "video"+gpl
+# chỉ để lấy libx264 là đổi lấy một app phình to và nghĩa vụ GPL cho toàn bộ
+# bản phát hành, không đáng.
+#
+# Đừng khai libx264 ở bất kỳ lệnh nào: nó không có trong bundle này, và vì
+# `stamp` fail-safe nên hỏng đó không nổi lên ở đâu ngoài một clip mất chữ.
 ffmpeg_kit_extended_config:
   type: "base"
   gpl: false
