@@ -10,6 +10,7 @@
 library;
 
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:io' show Platform;
 import 'dart:ui' as ui;
 
@@ -389,6 +390,9 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    developer.log('LIFECYCLE $state status=${_bloc.state.status} '
+        'cut=$_cutByBackground code=${_interruptedCode ?? "-"}',
+        name: 'zenpack.call');
     // Hai mức, vì hai mức đó khác nhau về chuyện mất hay không mất bằng chứng.
     //
     // `inactive` = có thứ gì đó che lên app nhưng app CHƯA bị treo: chuông
@@ -423,9 +427,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       // người quay không cần biết, và cũng không nên bị chặn lại bằng một hộp
       // thoại. KHÔNG dựng lại camera — dựng lại là vứt phiên ghi.
       if (_bloc.state.status == RecordingStatus.interrupted) {
-        _interruptedCode = null;
-        _cutByBackground = false;
-        _bloc.add(const RecordingResumeRequested());
+        unawaited(_resumeOrAsk());
         return;
       }
       if (needsCamera && (widget.isActive?.value ?? true)) {
@@ -451,14 +453,21 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     if (!Platform.isIOS) return;
     _callSub = _callChannel.receiveBroadcastStream().listen(
       (event) {
+        developer.log('CALL event=$event mounted=$mounted '
+            'status=${_bloc.state.status}', name: 'zenpack.call');
         if (event != 'incoming' || !mounted) return;
         if (!_bloc.state.isRecording || _bloc.state.code.isEmpty) return;
         // Tạm dừng NGAY lúc chuông reo, không đợi bắt máy: quay tiếp cảnh
         // người quay quay ra nghe điện thoại thì clip vừa vô nghĩa vừa tốn
         // dung lượng.
-        _interruptedCode = _bloc.state.code;
-        _cutByBackground = true;
-        _bloc.add(const RecordingInterrupted());
+        // KHÔNG dừng quay. Chuông reo mà chưa ai nghe máy thì app vẫn chạy
+        // bình thường và phiên ghi vẫn sống — dừng ở đây là tự cắt clip của
+        // mình vì một cuộc gọi có thể người quay còn chẳng buồn bắt.
+        //
+        // Đọc to ngay lúc này, không đợi lúc quay lại app: người quay đang cúi
+        // xuống thùng hàng, đây là giây họ cần biết có chuyện xảy ra.
+        unawaited(_bloc.announceInterrupted());
+        unawaited(_showCallDialog());
       },
       onError: (Object _) {
         // Kênh không dựng được (bản build cũ, thiết bị lạ) — vòng đời app vẫn
@@ -474,6 +483,71 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   /// mới cho cùng đơn.
   bool _cutByBackground = false;
 
+  /// Đang mở hộp thoại cuộc gọi — chặn mở chồng khi có cuộc thứ hai gọi tới.
+  bool _callDialogOpen = false;
+
+  /// Hỏi ngay lúc chuông reo, TRONG LÚC VẪN ĐANG QUAY.
+  ///
+  /// "Tiếp tục" không phải thao tác nối lại gì cả — clip chưa từng dừng, nút
+  /// đó chỉ đóng hộp thoại. "Kết thúc" mới chốt clip. Đây là khác biệt so với
+  /// hộp thoại sau cuộc gọi ĐÃ NGHE: lúc đó iOS đã thu hồi phiên ghi và clip
+  /// buộc phải chốt, không còn lựa chọn nào.
+  Future<void> _showCallDialog() async {
+    if (_callDialogOpen || !mounted) return;
+    _callDialogOpen = true;
+    final l10n = context.l10n;
+    try {
+      final keepRecording = await showCupertinoDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => CupertinoAlertDialog(
+          title: Text(l10n.recordInterruptedTitle),
+          content: Text(l10n.recordInterruptedBody),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.recordInterruptedFinish),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.recordInterruptedResume),
+            ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      // Người dùng nghe máy giữa chừng: clip đã bị chốt ở nhánh vòng đời, hộp
+      // thoại này không còn nghĩa gì nữa.
+      if (!_bloc.state.isRecording) return;
+      if (!(keepRecording ?? true)) _bloc.add(const RecordingStopRequested());
+    } finally {
+      _callDialogOpen = false;
+    }
+  }
+
+  /// Quay tiếp vào clip đang mở; nối không được thì mới hỏi.
+  ///
+  /// KHÔNG xoá [_interruptedCode]/[_cutByBackground] trước khi biết kết quả.
+  /// Bản trước xoá ngay rồi mới thử nối — nối hỏng (iOS thu hồi phiên ghi khi
+  /// có cuộc gọi) là bloc chốt clip về nghỉ, mà lúc đó chẳng còn gì để hỏi
+  /// người quay. Nhìn ra đúng như "có cuộc gọi là dừng quay, không báo gì".
+  Future<void> _resumeOrAsk() async {
+    _bloc.add(const RecordingResumeRequested());
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    if (_bloc.state.status == RecordingStatus.recording) {
+      // Nối được thật — clip liền một mạch, không cần làm phiền ai.
+      _interruptedCode = null;
+      _cutByBackground = false;
+      return;
+    }
+    // Không nối được: dựng lại camera rồi hỏi, vì "Tiếp tục" bây giờ nghĩa là
+    // mở clip mới cho cùng đơn.
+    await _startRecordingFlow();
+    await _askResumeInterrupted();
+  }
+
   /// Hỏi quay tiếp hay kết thúc, sau khi app trở lại từ cuộc gọi.
   ///
   /// Hiện tự động, không cần thao tác nào: người quay vừa nghe máy xong, việc
@@ -482,6 +556,8 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   /// Hỏi thay vì tự quay tiếp: người quay có thể đã rời bàn, tự động ghi hình
   /// trần nhà cả phút là vô nghĩa và tốn quota.
   Future<void> _askResumeInterrupted() async {
+    developer.log('ASK code=${_interruptedCode ?? "-"} cut=$_cutByBackground '
+        'status=${_bloc.state.status}', name: 'zenpack.call');
     final code = _interruptedCode;
     final wasCut = _cutByBackground;
     _interruptedCode = null;
@@ -499,7 +575,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       barrierDismissible: false,
       builder: (dialogContext) => CupertinoAlertDialog(
         title: Text(l10n.recordInterruptedTitle),
-        content: Text(l10n.recordInterruptedBody(code)),
+        content: Text(l10n.recordInterruptedBody),
         actions: [
           CupertinoDialogAction(
             onPressed: () => Navigator.of(dialogContext).pop(false),

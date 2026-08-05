@@ -2765,14 +2765,14 @@ abstract class AppLocalizations {
   /// No description provided for @recordInterruptedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Recording stopped'**
+  /// **'Recording paused'**
   String get recordInterruptedTitle;
 
   /// No description provided for @recordInterruptedBody.
   ///
   /// In en, this message translates to:
-  /// **'An incoming call interrupted the clip for {code}. What was recorded is saved. Keep recording this order?'**
-  String recordInterruptedBody(String code);
+  /// **'Recording paused because something interrupted it. Continue recording?'**
+  String get recordInterruptedBody;
 
   /// No description provided for @recordInterruptedResume.
   ///

@@ -822,16 +822,8 @@
   "accountEndQrTitle": "Mã dừng quay",
   "accountEndQrShare": "Chia sẻ mã",
   "accountEndQrSave": "Lưu vào thư viện ảnh",
-  "recordInterruptedTitle": "Đã dừng quay",
-  "recordInterruptedBody": "Cuộc gọi đến đã cắt ngang clip của đơn {code}. Phần vừa quay đã được lưu. Quay tiếp đơn này?",
-  "@recordInterruptedBody": {
-    "placeholders": {
-      "code": {
-        "type": "String",
-        "example": "SPX123"
-      }
-    }
-  },
+  "recordInterruptedTitle": "Đã tạm dừng quay",
+  "recordInterruptedBody": "Quá trình quay đã tạm dừng do có tác động từ bên ngoài. Bạn có muốn tiếp tục quay không?",
   "recordInterruptedResume": "Tiếp tục",
   "recordInterruptedFinish": "Kết thúc",
   "commonApply": "Áp dụng",

@@ -1068,16 +1068,8 @@
   "accountEndQrTitle": "Stop-recording code",
   "accountEndQrShare": "Share code",
   "accountEndQrSave": "Save to photo library",
-  "recordInterruptedTitle": "Recording stopped",
-  "recordInterruptedBody": "An incoming call interrupted the clip for {code}. What was recorded is saved. Keep recording this order?",
-  "@recordInterruptedBody": {
-    "placeholders": {
-      "code": {
-        "type": "String",
-        "example": "SPX123"
-      }
-    }
-  },
+  "recordInterruptedTitle": "Recording paused",
+  "recordInterruptedBody": "Recording paused because something interrupted it. Continue recording?",
   "recordInterruptedResume": "Continue",
   "recordInterruptedFinish": "Finish",
   "commonApply": "Apply",

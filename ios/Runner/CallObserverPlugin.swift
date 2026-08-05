@@ -22,6 +22,15 @@ final class CallObserverPlugin: NSObject, FlutterStreamHandler, CXCallObserverDe
   /// does not fire a second "incoming" for the same one.
   private var announced = Set<UUID>()
 
+  /// Giữ sống cả plugin lẫn kênh cho tới hết vòng đời app.
+  ///
+  /// Bản trước để cả hai là biến cục bộ trong `register`. Hàm chạy xong là ARC
+  /// giải phóng kênh, kênh thả luôn stream handler, và `CXCallObserver` mất
+  /// delegate — cuộc gọi đến vẫn được hệ điều hành báo nhưng không còn ai nghe.
+  /// Không lỗi, không cảnh báo, chỉ là im lặng.
+  private static var retained: CallObserverPlugin?
+  private static var channel: FlutterEventChannel?
+
   static func register(with registrar: FlutterPluginRegistrar) {
     let instance = CallObserverPlugin()
     let channel = FlutterEventChannel(
@@ -29,8 +38,9 @@ final class CallObserverPlugin: NSObject, FlutterStreamHandler, CXCallObserverDe
       binaryMessenger: registrar.messenger()
     )
     channel.setStreamHandler(instance)
-    // Retained by the channel's strong reference to the handler.
     instance.observer.setDelegate(instance, queue: nil)
+    retained = instance
+    self.channel = channel
   }
 
   func onListen(
@@ -57,6 +67,7 @@ final class CallObserverPlugin: NSObject, FlutterStreamHandler, CXCallObserverDe
     // for a call they placed themselves would only be confusing.
     guard !call.isOutgoing, !call.hasConnected else { return }
     guard announced.insert(call.uuid).inserted else { return }
+    NSLog("[zenpack] cuoc goi den, sink=\(sink != nil)")
     sink?("incoming")
   }
 }
