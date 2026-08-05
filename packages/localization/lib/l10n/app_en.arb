@@ -1,5 +1,17 @@
 {
   "@@locale": "en",
+  "bundleBackendPending": "Waiting on a backend endpoint for this",
+  "bundleCreate": "Create",
+  "bundleCreateLink": "Create link",
+  "bundleSelected": "{count} selected",
+  "@bundleSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bundleUploadDrive": "Upload to Drive",
   "commonCancel": "Cancel",
   "commonRetry": "Retry",
   "commonClose": "Close",
@@ -338,6 +350,7 @@
   "detailDownloadPhoto": "Download photo",
   "attachPhotoToOrder": "Attach photo to order",
   "deleteVideoAction": "Delete video",
+  "deletePhotoAction": "Delete photo",
   "deleteVideoNote": "Owner/manager only · locked while a dossier is open · two-step confirm",
   "deleteVideoConfirmTitle": "Final confirmation",
   "deleteVideoConfirmBody": "This evidence will be permanently deleted and cannot be recovered — delete anyway?",
@@ -949,6 +962,8 @@
   "uploadSizeTitleVideo": "Max size per video",
   "uploadSizeTitleImage": "Max size per photo",
   "uploadSizeDefaultValue": "{value} MB (default)",
+  "uploadSizeUnlimited": "No limit (default)",
+  "uploadSizeValueUnlimited": "No limit",
   "@uploadSizeDefaultValue": {
     "placeholders": {
       "value": {
@@ -981,7 +996,7 @@
       }
     }
   },
-  "uploadSizeChanged": "Max size/file: {megabytes} MB",
+  "uploadSizeChanged": "Size per file: {megabytes}",
   "@uploadSizeChanged": {
     "description": "Shop detail / upload size cap (FR-21).",
     "placeholders": {
@@ -1076,7 +1091,7 @@
   "unitMinutes": "min",
   "unitMegabytes": "MB",
   "clipDurationCustomLabel": "Or enter the number of minutes you want",
-  "uploadSizeCustomLabel": "Or enter any size you want (no limit)",
+  "uploadSizeCustomLabel": "Or enter the size you want",
   "supportOpenFailed": "Couldn’t open — check the app is installed",
   "feedbackThanksTitle": "Thank you!",
   "feedbackThanksBody": "Your feedback helps make ZenPack better.",

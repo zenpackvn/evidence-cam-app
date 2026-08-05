@@ -2633,7 +2633,13 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
         _autoSelectIfNeeded(shops);
         return EcChooseShopScreen(
           shops: shops,
-          showManage: shops.any((shop) => shop.role != 'staff'),
+          // Luôn hiện "Quản lý cửa hàng".
+          //
+          // Trước đây ẩn khi mọi shop đều là vai trò nhân viên, nên tài khoản
+          // chỉ đi làm thuê thì lối vào biến mất hẳn — nhìn ra như app mất
+          // tính năng. Danh sách bên trong giờ đã hiện đủ mọi shop, nên vào
+          // vẫn xem được, chỉ là không sửa được thứ mình không có quyền.
+          showManage: true,
           onSelect: widget.onSelect,
           onManage: widget.onManage,
           // Cùng đích với nút "Tạo shop" ở màn chưa-có-shop; thiếu dòng này
@@ -2669,10 +2675,12 @@ class _ShopMgmtRouteState extends State<_ShopMgmtRoute> {
   Future<List<EcShopMgmtEntry>> _load() async {
     final l10n = context.l10n;
     final shops = await widget.repo.shops();
-    return shops
-        .where((shop) => shop.role != 'staff')
-        .map((s) => _shopMgmtFromDto(l10n, s))
-        .toList();
+    // Hiện ĐỦ mọi shop, kể cả shop mình chỉ là nhân viên.
+    //
+    // Bản trước lọc bỏ chúng, nên danh sách ở đây ít hơn màn chọn cửa hàng —
+    // nhìn ra như app làm mất một shop. Không quản lý được thì hàng đó chỉ
+    // không bấm vào được (xem chỗ dựng màn), chứ không được giấu đi.
+    return shops.map((s) => _shopMgmtFromDto(l10n, s)).toList();
   }
 
   /// Kết quả tốt gần nhất — giữ màn hình đứng yên trong lúc làm mới ngầm.
@@ -3703,6 +3711,43 @@ class _OrderRoute extends StatefulWidget {
 class _OrderRouteState extends State<_OrderRoute> {
   late Future<_OrderDetailData> _detail = _load();
 
+  /// Số clip của đơn này còn nằm trong hàng đợi, lần đọc gần nhất.
+  ///
+  /// Ảnh vừa đính chỉ có trên máy; server chưa biết gì cho tới khi tải xong.
+  /// Theo dõi con số này để nạp lại đúng lúc nó rời hàng đợi — nạp lại ở MỌI
+  /// nhịp hàng đợi động đậy thì mỗi phần trăm tiến trình là một lần gọi API.
+  Set<String>? _queueIds;
+
+  void _onQueueChanged() {
+    // So theo TẬP id của cả hàng đợi, không lọc theo mã đơn: mã lưu trong hàng
+    // đợi đã qua chuẩn hoá nên không phải lúc nào cũng bằng `order.tracking`,
+    // và lọc trượt thì tập luôn rỗng — không lần nạp lại nào chạy, ảnh vừa
+    // đính vẫn phải thoát ra vào lại mới thấy.
+    //
+    // Chỉ đổi khi có việc VÀO hoặc RA khỏi hàng đợi, nên tiến trình tải chạy
+    // từng phần trăm không kéo theo hàng loạt lời gọi API.
+    final ids = widget.queue.tasks.map((t) => t.id).toSet();
+    if (_queueIds != null &&
+        _queueIds!.length == ids.length &&
+        _queueIds!.containsAll(ids)) {
+      return;
+    }
+    _queueIds = ids;
+    if (mounted) _retry();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.queue.addListener(_onQueueChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.queue.removeListener(_onQueueChanged);
+    super.dispose();
+  }
+
   /// Kết quả tốt gần nhất — giữ màn hình đứng yên trong lúc làm mới ngầm.
   _OrderDetailData? _last;
 
@@ -3817,11 +3862,16 @@ class _OrderRouteState extends State<_OrderRoute> {
       ),
       builder: (context, data) {
         _last = data;
-        final days = _timelineDays(
+        final days = _withPendingUploads(
           context.l10n,
-          data.detail.evidence,
-          data.videoTypes,
-          data.memberNames,
+          _timelineDays(
+            context.l10n,
+            data.detail.evidence,
+            data.videoTypes,
+            data.memberNames,
+          ),
+          data.detail.order.tracking,
+          widget.queue,
         );
         return ListenableBuilder(
           listenable: widget.queue,
@@ -3836,7 +3886,9 @@ class _OrderRouteState extends State<_OrderRoute> {
                     shopId: widget.shop.id,
                     orderId: widget.order.id,
                     evidenceId: video.id,
-                    canDelete: widget.shop.role != 'staff',
+                    // Mọi vai trò đều xoá được, theo yêu cầu. Backend vẫn là chốt cuối:
+                    // không đủ quyền thì lời gọi xoá bị từ chối và màn báo lỗi.
+                    canDelete: true,
                     tracking: widget.order.tracking,
                     video: _videoDetail(
                       context.l10n,
@@ -3857,7 +3909,9 @@ class _OrderRouteState extends State<_OrderRoute> {
                     shopId: widget.shop.id,
                     orderId: widget.order.id,
                     evidenceId: video.id,
-                    canDelete: widget.shop.role != 'staff',
+                    // Mọi vai trò đều xoá được, theo yêu cầu. Backend vẫn là chốt cuối:
+                    // không đủ quyền thì lời gọi xoá bị từ chối và màn báo lỗi.
+                    canDelete: true,
                     tracking: widget.order.tracking,
                     video: _videoDetail(
                       context.l10n,
@@ -3878,13 +3932,24 @@ class _OrderRouteState extends State<_OrderRoute> {
               context.l10n.labelTrackingCode,
             ),
             onRetryUpload: () => unawaited(_retryPendingUploads()),
-            onAttachPhoto: () => _attachPhoto(
-              context,
-              widget.queue,
-              data.detail.order.tracking,
-              widget.shop.id,
-              budget: widget.shop.clipBudget,
-              platformLabel: _platformDisplayName(widget.shop.platform),
+            // Backend chưa có endpoint gộp bằng chứng thành hồ sơ, nên nút chỉ
+            // báo đang chờ. Giữ nguyên như trước khi khối này bị gỡ.
+            onCreateLink: (picked) =>
+                _toast(context, context.l10n.bundleBackendPending),
+            // Nạp lại NGAY sau khi đính: ảnh mới chỉ vào hàng đợi, còn danh
+            // sách bằng chứng dựng từ dữ liệu server. Không nạp lại thì phải
+            // thoát ra vào lại mới thấy ảnh vừa chọn.
+            onAttachPhoto: () => unawaited(
+              _attachPhoto(
+                context,
+                widget.queue,
+                data.detail.order.tracking,
+                widget.shop.id,
+                budget: widget.shop.clipBudget,
+                platformLabel: _platformDisplayName(widget.shop.platform),
+              ).then((_) {
+                if (mounted) _retry();
+              }),
             ),
           ),
         );
@@ -4355,6 +4420,49 @@ class _MemberActionExtra {
 
   final String shopId;
   final EcShopMember member;
+}
+
+/// Ghép các bằng chứng CHƯA tải xong của đơn vào danh sách.
+///
+/// Danh sách dựng từ dữ liệu server, mà ảnh vừa đính mới chỉ nằm trong hàng
+/// đợi trên máy — nạp lại bao nhiêu lần server cũng chưa có gì để trả. Không
+/// ghép vào thì người dùng đính ảnh xong nhìn thấy y như chưa đính, phải thoát
+/// ra vào lại (lúc đó tải đã xong) mới thấy.
+///
+/// So mã đơn sau khi chuẩn hoá: mã lưu trong hàng đợi đã bỏ dấu cách và viết
+/// hoa, không phải lúc nào cũng bằng chuỗi hiển thị.
+List<EcTimelineDay> _withPendingUploads(
+  AppLocalizations l10n,
+  List<EcTimelineDay> days,
+  String tracking,
+  EcUploadQueue queue,
+) {
+  final wanted = normalizeTrackingCode(tracking);
+  final pending = [
+    for (final task in queue.tasks)
+      if (normalizeTrackingCode(task.tracking) == wanted)
+        EcTimelineVideo(
+          time: _hhmm(task.createdAt),
+          capturedAtMs: task.createdAt.millisecondsSinceEpoch,
+          label: task.type,
+          type: task.type.toLowerCase().contains('ảnh')
+              ? EcEvidenceType.image
+              : EcEvidenceType.video,
+          statusText: l10n.uploadStatusPending,
+          durationSeconds: task.durationSeconds,
+        ),
+  ];
+  if (pending.isEmpty) return days;
+  final today = _dateLabel(DateTime.now());
+  final rest = [for (final d in days) if (d.date != today) d];
+  final todayVideos = [
+    for (final d in days)
+      if (d.date == today) ...d.videos,
+  ];
+  return [
+    EcTimelineDay(date: today, videos: [...pending, ...todayVideos]),
+    ...rest,
+  ];
 }
 
 List<EcTimelineDay> _timelineDays(
@@ -5386,6 +5494,47 @@ GoRouter _buildRouter(
             // inside the built page, not the pageBuilder's own `c`.
             Builder(
               builder: (pageContext) => EcPhotoDetailScreen(
+                canDelete: extra?.canDelete ?? false,
+                onDelete: extra?.evidenceId == null
+                    ? null
+                    : () async {
+                        final ok = await showCupertinoDialog<bool>(
+                          context: pageContext,
+                          builder: (dialogContext) => CupertinoAlertDialog(
+                            title: Text(c.l10n.deleteVideoConfirmTitle),
+                            content: Text(c.l10n.deleteVideoConfirmBody),
+                            actions: [
+                              CupertinoDialogAction(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: Text(c.l10n.commonCancel),
+                              ),
+                              CupertinoDialogAction(
+                                isDestructiveAction: true,
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(true),
+                                child: Text(c.l10n.deleteVideoConfirmAction),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (ok != true || !pageContext.mounted) return;
+                        try {
+                          await repo.deleteEvidence(
+                            extra!.shopId,
+                            extra.orderId,
+                            extra.evidenceId!,
+                          );
+                          if (pageContext.mounted) {
+                            _toast(pageContext, c.l10n.toastVideoDeleted);
+                          }
+                          if (c.mounted) c.pop(true);
+                        } on Object catch (error) {
+                          if (pageContext.mounted) {
+                            _toast(pageContext, _dataErrorText(c.l10n, error));
+                          }
+                        }
+                      },
                 photo:
                     extra?.video ??
                     EcVideoDetail(
@@ -5857,7 +6006,13 @@ GoRouter _buildRouter(
                 c.pop();
                 _toast(
                   c,
-                  c.l10n.uploadSizeChanged(ClipBudget.megabytesLabel(bytes)),
+                  bytes <= 0
+                      ? c.l10n.uploadSizeChanged(
+                          c.l10n.uploadSizeValueUnlimited,
+                        )
+                      : c.l10n.uploadSizeChanged(
+                          '${ClipBudget.megabytesLabel(bytes)} MB',
+                        ),
                 );
                 // Đồng bộ ngầm: thành công thì server thành nguồn chuẩn, hỏng
                 // thì bản nhớ tại chỗ vẫn giữ lựa chọn của người dùng.

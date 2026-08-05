@@ -98,6 +98,36 @@ abstract class AppLocalizations {
     Locale('vi'),
   ];
 
+  /// No description provided for @bundleBackendPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting on a backend endpoint for this'**
+  String get bundleBackendPending;
+
+  /// No description provided for @bundleCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get bundleCreate;
+
+  /// No description provided for @bundleCreateLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Create link'**
+  String get bundleCreateLink;
+
+  /// No description provided for @bundleSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String bundleSelected(int count);
+
+  /// No description provided for @bundleUploadDrive.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload to Drive'**
+  String get bundleUploadDrive;
+
   /// No description provided for @commonCancel.
   ///
   /// In en, this message translates to:
@@ -1309,6 +1339,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete video'**
   String get deleteVideoAction;
+
+  /// No description provided for @deletePhotoAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete photo'**
+  String get deletePhotoAction;
 
   /// No description provided for @deleteVideoNote.
   ///
@@ -2630,6 +2666,18 @@ abstract class AppLocalizations {
   /// **'{value} MB (default)'**
   String uploadSizeDefaultValue(String value);
 
+  /// No description provided for @uploadSizeUnlimited.
+  ///
+  /// In en, this message translates to:
+  /// **'No limit (default)'**
+  String get uploadSizeUnlimited;
+
+  /// No description provided for @uploadSizeValueUnlimited.
+  ///
+  /// In en, this message translates to:
+  /// **'No limit'**
+  String get uploadSizeValueUnlimited;
+
   /// Shop detail / upload size cap (FR-21).
   ///
   /// In en, this message translates to:
@@ -2651,7 +2699,7 @@ abstract class AppLocalizations {
   /// Shop detail / upload size cap (FR-21).
   ///
   /// In en, this message translates to:
-  /// **'Max size/file: {megabytes} MB'**
+  /// **'Size per file: {megabytes}'**
   String uploadSizeChanged(String megabytes);
 
   /// Shop detail / upload size cap (FR-21).
@@ -2813,7 +2861,7 @@ abstract class AppLocalizations {
   /// No description provided for @uploadSizeCustomLabel.
   ///
   /// In en, this message translates to:
-  /// **'Or enter any size you want (no limit)'**
+  /// **'Or enter the size you want'**
   String get uploadSizeCustomLabel;
 
   /// No description provided for @supportOpenFailed.

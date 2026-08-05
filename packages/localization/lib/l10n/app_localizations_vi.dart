@@ -9,6 +9,24 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
+  String get bundleBackendPending =>
+      'Chức năng này đang chờ backend mở endpoint';
+
+  @override
+  String get bundleCreate => 'Tạo';
+
+  @override
+  String get bundleCreateLink => 'Tạo link';
+
+  @override
+  String bundleSelected(int count) {
+    return 'Đã chọn $count bằng chứng';
+  }
+
+  @override
+  String get bundleUploadDrive => 'Đẩy lên Drive';
+
+  @override
   String get commonCancel => 'Hủy';
 
   @override
@@ -672,6 +690,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get deleteVideoAction => 'Xóa video';
+
+  @override
+  String get deletePhotoAction => 'Xóa ảnh';
 
   @override
   String get deleteVideoNote =>
@@ -1430,6 +1451,12 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get uploadSizeUnlimited => 'Không giới hạn (mặc định)';
+
+  @override
+  String get uploadSizeValueUnlimited => 'Không giới hạn';
+
+  @override
   String get uploadSizeTitle => 'Dung lượng tối đa mỗi tệp';
 
   @override
@@ -1444,7 +1471,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String uploadSizeChanged(String megabytes) {
-    return 'Dung lượng/tệp: $megabytes MB';
+    return 'Dung lượng/tệp: $megabytes';
   }
 
   @override
@@ -1533,8 +1560,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get clipDurationCustomLabel => 'Hoặc nhập số phút bạn muốn';
 
   @override
-  String get uploadSizeCustomLabel =>
-      'Hoặc nhập dung lượng bạn muốn (không giới hạn)';
+  String get uploadSizeCustomLabel => 'Hoặc nhập dung lượng bạn muốn';
 
   @override
   String get supportOpenFailed =>

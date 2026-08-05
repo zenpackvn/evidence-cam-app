@@ -1,3 +1,6 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:injectable/injectable.dart';
 
@@ -63,8 +66,59 @@ class VoiceAnnouncerService {
   /// engine (or no platform implementation, as in tests) silently skips the
   /// announcement rather than surfacing an error — recording must keep
   /// working either way.
+  /// Đã chốt được giọng tiếng Việt trên Android chưa.
+  bool _languageReady = false;
+
+  /// Chọn giọng tiếng Việt ngay trước khi đọc, CHỈ trên Android.
+  ///
+  /// `setLanguage` trong constructor bắn đi mà không chờ, trong khi engine TTS
+  /// của Android còn chưa bind xong — lệnh rơi vào hư không, rồi máy đọc bằng
+  /// ngôn ngữ hệ thống (tiếng Anh). Hỏi engine xem nó có mã nào cho tiếng Việt
+  /// rồi đặt đúng mã đó, vì mỗi engine trả về một dạng khác nhau: `vi-VN`,
+  /// `vi_VN`, hoặc chỉ `vi`.
+  ///
+  /// Khoanh riêng Android: trên iOS `setLanguage` đang chạy đúng, không có lý
+  /// do đụng vào.
+  Future<void> _ensureVietnamese() async {
+    if (_languageReady || !Platform.isAndroid) return;
+    try {
+      // Hỏi thẳng engine từng mã một. `isLanguageAvailable` là câu trả lời
+      // đáng tin nhất: `getLanguages` ở vài engine trả về danh sách rỗng hoặc
+      // thiếu, và lúc đó bản trước lặng lẽ bỏ cuộc rồi đọc bằng giọng mặc
+      // định — đúng thứ nghe ra tiếng Anh.
+      for (final code in const ['vi-VN', 'vi_VN', 'vi']) {
+        final available = await _tts.isLanguageAvailable(code);
+        if (available == true) {
+          await _tts.setLanguage(code);
+          _languageReady = true;
+          debugPrint('[zenpack.tts] dung giong $code');
+          return;
+        }
+      }
+      // Không mã nào khớp thì soi danh sách engine tự khai.
+      final languages = (await _tts.getLanguages as List<dynamic>)
+          .map((e) => e.toString())
+          .toList();
+      debugPrint('[zenpack.tts] languages=$languages');
+      final match = languages.firstWhere(
+        (code) => code.toLowerCase().replaceAll('_', '-').startsWith('vi'),
+        orElse: () => '',
+      );
+      if (match.isEmpty) {
+        debugPrint('[zenpack.tts] MAY KHONG CO GIONG TIENG VIET');
+        return;
+      }
+      await _tts.setLanguage(match);
+      _languageReady = true;
+      debugPrint('[zenpack.tts] dung giong $match');
+    } on Object catch (error) {
+      debugPrint('[zenpack.tts] loi: $error');
+    }
+  }
+
   Future<void> speak(String text) async {
     try {
+      await _ensureVietnamese();
       await _tts.speak(text);
     } on Object {
       // See above: announcements are best-effort.

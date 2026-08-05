@@ -1999,7 +1999,9 @@ class _UploadSizeRow extends StatelessWidget {
                 ),
               ),
               PenText(
-                l10n.uploadSizeValue(_megabytes(_currentBytes)),
+                _currentBytes <= 0
+                    ? l10n.uploadSizeValueUnlimited
+                    : l10n.uploadSizeValue(_megabytes(_currentBytes)),
                 size: 16,
                 color: PenColors.ink,
                 weight: FontWeight.w600,
@@ -3034,6 +3036,15 @@ class EcUploadSizeSheetScreen extends StatelessWidget {
             selected: m == selected,
             onTap: () => onSelect?.call(m * 1000000),
           ),
+        // Không giới hạn = 0 byte. Là một lựa chọn ngang hàng với mức mặc
+        // định, không phải trạng thái "chưa đặt gì": shop quay clip dài, chặn
+        // theo dung lượng chỉ làm mất đoạn cuối của bằng chứng.
+        _EcSheetActionRow(
+          icon: LucideIcons.infinity,
+          label: l10n.uploadSizeUnlimited,
+          selected: selected <= 0,
+          onTap: () => onSelect?.call(0),
+        ),
         _EcSheetCustomInput(
           label: l10n.uploadSizeCustomLabel,
           unit: l10n.unitMegabytes,

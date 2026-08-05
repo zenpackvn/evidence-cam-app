@@ -1,5 +1,17 @@
 {
   "@@locale": "vi",
+  "bundleBackendPending": "Chức năng này đang chờ backend mở endpoint",
+  "bundleCreate": "Tạo",
+  "bundleCreateLink": "Tạo link",
+  "bundleSelected": "Đã chọn {count} bằng chứng",
+  "@bundleSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bundleUploadDrive": "Đẩy lên Drive",
   "commonCancel": "Hủy",
   "commonRetry": "Thử lại",
   "commonClose": "Đóng",
@@ -225,6 +237,7 @@
   "detailDownloadPhoto": "Tải ảnh về máy",
   "attachPhotoToOrder": "Đính kèm ảnh vào đơn",
   "deleteVideoAction": "Xóa video",
+  "deletePhotoAction": "Xóa ảnh",
   "deleteVideoNote": "Chỉ Chủ/QL shop · khóa nếu hồ sơ đang mở · xác nhận 2 bước",
   "deleteVideoConfirmTitle": "Xác nhận lần cuối",
   "deleteVideoConfirmBody": "Bằng chứng sẽ mất vĩnh viễn, không thể khôi phục — vẫn xóa?",
@@ -703,6 +716,8 @@
   "uploadSizeTitleVideo": "Dung lượng tối đa mỗi video",
   "uploadSizeTitleImage": "Dung lượng tối đa mỗi ảnh",
   "uploadSizeDefaultValue": "{value} MB (mặc định)",
+  "uploadSizeUnlimited": "Không giới hạn (mặc định)",
+  "uploadSizeValueUnlimited": "Không giới hạn",
   "@uploadSizeDefaultValue": {
     "placeholders": {
       "value": {
@@ -735,7 +750,7 @@
       }
     }
   },
-  "uploadSizeChanged": "Dung lượng/tệp: {megabytes} MB",
+  "uploadSizeChanged": "Dung lượng/tệp: {megabytes}",
   "@uploadSizeChanged": {
     "description": "Shop detail / upload size cap (FR-21).",
     "placeholders": {
@@ -830,7 +845,7 @@
   "unitMinutes": "phút",
   "unitMegabytes": "MB",
   "clipDurationCustomLabel": "Hoặc nhập số phút bạn muốn",
-  "uploadSizeCustomLabel": "Hoặc nhập dung lượng bạn muốn (không giới hạn)",
+  "uploadSizeCustomLabel": "Hoặc nhập dung lượng bạn muốn",
   "supportOpenFailed": "Không mở được, kiểm tra xem máy đã cài ứng dụng chưa",
   "feedbackThanksTitle": "Cảm ơn bạn!",
   "feedbackThanksBody": "Phản hồi của bạn giúp ZenPack ngày càng tốt hơn.",

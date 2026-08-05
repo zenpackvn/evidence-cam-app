@@ -9,6 +9,23 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get bundleBackendPending => 'Waiting on a backend endpoint for this';
+
+  @override
+  String get bundleCreate => 'Create';
+
+  @override
+  String get bundleCreateLink => 'Create link';
+
+  @override
+  String bundleSelected(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get bundleUploadDrive => 'Upload to Drive';
+
+  @override
   String get commonCancel => 'Cancel';
 
   @override
@@ -675,6 +692,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteVideoAction => 'Delete video';
+
+  @override
+  String get deletePhotoAction => 'Delete photo';
 
   @override
   String get deleteVideoNote =>
@@ -1436,6 +1456,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get uploadSizeUnlimited => 'No limit (default)';
+
+  @override
+  String get uploadSizeValueUnlimited => 'No limit';
+
+  @override
   String get uploadSizeTitle => 'Max size per file';
 
   @override
@@ -1450,7 +1476,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String uploadSizeChanged(String megabytes) {
-    return 'Max size/file: $megabytes MB';
+    return 'Size per file: $megabytes';
   }
 
   @override
@@ -1540,7 +1566,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Or enter the number of minutes you want';
 
   @override
-  String get uploadSizeCustomLabel => 'Or enter any size you want (no limit)';
+  String get uploadSizeCustomLabel => 'Or enter the size you want';
 
   @override
   String get supportOpenFailed => 'Couldn’t open — check the app is installed';

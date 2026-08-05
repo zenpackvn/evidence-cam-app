@@ -187,6 +187,7 @@ class EcOrderTimelineScreen extends StatefulWidget {
     this.onVideoTap,
     this.onVideoMenu,
     this.onAttachPhoto,
+    this.onCreateLink,
     super.key,
   });
 
@@ -218,11 +219,41 @@ class EcOrderTimelineScreen extends StatefulWidget {
   /// Called when "Đính kèm ảnh vào đơn" is tapped.
   final VoidCallback? onAttachPhoto;
 
+  /// Gộp các bằng chứng đã tick thành một link hồ sơ chia sẻ được.
+  final ValueChanged<List<EcTimelineVideo>>? onCreateLink;
+
   @override
   State<EcOrderTimelineScreen> createState() => _EcOrderTimelineScreenState();
 }
 
 class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
+  /// Đang ở chế độ tick chọn bằng chứng để gộp. Mặc định TẮT, nên chạm một
+  /// hàng vẫn là mở chi tiết như thường.
+  bool _selecting = false;
+
+  /// Id các bằng chứng đã tick. Dùng id thay vì object để tick không mất khi
+  /// danh sách được nạp lại (xoá bằng chứng, kéo làm mới).
+  final Set<String> _picked = <String>{};
+
+  List<EcTimelineVideo> get _pickedVideos => [
+    for (final day in widget.days)
+      for (final v in day.videos)
+        if (v.id != null && _picked.contains(v.id)) v,
+  ];
+
+  void _toggle(EcTimelineVideo video) {
+    final id = video.id;
+    if (id == null) return;
+    setState(() {
+      if (!_picked.remove(id)) _picked.add(id);
+    });
+  }
+
+  void _exitSelection() => setState(() {
+    _selecting = false;
+    _picked.clear();
+  });
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -269,21 +300,51 @@ class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
                       if (v > 0) const SizedBox(height: 9),
                       _EcTimelineVideoRow(
                         video: widget.days[d].videos[v],
-                        onPlay: _bind(
-                          widget.onVideoTap,
-                          widget.days[d].videos[v],
-                        ),
-                        onMenu: _bind(
-                          widget.onVideoMenu,
-                          widget.days[d].videos[v],
-                        ),
+                        selecting: _selecting,
+                        picked: _picked.contains(widget.days[d].videos[v].id),
+                        onPlay: _selecting
+                            ? () => _toggle(widget.days[d].videos[v])
+                            : _bind(
+                                widget.onVideoTap,
+                                widget.days[d].videos[v],
+                              ),
+                        onMenu: _selecting
+                            ? null
+                            : _bind(
+                                widget.onVideoMenu,
+                                widget.days[d].videos[v],
+                              ),
                       ),
                     ],
                   ],
                   const SizedBox(height: 16),
-                  _EcAttachPhotoRow(onTap: widget.onAttachPhoto),
                 ],
               ),
+            ),
+          ),
+          // Ghim đáy màn, NGOÀI vùng cuộn: đơn có năm chục clip thì nút nằm
+          // trong danh sách đồng nghĩa phải cuộn hết mới bấm được. Đây là hành
+          // động áp lên cả đơn, không thuộc về một hàng nào.
+          // Đính kèm ảnh GHIM cùng chỗ với nút gộp, ngoài vùng cuộn.
+          //
+          // Trước đây nó nằm cuối danh sách bằng chứng: đơn có vài chục clip
+          // thì phải cuộn hết mới bấm được, trong khi đính ảnh là việc làm bất
+          // cứ lúc nào chứ không phải sau khi xem xong.
+          if (!_selecting)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+              child: _EcAttachPhotoRow(onTap: widget.onAttachPhoto),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
+            child: _EcBundleSection(
+              selecting: _selecting,
+              pickedCount: _picked.length,
+              onStart: () => setState(() => _selecting = true),
+              onCancel: _exitSelection,
+              onCreateLink: _picked.isEmpty
+                  ? null
+                  : () => widget.onCreateLink?.call(_pickedVideos),
             ),
           ),
         ],
@@ -462,11 +523,18 @@ class EcPhotoDetailScreen extends StatelessWidget {
     this.onClose,
     this.onCopyLink,
     this.onDownload,
+    this.onDelete,
+    this.canDelete = true,
     super.key,
   });
 
   /// The photo whose details are shown.
   final EcVideoDetail photo;
+
+  /// Xoá ảnh khỏi đơn. Màn ảnh trước đây KHÔNG có mục này, dù màn video thì
+  /// có — nên ảnh đính nhầm là không gỡ ra được bằng đường nào.
+  final VoidCallback? onDelete;
+  final bool canDelete;
 
   /// Called when the dimmed area above the sheet is tapped.
   final VoidCallback? onClose;
@@ -632,6 +700,16 @@ class EcPhotoDetailScreen extends StatelessWidget {
                         title: context.l10n.detailDownloadPhoto,
                         onTap: onDownload,
                       ),
+                      if (canDelete) ...[
+                        const _EcDetailDivider(),
+                        _EcDetailActionRow(
+                          icon: LucideIcons.trash2,
+                          title: context.l10n.deletePhotoAction,
+                          subtitle: context.l10n.deleteVideoNote,
+                          danger: true,
+                          onTap: onDelete,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -728,16 +806,158 @@ class _EcUploadWarnBanner extends StatelessWidget {
   }
 }
 
+class _EcBundleSection extends StatelessWidget {
+  const _EcBundleSection({
+    required this.selecting,
+    required this.pickedCount,
+    this.onStart,
+    this.onCancel,
+    this.onCreateLink,
+  });
+
+  final bool selecting;
+  final int pickedCount;
+  final VoidCallback? onStart;
+  final VoidCallback? onCancel;
+  final VoidCallback? onCreateLink;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    if (!selecting) {
+      return EcTap(
+        onTap: onStart,
+        child: PenBox(
+          width: double.infinity,
+          height: 52,
+          fill: PenColors.card,
+          stroke: PenColors.line,
+          radius: 14,
+          axis: PenAxis.row,
+          gap: 8,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          children: [
+            const Icon(LucideIcons.plus, size: 20, color: PenColors.ink),
+            PenText(
+              // Nói thẳng ra cái sắp nhận được. Từ khi "Đẩy lên Drive" tạm gỡ
+              // thì gộp bằng chứng chỉ còn một đường ra là link, nên "Tạo"
+              // chung chung bắt người dùng bấm vào mới biết mình được gì.
+              l10n.bundleCreateLink,
+              size: 15,
+              color: PenColors.ink,
+              weight: FontWeight.w600,
+              softWrap: false,
+            ),
+          ],
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: PenText(
+                l10n.bundleSelected(pickedCount),
+                size: 13,
+                color: PenColors.mut,
+              ),
+            ),
+            EcTap(
+              onTap: onCancel,
+              child: PenText(
+                l10n.commonCancel,
+                size: 13,
+                color: PenColors.link,
+                weight: FontWeight.w700,
+                softWrap: false,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // Chỉ còn đường tạo link. Nút "Đẩy lên Drive" tạm gỡ vì chưa
+        // có gì đứng sau nó — chuỗi l10n `bundleUploadDrive` vẫn giữ, dựng lại
+        // là thêm một `_BundleAction` nữa ở đây.
+        _BundleAction(
+          icon: LucideIcons.link,
+          label: l10n.bundleCreateLink,
+          onTap: onCreateLink,
+          primary: true,
+        ),
+      ],
+    );
+  }
+}
+
+class _BundleAction extends StatelessWidget {
+  const _BundleAction({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.primary = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool primary;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    final fg = primary
+        ? PenColors.card
+        : (enabled ? PenColors.ink : PenColors.mut);
+    return EcTap(
+      onTap: onTap,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.45,
+        child: PenBox(
+          width: double.infinity,
+          height: 52,
+          fill: primary ? PenColors.primary : PenColors.card,
+          stroke: primary ? null : PenColors.line,
+          radius: 14,
+          axis: PenAxis.row,
+          gap: 8,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, size: 19, color: fg),
+            PenText(
+              label,
+              size: 15,
+              color: fg,
+              weight: FontWeight.w700,
+              softWrap: false,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _EcTimelineVideoRow extends StatelessWidget {
   const _EcTimelineVideoRow({
     required this.video,
     this.onPlay,
     this.onMenu,
+    this.selecting = false,
+    this.picked = false,
   });
 
   final EcTimelineVideo video;
   final VoidCallback? onPlay;
   final VoidCallback? onMenu;
+
+  /// Đang ở chế độ chọn để gộp: hàng hiện ô tick thay cho nút ⋮, và chạm vào
+  /// hàng là tick chứ không mở chi tiết.
+  final bool selecting;
+  final bool picked;
 
   @override
   Widget build(BuildContext context) {
@@ -791,14 +1011,21 @@ class _EcTimelineVideoRow extends StatelessWidget {
                   ],
                 ),
               ),
-              EcTap(
-                onTap: onMenu,
-                child: const Icon(
-                  LucideIcons.ellipsisVertical,
-                  size: 16,
-                  color: PenColors.ink,
+              if (selecting)
+                Icon(
+                  picked ? LucideIcons.squareCheckBig : LucideIcons.square,
+                  size: 20,
+                  color: picked ? PenColors.primary : PenColors.mut,
+                )
+              else
+                EcTap(
+                  onTap: onMenu,
+                  child: const Icon(
+                    LucideIcons.ellipsisVertical,
+                    size: 16,
+                    color: PenColors.ink,
+                  ),
                 ),
-              ),
             ],
           ),
         ),
