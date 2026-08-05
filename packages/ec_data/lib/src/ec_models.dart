@@ -396,6 +396,26 @@ class OrderDetailDto {
   final List<EvidenceDto> evidence;
 }
 
+/// Một dòng của bảng "Dung lượng theo loại".
+class QuotaTypeUsageDto {
+  const QuotaTypeUsageDto({
+    required this.type,
+    required this.videoCount,
+    required this.bytes,
+  });
+
+  factory QuotaTypeUsageDto.fromJson(Map<String, dynamic> j) =>
+      QuotaTypeUsageDto(
+        type: (j['type'] as String?) ?? (j['name'] as String?) ?? '',
+        videoCount: _int(j['video_count']),
+        bytes: _int(j['bytes']),
+      );
+
+  final String type;
+  final int videoCount;
+  final int bytes;
+}
+
 class QuotaDto {
   const QuotaDto({
     required this.planCode,
@@ -404,6 +424,8 @@ class QuotaDto {
     required this.remainingBytes,
     this.retentionDays = 30,
     this.canManagePlan = true,
+    this.videoCount,
+    this.byType = const [],
   });
 
   factory QuotaDto.fromJson(Map<String, dynamic> j) => QuotaDto(
@@ -413,7 +435,19 @@ class QuotaDto {
     remainingBytes: _int(j['remaining_bytes']),
     retentionDays: _intN(j['retention_days']) ?? 30,
     canManagePlan: (j['can_manage_plan'] as bool?) ?? true,
+    videoCount: _intN(j['video_count']),
+    byType: [
+      for (final e in (j['by_type'] as List<dynamic>? ?? const []))
+        QuotaTypeUsageDto.fromJson(e as Map<String, dynamic>),
+    ],
   );
+
+  /// Tổng số video đang lưu của shop; `null` khi backend chưa trả trường này.
+  final int? videoCount;
+
+  /// Bảng chia dung lượng theo loại video, do backend tính trên TOÀN BỘ clip
+  /// của shop. Rỗng thì màn Gói cước lùi về số liệu của riêng máy này.
+  final List<QuotaTypeUsageDto> byType;
 
   final String planCode;
   final int usedBytes;

@@ -1249,18 +1249,32 @@ class _QuotaRouteState extends State<_QuotaRoute> {
           );
         }
         final quota = snap.data!;
-        final typeUsage = _localTypeUsage();
-        final videoCount = typeUsage.fold<int>(
-          0,
-          (total, u) => total + u.videoCount,
-        );
-        final usedBytes = typeUsage.fold<int>(0, (total, u) => total + u.bytes);
+        // Ưu tiên số liệu của server: bảng này phải mô tả TOÀN BỘ clip của
+        // shop, còn hàng đợi trên máy chỉ còn những clip chưa upload xong —
+        // upload xong hết là bảng rỗng, đúng thứ đang thấy.
+        final typeUsage = quota.byType.isNotEmpty
+            ? [
+                for (final t in quota.byType)
+                  EcQuotaTypeUsage(
+                    type: t.type,
+                    videoCount: t.videoCount,
+                    bytes: t.bytes,
+                  ),
+              ]
+            : _localTypeUsage();
+        final videoCount =
+            quota.videoCount ??
+            typeUsage.fold<int>(0, (total, u) => total + u.videoCount);
         return EcQuotaScreen(
           planLabel: _planDisplayName(context.l10n, quota.planCode),
-          // Computed from the clips actually on this device rather than the
-          // API's usedBytes, so this always matches what quotaByType lists
-          // below it.
-          usedBytes: usedBytes,
+          // Số của SERVER, không phải tổng các clip còn nằm trên máy.
+          //
+          // Bản trước cộng kích thước file trong hàng đợi upload để con số này
+          // khớp với bảng chia theo loại ngay bên dưới. Nhưng clip upload xong
+          // là rời hàng đợi, nên quay thêm bao nhiêu thì con số vẫn đứng yên —
+          // trong khi đây đúng là con số người bán đem so với hạn mức gói.
+          // Khớp nhau mà sai thì vô dụng hơn là lệch nhau mà đúng.
+          usedBytes: quota.usedBytes,
           capBytes: quota.capBytes,
           retentionTotalDays: quota.retentionDays,
           videoCount: videoCount,
