@@ -10,6 +10,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:ui' as ui;
 
 import 'package:analytics/analytics.dart';
@@ -32,6 +33,7 @@ import 'package:flutter/cupertino.dart'
 import 'package:flutter/foundation.dart'
     show TargetPlatform, ValueListenable, defaultTargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show EventChannel;
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
@@ -195,6 +197,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     widget.isActive?.addListener(_onActiveChanged);
+    _listenForCalls();
     // The phone sits propped up looking down at the packing table for this
     // flow — it isn't handheld — so free rotation just lets the orientation
     // sensor flicker to landscape at that near-flat resting angle (observed
@@ -328,6 +331,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     widget.isActive?.removeListener(_onActiveChanged);
+    unawaited(_callSub?.cancel());
     unawaited(_bloc.close());
     super.dispose();
   }
@@ -385,13 +389,25 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Hai mức, vì hai mức đó khác nhau về chuyện mất hay không mất bằng chứng.
+    //
+    // `inactive` = có thứ gì đó che lên app nhưng app CHƯA bị treo: chuông
+    // cuộc gọi đang reo, banner tin nhắn, trung tâm điều khiển. Phiên ghi vẫn
+    // sống, nên chỉ TẠM DỪNG — file còn mở, quay tiếp được vào chính nó.
+    //
+    // `paused` = app bị đẩy xuống nền thật (nghe máy, chuyển app). iOS thu hồi
+    // phiên ghi, nên phải CHỐT VÀ LƯU ngay tại đây. Giữ file mở qua mốc này là
+    // mất trắng cả clip chứ không phải mất phần đuôi — FR-08/FR-09.
     if (state == AppLifecycleState.inactive) {
+      if (_bloc.state.isRecording) _bloc.add(const RecordingInterrupted());
+    } else if (state == AppLifecycleState.paused) {
       _releasedForBackground = true;
-      // Nhớ đơn đang quay TRƯỚC khi `RecordingBackgrounded` chốt clip và xoá
-      // `code` khỏi state — đây là thứ duy nhất còn lại để hỏi người quay có
-      // muốn quay tiếp đơn đó không sau khi nghe máy xong.
-      if (_bloc.state.isRecording && _bloc.state.code.isNotEmpty) {
+      // Nhớ đơn đang quay TRƯỚC khi clip bị chốt và `code` bị xoá khỏi state.
+      if (_bloc.state.code.isNotEmpty &&
+          (_bloc.state.isRecording ||
+              _bloc.state.status == RecordingStatus.interrupted)) {
         _interruptedCode = _bloc.state.code;
+        _cutByBackground = true;
       }
       _bloc.add(const RecordingBackgrounded());
     } else if (state == AppLifecycleState.resumed) {
@@ -402,28 +418,85 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       _releasedForBackground = false;
       // Tab khác đang hiển thị thì để `_onActiveChanged` lo — dựng camera ở
       // đây sẽ bật nó lên trong lúc người dùng đang xem Vận đơn.
+      // Clip vẫn đang mở (chỉ tạm dừng, app không hề bị treo) thì quay tiếp
+      // NGAY vào chính nó, không hỏi han gì: một banner tin nhắn lướt qua thì
+      // người quay không cần biết, và cũng không nên bị chặn lại bằng một hộp
+      // thoại. KHÔNG dựng lại camera — dựng lại là vứt phiên ghi.
+      if (_bloc.state.status == RecordingStatus.interrupted) {
+        _interruptedCode = null;
+        _cutByBackground = false;
+        _bloc.add(const RecordingResumeRequested());
+        return;
+      }
       if (needsCamera && (widget.isActive?.value ?? true)) {
         unawaited(_startRecordingFlow().then((_) => _askResumeInterrupted()));
       }
     }
   }
 
-  /// Đơn đang quay dở lúc bị cuộc gọi/thông báo cắt ngang, chờ hỏi lại.
+  /// Đơn đang quay dở lúc bị cuộc gọi cắt ngang, chờ hỏi lại.
   String? _interruptedCode;
 
-  /// Hỏi quay tiếp đơn dở hay kết thúc, sau khi app trở lại từ cuộc gọi.
+  /// Cuộc gọi đến, do hệ điều hành báo qua CallKit.
   ///
-  /// Clip dở đã được chốt và lưu lúc bị cắt ngang — không mất gì. Câu hỏi này
-  /// chỉ quyết định có mở clip MỚI cho cùng đơn đó hay về trạng thái nghỉ.
+  /// Vòng đời app KHÔNG trả lời được câu "có cuộc gọi đang reo không": chuông
+  /// reo và banner tin nhắn cùng đẩy app sang `inactive`, còn cuộc gọi VoIP
+  /// không ai bắt máy thì chẳng bao giờ đẩy app xuống nền — đúng trường hợp
+  /// gọi Zalo mà nhìn như không có gì xảy ra. CallKit báo mọi cuộc gọi máy
+  /// biết, gồm cả Zalo/Messenger/WhatsApp.
+  static const _callChannel = EventChannel('zenpack/calls');
+  StreamSubscription<dynamic>? _callSub;
+
+  void _listenForCalls() {
+    if (!Platform.isIOS) return;
+    _callSub = _callChannel.receiveBroadcastStream().listen(
+      (event) {
+        if (event != 'incoming' || !mounted) return;
+        if (!_bloc.state.isRecording || _bloc.state.code.isEmpty) return;
+        // Tạm dừng NGAY lúc chuông reo, không đợi bắt máy: quay tiếp cảnh
+        // người quay quay ra nghe điện thoại thì clip vừa vô nghĩa vừa tốn
+        // dung lượng.
+        _interruptedCode = _bloc.state.code;
+        _cutByBackground = true;
+        _bloc.add(const RecordingInterrupted());
+      },
+      onError: (Object _) {
+        // Kênh không dựng được (bản build cũ, thiết bị lạ) — vòng đời app vẫn
+        // là lưới đỡ như trước.
+      },
+    );
+  }
+
+  /// Clip đã bị CHỐT vì app xuống nền thật, không phải chỉ tạm dừng.
+  ///
+  /// Phân biệt hai đường ở lúc quay lại: tạm dừng thì quay tiếp vào file cũ và
+  /// không hỏi gì; bị chốt rồi thì phải hỏi, và "Tiếp tục" chỉ có thể mở clip
+  /// mới cho cùng đơn.
+  bool _cutByBackground = false;
+
+  /// Hỏi quay tiếp hay kết thúc, sau khi app trở lại từ cuộc gọi.
+  ///
+  /// Hiện tự động, không cần thao tác nào: người quay vừa nghe máy xong, việc
+  /// đầu tiên họ cần biết là máy còn đang ghi hay không.
+  ///
   /// Hỏi thay vì tự quay tiếp: người quay có thể đã rời bàn, tự động ghi hình
   /// trần nhà cả phút là vô nghĩa và tốn quota.
   Future<void> _askResumeInterrupted() async {
     final code = _interruptedCode;
+    final wasCut = _cutByBackground;
     _interruptedCode = null;
-    if (code == null || !mounted) return;
+    _cutByBackground = false;
+    if (code == null || !wasCut || !mounted) return;
     final l10n = context.l10n;
+    final paused = _bloc.state.status == RecordingStatus.interrupted;
+    // Nói trước khi vẽ hộp thoại: người quay có thể còn đang cầm máy áp tai,
+    // mắt chưa nhìn màn hình.
+    unawaited(_bloc.announceInterrupted());
     final resume = await showCupertinoDialog<bool>(
       context: context,
+      // Không cho bấm ra ngoài để đóng: bỏ lửng câu hỏi này là clip treo giữa
+      // chừng, không ai biết nó còn mở hay đã chốt.
+      barrierDismissible: false,
       builder: (dialogContext) => CupertinoAlertDialog(
         title: Text(l10n.recordInterruptedTitle),
         content: Text(l10n.recordInterruptedBody(code)),
@@ -440,8 +513,25 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         ],
       ),
     );
-    if (resume ?? false) {
-      if (!mounted) return;
+    if (!mounted) return;
+    if (!(resume ?? false)) {
+      // Kết thúc: chốt clip đang mở. Trạng thái `interrupted` nghĩa là file
+      // chưa đóng, nên phải đi qua đường dừng bình thường.
+      if (paused) _bloc.add(const RecordingStopRequested());
+      return;
+    }
+    if (!paused) {
+      // Clip đã bị chốt từ trước (iOS thu hồi phiên ghi) — chỉ còn cách mở
+      // clip mới cho cùng đơn.
+      _bloc.add(RecordingManualCodeSubmitted(code));
+      return;
+    }
+    _bloc.add(const RecordingResumeRequested());
+    // Nối lại hỏng thì bloc tự chốt clip và về `idle`; lúc đó mở clip mới cho
+    // đúng đơn đó, chứ không bỏ người quay đứng trước màn hình đã tắt ghi.
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+    if (_bloc.state.status == RecordingStatus.idle) {
       _bloc.add(RecordingManualCodeSubmitted(code));
     }
   }

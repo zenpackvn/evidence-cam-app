@@ -476,11 +476,22 @@ class _EcDialogFrame extends StatelessWidget {
       color: Colors.transparent,
       child: Stack(
         children: [
-          // Tap outside the card closes the dialog (barrier dismiss).
+          // Bấm ra ngoài thẻ: bàn phím đang mở thì HẠ BÀN PHÍM trước, lần bấm
+          // sau mới đóng hộp thoại.
+          //
+          // Đang gõ dở mà bấm ra ngoài, ý người dùng là "cho tôi nhìn lại cái
+          // form" chứ không phải "vứt hết đi làm lại". Đóng thẳng là mất chữ
+          // vừa nhập. Cùng cách xử lý hai nhịp với `PenSheet`.
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.of(context).maybePop(),
+              onTap: () {
+                if (MediaQuery.viewInsetsOf(context).bottom > 0) {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  return;
+                }
+                Navigator.of(context).maybePop();
+              },
             ),
           ),
           SafeArea(
@@ -488,7 +499,9 @@ class _EcDialogFrame extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               child: Center(
                 child: GestureDetector(
-                  onTap: () {},
+                  // Bấm vào chỗ trống trong thẻ cũng hạ bàn phím — nút bấm và
+                  // ô nhập vẫn nhận chạm của chúng như thường.
+                  onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -3873,10 +3886,52 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
               ],
             ),
           ),
+          if (widget.onBack != null) _BackSwipeEdge(onBack: widget.onBack!),
         ],
       ),
     );
   }
+}
+
+/// Dải mép trái nhận thao tác vuốt-để-quay-lại.
+///
+/// Màn vận đơn là một tab gốc chứ không phải trang được push, nên iOS không tự
+/// cho vuốt về — trong khi ngón tay người dùng thì vẫn quen làm thế. Dải này
+/// dựng lại đúng thao tác đó và gọi cùng một [onBack] với nút trên header.
+///
+/// Chỉ rộng 20 như `_kBackGestureWidth` của Cupertino: rộng hơn là nuốt luôn
+/// thao tác kéo ngang hàng viên lọc nằm ngay bên dưới.
+class _BackSwipeEdge extends StatefulWidget {
+  const _BackSwipeEdge({required this.onBack});
+
+  final VoidCallback onBack;
+
+  static const _width = 20.0;
+
+  @override
+  State<_BackSwipeEdge> createState() => _BackSwipeEdgeState();
+}
+
+class _BackSwipeEdgeState extends State<_BackSwipeEdge> {
+  double _dragged = 0;
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: _BackSwipeEdge._width,
+    child: GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragStart: (_) => _dragged = 0,
+      onHorizontalDragUpdate: (d) => _dragged += d.delta.dx,
+      // Nhận cả hai kiểu: hất nhanh, hoặc kéo chậm đủ xa. Chỉ xét vận tốc thì
+      // cú kéo từ tốn có vận tốc gần 0 lúc nhả tay và bị bỏ qua.
+      onHorizontalDragEnd: (d) {
+        if ((d.primaryVelocity ?? 0) > 300 || _dragged > 60) widget.onBack();
+      },
+    ),
+  );
 }
 
 /// Các ô số hiện trên thanh phân trang: cửa sổ 3 số quanh [page], kèm trang

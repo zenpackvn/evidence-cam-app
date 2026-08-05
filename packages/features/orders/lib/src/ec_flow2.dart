@@ -131,11 +131,16 @@ class EcVideoDetail {
     this.type = EcEvidenceType.video,
     this.capturedAtMs,
     this.tracking,
+    this.durationSeconds,
   });
 
   /// Mốc quay, epoch-ms — gốc của đồng hồ chạy lúc phát lại và của dấu đóng
   /// vào clip khi xuất. `null` với bằng chứng cũ chưa có trường này.
   final int? capturedAtMs;
+
+  /// Thời lượng clip, giây. Dấu đóng vào clip cần con số này để biết phải vẽ
+  /// sẵn bao nhiêu ô đồng hồ; [duration] chỉ là chuỗi `mm:ss` để hiện.
+  final int? durationSeconds;
 
   /// Mã vận đơn của bằng chứng, để hiện lại đúng như lúc quay.
   final String? tracking;

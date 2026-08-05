@@ -96,6 +96,16 @@ class MemberDto {
     this.inviteContact,
   });
 
+  /// Thiếu trường thì để trống chứ KHÔNG ném.
+  ///
+  /// `as String` trên trường có thể null làm chết cả danh sách chỉ vì một
+  /// dòng: `.map()` ném ra ngoài, màn chi tiết cửa hàng mất sạch thành viên
+  /// kể cả dòng chủ shop hoàn toàn bình thường. Người được mời mà chưa đăng ký
+  /// tài khoản là trường hợp có thật cho `account_uid` rỗng.
+  ///
+  /// Vai trò để RỖNG chứ không mặc định thành `staff`: bịa ra một mức quyền
+  /// còn tệ hơn hiện ô trống, vì nó là câu trả lời sai cho câu hỏi ai được làm
+  /// gì. Xem [ShopDto], nơi cùng trường này đã phải phòng thủ từ trước.
   factory MemberDto.fromJson(Map<String, dynamic> j) => MemberDto(
     role: j['role'] as String,
     accountUid: j['account_uid'] as String?,

@@ -13,6 +13,7 @@ library;
 // ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:app_platform/app_platform.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
@@ -23,6 +24,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'device_samples.dart';
 import 'ec_bill_scanner.dart';
 import 'ec_video_faststart.dart';
+import 'ec_video_stamp.dart';
 
 /// Content of the printed "kết thúc phiên" QR placed on the packing table.
 ///
@@ -99,7 +101,12 @@ bool idleScanMayStart(
 
 /// Explicit recording-session status. Illegal flag combinations that the old
 /// bools allowed (e.g. starting && recording) are now unrepresentable.
-enum RecordingStatus { initializing, idle, recording, error }
+/// [interrupted] = clip vẫn ĐANG MỞ, chỉ tạm dừng ghi.
+///
+/// Khác hẳn `idle`: file chưa chốt, `resumeVideoRecording` nối tiếp được vào
+/// đúng clip đó. Phải là trạng thái riêng vì màn hình cần biết để hỏi người
+/// quay, và vì mọi thao tác đụng camera đều phải tránh trong lúc này.
+enum RecordingStatus { initializing, idle, recording, interrupted, error }
 
 @immutable
 class RecordingSessionState {
@@ -281,6 +288,17 @@ class RecordingBackgrounded extends RecordingSessionEvent {
   const RecordingBackgrounded();
 }
 
+/// Có tác động từ bên ngoài (thông báo, trung tâm điều khiển, cuộc gọi đến)
+/// khiến việc quay phải dừng lại giữa chừng.
+class RecordingInterrupted extends RecordingSessionEvent {
+  const RecordingInterrupted();
+}
+
+/// Quay tiếp vào đúng clip đang mở sau khi bị gián đoạn.
+class RecordingResumeRequested extends RecordingSessionEvent {
+  const RecordingResumeRequested();
+}
+
 class RecordingResolutionCycled extends RecordingSessionEvent {
   const RecordingResolutionCycled();
 }
@@ -319,6 +337,7 @@ class RecordingSessionBloc
     VoiceAnnouncerService? voiceAnnouncer,
     CaptureToneService? captureTone,
     EcVideoFaststartService? faststart,
+    EcVideoStampService? stamper,
     Future<bool> Function(String code)? verifyReturnCode,
     Future<double?> Function()? checkFreeDiskSpaceMb,
     String initialType = 'Đóng hàng',
@@ -333,6 +352,7 @@ class RecordingSessionBloc
        _tone = captureTone ?? CaptureToneService(),
        _ownsTone = captureTone == null,
        _faststart = faststart ?? EcVideoFaststartService(),
+       _stamper = stamper ?? EcVideoStampService(),
        _verifyReturnCode = verifyReturnCode,
        _checkFreeDiskSpaceMb = checkFreeDiskSpaceMb ?? getFreeDiskSpaceMb,
        _endQr = endQr,
@@ -353,6 +373,8 @@ class RecordingSessionBloc
     on<RecordingTicked>(_onTicked);
     on<RecordingCutoverExpired>(_onCutoverExpired);
     on<RecordingBackgrounded>(_onBackgrounded);
+    on<RecordingInterrupted>(_onInterrupted);
+    on<RecordingResumeRequested>(_onResumeRequested);
     on<RecordingResolutionCycled>(_onResolutionCycled);
     on<RecordingCameraFlipped>(_onCameraFlipped);
     on<RecordingZoomAdjusted>(_onZoomAdjusted);
@@ -385,6 +407,15 @@ class RecordingSessionBloc
   /// (app-lifetime, like the voice announcer) and is not ours to dispose.
   final bool _ownsTone;
   final EcVideoFaststartService _faststart;
+  final EcVideoStampService _stamper;
+
+  /// Mốc bấm quay của clip đang mở.
+  ///
+  /// Dùng làm gốc cho đồng hồ nung vào khung hình. Lấy `now - thời lượng` lúc
+  /// quay xong thì lệch một nhịp so với `capturedAt` backend ghi, và hai con
+  /// số chênh nhau trên cùng một bằng chứng là thứ không giải thích được với
+  /// người đi khiếu nại.
+  DateTime? _clipStartedAt;
   final Future<double?> Function() _checkFreeDiskSpaceMb;
   final Future<bool> Function(String code)? _verifyReturnCode;
   final String _endQr;
@@ -670,7 +701,21 @@ class RecordingSessionBloc
     } on Object {
       // Kệ — quay quan trọng hơn thông báo.
     }
-    unawaited(_voice.speak('Đã bắt đầu quay'));
+    try {
+      // CHỜ câu nói dứt, không bắn rồi bỏ đó.
+      //
+      // Bắn kiểu `unawaited` thì camera lăn ngay sau đó, mà khởi động camera
+      // giành lại phiên âm thanh của hệ điều hành — câu nói đang phát dở bị
+      // cắt ngang, phần lớn trường hợp là chưa kịp ra tiếng nào. Người quay
+      // chỉ nghe tút rồi im, tưởng máy chưa nhận.
+      //
+      // Trần 2.5 giây để một engine TTS treo không giữ luôn việc ghi hình.
+      await _voice
+          .speak('Đã bắt đầu quay')
+          .timeout(const Duration(milliseconds: 2500));
+    } on Object {
+      // Kệ — quay quan trọng hơn thông báo.
+    }
   }
 
   bool _mayAutoStart(String code) {
@@ -776,6 +821,7 @@ class RecordingSessionBloc
   /// Records with the hands-free scan stream; if the hardware rejects concurrent
   /// stream+record, records without it and disables live cut-over for good.
   Future<void> _startVideoWithScan() async {
+    _clipStartedAt = DateTime.now();
     if (_liveScan) {
       try {
         await _camera.startVideoRecording(onAvailable: _onRecordingFrame);
@@ -941,12 +987,17 @@ class RecordingSessionBloc
   /// [_onClipSaved] — best-effort, since [EcVideoFaststartService.prepare]
   /// falls back to the original file on any failure.
   ///
-  /// This deliberately does NOT alter a single frame. An earlier version burned
-  /// a time/tracking/battery overlay in here, which re-encoded every clip and
-  /// broke FR-07's "evidence stays intact" rule for the 99% of clips that are
-  /// never disputed. The overlay's data all lives in the backend already
-  /// (captured time, tracking code, video type), so a burned-in copy can be
-  /// rendered on demand if a marketplace ever needs one.
+  /// Remux cho phát được ngay, rồi nung ngày / giờ / mã vận đơn vào khung hình.
+  ///
+  /// Nung ở đây nghĩa là BẢN ĐẨY LÊN CLOUD cũng mang dấu, không riêng bản tải
+  /// về qua app. Chủ đích, theo yêu cầu: người nhận link hồ sơ tải clip thẳng
+  /// từ cloud phải đọc được clip của đơn nào, quay lúc nào — đó đúng là người
+  /// cần thông tin đó nhất.
+  ///
+  /// Đánh đổi đã biết: nung là encode lại, nên clip lưu trữ không còn là chuỗi
+  /// byte gốc từ cảm biến như FR-07 mô tả, và mỗi clip tốn thêm một lượt encode
+  /// ngay sau khi quay. Fail-safe: nung hỏng thì `stamp` trả lại bản chưa nung,
+  /// clip vẫn lên cloud đủ.
   Future<void> _prepareAndSave(
     String path,
     String code,
@@ -954,7 +1005,32 @@ class RecordingSessionBloc
     int durationSeconds,
   ) async {
     final streamable = await _faststart.prepare(path);
-    _onClipSaved(streamable, code, typeLabel, durationSeconds, _samples);
+    final startedAt =
+        _clipStartedAt ??
+        DateTime.now().subtract(Duration(seconds: durationSeconds));
+    _clipStartedAt = null;
+    String two(int n) => n.toString().padLeft(2, '0');
+    final stamped = await _stamper.stamp(
+      streamable,
+      lines: [
+        '${two(startedAt.day)}/${two(startedAt.month)}/${startedAt.year}',
+        '${two(startedAt.hour)}:${two(startedAt.minute)}:'
+            '${two(startedAt.second)}',
+        if (code.isNotEmpty) code,
+      ],
+      clockStart: startedAt,
+      clockSeconds: durationSeconds,
+    );
+    if (stamped != streamable) await _deleteQuietly(streamable);
+    _onClipSaved(stamped, code, typeLabel, durationSeconds, _samples);
+  }
+
+  Future<void> _deleteQuietly(String path) async {
+    try {
+      await File(path).delete();
+    } on Object {
+      // Đã biến mất, hoặc không phải của mình — không có gì để dọn.
+    }
   }
 
   void _onTicked(RecordingTicked event, Emitter<RecordingSessionState> emit) {
@@ -1008,6 +1084,100 @@ class RecordingSessionBloc
       await _camera.dispose();
       if (!isClosed) emit(state.copyWith(status: RecordingStatus.initializing));
     });
+  }
+
+  /// Tạm dừng ghi mà KHÔNG chốt clip.
+  ///
+  /// Giữ file đang mở để `resumeVideoRecording` nối tiếp vào chính nó — đó là
+  /// điều kiện để "quay tiếp" nghĩa là cùng một video, chứ không phải mở clip
+  /// mới cùng mã. Camera cũng không dispose, vì dispose là mất luôn phiên ghi.
+  ///
+  /// Nói to ra loa: người quay đang ôm thùng hàng, mắt không nhìn màn hình.
+  /// Không nói thì họ gói xong cả đơn rồi mới biết máy đã ngừng ghi từ lâu.
+  Future<void> _onInterrupted(
+    RecordingInterrupted event,
+    Emitter<RecordingSessionState> emit,
+  ) async {
+    if (state.status != RecordingStatus.recording) return;
+    await _serialized(() async {
+      if (!_camera.isRecordingVideo) return;
+      try {
+        await _camera.pauseVideoRecording();
+      } on Object {
+        // Máy không cho tạm dừng — để nguyên trạng thái đang quay, đường
+        // `RecordingBackgrounded` vẫn chốt được clip như trước.
+        return;
+      }
+      _cancelTimer();
+      _clipClock.stop();
+      if (!isClosed) {
+        emit(state.copyWith(status: RecordingStatus.interrupted));
+      }
+    });
+  }
+
+  /// Nói to là việc quay đã bị cắt ngang.
+  ///
+  /// Gọi lúc app ĐÃ trở lại, không phải lúc bị đẩy xuống nền: dưới nền thì loa
+  /// không phát được, câu nói rơi vào hư không đúng lúc cần nhất.
+  Future<void> announceInterrupted() => _voice.speak(_interruptedSpeech);
+
+  /// Câu nói khi việc quay bị cắt ngang.
+  static const _interruptedSpeech = 'Quá trình quay bị gián đoạn';
+
+  /// Quay tiếp vào đúng clip đang mở.
+  ///
+  /// Nối lại hỏng (hay gặp sau cuộc gọi đã nghe: iOS thu hồi phiên ghi khi app
+  /// xuống nền thật) thì CHỐT clip đang có rồi báo về `idle`, chứ không im
+  /// lặng. Màn hình dựa vào đó để mở clip mới cho cùng đơn — chia làm hai file
+  /// nhưng không mất giây nào đã quay.
+  Future<void> _onResumeRequested(
+    RecordingResumeRequested event,
+    Emitter<RecordingSessionState> emit,
+  ) async {
+    if (state.status != RecordingStatus.interrupted) return;
+    await _serialized(() async {
+      try {
+        await _camera.resumeVideoRecording();
+      } on Object {
+        await _finalizeInterrupted(emit);
+        return;
+      }
+      _clipClock.start();
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!isClosed) add(const RecordingTicked());
+      });
+      if (!isClosed) emit(state.copyWith(status: RecordingStatus.recording));
+    });
+  }
+
+  /// Chốt clip đang tạm dừng và về `idle`, giữ nguyên những gì đã quay.
+  Future<void> _finalizeInterrupted(
+    Emitter<RecordingSessionState> emit,
+  ) async {
+    _cancelTimer();
+    if (_camera.isRecordingVideo) {
+      try {
+        final file = await _camera.stopVideoRecording();
+        await _prepareAndSave(
+          file.path,
+          state.code,
+          state.typeLabel,
+          state.elapsed.inSeconds,
+        );
+      } on Object {
+        // Phiên ghi đã bị hệ điều hành thu hồi — không còn gì lấy lại được.
+      }
+    }
+    if (!isClosed) {
+      emit(
+        state.copyWith(
+          status: RecordingStatus.idle,
+          elapsed: Duration.zero,
+          code: '',
+        ),
+      );
+    }
   }
 
   Future<void> _onResolutionCycled(

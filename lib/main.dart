@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
     show DeviceOrientation, SystemChrome, SystemUiMode;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:storage/storage.dart';
 
 import 'app/bootstrap_error_app.dart';
@@ -41,6 +42,12 @@ Future<void> main() async {
 
       try {
         await configureDependencies();
+
+        // Đường dẫn Documents phải có TRƯỚC khi giao diện dựng: ảnh đại diện
+        // lưu theo đường dẫn tương đối và được đọc đồng bộ ngay trong `build`.
+        ecRememberDocumentsPath(
+          (await getApplicationDocumentsDirectory()).path,
+        );
 
         // Drop any Keychain data that survived a previous install (iOS keeps it
         // across uninstalls) before session restore reads secure storage.

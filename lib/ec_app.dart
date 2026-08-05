@@ -242,6 +242,12 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     }
     if (state != AppLifecycleState.resumed || !_wasPaused) return;
     _wasPaused = false;
+    // Đang ở màn ghi hình thì GIỮ NGUYÊN. Cuộc gọi đến làm app xuống nền thật,
+    // reset về splash ở đây là màn quay bị huỷ trước khi kịp hỏi người quay có
+    // muốn quay tiếp hay không — đúng thứ họ cần nhất ngay lúc nghe máy xong.
+    if (_router.routerDelegate.currentConfiguration.uri.path == '/record') {
+      return;
+    }
     // Mở lại app là bắt đầu lại từ splash, không rơi thẳng vào màn đang dở.
     // Phiên đăng nhập do Firebase giữ nên splash tự đưa thẳng sang chọn shop,
     // không bắt đăng nhập lại.
@@ -891,9 +897,7 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
   @override
   void initState() {
     super.initState();
-    _avatarPath = _appMemory()?.getString(
-      _avatarPathKey(widget.auth.currentUser?.uid),
-    );
+    _avatarPath = _rememberedAvatar(widget.auth.currentUser?.uid);
     _loadSavedPhone();
   }
 
@@ -1854,10 +1858,9 @@ Future<void> _copyText(BuildContext context, String text, String label) async {
 
 /// Ba dòng nung vào clip lúc xuất, khớp với lớp chữ của màn ghi hình.
 ///
-/// Giờ nung là mốc BẮT ĐẦU quay, đứng im suốt clip: ffmpeg chỉ chạy được đồng
-/// hồ đếm bằng `drawtext`, mà bộ lọc đó đòi một file font nằm sẵn trên đĩa —
-/// app không đóng gói font nào, nên chữ có dấu sẽ hỏng. Mốc bắt đầu cũng là
-/// mốc có nghĩa nhất với người nhận bằng chứng.
+/// Dòng giờ ở giữa là dòng chạy: `EcVideoStampService` vẽ sẵn một ô cho mỗi
+/// giây rồi để ffmpeg cắt đúng ô theo thời gian, nên clip tải về đọc giống hệt
+/// lúc bấm phát trong app. Thiếu thời lượng thì nó tự đứng im ở mốc bắt đầu.
 ///
 /// Thiếu mốc epoch (bằng chứng cũ) thì lùi về chuỗi đã định dạng sẵn, còn hơn
 /// giao ra một clip không có giờ nào.
@@ -1897,9 +1900,12 @@ Future<void> _downloadAndShareVideo(
     // — trước khi giao file ra ngoài: rời khỏi app thì clip chỉ còn là một mp4
     // trần, người nhận không có cách nào biết nó của đơn nào. Hỏng dấu thì
     // `stamp` trả lại bản gốc, người dùng vẫn cầm được file.
+    final at = video.capturedAtMs;
     final stamped = await EcVideoStampService().stamp(
       path,
       lines: _stampLines(video, tracking),
+      clockStart: at == null ? null : DateTime.fromMillisecondsSinceEpoch(at),
+      clockSeconds: video.durationSeconds,
     );
     if (stamped != path) await _deleteQuietly(path);
     path = stamped;
@@ -2135,6 +2141,38 @@ KeyValueStore? _appMemory() =>
 /// uploaded/served from the backend yet (see `_EditProfileRouteState`).
 String _avatarPathKey(String? uid) => 'profile.avatar_path.${uid ?? ''}';
 
+/// Thư mục Documents của app, chụp lại một lần lúc khởi động.
+///
+/// Cần bản đồng bộ vì ảnh đại diện được đọc ngay trong `build`, mà
+/// `getApplicationDocumentsDirectory()` là bất đồng bộ.
+String? _documentsPath;
+
+/// Ghi nhớ thư mục Documents; gọi trong bootstrap trước `runApp`.
+void ecRememberDocumentsPath(String path) => _documentsPath = path;
+
+/// Đổi giá trị đã lưu thành đường dẫn dùng được ở lần chạy này.
+///
+/// Trên iOS, thư mục dữ liệu của app nằm dưới một UUID ĐỔI MỖI LẦN CÀI LẠI.
+/// Bản trước lưu đường dẫn tuyệt đối nên cài lại xong là nó trỏ vào chỗ không
+/// còn tồn tại — file ảnh vẫn nằm nguyên trong Documents, chỉ là không ai tìm
+/// ra nó nữa, và màn Tài khoản lặng lẽ quay về icon người.
+///
+/// Nhận cả giá trị cũ (tuyệt đối) lẫn mới (tương đối) để ảnh người dùng đã lưu
+/// từ bản trước không mất.
+String? _resolveAvatarPath(String? stored) {
+  if (stored == null || stored.isEmpty) return null;
+  if (stored.startsWith('http')) return stored;
+  final docs = _documentsPath;
+  if (!stored.startsWith('/')) {
+    return docs == null ? null : '$docs/$stored';
+  }
+  if (File(stored).existsSync()) return stored;
+  // Đường dẫn tuyệt đối đã chết: dựng lại từ phần đuôi sau `/Documents/`.
+  final marker = stored.indexOf('/Documents/');
+  if (docs == null || marker < 0) return stored;
+  return '$docs${stored.substring(marker + '/Documents'.length)}';
+}
+
 /// Copies a picked avatar into the app-documents dir, keyed per account, so
 /// it survives OS cache purges the same way evidence clips do (see
 /// `EcUploadQueue`'s doc comment) — `image_picker`'s own returned path points
@@ -2146,10 +2184,10 @@ Future<String> _persistAvatarFile(String pickedPath, String? uid) async {
     final dir = await getApplicationDocumentsDirectory();
     final avatarsDir = Directory('${dir.path}/avatars');
     if (!avatarsDir.existsSync()) avatarsDir.createSync(recursive: true);
-    final stored =
-        '${avatarsDir.path}/${uid ?? 'anon'}${_fileExtension(pickedPath)}';
-    await File(pickedPath).copy(stored);
-    return stored;
+    final name = '${uid ?? 'anon'}${_fileExtension(pickedPath)}';
+    await File(pickedPath).copy('${avatarsDir.path}/$name');
+    // Trả về đường dẫn TƯƠNG ĐỐI so với Documents — xem `_resolveAvatarPath`.
+    return 'avatars/$name';
   } on Object {
     // Not a copyable local file (e.g. a test double, or the copy failed for
     // some other reason) — fall back to the original value rather than fail
@@ -2279,10 +2317,10 @@ Future<void> _rememberAvatar(String? uid, String path) {
 String? _rememberedAvatar(String? uid) {
   final key = _avatarPathKey(uid);
   final cached = _avatarCache[key];
-  if (cached != null) return cached;
+  if (cached != null) return _resolveAvatarPath(cached);
   final saved = _appMemory()?.getString(key);
   if (saved != null) _avatarCache[key] = saved;
-  return saved;
+  return _resolveAvatarPath(saved);
 }
 
 /// Trần dung lượng người dùng vừa đặt, giữ trong bộ nhớ tiến trình.
@@ -2396,6 +2434,9 @@ String _roleDisplayName(AppLocalizations l10n, String role) => switch (role) {
   'owner' => l10n.roleOwner,
   'manager' => l10n.roleManager,
   'staff' => l10n.roleStaff,
+  // Rỗng chứ không phải một vai trò lạ — in ra chuỗi rỗng thì hàng trông như
+  // lỗi hiển thị, trong khi sự thật là dữ liệu không nói vai trò là gì.
+  '' => l10n.roleUnknown,
   _ => role,
 };
 
@@ -2763,7 +2804,10 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
       return await run();
     } on Object catch (error, stack) {
       developer.log(
-        'shop detail: $what failed',
+        // Ghi rõ KIỂU lỗi: `TypeError` là app đọc sai dữ liệu trả về, còn
+        // `DioException` là endpoint hỏng. Hai thứ đó sửa ở hai nơi khác hẳn
+        // nhau, mà nhìn màn báo lỗi thì không phân biệt được.
+        'shop detail: $what failed (${error.runtimeType})',
         name: 'zenpack.shop',
         level: 1000,
         error: error,
@@ -3257,6 +3301,18 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       });
     }
     try {
+      if (_filteringByDate) {
+        final items = await _fetchAllForDate();
+        if (!mounted || queryGeneration != _searchGeneration) return;
+        setState(() {
+          _orders = items;
+          // Đã gộp hết các trang rồi nên không còn trang nào để chuyển.
+          _page = _unpaged;
+          _loading = false;
+          _loadError = null;
+        });
+        return;
+      }
       final result = await _fetchPage(_page.page);
       if (!mounted || queryGeneration != _searchGeneration) return;
       setState(() {
@@ -3276,14 +3332,44 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     }
   }
 
+  /// Số trang tối đa nạp khi lọc theo ngày. 20 trang × 10 đơn = 200 đơn.
+  static const _dateScanPages = 20;
+
+  bool get _filteringByDate => _filters.fromTs != null || _filters.toTs != null;
+
+  /// KHÔNG gửi `from`/`to` lên server.
+  ///
+  /// Server lọc theo `created_at` (ngày TẠO đơn), còn màn này hiển thị và lọc
+  /// theo ngày QUAY. Một đơn tạo hôm trước rồi quay thêm hôm nay bị server
+  /// loại ngay, app không nhận được gì để lọc — chọn "Hôm nay" ra rỗng dù vừa
+  /// quay xong. Hai bộ lọc còn lại thì server hiểu đúng nên vẫn gửi.
   Future<OrderPageDto> _fetchPage(int page) => widget.repo.orders(
     widget.shopId,
     page: page,
     uploadState: _filters.uploadState,
-    fromTs: _filters.fromTs,
-    toTs: _filters.toTs,
     videoTypeId: _filters.videoTypeId,
   );
+
+  /// Nạp nhiều trang rồi gộp, dùng khi đang lọc theo ngày.
+  ///
+  /// Lọc tại chỗ chỉ thấy những đơn đã nạp, mà đơn khớp ngày có thể nằm ở
+  /// trang sau — nạp một trang rồi lọc là lại ra rỗng y như cũ. Có trần
+  /// [_dateScanPages] để shop nhiều đơn không kéo về vô hạn; chạm trần thì ghi
+  /// log chứ không lặng lẽ cắt bớt.
+  Future<List<OrderSummaryDto>> _fetchAllForDate() async {
+    final all = <OrderSummaryDto>[];
+    for (var page = 1; page <= _dateScanPages; page++) {
+      final result = await _fetchPage(page);
+      all.addAll(result.items);
+      if (result.items.length < result.pageSize) return all;
+    }
+    developer.log(
+      'orders: dừng ở $_dateScanPages trang khi lọc theo ngày; '
+      'đơn cũ hơn ${all.length} đơn gần nhất không được xét',
+      name: 'zenpack.orders',
+    );
+    return all;
+  }
 
   /// Chuyển trang. Lỗi thì giữ nguyên trang đang xem thay vì bỏ trắng danh
   /// sách — người dùng vẫn còn cái đang đọc và chỉ cần bấm lại.
@@ -3313,6 +3399,20 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   Future<void> _refresh() async {
     final trimmed = _query.trim();
     try {
+      // Đang lọc theo ngày thì phải nạp lại ĐỦ các trang như lúc lọc, không
+      // phải mỗi trang đang xem. Nạp một trang xong gán đè là danh sách vừa
+      // lọc ra bị thay bằng 10 đơn mới nhất — mở một đơn rồi thoát ra là mã
+      // vừa tìm thấy biến mất.
+      if (trimmed.isEmpty && _filteringByDate) {
+        final items = await _fetchAllForDate();
+        if (!mounted) return;
+        setState(() {
+          _orders = items;
+          _page = _unpaged;
+          _loadError = null;
+        });
+        return;
+      }
       if (trimmed.isEmpty) {
         final result = await _fetchPage(_page.page);
         if (!mounted) return;
@@ -4425,6 +4525,7 @@ EcVideoDetail _videoDetail(
   String tracking = '',
 }) => EcVideoDetail(
   capturedAtMs: video.capturedAtMs,
+  durationSeconds: video.durationSeconds,
   tracking: tracking,
   title: video.label,
   duration: _durationLabel(video.durationSeconds),
