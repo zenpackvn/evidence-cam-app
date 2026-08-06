@@ -260,7 +260,7 @@
     },
     {
       "id": "6:610114076402941823",
-      "lastPropertyId": "13:1404892107533783200",
+      "lastPropertyId": "14:4026688712373386948",
       "name": "EvidenceClipEntity",
       "properties": [
         {
@@ -330,6 +330,11 @@
           "id": "13:1404892107533783200",
           "name": "durationSeconds",
           "type": 6
+        },
+        {
+          "id": "14:4026688712373386948",
+          "name": "ownerUid",
+          "type": 9
         }
       ],
       "relations": []

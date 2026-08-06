@@ -27,6 +27,7 @@ class EvidenceClipEntity {
     this.remoteUrl,
     this.errorMessage,
     this.durationSeconds,
+    this.ownerUid,
   });
 
   /// ObjectBox primary key. Internal — never exposed to the UI. 0 means "new";
@@ -78,4 +79,15 @@ class EvidenceClipEntity {
   /// Recorded clip length in seconds, captured at stop time. Null on older
   /// rows persisted before this field existed.
   int? durationSeconds;
+
+  /// Tài khoản đã QUAY clip này.
+  ///
+  /// Phải nằm trên đĩa chứ không chỉ trong bộ nhớ: điện thoại dùng chung ca,
+  /// A quay rồi đăng xuất, B đăng nhập, app khởi động lại — nếu không có dấu
+  /// này thì clip của A lên hệ thống mang tên B, hoặc hỏng 404 khi B không
+  /// thuộc shop đó. Cả hai đều phá chuỗi bằng chứng.
+  ///
+  /// Null ở những hàng lưu từ trước khi có trường này; lúc đó không chặn được
+  /// nên vẫn cho tải như cũ.
+  String? ownerUid;
 }

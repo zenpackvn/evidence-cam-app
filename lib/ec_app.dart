@@ -170,6 +170,7 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     store: widget.evidenceStore,
     analytics: _analytics(),
     crashReporter: _crashReporter(),
+    currentUid: () => _auth.currentUser?.uid,
   );
 
   // Built once for the app's lifetime rather than per record-screen visit —

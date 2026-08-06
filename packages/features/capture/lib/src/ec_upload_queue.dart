@@ -42,6 +42,7 @@ class UploadTask {
     this.errorMessage,
     this.durationSeconds,
     this.samplesJson,
+    this.ownerUid,
   });
 
   /// Parses a task from the legacy `queue.json` format, used only by the
@@ -68,6 +69,9 @@ class UploadTask {
   /// Shop the clip belongs to; needed by the real backend uploader. Older
   /// persisted tasks (and the offline path) may leave it null.
   final String? shopId;
+
+  /// Tài khoản đã quay clip. Xem [EvidenceClipEntity.ownerUid].
+  final String? ownerUid;
   EcUploadState state;
   double progress;
   int retryCount;
@@ -95,9 +99,11 @@ class EcUploadQueue extends ChangeNotifier {
     EvidenceClipStore? store,
     AnalyticsService? analytics,
     CrashReporter? crashReporter,
+    String? Function()? currentUid,
     @visibleForTesting Directory? directory,
     @visibleForTesting Directory? temporaryDirectory,
-  }) : _uploader = uploader,
+  }) : _currentUid = currentUid,
+       _uploader = uploader,
        _store = store ?? InMemoryEvidenceClipStore(),
        _analytics = analytics,
        _crashReporter = crashReporter,
@@ -158,6 +164,7 @@ class EcUploadQueue extends ChangeNotifier {
     int? durationSeconds,
     String? samplesJson,
     DateTime? capturedAt,
+    String? ownerUid,
   }) async {
     final dir = await _evidenceDir();
     final id = DateTime.now().microsecondsSinceEpoch.toString();
@@ -189,6 +196,7 @@ class EcUploadQueue extends ChangeNotifier {
       shopId: shopId,
       durationSeconds: durationSeconds,
       samplesJson: samplesJson,
+      ownerUid: ownerUid,
     );
     _tasks.insert(0, task);
     await _store.save(task);
@@ -411,9 +419,31 @@ class EcUploadQueue extends ChangeNotifier {
     }
   }
 
+  /// Ai đang đăng nhập; `null` = không biết, khi đó không chặn gì.
+  final String? Function()? _currentUid;
+
+  /// Clip này có được tải lên dưới tài khoản đang đăng nhập không.
+  ///
+  /// Điện thoại dùng chung ca: A quay rồi đăng xuất, B đăng nhập. `created_by_uid`
+  /// lấy từ token lúc presign chứ không phải từ người đã quay, nên nếu cứ tải
+  /// thì clip của A lên hệ thống mang tên B — hoặc hỏng 404 khi B không thuộc
+  /// shop đó. Cả hai đều phá chuỗi bằng chứng.
+  ///
+  /// Không khớp thì GIỮ NGUYÊN ở trạng thái chờ, không xoá và không báo lỗi:
+  /// A đăng nhập lại là clip tự đi tiếp.
+  bool _uploadableNow(UploadTask task) {
+    final owner = task.ownerUid;
+    if (owner == null) return true;
+    final current = _currentUid?.call();
+    if (current == null) return true;
+    return owner == current;
+  }
+
   UploadTask? _firstWaiting() {
     for (final task in _tasks) {
-      if (task.state == EcUploadState.waiting) return task;
+      if (task.state == EcUploadState.waiting && _uploadableNow(task)) {
+        return task;
+      }
     }
     return null;
   }
