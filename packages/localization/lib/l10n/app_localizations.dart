@@ -110,11 +110,95 @@ abstract class AppLocalizations {
   /// **'Create'**
   String get bundleCreate;
 
-  /// No description provided for @bundleCreateLink.
+  /// No description provided for @bundleCreateClaim.
   ///
   /// In en, this message translates to:
-  /// **'Create link'**
-  String get bundleCreateLink;
+  /// **'Create claim dossier'**
+  String get bundleCreateClaim;
+
+  /// No description provided for @accountClaims.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim dossiers'**
+  String get accountClaims;
+
+  /// No description provided for @claimsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim dossiers'**
+  String get claimsTitle;
+
+  /// No description provided for @claimsLocalOnlyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This list is stored on this device. Uninstalling the app or switching devices loses it.'**
+  String get claimsLocalOnlyNote;
+
+  /// No description provided for @claimsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No dossiers yet. Open the Orders tab, tap the plus button and pick the evidence to build one.'**
+  String get claimsEmpty;
+
+  /// Summary line for one dossier in the list screen.
+  ///
+  /// In en, this message translates to:
+  /// **'{orders} orders · {evidence} evidence'**
+  String claimsSummary(int orders, int evidence);
+
+  /// No description provided for @claimsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier contents copied'**
+  String get claimsCopied;
+
+  /// No description provided for @claimsCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim dossier created'**
+  String get claimsCreated;
+
+  /// No description provided for @claimsPickNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No evidence selected'**
+  String get claimsPickNothing;
+
+  /// No description provided for @claimsDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete dossier'**
+  String get claimsDelete;
+
+  /// No description provided for @claimsDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this dossier? The evidence on the orders themselves is untouched.'**
+  String get claimsDeleteConfirm;
+
+  /// No description provided for @claimsDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier deleted'**
+  String get claimsDeleted;
+
+  /// No description provided for @claimsPhotoAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo added to the dossier and queued onto the order'**
+  String get claimsPhotoAdded;
+
+  /// No description provided for @claimsAddedLater.
+  ///
+  /// In en, this message translates to:
+  /// **'added later'**
+  String get claimsAddedLater;
+
+  /// No description provided for @commonDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get commonDelete;
 
   /// No description provided for @bundleSelected.
   ///

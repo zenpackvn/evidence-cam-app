@@ -848,7 +848,7 @@ class _EcBundleSection extends StatelessWidget {
               // Nói thẳng ra cái sắp nhận được. Từ khi "Đẩy lên Drive" tạm gỡ
               // thì gộp bằng chứng chỉ còn một đường ra là link, nên "Tạo"
               // chung chung bắt người dùng bấm vào mới biết mình được gì.
-              l10n.bundleCreateLink,
+              l10n.bundleCreateClaim,
               size: 15,
               color: PenColors.ink,
               weight: FontWeight.w600,
@@ -887,8 +887,8 @@ class _EcBundleSection extends StatelessWidget {
         // có gì đứng sau nó — chuỗi l10n `bundleUploadDrive` vẫn giữ, dựng lại
         // là thêm một `_BundleAction` nữa ở đây.
         _BundleAction(
-          icon: LucideIcons.link,
-          label: l10n.bundleCreateLink,
+          icon: LucideIcons.fileText,
+          label: l10n.bundleCreateClaim,
           onTap: onCreateLink,
           primary: true,
         ),

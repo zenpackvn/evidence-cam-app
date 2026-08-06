@@ -67,10 +67,12 @@ import 'package:localization/localization.dart';
 import 'package:network/network.dart' show Dio, DioException, DioExceptionType;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_contracts/shared_contracts.dart' show ClipBudget;
+import 'package:shared_contracts/shared_contracts.dart'
+    show ClipBudget, EcClaimDossier, EcClaimEvidence, EcClaimOrder;
 import 'package:storage/storage.dart';
 
 import 'app/di/injection.dart';
+import 'core/data/ec_claim_store.dart';
 import 'app/update_gate.dart';
 import 'data/ec_uploader.dart';
 import 'data/platform_device_conditions.dart';
@@ -851,6 +853,7 @@ class _AccountRouteState extends State<_AccountRoute> {
               share: _maybeGetIt<ShareService>(),
               gallery: _maybeGetIt<GallerySaveService>(),
             ),
+            onClaimsTap: () => context.push('/claims'),
             onChangePasswordTap: () => context.push('/change-password'),
             onDeleteAccount: () => context.push('/delete-account'),
             onLoginMethodsTap: () => context.push('/login-methods'),
@@ -2193,6 +2196,14 @@ EcShopSummary? _selected(ValueNotifier<EcShopSummary?> selectedShop) =>
 KeyValueStore? _appMemory() =>
     getIt.isRegistered<KeyValueStore>() ? getIt<KeyValueStore>() : null;
 
+/// Kho hồ sơ khiếu nại, dựng một lần cho cả app.
+///
+/// Một thể duy nhất chứ không mỗi route một cái: hồ sơ tạo ở tab Vận đơn phải
+/// hiện ngay ở tab Tài khoản, mà hai tab đó sống song song trong shell ba tab.
+/// Hai thể riêng thì chúng có hai bản nhớ trong RAM khác nhau và tab kia chỉ
+/// thấy hồ sơ mới sau khi khởi động lại app.
+final EcClaimStore _claimStore = EcClaimStore(_appMemory());
+
 /// Device-local avatar image path, keyed per account since the avatar isn't
 /// uploaded/served from the backend yet (see `_EditProfileRouteState`).
 String _avatarPathKey(String? uid) => 'profile.avatar_path.${uid ?? ''}';
@@ -2544,16 +2555,24 @@ Future<String?> _pickImagePath() async {
 /// Picks a photo and attaches it to [tracking]'s evidence via the upload queue
 /// (uploads once the backend is configured). Shows a confirmation, or nothing
 /// if the user cancelled.
-Future<void> _attachPhoto(
+///
+/// Trả về đường dẫn ảnh đã xếp hàng, hoặc `null` khi người dùng huỷ / ảnh vượt
+/// trần. Màn hồ sơ khiếu nại cần đường dẫn đó để hiện ảnh vừa đính ngay lập
+/// tức — nó còn phải chờ tải lên xong mới có URL của server.
+///
+/// [toastOnQueued] tắt được vì màn hồ sơ có thông báo riêng, nói thêm rằng ảnh
+/// vào cả hồ sơ lẫn đơn hàng; hai toast chồng nhau thì chỉ thấy cái sau.
+Future<String?> _attachPhoto(
   BuildContext context,
   EcUploadQueue queue,
   String tracking,
   String shopId, {
   ClipBudget? budget,
   String platformLabel = '',
+  bool toastOnQueued = true,
 }) async {
   final path = await _pickImagePath();
-  if (path == null || !context.mounted) return;
+  if (path == null || !context.mounted) return null;
   // Ảnh vượt giới hạn của sàn vẫn lưu NGUYÊN VẸN — không nén, không cắt (FR-20:
   // chuỗi bằng chứng phải nguyên gốc). Chỉ cảnh báo để CSKH biết phải gửi bằng
   // link hồ sơ thay vì đính thẳng lên form khiếu nại.
@@ -2571,7 +2590,7 @@ Future<void> _attachPhoto(
         ClipBudget.megabytesLabel(cap),
       ),
     );
-    return;
+    return null;
   }
   await queue.enqueue(
     tracking: tracking,
@@ -2579,7 +2598,7 @@ Future<void> _attachPhoto(
     filePath: path,
     shopId: shopId,
   );
-  if (!context.mounted) return;
+  if (!context.mounted) return path;
   final limit = budget?.maxImageBytes;
   if (limit != null && bytes > limit) {
     _toast(
@@ -2590,9 +2609,10 @@ Future<void> _attachPhoto(
         ClipBudget.megabytesLabel(limit),
       ),
     );
-    return;
+    return path;
   }
-  _toast(context, context.l10n.toastPhotoQueued);
+  if (toastOnQueued) _toast(context, context.l10n.toastPhotoQueued);
+  return path;
 }
 
 /// Shop picker backed by the repository. The dev/prod app must choose a real
@@ -3518,6 +3538,50 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   ///
   /// Danh sách vận đơn chỉ có số đếm, nên phải hỏi thêm chi tiết đơn. Hỏng thì
   /// trả rỗng: hàng bung ra báo "chưa có bằng chứng" chứ không làm vỡ màn.
+  /// Gom những gì vừa tick thành một hồ sơ khiếu nại và lưu lại.
+  ///
+  /// Chụp NGUYÊN nội dung bằng chứng chứ không giữ id rồi tra sau: clip có hạn
+  /// lưu trữ, và một hồ sơ khiếu nại phải nói được nó ĐÃ gồm những gì kể cả khi
+  /// bằng chứng gốc đã hết hạn. Không có gì gửi lên máy chủ ở bước này — backend
+  /// chưa có endpoint gộp; xem `EcClaimStore`.
+  Future<void> _createClaim(List<EcClaimOrderPick> picks) async {
+    final l10n = context.l10n;
+    if (picks.isEmpty) {
+      _toast(context, l10n.claimsPickNothing);
+      return;
+    }
+    final now = DateTime.now();
+    await _claimStore.add(
+      EcClaimDossier(
+        id: now.microsecondsSinceEpoch.toString(),
+        shopId: widget.shopId,
+        createdAt: now,
+        orders: [
+          for (final pick in picks)
+            EcClaimOrder(
+              tracking: pick.orderCode,
+              orderId: _orders
+                  .where((o) => o.tracking == pick.orderCode)
+                  .firstOrNull
+                  ?.id,
+              evidence: [
+                for (final e in pick.evidence)
+                  EcClaimEvidence(
+                    id: e.id,
+                    label: e.label,
+                    time: e.time,
+                    isPhoto: e.isPhoto,
+                    url: e.url,
+                    thumbUrl: e.thumbUrl,
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+    if (mounted) _toast(context, l10n.claimsCreated);
+  }
+
   Future<List<EcPickableEvidence>> _pickableEvidence(String code) async {
     final match = _orders.where((o) => o.tracking == code);
     if (match.isEmpty) return const [];
@@ -3533,6 +3597,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
               time: _hhmm(DateTime.fromMillisecondsSinceEpoch(e.capturedAt)),
               isPhoto: e.kind == 'photo',
               thumbUrl: e.kind == 'photo' ? e.url : e.thumbUrl,
+              url: e.url,
             ),
       ];
     } on Object {
@@ -3800,10 +3865,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         videoTypes: _videoTypes,
         onFiltersChanged: _applyFilters,
         onLoadEvidence: _pickableEvidence,
-        // Endpoint gộp bằng chứng chưa nối; nút vẫn phải có để luồng chọn có
-        // đường ra, và để thấy ngay mình đã chọn bao nhiêu.
-        onCreateLink: (ids) =>
-            _toast(context, context.l10n.bundleBackendPending),
+        onCreateClaim: _createClaim,
         onRefresh: _refresh,
         pageInfo: _page,
         onPageChanged: _goToPage,
@@ -4690,6 +4752,184 @@ List<EcTimelineDay> _timelineDays(
 String _dateLabel(DateTime d) {
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(d.day)}/${two(d.month)}/${d.year}';
+}
+
+/// `06/08/2026` — ngày tạo hồ sơ, dạng ngắn nhất mà vẫn không nhập nhằng.
+String _dayLabelOf(DateTime d) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(d.day)}/${two(d.month)}/${d.year}';
+}
+
+/// Lớp cha: danh sách hồ sơ khiếu nại của shop đang chọn.
+///
+/// Nghe [EcClaimStore] chứ không chụp một lần: hồ sơ có thể được tạo ở tab Vận
+/// đơn trong lúc màn này còn nằm trong stack, và người dùng quay lại phải thấy
+/// nó ngay chứ không phải sau khi khởi động lại app.
+class _ClaimListRoute extends StatelessWidget {
+  const _ClaimListRoute({required this.shopId, this.onBack});
+
+  final String shopId;
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: _claimStore,
+    builder: (context, _) {
+      final dossiers = _claimStore.forShop(shopId);
+      return EcClaimListScreen(
+        onBack: onBack,
+        entries: [
+          for (final d in dossiers)
+            EcClaimEntry(
+              id: d.id,
+              dateLabel: _dayLabelOf(d.createdAt),
+              timeLabel: _hhmm(d.createdAt),
+              orderCount: d.orders.length,
+              evidenceCount: d.evidenceCount,
+            ),
+        ],
+        onOpen: (entry) =>
+            context.push('/claim-detail', extra: (shopId, entry.id)),
+        onCopy: (entry) {
+          final dossier = _claimStore.byId(shopId, entry.id);
+          if (dossier == null) return;
+          _copyClaimSummary(context, dossier);
+        },
+      );
+    },
+  );
+}
+
+/// Sao chép nội dung hồ sơ dưới dạng chữ.
+///
+/// Chưa có link gộp để sao chép — backend chưa mở endpoint — nên thứ đi vào
+/// clipboard là chính nội dung hồ sơ. Dán được thẳng vào khung chat CSKH của
+/// sàn, và người đọc không cần app nào để mở nó.
+void _copyClaimSummary(BuildContext context, EcClaimDossier dossier) {
+  final l10n = context.l10n;
+  Clipboard.setData(
+    ClipboardData(text: ecClaimSummaryText(dossier, title: l10n.claimsTitle)),
+  );
+  _toast(context, l10n.claimsCopied);
+}
+
+/// Lớp con: nội dung một hồ sơ — từng mã vận đơn và bằng chứng của nó, cộng
+/// một hàng đính kèm ảnh dưới mỗi mã đơn.
+class _ClaimDetailRoute extends StatelessWidget {
+  const _ClaimDetailRoute({
+    required this.shopId,
+    required this.dossierId,
+    required this.queue,
+    this.budget,
+    this.onBack,
+  });
+
+  final String shopId;
+  final String dossierId;
+  final EcUploadQueue queue;
+  final ClipBudget? budget;
+  final VoidCallback? onBack;
+
+  /// Đính ảnh vào ĐƠN HÀNG trước, rồi mới ghi vào hồ sơ.
+  ///
+  /// Thứ tự đó là cố ý: ảnh khiếu nại phải sống trên máy chủ, nơi web admin
+  /// thấy được và gỡ app không làm mất. Bản ghi trong hồ sơ chỉ là con trỏ tới
+  /// nó. Làm ngược lại thì hồ sơ nói có ảnh trong khi ảnh chưa đi đâu cả.
+  Future<void> _attach(BuildContext context, String tracking) async {
+    final path = await _attachPhoto(
+      context,
+      queue,
+      tracking,
+      shopId,
+      budget: budget,
+      toastOnQueued: false,
+    );
+    if (path == null || !context.mounted) return;
+    final l10n = context.l10n;
+    await _claimStore.attachEvidence(
+      shopId,
+      dossierId,
+      tracking,
+      EcClaimEvidence(
+        // Chưa có id của server (ảnh mới vào hàng đợi), nên dùng chính đường
+        // dẫn file làm khoá — đủ để không trùng với bằng chứng nào khác.
+        id: path,
+        label: l10n.kindPhoto,
+        time: _hhmm(DateTime.now()),
+        isPhoto: true,
+        url: path,
+        addedLater: true,
+      ),
+    );
+    if (context.mounted) _toast(context, l10n.claimsPhotoAdded);
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final l10n = context.l10n;
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(l10n.claimsDelete),
+        content: Text(l10n.claimsDeleteConfirm),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.commonDelete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await _claimStore.remove(shopId, dossierId);
+    if (!context.mounted) return;
+    _toast(context, l10n.claimsDeleted);
+    onBack?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: _claimStore,
+    builder: (context, _) {
+      final dossier = _claimStore.byId(shopId, dossierId);
+      // Hồ sơ vừa bị xoá ở màn này: khung rỗng chỉ tồn tại một nhịp trước khi
+      // `onBack` đưa đi, nên không dựng màn báo lỗi cho nó.
+      if (dossier == null) {
+        return const CupertinoPageScaffold(
+          backgroundColor: BrandColors.bg,
+          child: SizedBox.shrink(),
+        );
+      }
+      return EcClaimDetailScreen(
+        dateLabel: _dayLabelOf(dossier.createdAt),
+        timeLabel: _hhmm(dossier.createdAt),
+        onBack: onBack,
+        onCopy: () => _copyClaimSummary(context, dossier),
+        onDelete: () => unawaited(_confirmDelete(context)),
+        onAttachPhoto: (tracking) => unawaited(_attach(context, tracking)),
+        groups: [
+          for (final order in dossier.orders)
+            EcClaimOrderGroup(
+              tracking: order.tracking,
+              items: [
+                for (final e in order.evidence)
+                  EcClaimItem(
+                    label: e.label,
+                    time: e.time,
+                    isPhoto: e.isPhoto,
+                    thumbUrl: e.thumbUrl,
+                    addedLater: e.addedLater,
+                  ),
+              ],
+            ),
+        ],
+      );
+    },
+  );
 }
 
 /// Màn lịch sử thanh toán. Đọc một lần khi mở, có nút thử lại khi mạng hỏng.
@@ -6241,6 +6481,29 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/payment-history',
         builder: (c, s) => _PaymentHistoryRoute(repo: repo),
+      ),
+      GoRoute(
+        path: '/claims',
+        builder: (c, s) => _ClaimListRoute(
+          shopId: _selected(selectedShop)?.id ?? '',
+          onBack: () => _back(c, '/account'),
+        ),
+      ),
+      GoRoute(
+        path: '/claim-detail',
+        builder: (c, s) {
+          final extra = s.extra;
+          final (shopId, dossierId) = extra is (String, String)
+              ? extra
+              : (_selected(selectedShop)?.id ?? '', '');
+          return _ClaimDetailRoute(
+            shopId: shopId,
+            dossierId: dossierId,
+            queue: queue,
+            budget: _selected(selectedShop)?.clipBudget,
+            onBack: () => _back(c, '/claims'),
+          );
+        },
       ),
       // Paywall mở thẳng, cho QA và cho ảnh chụp nộp App Review.
       //

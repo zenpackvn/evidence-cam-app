@@ -3422,6 +3422,7 @@ class EcPickableEvidence {
     required this.time,
     this.isPhoto = false,
     this.thumbUrl,
+    this.url,
   });
 
   final String id;
@@ -3429,6 +3430,18 @@ class EcPickableEvidence {
   final String time;
   final bool isPhoto;
   final String? thumbUrl;
+
+  /// Link tải. Đi kèm vì hồ sơ khiếu nại chụp lại bằng chứng ngay lúc tạo —
+  /// hỏi lại server sau thì bằng chứng có thể đã hết hạn lưu trữ.
+  final String? url;
+}
+
+/// Bằng chứng đã tick của MỘT mã vận đơn, gom lại khi bấm tạo hồ sơ.
+class EcClaimOrderPick {
+  const EcClaimOrderPick({required this.orderCode, required this.evidence});
+
+  final String orderCode;
+  final List<EcPickableEvidence> evidence;
 }
 
 class EcOrderRow {
@@ -3581,7 +3594,7 @@ class EcHomeOrdersScreen extends StatefulWidget {
     this.onSearchChanged,
     this.onFiltersChanged,
     this.onLoadEvidence,
-    this.onCreateLink,
+    this.onCreateClaim,
     this.onOrderTap,
     this.onRefresh,
     this.pageInfo = const EcOrderPage(),
@@ -3636,8 +3649,12 @@ class EcHomeOrdersScreen extends StatefulWidget {
   /// hàng 1", "Ảnh đính kèm 2" thì không đủ để chọn đúng thứ cần gộp.
   final Future<List<EcPickableEvidence>> Function(String code)? onLoadEvidence;
 
-  /// Gộp các bằng chứng đã tick thành một link hồ sơ.
-  final ValueChanged<List<String>>? onCreateLink;
+  /// Gộp các bằng chứng đã tick thành một hồ sơ khiếu nại.
+  ///
+  /// Nhận CẢ chi tiết từng bằng chứng chứ không chỉ id: hồ sơ chụp lại nội dung
+  /// ngay lúc tạo, vì tới lúc đem đi khiếu nại thì clip có thể đã hết hạn lưu
+  /// trữ và không tra ngược được nữa.
+  final ValueChanged<List<EcClaimOrderPick>>? onCreateClaim;
   final ValueChanged<EcOrderRow>? onOrderTap;
 
   /// Pull-to-refresh — reloads the current page.
@@ -3830,13 +3847,37 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
   /// sách đổi, hàng bị dựng lại — nhưng những gì đã tick phải còn nguyên.
   final Set<String> _pickedEvidence = <String>{};
 
+  /// Chi tiết bằng chứng đã nạp, theo mã đơn.
+  ///
+  /// [_pickedEvidence] chỉ có id, mà hồ sơ khiếu nại cần nhãn, giờ và link tải
+  /// của từng cái. Những thứ đó đã hiện trên màn rồi — giữ lại ở đây để lúc bấm
+  /// tạo hồ sơ không phải hỏi server lại một lượt cho đúng dữ liệu vừa xem.
+  final Map<String, List<EcPickableEvidence>> _evidenceByCode = {};
+
   void _toggleLinkMode() => setState(() {
     _linkMode = !_linkMode;
     if (!_linkMode) {
       _expanded.clear();
       _pickedEvidence.clear();
+      _evidenceByCode.clear();
     }
   });
+
+  /// Bằng chứng đã tick, gom theo mã đơn và giữ đúng thứ tự đơn trên màn.
+  ///
+  /// Bỏ qua đơn nào không còn cái nào được tick: người dùng bung một đơn ra
+  /// xem rồi bỏ tick hết thì đơn đó không thuộc về hồ sơ nữa.
+  List<EcClaimOrderPick> get _claimPicks => [
+    for (final entry in _evidenceByCode.entries)
+      if (entry.value.any((e) => _pickedEvidence.contains(e.id)))
+        EcClaimOrderPick(
+          orderCode: entry.key,
+          evidence: [
+            for (final e in entry.value)
+              if (_pickedEvidence.contains(e.id)) e,
+          ],
+        ),
+  ];
 
   void _toggleExpanded(String code) => setState(() {
     if (!_expanded.remove(code)) _expanded.add(code);
@@ -4068,11 +4109,24 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                                       load: widget.onLoadEvidence,
                                       order: visible[i],
                                       picked: _pickedEvidence,
+                                      onLoaded: (items) =>
+                                          _evidenceByCode[visible[i].code] =
+                                              items,
                                       onToggle: (id) => setState(() {
                                         if (!_pickedEvidence.remove(id)) {
                                           _pickedEvidence.add(id);
                                         }
                                       }),
+                                      onToggleAll: (items, select) =>
+                                          setState(() {
+                                            for (final e in items) {
+                                              if (select) {
+                                                _pickedEvidence.add(e.id);
+                                              } else {
+                                                _pickedEvidence.remove(e.id);
+                                              }
+                                            }
+                                          }),
                                     ),
                                 ],
                                 // Phân trang nằm trong thẻ, dưới một đường kẻ —
@@ -4169,8 +4223,7 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                         ),
                       ),
                       EcTap(
-                        onTap: () =>
-                            widget.onCreateLink?.call(_pickedEvidence.toList()),
+                        onTap: () => widget.onCreateClaim?.call(_claimPicks),
                         child: PenBox(
                           height: 56,
                           fill: PenColors.primary,
@@ -4183,12 +4236,12 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 22),
                           children: [
                             const Icon(
-                              LucideIcons.link,
+                              LucideIcons.fileText,
                               size: 22,
                               color: PenColors.card,
                             ),
                             PenText(
-                              '${context.l10n.bundleCreateLink} '
+                              '${context.l10n.bundleCreateClaim} '
                               '(${_pickedEvidence.length})',
                               size: 16,
                               color: PenColors.card,
@@ -4694,39 +4747,62 @@ String? _dayLabel(int? epochMs) {
   return '${two(d.day)}/${two(d.month)}/${d.year}';
 }
 
-/// Danh sách bằng chứng bung ra dưới một mã đơn, mỗi dòng có ô tick.
+/// Danh sách bằng chứng bung ra dưới một mã đơn, mỗi dòng có ô tick, và một ô
+/// tick TO hơn ở trên cùng để chọn/bỏ chọn cả đơn.
 class _EvidencePickList extends StatefulWidget {
   const _EvidencePickList({
     required this.order,
     required this.picked,
     required this.onToggle,
+    required this.onToggleAll,
     this.load,
+    this.onLoaded,
   });
 
   final EcOrderRow order;
   final Set<String> picked;
   final ValueChanged<String> onToggle;
+
+  /// Nhận cả danh sách của đơn này và cờ "đang chọn tất cả hay đang bỏ chọn".
+  final void Function(List<EcPickableEvidence> items, bool select) onToggleAll;
+
   final Future<List<EcPickableEvidence>> Function(String code)? load;
+
+  /// Báo lên cha danh sách vừa nạp xong.
+  ///
+  /// Cha cần chi tiết từng bằng chứng (nhãn, giờ, link tải) để dựng hồ sơ khiếu
+  /// nại, mà nó chỉ giữ id. Không đẩy lên thì lúc bấm tạo hồ sơ phải hỏi lại
+  /// server một lượt nữa cho đúng những thứ vừa hiện ra trên màn.
+  final ValueChanged<List<EcPickableEvidence>>? onLoaded;
 
   @override
   State<_EvidencePickList> createState() => _EvidencePickListState();
 }
 
 class _EvidencePickListState extends State<_EvidencePickList> {
-  late final Future<List<EcPickableEvidence>> _items =
-      widget.load?.call(widget.order.code) ??
-      Future.value(const <EcPickableEvidence>[]);
+  late final Future<List<EcPickableEvidence>> _items = _loadAndReport();
+
+  Future<List<EcPickableEvidence>> _loadAndReport() async {
+    final items =
+        await widget.load?.call(widget.order.code) ??
+        const <EcPickableEvidence>[];
+    widget.onLoaded?.call(items);
+    return items;
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Lề phải 0, còn từng dòng tự chừa 8 — nhờ vậy ô "chọn tất cả" nhô sang
+    // phải hơn các ô nhỏ đúng 8px, đủ để mắt nhận ra nó không cùng một hàng
+    // ngũ với chúng.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(34, 0, 8, 10),
+      padding: const EdgeInsets.fromLTRB(34, 0, 0, 10),
       child: FutureBuilder<List<EcPickableEvidence>>(
         future: _items,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
             return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.fromLTRB(0, 12, 8, 12),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: CupertinoActivityIndicator(),
@@ -4736,7 +4812,7 @@ class _EvidencePickListState extends State<_EvidencePickList> {
           final items = snap.data ?? const <EcPickableEvidence>[];
           if (items.isEmpty) {
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.fromLTRB(0, 10, 8, 10),
               child: PenText(
                 context.l10n.orderNoEvidence,
                 size: 13,
@@ -4744,16 +4820,24 @@ class _EvidencePickListState extends State<_EvidencePickList> {
               ),
             );
           }
+          final allPicked = items.every((e) => widget.picked.contains(e.id));
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _EvidencePickAllRow(
+                picked: allPicked,
+                onTap: () => widget.onToggleAll(items, !allPicked),
+              ),
               for (final e in items)
-                _EvidencePickRow(
-                  label: e.label,
-                  time: e.time,
-                  isPhoto: e.isPhoto,
-                  picked: widget.picked.contains(e.id),
-                  onTap: () => widget.onToggle(e.id),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _EvidencePickRow(
+                    label: e.label,
+                    time: e.time,
+                    isPhoto: e.isPhoto,
+                    picked: widget.picked.contains(e.id),
+                    onTap: () => widget.onToggle(e.id),
+                  ),
                 ),
             ],
           );
@@ -4761,6 +4845,40 @@ class _EvidencePickListState extends State<_EvidencePickList> {
       ),
     );
   }
+}
+
+/// Ô tick "cả đơn này", nằm trên cùng chồng ô tick của từng bằng chứng.
+///
+/// To hơn và nhô sang phải hơn các ô nhỏ. Hai khác biệt đó là toàn bộ thứ nói
+/// cho người dùng biết nó không phải một dòng bằng chứng nữa — không có nhãn
+/// chữ nào ở đây, nên nếu nó trông y hệt các ô kia thì nó chỉ là một hàng lạ
+/// không rõ của cái gì.
+class _EvidencePickAllRow extends StatelessWidget {
+  const _EvidencePickAllRow({required this.picked, required this.onTap});
+
+  final bool picked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: PenBox(
+      width: double.infinity,
+      axis: PenAxis.row,
+      main: MainAxisAlignment.end,
+      cross: CrossAxisAlignment.center,
+      // Vùng chạm cao 40 chứ không bó sát icon: đây là nút bấm nhiều nhất
+      // trong luồng chọn, mà nó lại không có nhãn chữ để chạm trượt vào.
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        Icon(
+          picked ? LucideIcons.squareCheckBig : LucideIcons.square,
+          size: 26,
+          color: picked ? PenColors.primary : PenColors.ink,
+        ),
+      ],
+    ),
+  );
 }
 
 class _EvidencePickRow extends StatelessWidget {

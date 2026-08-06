@@ -15,7 +15,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bundleCreate => 'Create';
 
   @override
-  String get bundleCreateLink => 'Create link';
+  String get bundleCreateClaim => 'Create claim dossier';
+
+  @override
+  String get accountClaims => 'Claim dossiers';
+
+  @override
+  String get claimsTitle => 'Claim dossiers';
+
+  @override
+  String get claimsLocalOnlyNote =>
+      'This list is stored on this device. Uninstalling the app or switching devices loses it.';
+
+  @override
+  String get claimsEmpty =>
+      'No dossiers yet. Open the Orders tab, tap the plus button and pick the evidence to build one.';
+
+  @override
+  String claimsSummary(int orders, int evidence) {
+    return '$orders orders · $evidence evidence';
+  }
+
+  @override
+  String get claimsCopied => 'Dossier contents copied';
+
+  @override
+  String get claimsCreated => 'Claim dossier created';
+
+  @override
+  String get claimsPickNothing => 'No evidence selected';
+
+  @override
+  String get claimsDelete => 'Delete dossier';
+
+  @override
+  String get claimsDeleteConfirm =>
+      'Delete this dossier? The evidence on the orders themselves is untouched.';
+
+  @override
+  String get claimsDeleted => 'Dossier deleted';
+
+  @override
+  String get claimsPhotoAdded =>
+      'Photo added to the dossier and queued onto the order';
+
+  @override
+  String get claimsAddedLater => 'added later';
+
+  @override
+  String get commonDelete => 'Delete';
 
   @override
   String bundleSelected(int count) {

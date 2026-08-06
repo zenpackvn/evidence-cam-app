@@ -2,7 +2,32 @@
   "@@locale": "vi",
   "bundleBackendPending": "Chức năng này đang chờ backend mở endpoint",
   "bundleCreate": "Tạo",
-  "bundleCreateLink": "Tạo link",
+  "bundleCreateClaim": "Tạo hồ sơ khiếu nại",
+  "accountClaims": "Hồ sơ khiếu nại",
+  "claimsTitle": "Hồ sơ khiếu nại",
+  "claimsLocalOnlyNote": "Danh sách này lưu trên máy này. Gỡ ứng dụng hoặc đổi máy là không còn.",
+  "claimsEmpty": "Chưa có hồ sơ nào. Vào tab Vận đơn, bấm dấu cộng rồi chọn bằng chứng để tạo.",
+  "claimsSummary": "{orders} đơn · {evidence} bằng chứng",
+  "@claimsSummary": {
+    "description": "Dòng tóm tắt của một hồ sơ ở màn danh sách.",
+    "placeholders": {
+      "orders": {
+        "type": "int"
+      },
+      "evidence": {
+        "type": "int"
+      }
+    }
+  },
+  "claimsCopied": "Đã sao chép nội dung hồ sơ",
+  "claimsCreated": "Đã tạo hồ sơ khiếu nại",
+  "claimsPickNothing": "Chưa chọn bằng chứng nào",
+  "claimsDelete": "Xóa hồ sơ",
+  "claimsDeleteConfirm": "Xóa hồ sơ này? Bằng chứng trong đơn hàng vẫn còn nguyên.",
+  "claimsDeleted": "Đã xóa hồ sơ",
+  "claimsPhotoAdded": "Đã thêm ảnh vào hồ sơ và đưa lên đơn hàng",
+  "claimsAddedLater": "đính thêm",
+  "commonDelete": "Xóa",
   "bundleSelected": "Đã chọn {count} bằng chứng",
   "@bundleSelected": {
     "placeholders": {

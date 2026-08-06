@@ -2,7 +2,32 @@
   "@@locale": "en",
   "bundleBackendPending": "Waiting on a backend endpoint for this",
   "bundleCreate": "Create",
-  "bundleCreateLink": "Create link",
+  "bundleCreateClaim": "Create claim dossier",
+  "accountClaims": "Claim dossiers",
+  "claimsTitle": "Claim dossiers",
+  "claimsLocalOnlyNote": "This list is stored on this device. Uninstalling the app or switching devices loses it.",
+  "claimsEmpty": "No dossiers yet. Open the Orders tab, tap the plus button and pick the evidence to build one.",
+  "claimsSummary": "{orders} orders · {evidence} evidence",
+  "@claimsSummary": {
+    "description": "Summary line for one dossier in the list screen.",
+    "placeholders": {
+      "orders": {
+        "type": "int"
+      },
+      "evidence": {
+        "type": "int"
+      }
+    }
+  },
+  "claimsCopied": "Dossier contents copied",
+  "claimsCreated": "Claim dossier created",
+  "claimsPickNothing": "No evidence selected",
+  "claimsDelete": "Delete dossier",
+  "claimsDeleteConfirm": "Delete this dossier? The evidence on the orders themselves is untouched.",
+  "claimsDeleted": "Dossier deleted",
+  "claimsPhotoAdded": "Photo added to the dossier and queued onto the order",
+  "claimsAddedLater": "added later",
+  "commonDelete": "Delete",
   "bundleSelected": "{count} selected",
   "@bundleSelected": {
     "placeholders": {

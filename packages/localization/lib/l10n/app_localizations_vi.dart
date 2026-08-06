@@ -16,7 +16,54 @@ class AppLocalizationsVi extends AppLocalizations {
   String get bundleCreate => 'Tạo';
 
   @override
-  String get bundleCreateLink => 'Tạo link';
+  String get bundleCreateClaim => 'Tạo hồ sơ khiếu nại';
+
+  @override
+  String get accountClaims => 'Hồ sơ khiếu nại';
+
+  @override
+  String get claimsTitle => 'Hồ sơ khiếu nại';
+
+  @override
+  String get claimsLocalOnlyNote =>
+      'Danh sách này lưu trên máy này. Gỡ ứng dụng hoặc đổi máy là không còn.';
+
+  @override
+  String get claimsEmpty =>
+      'Chưa có hồ sơ nào. Vào tab Vận đơn, bấm dấu cộng rồi chọn bằng chứng để tạo.';
+
+  @override
+  String claimsSummary(int orders, int evidence) {
+    return '$orders đơn · $evidence bằng chứng';
+  }
+
+  @override
+  String get claimsCopied => 'Đã sao chép nội dung hồ sơ';
+
+  @override
+  String get claimsCreated => 'Đã tạo hồ sơ khiếu nại';
+
+  @override
+  String get claimsPickNothing => 'Chưa chọn bằng chứng nào';
+
+  @override
+  String get claimsDelete => 'Xóa hồ sơ';
+
+  @override
+  String get claimsDeleteConfirm =>
+      'Xóa hồ sơ này? Bằng chứng trong đơn hàng vẫn còn nguyên.';
+
+  @override
+  String get claimsDeleted => 'Đã xóa hồ sơ';
+
+  @override
+  String get claimsPhotoAdded => 'Đã thêm ảnh vào hồ sơ và đưa lên đơn hàng';
+
+  @override
+  String get claimsAddedLater => 'đính thêm';
+
+  @override
+  String get commonDelete => 'Xóa';
 
   @override
   String bundleSelected(int count) {

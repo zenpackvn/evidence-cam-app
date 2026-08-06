@@ -43,6 +43,7 @@ class EcAccountTabScreen extends StatelessWidget {
     this.onQuotaTap,
     this.onLanguageTap,
     this.onEndQrTap,
+    this.onClaimsTap,
     this.onChangePasswordTap,
     this.onLoginMethodsTap,
     this.onLogout,
@@ -74,6 +75,9 @@ class EcAccountTabScreen extends StatelessWidget {
   /// Mở tờ QR "kết thúc phiên" để in. Mã dùng chung cho mọi máy, nên nó thuộc
   /// nhóm cài đặt app chứ không phải của riêng shop nào.
   final VoidCallback? onEndQrTap;
+
+  /// Mở danh sách hồ sơ khiếu nại đã tạo.
+  final VoidCallback? onClaimsTap;
   final VoidCallback? onChangePasswordTap;
   final VoidCallback? onLoginMethodsTap;
   final VoidCallback? onLogout;
@@ -141,6 +145,11 @@ class EcAccountTabScreen extends StatelessWidget {
                         icon: LucideIcons.qrCode,
                         label: context.l10n.accountEndQr,
                         onTap: onEndQrTap,
+                      ),
+                      _SettingsRow(
+                        icon: LucideIcons.fileText,
+                        label: context.l10n.accountClaims,
+                        onTap: onClaimsTap,
                       ),
                     ],
                   ),
