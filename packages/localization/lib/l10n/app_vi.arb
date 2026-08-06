@@ -388,6 +388,7 @@
   "addMemberSubmit": "Thêm",
   "setAsManager": "Đặt làm Quản lý shop",
   "setAsStaff": "Đặt làm Nhân viên",
+  "memberOwnerLocked": "Chủ cửa hàng không đổi vai trò hay gỡ ở đây được — quyền sở hữu gắn với cửa hàng, không phải một hàng thành viên.",
   "removeFromShop": "Gỡ khỏi shop",
   "revokeInvite": "Xóa lời mời",
   "resolutionAppliesNote": "Áp dụng cho video quay mới của shop",

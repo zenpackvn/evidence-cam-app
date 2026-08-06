@@ -75,6 +75,50 @@ void main() {
       expect(find.text('Đặt làm quản lý shop'), findsNothing);
     });
 
+    // Chủ cửa hàng không có hàng trong shop_members, nên đổi vai trò trả 404 và
+    // gỡ thì máy chủ xoá 0 hàng. Bày hai việc đó ra là mời người dùng bấm vào
+    // một thao tác không bao giờ xảy ra — và bản cũ còn báo "đã gỡ" cho nó.
+    testWidgets('hàng chủ shop không có đổi vai trò và không có gỡ', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcMemberActionsScreen(
+          member: EcShopMember(
+            name: 'Chủ Shop',
+            role: 'Chủ shop',
+            roleCode: 'owner',
+          ),
+        ),
+      );
+
+      expect(find.text('Đặt làm Quản lý shop'), findsNothing);
+      expect(find.text('Đặt làm Nhân viên'), findsNothing);
+      expect(find.text('Gỡ khỏi shop'), findsNothing);
+      // Và nói rõ vì sao, thay vì để một sheet trống không.
+      expect(
+        find.textContaining('quyền sở hữu gắn với cửa hàng'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('thành viên thường vẫn đủ ba hành động', (tester) async {
+      await _pump(
+        tester,
+        const EcMemberActionsScreen(
+          member: EcShopMember(
+            name: 'Nhân viên A',
+            role: 'Nhân viên',
+            roleCode: 'staff',
+          ),
+        ),
+      );
+
+      expect(find.text('Đặt làm Quản lý shop'), findsOneWidget);
+      expect(find.text('Đặt làm Nhân viên'), findsOneWidget);
+      expect(find.text('Gỡ khỏi shop'), findsOneWidget);
+    });
+
     // Gõ sai định dạng thì backend vẫn tạo lời mời, nhưng mailer bỏ qua contact
     // không có '@' — lời mời treo mãi và không ai được báo gì.
     testWidgets('màn mời chặn contact sai định dạng, không gọi API', (

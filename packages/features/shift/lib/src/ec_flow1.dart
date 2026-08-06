@@ -2843,7 +2843,15 @@ class EcMemberActionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isManager = member.role.contains('Quản lý');
+    // Đọc MÃ vai trò, không so chuỗi hiển thị: `member.role` là chuỗi đã dịch
+    // (và còn bị bọc thêm "· đã nhận lời mời"), nên máy để tiếng Anh là so trượt
+    // và một quản lý bị đánh dấu thành nhân viên.
+    final isManager = member.roleCode == 'manager';
+    // Chủ cửa hàng KHÔNG có hàng trong shop_members — quyền sở hữu nằm ở
+    // shops.owner_uid. Đổi vai trò trả 404, còn gỡ thì trước đây trả 204 mà
+    // không gỡ gì: người dùng nhận thông báo "đã gỡ" cho một việc chưa xảy ra.
+    // Không bày ra hai việc máy chủ không làm được.
+    final isOwner = member.roleCode == 'owner';
     // Lời mời chưa ai nhận thì không có tài khoản để đổi vai trò — bày hai dòng
     // đó ra chỉ để bấm vào là báo lỗi. Còn đúng một việc: xóa lời mời.
     final isPendingInvite = member.inviteId != null;
@@ -2851,30 +2859,41 @@ class EcMemberActionsScreen extends StatelessWidget {
       title: member.name,
       subtitle: context.l10n.memberCurrentRole(member.role),
       children: [
-        if (!isPendingInvite) ...[
+        if (isOwner)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: PenText(
+              context.l10n.memberOwnerLocked,
+              size: 13,
+              color: PenColors.mut,
+            ),
+          )
+        else ...[
+          if (!isPendingInvite) ...[
+            _EcSheetActionRow(
+              icon: Icons.shield_outlined,
+              label: context.l10n.setAsManager,
+              selected: isManager,
+              onTap: onSetManager,
+            ),
+            _EcSheetActionRow(
+              icon: Icons.person_outline,
+              label: context.l10n.setAsStaff,
+              selected: !isManager,
+              onTap: onSetStaff,
+            ),
+          ],
           _EcSheetActionRow(
-            icon: Icons.shield_outlined,
-            label: context.l10n.setAsManager,
-            selected: isManager,
-            onTap: onSetManager,
-          ),
-          _EcSheetActionRow(
-            icon: Icons.person_outline,
-            label: context.l10n.setAsStaff,
-            selected: !isManager,
-            onTap: onSetStaff,
+            icon: isPendingInvite
+                ? Icons.delete_outline
+                : Icons.person_remove_outlined,
+            label: isPendingInvite
+                ? context.l10n.revokeInvite
+                : context.l10n.removeFromShop,
+            destructive: true,
+            onTap: onRemove,
           ),
         ],
-        _EcSheetActionRow(
-          icon: isPendingInvite
-              ? Icons.delete_outline
-              : Icons.person_remove_outlined,
-          label: isPendingInvite
-              ? context.l10n.revokeInvite
-              : context.l10n.removeFromShop,
-          destructive: true,
-          onTap: onRemove,
-        ),
       ],
     );
   }

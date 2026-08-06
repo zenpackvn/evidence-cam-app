@@ -1147,6 +1147,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setAsStaff => 'Set as staff';
 
   @override
+  String get memberOwnerLocked =>
+      'The owner cannot be re-roled or removed here — ownership belongs to the shop, not to a membership row.';
+
+  @override
   String get removeFromShop => 'Remove from shop';
 
   @override

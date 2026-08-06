@@ -599,6 +599,7 @@
   "addMemberSubmit": "Add",
   "setAsManager": "Set as shop manager",
   "setAsStaff": "Set as staff",
+  "memberOwnerLocked": "The owner cannot be re-roled or removed here — ownership belongs to the shop, not to a membership row.",
   "removeFromShop": "Remove from shop",
   "revokeInvite": "Delete invitation",
   "resolutionAppliesNote": "Applies to the shop's newly recorded videos",

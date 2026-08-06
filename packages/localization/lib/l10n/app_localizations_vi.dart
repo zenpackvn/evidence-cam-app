@@ -1143,6 +1143,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get setAsStaff => 'Đặt làm Nhân viên';
 
   @override
+  String get memberOwnerLocked =>
+      'Chủ cửa hàng không đổi vai trò hay gỡ ở đây được — quyền sở hữu gắn với cửa hàng, không phải một hàng thành viên.';
+
+  @override
   String get removeFromShop => 'Gỡ khỏi shop';
 
   @override

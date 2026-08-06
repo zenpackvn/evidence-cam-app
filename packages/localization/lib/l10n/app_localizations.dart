@@ -2150,6 +2150,12 @@ abstract class AppLocalizations {
   /// **'Set as staff'**
   String get setAsStaff;
 
+  /// No description provided for @memberOwnerLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'The owner cannot be re-roled or removed here — ownership belongs to the shop, not to a membership row.'**
+  String get memberOwnerLocked;
+
   /// No description provided for @removeFromShop.
   ///
   /// In en, this message translates to:
