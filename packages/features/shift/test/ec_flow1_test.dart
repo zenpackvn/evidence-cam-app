@@ -990,6 +990,38 @@ void main() {
       expect(find.text('Thời gian'), findsOneWidget);
     });
 
+    // Lọc theo ngày giờ do SERVER làm (cùng trục `created_at` với web), nên màn
+    // này không được lọc lại lần nữa — lọc chồng sẽ giấu mất chính những đơn
+    // server vừa trả về đúng, và làm app lại lệch với web thêm lần nữa.
+    testWidgets('không lọc lại theo ngày ở máy — kể cả đơn chưa có clip', (
+      tester,
+    ) async {
+      const rows = [
+        EcOrderRow(
+          code: 'TAO-HOM-NAY',
+          time: '--:--',
+          type: '—',
+          videoCount: 0,
+        ),
+        EcOrderRow(
+          code: 'DA-QUAY',
+          time: '10:23',
+          type: 'Đóng hàng',
+          videoCount: 1,
+          capturedAtMs: 1000,
+        ),
+      ];
+      await _pump(
+        tester,
+        const EcHomeOrdersScreen(shopName: 'Shop ABC', orders: rows),
+      );
+
+      // Đơn chưa có clip trước đây bị ẩn khi có bộ lọc ngày vì không chứng minh
+      // được nó thuộc ngày nào. Server đã trả nó về thì phải hiện.
+      expect(find.text('TAO-HOM-NAY'), findsOneWidget);
+      expect(find.text('DA-QUAY'), findsOneWidget);
+    });
+
     testWidgets('picking a day filters to exactly that day', (tester) async {
       final picked = <EcOrderFilters>[];
       await _pump(

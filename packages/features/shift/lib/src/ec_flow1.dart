@@ -3696,37 +3696,20 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
 
   /// Orders as handed in, thu hẹp theo ô tìm kiếm.
   ///
-  /// Lọc tại chỗ chạy KỂ CẢ khi cha đã gọi tìm kiếm phía server. Bản trước tin
-  /// hẳn vào server và trả nguyên danh sách, nhưng `/api/shops/{id}/orders`
-  /// đang bỏ qua tham số `q` — gõ một mã vẫn ra toàn bộ đơn. Server lọc đúng
-  /// thì bước này không đổi gì; server bỏ sót thì người dùng vẫn chỉ thấy mã
-  /// mình gõ.
+  /// KHÔNG còn lọc theo ngày ở đây. Bản trước lọc tại chỗ theo ngày QUAY vì
+  /// server lọc theo ngày TẠO đơn — hai trục khác nhau, nên cùng một chip
+  /// "Hôm nay" cho ra hai danh sách khác nhau giữa app và web. Nay server lọc
+  /// theo `from`/`to` như web, và lọc thêm một lần nữa ở đây sẽ giấu mất chính
+  /// những đơn server vừa trả về đúng.
+  ///
+  /// Lọc theo mã thì vẫn giữ: `/api/shops/{id}/orders` bỏ qua tham số `q`, nên
+  /// gõ một mã mà tin hẳn vào server thì vẫn ra toàn bộ đơn.
   List<EcOrderRow> get _visibleOrders {
     final query = _query.trim().toLowerCase();
-    final from = _filters.fromTs;
-    final to = _filters.toTs;
-    if (query.isEmpty && from == null && to == null) return widget.orders;
-    return widget.orders.where((order) {
-      if (query.isNotEmpty && !order.code.toLowerCase().contains(query)) {
-        return false;
-      }
-      // Mã tra được và khoảng thời gian KẾT HỢP với nhau, không loại trừ.
-      //
-      // Tìm kiếm phía server bỏ qua bộ lọc, nên kết quả trả về gồm cả đơn
-      // ngoài khoảng đang chọn. Người dùng tra một mã rồi đổi ngày là để hỏi
-      // "mã này có trong ngày đó không" — trả về đúng khi có, rỗng khi không.
-      if (from == null && to == null) return true;
-      final at = order.capturedAtMs;
-      // Không có mốc thời gian thì không chứng minh được đơn nằm trong ngày
-      // đang chọn — ẩn đi. Hiện lên là phá đúng câu hỏi người dùng đang đặt:
-      // ngày này có mã đó hay không.
-      if (at == null) return false;
-      if (from != null && at < from) return false;
-      // `to` là mili-giây cuối CÙNG NGÀY (xem `_boundsFor`), nên so sánh phải
-      // là `>`; thiếu chặn trên thì đổi sang ngày khác vẫn thấy nguyên mã cũ.
-      if (to != null && at > to) return false;
-      return true;
-    }).toList();
+    if (query.isEmpty) return widget.orders;
+    return widget.orders
+        .where((order) => order.code.toLowerCase().contains(query))
+        .toList();
   }
 
   void _select(void Function(String?) apply, String? value) {

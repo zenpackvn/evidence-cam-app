@@ -3395,18 +3395,6 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       });
     }
     try {
-      if (_filteringByDate) {
-        final items = await _fetchAllForDate();
-        if (!mounted || queryGeneration != _searchGeneration) return;
-        setState(() {
-          _orders = items;
-          // Đã gộp hết các trang rồi nên không còn trang nào để chuyển.
-          _page = _unpaged;
-          _loading = false;
-          _loadError = null;
-        });
-        return;
-      }
       final result = await _fetchPage(_page.page);
       if (!mounted || queryGeneration != _searchGeneration) return;
       setState(() {
@@ -3426,17 +3414,6 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     }
   }
 
-  /// Số trang tối đa nạp khi lọc theo ngày. 20 trang × 10 đơn = 200 đơn.
-  static const _dateScanPages = 20;
-
-  bool get _filteringByDate => _filters.fromTs != null || _filters.toTs != null;
-
-  /// KHÔNG gửi `from`/`to` lên server.
-  ///
-  /// Server lọc theo `created_at` (ngày TẠO đơn), còn màn này hiển thị và lọc
-  /// theo ngày QUAY. Một đơn tạo hôm trước rồi quay thêm hôm nay bị server
-  /// loại ngay, app không nhận được gì để lọc — chọn "Hôm nay" ra rỗng dù vừa
-  /// quay xong. Hai bộ lọc còn lại thì server hiểu đúng nên vẫn gửi.
   /// Bằng chứng của một mã đơn, cho danh sách tick khi gộp link.
   ///
   /// Danh sách vận đơn chỉ có số đếm, nên phải hỏi thêm chi tiết đơn. Hỏng thì
@@ -3463,33 +3440,24 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     }
   }
 
+  /// Gửi CẢ khoảng ngày lên server, và phân trang bình thường.
+  ///
+  /// Bản trước cố ý giữ `from`/`to` lại rồi lọc tại máy theo ngày QUAY, vì
+  /// server lọc theo ngày TẠO đơn. Cái giá của nó lớn hơn cái được: web lọc
+  /// theo ngày tạo nên cùng một chip "Hôm nay" cho ra hai danh sách khác nhau
+  /// trên hai thiết bị, và để lọc được tại máy thì app phải kéo về tới 200 đơn
+  /// rồi lặng lẽ bỏ qua phần cũ hơn ở shop đông đơn.
+  ///
+  /// Nay bám theo web: một trục thời gian duy nhất — ngày TẠO đơn, do server
+  /// lọc — và mỗi lần một trang. Nhiều hơn thì bấm sang trang sau.
   Future<OrderPageDto> _fetchPage(int page) => widget.repo.orders(
     widget.shopId,
     page: page,
     uploadState: _filters.uploadState,
     videoTypeId: _filters.videoTypeId,
+    fromTs: _filters.fromTs,
+    toTs: _filters.toTs,
   );
-
-  /// Nạp nhiều trang rồi gộp, dùng khi đang lọc theo ngày.
-  ///
-  /// Lọc tại chỗ chỉ thấy những đơn đã nạp, mà đơn khớp ngày có thể nằm ở
-  /// trang sau — nạp một trang rồi lọc là lại ra rỗng y như cũ. Có trần
-  /// [_dateScanPages] để shop nhiều đơn không kéo về vô hạn; chạm trần thì ghi
-  /// log chứ không lặng lẽ cắt bớt.
-  Future<List<OrderSummaryDto>> _fetchAllForDate() async {
-    final all = <OrderSummaryDto>[];
-    for (var page = 1; page <= _dateScanPages; page++) {
-      final result = await _fetchPage(page);
-      all.addAll(result.items);
-      if (result.items.length < result.pageSize) return all;
-    }
-    developer.log(
-      'orders: dừng ở $_dateScanPages trang khi lọc theo ngày; '
-      'đơn cũ hơn ${all.length} đơn gần nhất không được xét',
-      name: 'zenpack.orders',
-    );
-    return all;
-  }
 
   /// Chuyển trang. Lỗi thì giữ nguyên trang đang xem thay vì bỏ trắng danh
   /// sách — người dùng vẫn còn cái đang đọc và chỉ cần bấm lại.
@@ -3519,20 +3487,8 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   Future<void> _refresh() async {
     final trimmed = _query.trim();
     try {
-      // Đang lọc theo ngày thì phải nạp lại ĐỦ các trang như lúc lọc, không
-      // phải mỗi trang đang xem. Nạp một trang xong gán đè là danh sách vừa
-      // lọc ra bị thay bằng 10 đơn mới nhất — mở một đơn rồi thoát ra là mã
-      // vừa tìm thấy biến mất.
-      if (trimmed.isEmpty && _filteringByDate) {
-        final items = await _fetchAllForDate();
-        if (!mounted) return;
-        setState(() {
-          _orders = items;
-          _page = _unpaged;
-          _loadError = null;
-        });
-        return;
-      }
+      // Nạp lại ĐÚNG trang đang xem, kể cả khi đang lọc theo ngày — server đã
+      // lọc sẵn nên trang đó vẫn là trang đó.
       if (trimmed.isEmpty) {
         final result = await _fetchPage(_page.page);
         if (!mounted) return;
