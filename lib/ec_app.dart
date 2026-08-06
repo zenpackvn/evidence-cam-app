@@ -2422,6 +2422,12 @@ EcShopMgmtEntry _shopMgmtFromDto(
       '${_platformDisplayName(shop.platform)} · ${_roleDisplayName(l10n, shop.role)}',
 );
 
+/// Nhân viên chỉ được XEM cửa hàng.
+///
+/// Họ vẫn quay video và tạo đơn bình thường ở luồng chính — đó là việc của họ.
+/// Cái bị khoá là sửa cấu hình shop, mời/gỡ người, và mọi thao tác xoá.
+bool _shopDetailIsReadOnly(EcShopSummary shop) => shop.role == 'staff';
+
 EcShopSummary? _shopFromMgmt(EcShopMgmtEntry shop) {
   final id = shop.id;
   if (id == null) return null;
@@ -2793,6 +2799,7 @@ class _ShopDetailRoute extends StatefulWidget {
   const _ShopDetailRoute({
     required this.repo,
     required this.shop,
+    this.readOnly = false,
     this.onBack,
     this.onMemberMore,
     this.onInviteMember,
@@ -2807,6 +2814,9 @@ class _ShopDetailRoute extends StatefulWidget {
 
   final EcRepository repo;
   final EcShopSummary shop;
+
+  /// Nhân viên: xem được cửa hàng nhưng không sửa được gì trong đó.
+  final bool readOnly;
   final VoidCallback? onBack;
   final Future<void> Function(EcShopMember member)? onMemberMore;
   final Future<void> Function()? onInviteMember;
@@ -2914,6 +2924,7 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
       builder: (context, detail) {
         _last = detail;
         return EcShopDetailScreen(
+          readOnly: widget.readOnly,
           membersError: detail.membersFailed,
           onRetryMembers: _retry,
           shopName: detail.shop.name,
@@ -4475,7 +4486,10 @@ List<EcTimelineDay> _withPendingUploads(
   ];
   if (pending.isEmpty) return days;
   final today = _dateLabel(DateTime.now());
-  final rest = [for (final d in days) if (d.date != today) d];
+  final rest = [
+    for (final d in days)
+      if (d.date != today) d,
+  ];
   final todayVideos = [
     for (final d in days)
       if (d.date == today) ...d.videos,
@@ -5703,40 +5717,71 @@ GoRouter _buildRouter(
               onRetry: () => c.go('/shop-mgmt'),
             );
           }
+          // Nhân viên: bỏ trống mọi callback nên màn chi tiết dựng ra ở dạng
+          // chỉ đọc. Máy chủ vốn đã từ chối các thao tác này, nên đây là bịt
+          // lối vào chứ không phải hàng rào an ninh — chưa bịt thì người dùng
+          // bấm xong mới ăn lỗi, và không hiểu vì sao.
+          final readOnly = _shopDetailIsReadOnly(shop);
           return _ShopDetailRoute(
             repo: repo,
             shop: shop,
+            readOnly: readOnly,
             onBack: () => _back(c, '/shop-mgmt'),
-            onMemberMore: (member) => c
-                .push(
-                  '/member-actions',
-                  extra: _MemberActionExtra(shopId: shop.id, member: member),
-                )
-                .then((_) {}),
-            onInviteMember: () =>
-                c.push('/invite-member', extra: shop.id).then((_) {}),
-            onTapResolution: () =>
-                c.push<void>('/resolution', extra: shop.id).then((_) {}),
-            onTapClipDuration: () =>
-                c.push<void>('/clip-duration', extra: shop.id).then((_) {}),
-            onTapImageSize: () => c
-                .push<void>(
-                  '/upload-size',
-                  extra: (shop.id, EcUploadKind.image),
-                )
-                .then((_) {}),
-            onTapVideoSize: () => c
-                .push<void>(
-                  '/upload-size',
-                  extra: (shop.id, EcUploadKind.video),
-                )
-                .then((_) {}),
-            onEditType: (type) =>
-                c.push('/create-type', extra: (shop.id, type)).then((_) {}),
-            onDeleteType: (type) =>
-                c.push('/confirm-delete', extra: (shop.id, type)).then((_) {}),
-            onAddType: () =>
-                c.push('/create-type', extra: (shop.id, null)).then((_) {}),
+            onMemberMore: readOnly
+                ? null
+                : (member) => c
+                      .push(
+                        '/member-actions',
+                        extra: _MemberActionExtra(
+                          shopId: shop.id,
+                          member: member,
+                        ),
+                      )
+                      .then((_) {}),
+            onInviteMember: readOnly
+                ? null
+                : () => c.push('/invite-member', extra: shop.id).then((_) {}),
+            onTapResolution: readOnly
+                ? null
+                : () =>
+                      c.push<void>('/resolution', extra: shop.id).then((_) {}),
+            onTapClipDuration: readOnly
+                ? null
+                : () => c
+                      .push<void>('/clip-duration', extra: shop.id)
+                      .then((_) {}),
+            onTapImageSize: readOnly
+                ? null
+                : () => c
+                      .push<void>(
+                        '/upload-size',
+                        extra: (shop.id, EcUploadKind.image),
+                      )
+                      .then((_) {}),
+            onTapVideoSize: readOnly
+                ? null
+                : () => c
+                      .push<void>(
+                        '/upload-size',
+                        extra: (shop.id, EcUploadKind.video),
+                      )
+                      .then((_) {}),
+            onEditType: readOnly
+                ? null
+                : (type) => c
+                      .push('/create-type', extra: (shop.id, type))
+                      .then((_) {}),
+            // Xoá loại video là thao tác phá dữ liệu — nhân viên không có.
+            onDeleteType: readOnly
+                ? null
+                : (type) => c
+                      .push('/confirm-delete', extra: (shop.id, type))
+                      .then((_) {}),
+            onAddType: readOnly
+                ? null
+                : () => c
+                      .push('/create-type', extra: (shop.id, null))
+                      .then((_) {}),
           );
         },
       ),

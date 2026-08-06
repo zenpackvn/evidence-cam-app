@@ -409,6 +409,53 @@ void main() {
       EcVideoType(name: 'Cân hàng'),
     ];
 
+    // Nhân viên phải THẤY được shop mình tham gia — trước đây màn quản lý lọc
+    // sạch shop vai trò `staff`, nên người vừa nhận lời mời mở app ra tưởng
+    // mình chưa vào được shop nào.
+    testWidgets('read-only hides the rows that only owners can act on', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcShopDetailScreen(
+          readOnly: true,
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          members: members,
+          videoTypes: videoTypes,
+        ),
+      );
+
+      // Vẫn xem được shop và mọi thứ trong đó.
+      expect(find.text('Shop ABC'), findsOneWidget);
+      expect(find.text('Nguyễn Văn A'), findsOneWidget);
+      expect(find.text('Đóng hàng'), findsOneWidget);
+
+      // Nhưng không còn lối vào thao tác nào.
+      expect(find.text('Mời thành viên'), findsNothing);
+      expect(find.text('Thêm loại (nhập tên)'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('an owner still gets the invite and add-type rows', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          members: members,
+          videoTypes: videoTypes,
+          onInviteMember: () {},
+          onAddType: () {},
+        ),
+      );
+      expect(find.text('Mời thành viên'), findsOneWidget);
+      expect(find.text('Thêm loại (nhập tên)'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('renders members and settings without overflow', (
       tester,
     ) async {

@@ -1727,8 +1727,17 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onAddType,
     this.membersError = false,
     this.onRetryMembers,
+    this.readOnly = false,
     super.key,
   });
+
+  /// Chế độ chỉ xem, dành cho nhân viên.
+  ///
+  /// Không chỉ là bỏ trống callback: những hàng chỉ tồn tại để mở ra một thao
+  /// tác — "Mời thành viên", "Thêm loại" — bị ẩn hẳn. Một nút bấm không ăn thì
+  /// người dùng bấm đi bấm lại rồi kết luận app hỏng, chứ không đoán ra là
+  /// mình không có quyền.
+  final bool readOnly;
 
   final String shopName;
   final String platformLabel;
@@ -1827,51 +1836,52 @@ class EcShopDetailScreen extends StatelessWidget {
                           : () => onMemberMore!(members[i]),
                     ),
                   ],
-                EcTap(
-                  onTap: onInviteMember,
-                  child: PenBox(
-                    width: double.infinity,
-                    stroke: PenColors.soft,
-                    radius: 10,
-                    axis: PenAxis.row,
-                    gap: 14,
-                    cross: CrossAxisAlignment.center,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 9,
-                      horizontal: 12,
-                    ),
-                    children: [
-                      const Icon(
-                        LucideIcons.plus,
-                        size: 22,
-                        color: PenColors.ink,
+                if (!readOnly)
+                  EcTap(
+                    onTap: onInviteMember,
+                    child: PenBox(
+                      width: double.infinity,
+                      stroke: PenColors.soft,
+                      radius: 10,
+                      axis: PenAxis.row,
+                      gap: 14,
+                      cross: CrossAxisAlignment.center,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 9,
+                        horizontal: 12,
                       ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            PenText(
-                              l10n.inviteMemberTitle,
-                              size: 14,
-                              color: PenColors.link,
-                              weight: FontWeight.w700,
-                              softWrap: false,
-                            ),
-                            const SizedBox(height: 2),
-                            PenText(
-                              l10n.inviteMemberHint,
-                              size: 12,
-                              color: PenColors.mut,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                      children: [
+                        const Icon(
+                          LucideIcons.plus,
+                          size: 22,
+                          color: PenColors.ink,
                         ),
-                      ),
-                    ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              PenText(
+                                l10n.inviteMemberTitle,
+                                size: 14,
+                                color: PenColors.link,
+                                weight: FontWeight.w700,
+                                softWrap: false,
+                              ),
+                              const SizedBox(height: 2),
+                              PenText(
+                                l10n.inviteMemberHint,
+                                size: 12,
+                                color: PenColors.mut,
+                                softWrap: false,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: _sectionCardGap),
@@ -1910,35 +1920,36 @@ class EcShopDetailScreen extends StatelessWidget {
                         ? null
                         : () => onDeleteType!(type),
                   ),
-                EcTap(
-                  onTap: onAddType,
-                  child: PenBox(
-                    width: double.infinity,
-                    stroke: PenColors.soft,
-                    radius: 10,
-                    axis: PenAxis.row,
-                    gap: 12,
-                    main: MainAxisAlignment.center,
-                    cross: CrossAxisAlignment.center,
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    children: [
-                      const Icon(
-                        LucideIcons.plus,
-                        size: 21,
-                        color: PenColors.ink,
-                      ),
-                      Flexible(
-                        child: PenText(
-                          l10n.shopDetailAddType,
-                          size: 16,
-                          color: PenColors.link,
-                          weight: FontWeight.w600,
-                          overflow: TextOverflow.ellipsis,
+                if (!readOnly)
+                  EcTap(
+                    onTap: onAddType,
+                    child: PenBox(
+                      width: double.infinity,
+                      stroke: PenColors.soft,
+                      radius: 10,
+                      axis: PenAxis.row,
+                      gap: 12,
+                      main: MainAxisAlignment.center,
+                      cross: CrossAxisAlignment.center,
+                      padding: const EdgeInsets.symmetric(vertical: 9),
+                      children: [
+                        const Icon(
+                          LucideIcons.plus,
+                          size: 21,
+                          color: PenColors.ink,
                         ),
-                      ),
-                    ],
+                        Flexible(
+                          child: PenText(
+                            l10n.shopDetailAddType,
+                            size: 16,
+                            color: PenColors.link,
+                            weight: FontWeight.w600,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ],
