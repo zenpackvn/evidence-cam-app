@@ -340,22 +340,14 @@ class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (!_selecting)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
-                    child: _EcAttachPhotoRow(onTap: widget.onAttachPhoto),
-                  ),
+                // Chỉ còn "Đính kèm ảnh", ghim đúng chỗ "Tạo link" từng đứng.
+                //
+                // Bỏ khối gộp bằng chứng: nút đó chưa nối được endpoint nên
+                // bấm vào chỉ báo "đang chờ backend" — một nút ghim sát đáy màn
+                // mà không làm gì thì tốn chỗ hơn là giúp.
                 Padding(
                   padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
-                  child: _EcBundleSection(
-                    selecting: _selecting,
-                    pickedCount: _picked.length,
-                    onStart: () => setState(() => _selecting = true),
-                    onCancel: _exitSelection,
-                    onCreateLink: _picked.isEmpty
-                        ? null
-                        : () => widget.onCreateLink?.call(_pickedVideos),
-                  ),
+                  child: _EcAttachPhotoRow(onTap: widget.onAttachPhoto),
                 ),
               ],
             ),

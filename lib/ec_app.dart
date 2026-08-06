@@ -3437,6 +3437,32 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   /// theo ngày QUAY. Một đơn tạo hôm trước rồi quay thêm hôm nay bị server
   /// loại ngay, app không nhận được gì để lọc — chọn "Hôm nay" ra rỗng dù vừa
   /// quay xong. Hai bộ lọc còn lại thì server hiểu đúng nên vẫn gửi.
+  /// Bằng chứng của một mã đơn, cho danh sách tick khi gộp link.
+  ///
+  /// Danh sách vận đơn chỉ có số đếm, nên phải hỏi thêm chi tiết đơn. Hỏng thì
+  /// trả rỗng: hàng bung ra báo "chưa có bằng chứng" chứ không làm vỡ màn.
+  Future<List<EcPickableEvidence>> _pickableEvidence(String code) async {
+    final match = _orders.where((o) => o.tracking == code);
+    if (match.isEmpty) return const [];
+    try {
+      final detail = await widget.repo.order(widget.shopId, match.first.id);
+      final l10n = context.l10n;
+      return [
+        for (final e in detail.evidence)
+          if (e.uploadStatus != 'deleted')
+            EcPickableEvidence(
+              id: e.id,
+              label: _kindLabel(l10n, e.kind),
+              time: _hhmm(DateTime.fromMillisecondsSinceEpoch(e.capturedAt)),
+              isPhoto: e.kind == 'photo',
+              thumbUrl: e.kind == 'photo' ? e.url : e.thumbUrl,
+            ),
+      ];
+    } on Object {
+      return const [];
+    }
+  }
+
   Future<OrderPageDto> _fetchPage(int page) => widget.repo.orders(
     widget.shopId,
     page: page,
@@ -3716,6 +3742,11 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         onSearchChanged: _search,
         videoTypes: _videoTypes,
         onFiltersChanged: _applyFilters,
+        onLoadEvidence: _pickableEvidence,
+        // Endpoint gộp bằng chứng chưa nối; nút vẫn phải có để luồng chọn có
+        // đường ra, và để thấy ngay mình đã chọn bao nhiêu.
+        onCreateLink: (ids) =>
+            _toast(context, context.l10n.bundleBackendPending),
         onRefresh: _refresh,
         pageInfo: _page,
         onPageChanged: _goToPage,

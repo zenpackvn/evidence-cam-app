@@ -3347,6 +3347,24 @@ class EcHomeStat {
 }
 
 /// An order row on HomeOrders.
+/// Một bằng chứng có thể tick để gộp link, đủ để người dùng nhận ra nó là cái
+/// nào: loại (Đóng hàng / Ảnh đính kèm / Trả hàng), giờ quay, và ảnh đại diện.
+class EcPickableEvidence {
+  const EcPickableEvidence({
+    required this.id,
+    required this.label,
+    required this.time,
+    this.isPhoto = false,
+    this.thumbUrl,
+  });
+
+  final String id;
+  final String label;
+  final String time;
+  final bool isPhoto;
+  final String? thumbUrl;
+}
+
 class EcOrderRow {
   const EcOrderRow({
     required this.code,
@@ -3494,6 +3512,8 @@ class EcHomeOrdersScreen extends StatefulWidget {
     this.onScanResult,
     this.onSearchChanged,
     this.onFiltersChanged,
+    this.onLoadEvidence,
+    this.onCreateLink,
     this.onOrderTap,
     this.onRefresh,
     this.pageInfo = const EcOrderPage(),
@@ -3541,6 +3561,15 @@ class EcHomeOrdersScreen extends StatefulWidget {
   /// Fired with the whole selection whenever any filter chip changes, so the
   /// parent can re-query the backend with all three applied at once.
   final ValueChanged<EcOrderFilters>? onFiltersChanged;
+
+  /// Nạp danh sách bằng chứng của một mã đơn, gọi khi người dùng bung hàng đó.
+  ///
+  /// Danh sách vận đơn chỉ biết SỐ LƯỢNG, không biết từng cái là gì — mà "Đóng
+  /// hàng 1", "Ảnh đính kèm 2" thì không đủ để chọn đúng thứ cần gộp.
+  final Future<List<EcPickableEvidence>> Function(String code)? onLoadEvidence;
+
+  /// Gộp các bằng chứng đã tick thành một link hồ sơ.
+  final ValueChanged<List<String>>? onCreateLink;
   final ValueChanged<EcOrderRow>? onOrderTap;
 
   /// Pull-to-refresh — reloads the current page.
@@ -3733,6 +3762,31 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
     });
     _applyFilters();
   }
+
+  /// Đang ở chế độ chọn bằng chứng để gộp thành một link.
+  bool _linkMode = false;
+
+  /// Mã đơn đang bung nội dung.
+  final Set<String> _expanded = <String>{};
+
+  /// Id bằng chứng đã tick, gom theo mã đơn.
+  ///
+  /// Giữ ở ĐÂY chứ không trong từng hàng: mã đóng hàng và mã trả hàng là hai
+  /// đơn khác nhau, nên người dùng phải quét tìm đơn khác giữa chừng. Danh
+  /// sách đổi, hàng bị dựng lại — nhưng những gì đã tick phải còn nguyên.
+  final Set<String> _pickedEvidence = <String>{};
+
+  void _toggleLinkMode() => setState(() {
+    _linkMode = !_linkMode;
+    if (!_linkMode) {
+      _expanded.clear();
+      _pickedEvidence.clear();
+    }
+  });
+
+  void _toggleExpanded(String code) => setState(() {
+    if (!_expanded.remove(code)) _expanded.add(code);
+  });
 
   /// Opens the scanner and, if a code comes back, drops it into the search box.
   Future<void> _onScan() async {
@@ -3942,10 +3996,30 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                                   _OrderTile(
                                     order: visible[i],
                                     platform: widget.platform,
-                                    onTap: widget.onOrderTap == null
-                                        ? null
-                                        : () => widget.onOrderTap!(visible[i]),
+                                    expandable: _linkMode,
+                                    expanded: _expanded.contains(
+                                      visible[i].code,
+                                    ),
+                                    onTap: _linkMode
+                                        ? () => _toggleExpanded(visible[i].code)
+                                        : (widget.onOrderTap == null
+                                              ? null
+                                              : () => widget.onOrderTap!(
+                                                  visible[i],
+                                                )),
                                   ),
+                                  if (_linkMode &&
+                                      _expanded.contains(visible[i].code))
+                                    _EvidencePickList(
+                                      load: widget.onLoadEvidence,
+                                      order: visible[i],
+                                      picked: _pickedEvidence,
+                                      onToggle: (id) => setState(() {
+                                        if (!_pickedEvidence.remove(id)) {
+                                          _pickedEvidence.add(id);
+                                        }
+                                      }),
+                                    ),
                                 ],
                                 // Phân trang nằm trong thẻ, dưới một đường kẻ —
                                 // nó thuộc về danh sách chứ không trôi tự do
@@ -3978,6 +4052,100 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                 ),
               ],
             ),
+          ),
+          // Nút gộp link: nổi góc phải, ngay trên thanh tab.
+          //
+          // Ngoài vùng cuộn để shop có năm chục đơn vẫn bấm được ngay, và đây
+          // là thao tác áp lên cả danh sách chứ không thuộc về một đơn nào.
+          Positioned(
+            right: 18,
+            bottom: PenTabBar.heightOf(context) + 16,
+            // Đã tick thì nút phình thành đường ra: chọn xong mà không có chỗ
+            // bấm thì cả thao tác chọn là vô nghĩa.
+            child: _pickedEvidence.isEmpty
+                ? EcTap(
+                    onTap: _toggleLinkMode,
+                    child: PenBox(
+                      width: 56,
+                      height: 56,
+                      fill: _linkMode ? PenColors.card : PenColors.primary,
+                      stroke: _linkMode ? PenColors.primary : null,
+                      radius: 999,
+                      shadows: const [penCardShadow],
+                      axis: PenAxis.row,
+                      main: MainAxisAlignment.center,
+                      cross: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _linkMode ? LucideIcons.x : LucideIcons.plus,
+                          size: 26,
+                          color: _linkMode ? PenColors.primary : PenColors.card,
+                        ),
+                      ],
+                    ),
+                  )
+                : PenBox(
+                    axis: PenAxis.row,
+                    gap: 10,
+                    hugMain: true,
+                    cross: CrossAxisAlignment.center,
+                    children: [
+                      // Thoát nằm CẠNH nút tạo, không thay chỗ nó: tick nhầm
+                      // một loạt rồi đổi ý là chuyện thường, mà lúc đó nút duy
+                      // nhất trên màn lại là "Tạo link".
+                      EcTap(
+                        onTap: _toggleLinkMode,
+                        child: PenBox(
+                          width: 56,
+                          height: 56,
+                          fill: PenColors.card,
+                          stroke: PenColors.line,
+                          radius: 999,
+                          shadows: const [penCardShadow],
+                          axis: PenAxis.row,
+                          main: MainAxisAlignment.center,
+                          cross: CrossAxisAlignment.center,
+                          children: const [
+                            Icon(
+                              LucideIcons.x,
+                              size: 24,
+                              color: PenColors.ink,
+                            ),
+                          ],
+                        ),
+                      ),
+                      EcTap(
+                        onTap: () =>
+                            widget.onCreateLink?.call(_pickedEvidence.toList()),
+                        child: PenBox(
+                          height: 56,
+                          fill: PenColors.primary,
+                          radius: 999,
+                          shadows: const [penCardShadow],
+                          axis: PenAxis.row,
+                          gap: 10,
+                          hugMain: true,
+                          cross: CrossAxisAlignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 22),
+                          children: [
+                            const Icon(
+                              LucideIcons.link,
+                              size: 22,
+                              color: PenColors.card,
+                            ),
+                            PenText(
+                              '${context.l10n.bundleCreateLink} '
+                              '(${_pickedEvidence.length})',
+                              size: 16,
+                              color: PenColors.card,
+                              weight: FontWeight.w700,
+                              softWrap: false,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
           ),
           if (widget.onBack != null) _BackSwipeEdge(onBack: widget.onBack!),
         ],
@@ -4472,11 +4640,141 @@ String? _dayLabel(int? epochMs) {
   return '${two(d.day)}/${two(d.month)}/${d.year}';
 }
 
+/// Danh sách bằng chứng bung ra dưới một mã đơn, mỗi dòng có ô tick.
+class _EvidencePickList extends StatefulWidget {
+  const _EvidencePickList({
+    required this.order,
+    required this.picked,
+    required this.onToggle,
+    this.load,
+  });
+
+  final EcOrderRow order;
+  final Set<String> picked;
+  final ValueChanged<String> onToggle;
+  final Future<List<EcPickableEvidence>> Function(String code)? load;
+
+  @override
+  State<_EvidencePickList> createState() => _EvidencePickListState();
+}
+
+class _EvidencePickListState extends State<_EvidencePickList> {
+  late final Future<List<EcPickableEvidence>> _items =
+      widget.load?.call(widget.order.code) ??
+      Future.value(const <EcPickableEvidence>[]);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(34, 0, 8, 10),
+      child: FutureBuilder<List<EcPickableEvidence>>(
+        future: _items,
+        builder: (context, snap) {
+          if (snap.connectionState != ConnectionState.done) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: CupertinoActivityIndicator(),
+              ),
+            );
+          }
+          final items = snap.data ?? const <EcPickableEvidence>[];
+          if (items.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: PenText(
+                context.l10n.orderNoEvidence,
+                size: 13,
+                color: PenColors.mut,
+              ),
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final e in items)
+                _EvidencePickRow(
+                  label: e.label,
+                  time: e.time,
+                  isPhoto: e.isPhoto,
+                  picked: widget.picked.contains(e.id),
+                  onTap: () => widget.onToggle(e.id),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _EvidencePickRow extends StatelessWidget {
+  const _EvidencePickRow({
+    required this.label,
+    required this.time,
+    required this.picked,
+    required this.onTap,
+    this.isPhoto = false,
+  });
+
+  final bool isPhoto;
+  final String label;
+  final String time;
+  final bool picked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: PenBox(
+      width: double.infinity,
+      axis: PenAxis.row,
+      gap: 10,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      children: [
+        Icon(
+          isPhoto ? LucideIcons.image : LucideIcons.video,
+          size: 17,
+          color: PenColors.primary,
+        ),
+        Expanded(
+          child: PenText(
+            label,
+            size: 14,
+            color: PenColors.ink,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        PenText(time, size: 12, color: PenColors.mut, softWrap: false),
+        Icon(
+          picked ? LucideIcons.squareCheckBig : LucideIcons.square,
+          size: 20,
+          color: picked ? PenColors.primary : PenColors.mut,
+        ),
+      ],
+    ),
+  );
+}
+
 class _OrderTile extends StatelessWidget {
-  const _OrderTile({required this.order, this.platform, this.onTap});
+  const _OrderTile({
+    required this.order,
+    this.platform,
+    this.onTap,
+    this.expandable = false,
+    this.expanded = false,
+  });
   final EcOrderRow order;
   final String? platform;
   final VoidCallback? onTap;
+
+  /// Đang ở chế độ chọn bằng chứng để gộp link: mũi tên chỉ XUỐNG, vì chạm vào
+  /// hàng là bung nội dung ngay tại chỗ chứ không rời khỏi danh sách.
+  final bool expandable;
+  final bool expanded;
 
   @override
   Widget build(BuildContext context) {
@@ -4565,8 +4863,10 @@ class _OrderTile extends StatelessWidget {
                 ),
               ],
             ),
-          const Icon(
-            LucideIcons.chevronRight,
+          Icon(
+            expandable
+                ? (expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown)
+                : LucideIcons.chevronRight,
             size: 19,
             color: PenColors.mut,
           ),
