@@ -157,6 +157,7 @@ class EcUploadQueue extends ChangeNotifier {
     String? shopId,
     int? durationSeconds,
     String? samplesJson,
+    DateTime? capturedAt,
   }) async {
     final dir = await _evidenceDir();
     final id = DateTime.now().microsecondsSinceEpoch.toString();
@@ -177,7 +178,14 @@ class EcUploadQueue extends ChangeNotifier {
       tracking: tracking,
       type: type,
       filePath: stored,
-      createdAt: DateTime.now(),
+      // Mốc BẤM QUAY, không phải giờ xếp hàng.
+      //
+      // Xếp hàng xảy ra sau khi đã quay xong, remux xong và nung chữ xong —
+      // với clip 2 phút trên máy tầm trung là lệch 3–5 phút. Máy chủ lấy mốc
+      // này làm đồng hồ chạy trên trang hồ sơ, nên nó đá nhau với chính chữ
+      // app đã nung lên cùng khung hình đó. Hai đồng hồ lệch nhau trên một
+      // khung là thứ đối phương chỉ vào đầu tiên khi tranh chấp.
+      createdAt: capturedAt ?? DateTime.now(),
       shopId: shopId,
       durationSeconds: durationSeconds,
       samplesJson: samplesJson,

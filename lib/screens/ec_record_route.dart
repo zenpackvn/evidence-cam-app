@@ -117,6 +117,7 @@ class EcRecordRoute extends StatefulWidget {
     String type,
     int durationSeconds,
     List<DeviceSample> samples,
+    DateTime startedAt,
   )?
   onSaved;
 
@@ -184,8 +185,15 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   late final RecordingSessionBloc _bloc = RecordingSessionBloc(
     camera: widget.camera ?? CameraService(),
     scanner: BillScanner(),
-    onClipSaved: (path, tracking, type, durationSeconds, samples) =>
-        widget.onSaved?.call(path, tracking, type, durationSeconds, samples),
+    onClipSaved: (path, tracking, type, durationSeconds, samples, startedAt) =>
+        widget.onSaved?.call(
+          path,
+          tracking,
+          type,
+          durationSeconds,
+          samples,
+          startedAt,
+        ),
     deviceConditions: widget.deviceConditions,
     verifyReturnCode: widget.verifyReturnCode,
     voiceAnnouncer: widget.voiceAnnouncer,

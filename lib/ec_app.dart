@@ -5323,23 +5323,32 @@ GoRouter _buildRouter(
                       onNavAccount: () => c.go('/account'),
                       onSettings: () => c.push('/type-sheet'),
                       deviceConditions: const PlatformDeviceConditions(),
-                      onSaved: (path, code, type, durationSeconds, samples) {
-                        queue.enqueue(
-                          tracking: code,
-                          type: type,
-                          filePath: path,
-                          shopId: shop.id,
-                          durationSeconds: durationSeconds,
-                          samplesJson: samples.isEmpty
-                              ? null
-                              : DeviceSample.encode(samples),
-                        );
-                        _analytics()?.trackClipRecorded(
-                          videoType: type,
-                          durationSeconds: durationSeconds,
-                        );
-                        _toast(c, c.l10n.toastVideoQueued);
-                      },
+                      onSaved:
+                          (
+                            path,
+                            code,
+                            type,
+                            durationSeconds,
+                            samples,
+                            startedAt,
+                          ) {
+                            queue.enqueue(
+                              tracking: code,
+                              type: type,
+                              filePath: path,
+                              shopId: shop.id,
+                              capturedAt: startedAt,
+                              durationSeconds: durationSeconds,
+                              samplesJson: samples.isEmpty
+                                  ? null
+                                  : DeviceSample.encode(samples),
+                            );
+                            _analytics()?.trackClipRecorded(
+                              videoType: type,
+                              durationSeconds: durationSeconds,
+                            );
+                            _toast(c, c.l10n.toastVideoQueued);
+                          },
                     );
                   },
                 ),

@@ -61,7 +61,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: EcRecordRoute(
             camera: camera,
-            onSaved: (path, tracking, type, durationSeconds, _) =>
+            onSaved: (path, tracking, type, durationSeconds, _, _) =>
                 savedPath = path,
           ),
         ),
@@ -103,7 +103,7 @@ void main() {
               requested = code == 'SPXVN999';
               return false;
             },
-            onSaved: (_, _, _, _, _) => saved = true,
+            onSaved: (_, _, _, _, _, _) => saved = true,
           ),
         ),
       );
@@ -140,7 +140,7 @@ void main() {
           onRequestCode: () async => 'SPXVN001',
           onRequestType: _picksType,
           onBack: () => left = true,
-          onSaved: (path, tracking, _, _, _) {
+          onSaved: (path, tracking, _, _, _, _) {
             savedPath = path;
             savedTracking = tracking;
           },

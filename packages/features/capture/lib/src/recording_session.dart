@@ -331,6 +331,7 @@ class RecordingSessionBloc
       String type,
       int durationSeconds,
       List<DeviceSample> samples,
+      DateTime startedAt,
     )
     onClipSaved,
     DeviceConditionSource? deviceConditions,
@@ -384,7 +385,16 @@ class RecordingSessionBloc
 
   final CameraService _camera;
   final BillScanner _scanner;
-  final void Function(String, String, String, int, List<DeviceSample>)
+
+  /// `(đường dẫn, mã đơn, loại, thời lượng, mẫu thiết bị, MỐC BẤM QUAY)`.
+  final void Function(
+    String,
+    String,
+    String,
+    int,
+    List<DeviceSample>,
+    DateTime,
+  )
   _onClipSaved;
 
   /// Null = không lấy mẫu điều kiện thiết bị (test widget, và mọi luồng chưa
@@ -1022,7 +1032,14 @@ class RecordingSessionBloc
       clockSeconds: durationSeconds,
     );
     if (stamped != streamable) await _deleteQuietly(streamable);
-    _onClipSaved(stamped, code, typeLabel, durationSeconds, _samples);
+    _onClipSaved(
+      stamped,
+      code,
+      typeLabel,
+      durationSeconds,
+      _samples,
+      startedAt,
+    );
   }
 
   Future<void> _deleteQuietly(String path) async {
@@ -1076,6 +1093,7 @@ class RecordingSessionBloc
             state.typeLabel,
             elapsedAtBackground.inSeconds,
             _samples,
+            _clipStartedAt ?? DateTime.now().subtract(elapsedAtBackground),
           );
         } on Object {
           // OS already tore the camera down mid-record; nothing recoverable.
