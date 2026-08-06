@@ -16,6 +16,7 @@ class _FakeUploader implements EcEvidenceUploader {
     required String tracking,
     required String type,
     String? shopId,
+    String? videoTypeId,
     int? capturedAt,
     int? durationSeconds,
     String? samplesJson,

@@ -20,11 +20,18 @@ abstract interface class EcEvidenceUploader {
   /// they must ride along with the bytes rather than be read at upload time:
   /// a clip queued offline uploads hours later, on a different battery and a
   /// different network.
+  ///
+  /// [videoTypeId] is the backend id of the chosen type, fixed at record time.
+  /// It must ride along for the same reason the samples do — by upload time the
+  /// type may have been renamed or deleted, so looking it up by [type] then
+  /// silently loses the clip's type. Null for photos and for clips queued
+  /// before this was carried, which fall back to the name lookup.
   Future<String> upload(
     File file, {
     required String tracking,
     required String type,
     String? shopId,
+    String? videoTypeId,
     int? capturedAt,
     int? durationSeconds,
     String? samplesJson,

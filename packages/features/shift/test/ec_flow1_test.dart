@@ -121,7 +121,7 @@ void main() {
 
     // Gõ sai định dạng thì backend vẫn tạo lời mời, nhưng mailer bỏ qua contact
     // không có '@' — lời mời treo mãi và không ai được báo gì.
-    testWidgets('màn mời chặn contact sai định dạng, không gọi API', (
+    testWidgets('màn mời chỉ nhận email, gửi đi bản viết thường', (
       tester,
     ) async {
       EcMemberInvite? sent;
@@ -139,20 +139,29 @@ void main() {
       await tester.tap(find.text('Thêm'));
       await tester.pump();
       expect(sent, isNull);
-      expect(
-        find.text('Nhập đúng một email hoặc một số điện thoại.'),
-        findsOne,
-      );
+      expect(find.text('Nhập đúng một địa chỉ email.'), findsOne);
 
+      // Số điện thoại KHÔNG còn được nhận: backend khớp lời mời theo email và
+      // chỉ email, nên một số gửi đi chỉ tạo ra lời mời treo vĩnh viễn.
       await tester.enterText(
         find.byType(CupertinoTextField),
         '+84 90 123 4567',
       );
       await tester.tap(find.text('Thêm'));
       await tester.pump();
-      // Gửi đi bản đã chuẩn hoá: `accounts.phone` lưu dạng 0…, so chuỗi thô là
-      // không khớp được tài khoản nào.
-      expect(sent?.contact, '0901234567');
+      expect(sent, isNull);
+
+      // Email lưu trong `accounts` là chữ thường, nên phải hạ chữ trước khi gửi
+      // — không thì SQLite không khớp được tài khoản nào.
+      await tester.enterText(
+        find.byType(CupertinoTextField),
+        'Ban@Email.com',
+      );
+      await tester.tap(find.text('Thêm'));
+      await tester.pump();
+      expect(sent?.contact, 'ban@email.com');
+      // Mã vai trò, không phải nhãn hiển thị: nhãn đổi theo ngôn ngữ máy.
+      expect(sent?.role, 'staff');
     });
 
     testWidgets('dragging the sheet down dismisses it', (tester) async {

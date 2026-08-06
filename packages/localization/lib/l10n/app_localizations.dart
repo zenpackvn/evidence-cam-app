@@ -674,6 +674,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t load the member list'**
   String get errorLoadMembers;
 
+  /// No description provided for @membersRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the shop owner and managers can see the member list'**
+  String get membersRestricted;
+
   /// No description provided for @errorLoadOrders.
   ///
   /// In en, this message translates to:
@@ -2111,26 +2117,68 @@ abstract class AppLocalizations {
   /// No description provided for @addMemberBody.
   ///
   /// In en, this message translates to:
-  /// **'Enter the email or phone number of a registered account to add them to the shop.'**
+  /// **'Enter the email of a registered ZenPack account to add them to the shop.'**
   String get addMemberBody;
 
-  /// No description provided for @emailOrPhone.
+  /// No description provided for @emailLabel.
   ///
   /// In en, this message translates to:
-  /// **'Email or phone number'**
-  String get emailOrPhone;
+  /// **'Email'**
+  String get emailLabel;
 
-  /// No description provided for @contactRequired.
+  /// No description provided for @emailRequired.
   ///
   /// In en, this message translates to:
-  /// **'Enter an email or phone number.'**
-  String get contactRequired;
+  /// **'Enter an email address.'**
+  String get emailRequired;
 
-  /// No description provided for @contactInvalid.
+  /// No description provided for @emailInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Enter one valid email address or phone number.'**
-  String get contactInvalid;
+  /// **'Enter one valid email address.'**
+  String get emailInvalid;
+
+  /// No description provided for @inviteRoleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get inviteRoleLabel;
+
+  /// No description provided for @roleStaffDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Record and view their own clips only'**
+  String get roleStaffDesc;
+
+  /// No description provided for @roleManagerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Full control of the shop'**
+  String get roleManagerDesc;
+
+  /// No description provided for @errorInviteAccountNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This email has no ZenPack account yet. Ask them to sign up first, then invite again.'**
+  String get errorInviteAccountNotFound;
+
+  /// No description provided for @errorInviteAlreadyMember.
+  ///
+  /// In en, this message translates to:
+  /// **'They are already a member of this shop.'**
+  String get errorInviteAlreadyMember;
+
+  /// No description provided for @errorInviteAlreadyOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'That is the shop owner — no invite needed.'**
+  String get errorInviteAlreadyOwner;
+
+  /// No description provided for @errorInviteInvalidRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'That email isn\'t valid. Check it and send again.'**
+  String get errorInviteInvalidRequest;
 
   /// No description provided for @addMemberSubmit.
   ///
@@ -2708,6 +2756,18 @@ abstract class AppLocalizations {
   /// **'Size per file: {megabytes}'**
   String uploadSizeChanged(String megabytes);
 
+  /// Avatar file exceeds the backend's size cap.
+  ///
+  /// In en, this message translates to:
+  /// **'Name and phone saved. The {megabytes} MB profile photo is over the {limit} MB cap, so it didn\'t reach the server — pick a smaller image.'**
+  String avatarTooLarge(String megabytes, String limit);
+
+  /// Avatar upload failed for another reason; profile still saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Name and phone saved. The profile photo didn\'t reach the server: {reason}'**
+  String avatarUploadFailed(String reason);
+
   /// Shop detail / upload size cap (FR-21).
   ///
   /// In en, this message translates to:
@@ -2959,24 +3019,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Call support'**
   String get supportCall;
-
-  /// No description provided for @limitClampedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Your plan does not allow this'**
-  String get limitClampedTitle;
-
-  /// No description provided for @limitClampedBody.
-  ///
-  /// In en, this message translates to:
-  /// **'You chose {want} min but the system accepts at most {got} min, and saved {got} min. Upgrade your plan or contact support if you need more.'**
-  String limitClampedBody(String want, String got);
-
-  /// No description provided for @limitClampedByServer.
-  ///
-  /// In en, this message translates to:
-  /// **'Your plan allows at most {value} — the system lowered it to that'**
-  String limitClampedByServer(String value);
 
   /// No description provided for @sheetCustomMin.
   ///

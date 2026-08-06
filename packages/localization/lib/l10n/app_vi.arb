@@ -119,6 +119,7 @@
   "errorLoadShopMgmt": "Không tải được quản lý shop",
   "errorLoadShopDetail": "Không tải được chi tiết shop",
   "errorLoadMembers": "Không tải được danh sách thành viên",
+  "membersRestricted": "Chỉ chủ shop và quản lý xem được danh sách thành viên",
   "errorLoadOrders": "Không tải được đơn hàng",
   "errorLoadOrderDetail": "Không tải được chi tiết đơn",
   "noShopSelectedOrdersDetail": "Vui lòng chọn shop trước khi xem đơn hàng.",
@@ -381,10 +382,17 @@
   "deleteVideoTypeConfirm": "Xóa loại",
   "deleteVideoTypeNote": "(Chỉ xóa khi loại chưa có video nào)",
   "addMemberTitle": "Thêm thành viên",
-  "addMemberBody": "Nhập email hoặc số điện thoại của tài khoản đã đăng ký để thêm vào shop.",
-  "emailOrPhone": "Email hoặc số điện thoại",
-  "contactRequired": "Nhập email hoặc số điện thoại.",
-  "contactInvalid": "Nhập đúng một email hoặc một số điện thoại.",
+  "addMemberBody": "Nhập email của tài khoản ZenPack đã đăng ký để thêm vào shop.",
+  "emailLabel": "Email",
+  "emailRequired": "Nhập email.",
+  "emailInvalid": "Nhập đúng một địa chỉ email.",
+  "inviteRoleLabel": "Vai trò",
+  "roleStaffDesc": "Chỉ quay + xem video mình quay",
+  "roleManagerDesc": "Toàn quyền trong shop",
+  "errorInviteAccountNotFound": "Email này chưa có tài khoản ZenPack. Bảo họ đăng ký trước rồi mời lại.",
+  "errorInviteAlreadyMember": "Người này đã là thành viên của shop.",
+  "errorInviteAlreadyOwner": "Đây là chủ shop, không cần mời.",
+  "errorInviteInvalidRequest": "Email không hợp lệ. Kiểm tra lại rồi gửi.",
   "addMemberSubmit": "Thêm",
   "setAsManager": "Đặt làm Quản lý shop",
   "setAsStaff": "Đặt làm Nhân viên",
@@ -760,6 +768,27 @@
       }
     }
   },
+  "avatarTooLarge": "Đã lưu tên và SĐT. Ảnh đại diện {megabytes} MB vượt trần {limit} MB nên chưa lên máy chủ — chọn ảnh nhỏ hơn.",
+  "@avatarTooLarge": {
+    "description": "Avatar file exceeds the backend's size cap.",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "avatarUploadFailed": "Đã lưu tên và SĐT. Ảnh đại diện chưa lên máy chủ: {reason}",
+  "@avatarUploadFailed": {
+    "description": "Avatar upload failed for another reason; profile still saved.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "fileOverUploadCap": "Tệp {megabytes} MB — vượt trần {limit} MB của shop nên chưa đính. Nâng trần trong Cài đặt shop rồi thử lại.",
   "@fileOverUploadCap": {
     "description": "Shop detail / upload size cap (FR-21).",
@@ -862,26 +891,6 @@
   "supportFacebook": "Nhắn Facebook",
   "supportZalo": "Nhắn Zalo",
   "supportCall": "Gọi hỗ trợ",
-  "limitClampedTitle": "Gói hiện tại không cho mức này",
-  "limitClampedBody": "Bạn chọn {want} phút nhưng hệ thống chỉ chấp nhận tối đa {got} phút, và đã lưu ở mức {got} phút. Nâng gói hoặc liên hệ hỗ trợ nếu cần mức cao hơn.",
-  "@limitClampedBody": {
-    "placeholders": {
-      "want": {
-        "type": "String"
-      },
-      "got": {
-        "type": "String"
-      }
-    }
-  },
-  "limitClampedByServer": "Gói hiện tại chỉ cho tối đa {value} — hệ thống đã hạ về mức này",
-  "@limitClampedByServer": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "sheetCustomMin": "Nhập từ {min} {unit} trở lên",
   "@sheetCustomMin": {
     "placeholders": {

@@ -1726,6 +1726,7 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onDeleteType,
     this.onAddType,
     this.membersError = false,
+    this.membersUnavailable = false,
     this.onRetryMembers,
     this.readOnly = false,
     super.key,
@@ -1750,6 +1751,13 @@ class EcShopDetailScreen extends StatelessWidget {
   /// được. Bật cờ này thì phần thành viên báo lỗi kèm nút thử lại, phần còn
   /// lại của màn hình vẫn dùng bình thường.
   final bool membersError;
+
+  /// Vai trò hiện tại không được xem danh sách thành viên.
+  ///
+  /// Khác hẳn [membersError]: đây không phải hỏng mà là không có quyền, nên
+  /// không có nút thử lại — bấm bao nhiêu lần cũng vẫn 403. Nhân viên thấy một
+  /// dòng nói rõ vì sao trống, thay vì một khối lỗi mời họ thử lại mãi mãi.
+  final bool membersUnavailable;
   final VoidCallback? onRetryMembers;
   final List<EcVideoType> videoTypes;
   final String resolution;
@@ -1819,8 +1827,17 @@ class EcShopDetailScreen extends StatelessWidget {
               icon: LucideIcons.users,
               label: l10n.sectionMembers,
               children: [
-                if (membersError)
-                  _MembersErrorRow(onRetry: onRetryMembers)
+                if (membersUnavailable)
+                  _MembersNoticeRow(
+                    icon: LucideIcons.lock,
+                    message: l10n.membersRestricted,
+                  )
+                else if (membersError)
+                  _MembersNoticeRow(
+                    icon: LucideIcons.triangleAlert,
+                    message: l10n.errorLoadMembers,
+                    onRetry: onRetryMembers,
+                  )
                 else
                   for (var i = 0; i < members.length; i++) ...[
                     if (i > 0)
@@ -2102,9 +2119,17 @@ class _PenSectionCard extends StatelessWidget {
 /// Chỗ của danh sách thành viên khi đọc hỏng — nói rõ là chưa tải được, kèm
 /// đường thử lại. Thà thừa một dòng chữ còn hơn để trống và bị đọc thành
 /// "cửa hàng này không có ai".
-class _MembersErrorRow extends StatelessWidget {
-  const _MembersErrorRow({this.onRetry});
+/// Dòng thay chỗ danh sách thành viên: đọc hỏng (có [onRetry]) hoặc không đủ
+/// quyền để đọc (không có).
+class _MembersNoticeRow extends StatelessWidget {
+  const _MembersNoticeRow({
+    required this.icon,
+    required this.message,
+    this.onRetry,
+  });
 
+  final IconData icon;
+  final String message;
   final VoidCallback? onRetry;
 
   @override
@@ -2117,10 +2142,10 @@ class _MembersErrorRow extends StatelessWidget {
       cross: CrossAxisAlignment.center,
       padding: const EdgeInsets.symmetric(vertical: 12),
       children: [
-        const Icon(LucideIcons.triangleAlert, size: 20, color: PenColors.mut),
+        Icon(icon, size: 20, color: PenColors.mut),
         Expanded(
           child: PenText(
-            l10n.errorLoadMembers,
+            message,
             size: 14,
             color: PenColors.mut,
             lineHeight: 1.4,
@@ -2658,8 +2683,8 @@ class EcConfirmDeleteScreen extends StatelessWidget {
   }
 }
 
-/// InviteMember — dialog to add an existing user to the shop by email/phone
-/// with a role. Fills the member control that previously had no destination.
+/// InviteMember — dialog to add an existing user to the shop by email with a
+/// role. Fills the member control that previously had no destination.
 class EcInviteMemberScreen extends StatefulWidget {
   const EcInviteMemberScreen({
     this.contactController,
@@ -2679,7 +2704,12 @@ class EcInviteMemberScreen extends StatefulWidget {
 }
 
 class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
-  String _role = 'Nhân viên';
+  /// Mã vai trò backend hiểu, KHÔNG phải nhãn hiển thị.
+  ///
+  /// Giữ nhãn tiếng Việt ở đây rồi suy ngược ra mã bằng `contains('Quản lý')`
+  /// là máy để tiếng Anh thì gán nhầm ai cũng thành nhân viên. Nhãn là thứ
+  /// dịch được; mã thì không.
+  String _role = 'staff';
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -2702,7 +2732,7 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
           style: _t(14, FontWeight.w400, BrandColors.mut),
         ),
         _Field(
-          label: context.l10n.emailOrPhone,
+          label: context.l10n.emailLabel,
           hint: 'ban@email.com',
           controller: widget.contactController,
           keyboardType: TextInputType.emailAddress,
@@ -2710,24 +2740,25 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
           // giờ tới được ai — chặn ngay tại đây thay vì để nó chết âm thầm.
           validator: (value) {
             final contact = (value ?? '').trim();
-            if (contact.isEmpty) return context.l10n.contactRequired;
-            return isInviteContact(contact)
-                ? null
-                : context.l10n.contactInvalid;
+            if (contact.isEmpty) return context.l10n.emailRequired;
+            return isInviteContact(contact) ? null : context.l10n.emailInvalid;
           },
         ),
-        Text('Vai trò', style: _t(14, FontWeight.w500, BrandColors.ink)),
-        _RoleOption(
-          label: 'Nhân viên',
-          desc: 'Chỉ quay + xem video mình quay',
-          selected: _role == 'Nhân viên',
-          onTap: () => setState(() => _role = 'Nhân viên'),
+        Text(
+          context.l10n.inviteRoleLabel,
+          style: _t(14, FontWeight.w500, BrandColors.ink),
         ),
         _RoleOption(
-          label: 'Quản lý shop',
-          desc: 'Toàn quyền trong shop',
-          selected: _role == 'Quản lý shop',
-          onTap: () => setState(() => _role = 'Quản lý shop'),
+          label: context.l10n.roleStaff,
+          desc: context.l10n.roleStaffDesc,
+          selected: _role == 'staff',
+          onTap: () => setState(() => _role = 'staff'),
+        ),
+        _RoleOption(
+          label: context.l10n.roleManager,
+          desc: context.l10n.roleManagerDesc,
+          selected: _role == 'manager',
+          onTap: () => setState(() => _role = 'manager'),
         ),
         Row(
           children: [
@@ -2765,7 +2796,11 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
 class EcMemberInvite {
   const EcMemberInvite(this.contact, this.role);
 
+  /// Email đã viết thường, sẵn sàng gửi lên backend.
   final String contact;
+
+  /// Mã vai trò backend hiểu: `staff` hoặc `manager`. Không phải nhãn hiển
+  /// thị — nhãn đổi theo ngôn ngữ máy, mã thì không.
   final String role;
 }
 
@@ -2955,15 +2990,27 @@ class EcClipDurationSheetScreen extends StatelessWidget {
   /// worse than a short one.
   static const _marks = [1, 2, 3, 5, 8, 10, 15, 20, 25];
 
-  /// Các mốc gợi ý, KHÔNG chặn theo gói.
+  /// Trần thời lượng của gói, tính bằng phút.
   ///
-  /// Shop trả tiền theo dung lượng thực dùng nên quay bao lâu là quyền của họ;
-  /// lọc bớt mốc chỉ khiến người cần mức cao không đặt nổi.
+  /// Khác trần dung lượng: dung lượng thì shop trả bao nhiêu dùng bấy nhiêu nên
+  /// không chặn, còn thời lượng clip là thứ gói quy định và backend từ chối
+  /// thẳng. Chặn ở đây thì người dùng thấy con số được phép; không chặn thì họ
+  /// thấy một lỗi mạng không liên quan gì tới việc họ vừa làm.
+  int get _planMaxMinutes => (budget.planMaxSeconds / 60).floor();
+
+  /// Các mốc gợi ý, cắt theo trần gói.
   List<int> get _options {
     final marks = [..._marks];
     final recommended = (budget.recommendedSeconds / 60).round();
     if (recommended > 0 && !marks.contains(recommended)) marks.add(recommended);
-    return marks..sort();
+    final max = _planMaxMinutes;
+    // Mốc vượt trần gói bị bỏ hẳn, không phải làm mờ: bấm được mà máy chủ từ
+    // chối thì tệ hơn không hiện. Trần bằng 0 (backend chưa trả) nghĩa là chưa
+    // biết, nên không cắt gì cả.
+    return [
+      for (final m in marks)
+        if (max <= 0 || m <= max) m,
+    ]..sort();
   }
 
   @override
@@ -2996,6 +3043,11 @@ class EcClipDurationSheetScreen extends StatelessWidget {
           label: l10n.clipDurationCustomLabel,
           unit: l10n.unitMinutes,
           min: 1,
+          // Trần của GÓI, thứ backend thật sự enforce. Gõ quá số này thì máy
+          // chủ từ chối, và app dịch cái từ chối đó thành "kiểm tra mạng" —
+          // nên chặn ở đây, kèm đúng con số được phép. 0 nghĩa là backend chưa
+          // trả trần nào, lúc đó đừng bịa ra một cái.
+          max: _planMaxMinutes > 0 ? _planMaxMinutes : null,
           initial: selectedMinutes,
           onSubmit: (m) => onSelect?.call(m * 60),
         ),
@@ -3112,15 +3164,23 @@ class _EcSheetCustomInput extends StatefulWidget {
     required this.min,
     required this.initial,
     required this.onSubmit,
+    this.max,
   });
 
   final String label;
   final String unit;
 
-  /// Giá trị nhỏ nhất chấp nhận được. **Không có trần**: shop trả tiền theo
-  /// dung lượng thực dùng, nên đặt bao nhiêu là quyền của họ — hết MB thì
-  /// backend báo lúc upload, chứ chặn sẵn ở đây là cản người muốn trả thêm.
+  /// Giá trị nhỏ nhất chấp nhận được.
   final int min;
+
+  /// Giá trị lớn nhất, hoặc `null` khi thật sự không có trần.
+  ///
+  /// Dung lượng tệp thì không có trần: shop trả tiền theo dung lượng thực dùng
+  /// nên đặt bao nhiêu là quyền của họ. Thời lượng clip thì CÓ — gói quy định
+  /// (`plan_max_clip_seconds`) và backend từ chối số vượt. Không kẹp ở đây thì
+  /// người dùng gõ 60 phút, ăn một lỗi trông y như lỗi mạng, và không có gì
+  /// nói cho họ biết con số nào mới được.
+  final int? max;
   final int initial;
 
   /// Nhận giá trị đã hợp lệ, theo đúng đơn vị hiển thị (phút hoặc MB).
@@ -3144,12 +3204,18 @@ class _EcSheetCustomInputState extends State<_EcSheetCustomInput> {
 
   void _submit() {
     final value = int.tryParse(_controller.text.trim());
-    if (value == null || value < widget.min) {
+    final max = widget.max;
+    if (value == null || value < widget.min || (max != null && value > max)) {
+      // Có trần thì nêu CẢ khoảng: người gõ quá cần biết số nào mới được, chứ
+      // "nhập từ 1 trở lên" không nói gì về việc 60 vừa bị từ chối.
       setState(
-        () => _error = context.l10n.sheetCustomMin(
-          '${widget.min}',
-          widget.unit,
-        ),
+        () => _error = max == null
+            ? context.l10n.sheetCustomMin('${widget.min}', widget.unit)
+            : context.l10n.sheetCustomRange(
+                '${widget.min}',
+                '$max',
+                widget.unit,
+              ),
       );
       return;
     }
@@ -3387,8 +3453,10 @@ class EcOrderRow {
   final String type;
   final int videoCount;
 
-  /// Mốc thời gian đơn được tạo, epoch ms. Cần cho việc lọc theo khoảng thời
-  /// gian ngay tại chỗ — [time] chỉ có `HH:mm` nên không suy ra ngày được.
+  /// Lần quay gần nhất (đơn chưa có clip thì lùi về lúc tạo đơn), epoch ms.
+  /// Dùng cho nhãn ngày trên dòng — [time] chỉ có `HH:mm` nên không suy ra
+  /// ngày được. KHÔNG phải trục chip thời gian lọc theo: chip lọc `created_at`,
+  /// và việc đó do server làm.
   final int? capturedAtMs;
   final int errorCount;
   final int pendingCount;
@@ -3627,9 +3695,12 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
 
   /// Epoch-ms bounds for a window, as `(from, to)`.
   ///
+  /// Bounds apply to the order's **creation** time — that is what the backend
+  /// compares (`orderScope`), and the app follows it so the same chip means the
+  /// same list here and on the web console.
+  ///
   /// Day-shaped windows ("today", "yesterday", a picked date) snap to local
-  /// midnight so they mean the same thing as the date the rows are grouped
-  /// under; the rolling ones stay relative to the current instant. Only the
+  /// midnight; the rolling ones stay relative to the current instant. Only the
   /// closed windows get a `to` — the rest run up to now.
   ///
   /// `to` is the last millisecond *inside* the day rather than the next

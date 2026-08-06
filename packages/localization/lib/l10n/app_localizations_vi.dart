@@ -323,6 +323,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get errorLoadMembers => 'Không tải được danh sách thành viên';
 
   @override
+  String get membersRestricted =>
+      'Chỉ chủ shop và quản lý xem được danh sách thành viên';
+
+  @override
   String get errorLoadOrders => 'Không tải được đơn hàng';
 
   @override
@@ -1122,16 +1126,39 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get addMemberBody =>
-      'Nhập email hoặc số điện thoại của tài khoản đã đăng ký để thêm vào shop.';
+      'Nhập email của tài khoản ZenPack đã đăng ký để thêm vào shop.';
 
   @override
-  String get emailOrPhone => 'Email hoặc số điện thoại';
+  String get emailLabel => 'Email';
 
   @override
-  String get contactRequired => 'Nhập email hoặc số điện thoại.';
+  String get emailRequired => 'Nhập email.';
 
   @override
-  String get contactInvalid => 'Nhập đúng một email hoặc một số điện thoại.';
+  String get emailInvalid => 'Nhập đúng một địa chỉ email.';
+
+  @override
+  String get inviteRoleLabel => 'Vai trò';
+
+  @override
+  String get roleStaffDesc => 'Chỉ quay + xem video mình quay';
+
+  @override
+  String get roleManagerDesc => 'Toàn quyền trong shop';
+
+  @override
+  String get errorInviteAccountNotFound =>
+      'Email này chưa có tài khoản ZenPack. Bảo họ đăng ký trước rồi mời lại.';
+
+  @override
+  String get errorInviteAlreadyMember => 'Người này đã là thành viên của shop.';
+
+  @override
+  String get errorInviteAlreadyOwner => 'Đây là chủ shop, không cần mời.';
+
+  @override
+  String get errorInviteInvalidRequest =>
+      'Email không hợp lệ. Kiểm tra lại rồi gửi.';
 
   @override
   String get addMemberSubmit => 'Thêm';
@@ -1479,6 +1506,16 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String avatarTooLarge(String megabytes, String limit) {
+    return 'Đã lưu tên và SĐT. Ảnh đại diện $megabytes MB vượt trần $limit MB nên chưa lên máy chủ — chọn ảnh nhỏ hơn.';
+  }
+
+  @override
+  String avatarUploadFailed(String reason) {
+    return 'Đã lưu tên và SĐT. Ảnh đại diện chưa lên máy chủ: $reason';
+  }
+
+  @override
   String fileOverUploadCap(String megabytes, String limit) {
     return 'Tệp $megabytes MB — vượt trần $limit MB của shop nên chưa đính. Nâng trần trong Cài đặt shop rồi thử lại.';
   }
@@ -1612,19 +1649,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get supportCall => 'Gọi hỗ trợ';
-
-  @override
-  String get limitClampedTitle => 'Gói hiện tại không cho mức này';
-
-  @override
-  String limitClampedBody(String want, String got) {
-    return 'Bạn chọn $want phút nhưng hệ thống chỉ chấp nhận tối đa $got phút, và đã lưu ở mức $got phút. Nâng gói hoặc liên hệ hỗ trợ nếu cần mức cao hơn.';
-  }
-
-  @override
-  String limitClampedByServer(String value) {
-    return 'Gói hiện tại chỉ cho tối đa $value — hệ thống đã hạ về mức này';
-  }
 
   @override
   String sheetCustomMin(String min, String unit) {

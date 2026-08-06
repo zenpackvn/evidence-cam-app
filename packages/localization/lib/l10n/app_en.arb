@@ -151,6 +151,7 @@
   "errorLoadShopMgmt": "Couldn't load shop management",
   "errorLoadShopDetail": "Couldn't load shop details",
   "errorLoadMembers": "Couldn't load the member list",
+  "membersRestricted": "Only the shop owner and managers can see the member list",
   "errorLoadOrders": "Couldn't load orders",
   "errorLoadOrderDetail": "Couldn't load order details",
   "noShopSelectedOrdersDetail": "Please choose a shop before viewing orders.",
@@ -592,10 +593,17 @@
   "deleteVideoTypeConfirm": "Delete type",
   "deleteVideoTypeNote": "(Only deletable while the type has no videos)",
   "addMemberTitle": "Add member",
-  "addMemberBody": "Enter the email or phone number of a registered account to add them to the shop.",
-  "emailOrPhone": "Email or phone number",
-  "contactRequired": "Enter an email or phone number.",
-  "contactInvalid": "Enter one valid email address or phone number.",
+  "addMemberBody": "Enter the email of a registered ZenPack account to add them to the shop.",
+  "emailLabel": "Email",
+  "emailRequired": "Enter an email address.",
+  "emailInvalid": "Enter one valid email address.",
+  "inviteRoleLabel": "Role",
+  "roleStaffDesc": "Record and view their own clips only",
+  "roleManagerDesc": "Full control of the shop",
+  "errorInviteAccountNotFound": "This email has no ZenPack account yet. Ask them to sign up first, then invite again.",
+  "errorInviteAlreadyMember": "They are already a member of this shop.",
+  "errorInviteAlreadyOwner": "That is the shop owner — no invite needed.",
+  "errorInviteInvalidRequest": "That email isn't valid. Check it and send again.",
   "addMemberSubmit": "Add",
   "setAsManager": "Set as shop manager",
   "setAsStaff": "Set as staff",
@@ -1006,6 +1014,27 @@
       }
     }
   },
+  "avatarTooLarge": "Name and phone saved. The {megabytes} MB profile photo is over the {limit} MB cap, so it didn't reach the server — pick a smaller image.",
+  "@avatarTooLarge": {
+    "description": "Avatar file exceeds the backend's size cap.",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "avatarUploadFailed": "Name and phone saved. The profile photo didn't reach the server: {reason}",
+  "@avatarUploadFailed": {
+    "description": "Avatar upload failed for another reason; profile still saved.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "fileOverUploadCap": "File is {megabytes} MB — over the shop's {limit} MB cap, not attached. Raise the cap in shop settings and try again.",
   "@fileOverUploadCap": {
     "description": "Shop detail / upload size cap (FR-21).",
@@ -1108,26 +1137,6 @@
   "supportFacebook": "Message on Facebook",
   "supportZalo": "Message on Zalo",
   "supportCall": "Call support",
-  "limitClampedTitle": "Your plan does not allow this",
-  "limitClampedBody": "You chose {want} min but the system accepts at most {got} min, and saved {got} min. Upgrade your plan or contact support if you need more.",
-  "@limitClampedBody": {
-    "placeholders": {
-      "want": {
-        "type": "String"
-      },
-      "got": {
-        "type": "String"
-      }
-    }
-  },
-  "limitClampedByServer": "Your plan allows at most {value} — the system lowered it to that",
-  "@limitClampedByServer": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "sheetCustomMin": "Enter {min} {unit} or more",
   "@sheetCustomMin": {
     "placeholders": {

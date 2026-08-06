@@ -168,18 +168,24 @@ class EcBilling {
     }
   }
 
-  /// Chờ backend áp xong giao dịch, bằng cách hỏi lại cho tới khi gói đổi.
+  /// Chờ backend áp xong giao dịch, bằng cách hỏi lại cho tới khi quyền dùng
+  /// đổi.
   ///
   /// Cần thiết vì cửa hàng báo "đã mua" trước khi RevenueCat kịp gọi webhook về
   /// backend. Không chờ thì màn hình vẫn hiện gói cũ ngay sau khi trả tiền —
   /// người dùng tưởng mất tiền.
   ///
-  /// Trả về `true` nếu thấy gói đổi, `false` nếu hết thời gian chờ. Hết thời
-  /// gian **không** có nghĩa là mua hỏng: webhook có thể về muộn hơn, nên phía
-  /// gọi hãy báo "đang xử lý" chứ đừng báo thất bại.
-  static Future<bool> waitForPlanChange({
-    required Future<String> Function() fetchPlanCode,
-    required String previousPlanCode,
+  /// So [EntitlementDto.signature] chứ KHÔNG so riêng mã gói: mua lại đúng gói
+  /// đang dùng thì mã không đổi, chỉ ngày hết hạn đổi. Chờ mã gói là lượt gia
+  /// hạn nào cũng hết giờ rồi báo "đang xử lý" — đọc ra như thất bại, và mời
+  /// người vừa trả tiền trả thêm lần nữa.
+  ///
+  /// Trả về `true` nếu thấy quyền dùng đổi, `false` nếu hết thời gian chờ. Hết
+  /// thời gian **không** có nghĩa là mua hỏng: webhook có thể về muộn hơn, nên
+  /// phía gọi hãy báo "đang xử lý" chứ đừng báo thất bại.
+  static Future<bool> waitForEntitlementChange({
+    required Future<String> Function() fetchSignature,
+    required String previousSignature,
     Duration timeout = const Duration(seconds: 20),
     Duration interval = const Duration(seconds: 2),
     Future<void> Function(Duration)? sleep,
@@ -190,7 +196,7 @@ class EcBilling {
       await delay(interval);
       waited += interval;
       try {
-        if (await fetchPlanCode() != previousPlanCode) return true;
+        if (await fetchSignature() != previousSignature) return true;
       } on Object {
         // Mạng chập chờn giữa chừng không được làm hỏng cả vòng chờ; lần sau
         // hỏi lại. Chỉ hết thời gian mới bỏ cuộc.

@@ -324,6 +324,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorLoadMembers => 'Couldn\'t load the member list';
 
   @override
+  String get membersRestricted =>
+      'Only the shop owner and managers can see the member list';
+
+  @override
   String get errorLoadOrders => 'Couldn\'t load orders';
 
   @override
@@ -1126,16 +1130,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addMemberBody =>
-      'Enter the email or phone number of a registered account to add them to the shop.';
+      'Enter the email of a registered ZenPack account to add them to the shop.';
 
   @override
-  String get emailOrPhone => 'Email or phone number';
+  String get emailLabel => 'Email';
 
   @override
-  String get contactRequired => 'Enter an email or phone number.';
+  String get emailRequired => 'Enter an email address.';
 
   @override
-  String get contactInvalid => 'Enter one valid email address or phone number.';
+  String get emailInvalid => 'Enter one valid email address.';
+
+  @override
+  String get inviteRoleLabel => 'Role';
+
+  @override
+  String get roleStaffDesc => 'Record and view their own clips only';
+
+  @override
+  String get roleManagerDesc => 'Full control of the shop';
+
+  @override
+  String get errorInviteAccountNotFound =>
+      'This email has no ZenPack account yet. Ask them to sign up first, then invite again.';
+
+  @override
+  String get errorInviteAlreadyMember =>
+      'They are already a member of this shop.';
+
+  @override
+  String get errorInviteAlreadyOwner =>
+      'That is the shop owner — no invite needed.';
+
+  @override
+  String get errorInviteInvalidRequest =>
+      'That email isn\'t valid. Check it and send again.';
 
   @override
   String get addMemberSubmit => 'Add';
@@ -1484,6 +1513,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String avatarTooLarge(String megabytes, String limit) {
+    return 'Name and phone saved. The $megabytes MB profile photo is over the $limit MB cap, so it didn\'t reach the server — pick a smaller image.';
+  }
+
+  @override
+  String avatarUploadFailed(String reason) {
+    return 'Name and phone saved. The profile photo didn\'t reach the server: $reason';
+  }
+
+  @override
   String fileOverUploadCap(String megabytes, String limit) {
     return 'File is $megabytes MB — over the shop\'s $limit MB cap, not attached. Raise the cap in shop settings and try again.';
   }
@@ -1617,19 +1656,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get supportCall => 'Call support';
-
-  @override
-  String get limitClampedTitle => 'Your plan does not allow this';
-
-  @override
-  String limitClampedBody(String want, String got) {
-    return 'You chose $want min but the system accepts at most $got min, and saved $got min. Upgrade your plan or contact support if you need more.';
-  }
-
-  @override
-  String limitClampedByServer(String value) {
-    return 'Your plan allows at most $value — the system lowered it to that';
-  }
 
   @override
   String sheetCustomMin(String min, String unit) {

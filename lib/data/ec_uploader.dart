@@ -264,6 +264,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     required String tracking,
     required String type,
     String? shopId,
+    String? videoTypeId,
     int? capturedAt,
     int? durationSeconds,
     String? samplesJson,
@@ -275,6 +276,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
         tracking: tracking,
         type: type,
         shopId: shopId,
+        videoTypeId: videoTypeId,
         capturedAt: capturedAt,
         durationSeconds: durationSeconds,
         samplesJson: samplesJson,
@@ -298,6 +300,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     required String tracking,
     required String type,
     String? shopId,
+    String? videoTypeId,
     int? capturedAt,
     int? durationSeconds,
     String? samplesJson,
@@ -313,7 +316,9 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       capturedAt: captureTime,
     );
     final isPhoto = _isPhotoEvidence(file, type);
-    final videoTypeId = isPhoto ? null : await _videoTypeId(shopId, type);
+    final resolvedTypeId = isPhoto
+        ? null
+        : videoTypeId ?? await _videoTypeIdByName(shopId, type);
     final clipDuration = isPhoto ? null : durationSeconds;
     // Băm một lần ở đây thay vì lại ở bước complete: gửi kèm ngay từ presign
     // thì vân tay và bộ mẫu thiết bị bị chốt trong CÙNG một request, trước khi
@@ -328,7 +333,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
         orderId: order.id,
         kind: isPhoto ? 'photo' : 'video',
         capturedAt: captureTime,
-        videoTypeId: videoTypeId,
+        videoTypeId: resolvedTypeId,
         durationSeconds: clipDuration,
         samplesJson: samplesJson,
         sha256: fingerprint,
@@ -343,7 +348,7 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
       order.id,
       kind: isPhoto ? 'photo' : 'video',
       capturedAt: captureTime,
-      videoTypeId: videoTypeId,
+      videoTypeId: resolvedTypeId,
       device: await _readDeviceLabel(),
       durationSeconds: clipDuration,
       samplesJson: samplesJson,
@@ -555,7 +560,14 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     }
   }
 
-  Future<String?> _videoTypeId(String shopId, String type) async {
+  /// Lưới đỡ cho clip xếp hàng TRƯỚC khi task mang theo `videoTypeId`.
+  ///
+  /// Tra theo tên là cách hỏng đã biết: clip nằm hàng chờ hàng giờ, quản lý đổi
+  /// tên hoặc xoá loại trong lúc đó là lượt tra trượt, clip lên hệ thống không
+  /// có loại và rơi khỏi bộ lọc theo loại vĩnh viễn, không báo gì. Đường chính
+  /// giờ là id chốt lúc bấm quay; hàm này chỉ còn phục vụ những clip cũ đã nằm
+  /// sẵn trong hàng đợi lúc bản này cài đè lên.
+  Future<String?> _videoTypeIdByName(String shopId, String type) async {
     final key = _normalizeName(type);
     if (key.isEmpty) return null;
     try {

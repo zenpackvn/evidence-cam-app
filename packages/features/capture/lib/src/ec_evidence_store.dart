@@ -81,6 +81,7 @@ UploadTask taskFromEntity(EvidenceClipEntity e) => UploadTask(
   errorMessage: e.errorMessage,
   durationSeconds: e.durationSeconds,
   ownerUid: e.ownerUid,
+  videoTypeId: e.videoTypeId,
 );
 
 /// Maps the UI/queue model to a persisted row. id 0 + replace-on-conflict on
@@ -99,4 +100,5 @@ EvidenceClipEntity entityFromTask(UploadTask t) => EvidenceClipEntity(
   errorMessage: t.errorMessage,
   durationSeconds: t.durationSeconds,
   ownerUid: t.ownerUid,
+  videoTypeId: t.videoTypeId,
 );

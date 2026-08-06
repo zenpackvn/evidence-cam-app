@@ -309,33 +309,26 @@ class EcApi {
     }
   }
 
-  /// PUT thẳng nội dung file lên một URL đã ký sẵn.
+  /// Trần dung lượng ảnh đại diện backend nhận, khớp giới hạn web công bố.
+  static const avatarMaxBytes = 2 * 1000 * 1000;
+
+  /// Tải ảnh đại diện lên và trả về tài khoản đã cập nhật.
   ///
-  /// URL tuyệt đối nên Dio bỏ qua `baseUrl`; không gửi kèm header xác thực của
-  /// app vì chữ ký đã nằm trong chính URL, thêm vào chỉ khiến R2 từ chối.
-  Future<void> putFile(String uploadUrl, File file) async {
+  /// Gửi **raw bytes** lên `PUT /api/me/avatar`, đúng như web: backend tự lưu
+  /// R2 rồi trả account có `avatar_url` mới. Không có bước presign nào cả —
+  /// `POST /api/account/avatar/presign` mà bản trước gọi không tồn tại, nên
+  /// mọi lần đổi ảnh trên app ăn 404 và không bao giờ tới máy chủ.
+  Future<AccountDto> uploadAvatar(File file) async {
     final bytes = await file.readAsBytes();
-    await _dio.put<void>(
-      uploadUrl,
+    final res = await _dio.put<Map<String, dynamic>>(
+      '/api/me/avatar',
       data: Stream.fromIterable([bytes]),
       options: Options(
         headers: {Headers.contentLengthHeader: bytes.length},
         contentType: _avatarContentTypeOf(file.path),
       ),
     );
-  }
-
-  /// Xin chỗ tải ảnh đại diện lên.
-  ///
-  /// ponytail: endpoint này backend CHƯA mở. Hợp đồng mong đợi:
-  /// `POST /api/account/avatar/presign` với `{contentType}` và trả về
-  /// `{uploadUrl, publicUrl}` — cùng khuôn với presign bằng chứng.
-  Future<AvatarUploadDto> presignAvatar({required String contentType}) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      '/api/account/avatar/presign',
-      data: {'contentType': contentType},
-    );
-    return AvatarUploadDto.fromJson(res.data!);
+    return AccountDto.fromJson(res.data!);
   }
 
   Future<PresignDto> presignUpload(

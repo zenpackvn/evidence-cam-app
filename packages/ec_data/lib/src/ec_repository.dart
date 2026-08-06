@@ -5,13 +5,18 @@ import 'ec_models.dart';
 
 /// The seam screens read through. Production binds [RemoteEcRepository] once
 /// the Worker base URL is set; tests may bind [FakeEcRepository].
-/// Đoán `Content-Type` từ đuôi file — server cần biết để lưu đúng kiểu.
-String _avatarContentType(String path) {
-  final lower = path.toLowerCase();
-  if (lower.endsWith('.png')) return 'image/png';
-  if (lower.endsWith('.heic')) return 'image/heic';
-  if (lower.endsWith('.webp')) return 'image/webp';
-  return 'image/jpeg';
+/// Ảnh đại diện vượt trần backend nhận.
+///
+/// Kiểu riêng chứ không phải một chuỗi lỗi: bên gọi cần nói được ảnh nặng bao
+/// nhiêu và trần là bao nhiêu, chứ không chỉ "không lưu được".
+class AvatarTooLargeException implements Exception {
+  const AvatarTooLargeException(this.bytes, this.maxBytes);
+
+  final int bytes;
+  final int maxBytes;
+
+  @override
+  String toString() => 'AvatarTooLargeException($bytes > $maxBytes)';
 }
 
 abstract interface class EcRepository {
@@ -141,11 +146,23 @@ class RemoteEcRepository implements EcRepository {
 
   @override
   Future<String> uploadAvatar(String filePath) async {
-    final slot = await _api.presignAvatar(
-      contentType: _avatarContentType(filePath),
-    );
-    await _api.putFile(slot.uploadUrl, File(filePath));
-    return slot.publicUrl;
+    final file = File(filePath);
+    // Chặn tại chỗ thay vì để backend trả 413 — ảnh máy ảnh hiện đại vượt 2MB
+    // là chuyện thường, và một mã lỗi HTTP thì không nói cho ai biết phải chọn
+    // ảnh nhỏ hơn.
+    final bytes = await file.length();
+    if (bytes > EcApi.avatarMaxBytes) {
+      throw AvatarTooLargeException(bytes, EcApi.avatarMaxBytes);
+    }
+    final account = await _api.uploadAvatar(file);
+    final url = account.avatarUrl;
+    // Máy chủ nhận ảnh mà không trả địa chỉ đọc là hợp đồng hỏng, không phải
+    // "chưa có ảnh" — ném lên để bên gọi báo, thay vì ghi một URL rỗng đè lên
+    // ảnh cũ.
+    if (url == null || url.isEmpty) {
+      throw StateError('PUT /api/me/avatar did not return an avatar_url');
+    }
+    return url;
   }
 
   @override

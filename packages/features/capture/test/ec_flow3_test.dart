@@ -331,7 +331,7 @@ void main() {
             ...ecDefaultVideoTypes,
             EcVideoType(label: 'Cân hàng', icon: Icons.scale_outlined),
           ],
-          onSelectType: (label) => selected = label,
+          onSelectType: (type) => selected = type.label,
           onManageTypes: () => managed = true,
         ),
       );

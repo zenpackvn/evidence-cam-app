@@ -14,6 +14,7 @@ class AccountDto {
     this.name,
     this.phone,
     this.avatarUrl,
+    this.entitlement,
   });
 
   factory AccountDto.fromJson(Map<String, dynamic> j) => AccountDto(
@@ -22,6 +23,9 @@ class AccountDto {
     name: j['name'] as String?,
     phone: j['phone'] as String?,
     avatarUrl: j['avatar_url'] as String?,
+    entitlement: j['entitlement'] is Map<String, dynamic>
+        ? EntitlementDto.fromJson(j['entitlement'] as Map<String, dynamic>)
+        : null,
   );
 
   final String uid;
@@ -29,6 +33,49 @@ class AccountDto {
   final String? name;
   final String? phone;
   final String? avatarUrl;
+
+  /// Quyền dùng đang có hiệu lực, do backend tổng hợp từ mọi đường thanh toán.
+  /// `null` khi backend chưa trả trường này.
+  final EntitlementDto? entitlement;
+}
+
+/// Quyền dùng của tài khoản, đọc từ `GET /api/me`.
+///
+/// Web hỏi đúng chỗ này để biết một lượt thanh toán đã được ghi nhận chưa
+/// (`#/pay/:plan` poll 5 giây một lần), nên app dùng cùng nguồn.
+class EntitlementDto {
+  const EntitlementDto({
+    required this.planCode,
+    this.status,
+    this.currentPeriodEnd,
+  });
+
+  factory EntitlementDto.fromJson(Map<String, dynamic> j) => EntitlementDto(
+    planCode: (j['plan_code'] as String?) ?? 'free',
+    status: j['status'] as String?,
+    currentPeriodEnd: _intN(j['current_period_end']),
+  );
+
+  final String planCode;
+
+  /// `active` · `trialing` · `expired` …
+  final String? status;
+
+  /// Gói có hiệu lực tới lúc nào, epoch ms. `null` ở gói miễn phí và khi
+  /// backend không trả trường này.
+  ///
+  /// Đây là thứ DUY NHẤT đổi khi người dùng gia hạn đúng gói đang dùng — mã
+  /// gói thì không. Chờ mã gói đổi là lượt gia hạn nào cũng hết giờ rồi báo
+  /// "đang xử lý", đọc ra như thất bại và mời họ trả tiền lần nữa.
+  final int? currentPeriodEnd;
+
+  /// Chuỗi đại diện một trạng thái quyền dùng, để so trước/sau khi thanh toán.
+  ///
+  /// Gộp cả ba trường vì mỗi lượt mua chỉ đổi một số trong đó: nâng gói đổi
+  /// [planCode], gia hạn đổi [currentPeriodEnd], kích hoạt lại đổi [status].
+  /// Backend không trả [currentPeriodEnd] thì chuỗi này rơi về đúng phép so
+  /// theo mã gói như trước — không tốt hơn, nhưng cũng không tệ hơn.
+  String get signature => '$planCode|$status|$currentPeriodEnd';
 }
 
 class ShopDto {
@@ -515,24 +562,6 @@ class PaymentDto {
 
   /// Giao dịch thử của App Store sandbox — không phải tiền thật.
   final bool sandbox;
-}
-
-/// Chỗ tải ảnh đại diện lên, theo cùng cơ chế presign của bằng chứng: server
-/// cấp một URL ghi tạm, app PUT thẳng file lên đó, rồi dùng [publicUrl] làm
-/// địa chỉ hiển thị lâu dài.
-class AvatarUploadDto {
-  const AvatarUploadDto({required this.uploadUrl, required this.publicUrl});
-
-  factory AvatarUploadDto.fromJson(Map<String, dynamic> j) => AvatarUploadDto(
-    uploadUrl: j['uploadUrl'] as String,
-    publicUrl: j['publicUrl'] as String,
-  );
-
-  /// URL ghi một lần, app PUT nội dung ảnh lên đây.
-  final String uploadUrl;
-
-  /// URL đọc công khai, lưu vào hồ sơ Firebase và server.
-  final String publicUrl;
 }
 
 class PresignDto {

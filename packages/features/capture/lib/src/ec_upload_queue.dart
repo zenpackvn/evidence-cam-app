@@ -43,6 +43,7 @@ class UploadTask {
     this.durationSeconds,
     this.samplesJson,
     this.ownerUid,
+    this.videoTypeId,
   });
 
   /// Parses a task from the legacy `queue.json` format, used only by the
@@ -62,7 +63,13 @@ class UploadTask {
 
   final String id;
   final String tracking;
+
+  /// Nhãn loại video, để hiển thị trong hàng đợi.
   final String type;
+
+  /// Id loại video trên máy chủ, chốt lúc bấm quay. Xem
+  /// `EvidenceClipEntity.videoTypeId` — tên loại đổi được, id thì không.
+  final String? videoTypeId;
   final String filePath;
   final DateTime createdAt;
 
@@ -161,6 +168,7 @@ class EcUploadQueue extends ChangeNotifier {
     required String type,
     required String filePath,
     String? shopId,
+    String? videoTypeId,
     int? durationSeconds,
     String? samplesJson,
     DateTime? capturedAt,
@@ -194,6 +202,7 @@ class EcUploadQueue extends ChangeNotifier {
       // khung là thứ đối phương chỉ vào đầu tiên khi tranh chấp.
       createdAt: capturedAt ?? DateTime.now(),
       shopId: shopId,
+      videoTypeId: videoTypeId,
       durationSeconds: durationSeconds,
       samplesJson: samplesJson,
       ownerUid: ownerUid,
@@ -346,6 +355,7 @@ class EcUploadQueue extends ChangeNotifier {
             tracking: task.tracking,
             type: task.type,
             shopId: task.shopId,
+            videoTypeId: task.videoTypeId,
             capturedAt: task.createdAt.millisecondsSinceEpoch,
             durationSeconds: task.durationSeconds,
             samplesJson: task.samplesJson,

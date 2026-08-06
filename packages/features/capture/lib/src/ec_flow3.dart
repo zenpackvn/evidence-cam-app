@@ -2380,9 +2380,17 @@ class EcVideoType {
     required this.label,
     required this.icon,
     this.locked = false,
+    this.id,
   });
 
   final String label;
+
+  /// Id trên máy chủ. `null` cho các loại dựng sẵn ở client
+  /// ([ecDefaultVideoTypes]), thứ chỉ hiện khi chưa đọc được danh sách thật.
+  ///
+  /// Đi cùng clip qua hàng đợi: tên loại đổi được trong lúc clip còn chờ, id
+  /// thì không.
+  final String? id;
   final IconData icon;
 
   /// Built-in types are locked — they can't be renamed/removed (only
@@ -2428,7 +2436,10 @@ class EcTypeSheetScreen extends StatelessWidget {
 
   final List<EcVideoType> types;
   final String selectedType;
-  final ValueChanged<String>? onSelectType;
+
+  /// Nhận CẢ loại được chọn, không chỉ nhãn: bên gọi cần `id` để chốt vào clip
+  /// ngay lúc quay.
+  final ValueChanged<EcVideoType>? onSelectType;
   final VoidCallback? onManageTypes;
 
   /// Thoát mà không quay. Có mặt vì chọn loại là bắt buộc: không có lối này
@@ -2450,7 +2461,7 @@ class EcTypeSheetScreen extends StatelessWidget {
           child: _TypeSheetRow(
             type: type,
             selected: type.label == selectedType,
-            onTap: () => onSelectType?.call(type.label),
+            onTap: () => onSelectType?.call(type),
           ),
         ),
     ];

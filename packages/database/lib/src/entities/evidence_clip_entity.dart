@@ -28,6 +28,7 @@ class EvidenceClipEntity {
     this.errorMessage,
     this.durationSeconds,
     this.ownerUid,
+    this.videoTypeId,
   });
 
   /// ObjectBox primary key. Internal — never exposed to the UI. 0 means "new";
@@ -44,8 +45,19 @@ class EvidenceClipEntity {
   /// Order tracking code this clip belongs to.
   String tracking;
 
-  /// Video type label (e.g. "Đóng hàng").
+  /// Video type label (e.g. "Đóng hàng"). Chỉ để HIỂN THỊ.
   String type;
+
+  /// Id loại video trên máy chủ, chốt ngay lúc bấm quay.
+  ///
+  /// Tên loại không dùng để tra được: clip nằm hàng chờ hàng giờ, trong lúc đó
+  /// quản lý đổi tên hoặc xoá loại là lượt tra theo tên trượt, clip lên hệ
+  /// thống không có loại và biến mất khỏi bộ lọc theo loại — vĩnh viễn, không
+  /// báo gì. Id thì không đổi.
+  ///
+  /// Null ở hàng lưu trước khi có trường này (và ở ảnh đính kèm, thứ không có
+  /// loại video); lúc đó mới rơi về tra theo tên như cũ.
+  String? videoTypeId;
 
   /// Shop the clip belongs to; needed by the real backend uploader. Null on the
   /// offline path / older rows.

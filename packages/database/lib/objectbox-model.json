@@ -260,7 +260,7 @@
     },
     {
       "id": "6:610114076402941823",
-      "lastPropertyId": "14:4026688712373386948",
+      "lastPropertyId": "15:7119890452260594462",
       "name": "EvidenceClipEntity",
       "properties": [
         {
@@ -334,6 +334,11 @@
         {
           "id": "14:4026688712373386948",
           "name": "ownerUid",
+          "type": 9
+        },
+        {
+          "id": "15:7119890452260594462",
+          "name": "videoTypeId",
           "type": 9
         }
       ],

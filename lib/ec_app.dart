@@ -183,6 +183,13 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
   // and shop management. Null until a shop is picked.
   final ValueNotifier<EcShopSummary?> _selectedShop = ValueNotifier(null);
   final ValueNotifier<String> _recordingType = ValueNotifier('Đóng hàng');
+
+  /// Id máy chủ của loại đang chọn, chốt cùng lúc với [_recordingType].
+  ///
+  /// Đi cùng clip vào hàng đợi. Null khi chưa mở sheet lần nào (đang dùng loại
+  /// mặc định dựng sẵn ở client, thứ chưa có id) — lúc đó bên tải lên lùi về
+  /// tra theo tên như cũ.
+  final ValueNotifier<String?> _recordingTypeId = ValueNotifier(null);
   // Whether the "Ghi hình" tab is the one on screen right now — the 3-tab
   // shell keeps every branch mounted, so without this the camera keeps
   // streaming (and hands-free auto-recording on a scanned bill) even while
@@ -199,6 +206,7 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     _queue,
     _selectedShop,
     _recordingType,
+    _recordingTypeId,
     widget.pickAvatarPath ?? _pickImagePath,
     shareService: widget.shareService,
     videoPlayerService: widget.videoPlayerService,
@@ -229,6 +237,7 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     _queue.dispose();
     _selectedShop.dispose();
     _recordingType.dispose();
+    _recordingTypeId.dispose();
     super.dispose();
   }
 
@@ -931,15 +940,18 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
       }
 
       // Tải ảnh lên rồi ghi URL công khai vào hồ sơ Firebase — nhờ vậy ảnh
-      // theo tài khoản, đăng nhập máy nào cũng có. Tải hỏng (backend chưa mở
-      // endpoint, mất mạng) thì bỏ qua: tên và SĐT vẫn lưu được, ảnh vẫn hiện
-      // từ bản trên máy.
+      // theo tài khoản, đăng nhập máy nào cũng có. Tải hỏng (mất mạng, ảnh quá
+      // nặng) thì tên và SĐT vẫn lưu được và ảnh vẫn hiện từ bản trên máy —
+      // nhưng PHẢI báo. Bản trước nuốt im lặng, nên suốt thời gian endpoint
+      // không tồn tại không ai biết ảnh chưa bao giờ tới máy chủ.
       String? avatarUrl;
+      String? avatarError;
       if (avatarPath != null) {
         try {
           avatarUrl = await widget.repo.uploadAvatar(avatarPath);
-        } on Object {
+        } on Object catch (error) {
           avatarUrl = null;
+          avatarError = _avatarErrorText(context.l10n, error);
         }
       }
       await widget.auth.updateProfile(
@@ -954,7 +966,7 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
       );
       if (!mounted) return;
       context.pop();
-      _toast(context, context.l10n.toastInfoSaved);
+      _toast(context, avatarError ?? context.l10n.toastInfoSaved);
     } on Object catch (error) {
       if (mounted) _toast(context, _authErrorText(context.l10n, error));
     }
@@ -1112,6 +1124,14 @@ class _QuotaRouteState extends State<_QuotaRoute> {
     _analytics()?.trackPaywallViewed();
   }
 
+  /// Chữ ký quyền dùng dựng từ mỗi mã gói, dùng khi backend chưa trả
+  /// `entitlement` trong `/api/me`.
+  ///
+  /// Khuôn phải trùng [EntitlementDto.signature] để hai nguồn so được với nhau
+  /// — trộn hai khuôn là lần hỏi đầu tiên đã "khác" và mọi lượt mua đều báo
+  /// thành công, kể cả lượt webhook chưa về.
+  static String _entitlementSignature(String planCode) => '$planCode|null|null';
+
   /// Mở paywall RevenueCat rồi chờ backend áp xong giao dịch.
   ///
   /// Cửa hàng báo "đã mua" TRƯỚC khi RevenueCat kịp gọi webhook về backend, nên
@@ -1131,12 +1151,20 @@ class _QuotaRouteState extends State<_QuotaRoute> {
       // chặn việc mở màn: paywall tự hiện trạng thái "chưa tải được bảng giá".
       // Nút bấm không được dẫn tới ngõ cụt im lặng.
       var offers = const <EcPlanOffer>[];
+      // Ảnh chụp quyền dùng TRƯỚC khi mở paywall — mốc để biết webhook đã về
+      // hay chưa. Phải đọc ở đây chứ không sau khi mua: đọc sau thì có thể đã
+      // là trạng thái mới rồi, và phép so luôn ra "chưa đổi".
+      var beforeSignature = _entitlementSignature(currentPlanCode);
       if (billing != null) {
         try {
           // repo.account() có thể ném (mất mạng, token hết hạn). Không được để
           // nó chặn việc mở paywall — nút bấm mà không có gì xảy ra là lỗi tệ
           // hơn việc hiện bảng giá rỗng.
-          if (await billing.start((await widget.repo.account()).uid)) {
+          final account = await widget.repo.account();
+          beforeSignature =
+              account.entitlement?.signature ??
+              _entitlementSignature(currentPlanCode);
+          if (await billing.start(account.uid)) {
             offers = await billing.offers();
           }
         } on Object {
@@ -1158,10 +1186,18 @@ class _QuotaRouteState extends State<_QuotaRoute> {
         _toast(context, context.l10n.toastPurchaseFailed);
         return;
       }
-      final applied = await EcBilling.waitForPlanChange(
-        fetchPlanCode: () async =>
-            (await widget.repo.quota(shopId: widget.shopId)).planCode,
-        previousPlanCode: currentPlanCode,
+      final applied = await EcBilling.waitForEntitlementChange(
+        // `/api/me` chứ không phải `/api/quota`: chỉ chỗ này mang ngày hết hạn,
+        // thứ duy nhất đổi khi người dùng mua lại đúng gói đang dùng. Web poll
+        // đúng endpoint này vì cùng lý do.
+        fetchSignature: () async {
+          final account = await widget.repo.account();
+          return account.entitlement?.signature ??
+              _entitlementSignature(
+                (await widget.repo.quota(shopId: widget.shopId)).planCode,
+              );
+        },
+        previousSignature: beforeSignature,
       );
       if (!mounted) return;
       // Nạp lại quota TRƯỚC khi mở hộp thoại, để lúc người dùng bấm Đóng thì
@@ -2087,14 +2123,19 @@ CustomTransitionPage<void> _modalPage(
   child: child,
 );
 
-Future<String?> _showTypeSheet(
+/// Mở sheet chọn loại video và trả về loại đã chọn — **cả nhãn lẫn id**.
+///
+/// Trả nguyên đối tượng chứ không chỉ nhãn vì id phải được chốt vào clip ngay
+/// tại đây: đến lúc clip lên tới máy chủ thì loại có thể đã bị đổi tên hoặc
+/// xoá, và tra lại theo tên lúc đó là mất loại của clip vĩnh viễn.
+Future<capture.EcVideoType?> _showTypeSheet(
   BuildContext context, {
   required EcRepository repo,
   required String shopId,
   required String selectedType,
   bool mandatory = false,
 }) {
-  return showGeneralDialog<String>(
+  return showGeneralDialog<capture.EcVideoType>(
     context: context,
     barrierDismissible: !mandatory,
     barrierLabel: context.l10n.commonClose,
@@ -2115,10 +2156,17 @@ Future<String?> _showTypeSheet(
   );
 }
 
-const _manageVideoTypesResult = '__manage_video_types__';
+/// Người dùng bấm "Quản lý loại video" chứ không chọn loại nào.
+const _manageVideoTypesResult = capture.EcVideoType(
+  label: '__manage_video_types__',
+  icon: Icons.settings,
+);
 
 /// Người dùng bấm back trong sheet chọn loại: không quay nữa, sang tab Vận đơn.
-const _typeSheetBackResult = '__type_sheet_back__';
+const _typeSheetBackResult = capture.EcVideoType(
+  label: '__type_sheet_back__',
+  icon: Icons.arrow_back,
+);
 
 /// Index of the `/record` [StatefulShellBranch] within the 3-tab shell
 /// (home, record, account) — see `_buildRouter`'s `StatefulShellRoute`.
@@ -2830,7 +2878,12 @@ class _ShopDetailRoute extends StatefulWidget {
   final EcRepository repo;
   final EcShopSummary shop;
 
-  /// Nhân viên: xem được cửa hàng nhưng không sửa được gì trong đó.
+  /// Ép chế độ chỉ xem kể cả khi vai trò cho phép sửa.
+  ///
+  /// Vai trò tự nó đã khoá màn này (xem [isReadOnly]) — cờ này chỉ để bên gọi
+  /// khoá thêm, không bao giờ để mở khoá. Trước đây chiều ngược lại: mỗi call
+  /// site phải nhớ truyền `readOnly`, và chỗ quên là nhân viên đi thẳng vào
+  /// Mời thành viên qua sheet chọn loại video.
   final bool readOnly;
   final VoidCallback? onBack;
   final Future<void> Function(EcShopMember member)? onMemberMore;
@@ -2842,6 +2895,13 @@ class _ShopDetailRoute extends StatefulWidget {
   final Future<void> Function(EcVideoType type)? onEditType;
   final Future<void> Function(EcVideoType type)? onDeleteType;
   final Future<void> Function()? onAddType;
+
+  /// Vai trò trên [shop] có bị khoá sửa không.
+  ///
+  /// Tính ở đây chứ không ở call site: màn này có ba đường vào, quên một chỗ
+  /// là mở toang cả trang quản trị cho nhân viên — đúng thứ đã xảy ra với
+  /// đường vào từ sheet chọn loại video.
+  bool get isReadOnly => readOnly || _shopDetailIsReadOnly(shop);
 
   @override
   State<_ShopDetailRoute> createState() => _ShopDetailRouteState();
@@ -2864,21 +2924,29 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
   ///   sàn, độ phân giải thật, không có gì bịa ra.
   /// - **loại video** hỏng → rỗng, đúng như spec, và người dùng nhận ra ngay
   ///   vì màn này có sẵn nút thêm loại.
+  ///
+  /// Nhân viên thì KHÔNG hỏi thành viên: endpoint đó chỉ mở cho chủ/quản lý,
+  /// nên lượt gọi ấy chắc chắn 403. Gọi rồi báo hỏng là dựng ra một khối lỗi
+  /// kèm nút "Thử lại" không bao giờ thành công — hỏi là sai, không phải trả
+  /// lời sai.
   Future<_ShopDetailData> _load() async {
     final l10n = context.l10n;
+    final canReadMembers = !widget.isReadOnly;
     final results = await Future.wait([
       _orLog('shop', () => widget.repo.shop(widget.shop.id)),
-      _orLog('members', () => widget.repo.members(widget.shop.id)),
+      if (canReadMembers)
+        _orLog('members', () => widget.repo.members(widget.shop.id)),
       _orLog('video-types', () => widget.repo.videoTypes(widget.shop.id)),
     ]);
-    final members = results[1] as List<MemberDto>?;
+    final members = canReadMembers ? results[1] as List<MemberDto>? : null;
     return _ShopDetailData(
       shop: (results[0] as ShopDto?) ?? _snapshotDto(),
       members: (members ?? const [])
           .map((m) => _memberFromDto(l10n, m))
           .toList(),
-      membersFailed: members == null,
-      videoTypes: ((results[2] as List<VideoTypeDto>?) ?? const [])
+      membersFailed: canReadMembers && members == null,
+      membersRestricted: !canReadMembers,
+      videoTypes: ((results.last as List<VideoTypeDto>?) ?? const [])
           .map(_videoTypeFromDto)
           .toList(),
     );
@@ -2938,10 +3006,11 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
       ),
       builder: (context, detail) {
         _last = detail;
-        final locked = widget.readOnly || detail.shop.role == 'staff';
+        final locked = widget.isReadOnly || detail.shop.role == 'staff';
         return EcShopDetailScreen(
           readOnly: locked,
           membersError: detail.membersFailed,
+          membersUnavailable: detail.membersRestricted,
           onRetryMembers: _retry,
           shopName: detail.shop.name,
           platformLabel: _platformDisplayName(detail.shop.platform),
@@ -3007,11 +3076,16 @@ class _ShopDetailData {
     required this.members,
     required this.videoTypes,
     this.membersFailed = false,
+    this.membersRestricted = false,
   });
 
   /// Đọc thành viên hỏng — phân biệt với cửa hàng thật sự không có ai, thứ
   /// không tồn tại vì cửa hàng nào cũng có người tạo ra nó.
   final bool membersFailed;
+
+  /// Không hỏi thành viên vì vai trò không được phép — cũng không phải "không
+  /// có ai", nhưng khác hẳn [membersFailed]: thử lại không giúp được gì.
+  final bool membersRestricted;
 
   final ShopDto shop;
 
@@ -3159,7 +3233,7 @@ class _TypeSheetRoute extends StatefulWidget {
   final String shopId;
   final String selectedType;
   final VoidCallback onManageTypes;
-  final ValueChanged<String> onSelected;
+  final ValueChanged<capture.EcVideoType> onSelected;
   final VoidCallback onBack;
   final bool dismissible;
 
@@ -3197,6 +3271,7 @@ class _TypeSheetRouteState extends State<_TypeSheetRoute> {
 capture.EcVideoType _captureTypeFromDto(VideoTypeDto type) =>
     capture.EcVideoType(
       label: type.name,
+      id: type.id,
       locked: type.isDefault,
       icon: switch (type.name) {
         'Đóng hàng' => Icons.inventory_2_outlined,
@@ -3227,9 +3302,6 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
     super.dispose();
   }
 
-  String _roleCode(String role) =>
-      role.contains('Quản lý') ? 'manager' : 'staff';
-
   Future<void> _invite(EcMemberInvite invite) async {
     if (_saving || invite.contact.trim().isEmpty) return;
     setState(() => _saving = true);
@@ -3237,7 +3309,7 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
       final result = await widget.repo.sendShopInvite(
         widget.shopId,
         contact: invite.contact.trim(),
-        role: _roleCode(invite.role),
+        role: invite.role,
       );
       if (!mounted) return;
       context.pop();
@@ -3248,7 +3320,7 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
             : context.l10n.toastMemberAdded,
       );
     } on Object catch (error) {
-      if (mounted) _toast(context, _dataErrorText(context.l10n, error));
+      if (mounted) _toast(context, _inviteErrorText(context.l10n, error));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -3261,6 +3333,34 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
     onInvite: _saving ? null : _invite,
   );
 }
+
+/// Vì sao ảnh đại diện không lên được máy chủ.
+///
+/// Tên và SĐT vẫn lưu bình thường, ảnh vẫn hiện từ bản trên máy — nên đây là
+/// một lời nhắc, không phải một thất bại. Nhưng phải nói ra: im lặng đúng là
+/// cách bản trước giấu việc endpoint không tồn tại suốt nhiều bản phát hành.
+String _avatarErrorText(AppLocalizations l10n, Object error) =>
+    error is AvatarTooLargeException
+    ? l10n.avatarTooLarge(
+        ClipBudget.megabytesLabel(error.bytes),
+        ClipBudget.megabytesLabel(error.maxBytes),
+      )
+    : l10n.avatarUploadFailed(_dataErrorText(l10n, error));
+
+/// Lỗi của riêng luồng mời thành viên.
+///
+/// Bốn mã dưới đây phải chặn TRƯỚC [_dataErrorText]: `account_not_found` ở đó
+/// nghĩa là "phiên đăng nhập hỏng, đăng nhập lại" — đúng cho luồng auth, sai
+/// hoàn toàn ở đây, nơi nó nghĩa là người được mời chưa có tài khoản. Và kể từ
+/// khi mời bắt buộc người nhận đã đăng ký, đó chính là lỗi hay gặp nhất.
+String _inviteErrorText(AppLocalizations l10n, Object error) =>
+    switch (_apiErrorCode(error)) {
+      'account_not_found' => l10n.errorInviteAccountNotFound,
+      'already_member' => l10n.errorInviteAlreadyMember,
+      'already_owner' => l10n.errorInviteAlreadyOwner,
+      'invalid_request' => l10n.errorInviteInvalidRequest,
+      _ => _dataErrorText(l10n, error),
+    };
 
 /// Orders tab — loads a page from the repository, supports pull-to-refresh and
 /// infinite scroll (20/page), and shows the live upload-queue count in the
@@ -3588,7 +3688,8 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       type: o.latestType ?? l10n.orderNoEvidence,
       videoCount: _videoCount(o),
       // Ưu tiên lần quay gần nhất; đơn chưa có bằng chứng thì lấy lúc tạo đơn.
-      // Dùng cho việc lọc theo khoảng thời gian ngay tại chỗ.
+      // Đây là nhãn ngày của dòng, KHÔNG phải thứ chip thời gian lọc theo —
+      // chip lọc `created_at`, và việc đó nay do server làm.
       capturedAtMs: capturedAt ?? o.createdAt,
       errorCount: _errorCount(o),
       pendingCount: o.pendingCount,
@@ -4977,6 +5078,7 @@ GoRouter _buildRouter(
   EcUploadQueue queue,
   ValueNotifier<EcShopSummary?> selectedShop,
   ValueNotifier<String> recordingType,
+  ValueNotifier<String?> recordingTypeId,
   PickAvatarPath pickAvatarPath, {
   ShareService? shareService,
   VideoPlayerService? videoPlayerService,
@@ -5119,6 +5221,9 @@ GoRouter _buildRouter(
           // trong build là an toàn (chỉ đọc lúc dựng route và lúc mở sheet).
           if (onRecordTab && !(isRecordTabActive?.value ?? false)) {
             recordingType.value = kEcDefaultVideoType;
+            // Id phải về null cùng lúc, nếu không loại mặc định "Đóng hàng"
+            // của lượt này mang id của loại đã chọn ở lượt quay trước.
+            recordingTypeId.value = null;
           }
           isRecordTabActive?.value = onRecordTab;
           return PopScope(canPop: false, child: navigationShell);
@@ -5301,10 +5406,16 @@ GoRouter _buildRouter(
                                 if (!c.mounted) return null;
                                 continue;
                               }
-                              if (selected != null && selected.isNotEmpty) {
-                                recordingType.value = selected;
+                              if (selected != null &&
+                                  selected.label.isNotEmpty) {
+                                // Nhãn và id chốt CÙNG một lúc, từ cùng một
+                                // dòng người dùng vừa bấm. Tách hai lượt đọc là
+                                // mở lại đúng khe hở đã sửa: loại đổi tên giữa
+                                // chừng thì clip mang id của loại khác.
+                                recordingType.value = selected.label;
+                                recordingTypeId.value = selected.id;
                               }
-                              return selected;
+                              return selected?.label;
                             }
                           },
                       onNavOrders: () => c.go('/home'),
@@ -5323,6 +5434,14 @@ GoRouter _buildRouter(
                             queue.enqueue(
                               tracking: code,
                               type: type,
+                              // Chỉ nhận id khi nhãn còn khớp với loại đã chọn
+                              // ở sheet. Hai giá trị này đặt cùng lúc nên lệch
+                              // nhau là bloc đang báo một loại khác — gửi id cũ
+                              // theo là gán nhầm loại cho clip, tệ hơn hẳn việc
+                              // để bên tải lên tra lại theo tên.
+                              videoTypeId: recordingType.value == type
+                                  ? recordingTypeId.value
+                                  : null,
                               filePath: path,
                               shopId: shop.id,
                               capturedAt: startedAt,
@@ -5686,8 +5805,13 @@ GoRouter _buildRouter(
                 });
               },
               // Return the chosen type to the record route, which applies it to
-              // the current/next recording.
-              onSelected: (t) => c.pop(t),
+              // the current/next recording. Nhãn và id chốt cùng một lúc, như ở
+              // sheet mở từ màn quay.
+              onSelected: (t) {
+                recordingType.value = t.label;
+                recordingTypeId.value = t.id;
+                c.pop(t.label);
+              },
             ),
             key: s.pageKey,
           );
@@ -6001,40 +6125,14 @@ GoRouter _buildRouter(
             EcClipDurationSheetScreen(
               budget: shop?.clipBudget ?? ClipBudget.fallback,
               platformLabel: _platformDisplayName(shop?.platform ?? 'other'),
+              // Không còn hộp thoại "máy chủ đã kẹp giá trị": sheet đã kẹp theo
+              // `plan_max_clip_seconds` trước khi gửi, nên con số tới đây luôn
+              // nằm trong trần và nhánh đó không bao giờ chạy được. Giữ lại chỉ
+              // là giữ một lời giải thích cho tình huống không tồn tại.
               onSelect: (seconds) {
                 repo
                     .updateShop(shopId, maxClipSeconds: seconds)
                     .then((updated) {
-                      // Server có quyền kẹp giá trị theo gói. Im lặng nhận con
-                      // số đã kẹp là kiểu hỏng khó hiểu nhất: chủ shop gõ 20,
-                      // toast báo 15, và không ai nói cho họ biết vì sao.
-                      if (updated.clipSeconds != seconds && c.mounted) {
-                        // Hộp thoại chứ không phải toast, và nêu CẢ HAI con
-                        // số: chủ shop gõ 20 rồi thấy 5, không có gì nói cho
-                        // họ biết ai đổi và đổi vì sao — dễ hiểu nhầm là app
-                        // hỏng. Đây là quyết định của server, phải nói rõ.
-                        unawaited(
-                          showCupertinoDialog<void>(
-                            context: c,
-                            builder: (dialogContext) => CupertinoAlertDialog(
-                              title: Text(c.l10n.limitClampedTitle),
-                              content: Text(
-                                c.l10n.limitClampedBody(
-                                  '${(seconds / 60).round()}',
-                                  '${(updated.clipSeconds / 60).round()}',
-                                ),
-                              ),
-                              actions: [
-                                CupertinoDialogAction(
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(),
-                                  child: Text(c.l10n.commonClose),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
                       if (!c.mounted) return;
                       final current = _selected(selectedShop);
                       if (current?.id == updated.id) {
