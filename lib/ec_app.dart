@@ -1296,8 +1296,17 @@ class _DeleteAccountRouteState extends State<_DeleteAccountRoute> {
         force: _openDossierWarningShown,
         dryRun: true,
       );
-      await widget.auth.deleteAccount();
+      // Xoá DỮ LIỆU trước, tài khoản đăng nhập sau.
+      //
+      // Thứ tự cũ xoá Firebase trước, nên lời gọi dọn dữ liệu ngay sau đó
+      // không còn token và luôn nhận 401: tài khoản biến mất, còn shop, bằng
+      // chứng và gói cước ở lại vĩnh viễn — không ai xác thực được nữa để dọn.
+      // Web làm đúng thứ tự này.
+      //
+      // Dọn dữ liệu hỏng thì ném ra ngoài và Firebase vẫn còn, người dùng thử
+      // lại được. Ngược lại thì mất hẳn đường vào.
       await widget.repo.deleteAccount(force: true);
+      await widget.auth.deleteAccount();
       _analytics()?.trackAccountDeleted();
       // Forget the remembered credentials so the deleted account's password is
       // never prefilled on the login screen we return to.
@@ -2810,7 +2819,17 @@ class _ShopDetailRoute extends StatefulWidget {
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
+    this.readOnly = false,
   });
+
+  /// Chỉ xem, không sửa.
+  ///
+  /// Chặn ở MỘT chỗ thay vì trông vào từng nơi gọi nhớ truyền đủ: màn này tới
+  /// được từ nhiều đường, trong đó có sheet chọn loại video mà nhân viên phải
+  /// đi qua trước mỗi lần quay — từ đó một chạm là tới Mời thành viên hay xoá
+  /// loại video. Máy chủ chặn hết, nhưng để người dùng bấm vào rồi nhận lỗi là
+  /// thiết kế sai.
+  final bool readOnly;
 
   final EcRepository repo;
   final EcShopSummary shop;
@@ -2923,6 +2942,7 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
       ),
       builder: (context, detail) {
         _last = detail;
+        final locked = widget.readOnly || detail.shop.role == 'staff';
         return EcShopDetailScreen(
           readOnly: widget.readOnly,
           membersError: detail.membersFailed,
@@ -2934,47 +2954,47 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
           members: detail.members,
           videoTypes: detail.videoTypes,
           onBack: widget.onBack,
-          onMemberMore: widget.onMemberMore == null
+          onMemberMore: locked || widget.onMemberMore == null
               ? null
               : (member) => widget.onMemberMore!(member).then((_) {
                   if (mounted) _retry();
                 }),
-          onInviteMember: widget.onInviteMember == null
+          onInviteMember: locked || widget.onInviteMember == null
               ? null
               : () => widget.onInviteMember!().then((_) {
                   if (mounted) _retry();
                 }),
-          onTapResolution: widget.onTapResolution == null
+          onTapResolution: locked || widget.onTapResolution == null
               ? null
               : () => widget.onTapResolution!().then((_) {
                   if (mounted) _retry();
                 }),
-          onTapClipDuration: widget.onTapClipDuration == null
+          onTapClipDuration: locked || widget.onTapClipDuration == null
               ? null
               : () => widget.onTapClipDuration!().then((_) {
                   if (mounted) _retry();
                 }),
-          onTapImageSize: widget.onTapImageSize == null
+          onTapImageSize: locked || widget.onTapImageSize == null
               ? null
               : () => widget.onTapImageSize!().then((_) {
                   if (mounted) _retry();
                 }),
-          onTapVideoSize: widget.onTapVideoSize == null
+          onTapVideoSize: locked || widget.onTapVideoSize == null
               ? null
               : () => widget.onTapVideoSize!().then((_) {
                   if (mounted) _retry();
                 }),
-          onEditType: widget.onEditType == null
+          onEditType: locked || widget.onEditType == null
               ? null
               : (type) => widget.onEditType!(type).then((_) {
                   if (mounted) _retry();
                 }),
-          onDeleteType: widget.onDeleteType == null
+          onDeleteType: locked || widget.onDeleteType == null
               ? null
               : (type) => widget.onDeleteType!(type).then((_) {
                   if (mounted) _retry();
                 }),
-          onAddType: widget.onAddType == null
+          onAddType: locked || widget.onAddType == null
               ? null
               : () => widget.onAddType!().then((_) {
                   if (mounted) _retry();
@@ -4728,9 +4748,10 @@ String _durationLabel(int? seconds) {
 
 String _dataErrorText(AppLocalizations l10n, Object error) {
   final text = error.toString();
-  if (text.contains('401') || text.contains('403')) {
-    return l10n.errorSessionInvalid;
-  }
+  // 403 ≠ 401. Phiên vẫn tốt, chỉ là không đủ quyền — bảo người dùng đăng nhập
+  // lại là đẩy họ vào vòng lặp: đăng xuất, đăng nhập, vẫn hỏng y như cũ.
+  if (text.contains('403')) return l10n.errorNoPermission;
+  if (text.contains('401')) return l10n.errorSessionInvalid;
   if (text.contains('type_has_videos')) {
     return l10n.errorVideoTypeInUse;
   }
