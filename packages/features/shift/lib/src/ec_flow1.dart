@@ -1195,9 +1195,14 @@ class EcNoShopScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
+            // Thẻ này PHẢI bấm được: người vừa được mời vào shop mà chưa thấy
+            // shop nào thì đây là đường duy nhất để họ kiểm tra lại. Tham số
+            // `onInviteTap` vốn được truyền vào nhưng không ai dùng, nên màn
+            // này là ngõ cụt hoàn toàn — không thấy gì, không bấm được gì.
             PenCard(
               stroke: PenColors.soft,
               gap: 16,
+              onTap: onInviteTap,
               padding: const EdgeInsets.symmetric(
                 vertical: 14,
                 horizontal: 16,
@@ -1222,6 +1227,12 @@ class EcNoShopScreen extends StatelessWidget {
                     color: PenColors.ink,
                   ),
                 ),
+                if (onInviteTap != null)
+                  const Icon(
+                    LucideIcons.refreshCw,
+                    size: 20,
+                    color: PenColors.mut,
+                  ),
               ],
             ),
             const SizedBox(height: 24),

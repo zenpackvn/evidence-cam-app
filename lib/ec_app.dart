@@ -2586,6 +2586,21 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
     _shops = _loadShops();
   });
 
+  /// Nạp lại mỗi khi màn này được hiện lại.
+  ///
+  /// Tạo shop mới, nhận lời mời, đổi vai trò — tất cả đều xảy ra ở màn khác
+  /// rồi quay về đây. Không nạp lại thì danh sách vẫn là bản chụp lúc mở app,
+  /// và người dùng tưởng thao tác vừa rồi không ăn.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null && route.isCurrent && _seenOnce) _retry();
+    _seenOnce = true;
+  }
+
+  bool _seenOnce = false;
+
   void _autoSelectIfNeeded(List<EcShopSummary> shops) {
     if (_autoSelected || !widget.autoEnter || widget.onSelect == null) return;
     EcShopSummary? target;
@@ -2626,7 +2641,13 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
         if (shops.isEmpty) {
           return EcNoShopScreen(
             onCreate: widget.onCreateShop ?? widget.onManage,
-            onInviteTap: () => _toast(context, context.l10n.toastInvitePending),
+            // Nạp lại thật, không chỉ hiện thông báo: người vừa được mời bấm
+            // vào đây là để hỏi "đã vào chưa", mà một câu toast thì không trả
+            // lời được câu đó.
+            onInviteTap: () {
+              _retry();
+              _toast(context, context.l10n.toastInvitePending);
+            },
             onLogout: widget.onLogout,
           );
         }
