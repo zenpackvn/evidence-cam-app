@@ -961,7 +961,7 @@
   },
   "uploadSizeTitleVideo": "Max size per video",
   "uploadSizeTitleImage": "Max size per photo",
-  "uploadSizeDefaultValue": "{value} MB (default)",
+  "uploadSizeDefaultValue": "{value} MB",
   "uploadSizeUnlimited": "No limit (default)",
   "uploadSizeValueUnlimited": "No limit",
   "@uploadSizeDefaultValue": {

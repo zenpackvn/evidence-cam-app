@@ -2383,10 +2383,15 @@ int _rememberedSizeCap(String shopId, EcUploadKind kind, int fromServer) {
     _sizeCapCache[key] = parsed;
     return parsed;
   }
-  // Chưa đặt gì thì lấy mức đề xuất của LOẠI, KHÔNG lấy con số server trả.
-  // Server trả trần của sàn — với ảnh nó là 10MB, trong khi mức đề xuất của
-  // app là 5MB; hiện 10 làm người dùng tưởng shop đã đặt mức đó.
-  return kind.defaultMegabytes * 1000000;
+  // Chưa đặt gì = KHÔNG GIỚI HẠN (0 byte).
+  //
+  // Mặc định cũ là 30MB cho video, 5MB cho ảnh — tức app tự chặn bằng chứng
+  // của shop khi chưa ai yêu cầu. Clip đóng hàng dài quá mức đó bị cắt mất
+  // đoạn cuối, đúng đoạn dán tem và niêm phong. Shop nào cần trần thì tự đặt.
+  //
+  // Con số server trả về vẫn không dùng ở đây: đó là trần của SÀN, không phải
+  // mức shop đặt.
+  return 0;
 }
 
 ClipBudget _budgetFromDto(ShopDto shop) => ClipBudget(
@@ -2808,7 +2813,6 @@ class _ShopDetailRoute extends StatefulWidget {
   const _ShopDetailRoute({
     required this.repo,
     required this.shop,
-    this.readOnly = false,
     this.onBack,
     this.onMemberMore,
     this.onInviteMember,
@@ -2821,15 +2825,6 @@ class _ShopDetailRoute extends StatefulWidget {
     this.onAddType,
     this.readOnly = false,
   });
-
-  /// Chỉ xem, không sửa.
-  ///
-  /// Chặn ở MỘT chỗ thay vì trông vào từng nơi gọi nhớ truyền đủ: màn này tới
-  /// được từ nhiều đường, trong đó có sheet chọn loại video mà nhân viên phải
-  /// đi qua trước mỗi lần quay — từ đó một chạm là tới Mời thành viên hay xoá
-  /// loại video. Máy chủ chặn hết, nhưng để người dùng bấm vào rồi nhận lỗi là
-  /// thiết kế sai.
-  final bool readOnly;
 
   final EcRepository repo;
   final EcShopSummary shop;
@@ -2944,7 +2939,7 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
         _last = detail;
         final locked = widget.readOnly || detail.shop.role == 'staff';
         return EcShopDetailScreen(
-          readOnly: widget.readOnly,
+          readOnly: locked,
           membersError: detail.membersFailed,
           onRetryMembers: _retry,
           shopName: detail.shop.name,
@@ -3940,7 +3935,10 @@ class _OrderRouteState extends State<_OrderRoute> {
                     evidenceId: video.id,
                     // Mọi vai trò đều xoá được, theo yêu cầu. Backend vẫn là chốt cuối:
                     // không đủ quyền thì lời gọi xoá bị từ chối và màn báo lỗi.
-                    canDelete: true,
+                    // Vai trò THẬT, không phải `true` cho tất cả. Máy chủ cấm
+                    // nhân viên xoá bằng chứng, nên mời họ bấm rồi trả lỗi là
+                    // app tự mâu thuẫn với chính màn hàng chờ (đã chặn staff).
+                    canDelete: widget.shop.role != 'staff',
                     tracking: widget.order.tracking,
                     video: _videoDetail(
                       context.l10n,
@@ -3963,7 +3961,10 @@ class _OrderRouteState extends State<_OrderRoute> {
                     evidenceId: video.id,
                     // Mọi vai trò đều xoá được, theo yêu cầu. Backend vẫn là chốt cuối:
                     // không đủ quyền thì lời gọi xoá bị từ chối và màn báo lỗi.
-                    canDelete: true,
+                    // Vai trò THẬT, không phải `true` cho tất cả. Máy chủ cấm
+                    // nhân viên xoá bằng chứng, nên mời họ bấm rồi trả lỗi là
+                    // app tự mâu thuẫn với chính màn hàng chờ (đã chặn staff).
+                    canDelete: widget.shop.role != 'staff',
                     tracking: widget.order.tracking,
                     video: _videoDetail(
                       context.l10n,
@@ -4747,6 +4748,11 @@ String _durationLabel(int? seconds) {
 }
 
 String _dataErrorText(AppLocalizations l10n, Object error) {
+  // Hỏi bộ dịch của API trước: nó đọc mã lỗi thật trong thân phản hồi và phân
+  // biệt được 403 với phiên hỏng, `open_dossiers_exist` với lỗi mạng. So chuỗi
+  // bên dưới chỉ là lưới đỡ cho những lỗi không phải từ Dio.
+  final api = _apiErrorText(l10n, error);
+  if (api != null) return api;
   final text = error.toString();
   // 403 ≠ 401. Phiên vẫn tốt, chỉ là không đủ quyền — bảo người dùng đăng nhập
   // lại là đẩy họ vào vòng lặp: đăng xuất, đăng nhập, vẫn hỏng y như cũ.

@@ -1447,7 +1447,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String uploadSizeDefaultValue(String value) {
-    return '$value MB (mặc định)';
+    return '$value MB';
   }
 
   @override

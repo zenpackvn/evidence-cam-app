@@ -1452,7 +1452,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String uploadSizeDefaultValue(String value) {
-    return '$value MB (default)';
+    return '$value MB';
   }
 
   @override

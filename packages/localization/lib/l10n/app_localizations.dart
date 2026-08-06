@@ -2663,7 +2663,7 @@ abstract class AppLocalizations {
   /// No description provided for @uploadSizeDefaultValue.
   ///
   /// In en, this message translates to:
-  /// **'{value} MB (default)'**
+  /// **'{value} MB'**
   String uploadSizeDefaultValue(String value);
 
   /// No description provided for @uploadSizeUnlimited.

@@ -715,7 +715,7 @@
   },
   "uploadSizeTitleVideo": "Dung lượng tối đa mỗi video",
   "uploadSizeTitleImage": "Dung lượng tối đa mỗi ảnh",
-  "uploadSizeDefaultValue": "{value} MB (mặc định)",
+  "uploadSizeDefaultValue": "{value} MB",
   "uploadSizeUnlimited": "Không giới hạn (mặc định)",
   "uploadSizeValueUnlimited": "Không giới hạn",
   "@uploadSizeDefaultValue": {
