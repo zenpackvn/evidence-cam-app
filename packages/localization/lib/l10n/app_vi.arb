@@ -94,8 +94,6 @@
   "toastVideoTypeSaved": "Đã lưu loại video",
   "toastVideoTypeDeleted": "Đã xóa loại video",
   "toastNoVideoTypeToDelete": "Không có loại video để xóa",
-  "toastRoleChangedManager": "Đã đổi vai trò: Quản lý shop",
-  "toastRoleChangedStaff": "Đã đổi vai trò: Nhân viên",
   "toastNoMemberToUpdate": "Không có thành viên để cập nhật",
   "toastMemberRemoved": "Đã gỡ khỏi shop (video đã quay vẫn upload nốt)",
   "toastInviteRevoked": "Đã xóa lời mời — link trong email hết tác dụng",
@@ -108,7 +106,6 @@
   "accountChangePassword": "Đổi mật khẩu",
   "accountLinkedMethods": "{count} liên kết",
   "roleOwner": "Chủ shop",
-  "roleManager": "Quản lý",
   "roleStaff": "Nhân viên",
   "memberInviteSent": "{role} · đã gửi lời mời",
   "@memberInviteSent": {
@@ -426,16 +423,11 @@
   "emailLabel": "Email",
   "emailRequired": "Nhập email.",
   "emailInvalid": "Nhập đúng một địa chỉ email.",
-  "inviteRoleLabel": "Vai trò",
-  "roleStaffDesc": "Chỉ quay + xem video mình quay",
-  "roleManagerDesc": "Toàn quyền trong shop",
   "errorInviteAccountNotFound": "Email này chưa có tài khoản ZenPack. Bảo họ đăng ký trước rồi mời lại.",
   "errorInviteAlreadyMember": "Người này đã là thành viên của shop.",
   "errorInviteAlreadyOwner": "Đây là chủ shop, không cần mời.",
   "errorInviteInvalidRequest": "Email không hợp lệ. Kiểm tra lại rồi gửi.",
   "addMemberSubmit": "Thêm",
-  "setAsManager": "Đặt làm Quản lý shop",
-  "setAsStaff": "Đặt làm Nhân viên",
   "memberOwnerLocked": "Chủ cửa hàng không đổi vai trò hay gỡ ở đây được — quyền sở hữu gắn với cửa hàng, không phải một hàng thành viên.",
   "removeFromShop": "Gỡ khỏi shop",
   "revokeInvite": "Xóa lời mời",
@@ -960,5 +952,9 @@
   "appUpdateTitle": "Đã có phiên bản mới",
   "appUpdateMessage": "Cập nhật ZenPack để dùng bản mới nhất.",
   "appUpdateNow": "Cập nhật",
-  "appUpdateLater": "Để sau"
+  "appUpdateLater": "Để sau",
+  "inviteRoleFixedNote": "Người được mời vào shop với vai trò Nhân viên: quay video và xem lại video của chính mình.",
+  "@inviteRoleFixedNote": {
+    "description": "Invite dialog — hai cấp quyền, không còn chọn vai trò."
+  }
 }

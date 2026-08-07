@@ -228,12 +228,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get toastNoVideoTypeToDelete => 'Không có loại video để xóa';
 
   @override
-  String get toastRoleChangedManager => 'Đã đổi vai trò: Quản lý shop';
-
-  @override
-  String get toastRoleChangedStaff => 'Đã đổi vai trò: Nhân viên';
-
-  @override
   String get toastNoMemberToUpdate => 'Không có thành viên để cập nhật';
 
   @override
@@ -276,9 +270,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get roleOwner => 'Chủ shop';
-
-  @override
-  String get roleManager => 'Quản lý';
 
   @override
   String get roleStaff => 'Nhân viên';
@@ -1210,15 +1201,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get emailInvalid => 'Nhập đúng một địa chỉ email.';
 
   @override
-  String get inviteRoleLabel => 'Vai trò';
-
-  @override
-  String get roleStaffDesc => 'Chỉ quay + xem video mình quay';
-
-  @override
-  String get roleManagerDesc => 'Toàn quyền trong shop';
-
-  @override
   String get errorInviteAccountNotFound =>
       'Email này chưa có tài khoản ZenPack. Bảo họ đăng ký trước rồi mời lại.';
 
@@ -1234,12 +1216,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get addMemberSubmit => 'Thêm';
-
-  @override
-  String get setAsManager => 'Đặt làm Quản lý shop';
-
-  @override
-  String get setAsStaff => 'Đặt làm Nhân viên';
 
   @override
   String get memberOwnerLocked =>
@@ -1752,4 +1728,8 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get appUpdateLater => 'Để sau';
+
+  @override
+  String get inviteRoleFixedNote =>
+      'Người được mời vào shop với vai trò Nhân viên: quay video và xem lại video của chính mình.';
 }

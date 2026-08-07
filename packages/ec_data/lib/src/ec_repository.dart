@@ -66,11 +66,6 @@ abstract interface class EcRepository {
   /// của lời mời, không phải của [removeMember].
   Future<void> revokeShopInvite(String shopId, String inviteId);
 
-  Future<void> updateMemberRole(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  });
   Future<void> removeMember(String shopId, String accountUid);
   Future<List<VideoTypeDto>> videoTypes(String shopId);
   Future<VideoTypeDto> addVideoType(
@@ -196,13 +191,6 @@ class RemoteEcRepository implements EcRepository {
   @override
   Future<void> revokeShopInvite(String shopId, String inviteId) =>
       _api.revokeShopInvite(shopId, inviteId);
-
-  @override
-  Future<void> updateMemberRole(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  }) => _api.updateMemberRole(shopId, accountUid: accountUid, role: role);
 
   @override
   Future<void> removeMember(String shopId, String accountUid) =>
@@ -374,13 +362,6 @@ class FakeEcRepository implements EcRepository {
 
   @override
   Future<void> revokeShopInvite(String shopId, String inviteId) async {}
-
-  @override
-  Future<void> updateMemberRole(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  }) async {}
 
   @override
   Future<void> removeMember(String shopId, String accountUid) async {}

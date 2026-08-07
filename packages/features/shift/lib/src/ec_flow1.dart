@@ -2848,7 +2848,6 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
   /// Giữ nhãn tiếng Việt ở đây rồi suy ngược ra mã bằng `contains('Quản lý')`
   /// là máy để tiếng Anh thì gán nhầm ai cũng thành nhân viên. Nhãn là thứ
   /// dịch được; mã thì không.
-  String _role = 'staff';
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -2884,16 +2883,12 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
           },
         ),
         // Chỉ còn MỘT vai trò mời được: nhân viên. Shop có đúng hai hạng —
-        // chủ và nhân viên — nên một danh sách một lựa chọn là thừa; dòng chữ
-        // dưới đây nói thẳng người được mời sẽ làm được gì.
+        // chủ và nhân viên — nên một danh sách một lựa chọn là thừa, và một nút
+        // radio luôn sáng mà bấm không được thì còn tệ hơn: nó trông như một
+        // lựa chọn. Nói thẳng bằng chữ.
         Text(
-          context.l10n.inviteRoleLabel,
-          style: _t(14, FontWeight.w500, BrandColors.ink),
-        ),
-        _RoleOption(
-          label: context.l10n.roleStaff,
-          desc: context.l10n.roleStaffDesc,
-          selected: true,
+          context.l10n.inviteRoleFixedNote,
+          style: _t(13, FontWeight.w400, BrandColors.mut),
         ),
         Row(
           children: [
@@ -2916,7 +2911,10 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
                   final contact = widget.contactController?.text ?? '';
                   if (!isInviteContact(contact.trim())) return;
                   widget.onInvite?.call(
-                    EcMemberInvite(inviteContactOf(contact), _role),
+                    // Mã vai trò backend hiểu, KHÔNG phải nhãn hiển thị: gửi
+                    // nhãn rồi để server suy ngược là máy đổi ngôn ngữ thì gán
+                    // nhầm. Hai cấp nên chỉ còn đúng một mã.
+                    EcMemberInvite(inviteContactOf(contact), 'staff'),
                   );
                 },
               ),
@@ -2939,59 +2937,6 @@ class EcMemberInvite {
   final String role;
 }
 
-class _RoleOption extends StatelessWidget {
-  const _RoleOption({
-    required this.label,
-    required this.desc,
-    required this.selected,
-  });
-  final String label;
-  final String desc;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    // Không còn `onTap`: chỉ có một vai trò mời được nên hàng này là dòng mô
-    // tả, không phải nút chọn. Để nó bấm được mà bấm không đổi gì là mời người
-    // dùng bấm đi bấm lại rồi kết luận app hỏng.
-    return DecoratedBox(
-      decoration: ecSquircleDecoration(
-        radius: 12,
-        side: BorderSide(
-          color: selected ? BrandColors.dark : BrandColors.line,
-          width: selected ? 1.5 : 1,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_off,
-              size: 20,
-              color: selected ? BrandColors.dark : BrandColors.mut,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    style: _t(14, FontWeight.w600, BrandColors.ink),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(desc, style: _t(14, FontWeight.w400, BrandColors.mut)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 /// MemberActions — bottom sheet from the ⋮ on a member row: change role or
 /// remove from shop.

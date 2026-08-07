@@ -94,8 +94,6 @@
   "toastVideoTypeSaved": "Video type saved",
   "toastVideoTypeDeleted": "Video type deleted",
   "toastNoVideoTypeToDelete": "No video type to delete",
-  "toastRoleChangedManager": "Role changed: Shop manager",
-  "toastRoleChangedStaff": "Role changed: Staff",
   "toastNoMemberToUpdate": "No member to update",
   "toastMemberRemoved": "Removed from shop (recorded videos still finish uploading)",
   "toastInviteRevoked": "Invitation deleted — the emailed link no longer works",
@@ -132,7 +130,6 @@
     }
   },
   "roleOwner": "Owner",
-  "roleManager": "Manager",
   "roleStaff": "Staff",
   "memberInviteSent": "{role} · invite sent",
   "@memberInviteSent": {
@@ -637,16 +634,11 @@
   "emailLabel": "Email",
   "emailRequired": "Enter an email address.",
   "emailInvalid": "Enter one valid email address.",
-  "inviteRoleLabel": "Role",
-  "roleStaffDesc": "Record and view their own clips only",
-  "roleManagerDesc": "Full control of the shop",
   "errorInviteAccountNotFound": "This email has no ZenPack account yet. Ask them to sign up first, then invite again.",
   "errorInviteAlreadyMember": "They are already a member of this shop.",
   "errorInviteAlreadyOwner": "That is the shop owner — no invite needed.",
   "errorInviteInvalidRequest": "That email isn't valid. Check it and send again.",
   "addMemberSubmit": "Add",
-  "setAsManager": "Set as shop manager",
-  "setAsStaff": "Set as staff",
   "memberOwnerLocked": "The owner cannot be re-roled or removed here — ownership belongs to the shop, not to a membership row.",
   "removeFromShop": "Remove from shop",
   "revokeInvite": "Delete invitation",
@@ -1212,5 +1204,9 @@
     "description": "Fallback body of the update dialog when Remote Config supplies none."
   },
   "appUpdateNow": "Update",
-  "appUpdateLater": "Later"
+  "appUpdateLater": "Later",
+  "inviteRoleFixedNote": "They join as a staff member: record videos and review their own.",
+  "@inviteRoleFixedNote": {
+    "description": "Invite dialog — hai cấp quyền, không còn chọn vai trò."
+  }
 }

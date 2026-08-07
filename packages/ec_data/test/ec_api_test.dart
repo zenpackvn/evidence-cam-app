@@ -295,27 +295,21 @@ void main() {
 
   test('member mutations call the shop member endpoints', () async {
     when(
-      () => dio.patch<void>(
-        '/api/shops/s1/members/u2',
-        data: any(named: 'data'),
-      ),
-    ).thenAnswer((_) async => _res('/api/shops/s1/members/u2', null));
-    when(
       () => dio.delete<void>('/api/shops/s1/members/u2'),
     ).thenAnswer((_) async => _res('/api/shops/s1/members/u2', null));
 
-    await api.updateMemberRole('s1', accountUid: 'u2', role: 'manager');
     await api.removeMember('s1', 'u2');
 
-    verify(
-      () => dio.patch<void>(
-        '/api/shops/s1/members/u2',
-        data: {
-          'role': 'manager',
-        },
-      ),
-    ).called(1);
     verify(() => dio.delete<void>('/api/shops/s1/members/u2')).called(1);
+    // Hai cấp quyền (2026-08-07): KHÔNG còn đường đổi vai trò. Máy chủ nhận
+    // `manager` rồi lặng lẽ hạ về `staff` và vẫn trả 200, nên mọi lời gọi từ
+    // app chỉ là một lời hứa sai — `updateMemberRole` đã gỡ khỏi cả ba tầng.
+    verifyNever(
+      () => dio.patch<void>(
+        any(that: contains('/members/')),
+        data: any(named: 'data'),
+      ),
+    );
     // Không còn `POST /members`: đường vào shop duy nhất là lời mời, và lời
     // mời thì người được mời phải tự bấm nhận.
     verifyNever(

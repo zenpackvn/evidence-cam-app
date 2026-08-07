@@ -506,18 +506,6 @@ abstract class AppLocalizations {
   /// **'No video type to delete'**
   String get toastNoVideoTypeToDelete;
 
-  /// No description provided for @toastRoleChangedManager.
-  ///
-  /// In en, this message translates to:
-  /// **'Role changed: Shop manager'**
-  String get toastRoleChangedManager;
-
-  /// No description provided for @toastRoleChangedStaff.
-  ///
-  /// In en, this message translates to:
-  /// **'Role changed: Staff'**
-  String get toastRoleChangedStaff;
-
   /// No description provided for @toastNoMemberToUpdate.
   ///
   /// In en, this message translates to:
@@ -589,12 +577,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Owner'**
   String get roleOwner;
-
-  /// No description provided for @roleManager.
-  ///
-  /// In en, this message translates to:
-  /// **'Manager'**
-  String get roleManager;
 
   /// No description provided for @roleStaff.
   ///
@@ -2264,24 +2246,6 @@ abstract class AppLocalizations {
   /// **'Enter one valid email address.'**
   String get emailInvalid;
 
-  /// No description provided for @inviteRoleLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Role'**
-  String get inviteRoleLabel;
-
-  /// No description provided for @roleStaffDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Record and view their own clips only'**
-  String get roleStaffDesc;
-
-  /// No description provided for @roleManagerDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Full control of the shop'**
-  String get roleManagerDesc;
-
   /// No description provided for @errorInviteAccountNotFound.
   ///
   /// In en, this message translates to:
@@ -2311,18 +2275,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get addMemberSubmit;
-
-  /// No description provided for @setAsManager.
-  ///
-  /// In en, this message translates to:
-  /// **'Set as shop manager'**
-  String get setAsManager;
-
-  /// No description provided for @setAsStaff.
-  ///
-  /// In en, this message translates to:
-  /// **'Set as staff'**
-  String get setAsStaff;
 
   /// No description provided for @memberOwnerLocked.
   ///
@@ -3199,6 +3151,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Later'**
   String get appUpdateLater;
+
+  /// Invite dialog — hai cấp quyền, không còn chọn vai trò.
+  ///
+  /// In en, this message translates to:
+  /// **'They join as a staff member: record videos and review their own.'**
+  String get inviteRoleFixedNote;
 }
 
 class _AppLocalizationsDelegate

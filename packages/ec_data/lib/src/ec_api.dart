@@ -138,15 +138,6 @@ class EcApi {
   Future<void> revokeShopInvite(String shopId, String inviteId) =>
       _dio.delete<void>('/api/shops/$shopId/invites/$inviteId');
 
-  Future<void> updateMemberRole(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  }) => _dio.patch<void>(
-    '/api/shops/$shopId/members/$accountUid',
-    data: {'role': role},
-  );
-
   Future<void> removeMember(String shopId, String accountUid) =>
       _dio.delete<void>('/api/shops/$shopId/members/$accountUid');
 

@@ -230,12 +230,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toastNoVideoTypeToDelete => 'No video type to delete';
 
   @override
-  String get toastRoleChangedManager => 'Role changed: Shop manager';
-
-  @override
-  String get toastRoleChangedStaff => 'Role changed: Staff';
-
-  @override
   String get toastNoMemberToUpdate => 'No member to update';
 
   @override
@@ -278,9 +272,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roleOwner => 'Owner';
-
-  @override
-  String get roleManager => 'Manager';
 
   @override
   String get roleStaff => 'Staff';
@@ -1215,15 +1206,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emailInvalid => 'Enter one valid email address.';
 
   @override
-  String get inviteRoleLabel => 'Role';
-
-  @override
-  String get roleStaffDesc => 'Record and view their own clips only';
-
-  @override
-  String get roleManagerDesc => 'Full control of the shop';
-
-  @override
   String get errorInviteAccountNotFound =>
       'This email has no ZenPack account yet. Ask them to sign up first, then invite again.';
 
@@ -1241,12 +1223,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addMemberSubmit => 'Add';
-
-  @override
-  String get setAsManager => 'Set as shop manager';
-
-  @override
-  String get setAsStaff => 'Set as staff';
 
   @override
   String get memberOwnerLocked =>
@@ -1761,4 +1737,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appUpdateLater => 'Later';
+
+  @override
+  String get inviteRoleFixedNote =>
+      'They join as a staff member: record videos and review their own.';
 }

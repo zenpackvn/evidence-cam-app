@@ -2164,8 +2164,10 @@ String _platformDisplayName(String platform) => switch (platform) {
 
 String _roleDisplayName(AppLocalizations l10n, String role) => switch (role) {
   'owner' => l10n.roleOwner,
-  'manager' => l10n.roleManager,
-  'staff' => l10n.roleStaff,
+  // `manager` là mã CŨ. Hai cấp (2026-08-07) không còn vai trò đó, và backend
+  // hạ mọi hàng còn sót về `staff`; hiện nó là "Quản lý" thì màn hình hứa một
+  // quyền hạn mà máy chủ đã không còn công nhận.
+  'manager' || 'staff' => l10n.roleStaff,
   // Rỗng chứ không phải một vai trò lạ — in ra chuỗi rỗng thì hàng trông như
   // lỗi hiển thị, trong khi sự thật là dữ liệu không nói vai trò là gì.
   '' => l10n.roleUnknown,
