@@ -356,6 +356,10 @@ class EvidenceDto {
     this.retentionExpiresAt,
     this.durationSeconds,
     this.clockSkewMs,
+    this.sealStatus,
+    this.sealedAt,
+    this.displaySha256,
+    this.timeCheck,
   });
 
   factory EvidenceDto.fromJson(Map<String, dynamic> j) => EvidenceDto(
@@ -373,6 +377,10 @@ class EvidenceDto {
     retentionExpiresAt: _intN(j['retention_expires_at']),
     durationSeconds: _intN(j['duration_seconds']),
     clockSkewMs: _intN(j['clock_skew_ms']),
+    sealStatus: j['seal_status'] as String?,
+    sealedAt: _intN(j['sealed_at']),
+    displaySha256: j['display_sha256'] as String?,
+    timeCheck: j['time_check'] as String?,
   );
 
   final String id;
@@ -420,6 +428,32 @@ class EvidenceDto {
   /// persisted flag would freeze old rows at whatever it used to be.
   bool get hasUntrustedClock =>
       clockSkewMs != null && clockSkewMs!.abs() > kClockSkewToleranceMs;
+
+  /// Where this clip is in the sealing chain: `pending`, `rendering`, `sealed`,
+  /// `hash_mismatch`, `render_failed` — or null for clips recorded before
+  /// sealing existed, which will never carry a stamp.
+  final String? sealStatus;
+
+  /// When the manifest was signed. This is the "Thời gian ký" the detail sheet
+  /// shows; it is a server clock reading, unlike [capturedAt].
+  final int? sealedAt;
+
+  /// SHA-256 of the stamped copy — the one actually stored. Differs from
+  /// [sha256], which fingerprints the raw bytes this phone uploaded.
+  final String? displaySha256;
+
+  /// `TIME_OK` or `TIME_DRIFT`.
+  final String? timeCheck;
+
+  /// The stored object is still the raw upload — the renderer has not written
+  /// the stamped copy over it yet.
+  ///
+  /// While this is true the server withholds [url] on purpose, so that nobody
+  /// walks away with a file that looks like evidence but carries no timestamp.
+  /// Only the two in-flight states count: a null [sealStatus] means the clip
+  /// predates sealing and is never going to change, and the two failure states
+  /// still have to play — that file is the user's only copy.
+  bool get isSealing => sealStatus == 'pending' || sealStatus == 'rendering';
 }
 
 /// Device-clock error we treat as normal drift rather than a wrong clock.

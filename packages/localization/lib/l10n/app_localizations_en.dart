@@ -721,6 +721,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailUploadStatus => 'Upload status';
 
   @override
+  String get detailSeal => 'Seal';
+
+  @override
+  String sealSealed(String at) {
+    return 'Sealed · $at';
+  }
+
+  @override
+  String get sealWorking => 'Stamping the timestamp…';
+
+  @override
+  String get sealWorkingHint =>
+      'The stored copy has no timestamp burned in yet, so playback and download wait for it. Usually a few seconds.';
+
+  @override
+  String get sealNone => 'Recorded before sealing existed';
+
+  @override
+  String get sealFailed => 'Sealing failed — the video still plays';
+
+  @override
+  String get sealMismatch => 'Fingerprint mismatch — re-record this clip';
+
+  @override
+  String get sealTimeDrift =>
+      'The camera clock drifted from the server, so the burned-in stamp also carries the time the server received the clip.';
+
+  @override
   String get detailPlayVideo => 'Play video';
 
   @override

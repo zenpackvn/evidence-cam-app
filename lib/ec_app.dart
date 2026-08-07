@@ -35,6 +35,7 @@ import 'package:feature_orders/feature_orders.dart'
         EcEvidenceType,
         EcOrderTimelineScreen,
         EcPhotoDetailScreen,
+        EcSealLine,
         EcStatusTone,
         EcTimelineDay,
         EcTimelineVideo,
@@ -4640,6 +4641,8 @@ List<EcTimelineDay> _timelineDays(
                 : EcEvidenceType.video,
             // Photos preview themselves; a clip needs its extracted poster.
             thumbUrl: item.kind == 'photo' ? item.url : item.thumbUrl,
+            seal: _sealLine(l10n, item),
+            timeDrift: item.timeCheck == 'TIME_DRIFT',
             statusText: item.uploadStatus == 'done'
                 ? null
                 : item.uploadStatus == 'expired'
@@ -4997,7 +5000,38 @@ EcVideoDetail _videoDetail(
   uploadStatus: video.uploadStatus ?? l10n.uploadStatusDone,
   mediaUrl: video.mediaUrl,
   type: video.type,
+  seal: video.seal,
+  timeDrift: video.timeDrift,
 );
+
+/// Turns `seal_status` into the one line the detail sheet shows.
+///
+/// Photos never enter the chain, so they get no row at all rather than a row
+/// saying "no". And `null` is deliberately NOT worded like `pending`: clips
+/// recorded before the sealing stage exists will sit at `null` forever, so
+/// calling that "in progress" leaves the user waiting for something that is
+/// never coming.
+EcSealLine? _sealLine(AppLocalizations l10n, EvidenceDto item) {
+  if (item.kind == 'photo') return null;
+  return switch (item.sealStatus) {
+    'sealed' => EcSealLine(
+      label: l10n.sealSealed(_sealedAtLabel(item.sealedAt)),
+    ),
+    'pending' || 'rendering' => EcSealLine(
+      label: l10n.sealWorking,
+      inProgress: true,
+    ),
+    'render_failed' => EcSealLine(label: l10n.sealFailed),
+    'hash_mismatch' => EcSealLine(label: l10n.sealMismatch),
+    _ => EcSealLine(label: l10n.sealNone),
+  };
+}
+
+String _sealedAtLabel(int? sealedAt) {
+  if (sealedAt == null) return '';
+  final at = DateTime.fromMillisecondsSinceEpoch(sealedAt);
+  return '${_dateLabel(at)} · ${_hhmm(at)}';
+}
 
 /// Formats a recorded clip length as `mm:ss`. Photos and evidence captured
 /// before this field existed have no duration — falls back to `—`.

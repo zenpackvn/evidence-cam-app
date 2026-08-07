@@ -255,6 +255,17 @@
   "detailDevice": "Thiết bị",
   "detailSize": "Dung lượng",
   "detailUploadStatus": "Trạng thái upload",
+  "detailSeal": "Niêm phong",
+  "sealSealed": "Đã niêm phong · {at}",
+  "@sealSealed": {
+    "placeholders": { "at": { "type": "String" } }
+  },
+  "sealWorking": "Đang đóng dấu thời gian…",
+  "sealWorkingHint": "Bản đang lưu chưa có dấu thời gian, nên tạm khoá phát và tải để bạn không cầm nhầm file chưa xong. Thường mất vài giây.",
+  "sealNone": "Quay trước khi có niêm phong",
+  "sealFailed": "Niêm phong lỗi — video vẫn xem được",
+  "sealMismatch": "Vân tay không khớp — hãy quay lại clip này",
+  "sealTimeDrift": "Đồng hồ máy quay lệch so với máy chủ, nên dấu nung ghi thêm giờ máy chủ nhận clip.",
   "detailPlayVideo": "Phát video",
   "detailCopyAssetLink": "Sao chép link",
   "assetLinkTitle": "Link bằng chứng",

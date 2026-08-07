@@ -1382,6 +1382,54 @@ abstract class AppLocalizations {
   /// **'Upload status'**
   String get detailUploadStatus;
 
+  /// No description provided for @detailSeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Seal'**
+  String get detailSeal;
+
+  /// No description provided for @sealSealed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sealed · {at}'**
+  String sealSealed(String at);
+
+  /// No description provided for @sealWorking.
+  ///
+  /// In en, this message translates to:
+  /// **'Stamping the timestamp…'**
+  String get sealWorking;
+
+  /// No description provided for @sealWorkingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The stored copy has no timestamp burned in yet, so playback and download wait for it. Usually a few seconds.'**
+  String get sealWorkingHint;
+
+  /// No description provided for @sealNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded before sealing existed'**
+  String get sealNone;
+
+  /// No description provided for @sealFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sealing failed — the video still plays'**
+  String get sealFailed;
+
+  /// No description provided for @sealMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingerprint mismatch — re-record this clip'**
+  String get sealMismatch;
+
+  /// No description provided for @sealTimeDrift.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera clock drifted from the server, so the burned-in stamp also carries the time the server received the clip.'**
+  String get sealTimeDrift;
+
   /// No description provided for @detailPlayVideo.
   ///
   /// In en, this message translates to:

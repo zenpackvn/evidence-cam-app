@@ -58,7 +58,16 @@ class EcTimelineVideo {
     this.statusIcon,
     this.durationSeconds,
     this.capturedAtMs,
+    this.seal,
+    this.timeDrift = false,
   });
+
+  /// Carried through the timeline only so the detail sheet can show it — the
+  /// row itself stays quiet about sealing. A clip that is still being stamped
+  /// is a normal clip that happens to be a few seconds from ready, and putting
+  /// a second badge next to the upload badge would read as a second problem.
+  final EcSealLine? seal;
+  final bool timeDrift;
 
   final String? id;
 
@@ -132,6 +141,8 @@ class EcVideoDetail {
     this.capturedAtMs,
     this.tracking,
     this.durationSeconds,
+    this.seal,
+    this.timeDrift = false,
   });
 
   /// Mốc quay, epoch-ms — gốc của đồng hồ chạy lúc phát lại và của dấu đóng
@@ -172,6 +183,33 @@ class EcVideoDetail {
 
   /// Evidence kind, driving the leading icon.
   final EcEvidenceType type;
+
+  /// Sealing state, already turned into the one line to show. `null` hides the
+  /// row entirely — used for photos, which never go through sealing.
+  final EcSealLine? seal;
+
+  /// The camera clock disagreed with the server, so the burned-in stamp also
+  /// carries the server receipt time. Worth one line, because a viewer who
+  /// spots two different clocks on the frame and no explanation reads it as
+  /// tampering.
+  final bool timeDrift;
+}
+
+/// One rendered line about sealing: what to say, and whether the clip is still
+/// being worked on.
+///
+/// The screen takes a formatted line rather than the raw `seal_status` on
+/// purpose — the five states map to five different sentences, and the choice
+/// of sentence is a wording decision that belongs with the localized strings,
+/// not in a widget.
+class EcSealLine {
+  const EcSealLine({required this.label, this.inProgress = false});
+
+  final String label;
+
+  /// While true the API withholds the media URL by design: the stored file is
+  /// still the raw upload, with no timestamp burned into it.
+  final bool inProgress;
 }
 
 /// Order timeline — evidence videos for one order, grouped by day, with
@@ -465,32 +503,59 @@ class EcVideoDetailScreen extends StatelessWidget {
             value: video.fileSize!,
           ),
         ],
+        if (video.seal != null) ...[
+          const _EcDetailDivider(),
+          _EcDetailInfoRow(
+            label: l10n.detailSeal,
+            value: video.seal!.label,
+          ),
+        ],
+        if (video.timeDrift) ...[
+          const SizedBox(height: 10),
+          PenText(
+            l10n.sealTimeDrift,
+            size: 13,
+            color: PenColors.mut,
+          ),
+        ],
         const SizedBox(height: 18),
         PenCard(
           axis: PenAxis.column,
           clip: true,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           children: [
-            _EcDetailActionRow(
-              icon: LucideIcons.play,
-              title: l10n.detailPlayVideo,
-              onTap: onPlay,
-            ),
-            if (video.mediaUrl != null) ...[
+            // Đang niêm phong thì API cố tình không trả link, vì bản đang nằm ở
+            // kho là bản THÔ — chưa có dấu giờ, chưa có mã vận đơn trên hình.
+            // Bày nút phát/tải ra lúc này là mời người dùng cầm về đúng cái file
+            // đó. Nói thẳng còn hơn để họ bấm rồi ăn toast "không có link".
+            if (video.seal?.inProgress ?? false)
+              _EcDetailActionRow(
+                icon: LucideIcons.loader,
+                title: l10n.sealWorking,
+                subtitle: l10n.sealWorkingHint,
+              )
+            else ...[
+              _EcDetailActionRow(
+                icon: LucideIcons.play,
+                title: l10n.detailPlayVideo,
+                onTap: onPlay,
+              ),
+              if (video.mediaUrl != null) ...[
+                const _EcDetailDivider(),
+                _EcDetailActionRow(
+                  icon: LucideIcons.copy,
+                  title: l10n.detailCopyAssetLink,
+                  onTap: onCopyLink,
+                ),
+              ],
               const _EcDetailDivider(),
               _EcDetailActionRow(
-                icon: LucideIcons.copy,
-                title: l10n.detailCopyAssetLink,
-                onTap: onCopyLink,
+                icon: LucideIcons.download,
+                title: l10n.detailDownloadVideo,
+                subtitle: l10n.detailDownloadNote,
+                onTap: onDownload,
               ),
             ],
-            const _EcDetailDivider(),
-            _EcDetailActionRow(
-              icon: LucideIcons.download,
-              title: l10n.detailDownloadVideo,
-              subtitle: l10n.detailDownloadNote,
-              onTap: onDownload,
-            ),
             if (canDelete) ...[
               const _EcDetailDivider(),
               _EcDetailActionRow(

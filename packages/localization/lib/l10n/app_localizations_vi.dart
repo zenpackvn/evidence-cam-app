@@ -718,6 +718,34 @@ class AppLocalizationsVi extends AppLocalizations {
   String get detailUploadStatus => 'Trạng thái upload';
 
   @override
+  String get detailSeal => 'Niêm phong';
+
+  @override
+  String sealSealed(String at) {
+    return 'Đã niêm phong · $at';
+  }
+
+  @override
+  String get sealWorking => 'Đang đóng dấu thời gian…';
+
+  @override
+  String get sealWorkingHint =>
+      'Bản đang lưu chưa có dấu thời gian, nên tạm khoá phát và tải để bạn không cầm nhầm file chưa xong. Thường mất vài giây.';
+
+  @override
+  String get sealNone => 'Quay trước khi có niêm phong';
+
+  @override
+  String get sealFailed => 'Niêm phong lỗi — video vẫn xem được';
+
+  @override
+  String get sealMismatch => 'Vân tay không khớp — hãy quay lại clip này';
+
+  @override
+  String get sealTimeDrift =>
+      'Đồng hồ máy quay lệch so với máy chủ, nên dấu nung ghi thêm giờ máy chủ nhận clip.';
+
+  @override
   String get detailPlayVideo => 'Phát video';
 
   @override

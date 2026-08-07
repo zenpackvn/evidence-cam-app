@@ -368,6 +368,17 @@
   "detailDevice": "Device",
   "detailSize": "Size",
   "detailUploadStatus": "Upload status",
+  "detailSeal": "Seal",
+  "sealSealed": "Sealed · {at}",
+  "@sealSealed": {
+    "placeholders": { "at": { "type": "String" } }
+  },
+  "sealWorking": "Stamping the timestamp…",
+  "sealWorkingHint": "The stored copy has no timestamp burned in yet, so playback and download wait for it. Usually a few seconds.",
+  "sealNone": "Recorded before sealing existed",
+  "sealFailed": "Sealing failed — the video still plays",
+  "sealMismatch": "Fingerprint mismatch — re-record this clip",
+  "sealTimeDrift": "The camera clock drifted from the server, so the burned-in stamp also carries the time the server received the clip.",
   "detailPlayVideo": "Play video",
   "detailCopyAssetLink": "Copy link",
   "assetLinkTitle": "Evidence link",
