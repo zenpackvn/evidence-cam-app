@@ -55,11 +55,6 @@ abstract interface class EcRepository {
     int? maxUploadBytes,
   });
   Future<List<MemberDto>> members(String shopId);
-  Future<void> addMember(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  });
   Future<ShopInviteDto> sendShopInvite(
     String shopId, {
     required String contact,
@@ -195,13 +190,6 @@ class RemoteEcRepository implements EcRepository {
 
   @override
   Future<List<MemberDto>> members(String shopId) => _api.listMembers(shopId);
-
-  @override
-  Future<void> addMember(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  }) => _api.addMember(shopId, accountUid: accountUid, role: role);
 
   @override
   Future<ShopInviteDto> sendShopInvite(
@@ -378,13 +366,6 @@ class FakeEcRepository implements EcRepository {
   Future<List<MemberDto>> members(String shopId) async => const [
     MemberDto(accountUid: 'fake-uid', role: 'owner'),
   ];
-
-  @override
-  Future<void> addMember(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  }) async {}
 
   @override
   Future<ShopInviteDto> sendShopInvite(

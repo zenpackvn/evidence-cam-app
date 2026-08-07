@@ -128,15 +128,6 @@ class EcApi {
   Future<List<MemberDto>> listMembers(String shopId) =>
       _getList('/api/shops/$shopId/members', MemberDto.fromJson);
 
-  Future<void> addMember(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  }) => _dio.post<void>(
-    '/api/shops/$shopId/members',
-    data: {'account_uid': accountUid, 'role': role},
-  );
-
   Future<ShopInviteDto> sendShopInvite(
     String shopId, {
     required String contact,

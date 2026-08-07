@@ -407,7 +407,7 @@
   "deleteVideoTypeConfirm": "Xóa loại",
   "deleteVideoTypeNote": "(Chỉ xóa khi loại chưa có video nào)",
   "addMemberTitle": "Thêm thành viên",
-  "addMemberBody": "Nhập email của tài khoản ZenPack đã đăng ký để thêm vào shop.",
+  "addMemberBody": "Nhập email của tài khoản ZenPack đã đăng ký. Họ nhận được lời mời và phải bấm xác nhận mới vào shop.",
   "emailLabel": "Email",
   "emailRequired": "Nhập email.",
   "emailInvalid": "Nhập đúng một địa chỉ email.",

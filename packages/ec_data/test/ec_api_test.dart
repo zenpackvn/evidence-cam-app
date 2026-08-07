@@ -294,9 +294,6 @@ void main() {
 
   test('member mutations call the shop member endpoints', () async {
     when(
-      () => dio.post<void>('/api/shops/s1/members', data: any(named: 'data')),
-    ).thenAnswer((_) async => _res('/api/shops/s1/members', null));
-    when(
       () => dio.patch<void>(
         '/api/shops/s1/members/u2',
         data: any(named: 'data'),
@@ -306,19 +303,9 @@ void main() {
       () => dio.delete<void>('/api/shops/s1/members/u2'),
     ).thenAnswer((_) async => _res('/api/shops/s1/members/u2', null));
 
-    await api.addMember('s1', accountUid: 'u2', role: 'staff');
     await api.updateMemberRole('s1', accountUid: 'u2', role: 'manager');
     await api.removeMember('s1', 'u2');
 
-    verify(
-      () => dio.post<void>(
-        '/api/shops/s1/members',
-        data: {
-          'account_uid': 'u2',
-          'role': 'staff',
-        },
-      ),
-    ).called(1);
     verify(
       () => dio.patch<void>(
         '/api/shops/s1/members/u2',
@@ -328,6 +315,11 @@ void main() {
       ),
     ).called(1);
     verify(() => dio.delete<void>('/api/shops/s1/members/u2')).called(1);
+    // Không còn `POST /members`: đường vào shop duy nhất là lời mời, và lời
+    // mời thì người được mời phải tự bấm nhận.
+    verifyNever(
+      () => dio.post<void>('/api/shops/s1/members', data: any(named: 'data')),
+    );
   });
 
   test(

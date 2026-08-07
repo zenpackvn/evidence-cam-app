@@ -1173,7 +1173,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get addMemberBody =>
-      'Nhập email của tài khoản ZenPack đã đăng ký để thêm vào shop.';
+      'Nhập email của tài khoản ZenPack đã đăng ký. Họ nhận được lời mời và phải bấm xác nhận mới vào shop.';
 
   @override
   String get emailLabel => 'Email';

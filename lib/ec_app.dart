@@ -3333,12 +3333,11 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
       );
       if (!mounted) return;
       context.pop();
-      _toast(
-        context,
-        result.status == 'pending'
-            ? context.l10n.toastInviteSent
-            : context.l10n.toastMemberAdded,
-      );
+      // `POST /invites` luôn trả `pending`: người được mời phải tự bấm link
+      // xác nhận mới vào shop. Nhánh "đã thêm thành viên" ở đây là di tích của
+      // thời tự-vào-shop, không có đường nào chạy tới nữa.
+      assert(result.status == 'pending', 'lời mời mới phải là pending');
+      _toast(context, context.l10n.toastInviteSent);
     } on Object catch (error) {
       if (mounted) _toast(context, _inviteErrorText(context.l10n, error));
     } finally {

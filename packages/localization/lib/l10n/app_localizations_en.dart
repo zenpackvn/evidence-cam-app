@@ -1178,7 +1178,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addMemberBody =>
-      'Enter the email of a registered ZenPack account to add them to the shop.';
+      'Enter the email of a registered ZenPack account. They get an invitation and must confirm it to join the shop.';
 
   @override
   String get emailLabel => 'Email';

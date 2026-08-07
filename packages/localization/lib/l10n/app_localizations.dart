@@ -2201,7 +2201,7 @@ abstract class AppLocalizations {
   /// No description provided for @addMemberBody.
   ///
   /// In en, this message translates to:
-  /// **'Enter the email of a registered ZenPack account to add them to the shop.'**
+  /// **'Enter the email of a registered ZenPack account. They get an invitation and must confirm it to join the shop.'**
   String get addMemberBody;
 
   /// No description provided for @emailLabel.

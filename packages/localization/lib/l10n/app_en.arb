@@ -618,7 +618,7 @@
   "deleteVideoTypeConfirm": "Delete type",
   "deleteVideoTypeNote": "(Only deletable while the type has no videos)",
   "addMemberTitle": "Add member",
-  "addMemberBody": "Enter the email of a registered ZenPack account to add them to the shop.",
+  "addMemberBody": "Enter the email of a registered ZenPack account. They get an invitation and must confirm it to join the shop.",
   "emailLabel": "Email",
   "emailRequired": "Enter an email address.",
   "emailInvalid": "Enter one valid email address.",
