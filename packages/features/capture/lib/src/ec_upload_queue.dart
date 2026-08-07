@@ -129,6 +129,19 @@ class EcUploadQueue extends ChangeNotifier {
   /// Newest-first view of the queue.
   List<UploadTask> get tasks => List.unmodifiable(_tasks);
 
+  /// Tăng một sau mỗi clip lên máy chủ thành công.
+  ///
+  /// Màn hạn mức nghe cái này để hỏi lại `/api/quota`. Một `ValueNotifier`
+  /// riêng chứ không phải `notifyListeners()` của cả hàng đợi: hàng đợi bắn
+  /// tin ở mỗi phần trăm tiến độ, nghe nó là mỗi clip gọi mạng cả trăm lần.
+  final ValueNotifier<int> uploadsCompleted = ValueNotifier<int>(0);
+
+  @override
+  void dispose() {
+    uploadsCompleted.dispose();
+    super.dispose();
+  }
+
   /// Clip đã quay xong nhưng CHƯA nằm an toàn trên máy chủ — tức là những clip
   /// hiện chỉ tồn tại trên chính cái điện thoại này.
   ///
@@ -459,6 +472,11 @@ class EcUploadQueue extends ChangeNotifier {
             ..progress = 1
             ..remoteUrl = url;
           succeeded = true;
+          // Máy chủ vừa ghi nhận thêm một video vào hạn mức tháng này. Đây là
+          // tín hiệu DUY NHẤT app có để biết con số quota trên màn đã cũ —
+          // không có nó thì màn hạn mức đứng im suốt phiên và người dùng thấy
+          // "quay rồi mà không trừ".
+          uploadsCompleted.value++;
           unawaited(_analytics?.trackUploadCompleted());
           // Bytes đã nằm trên R2 và backend đã xác nhận, nên bản trên máy hết
           // giá trị. Một ca đóng hàng sinh hàng trăm clip; giữ lại là lấp đầy

@@ -114,7 +114,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get shopDeleted => 'Đã xóa cửa hàng';
+  String get shopDeleted => 'Đã xoá cửa hàng.';
 
   @override
   String bundleSelected(int count) {
@@ -743,7 +743,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String sealSealed(String at) {
-    return 'Đã niêm phong · $at';
+    return 'Đã khoá · $at';
   }
 
   @override
@@ -765,6 +765,33 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get sealTimeDrift =>
       'Đồng hồ máy quay lệch so với máy chủ, nên dấu nung ghi thêm giờ máy chủ nhận clip.';
+
+  @override
+  String get detailSealAnchor => 'Chứng thực độc lập';
+
+  @override
+  String sealAnchorConfirmed(String block) {
+    return 'Đã có · mục #$block';
+  }
+
+  @override
+  String get sealAnchorConfirmedNoBlock => 'Đã có';
+
+  @override
+  String get sealAnchorPending => 'Đang ghi vào sổ công khai (vài giờ)';
+
+  @override
+  String get sealAnchorNone => 'Không có';
+
+  @override
+  String get sealVerifyOpen => 'Xem trang kiểm chứng';
+
+  @override
+  String get sealVerifyHint =>
+      'Gửi link này cho sàn — họ tự kiểm chứng được, không cần tin ZenPack.';
+
+  @override
+  String get sealVerifyFailed => 'Không mở được trang kiểm chứng.';
 
   @override
   String get detailPlayVideo => 'Phát video';
@@ -1785,6 +1812,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get quotaTopupCredits => 'Lượt mua thêm';
 
   @override
+  String get quotaOverCap => 'Đã vượt trần gói';
+
+  @override
   String quotaBlockAt(int n) {
     return 'Chặn quay mới từ $n video';
   }
@@ -1817,4 +1847,152 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get quotaStrandedNote =>
       'Những video này chỉ tồn tại trên điện thoại. Mất máy, gỡ app hoặc xoá dữ liệu app là mất luôn.';
+
+  @override
+  String get storageTitle => 'Kho lưu trữ';
+
+  @override
+  String get storageSystemName => 'Kho của hệ thống';
+
+  @override
+  String get storageS3Name => 'Kho riêng của bạn (S3)';
+
+  @override
+  String get storageDriveName => 'Google Drive của bạn';
+
+  @override
+  String get storageSystemDesc =>
+      'Mặc định, không phải cấu hình gì. Đây là nơi duy nhất hệ thống bảo đảm được đầy đủ mọi cam kết về bằng chứng.';
+
+  @override
+  String get storageOwnDesc =>
+      'Video mới lưu thẳng vào kho của bạn. Video cũ nằm nguyên chỗ cũ cho tới khi hết hạn lưu.';
+
+  @override
+  String get storageNoPresign =>
+      'Kho này không ký được link tải, nên video phải đi vòng qua máy chủ — người nhận link sẽ thấy chậm hơn.';
+
+  @override
+  String get storageNoObjectLock =>
+      'Kho này không khoá được đối tượng. Không thể hứa với sàn rằng bằng chứng không xoá được.';
+
+  @override
+  String get storageNotInPlan =>
+      'Gói hiện tại chưa mở kho riêng. Nâng gói trên web để dùng.';
+
+  @override
+  String get storageHealthTitle => 'Tình trạng kho';
+
+  @override
+  String get storageHealthTotal => 'Tổng video';
+
+  @override
+  String get storageHealthIntact => 'Còn nguyên vẹn';
+
+  @override
+  String get storageHealthUnreachable => 'Không truy cập được';
+
+  @override
+  String get storageHealthMismatched => 'Sai lệch với hồ sơ niêm phong';
+
+  @override
+  String get storageHealthPendingRelay => 'Đang chờ ở vùng tạm';
+
+  @override
+  String get storageProblemsNote =>
+      'Có video đang gặp vấn đề ở kho của bạn. Kiểm tra lại quyền truy cập bên phía nhà cung cấp.';
+
+  @override
+  String get storageTest => 'Kiểm tra lại kết nối';
+
+  @override
+  String get storageDisconnect => 'Thôi dùng kho riêng';
+
+  @override
+  String get storageDisconnectConfirm =>
+      'Video quay từ lúc này sẽ về kho hệ thống. Video cũ vẫn nằm trong kho của bạn và hệ thống sẽ mất đường tới chúng.';
+
+  @override
+  String get storageConnectS3 => 'Cắm kho S3';
+
+  @override
+  String get storageConnectDrive => 'Kết nối Google Drive';
+
+  @override
+  String get storageConnectHint =>
+      'Chỉ cần cấp quyền đọc/ghi/xoá trên đúng prefix bên dưới, không cần quyền trên cả bucket.';
+
+  @override
+  String get storageConnectSubmit => 'Kiểm tra và lưu';
+
+  @override
+  String get storageFieldEndpoint => 'Endpoint';
+
+  @override
+  String get storageFieldBucket => 'Bucket';
+
+  @override
+  String get storageFieldAccessKey => 'Access key ID';
+
+  @override
+  String get storageFieldSecretKey => 'Secret access key';
+
+  @override
+  String get storageFieldRegion => 'Region';
+
+  @override
+  String get storageFieldPrefix => 'Prefix';
+
+  @override
+  String get storageFieldPrefixHint =>
+      'Thư mục con trong bucket. Để mặc định nếu không chắc.';
+
+  @override
+  String get storageConnected => 'Đã cắm kho riêng.';
+
+  @override
+  String get storageDisconnected => 'Đã thôi dùng kho riêng.';
+
+  @override
+  String get storageTestOk => 'Kết nối bình thường.';
+
+  @override
+  String get storageOwnerOnly => 'Chỉ chủ cửa hàng đổi được kho lưu trữ.';
+
+  @override
+  String get dangerZone => 'Vùng nguy hiểm';
+
+  @override
+  String get shopDelete => 'Xoá cửa hàng';
+
+  @override
+  String get shopDeleteDesc =>
+      'Xoá hẳn đơn, bằng chứng, tệp trên kho và thành viên. Không lùi lại được.';
+
+  @override
+  String get shopDeleteConfirmTitle => 'Xoá cửa hàng này?';
+
+  @override
+  String shopDeleteConfirmBody(int orders, int videos, int members) {
+    return '$orders đơn · $videos video · $members thành viên sẽ bị xoá vĩnh viễn.';
+  }
+
+  @override
+  String shopDeleteOpenDossiers(int n) {
+    return '$n hồ sơ khiếu nại đang mở. Link đã gửi cho sàn sẽ chết ngay khi xoá.';
+  }
+
+  @override
+  String get shopDeleteForce => 'Vẫn xoá';
+
+  @override
+  String get shopDeleteFailed => 'Không xoá được cửa hàng.';
+
+  @override
+  String get claimsCreatedLocalOnly =>
+      'Đã tạo hồ sơ trên máy. Chưa gửi lên được nên chưa có link chia sẻ — mở lại khi có mạng.';
+
+  @override
+  String get claimsLinkCopied =>
+      'Đã sao chép link hồ sơ. Dán vào kênh khiếu nại của sàn.';
 }

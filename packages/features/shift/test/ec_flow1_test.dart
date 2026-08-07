@@ -126,7 +126,9 @@ void main() {
     // Một nút radio luôn sáng mà bấm không được trông như một lựa chọn, trong
     // khi shop chỉ có hai hạng và người được mời luôn là hạng dưới. Nói bằng
     // chữ, và tuyệt đối không nhắc tới vai trò đã bỏ.
-    testWidgets('màn mời nói thẳng vai trò, không bày lựa chọn', (tester) async {
+    testWidgets('màn mời nói thẳng vai trò, không bày lựa chọn', (
+      tester,
+    ) async {
       await _pump(tester, const EcInviteMemberScreen());
       expect(find.textContaining('vai trò Nhân viên'), findsOneWidget);
       expect(find.textContaining('Quản lý'), findsNothing);

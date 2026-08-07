@@ -287,7 +287,7 @@ abstract class AppLocalizations {
   /// No description provided for @shopDeleted.
   ///
   /// In en, this message translates to:
-  /// **'Shop deleted'**
+  /// **'Shop deleted.'**
   String get shopDeleted;
 
   /// No description provided for @bundleSelected.
@@ -1418,10 +1418,10 @@ abstract class AppLocalizations {
   /// **'Seal'**
   String get detailSeal;
 
-  /// No description provided for @sealSealed.
+  /// Says the outcome ("locked") rather than the mechanism ("sealed"): a seller buys tamper-evidence, not vocabulary.
   ///
   /// In en, this message translates to:
-  /// **'Sealed · {at}'**
+  /// **'Locked · {at}'**
   String sealSealed(String at);
 
   /// No description provided for @sealWorking.
@@ -1459,6 +1459,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The camera clock drifted from the server, so the burned-in stamp also carries the time the server received the clip.'**
   String get sealTimeDrift;
+
+  /// No description provided for @detailSealAnchor.
+  ///
+  /// In en, this message translates to:
+  /// **'Independent proof'**
+  String get detailSealAnchor;
+
+  /// Never says blockchain/Bitcoin on the seller's screen; the terminology lives on the verification page, whose reader is a marketplace agent who chose to open the details.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes · entry #{block}'**
+  String sealAnchorConfirmed(String block);
+
+  /// No description provided for @sealAnchorConfirmedNoBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get sealAnchorConfirmedNoBlock;
+
+  /// No description provided for @sealAnchorPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Being written to the public ledger (a few hours)'**
+  String get sealAnchorPending;
+
+  /// No description provided for @sealAnchorNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get sealAnchorNone;
+
+  /// No description provided for @sealVerifyOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open verification page'**
+  String get sealVerifyOpen;
+
+  /// No description provided for @sealVerifyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Send this link to the marketplace — they can verify it themselves, without trusting ZenPack.'**
+  String get sealVerifyHint;
+
+  /// No description provided for @sealVerifyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the verification page.'**
+  String get sealVerifyFailed;
 
   /// No description provided for @detailPlayVideo.
   ///
@@ -3242,6 +3290,12 @@ abstract class AppLocalizations {
   /// **'Top-up credits'**
   String get quotaTopupCredits;
 
+  /// No description provided for @quotaOverCap.
+  ///
+  /// In en, this message translates to:
+  /// **'Over plan allowance'**
+  String get quotaOverCap;
+
   /// No description provided for @quotaBlockAt.
   ///
   /// In en, this message translates to:
@@ -3289,6 +3343,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'These videos exist only on this phone. Losing it, uninstalling the app or clearing its data loses them.'**
   String get quotaStrandedNote;
+
+  /// No description provided for @storageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Video storage'**
+  String get storageTitle;
+
+  /// No description provided for @storageSystemName.
+  ///
+  /// In en, this message translates to:
+  /// **'System storage'**
+  String get storageSystemName;
+
+  /// No description provided for @storageS3Name.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own storage (S3)'**
+  String get storageS3Name;
+
+  /// No description provided for @storageDriveName.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Google Drive'**
+  String get storageDriveName;
+
+  /// No description provided for @storageSystemDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The default; nothing to configure. It is the only place where every evidence commitment holds.'**
+  String get storageSystemDesc;
+
+  /// No description provided for @storageOwnDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'New videos go straight to your storage. Older ones stay where they are until their retention ends.'**
+  String get storageOwnDesc;
+
+  /// No description provided for @storageNoPresign.
+  ///
+  /// In en, this message translates to:
+  /// **'This storage cannot sign download links, so videos must be relayed through the server — whoever opens your link will find it slower.'**
+  String get storageNoPresign;
+
+  /// No description provided for @storageNoObjectLock.
+  ///
+  /// In en, this message translates to:
+  /// **'This storage has no object lock. You cannot promise a marketplace that the evidence is undeletable.'**
+  String get storageNoObjectLock;
+
+  /// No description provided for @storageNotInPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan does not include custom storage yet. Upgrade on the web to use it.'**
+  String get storageNotInPlan;
+
+  /// No description provided for @storageHealthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage health'**
+  String get storageHealthTitle;
+
+  /// No description provided for @storageHealthTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total videos'**
+  String get storageHealthTotal;
+
+  /// No description provided for @storageHealthIntact.
+  ///
+  /// In en, this message translates to:
+  /// **'Intact'**
+  String get storageHealthIntact;
+
+  /// No description provided for @storageHealthUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unreachable'**
+  String get storageHealthUnreachable;
+
+  /// No description provided for @storageHealthMismatched.
+  ///
+  /// In en, this message translates to:
+  /// **'Mismatched against the seal'**
+  String get storageHealthMismatched;
+
+  /// No description provided for @storageHealthPendingRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting in the relay area'**
+  String get storageHealthPendingRelay;
+
+  /// No description provided for @storageProblemsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Some videos have problems in your storage. Check the access permissions on the provider side.'**
+  String get storageProblemsNote;
+
+  /// No description provided for @storageTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-test the connection'**
+  String get storageTest;
+
+  /// No description provided for @storageDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop using custom storage'**
+  String get storageDisconnect;
+
+  /// No description provided for @storageDisconnectConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos recorded from now on go to system storage. Older ones stay in your storage and the system loses its route to them.'**
+  String get storageDisconnectConfirm;
+
+  /// No description provided for @storageConnectS3.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect S3 storage'**
+  String get storageConnectS3;
+
+  /// No description provided for @storageConnectDrive.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect Google Drive'**
+  String get storageConnectDrive;
+
+  /// No description provided for @storageConnectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Grant read/write/delete on the prefix below only — no permission on the whole bucket is needed.'**
+  String get storageConnectHint;
+
+  /// No description provided for @storageConnectSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Test and save'**
+  String get storageConnectSubmit;
+
+  /// No description provided for @storageFieldEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint'**
+  String get storageFieldEndpoint;
+
+  /// No description provided for @storageFieldBucket.
+  ///
+  /// In en, this message translates to:
+  /// **'Bucket'**
+  String get storageFieldBucket;
+
+  /// No description provided for @storageFieldAccessKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Access key ID'**
+  String get storageFieldAccessKey;
+
+  /// No description provided for @storageFieldSecretKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Secret access key'**
+  String get storageFieldSecretKey;
+
+  /// No description provided for @storageFieldRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'Region'**
+  String get storageFieldRegion;
+
+  /// No description provided for @storageFieldPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefix'**
+  String get storageFieldPrefix;
+
+  /// No description provided for @storageFieldPrefixHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sub-folder inside the bucket. Leave the default if unsure.'**
+  String get storageFieldPrefixHint;
+
+  /// No description provided for @storageConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom storage connected.'**
+  String get storageConnected;
+
+  /// No description provided for @storageDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom storage disconnected.'**
+  String get storageDisconnected;
+
+  /// No description provided for @storageTestOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection is healthy.'**
+  String get storageTestOk;
+
+  /// No description provided for @storageOwnerOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the shop owner can change storage.'**
+  String get storageOwnerOnly;
+
+  /// No description provided for @dangerZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger zone'**
+  String get dangerZone;
+
+  /// No description provided for @shopDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete shop'**
+  String get shopDelete;
+
+  /// No description provided for @shopDeleteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently deletes orders, evidence, stored files and members. This cannot be undone.'**
+  String get shopDeleteDesc;
+
+  /// No description provided for @shopDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this shop?'**
+  String get shopDeleteConfirmTitle;
+
+  /// No description provided for @shopDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{orders} orders · {videos} videos · {members} members will be permanently deleted.'**
+  String shopDeleteConfirmBody(int orders, int videos, int members);
+
+  /// No description provided for @shopDeleteOpenDossiers.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} claim dossiers are still open. Links already sent to marketplaces die the moment you delete.'**
+  String shopDeleteOpenDossiers(int n);
+
+  /// No description provided for @shopDeleteForce.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete anyway'**
+  String get shopDeleteForce;
+
+  /// No description provided for @shopDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete the shop.'**
+  String get shopDeleteFailed;
+
+  /// No description provided for @claimsCreatedLocalOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier saved on this phone. It could not be uploaded, so there is no share link yet — reopen it when you are back online.'**
+  String get claimsCreatedLocalOnly;
+
+  /// No description provided for @claimsLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier link copied. Paste it into the marketplace claim channel.'**
+  String get claimsLinkCopied;
 }
 
 class _AppLocalizationsDelegate

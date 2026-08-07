@@ -1845,6 +1845,8 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
+    this.onTapStorage,
+    this.storageLabel = '',
     this.onDeleteShop,
     this.membersError = false,
     this.membersUnavailable = false,
@@ -1896,6 +1898,13 @@ class EcShopDetailScreen extends StatelessWidget {
   /// Xoá hẳn cửa hàng. `null` = không hiện nút (nhân viên, hoặc bên gọi chưa
   /// nối). Rào chắn "phải gỡ hết người trước" nằm ở bên gọi, không ở đây: màn
   /// này biết danh sách thành viên nhưng không biết ai đang đăng nhập.
+  /// Kho lưu trữ. Mở cho mọi vai trò — xem tình trạng kho không phải đặc quyền
+  /// của chủ shop, chỉ ĐỔI kho mới là.
+  final VoidCallback? onTapStorage;
+
+  /// Dòng tóm tắt kho đang dùng ("Kho của hệ thống", "Kho riêng của bạn"…).
+  final String storageLabel;
+
   final VoidCallback? onDeleteShop;
 
   @override
@@ -2040,6 +2049,16 @@ class EcShopDetailScreen extends StatelessWidget {
                   label: l10n.shopDetailImageSize,
                   value: l10n.uploadSizeValue('${kFixedImageBytes ~/ 1000000}'),
                 ),
+                // Kho lưu trữ mở cho MỌI vai trò, khác các hàng trên. Kho hỏng
+                // là chuyện xảy ra giữa ca đóng hàng và người đầu tiên chịu là
+                // người đang cầm máy quay — bắt họ đi hỏi chủ shop mới biết
+                // clip của mình đang nằm ở đâu là quá muộn.
+                _FixedSettingRow(
+                  icon: LucideIcons.hardDrive,
+                  label: l10n.storageTitle,
+                  value: storageLabel,
+                  onTap: onTapStorage,
+                ),
               ],
             ),
             const SizedBox(height: _sectionCardGap),
@@ -2150,14 +2169,25 @@ class _FixedSettingRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final String value;
 
+  /// Null = hàng chỉ đọc (mức cố định). Có = hàng mở sang màn khác, và khi đó
+  /// chữ "mặc định" nhường chỗ cho mũi tên — hai kiểu hàng phải nhìn ra khác
+  /// nhau, không thì người dùng đi tìm chỗ bấm trên một hàng không bấm được.
+  final VoidCallback? onTap;
+
   @override
-  Widget build(BuildContext context) => PenBox(
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: _row(context),
+  );
+
+  Widget _row(BuildContext context) => PenBox(
     width: double.infinity,
     fill: PenColors.card,
     stroke: PenColors.line,
@@ -2188,12 +2218,15 @@ class _FixedSettingRow extends StatelessWidget {
       // Chữ "mặc định" thay chỗ mũi tên cũ. Bỏ trống chỗ đó thì hàng trông y
       // như một hàng bấm được vừa hỏng; nói thẳng đây là mức mặc định thì
       // người dùng thôi tìm chỗ bấm.
-      PenText(
-        context.l10n.settingDefaultSuffix,
-        size: 13,
-        color: PenColors.mut,
-        softWrap: false,
-      ),
+      if (onTap == null)
+        PenText(
+          context.l10n.settingDefaultSuffix,
+          size: 13,
+          color: PenColors.mut,
+          softWrap: false,
+        )
+      else
+        const Icon(LucideIcons.chevronRight, size: 18, color: PenColors.mut),
     ],
   );
 }
@@ -2931,7 +2964,6 @@ class EcMemberInvite {
   /// thị — nhãn đổi theo ngôn ngữ máy, mã thì không.
   final String role;
 }
-
 
 /// MemberActions — bottom sheet from the ⋮ on a member row: change role or
 /// remove from shop.

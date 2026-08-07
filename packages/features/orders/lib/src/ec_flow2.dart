@@ -203,13 +203,29 @@ class EcVideoDetail {
 /// of sentence is a wording decision that belongs with the localized strings,
 /// not in a widget.
 class EcSealLine {
-  const EcSealLine({required this.label, this.inProgress = false});
+  const EcSealLine({
+    required this.label,
+    this.inProgress = false,
+    this.anchor,
+    this.canVerify = false,
+  });
 
   final String label;
 
   /// While true the API withholds the media URL by design: the stored file is
   /// still the raw upload, with no timestamp burned into it.
   final bool inProgress;
+
+  /// One line about the independent proof: present, still being written, or
+  /// absent. Kept separate from [label] because the two run on different
+  /// clocks — the seal finishes in seconds, the public ledger takes hours — and
+  /// folding them into one spinner makes a working feature read as a stuck one.
+  final String? anchor;
+
+  /// Whether this clip has a manifest a public page can verify. False for
+  /// clips recorded before sealing existed — opening the page for one of those
+  /// serves a 404, the fastest way to lose a seller's trust in the feature.
+  final bool canVerify;
 }
 
 /// Order timeline — evidence videos for one order, grouped by day, with
@@ -407,6 +423,7 @@ class EcVideoDetailScreen extends StatelessWidget {
     this.onCopyLink,
     this.onDownload,
     this.onDelete,
+    this.onVerify,
     this.canDelete = true,
     super.key,
   });
@@ -428,6 +445,10 @@ class EcVideoDetailScreen extends StatelessWidget {
 
   /// Called when "Xóa video" is tapped.
   final VoidCallback? onDelete;
+
+  /// Called when "Xem trang kiểm chứng" is tapped — opens the public page a
+  /// seller can hand to a marketplace.
+  final VoidCallback? onVerify;
 
   /// Whether the current user may delete this clip. False for Nhân viên
   /// (staff) — hides the delete row.
@@ -510,6 +531,13 @@ class EcVideoDetailScreen extends StatelessWidget {
             value: video.seal!.label,
           ),
         ],
+        if (video.seal?.anchor != null) ...[
+          const _EcDetailDivider(),
+          _EcDetailInfoRow(
+            label: l10n.detailSealAnchor,
+            value: video.seal!.anchor!,
+          ),
+        ],
         if (video.timeDrift) ...[
           const SizedBox(height: 10),
           PenText(
@@ -554,6 +582,19 @@ class EcVideoDetailScreen extends StatelessWidget {
                 title: l10n.detailDownloadVideo,
                 subtitle: l10n.detailDownloadNote,
                 onTap: onDownload,
+              ),
+            ],
+            // Nằm CÙNG nhóm với phát/tải chứ không nằm dưới cùng: đây là thứ
+            // người bán gửi cho sàn khi có khiếu nại, tức là một hành động
+            // chính, không phải một mục cài đặt. Chỉ hiện khi clip thật sự có
+            // hồ sơ — mở trang cho clip cũ chỉ ra 404.
+            if (video.seal?.canVerify ?? false) ...[
+              const _EcDetailDivider(),
+              _EcDetailActionRow(
+                icon: LucideIcons.shieldCheck,
+                title: l10n.sealVerifyOpen,
+                subtitle: l10n.sealVerifyHint,
+                onTap: onVerify,
               ),
             ],
             if (canDelete) ...[

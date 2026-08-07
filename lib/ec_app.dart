@@ -815,11 +815,33 @@ class _AccountRoute extends StatefulWidget {
 }
 
 class _AccountRouteState extends State<_AccountRoute> {
-  // Fetched once; stored so rebuilds (user/language changes) don't refetch.
-  // Chỉ hỏi lại khi quay về từ trang quota — chỗ duy nhất gói có thể vừa đổi.
-  late Future<QuotaDto> _quota = widget.repo.quota(
-    shopId: widget.selectedShop.value?.id,
-  );
+  // Hỏi lại khi: quay về từ trang quota (gói có thể vừa đổi) HOẶC vừa có clip
+  // lên máy chủ xong (số video đã dùng vừa tăng).
+  //
+  // Vế thứ hai là thứ bị thiếu tới 2026-08-08: `_quota` chụp một lần lúc dựng
+  // màn, nên quay xong 20 clip mà con số trên màn vẫn y nguyên cả phiên — đúng
+  // cái người dùng mô tả là "dùng rồi mà không trừ".
+  late Future<QuotaDto> _quota = _fetchQuota();
+
+  Future<QuotaDto> _fetchQuota() =>
+      widget.repo.quota(shopId: widget.selectedShop.value?.id);
+
+  void _refreshQuota() {
+    if (!mounted) return;
+    setState(() => _quota = _fetchQuota());
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.queue.uploadsCompleted.addListener(_refreshQuota);
+  }
+
+  @override
+  void dispose() {
+    widget.queue.uploadsCompleted.removeListener(_refreshQuota);
+    super.dispose();
+  }
 
   Future<void> _logout() async {
     final confirmed = await showCupertinoDialog<bool>(
@@ -899,11 +921,7 @@ class _AccountRouteState extends State<_AccountRoute> {
               if (!mounted) return;
               // Thân khối, KHÔNG phải arrow: closure của setState mà trả về
               // Future thì Flutter ném assertion và bỏ luôn lượt dựng lại.
-              setState(() {
-                _quota = widget.repo.quota(
-                  shopId: widget.selectedShop.value?.id,
-                );
-              });
+              _refreshQuota();
             },
             onLanguageTap: () => context.push('/language'),
             onEndQrTap: () => _showEndSessionQr(
@@ -1184,6 +1202,25 @@ class _QuotaRoute extends StatefulWidget {
 class _QuotaRouteState extends State<_QuotaRoute> {
   late Future<QuotaDto> _quota = widget.repo.quota(shopId: widget.shopId);
 
+  // Màn này mở suốt trong lúc hàng đợi vẫn đang đẩy clip lên — số trên màn
+  // phải chạy theo, không thì nó chỉ đúng ở đúng giây vừa mở.
+  @override
+  void initState() {
+    super.initState();
+    widget.queue.uploadsCompleted.addListener(_refresh);
+  }
+
+  @override
+  void dispose() {
+    widget.queue.uploadsCompleted.removeListener(_refresh);
+    super.dispose();
+  }
+
+  void _refresh() {
+    if (!mounted) return;
+    setState(() => _quota = widget.repo.quota(shopId: widget.shopId));
+  }
+
   /// Groups this shop's clips by [UploadTask.type], summing each clip's
   /// on-disk file size. Sorted largest-first so the breakdown (and its
   /// stacked bar) read biggest-type-first, matching the reference design.
@@ -1321,6 +1358,236 @@ bool _isOpenDossierConflict(Object error) =>
 /// Lightweight feedback so no button is a dead end: actions that don't (yet)
 /// have a dedicated screen confirm they fired.
 void _toast(BuildContext c, String msg) => ecToast(c, msg);
+
+/// Màn "Kho lưu trữ": đọc trạng thái, rồi cho chủ shop kiểm tra lại / gỡ kho.
+///
+/// Cắm kho mới đi qua một màn riêng (`/storage-connect`) vì nó là một form năm
+/// ô — nhét vào đây thì màn này vừa là bảng tình trạng vừa là biểu mẫu, và mỗi
+/// lần đọc lại trạng thái là mất chữ người dùng đang gõ dở.
+class _StorageRoute extends StatefulWidget {
+  const _StorageRoute({
+    required this.repo,
+    required this.shopId,
+    this.canManage = false,
+    this.onBack,
+  });
+
+  final EcRepository repo;
+  final String shopId;
+
+  /// Actor có phải chủ shop không. Quyết định có chào nút đổi kho hay không —
+  /// máy chủ vẫn là hàng rào thật (`owner_only`), đây chỉ là không mời bấm vào
+  /// một cái nút chắc chắn 403.
+  final bool canManage;
+  final VoidCallback? onBack;
+
+  @override
+  State<_StorageRoute> createState() => _StorageRouteState();
+}
+
+class _StorageRouteState extends State<_StorageRoute> {
+  late Future<StorageStateDto> _state = widget.repo.storage(widget.shopId);
+  bool _busy = false;
+
+  void _reload() => setState(() => _state = widget.repo.storage(widget.shopId));
+
+  /// Chạy một thao tác mạng, khoá nút trong lúc chạy, rồi đọc lại trạng thái.
+  ///
+  /// Đọc lại ở `finally` chứ không chỉ khi thành công: một lượt "kiểm tra lại"
+  /// hỏng cũng đổi `last_error` phía máy chủ, và đó chính là câu người dùng
+  /// cần đọc.
+  Future<void> _run(Future<void> Function() action, String okMessage) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await action();
+      if (mounted) _toast(context, okMessage);
+    } on Object catch (error) {
+      if (mounted) _toast(context, _dataErrorText(context.l10n, error));
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+        _reload();
+      }
+    }
+  }
+
+  Future<void> _disconnect() async {
+    final l10n = context.l10n;
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(l10n.storageDisconnect),
+        content: Text(l10n.storageDisconnectConfirm),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.storageDisconnect),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _run(
+      () => widget.repo.disconnectStorage(widget.shopId),
+      l10n.storageDisconnected,
+    );
+  }
+
+  /// Google Drive cắm qua OAuth nên phải rời app sang trình duyệt. Quay lại thì
+  /// đọc lại trạng thái — không có tín hiệu nào khác báo cấp quyền xong chưa.
+  Future<void> _connectDrive() async {
+    try {
+      final url = await widget.repo.gdriveAuthUrl(widget.shopId);
+      if (!mounted) return;
+      if (url.isEmpty) {
+        _toast(context, context.l10n.supportOpenFailed);
+        return;
+      }
+      await _openSupport(context, url);
+      if (mounted) _reload();
+    } on Object catch (error) {
+      if (mounted) _toast(context, _dataErrorText(context.l10n, error));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<StorageStateDto>(
+      future: _state,
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return _RouteLoadError(
+            title: context.l10n.storageTitle,
+            detail: _dataErrorText(context.l10n, snap.error!),
+            onRetry: _reload,
+          );
+        }
+        if (!snap.hasData) {
+          return const CupertinoPageScaffold(
+            backgroundColor: BrandColors.bg,
+            child: Center(child: CupertinoActivityIndicator()),
+          );
+        }
+        final dto = snap.data!;
+        final view = dto.storage;
+        return EcStorageScreen(
+          busy: _busy,
+          onBack: widget.onBack,
+          state: EcStorageState(
+            kind: switch (dto.kind) {
+              StorageKind.system => EcStorageKind.system,
+              StorageKind.s3 => EcStorageKind.s3,
+              StorageKind.gdrive => EcStorageKind.gdrive,
+            },
+            label: view?.label ?? '',
+            ok: view?.ok ?? true,
+            lastError: view?.lastError,
+            byosAllowed: dto.byosAllowed,
+            // `byos_allowed` nói về GÓI, không nói về vai trò. Chủ shop là
+            // người duy nhất đổi được kho, và máy chủ trả `owner_only` cho mọi
+            // ai khác — nên nút chỉ hiện khi cả hai điều kiện đều đúng.
+            canManage: widget.canManage,
+            presignedDownload: view?.capabilities?.presignedDownload ?? true,
+            objectLock: view?.capabilities?.objectLock ?? false,
+            health: EcStorageHealth(
+              total: dto.health.total,
+              intact: dto.health.intact,
+              unreachable: dto.health.unreachable,
+              mismatched: dto.health.mismatched,
+              pendingRelay: dto.health.pendingRelay,
+            ),
+          ),
+          onTest: () => _run(
+            () => widget.repo.testStorage(widget.shopId),
+            context.l10n.storageTestOk,
+          ),
+          onDisconnect: _disconnect,
+          onConnectDrive: _connectDrive,
+          onConnectS3: () => context
+              .push<bool>('/storage-connect', extra: widget.shopId)
+              .then((saved) {
+                if (saved == true && mounted) _reload();
+              }),
+        );
+      },
+    );
+  }
+}
+
+/// Form cắm kho S3. Đóng lại với `true` khi máy chủ đã lưu xong.
+class _StorageConnectRoute extends StatefulWidget {
+  const _StorageConnectRoute({required this.repo, required this.shopId});
+
+  final EcRepository repo;
+  final String shopId;
+
+  @override
+  State<_StorageConnectRoute> createState() => _StorageConnectRouteState();
+}
+
+class _StorageConnectRouteState extends State<_StorageConnectRoute> {
+  bool _busy = false;
+  String? _error;
+
+  @override
+  Widget build(BuildContext context) {
+    return EcStorageConnectScreen(
+      busy: _busy,
+      errorText: _error,
+      onBack: () => context.pop(false),
+      onSubmit:
+          ({
+            required endpoint,
+            required bucket,
+            required accessKeyId,
+            required secretAccessKey,
+            required region,
+            required prefix,
+          }) async {
+            if (_busy) return;
+            setState(() {
+              _busy = true;
+              _error = null;
+            });
+            try {
+              final result = await widget.repo.saveS3Storage(
+                widget.shopId,
+                endpoint: endpoint,
+                bucket: bucket,
+                accessKeyId: accessKeyId,
+                secretAccessKey: secretAccessKey,
+                region: region,
+                prefix: prefix.isEmpty ? 'evidencecam' : prefix,
+              );
+              if (!context.mounted) return;
+              if (result.ok) {
+                _toast(context, context.l10n.storageConnected);
+                context.pop(true);
+                return;
+              }
+              // `ok == false` = máy chủ CHƯA lưu gì. Hiện nguyên `hint` — đó là
+              // câu duy nhất nói được khách thiếu quyền nào bên nhà cung cấp.
+              setState(() {
+                _busy = false;
+                _error = result.hint ?? context.l10n.errorLoadShopDetail;
+              });
+            } on Object catch (error) {
+              if (!mounted) return;
+              setState(() {
+                _busy = false;
+                _error = _dataErrorText(context.l10n, error);
+              });
+            }
+          },
+    );
+  }
+}
 
 // Kênh hỗ trợ hiện ở góc trái dưới trang Tài khoản.
 //
@@ -2474,6 +2741,7 @@ class _ShopDetailRoute extends StatefulWidget {
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
+    this.onTapStorage,
     this.onDeleteShop,
     this.readOnly = false,
   });
@@ -2494,6 +2762,9 @@ class _ShopDetailRoute extends StatefulWidget {
   final Future<void> Function(EcVideoType type)? onEditType;
   final Future<void> Function(EcVideoType type)? onDeleteType;
   final Future<void> Function()? onAddType;
+
+  /// Kho lưu trữ. Mở cho mọi vai trò, khác các callback quản trị khác.
+  final Future<void> Function()? onTapStorage;
 
   /// Xoá hẳn cửa hàng. Rào chắn "phải gỡ hết người trước" nằm ở router, nơi
   /// biết danh sách thành viên vừa đọc về.
@@ -2540,6 +2811,10 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
       if (canReadMembers)
         _orLog('members', () => widget.repo.members(widget.shop.id)),
       _orLog('video-types', () => widget.repo.videoTypes(widget.shop.id)),
+      // Kho chỉ để hiện một dòng tóm tắt, nên hỏng thì rơi về "kho hệ thống"
+      // chứ không làm hỏng cả màn — người dùng vẫn mở được màn kho và thấy
+      // lỗi thật ở đó.
+      _orLog('storage', () => widget.repo.storage(widget.shop.id)),
     ]);
     final members = canReadMembers ? results[1] as List<MemberDto>? : null;
     return _ShopDetailData(
@@ -2549,9 +2824,12 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
           .toList(),
       membersFailed: canReadMembers && members == null,
       membersRestricted: !canReadMembers,
-      videoTypes: ((results.last as List<VideoTypeDto>?) ?? const [])
-          .map(_videoTypeFromDto)
-          .toList(),
+      storageKind:
+          (results.last as StorageStateDto?)?.kind ?? StorageKind.system,
+      videoTypes:
+          ((results[canReadMembers ? 2 : 1] as List<VideoTypeDto>?) ?? const [])
+              .map(_videoTypeFromDto)
+              .toList(),
     );
   }
 
@@ -2642,6 +2920,14 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
               : (type) => widget.onDeleteType!(type).then((_) {
                   if (mounted) _retry();
                 }),
+          // Kho KHÔNG khoá theo `locked`: nhân viên phải xem được kho đang ra
+          // sao. Máy chủ mở `GET` cho mọi vai trò và chỉ chặn phần ĐỔI kho.
+          onTapStorage: widget.onTapStorage == null
+              ? null
+              : () => widget.onTapStorage!().then((_) {
+                  if (mounted) _retry();
+                }),
+          storageLabel: _storageLabel(context, detail.storageKind),
           onDeleteShop: locked || widget.onDeleteShop == null
               ? null
               : () => unawaited(widget.onDeleteShop!()),
@@ -2663,6 +2949,7 @@ class _ShopDetailData {
     required this.videoTypes,
     this.membersFailed = false,
     this.membersRestricted = false,
+    this.storageKind = StorageKind.system,
   });
 
   /// Đọc thành viên hỏng — phân biệt với cửa hàng thật sự không có ai, thứ
@@ -2677,7 +2964,17 @@ class _ShopDetailData {
 
   final List<EcShopMember> members;
   final List<EcVideoType> videoTypes;
+
+  /// Chỉ để hiện tóm tắt trên hàng "Kho lưu trữ". Đọc hỏng → kho hệ thống, và
+  /// màn kho sẽ nói ra lỗi thật khi người dùng mở nó.
+  final StorageKind storageKind;
 }
+
+String _storageLabel(BuildContext context, StorageKind kind) => switch (kind) {
+  StorageKind.system => context.l10n.storageSystemName,
+  StorageKind.s3 => context.l10n.storageS3Name,
+  StorageKind.gdrive => context.l10n.storageDriveName,
+};
 
 /// Hàng `pending` chưa có tài khoản: không uid, không tên, không email — chỉ
 /// có địa chỉ đã mời. Nhãn trạng thái lấy theo `invite_status`, không theo
@@ -4466,6 +4763,7 @@ class _CreateClaimRoute extends StatelessWidget {
   ) async {
     final l10n = context.l10n;
     final now = DateTime.now();
+    final shareUrl = await _publish(batch);
     // Chụp lại NGUYÊN nội dung chứ không giữ id rồi tra sau: clip có hạn lưu
     // trữ, mà hồ sơ khiếu nại phải nói được nó ĐÃ gồm những gì.
     await _claimStore.add(
@@ -4473,6 +4771,7 @@ class _CreateClaimRoute extends StatelessWidget {
         id: now.microsecondsSinceEpoch.toString(),
         shopId: shopId,
         createdAt: now,
+        shareUrl: shareUrl,
         orders: [
           for (final order in batch)
             EcClaimOrder(
@@ -4492,8 +4791,48 @@ class _CreateClaimRoute extends StatelessWidget {
       ),
     );
     if (!context.mounted) return;
-    _toast(context, l10n.claimsCreated);
+    _toast(
+      context,
+      shareUrl == null ? l10n.claimsCreatedLocalOnly : l10n.claimsCreated,
+    );
     onBack?.call();
+  }
+
+  /// Đẩy hồ sơ lên máy chủ để nó có một địa chỉ công khai gửi được cho sàn.
+  ///
+  /// Trả `null` khi không gửi được — và khi đó hồ sơ VẪN được lưu trên máy.
+  /// Người bán vừa tick xong một danh sách đơn; bắt họ làm lại vì mất mạng là
+  /// trừng phạt họ vì lỗi của mạng. Đổi lại, màn hình phải nói thẳng là chưa
+  /// có link, chứ không để họ tưởng bằng chứng đã chia sẻ được.
+  Future<String?> _publish(List<EcClaimOrderPicks> batch) async {
+    try {
+      // Mã vận đơn → id đơn. `_search` đã tra ra id này lúc người dùng gõ mã,
+      // nhưng màn là StatelessWidget nên không giữ lại được; tra lại một lượt
+      // song song vẫn rẻ hơn nhiều so với dựng thêm một tầng trạng thái.
+      final ids = await Future.wait(
+        batch.map((order) async {
+          final hits = await repo.searchOrders(shopId, order.orderCode);
+          final match = hits.where(
+            (o) => o.tracking.toLowerCase() == order.orderCode.toLowerCase(),
+          );
+          return match.isEmpty ? null : match.first.id;
+        }),
+      );
+      final resolved = [
+        for (final id in ids) ?id,
+      ];
+      if (resolved.isEmpty) return null;
+      return (await repo.createClaim(shopId, resolved)).url;
+    } on Object catch (error, stack) {
+      developer.log(
+        'claims: không gửi được hồ sơ lên máy chủ (${error.runtimeType})',
+        name: 'zenpack.claims',
+        level: 1000,
+        error: error,
+        stackTrace: stack,
+      );
+      return null;
+    }
   }
 
   @override
@@ -4529,10 +4868,19 @@ class _CreateClaimRoute extends StatelessWidget {
 /// sàn, và người đọc không cần app nào để mở nó.
 void _copyClaimSummary(BuildContext context, EcClaimDossier dossier) {
   final l10n = context.l10n;
+  final url = dossier.shareUrl;
+  final hasLink = url != null && url.isNotEmpty;
+  // Ưu tiên LINK: một dòng, mở ra là người kiểm duyệt xem được cả vụ với đủ
+  // video, mốc giờ và mã vận đơn — thứ một khối chữ dán vào ô chat không làm
+  // được. Chưa có link thì lùi về bản chữ, vẫn dán được vào bất cứ đâu.
   Clipboard.setData(
-    ClipboardData(text: ecClaimSummaryText(dossier, title: l10n.claimsTitle)),
+    ClipboardData(
+      text: hasLink
+          ? url
+          : ecClaimSummaryText(dossier, title: l10n.claimsTitle),
+    ),
   );
-  _toast(context, l10n.claimsCopied);
+  _toast(context, hasLink ? l10n.claimsLinkCopied : l10n.claimsCopied);
 }
 
 /// Lớp con: nội dung một hồ sơ — từng mã vận đơn và bằng chứng của nó, cộng
@@ -5803,6 +6151,11 @@ GoRouter _buildRouter(
             onInviteMember: readOnly
                 ? null
                 : () => c.push('/invite-member', extra: shop.id).then((_) {}),
+            // Kho lưu trữ KHÔNG khoá theo `readOnly`: nhân viên phải xem
+            // được kho đang ra sao — máy chủ mở `GET` cho mọi vai trò.
+            onTapStorage: () => c
+                .push<void>('/storage', extra: (shop.id, shop.role == 'owner'))
+                .then((_) {}),
             onDeleteShop: readOnly
                 ? null
                 : () => _confirmDeleteShop(c, repo, shop),
@@ -5953,6 +6306,29 @@ GoRouter _buildRouter(
                   });
             },
           ),
+        ),
+      ),
+      GoRoute(
+        path: '/storage',
+        builder: (c, s) {
+          // `(shopId, canManage)`: vai trò đi kèm chứ không đọc lại — màn này
+          // mở cho mọi vai trò, chỉ chủ shop mới thấy nút đổi kho.
+          final (shopId, canManage) = s.extra is (String, bool)
+              ? s.extra! as (String, bool)
+              : (_selected(selectedShop)?.id ?? '', false);
+          return _StorageRoute(
+            repo: repo,
+            shopId: shopId,
+            canManage: canManage,
+            onBack: () => _back(c, '/shop-detail'),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/storage-connect',
+        builder: (c, s) => _StorageConnectRoute(
+          repo: repo,
+          shopId: s.extra is String ? s.extra! as String : '',
         ),
       ),
       GoRoute(

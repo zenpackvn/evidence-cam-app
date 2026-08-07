@@ -133,19 +133,125 @@ class EcApi {
 
   /// Xoá hẳn cửa hàng.
   ///
-  /// ponytail: endpoint này backend CHƯA mở — hiện trả 404. Đường REST chuẩn
-  /// cho tài nguyên đã có `GET/PATCH /api/shops/:id`, nên khi backend làm thì
-  /// gần như chắc chắn là đường này. App bắt lỗi và nói rõ thay vì nuốt.
-  Future<void> deleteShop(String shopId) =>
-      _dio.delete<void>('/api/shops/$shopId');
-
   Future<ShopDto> getShop(String shopId) async {
     final res = await _dio.get<Map<String, dynamic>>('/api/shops/$shopId');
     return ShopDto.fromJson(res.data!);
   }
 
+  /// Gộp nhiều đơn thành một hồ sơ khiếu nại, trả về link công khai.
+  ///
+  /// Mọi thành viên gọi được: người đứng máy là người phát hiện đơn có vấn đề,
+  /// và bắt họ chờ chủ shop mở laptop là đúng lúc bằng chứng còn nóng nhất thì
+  /// không ai gửi được cho sàn.
+  Future<ClaimDto> createClaim(
+    String shopId,
+    List<String> orderIds, {
+    String? title,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/shops/$shopId/claims',
+      data: {'order_ids': orderIds, 'title': ?title},
+    );
+    return ClaimDto.fromJson(res.data!);
+  }
+
+  Future<List<ClaimDto>> listClaims(String shopId) =>
+      _getList('/api/shops/$shopId/claims', ClaimDto.fromJson);
+
+  /// Thu hồi: link chết ngay, dữ liệu còn nguyên. Chủ shop hoặc quản lý.
+  Future<void> revokeClaim(String shopId, String claimId) =>
+      _dio.delete<void>('/api/shops/$shopId/claims/$claimId');
+
+  /// Xoá cửa hàng này sẽ mất những gì. Đọc thuần — dùng cho màn xác nhận.
+  Future<ShopDeletionPreviewDto> shopDeletionPreview(String shopId) => _get(
+    '/api/shops/$shopId/deletion-preview',
+    ShopDeletionPreviewDto.fromJson,
+  );
+
+  /// Xoá HẲN cửa hàng. Không lùi lại được — khác `archive` ở đúng chỗ đó.
+  ///
+  /// Trả 409 `open_dossiers_exist` khi còn hồ sơ khiếu nại đang mở; gọi lại
+  /// với [force] là ép. Chỉ chủ shop.
+  Future<void> deleteShop(String shopId, {bool force = false}) =>
+      _dio.delete<void>(
+        '/api/shops/$shopId',
+        queryParameters: force ? const {'force': 'true'} : null,
+      );
+
   Future<List<MemberDto>> listMembers(String shopId) =>
       _getList('/api/shops/$shopId/members', MemberDto.fromJson);
+
+  // --- kho riêng của shop, BYOS (mục 5.1) ---
+  //
+  // Cùng bộ endpoint web admin dùng. Kho là quyết định của chủ shop nhưng người
+  // đứng máy phải ĐỌC được tình trạng: khi kho của khách hỏng, clip đọng ở vùng
+  // chờ tạm và người duy nhất thấy điều đó ngay là người đang quay.
+
+  /// Cấu hình kho + bảng tình trạng, một lời gọi.
+  /// `storage == null` = shop đang dùng kho của hệ thống.
+  Future<StorageStateDto> getStorage(String shopId) =>
+      _get('/api/shops/$shopId/storage', StorageStateDto.fromJson);
+
+  /// Cắm kho S3. Máy chủ chạy vòng PUT→HEAD→GET→DELETE rồi mới lưu, nên
+  /// `ok == false` nghĩa là KHÔNG có gì được ghi — hiện nguyên `hint` cho khách.
+  ///
+  /// Google Drive không đi đường này: nó cắm qua OAuth ([gdriveAuthUrl]).
+  Future<StorageValidateDto> saveS3Storage(
+    String shopId, {
+    required String endpoint,
+    required String bucket,
+    required String accessKeyId,
+    required String secretAccessKey,
+    String region = 'auto',
+    String prefix = 'evidencecam',
+  }) async {
+    final res = await _dio.put<Map<String, dynamic>>(
+      '/api/shops/$shopId/storage',
+      data: {
+        'kind': 's3',
+        'config': {
+          'endpoint': endpoint,
+          'region': region,
+          'bucket': bucket,
+          'prefix': prefix,
+          'accessKeyId': accessKeyId,
+          'secretAccessKey': secretAccessKey,
+        },
+      },
+    );
+    return StorageValidateDto.fromJson(res.data!);
+  }
+
+  /// Chạy lại vòng kiểm tra trên cấu hình đã lưu — dùng sau khi khách vừa sửa
+  /// quyền bên phía họ.
+  Future<StorageValidateDto> testStorage(String shopId) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/shops/$shopId/storage/test',
+    );
+    return StorageValidateDto.fromJson(res.data!);
+  }
+
+  /// Thôi dùng kho riêng. Video quay TỪ LÚC NÀY về kho hệ thống; video cũ nằm
+  /// nguyên trong kho của khách và hệ thống mất đường tới chúng.
+  Future<void> deleteStorage(String shopId) =>
+      _dio.delete<void>('/api/shops/$shopId/storage');
+
+  /// URL để mở trình duyệt cấp quyền Google Drive.
+  Future<String> gdriveAuthUrl(String shopId) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/api/shops/$shopId/storage/gdrive/auth-url',
+    );
+    return (res.data!['url'] as String?) ?? '';
+  }
+
+  Future<void> addMember(
+    String shopId, {
+    required String accountUid,
+    required String role,
+  }) => _dio.post<void>(
+    '/api/shops/$shopId/members',
+    data: {'account_uid': accountUid, 'role': role},
+  );
 
   Future<ShopInviteDto> sendShopInvite(
     String shopId, {
@@ -290,6 +396,12 @@ class EcApi {
   /// dùng, nên hai bên không thể sinh ra hai link khác nhau.
   String dossierShareUrl(String shareToken) =>
       '${_dio.options.baseUrl.replaceAll(RegExp(r'/+$'), '')}/d/$shareToken';
+
+  /// Trang kiểm chứng công khai của một clip. Không cần đăng nhập — cả điểm của
+  /// nó là người ngoài (nhân viên sàn) mở được, và họ đi tiếp sang công cụ của
+  /// bên thứ ba từ đó.
+  String verifyUrl(String evidenceId) =>
+      '${_dio.options.baseUrl.replaceAll(RegExp(r'/+$'), '')}/seal/verify/$evidenceId';
 
   Future<OrderDetailDto> getOrder(String shopId, String orderId) =>
       _get('/api/shops/$shopId/orders/$orderId', OrderDetailDto.fromJson);

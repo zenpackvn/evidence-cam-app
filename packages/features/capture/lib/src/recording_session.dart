@@ -1030,6 +1030,10 @@ class RecordingSessionBloc
       ],
       clockStart: startedAt,
       clockSeconds: durationSeconds,
+      // Bitrate encode lại đi theo đúng độ phân giải shop đã chọn. Thiếu tham
+      // số này thì hạ xuống 240p/480p không làm tệp nhẹ đi chút nào — đó đúng
+      // là cách nó hỏng trước 2026-08-08.
+      resolution: state.resolutionLabel,
     );
     if (stamped != streamable) await _deleteQuietly(streamable);
     _onClipSaved(

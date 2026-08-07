@@ -52,9 +52,6 @@ abstract interface class EcRepository {
     int? maxClipSeconds,
   });
 
-  /// Xoá hẳn cửa hàng. Bên gọi phải chắc shop không còn thành viên nào khác.
-  Future<void> deleteShop(String shopId);
-
   Future<List<MemberDto>> members(String shopId);
   Future<ShopInviteDto> sendShopInvite(
     String shopId, {
@@ -83,6 +80,37 @@ abstract interface class EcRepository {
   });
   Future<void> deleteVideoType(String shopId, String typeId);
   Future<QuotaDto> quota({String? shopId});
+
+  /// Gộp nhiều đơn thành một hồ sơ khiếu nại; trả link công khai zenpack.vn.
+  Future<ClaimDto> createClaim(
+    String shopId,
+    List<String> orderIds, {
+    String? title,
+  });
+  Future<List<ClaimDto>> listClaims(String shopId);
+  Future<void> revokeClaim(String shopId, String claimId);
+
+  /// Xoá cửa hàng này sẽ mất những gì. Chỉ chủ shop đọc được.
+  Future<ShopDeletionPreviewDto> shopDeletionPreview(String shopId);
+
+  /// Xoá HẲN cửa hàng. Ném khi còn hồ sơ khiếu nại đang mở, trừ khi [force].
+  Future<void> deleteShop(String shopId, {bool force});
+
+  /// Kho riêng của shop (BYOS, mục 5.1). Đọc được với mọi vai trò; đổi thì chỉ
+  /// chủ shop — máy chủ chặn, `byosAllowed` chỉ để ẩn nút.
+  Future<StorageStateDto> storage(String shopId);
+  Future<StorageValidateDto> saveS3Storage(
+    String shopId, {
+    required String endpoint,
+    required String bucket,
+    required String accessKeyId,
+    required String secretAccessKey,
+    String region,
+    String prefix,
+  });
+  Future<StorageValidateDto> testStorage(String shopId);
+  Future<void> disconnectStorage(String shopId);
+  Future<String> gdriveAuthUrl(String shopId);
 
   /// Khai số clip chưa upload được đang nằm trên máy này (xem
   /// [EcApi.reportQueueDepth]). Nuốt lỗi ở tầng hiện thực: đây là báo cáo phụ
@@ -116,6 +144,10 @@ abstract interface class EcRepository {
 
   /// URL công khai của [shareToken].
   String dossierShareUrl(String shareToken);
+
+  /// Trang kiểm chứng công khai của một bằng chứng — không cần đăng nhập, và
+  /// chính chỗ đó dẫn tiếp sang công cụ kiểm chứng của bên thứ ba.
+  String verifyUrl(String evidenceId);
   Future<void> deleteEvidence(String shopId, String orderId, String evidenceId);
   Future<void> deleteAccount({bool force, bool dryRun});
 }
@@ -186,9 +218,6 @@ class RemoteEcRepository implements EcRepository {
   );
 
   @override
-  Future<void> deleteShop(String shopId) => _api.deleteShop(shopId);
-
-  @override
   Future<List<MemberDto>> members(String shopId) => _api.listMembers(shopId);
 
   @override
@@ -233,6 +262,60 @@ class RemoteEcRepository implements EcRepository {
 
   @override
   Future<QuotaDto> quota({String? shopId}) => _api.getQuota(shopId: shopId);
+
+  @override
+  Future<ClaimDto> createClaim(
+    String shopId,
+    List<String> orderIds, {
+    String? title,
+  }) => _api.createClaim(shopId, orderIds, title: title);
+
+  @override
+  Future<List<ClaimDto>> listClaims(String shopId) => _api.listClaims(shopId);
+
+  @override
+  Future<void> revokeClaim(String shopId, String claimId) =>
+      _api.revokeClaim(shopId, claimId);
+
+  @override
+  Future<ShopDeletionPreviewDto> shopDeletionPreview(String shopId) =>
+      _api.shopDeletionPreview(shopId);
+
+  @override
+  Future<void> deleteShop(String shopId, {bool force = false}) =>
+      _api.deleteShop(shopId, force: force);
+
+  @override
+  Future<StorageStateDto> storage(String shopId) => _api.getStorage(shopId);
+
+  @override
+  Future<StorageValidateDto> saveS3Storage(
+    String shopId, {
+    required String endpoint,
+    required String bucket,
+    required String accessKeyId,
+    required String secretAccessKey,
+    String region = 'auto',
+    String prefix = 'evidencecam',
+  }) => _api.saveS3Storage(
+    shopId,
+    endpoint: endpoint,
+    bucket: bucket,
+    accessKeyId: accessKeyId,
+    secretAccessKey: secretAccessKey,
+    region: region,
+    prefix: prefix,
+  );
+
+  @override
+  Future<StorageValidateDto> testStorage(String shopId) =>
+      _api.testStorage(shopId);
+
+  @override
+  Future<void> disconnectStorage(String shopId) => _api.deleteStorage(shopId);
+
+  @override
+  Future<String> gdriveAuthUrl(String shopId) => _api.gdriveAuthUrl(shopId);
 
   @override
   Future<void> reportQueueDepth(
@@ -289,6 +372,9 @@ class RemoteEcRepository implements EcRepository {
 
   @override
   String dossierShareUrl(String shareToken) => _api.dossierShareUrl(shareToken);
+
+  @override
+  String verifyUrl(String evidenceId) => _api.verifyUrl(evidenceId);
 
   @override
   Future<void> deleteEvidence(
@@ -369,9 +455,6 @@ class FakeEcRepository implements EcRepository {
   );
 
   @override
-  Future<void> deleteShop(String shopId) async {}
-
-  @override
   Future<List<MemberDto>> members(String shopId) async => const [
     MemberDto(accountUid: 'fake-uid', role: 'owner'),
   ];
@@ -432,6 +515,54 @@ class FakeEcRepository implements EcRepository {
   Future<void> deleteVideoType(String shopId, String typeId) async {}
 
   @override
+  Future<ClaimDto> createClaim(
+    String shopId,
+    List<String> orderIds, {
+    String? title,
+  }) async =>
+      const ClaimDto(id: 'claim-demo', url: 'https://zenpack.vn/c/demo');
+
+  @override
+  Future<List<ClaimDto>> listClaims(String shopId) async => const [];
+
+  @override
+  Future<void> revokeClaim(String shopId, String claimId) async {}
+
+  @override
+  Future<ShopDeletionPreviewDto> shopDeletionPreview(String shopId) async =>
+      const ShopDeletionPreviewDto(orders: 12, videos: 34, members: 2);
+
+  @override
+  Future<void> deleteShop(String shopId, {bool force = false}) async {}
+
+  // Bản mẫu luôn ở kho hệ thống, và `byosAllowed: false` — màn xem trước không
+  // được chào một cái nút mà bản thật sẽ khoá theo gói.
+  @override
+  Future<StorageStateDto> storage(String shopId) async =>
+      const StorageStateDto(health: StorageHealthDto(total: 42, intact: 42));
+
+  @override
+  Future<StorageValidateDto> saveS3Storage(
+    String shopId, {
+    required String endpoint,
+    required String bucket,
+    required String accessKeyId,
+    required String secretAccessKey,
+    String region = 'auto',
+    String prefix = 'evidencecam',
+  }) async => const StorageValidateDto(ok: true);
+
+  @override
+  Future<StorageValidateDto> testStorage(String shopId) async =>
+      const StorageValidateDto(ok: true);
+
+  @override
+  Future<void> disconnectStorage(String shopId) async {}
+
+  @override
+  Future<String> gdriveAuthUrl(String shopId) async => '';
+
+  @override
   Future<void> reportQueueDepth(
     String shopId, {
     required int pending,
@@ -489,6 +620,9 @@ class FakeEcRepository implements EcRepository {
 
   @override
   String dossierShareUrl(String shareToken) => '';
+
+  @override
+  String verifyUrl(String evidenceId) => '';
 
   @override
   Future<void> deleteEvidence(

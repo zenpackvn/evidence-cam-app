@@ -75,7 +75,6 @@ const _ordersPage = shift.EcOrderPage(
 
 void _noopPage(int page) {}
 
-
 Future<void> _warmDesignArtwork() async {
   final files = Directory('packages/ec_ui/assets/design')
       .listSync(recursive: true)

@@ -280,9 +280,14 @@
   "detailSize": "Dung lượng",
   "detailUploadStatus": "Trạng thái upload",
   "detailSeal": "Niêm phong",
-  "sealSealed": "Đã niêm phong · {at}",
+  "sealSealed": "Đã khoá · {at}",
   "@sealSealed": {
-    "placeholders": { "at": { "type": "String" } }
+    "description": "Nói bằng kết quả (\"đã khoá\") chứ không bằng cơ chế (\"đã niêm phong\"): người bán mua việc sửa vào là bị phát hiện, không mua thuật ngữ.",
+    "placeholders": {
+      "at": {
+        "type": "String"
+      }
+    }
   },
   "sealWorking": "Đang đóng dấu thời gian…",
   "sealWorkingHint": "Bản đang lưu chưa có dấu thời gian, nên tạm khoá phát và tải để bạn không cầm nhầm file chưa xong. Thường mất vài giây.",
@@ -290,6 +295,22 @@
   "sealFailed": "Niêm phong lỗi — video vẫn xem được",
   "sealMismatch": "Vân tay không khớp — hãy quay lại clip này",
   "sealTimeDrift": "Đồng hồ máy quay lệch so với máy chủ, nên dấu nung ghi thêm giờ máy chủ nhận clip.",
+  "detailSealAnchor": "Chứng thực độc lập",
+  "sealAnchorConfirmed": "Đã có · mục #{block}",
+  "@sealAnchorConfirmed": {
+    "description": "KHÔNG dùng chữ blockchain/Bitcoin ở màn người bán — nhóm này ở VN dính từ đó với đa cấp. Thuật ngữ chỉ xuất hiện ở trang kiểm chứng, nơi người đọc là nhân viên sàn và đã chủ động bấm vào xem chi tiết.",
+    "placeholders": {
+      "block": {
+        "type": "String"
+      }
+    }
+  },
+  "sealAnchorConfirmedNoBlock": "Đã có",
+  "sealAnchorPending": "Đang ghi vào sổ công khai (vài giờ)",
+  "sealAnchorNone": "Không có",
+  "sealVerifyOpen": "Xem trang kiểm chứng",
+  "sealVerifyHint": "Gửi link này cho sàn — họ tự kiểm chứng được, không cần tin ZenPack.",
+  "sealVerifyFailed": "Không mở được trang kiểm chứng.",
   "detailPlayVideo": "Phát video",
   "detailCopyAssetLink": "Sao chép link",
   "assetLinkTitle": "Link bằng chứng",
@@ -982,6 +1003,7 @@
   "quotaBlockedNote": "Video vẫn quay bình thường, nhưng chưa tải lên được — chúng đang nằm trên máy và chưa được bảo vệ. Hạn mức được nâng thì chúng tự tải lên.",
   "quotaBlockedOwnerNote": "Liên hệ chủ tài khoản để được nâng hạn mức.",
   "quotaTopupCredits": "Lượt mua thêm",
+  "quotaOverCap": "Đã vượt trần gói",
   "quotaBlockAt": "Chặn quay mới từ {n} video",
   "@quotaBlockAt": {
     "placeholders": {
@@ -1024,5 +1046,70 @@
       }
     }
   },
-  "quotaStrandedNote": "Những video này chỉ tồn tại trên điện thoại. Mất máy, gỡ app hoặc xoá dữ liệu app là mất luôn."
+  "quotaStrandedNote": "Những video này chỉ tồn tại trên điện thoại. Mất máy, gỡ app hoặc xoá dữ liệu app là mất luôn.",
+  "storageTitle": "Kho lưu trữ",
+  "storageSystemName": "Kho của hệ thống",
+  "storageS3Name": "Kho riêng của bạn (S3)",
+  "storageDriveName": "Google Drive của bạn",
+  "storageSystemDesc": "Mặc định, không phải cấu hình gì. Đây là nơi duy nhất hệ thống bảo đảm được đầy đủ mọi cam kết về bằng chứng.",
+  "storageOwnDesc": "Video mới lưu thẳng vào kho của bạn. Video cũ nằm nguyên chỗ cũ cho tới khi hết hạn lưu.",
+  "storageNoPresign": "Kho này không ký được link tải, nên video phải đi vòng qua máy chủ — người nhận link sẽ thấy chậm hơn.",
+  "storageNoObjectLock": "Kho này không khoá được đối tượng. Không thể hứa với sàn rằng bằng chứng không xoá được.",
+  "storageNotInPlan": "Gói hiện tại chưa mở kho riêng. Nâng gói trên web để dùng.",
+  "storageHealthTitle": "Tình trạng kho",
+  "storageHealthTotal": "Tổng video",
+  "storageHealthIntact": "Còn nguyên vẹn",
+  "storageHealthUnreachable": "Không truy cập được",
+  "storageHealthMismatched": "Sai lệch với hồ sơ niêm phong",
+  "storageHealthPendingRelay": "Đang chờ ở vùng tạm",
+  "storageProblemsNote": "Có video đang gặp vấn đề ở kho của bạn. Kiểm tra lại quyền truy cập bên phía nhà cung cấp.",
+  "storageTest": "Kiểm tra lại kết nối",
+  "storageDisconnect": "Thôi dùng kho riêng",
+  "storageDisconnectConfirm": "Video quay từ lúc này sẽ về kho hệ thống. Video cũ vẫn nằm trong kho của bạn và hệ thống sẽ mất đường tới chúng.",
+  "storageConnectS3": "Cắm kho S3",
+  "storageConnectDrive": "Kết nối Google Drive",
+  "storageConnectHint": "Chỉ cần cấp quyền đọc/ghi/xoá trên đúng prefix bên dưới, không cần quyền trên cả bucket.",
+  "storageConnectSubmit": "Kiểm tra và lưu",
+  "storageFieldEndpoint": "Endpoint",
+  "storageFieldBucket": "Bucket",
+  "storageFieldAccessKey": "Access key ID",
+  "storageFieldSecretKey": "Secret access key",
+  "storageFieldRegion": "Region",
+  "storageFieldPrefix": "Prefix",
+  "storageFieldPrefixHint": "Thư mục con trong bucket. Để mặc định nếu không chắc.",
+  "storageConnected": "Đã cắm kho riêng.",
+  "storageDisconnected": "Đã thôi dùng kho riêng.",
+  "storageTestOk": "Kết nối bình thường.",
+  "storageOwnerOnly": "Chỉ chủ cửa hàng đổi được kho lưu trữ.",
+  "dangerZone": "Vùng nguy hiểm",
+  "shopDelete": "Xoá cửa hàng",
+  "shopDeleteDesc": "Xoá hẳn đơn, bằng chứng, tệp trên kho và thành viên. Không lùi lại được.",
+  "shopDeleteConfirmTitle": "Xoá cửa hàng này?",
+  "shopDeleteConfirmBody": "{orders} đơn · {videos} video · {members} thành viên sẽ bị xoá vĩnh viễn.",
+  "@shopDeleteConfirmBody": {
+    "placeholders": {
+      "orders": {
+        "type": "int"
+      },
+      "videos": {
+        "type": "int"
+      },
+      "members": {
+        "type": "int"
+      }
+    }
+  },
+  "shopDeleteOpenDossiers": "{n} hồ sơ khiếu nại đang mở. Link đã gửi cho sàn sẽ chết ngay khi xoá.",
+  "@shopDeleteOpenDossiers": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "shopDeleteForce": "Vẫn xoá",
+  "shopDeleted": "Đã xoá cửa hàng.",
+  "shopDeleteFailed": "Không xoá được cửa hàng.",
+  "claimsCreatedLocalOnly": "Đã tạo hồ sơ trên máy. Chưa gửi lên được nên chưa có link chia sẻ — mở lại khi có mạng.",
+  "claimsLinkCopied": "Đã sao chép link hồ sơ. Dán vào kênh khiếu nại của sàn."
 }

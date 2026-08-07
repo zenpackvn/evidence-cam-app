@@ -114,7 +114,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get shopDeleted => 'Shop deleted';
+  String get shopDeleted => 'Shop deleted.';
 
   @override
   String bundleSelected(int count) {
@@ -746,7 +746,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String sealSealed(String at) {
-    return 'Sealed · $at';
+    return 'Locked · $at';
   }
 
   @override
@@ -768,6 +768,34 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get sealTimeDrift =>
       'The camera clock drifted from the server, so the burned-in stamp also carries the time the server received the clip.';
+
+  @override
+  String get detailSealAnchor => 'Independent proof';
+
+  @override
+  String sealAnchorConfirmed(String block) {
+    return 'Yes · entry #$block';
+  }
+
+  @override
+  String get sealAnchorConfirmedNoBlock => 'Yes';
+
+  @override
+  String get sealAnchorPending =>
+      'Being written to the public ledger (a few hours)';
+
+  @override
+  String get sealAnchorNone => 'None';
+
+  @override
+  String get sealVerifyOpen => 'Open verification page';
+
+  @override
+  String get sealVerifyHint =>
+      'Send this link to the marketplace — they can verify it themselves, without trusting ZenPack.';
+
+  @override
+  String get sealVerifyFailed => 'Couldn\'t open the verification page.';
 
   @override
   String get detailPlayVideo => 'Play video';
@@ -1794,6 +1822,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaTopupCredits => 'Top-up credits';
 
   @override
+  String get quotaOverCap => 'Over plan allowance';
+
+  @override
   String quotaBlockAt(int n) {
     return 'New recordings blocked at $n videos';
   }
@@ -1827,4 +1858,152 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get quotaStrandedNote =>
       'These videos exist only on this phone. Losing it, uninstalling the app or clearing its data loses them.';
+
+  @override
+  String get storageTitle => 'Video storage';
+
+  @override
+  String get storageSystemName => 'System storage';
+
+  @override
+  String get storageS3Name => 'Your own storage (S3)';
+
+  @override
+  String get storageDriveName => 'Your Google Drive';
+
+  @override
+  String get storageSystemDesc =>
+      'The default; nothing to configure. It is the only place where every evidence commitment holds.';
+
+  @override
+  String get storageOwnDesc =>
+      'New videos go straight to your storage. Older ones stay where they are until their retention ends.';
+
+  @override
+  String get storageNoPresign =>
+      'This storage cannot sign download links, so videos must be relayed through the server — whoever opens your link will find it slower.';
+
+  @override
+  String get storageNoObjectLock =>
+      'This storage has no object lock. You cannot promise a marketplace that the evidence is undeletable.';
+
+  @override
+  String get storageNotInPlan =>
+      'Your plan does not include custom storage yet. Upgrade on the web to use it.';
+
+  @override
+  String get storageHealthTitle => 'Storage health';
+
+  @override
+  String get storageHealthTotal => 'Total videos';
+
+  @override
+  String get storageHealthIntact => 'Intact';
+
+  @override
+  String get storageHealthUnreachable => 'Unreachable';
+
+  @override
+  String get storageHealthMismatched => 'Mismatched against the seal';
+
+  @override
+  String get storageHealthPendingRelay => 'Waiting in the relay area';
+
+  @override
+  String get storageProblemsNote =>
+      'Some videos have problems in your storage. Check the access permissions on the provider side.';
+
+  @override
+  String get storageTest => 'Re-test the connection';
+
+  @override
+  String get storageDisconnect => 'Stop using custom storage';
+
+  @override
+  String get storageDisconnectConfirm =>
+      'Videos recorded from now on go to system storage. Older ones stay in your storage and the system loses its route to them.';
+
+  @override
+  String get storageConnectS3 => 'Connect S3 storage';
+
+  @override
+  String get storageConnectDrive => 'Connect Google Drive';
+
+  @override
+  String get storageConnectHint =>
+      'Grant read/write/delete on the prefix below only — no permission on the whole bucket is needed.';
+
+  @override
+  String get storageConnectSubmit => 'Test and save';
+
+  @override
+  String get storageFieldEndpoint => 'Endpoint';
+
+  @override
+  String get storageFieldBucket => 'Bucket';
+
+  @override
+  String get storageFieldAccessKey => 'Access key ID';
+
+  @override
+  String get storageFieldSecretKey => 'Secret access key';
+
+  @override
+  String get storageFieldRegion => 'Region';
+
+  @override
+  String get storageFieldPrefix => 'Prefix';
+
+  @override
+  String get storageFieldPrefixHint =>
+      'Sub-folder inside the bucket. Leave the default if unsure.';
+
+  @override
+  String get storageConnected => 'Custom storage connected.';
+
+  @override
+  String get storageDisconnected => 'Custom storage disconnected.';
+
+  @override
+  String get storageTestOk => 'Connection is healthy.';
+
+  @override
+  String get storageOwnerOnly => 'Only the shop owner can change storage.';
+
+  @override
+  String get dangerZone => 'Danger zone';
+
+  @override
+  String get shopDelete => 'Delete shop';
+
+  @override
+  String get shopDeleteDesc =>
+      'Permanently deletes orders, evidence, stored files and members. This cannot be undone.';
+
+  @override
+  String get shopDeleteConfirmTitle => 'Delete this shop?';
+
+  @override
+  String shopDeleteConfirmBody(int orders, int videos, int members) {
+    return '$orders orders · $videos videos · $members members will be permanently deleted.';
+  }
+
+  @override
+  String shopDeleteOpenDossiers(int n) {
+    return '$n claim dossiers are still open. Links already sent to marketplaces die the moment you delete.';
+  }
+
+  @override
+  String get shopDeleteForce => 'Delete anyway';
+
+  @override
+  String get shopDeleteFailed => 'Couldn\'t delete the shop.';
+
+  @override
+  String get claimsCreatedLocalOnly =>
+      'Dossier saved on this phone. It could not be uploaded, so there is no share link yet — reopen it when you are back online.';
+
+  @override
+  String get claimsLinkCopied =>
+      'Dossier link copied. Paste it into the marketplace claim channel.';
 }

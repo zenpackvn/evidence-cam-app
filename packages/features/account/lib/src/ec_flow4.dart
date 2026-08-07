@@ -785,22 +785,29 @@ class EcQuotaScreen extends StatelessWidget {
     return pct;
   }
 
-  double get _usedFraction => _usedPercent / 100;
+  /// Hạn mức thật của tháng: trần gói + lượt đã mua thêm. KHÔNG gồm khoảng đệm
+  /// 10% — đệm là quãng ân hạn sau khi hết hạn mức, không phải một phần của nó.
+  int get _allowanceVideos => capVideos + topupVideos;
 
-  /// Còn quay được bao nhiêu clip trước khi bị chặn.
+  /// Còn bao nhiêu video trong hạn mức.
   ///
-  /// Ưu tiên con số máy chủ gửi — `remaining_videos` của backend đã tính cả
-  /// khoảng đệm 10% lẫn lượt mua thêm, nên nó CHÍNH LÀ khoảng cách tới mốc
-  /// chặn. Tự trừ chỉ là đường lùi khi trường đó vắng, và khi đó phải trừ theo
-  /// [blockAtVideos] chứ không phải trần gói, nếu không màn hình báo hết sạch
-  /// trong khi máy vẫn quay được.
+  /// KHÔNG dùng `remaining_videos` của máy chủ và KHÔNG trừ theo [blockAtVideos]:
+  /// cả hai đều đã cộng sẵn khoảng đệm 10%, nên gói 50 video quay xong clip đầu
+  /// tiên vẫn hiện "còn 54". Người dùng đọc thành "quay rồi mà chẳng thấy trừ",
+  /// và họ đọc đúng — một con số lớn hơn trần gói thì không thể là số còn lại
+  /// của gói. Phần đệm nói riêng qua [_overVideos].
   int get _remainingVideos {
-    final explicit = remainingVideos;
-    if (explicit != null) return explicit < 0 ? 0 : explicit;
-    final ceiling = blockAtVideos > 0 ? blockAtVideos : capVideos;
-    final left = ceiling - usedVideos;
+    final left = _allowanceVideos - usedVideos;
     return left < 0 ? 0 : left;
   }
+
+  /// Đã vượt trần bao nhiêu. 0 khi còn trong hạn mức.
+  int get _overVideos {
+    final over = usedVideos - _allowanceVideos;
+    return over < 0 ? 0 : over;
+  }
+
+  double get _usedFraction => _usedPercent / 100;
 
   @override
   Widget build(BuildContext context) {
@@ -868,6 +875,7 @@ class EcQuotaScreen extends StatelessWidget {
                       _VideoQuotaFacts(
                         topupVideos: topupVideos,
                         blockAtVideos: blockAtVideos,
+                        overVideos: _overVideos,
                         blocked: blocked,
                         canManagePlan: canManagePlan,
                       ),
@@ -903,12 +911,20 @@ class _VideoQuotaFacts extends StatelessWidget {
   const _VideoQuotaFacts({
     required this.topupVideos,
     required this.blockAtVideos,
+    required this.overVideos,
     required this.blocked,
     required this.canManagePlan,
   });
 
   final int topupVideos;
   final int blockAtVideos;
+
+  /// Đã quay vượt trần gói bao nhiêu clip. 0 khi còn trong hạn mức.
+  ///
+  /// Con số này gánh phần việc mà thẻ tóm tắt bỏ lại: khi hết hạn mức nó hiện
+  /// "0 còn lại", đúng nhưng không nói được người dùng đang ở đâu trong khoảng
+  /// đệm 10%.
+  final int overVideos;
   final bool blocked;
   final bool canManagePlan;
 
@@ -955,6 +971,8 @@ class _VideoQuotaFacts extends StatelessWidget {
         ],
         if (topupVideos > 0)
           _FactRow(label: l10n.quotaTopupCredits, value: '+$topupVideos'),
+        if (overVideos > 0)
+          _FactRow(label: l10n.quotaOverCap, value: '+$overVideos'),
         _FactRow(
           label: l10n.quotaBlockAt(blockAtVideos),
           value: '',

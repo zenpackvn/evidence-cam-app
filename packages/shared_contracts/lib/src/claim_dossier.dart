@@ -16,6 +16,7 @@ class EcClaimDossier {
     required this.shopId,
     required this.createdAt,
     required this.orders,
+    this.shareUrl,
   });
 
   factory EcClaimDossier.fromJson(Map<String, dynamic> j) => EcClaimDossier(
@@ -24,6 +25,7 @@ class EcClaimDossier {
     createdAt: DateTime.fromMillisecondsSinceEpoch(
       (j['created_at'] as num?)?.toInt() ?? 0,
     ),
+    shareUrl: j['share_url'] as String?,
     orders: [
       for (final o in (j['orders'] as List<dynamic>? ?? const []))
         EcClaimOrder.fromJson(o as Map<String, dynamic>),
@@ -39,6 +41,14 @@ class EcClaimDossier {
 
   final List<EcClaimOrder> orders;
 
+  /// Link công khai của hồ sơ trên zenpack.vn, do máy chủ cấp.
+  ///
+  /// `null` = hồ sơ chỉ tồn tại trên máy này: hoặc nó được tạo trước khi máy
+  /// chủ mở endpoint gộp, hoặc lượt gửi lên hỏng (mất mạng) và hàng đợi chưa
+  /// thử lại. Màn hồ sơ phải nói thẳng điều đó ra — im lặng là để người bán
+  /// tưởng bằng chứng khiếu nại của họ đã an toàn trên máy chủ.
+  final String? shareUrl;
+
   /// Tổng số bằng chứng trong hồ sơ, cho nhãn tóm tắt ở dòng cha.
   int get evidenceCount =>
       orders.fold(0, (total, o) => total + o.evidence.length);
@@ -47,15 +57,18 @@ class EcClaimDossier {
     'id': id,
     'shop_id': shopId,
     'created_at': createdAt.millisecondsSinceEpoch,
+    if (shareUrl != null) 'share_url': shareUrl,
     'orders': [for (final o in orders) o.toJson()],
   };
 
-  EcClaimDossier copyWith({List<EcClaimOrder>? orders}) => EcClaimDossier(
-    id: id,
-    shopId: shopId,
-    createdAt: createdAt,
-    orders: orders ?? this.orders,
-  );
+  EcClaimDossier copyWith({List<EcClaimOrder>? orders, String? shareUrl}) =>
+      EcClaimDossier(
+        id: id,
+        shopId: shopId,
+        createdAt: createdAt,
+        orders: orders ?? this.orders,
+        shareUrl: shareUrl ?? this.shareUrl,
+      );
 }
 
 /// Phần của một mã vận đơn trong hồ sơ.

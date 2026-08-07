@@ -349,6 +349,8 @@ class EvidenceDto {
     this.sealedAt,
     this.displaySha256,
     this.timeCheck,
+    this.otsStatus,
+    this.otsBlockHeight,
   });
 
   factory EvidenceDto.fromJson(Map<String, dynamic> j) => EvidenceDto(
@@ -370,6 +372,8 @@ class EvidenceDto {
     sealedAt: _intN(j['sealed_at']),
     displaySha256: j['display_sha256'] as String?,
     timeCheck: j['time_check'] as String?,
+    otsStatus: j['ots_status'] as String?,
+    otsBlockHeight: _intN(j['ots_block_height']),
   );
 
   final String id;
@@ -433,6 +437,17 @@ class EvidenceDto {
 
   /// `TIME_OK` or `TIME_DRIFT`.
   final String? timeCheck;
+
+  /// How far the clip's proof has got into a public timestamp ledger:
+  /// `none`, `pending` (calendar took it, Bitcoin has not sealed a block yet —
+  /// hours), or `confirmed`. Only `confirmed` may be shown as anchored: the
+  /// third-party verification page reports the same three states, and claiming
+  /// more than it does is the one way this feature loses in front of a reviewer.
+  final String? otsStatus;
+
+  /// Block number the proof landed in. Only set once [otsStatus] is
+  /// `confirmed` — it is the number a seller can read back to a marketplace.
+  final int? otsBlockHeight;
 
   /// The stored object is still the raw upload — the renderer has not written
   /// the stamped copy over it yet.
@@ -661,4 +676,253 @@ class VideoTypeDto {
 
   /// `#RRGGBB` người tạo chọn; `null` = dùng màu mặc định.
   final String? color;
+}
+
+// ── Kho riêng của shop (BYOS, mục 5.1) ───────────────────────────────────────
+
+/// Loại kho shop đang dùng. Không có cấu hình = [system].
+enum StorageKind { system, s3, gdrive }
+
+/// Cam kết nào hứa được với kho đang cắm.
+///
+/// Nguồn sự thật là máy chủ, không phải trí nhớ: mỗi nhà cung cấp thiếu một
+/// thứ khác nhau (Drive không ký được URL, vài nơi không có object lock), và
+/// hứa nhầm một cam kết chuỗi bằng chứng thì hỏng đúng lúc cần nhất.
+class StorageCapabilitiesDto {
+  const StorageCapabilitiesDto({
+    required this.presignedDownload,
+    required this.objectLock,
+  });
+
+  factory StorageCapabilitiesDto.fromJson(Map<String, dynamic> j) =>
+      StorageCapabilitiesDto(
+        presignedDownload: (j['presignedDownload'] as bool?) ?? false,
+        objectLock: (j['objectLock'] as bool?) ?? false,
+      );
+
+  /// False (Google Drive) = video phải đi vòng qua máy chủ, chậm hơn hẳn.
+  final bool presignedDownload;
+
+  /// Cơ sở DUY NHẤT để hứa "bằng chứng không thể xoá". Đừng hứa khi false.
+  final bool objectLock;
+}
+
+/// Kho đang cắm, đã che secret. Máy chủ KHÔNG bao giờ trả khoá bí mật.
+class StorageViewDto {
+  const StorageViewDto({
+    required this.kind,
+    required this.ok,
+    this.label = '',
+    this.lastError,
+    this.lastCheckedAt,
+    this.capabilities,
+  });
+
+  factory StorageViewDto.fromJson(Map<String, dynamic> j) {
+    final config = j['config'];
+    return StorageViewDto(
+      kind: (j['kind'] as String?) == 'gdrive'
+          ? StorageKind.gdrive
+          : StorageKind.s3,
+      ok: (j['status'] as String?) != 'error',
+      label: config is Map<String, dynamic> ? _storageLabel(config) : '',
+      lastError: j['last_error'] as String?,
+      lastCheckedAt: _intN(j['last_checked_at']),
+      capabilities: j['capabilities'] is Map<String, dynamic>
+          ? StorageCapabilitiesDto.fromJson(
+              j['capabilities'] as Map<String, dynamic>,
+            )
+          : null,
+    );
+  }
+
+  final StorageKind kind;
+  final bool ok;
+
+  /// Dòng nhận diện kho, đọc được bằng mắt: `bucket/prefix` với S3, tên thư
+  /// mục với Drive. Đủ để chủ shop biết mình đang cắm đúng chỗ hay không.
+  final String label;
+  final String? lastError;
+  final int? lastCheckedAt;
+  final StorageCapabilitiesDto? capabilities;
+}
+
+String _storageLabel(Map<String, dynamic> config) {
+  final bucket = config['bucket'] as String?;
+  if (bucket != null && bucket.isNotEmpty) {
+    final prefix = config['prefix'] as String?;
+    return prefix == null || prefix.isEmpty ? bucket : '$bucket/$prefix';
+  }
+  return (config['folderName'] as String?) ??
+      (config['folderId'] as String?) ??
+      '';
+}
+
+/// Bảng tình trạng kho (mục 5.3).
+class StorageHealthDto {
+  const StorageHealthDto({
+    this.total = 0,
+    this.intact = 0,
+    this.unreachable = 0,
+    this.mismatched = 0,
+    this.unchecked = 0,
+    this.pendingRelay = 0,
+    this.lastCheckedAt,
+  });
+
+  factory StorageHealthDto.fromJson(Map<String, dynamic> j) => StorageHealthDto(
+    total: _int(j['total']),
+    intact: _int(j['intact']),
+    unreachable: _int(j['unreachable']),
+    mismatched: _int(j['mismatched']),
+    unchecked: _int(j['unchecked']),
+    pendingRelay: _int(j['pending_relay']),
+    lastCheckedAt: _intN(j['last_checked_at']),
+  );
+
+  final int total;
+  final int intact;
+
+  /// Không mở được ở kho của shop — bằng chứng coi như đã mất tới khi khách sửa.
+  final int unreachable;
+
+  /// Sai lệch so với hồ sơ niêm phong: tệp đã bị sửa sau khi hệ thống nhận.
+  final int mismatched;
+  final int unchecked;
+
+  /// Còn nằm ở vùng chờ tạm vì kho đang có sự cố. Chưa mất, nhưng chưa về nhà.
+  final int pendingRelay;
+  final int? lastCheckedAt;
+
+  /// Có gì cần chủ shop xử lý ngay không.
+  bool get hasProblems => unreachable > 0 || mismatched > 0 || pendingRelay > 0;
+}
+
+class StorageStateDto {
+  const StorageStateDto({
+    this.storage,
+    this.health = const StorageHealthDto(),
+    this.byosAllowed = false,
+  });
+
+  factory StorageStateDto.fromJson(Map<String, dynamic> j) => StorageStateDto(
+    storage: j['storage'] is Map<String, dynamic>
+        ? StorageViewDto.fromJson(j['storage'] as Map<String, dynamic>)
+        : null,
+    health: j['health'] is Map<String, dynamic>
+        ? StorageHealthDto.fromJson(j['health'] as Map<String, dynamic>)
+        : const StorageHealthDto(),
+    byosAllowed: (j['byos_allowed'] as bool?) ?? false,
+  );
+
+  /// Null = đang dùng kho của hệ thống (mặc định).
+  final StorageViewDto? storage;
+  final StorageHealthDto health;
+
+  /// Gói hiện tại có được cắm kho riêng không. Ẩn nút theo cờ NÀY, đừng tự suy
+  /// từ mã gói ở client — quy tắc phân gói chỉ sống ở một chỗ.
+  final bool byosAllowed;
+
+  StorageKind get kind => storage?.kind ?? StorageKind.system;
+}
+
+/// Kết quả vòng kiểm tra PUT→HEAD→GET→DELETE.
+class StorageValidateDto {
+  const StorageValidateDto({required this.ok, this.hint, this.failedStep});
+
+  factory StorageValidateDto.fromJson(Map<String, dynamic> j) {
+    final steps = j['steps'];
+    String? failed;
+    if (steps is List) {
+      for (final s in steps) {
+        if (s is Map<String, dynamic> && (s['ok'] as bool?) == false) {
+          failed = s['step'] as String?;
+          break;
+        }
+      }
+    }
+    return StorageValidateDto(
+      ok: (j['ok'] as bool?) ?? false,
+      hint: j['hint'] as String?,
+      failedStep: failed,
+    );
+  }
+
+  /// False nghĩa là máy chủ CHƯA lưu gì cả.
+  final bool ok;
+
+  /// Thiếu quyền gì, sửa thế nào. Hiện nguyên văn — đây là câu duy nhất giúp
+  /// khách tự sửa được cấu hình IAM bên phía họ.
+  final String? hint;
+
+  /// Bước đầu tiên hỏng (`put`/`head`/`get`/`delete`), để chỉ đúng quyền thiếu.
+  final String? failedStep;
+}
+
+/// Số hiện trên màn xác nhận xoá cửa hàng.
+///
+/// Xoá cửa hàng là thao tác duy nhất trong sản phẩm không lùi lại được, nên
+/// màn xác nhận phải nói bằng số thật — "bạn chắc chứ?" thì ai cũng bấm qua.
+class ShopDeletionPreviewDto {
+  const ShopDeletionPreviewDto({
+    this.orders = 0,
+    this.videos = 0,
+    this.photos = 0,
+    this.members = 0,
+    this.openDossiers = 0,
+    this.bytes = 0,
+  });
+
+  factory ShopDeletionPreviewDto.fromJson(Map<String, dynamic> j) =>
+      ShopDeletionPreviewDto(
+        orders: _int(j['orders']),
+        videos: _int(j['videos']),
+        photos: _int(j['photos']),
+        members: _int(j['members']),
+        openDossiers: _int(j['open_dossiers']),
+        bytes: _int(j['bytes']),
+      );
+
+  final int orders;
+  final int videos;
+  final int photos;
+  final int members;
+
+  /// > 0 thì máy chủ trả 409 trừ khi ép — link của chúng đã ở chỗ nhân viên sàn.
+  final int openDossiers;
+  final int bytes;
+}
+
+/// Hồ sơ khiếu nại gộp nhiều đơn, theo bản của máy chủ.
+class ClaimDto {
+  const ClaimDto({
+    required this.id,
+    required this.url,
+    this.title,
+    this.orderCount = 0,
+    this.revoked = false,
+    this.createdAt = 0,
+  });
+
+  factory ClaimDto.fromJson(Map<String, dynamic> j) => ClaimDto(
+    id: (j['id'] as String?) ?? '',
+    url: (j['url'] as String?) ?? '',
+    title: j['title'] as String?,
+    orderCount: _int(j['order_count']),
+    revoked: _int(j['revoked']) == 1,
+    createdAt: _int(j['created_at']),
+  );
+
+  final String id;
+
+  /// Link công khai đầy đủ trên zenpack.vn. Dùng nguyên chuỗi này — đừng ghép
+  /// lại từ token, vì mỗi client ghép một kiểu và cái sai chỉ lộ ra sau khi
+  /// người bán đã gửi link cho sàn.
+  final String url;
+  final String? title;
+  final int orderCount;
+
+  /// Đã thu hồi — link chết, dữ liệu còn.
+  final bool revoked;
+  final int createdAt;
 }

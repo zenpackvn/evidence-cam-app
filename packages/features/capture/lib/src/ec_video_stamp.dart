@@ -18,7 +18,6 @@ import 'package:ffmpeg_kit_extended_flutter/ffmpeg_kit_extended_flutter.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/painting.dart';
 import 'package:path_provider/path_provider.dart';
-
 import 'ec_video_faststart.dart' show FfmpegRunner;
 
 class EcVideoStampService {
@@ -54,19 +53,44 @@ class EcVideoStampService {
   ///
   /// Bộ mã hoá phần cứng của hệ điều hành thì có sẵn ngay trong bản `base`,
   /// không ràng buộc GPL, không làm phình app, và nhanh hơn hẳn trên điện
-  /// thoại. Chúng không nhận `-crf` nên phải khai bitrate; 4 Mbps đủ cho mức
-  /// 720p mà màn ghi hình quay ra.
+  /// thoại. Chúng không nhận `-crf` nên phải khai bitrate — [kbps], suy ra từ
+  /// độ phân giải qua [_bitrateFor].
+  ///
+  /// Trước 2026-08-08 chỗ này khai cứng 4 Mbps cho MỌI độ phân giải, nên clip
+  /// 720p ra ~30 MB/phút (gấp đôi mức backend tính hạn mức) và hai mức 240p /
+  /// 480p không tiết kiệm được gì — người dùng hạ độ phân giải mà tệp vẫn nặng
+  /// y hệt.
   ///
   /// Hai lựa chọn cuối là lưới an toàn: `libx264` cho ngày ai đó nâng bundle
   /// lên, còn `mpeg4` là bộ mã hoá nội tại của ffmpeg, luôn có mặt.
-  static List<_Encoder> get _encoders => [
-    if (Platform.isAndroid) const _Encoder('h264_mediacodec', '-b:v 4M'),
+  /// Bitrate encode lại, kbps, theo độ phân giải đang quay.
+  ///
+  /// Sống ở ĐÂY vì đây là nơi duy nhất dùng nó. Từ 2026-08-07 app không còn
+  /// bảng dung lượng-mỗi-giây nào để bám theo: gói cước tính theo SỐ VIDEO,
+  /// nên byte thôi là chính sách. Cái còn lại thuần là một thông số máy quay.
+  ///
+  /// Đo thực tế trên clip điện thoại 720×1280 30fps: 4 Mbps ≈ 30,2 MB/phút ·
+  /// 1,5 Mbps ≈ 11,3 · 0,8 Mbps ≈ 6,0 · 0,4 Mbps ≈ 3,0. Bản gốc chưa nén từ
+  /// camera: ~97 MB/phút.
+  static const _bitrateKbps = <String, int>{
+    '240p': 400,
+    '480p': 800,
+    '720p': 1500,
+  };
+
+  static int _bitrateFor(String resolution) =>
+      _bitrateKbps[resolution] ?? _bitrateKbps['720p']!;
+
+  static List<_Encoder> _encodersAt(int kbps) => [
+    if (Platform.isAndroid) _Encoder('h264_mediacodec', '-b:v ${kbps}k'),
     if (Platform.isIOS || Platform.isMacOS)
       // `-allow_sw 1`: máy ảo và vài đời máy không cho encode phần cứng, cứ
       // để VideoToolbox tự lùi về đường phần mềm còn hơn hỏng cả lượt.
-      const _Encoder('h264_videotoolbox', '-b:v 4M -allow_sw 1'),
-    const _Encoder('libx264', '-preset veryfast -crf 23'),
-    const _Encoder('mpeg4', '-q:v 4'),
+      _Encoder('h264_videotoolbox', '-b:v ${kbps}k -allow_sw 1'),
+    // x264 nhận `-crf`, thứ cho chất lượng ổn định hơn hẳn ở cùng dung lượng.
+    // 26 rơi vào đúng khoảng 1,5 Mbps của bảng bitrate khi đo trên clip thật.
+    const _Encoder('libx264', '-preset veryfast -crf 26'),
+    const _Encoder('mpeg4', '-q:v 6'),
   ];
 
   /// Cạnh tối đa của ảnh dấu, pixel.
@@ -85,12 +109,16 @@ class EcVideoStampService {
   ///
   /// Fail-safe có chủ đích: người dùng đang muốn cầm được file về tay, một cái
   /// dấu không lên được không đáng để mất luôn bản tải về.
+  /// [resolution] quyết định bitrate encode lại (`240p` / `480p` / `720p`) —
+  /// xem [_bitrateKbps]. Đây là bước encode DUY NHẤT trong app, nên nó
+  /// cũng là chỗ duy nhất quyết định clip nặng bao nhiêu — xem [_bitrateKbps].
   Future<String> stamp(
     String inputPath, {
     required List<String> lines,
     DateTime? clockStart,
     int? clockSeconds,
     int clockLine = 1,
+    String resolution = '720p',
   }) async {
     if (lines.isEmpty || !File(inputPath).existsSync()) {
       _log('bỏ qua: không có chữ để đóng, hoặc không thấy file "$inputPath"');
@@ -127,7 +155,7 @@ class EcVideoStampService {
       // `-loop 1` cho ảnh dấu: `crop` chỉ đổi ô theo `t` khi đầu vào là một
       // luồng có nhiều khung, ảnh tĩnh một khung thì đồng hồ đứng im.
       var ok = false;
-      for (final encoder in _encoders) {
+      for (final encoder in _encodersAt(_bitrateFor(resolution))) {
         ok = await _run(
           '-y -i "$inputPath" -loop 1 -i "$spritePath" '
           '-filter_complex_script "$graphPath" -map [out] '
