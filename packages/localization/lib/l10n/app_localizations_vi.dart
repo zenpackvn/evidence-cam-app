@@ -63,6 +63,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get claimsAddedLater => 'đính thêm';
 
   @override
+  String get claimsRemoveItemTitle => 'Gỡ khỏi hồ sơ';
+
+  @override
+  String get claimsRemoveItemConfirm =>
+      'Gỡ bằng chứng này khỏi hồ sơ khiếu nại? Video/ảnh trong đơn hàng vẫn còn nguyên.';
+
+  @override
+  String get claimsItemRemoved => 'Đã gỡ khỏi hồ sơ';
+
+  @override
+  String get commonRemove => 'Gỡ';
+
+  @override
   String get commonDelete => 'Xóa';
 
   @override

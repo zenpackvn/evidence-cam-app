@@ -167,7 +167,7 @@ class _ClaimRow extends StatelessWidget {
         axis: PenAxis.row,
         gap: 12,
         cross: CrossAxisAlignment.center,
-        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+        padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
         children: [
           Expanded(
             child: Column(
@@ -198,11 +198,6 @@ class _ClaimRow extends StatelessWidget {
               child: Icon(LucideIcons.copy, size: 20, color: PenColors.primary),
             ),
           ),
-          const Icon(
-            LucideIcons.chevronRight,
-            size: 20,
-            color: PenColors.soft,
-          ),
         ],
       ),
     );
@@ -220,6 +215,7 @@ class EcClaimOrderGroup {
 /// Một video/ảnh trong hồ sơ.
 class EcClaimItem {
   const EcClaimItem({
+    required this.id,
     required this.label,
     required this.time,
     this.isPhoto = false,
@@ -227,6 +223,8 @@ class EcClaimItem {
     this.addedLater = false,
   });
 
+  /// Khoá để bên gọi biết gỡ cái nào ra khỏi hồ sơ.
+  final String id;
   final String label;
   final String time;
   final bool isPhoto;
@@ -247,6 +245,7 @@ class EcClaimDetailScreen extends StatelessWidget {
     this.onCopy,
     this.onDelete,
     this.onAttachPhoto,
+    this.onRemoveItem,
     super.key,
   });
 
@@ -260,6 +259,11 @@ class EcClaimDetailScreen extends StatelessWidget {
   /// Đính thêm ảnh vào MỘT mã vận đơn của hồ sơ. Nhận mã đơn vì hồ sơ có thể
   /// gồm nhiều đơn — không có nó thì ảnh không biết thuộc về đơn nào.
   final ValueChanged<String>? onAttachPhoto;
+
+  /// Gỡ một bằng chứng khỏi hồ sơ: `(mã đơn, id bằng chứng)`. Cùng lý do với
+  /// [onAttachPhoto] — id bằng chứng là duy nhất, nhưng mã đơn nói cho bên gọi
+  /// biết phải sửa nhánh nào của hồ sơ.
+  final void Function(String tracking, String evidenceId)? onRemoveItem;
 
   @override
   Widget build(BuildContext context) {
@@ -315,7 +319,11 @@ class EcClaimDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
               children: [
                 for (final group in groups) ...[
-                  _OrderGroupCard(group: group, onAttachPhoto: onAttachPhoto),
+                  _OrderGroupCard(
+                    group: group,
+                    onAttachPhoto: onAttachPhoto,
+                    onRemoveItem: onRemoveItem,
+                  ),
                   const SizedBox(height: 12),
                 ],
                 if (groups.isEmpty)
@@ -335,10 +343,15 @@ class EcClaimDetailScreen extends StatelessWidget {
 }
 
 class _OrderGroupCard extends StatelessWidget {
-  const _OrderGroupCard({required this.group, this.onAttachPhoto});
+  const _OrderGroupCard({
+    required this.group,
+    this.onAttachPhoto,
+    this.onRemoveItem,
+  });
 
   final EcClaimOrderGroup group;
   final ValueChanged<String>? onAttachPhoto;
+  final void Function(String tracking, String evidenceId)? onRemoveItem;
 
   @override
   Widget build(BuildContext context) {
@@ -354,7 +367,13 @@ class _OrderGroupCard extends StatelessWidget {
           color: PenColors.ink,
           weight: FontWeight.w800,
         ),
-        for (final item in group.items) _ClaimItemRow(item: item),
+        for (final item in group.items)
+          _ClaimItemRow(
+            item: item,
+            onRemove: onRemoveItem == null
+                ? null
+                : () => onRemoveItem!(group.tracking, item.id),
+          ),
         // Đính kèm ảnh ở ĐÁY mỗi mã đơn, không phải đáy màn: hồ sơ gồm nhiều
         // đơn thì một nút chung không nói được ảnh sắp thuộc về đơn nào.
         if (onAttachPhoto != null)
@@ -365,9 +384,12 @@ class _OrderGroupCard extends StatelessWidget {
 }
 
 class _ClaimItemRow extends StatelessWidget {
-  const _ClaimItemRow({required this.item});
+  const _ClaimItemRow({required this.item, this.onRemove});
 
   final EcClaimItem item;
+
+  /// Gỡ khỏi hồ sơ. `null` = không hiện icon.
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) => PenBox(
@@ -402,6 +424,16 @@ class _ClaimItemRow extends StatelessWidget {
           ),
         ),
       PenText(item.time, size: 12, color: PenColors.mut, softWrap: false),
+      if (onRemove != null)
+        // Vùng chạm rộng hơn icon: hàng chỉ cao 31pt và icon 17pt thì một ngón
+        // tay chạm trượt sang dòng bên cạnh là chuyện thường.
+        EcTap(
+          onTap: onRemove,
+          child: const Padding(
+            padding: EdgeInsets.only(left: 4, top: 6, bottom: 6),
+            child: Icon(LucideIcons.trash2, size: 17, color: PenColors.danger),
+          ),
+        ),
     ],
   );
 }

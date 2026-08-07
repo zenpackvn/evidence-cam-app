@@ -4615,6 +4615,41 @@ class _ClaimDetailRoute extends StatelessWidget {
     if (context.mounted) _toast(context, l10n.claimsPhotoAdded);
   }
 
+  /// Gỡ một bằng chứng khỏi hồ sơ, sau khi hỏi lại.
+  ///
+  /// Hỏi lại vì icon thùng rác nằm ngay cạnh giờ quay, cách ngón tay đúng vài
+  /// pixel — chạm trượt là mất một dòng bằng chứng khỏi hồ sơ mà không có gì
+  /// hoàn tác. Hộp thoại cũng nói rõ đơn hàng không bị đụng tới, nếu không thì
+  /// "xóa" ở đây đọc ra như xóa hẳn clip.
+  Future<void> _removeItem(
+    BuildContext context,
+    String tracking,
+    String evidenceId,
+  ) async {
+    final l10n = context.l10n;
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(l10n.claimsRemoveItemTitle),
+        content: Text(l10n.claimsRemoveItemConfirm),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.commonRemove),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await _claimStore.removeEvidence(shopId, dossierId, tracking, evidenceId);
+    if (context.mounted) _toast(context, l10n.claimsItemRemoved);
+  }
+
   Future<void> _confirmDelete(BuildContext context) async {
     final l10n = context.l10n;
     final confirmed = await showCupertinoDialog<bool>(
@@ -4662,6 +4697,8 @@ class _ClaimDetailRoute extends StatelessWidget {
         onCopy: () => _copyClaimSummary(context, dossier),
         onDelete: () => unawaited(_confirmDelete(context)),
         onAttachPhoto: (tracking) => unawaited(_attach(context, tracking)),
+        onRemoveItem: (tracking, evidenceId) =>
+            unawaited(_removeItem(context, tracking, evidenceId)),
         groups: [
           for (final order in dossier.orders)
             EcClaimOrderGroup(
@@ -4669,6 +4706,7 @@ class _ClaimDetailRoute extends StatelessWidget {
               items: [
                 for (final e in order.evidence)
                   EcClaimItem(
+                    id: e.id,
                     label: e.label,
                     time: e.time,
                     isPhoto: e.isPhoto,

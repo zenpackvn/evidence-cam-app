@@ -63,6 +63,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsAddedLater => 'added later';
 
   @override
+  String get claimsRemoveItemTitle => 'Remove from dossier';
+
+  @override
+  String get claimsRemoveItemConfirm =>
+      'Remove this evidence from the claim dossier? The video/photo on the order itself is untouched.';
+
+  @override
+  String get claimsItemRemoved => 'Removed from the dossier';
+
+  @override
+  String get commonRemove => 'Remove';
+
+  @override
   String get commonDelete => 'Delete';
 
   @override

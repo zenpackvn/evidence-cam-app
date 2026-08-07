@@ -194,6 +194,30 @@ abstract class AppLocalizations {
   /// **'added later'**
   String get claimsAddedLater;
 
+  /// No description provided for @claimsRemoveItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from dossier'**
+  String get claimsRemoveItemTitle;
+
+  /// No description provided for @claimsRemoveItemConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this evidence from the claim dossier? The video/photo on the order itself is untouched.'**
+  String get claimsRemoveItemConfirm;
+
+  /// No description provided for @claimsItemRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from the dossier'**
+  String get claimsItemRemoved;
+
+  /// No description provided for @commonRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get commonRemove;
+
   /// No description provided for @commonDelete.
   ///
   /// In en, this message translates to:
