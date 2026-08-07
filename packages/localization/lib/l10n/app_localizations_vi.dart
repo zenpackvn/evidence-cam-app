@@ -192,6 +192,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get toastPhotoQueued => 'Đã đính kèm ảnh — đưa vào hàng chờ tải';
 
   @override
+  String imageOverFixedCap(String megabytes, String limit) {
+    return 'Ảnh $megabytes MB — vượt trần $limit MB nên chưa đính. Chọn ảnh nhỏ hơn.';
+  }
+
+  @override
   String get toastInvitePending => 'Chờ lời mời vào shop';
 
   @override
@@ -454,7 +459,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get statPendingUpload => 'Chờ tải';
 
   @override
-  String get accountPlanQuota => 'Gói cước & Quota';
+  String get accountPlanQuota => 'Dung lượng';
 
   @override
   String get accountSectionApp => 'GÓI & ỨNG DỤNG';

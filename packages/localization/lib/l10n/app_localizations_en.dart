@@ -194,6 +194,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toastPhotoQueued => 'Photo attached — added to the upload queue';
 
   @override
+  String imageOverFixedCap(String megabytes, String limit) {
+    return 'Photo is $megabytes MB — over the $limit MB cap, not attached. Pick a smaller image.';
+  }
+
+  @override
   String get toastInvitePending => 'Waiting for a shop invitation';
 
   @override
@@ -456,7 +461,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statPendingUpload => 'Pending upload';
 
   @override
-  String get accountPlanQuota => 'Plan & Quota';
+  String get accountPlanQuota => 'Storage';
 
   @override
   String get accountSectionApp => 'PLAN & APP';

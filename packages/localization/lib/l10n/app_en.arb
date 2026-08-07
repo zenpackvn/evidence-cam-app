@@ -82,6 +82,18 @@
   "toastPhotoDownloadFailed": "Couldn't download photo, try again later",
   "toastPhotoNoDownloadLink": "Photo has no download link yet",
   "toastPhotoQueued": "Photo attached — added to the upload queue",
+  "imageOverFixedCap": "Photo is {megabytes} MB — over the {limit} MB cap, not attached. Pick a smaller image.",
+  "@imageOverFixedCap": {
+    "description": "Ảnh vượt trần 5 MB cố định.",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
   "toastInvitePending": "Waiting for a shop invitation",
   "toastInviteSent": "Invitation sent",
   "toastMemberAdded": "Member added",
@@ -217,7 +229,7 @@
   "statOrdersToday": "Orders",
   "statVideosRecorded": "Videos recorded",
   "statPendingUpload": "Pending upload",
-  "accountPlanQuota": "Plan & Quota",
+  "accountPlanQuota": "Storage",
   "accountSectionApp": "PLAN & APP",
   "accountLanguage": "Language",
   "accountSectionSecurity": "SECURITY & SIGN-IN",

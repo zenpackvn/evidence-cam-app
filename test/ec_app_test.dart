@@ -554,7 +554,7 @@ void main() {
       await signInWithGoogle(tester);
       await tester.tap(find.text('Tài khoản').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Gói cước & Quota'));
+      await tester.tap(find.text('Dung lượng'));
       await tester.pumpAndSettle();
 
       expect(find.text('12 GB / 60 GB'), findsOneWidget);
@@ -582,7 +582,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Cơ bản'), findsWidgets);
 
-      await tester.tap(find.text('Gói cước & Quota'));
+      await tester.tap(find.text('Dung lượng'));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(PenBackButton).first);
       await tester.pumpAndSettle();

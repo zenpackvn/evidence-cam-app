@@ -70,6 +70,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_contracts/shared_contracts.dart'
     show
         ClipBudget,
+        kFixedImageBytes,
         EcClaimDossier,
         EcClaimEvidence,
         EcClaimOrder,
@@ -857,7 +858,6 @@ class _AccountRouteState extends State<_AccountRoute> {
               share: _maybeGetIt<ShareService>(),
               gallery: _maybeGetIt<GallerySaveService>(),
             ),
-            onClaimsTap: () => context.push('/claims'),
             onChangePasswordTap: () => context.push('/change-password'),
             onDeleteAccount: () => context.push('/delete-account'),
             onLoginMethodsTap: () => context.push('/login-methods'),
@@ -2213,9 +2213,27 @@ Future<String?> _attachPhoto(
 }) async {
   final path = await _pickImagePath();
   if (path == null || !context.mounted) return null;
-  // Không còn trần dung lượng nào (2026-08-07): gói cước tính theo SỐ VIDEO,
-  // nên một tấm ảnh nặng bao nhiêu cũng không tốn suất nào. Ảnh luôn lưu NGUYÊN
-  // VẸN — không nén, không cắt (FR-20: chuỗi bằng chứng phải nguyên gốc).
+  // Trần 5 MB cho MỘT tấm ảnh — đúng con số màn Chi tiết cửa hàng in ra.
+  //
+  // Đây không phải quota (quota tính theo SỐ VIDEO, một tấm ảnh nặng bao nhiêu
+  // cũng không tốn suất nào). Đây là chặn một tệp đơn lẻ, để ảnh máy ảnh 40MB
+  // không đi qua đường đính kèm. Ảnh trong trần thì lưu NGUYÊN VẸN — không nén,
+  // không cắt (FR-20: chuỗi bằng chứng phải nguyên gốc).
+  //
+  // Đọc cùng hằng số màn cài đặt dùng: hai chỗ hai nguồn là dòng chữ nói dối.
+  final bytes = await File(path).length();
+  if (bytes > kFixedImageBytes) {
+    if (context.mounted) {
+      _toast(
+        context,
+        context.l10n.imageOverFixedCap(
+          '${(bytes / 1000000).toStringAsFixed(1)}',
+          '${kFixedImageBytes ~/ 1000000}',
+        ),
+      );
+    }
+    return null;
+  }
   await queue.enqueue(
     tracking: tracking,
     type: 'Ảnh đính kèm',
@@ -2232,7 +2250,6 @@ Future<String?> _attachPhoto(
 class _ChooseShopRoute extends StatefulWidget {
   const _ChooseShopRoute({
     required this.repo,
-    this.auth,
     this.onSelect,
     this.onAccount,
     this.onCreateShop,
@@ -2241,10 +2258,6 @@ class _ChooseShopRoute extends StatefulWidget {
   });
 
   final EcRepository repo;
-
-  /// Chỉ để lấy tên/email hiện trên thẻ Tài khoản.
-  final EcAuth? auth;
-
   final ValueChanged<EcShopSummary>? onSelect;
 
   /// Mở màn Tài khoản. Nó rời khỏi thanh tab để nhường ô thứ ba cho Hồ sơ
@@ -2361,11 +2374,8 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
           );
         }
         _autoSelectIfNeeded(shops);
-        final user = widget.auth?.currentUser;
         return EcChooseShopScreen(
           shops: shops,
-          userName: user?.displayName,
-          userEmail: user?.email,
           onAccountTap: widget.onAccount,
           onSelect: widget.onSelect,
           // Cùng đích với nút "Tạo shop" ở màn chưa-có-shop.
@@ -4391,12 +4401,25 @@ class _CreateClaimRoute extends StatelessWidget {
       );
       if (match.isEmpty) return null;
       final detail = await repo.order(shopId, match.first.id);
+      // Tên loại video, không phải chữ "Video" chung chung.
+      //
+      // Cả đơn đều là "Video" thì danh sách không nói được cái nào là đóng
+      // hàng, cái nào là trả hàng — mà đó chính là thứ quyết định người bán
+      // tick cái nào để đi khiếu nại. Hỏng thì rơi về nhãn chung.
+      final typeNames = <String, String>{};
+      try {
+        for (final t in await repo.videoTypes(shopId)) {
+          typeNames[t.id] = t.name;
+        }
+      } on Object {
+        // Danh sách loại chỉ làm nhãn đẹp hơn, không chặn việc chọn.
+      }
       return [
         for (final e in detail.evidence)
           if (e.uploadStatus != 'deleted')
             EcClaimPickable(
               id: e.id,
-              label: _kindLabel(l10n, e.kind),
+              label: typeNames[e.videoTypeId] ?? _kindLabel(l10n, e.kind),
               time: _hhmm(DateTime.fromMillisecondsSinceEpoch(e.capturedAt)),
               isPhoto: e.kind == 'photo',
               capturedAt: e.capturedAt,
@@ -5005,7 +5028,6 @@ GoRouter _buildRouter(
             // ghi chú trên màn này). Đăng nhập là hành động có chủ đích nên
             // luôn dừng ở đây để người dùng chọn shop.
             autoEnter: s.extra == _resumedSession,
-            auth: auth,
             onAccount: () => c.push('/account'),
             onSelect: (shop) {
               selectedShop.value = shop;

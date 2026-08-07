@@ -12,7 +12,8 @@ library;
 import 'dart:async';
 
 import 'package:ec_ui/ec_ui.dart';
-import 'package:flutter/cupertino.dart' show CupertinoTextField;
+import 'package:flutter/cupertino.dart'
+    show CupertinoActivityIndicator, CupertinoTextField;
 import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
 
@@ -617,15 +618,15 @@ class EcCreateClaimScreen extends StatefulWidget {
 class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
   final _search = TextEditingController();
 
-  String? _code;
-  List<EcClaimPickable>? _items;
-
   /// Mọi mã đã tra trong lượt này, theo đúng thứ tự tra.
   ///
   /// Giữ lại để tra mã thứ hai KHÔNG làm mất phần đã tick ở mã thứ nhất — một
   /// hồ sơ khiếu nại thường gộp vài đơn, mà quét xong mất sạch lựa chọn cũ thì
   /// người dùng phải làm lại từ đầu và sẽ không bao giờ gộp quá một đơn.
   final Map<String, List<EcClaimPickable>> _seen = {};
+
+  /// Thứ tự hiện ra: mã quét gần nhất đứng đầu.
+  final List<String> _order = [];
 
   /// Id đã tick, chung cho MỌI mã. Id bằng chứng là duy nhất toàn hệ thống nên
   /// một tập phẳng là đủ.
@@ -664,19 +665,25 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
     setState(() {
       _loading = true;
       _notFound = false;
-      _items = null;
     });
     final found = await widget.onSearch(code);
     if (!mounted) return;
     setState(() {
       _loading = false;
-      _code = code;
-      _items = found;
       _notFound = found == null;
       // Không tick sẵn gì cả. Đơn có chục clip mà người bán chỉ cần một cái để
       // khiếu nại thì tick sẵn hết bắt họ bỏ chín — nhiều thao tác hơn hẳn tự
       // tick một.
-      if (found != null) _seen[code] = found;
+      if (found != null) {
+        // Mã mới lên ĐẦU: người bán vừa quét cái gì thì muốn thấy ngay cái đó,
+        // không phải cuộn qua mọi mã đã quét trước để tìm.
+        _seen
+          ..remove(code)
+          ..[code] = found;
+        _order
+          ..remove(code)
+          ..insert(0, code);
+      }
     });
   }
 
@@ -690,7 +697,6 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final items = _items ?? const <EcClaimPickable>[];
     return PenScreen(
       scrollable: false,
       child: Column(
@@ -723,7 +729,7 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
               onScan: widget.onScan == null ? null : () => unawaited(_scan()),
             ),
           ),
-          Expanded(child: _body(context, l10n, items)),
+          Expanded(child: _body(context, l10n)),
           // Nút tạo hiện NGAY KHI đã tick được thứ gì, kể cả lúc đang tra một
           // mã khác chưa ra kết quả: phần đã tick ở mã trước vẫn còn nguyên,
           // giấu nút đi thì trông như chúng đã mất.
@@ -745,35 +751,96 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
     );
   }
 
-  Widget _body(
-    BuildContext context,
-    AppLocalizations l10n,
-    List<EcClaimPickable> items,
-  ) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator.adaptive());
-    }
-    // Ba trạng thái rỗng KHÁC NHAU, không gộp thành một: chưa tra gì, tra
-    // không thấy mã, và mã có thật nhưng đơn chưa có bằng chứng. Gộp lại thì
-    // người dùng không biết mình gõ sai mã hay đơn thật sự trống.
-    if (_notFound) {
-      return _Hint(icon: LucideIcons.searchX, text: l10n.claimsCreateNoOrder);
-    }
-    if (_items == null) {
+  Widget _body(BuildContext context, AppLocalizations l10n) {
+    // Chưa quét được mã nào: ba trạng thái rỗng KHÁC NHAU, không gộp thành một
+    // — đang tra, tra không thấy mã, và chưa tra gì. Gộp lại thì người dùng
+    // không biết mình gõ sai mã hay app đang bận.
+    if (_order.isEmpty) {
+      if (_loading) {
+        return const Center(child: CircularProgressIndicator.adaptive());
+      }
+      if (_notFound) {
+        return _Hint(icon: LucideIcons.searchX, text: l10n.claimsCreateNoOrder);
+      }
       return _Hint(icon: LucideIcons.scanLine, text: l10n.claimsCreateStart);
     }
-    if (items.isEmpty) {
-      return _Hint(icon: LucideIcons.fileText, text: l10n.timelineEmpty);
-    }
-    final allPicked = items.every((e) => _picked.contains(e.id));
+    // Đã có mã trên màn: lượt tra mới KHÔNG được thay chỗ chúng. Báo trạng
+    // thái bằng một dòng ở đầu, còn danh sách cũ vẫn nguyên bên dưới — quét
+    // nhầm một mã mà mất sạch phần đã tick là hỏng cả buổi làm.
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+      children: [
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 14),
+            child: Center(child: CupertinoActivityIndicator()),
+          )
+        else if (_notFound)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: PenText(
+              l10n.claimsCreateNoOrder,
+              size: 13,
+              color: PenColors.danger,
+            ),
+          ),
+        for (final code in _order) ...[
+          _OrderPickSection(
+            code: code,
+            items: _seen[code]!,
+            picked: _picked,
+            onToggle: (id) => setState(() {
+              if (!_picked.remove(id)) _picked.add(id);
+            }),
+            onToggleAll: (select) => setState(() {
+              for (final e in _seen[code]!) {
+                if (select) {
+                  _picked.add(e.id);
+                } else {
+                  _picked.remove(e.id);
+                }
+              }
+            }),
+          ),
+          const SizedBox(height: 18),
+        ],
+      ],
+    );
+  }
+}
+
+/// Một mã vận đơn đã quét, cùng mọi bằng chứng của nó.
+///
+/// Mỗi mã là một khối riêng, xếp chồng theo thứ tự quét — mã mới trên cùng.
+/// Quét mã thứ hai KHÔNG đẩy mã thứ nhất đi đâu cả: một hồ sơ khiếu nại thường
+/// gộp vài đơn, mà mất khối cũ là người dùng phải làm lại từ đầu.
+class _OrderPickSection extends StatelessWidget {
+  const _OrderPickSection({
+    required this.code,
+    required this.items,
+    required this.picked,
+    required this.onToggle,
+    required this.onToggleAll,
+  });
+
+  final String code;
+  final List<EcClaimPickable> items;
+  final Set<String> picked;
+  final ValueChanged<String> onToggle;
+  final ValueChanged<bool> onToggleAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final allPicked =
+        items.isNotEmpty && items.every((e) => picked.contains(e.id));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
             Expanded(
               child: PenText(
-                _code ?? '',
+                code,
                 size: 16,
                 color: PenColors.ink,
                 weight: FontWeight.w800,
@@ -781,33 +848,36 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            EcTap(
-              onTap: () => setState(() {
-                if (allPicked) {
-                  _picked.clear();
-                } else {
-                  _picked.addAll(items.map((e) => e.id));
-                }
-              }),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                child: Icon(
-                  allPicked ? LucideIcons.squareCheckBig : LucideIcons.square,
-                  size: 26,
-                  color: allPicked ? PenColors.primary : PenColors.ink,
+            if (items.isNotEmpty)
+              EcTap(
+                onTap: () => onToggleAll(!allPicked),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 4,
+                  ),
+                  child: Icon(
+                    allPicked ? LucideIcons.squareCheckBig : LucideIcons.square,
+                    size: 26,
+                    color: allPicked ? PenColors.primary : PenColors.ink,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
-        for (final e in items)
-          _PickRow(
-            item: e,
-            picked: _picked.contains(e.id),
-            onTap: () => setState(() {
-              if (!_picked.remove(e.id)) _picked.add(e.id);
-            }),
-          ),
+        if (items.isEmpty)
+          PenText(
+            context.l10n.timelineEmpty,
+            size: 13,
+            color: PenColors.mut,
+          )
+        else
+          for (final e in items)
+            _PickRow(
+              item: e,
+              picked: picked.contains(e.id),
+              onTap: () => onToggle(e.id),
+            ),
       ],
     );
   }

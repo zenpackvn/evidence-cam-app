@@ -41,8 +41,10 @@ void main() {
       expect(find.text('Nguyễn Văn A'), findsOneWidget);
       expect(find.text('nguyenvana@gmail.com'), findsOneWidget);
       expect(find.text('GÓI & ỨNG DỤNG'), findsOneWidget);
-      expect(find.text('Gói cước & Quota'), findsOneWidget);
-      expect(find.text('Cơ bản'), findsOneWidget);
+      // "Gói cước & Quota" -> "Dung lượng", và không còn nhắc tên gói: app
+      // không bán gói nên tên gói ở đây không giúp người dùng làm được gì.
+      expect(find.text('Dung lượng'), findsOneWidget);
+      expect(find.text('Cơ bản'), findsNothing);
       expect(find.text('Ngôn ngữ'), findsOneWidget);
       expect(find.text('BẢO MẬT & ĐĂNG NHẬP'), findsOneWidget);
       expect(find.text('Đổi mật khẩu'), findsOneWidget);
@@ -71,7 +73,7 @@ void main() {
         tester,
         EcAccountTabScreen(onQuotaTap: () => tapped = true),
       );
-      await tester.tap(find.text('Gói cước & Quota'));
+      await tester.tap(find.text('Dung lượng'));
       expect(tapped, isTrue);
     });
   });

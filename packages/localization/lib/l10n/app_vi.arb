@@ -82,6 +82,18 @@
   "toastPhotoDownloadFailed": "Không tải được ảnh, thử lại sau",
   "toastPhotoNoDownloadLink": "Ảnh chưa có link tải",
   "toastPhotoQueued": "Đã đính kèm ảnh — đưa vào hàng chờ tải",
+  "imageOverFixedCap": "Ảnh {megabytes} MB — vượt trần {limit} MB nên chưa đính. Chọn ảnh nhỏ hơn.",
+  "@imageOverFixedCap": {
+    "description": "Ảnh vượt trần 5 MB cố định.",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
   "toastInvitePending": "Chờ lời mời vào shop",
   "toastInviteSent": "Đã gửi lời mời",
   "toastMemberAdded": "Đã thêm thành viên",
@@ -177,7 +189,7 @@
   "statOrdersToday": "Vận đơn",
   "statVideosRecorded": "Video đã quay",
   "statPendingUpload": "Chờ tải",
-  "accountPlanQuota": "Gói cước & Quota",
+  "accountPlanQuota": "Dung lượng",
   "accountSectionApp": "GÓI & ỨNG DỤNG",
   "accountLanguage": "Ngôn ngữ",
   "accountSectionSecurity": "BẢO MẬT & ĐĂNG NHẬP",

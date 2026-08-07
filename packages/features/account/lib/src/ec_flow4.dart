@@ -43,7 +43,6 @@ class EcAccountTabScreen extends StatelessWidget {
     this.onQuotaTap,
     this.onLanguageTap,
     this.onEndQrTap,
-    this.onClaimsTap,
     this.onChangePasswordTap,
     this.onLoginMethodsTap,
     this.onLogout,
@@ -76,7 +75,6 @@ class EcAccountTabScreen extends StatelessWidget {
   final VoidCallback? onEndQrTap;
 
   /// Mở danh sách hồ sơ khiếu nại đã tạo.
-  final VoidCallback? onClaimsTap;
   final VoidCallback? onChangePasswordTap;
   final VoidCallback? onLoginMethodsTap;
   final VoidCallback? onLogout;
@@ -98,24 +96,14 @@ class EcAccountTabScreen extends StatelessWidget {
   /// `safeArea.top` vào), dùng cả ở chỗ vẽ lẫn chỗ tính trần khối cố định —
   /// hai chỗ lệch nhau là sinh ra khe hở hoặc phần xanh bị đè.
   ///
-  /// Lùi 14 cùng lúc với [_cardTopGap] (26 -> 12). Kéo thẻ lên mà để nền xanh
-  /// đứng yên thì trông y như chưa sửa gì.
+  /// Thẻ tài khoản nằm gọn bên trong ô này, căn giữa theo chiều dọc.
   static const _bannerHeight = 126.0;
 
-  /// Khoảng hở giữa mép dưới tai thỏ và thẻ tài khoản.
+  /// Vùng cuộn lấy đúng đáy ô xanh làm lề trên.
   ///
-  /// Vùng an toàn của iOS đã chừa sẵn chỗ cho tai thỏ, nên con số này chỉ là
-  /// khoảng thở thêm. 26 cũ tạo ra một dải trống nhìn như lỗi căn lề.
-  static const _cardTopGap = 12.0;
-
-  /// Chiều cao khối cố định tính từ mép dưới tai thỏ: [_cardTopGap] + thẻ tài
-  /// khoản (đệm 16 mỗi phía quanh nội dung cao 62).
-  ///
-  /// Vùng cuộn lấy đúng số này làm lề trên. Lấy theo [_bannerHeight] như bản
-  /// trước là sai: đáy thẻ nằm thấp hơn đáy dải xanh, nên mục đầu tiên bị thẻ
-  /// che mất một phần ngay khi chưa cuộn. Suy ra từ [_cardTopGap] chứ không gõ
-  /// lại số: sửa một chỗ mà quên chỗ kia là sinh đúng cái khe hở này.
-  static const _headerBlockHeight = _cardTopGap + 62.0 + 32.0;
+  /// Thẻ tài khoản nay nằm GỌN trong ô xanh (căn giữa), nên đáy ô xanh cũng là
+  /// đáy khối cố định — không còn phải cộng thêm chiều cao thẻ như bản trước.
+  static const _headerBlockHeight = _bannerHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +131,6 @@ class EcAccountTabScreen extends StatelessWidget {
                       _SettingsRow(
                         icon: LucideIcons.creditCard,
                         label: context.l10n.accountPlanQuota,
-                        value: planLabel,
                         onTap: onQuotaTap,
                       ),
                       _SettingsRow(
@@ -156,11 +143,6 @@ class EcAccountTabScreen extends StatelessWidget {
                         icon: LucideIcons.qrCode,
                         label: context.l10n.accountEndQr,
                         onTap: onEndQrTap,
-                      ),
-                      _SettingsRow(
-                        icon: LucideIcons.fileText,
-                        label: context.l10n.accountClaims,
-                        onTap: onClaimsTap,
                       ),
                     ],
                   ),
@@ -219,37 +201,40 @@ class EcAccountTabScreen extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: PenBrandBanner(height: _bannerHeight),
           ),
-          // Thẻ tài khoản khoá, nằm trên cùng, có nút back đè lên dải xanh.
+          // Thẻ tài khoản căn GIỮA ô xanh theo chiều dọc.
           //
-          // Màn này không còn là một tab — nó được đẩy từ màn Chọn cửa hàng —
-          // nên phải có đường quay ra. Trước đây thanh tab ở đáy làm việc đó.
+          // Nút back nằm trong `Stack` chứ không xếp trên thẻ: xếp trên thì nó
+          // đẩy thẻ tụt xuống và thẻ hết nằm giữa. Màn này được ĐẨY từ màn Chọn
+          // cửa hàng nên phải có đường quay ra — trước đây thanh tab ở đáy làm
+          // việc đó.
           SafeArea(
             bottom: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (onBack != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 2, 18, 0),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
+            child: SizedBox(
+              height: _bannerHeight,
+              child: Stack(
+                children: [
+                  if (onBack != null)
+                    Positioned(
+                      left: 14,
+                      top: 2,
                       child: PenBackButton(
                         onTap: onBack,
                         color: PenColors.card,
                       ),
                     ),
+                  Align(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      child: _UserRow(
+                        name: userName,
+                        email: userEmail,
+                        avatarPath: avatarPath,
+                        onTap: onProfileTap,
+                      ),
+                    ),
                   ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, _cardTopGap, 18, 0),
-                  child: _UserRow(
-                    name: userName,
-                    email: userEmail,
-                    avatarPath: avatarPath,
-                    onTap: onProfileTap,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           // Cụm liên hệ nổi ở góc phải dưới. Nằm trong Stack nên nó không cuộn
@@ -753,6 +738,7 @@ class EcQuotaScreen extends StatelessWidget {
 
   /// Short plan code shown in the header chip (design: "P1").
   final String planCode;
+
   /// Video đã tính vào gói trong tháng này, và trần của gói.
   final int usedVideos;
   final int? remainingVideos;
@@ -831,8 +817,6 @@ class EcQuotaScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        _PlanChip(label: planCode),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -860,34 +844,6 @@ class EcQuotaScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The amber `PlanChip` in the quota header — the plan's short code.
-class _PlanChip extends StatelessWidget {
-  const _PlanChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => PenBox(
-    fill: const Color(0xFFFFF6E5),
-    radius: 999,
-    axis: PenAxis.row,
-    gap: 6,
-    cross: CrossAxisAlignment.center,
-    hugMain: true,
-    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 11),
-    children: [
-      const Icon(LucideIcons.badgeCheck, size: 15, color: _warning),
-      PenText(
-        label,
-        size: 13,
-        color: _warning,
-        weight: FontWeight.w800,
-        softWrap: false,
-      ),
-    ],
-  );
 }
 
 /// `--warning` / `--chart-4` — the amber the design uses for plan and
@@ -928,32 +884,6 @@ class _QuotaSummaryCard extends StatelessWidget {
       gap: 12,
       padding: const EdgeInsets.all(16),
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  PenText(
-                    l10n.quotaCurrentPlan,
-                    size: 13,
-                    color: PenColors.mut,
-                    softWrap: false,
-                  ),
-                  const SizedBox(height: 3),
-                  PenText(
-                    planLabel,
-                    size: 24,
-                    color: PenColors.ink,
-                    weight: FontWeight.w800,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

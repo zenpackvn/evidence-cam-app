@@ -434,6 +434,12 @@ abstract class AppLocalizations {
   /// **'Photo attached — added to the upload queue'**
   String get toastPhotoQueued;
 
+  /// Ảnh vượt trần 5 MB cố định.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo is {megabytes} MB — over the {limit} MB cap, not attached. Pick a smaller image.'**
+  String imageOverFixedCap(String megabytes, String limit);
+
   /// No description provided for @toastInvitePending.
   ///
   /// In en, this message translates to:
@@ -911,7 +917,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountPlanQuota.
   ///
   /// In en, this message translates to:
-  /// **'Plan & Quota'**
+  /// **'Storage'**
   String get accountPlanQuota;
 
   /// No description provided for @accountSectionApp.

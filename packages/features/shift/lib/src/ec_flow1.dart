@@ -952,8 +952,6 @@ String _platformLabel(String platform) => switch (platform) {
 class EcChooseShopScreen extends StatelessWidget {
   const EcChooseShopScreen({
     required this.shops,
-    this.userName,
-    this.userEmail,
     this.onSelect,
     this.onAccountTap,
     this.onAddShop,
@@ -962,11 +960,6 @@ class EcChooseShopScreen extends StatelessWidget {
   });
 
   final List<EcShopSummary> shops;
-
-  /// Tên và email hiện trên thẻ Tài khoản. Null thì thẻ vẫn vẽ, chỉ là chưa
-  /// đọc xong hồ sơ — giấu thẻ đi rồi hiện lại sau là màn nhảy trước mắt.
-  final String? userName;
-  final String? userEmail;
 
   final ValueChanged<EcShopSummary>? onSelect;
 
@@ -988,44 +981,61 @@ class EcChooseShopScreen extends StatelessWidget {
     return PenScreen(
       scrollable: false,
       decorations: const [
-        Positioned(left: 49, top: 25, child: PenPlatformHero()),
+        // Cụm icon sàn kéo lên sát mép trên: nút Tài khoản nay chiếm góc phải
+        // nên khoảng trống phía trên không còn chỗ dùng.
+        Positioned(left: 49, top: 4, child: PenPlatformHero()),
       ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Nút Tài khoản: viên xanh góc phải TRÊN CÙNG, chỉ một chữ.
+          //
+          // Trước nó là một thẻ to bằng thẻ shop, đứng lẫn trong danh sách —
+          // mà đây không phải một cửa hàng. Đưa lên góc và thu lại thành một
+          // viên nhỏ thì nó thôi giả làm shop, và trả chỗ cho danh sách.
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 8, 22, 0),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: onAccountTap == null
+                    ? const SizedBox.shrink()
+                    : _AccountPill(onTap: onAccountTap!),
+              ),
+            ),
+          ),
+          // Tiêu đề KHOÁ cùng nút Tài khoản, ngoài vùng cuộn: nó nói màn này
+          // đang hỏi gì, mà một câu hỏi trôi mất khi kéo danh sách thì người
+          // dùng phải cuộn ngược lên mới nhớ mình đang ở đâu.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 96, 22, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                PenText(
+                  l10n.shopChooseTitle,
+                  size: 30,
+                  color: PenColors.ink,
+                  weight: FontWeight.w800,
+                  align: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                PenText(
+                  l10n.shopChooseSubtitle,
+                  size: 14,
+                  color: PenColors.mut,
+                  align: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(22, 186, 22, 16),
+              padding: const EdgeInsets.fromLTRB(22, 20, 22, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  PenText(
-                    l10n.shopChooseTitle,
-                    size: 30,
-                    color: PenColors.ink,
-                    weight: FontWeight.w800,
-                    align: TextAlign.center,
-                  ),
-                  const SizedBox(height: 6),
-                  PenText(
-                    l10n.shopChooseSubtitle,
-                    size: 14,
-                    color: PenColors.mut,
-                    align: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  // Tài khoản đứng TRÊN mọi shop: nó thuộc về người dùng, còn
-                  // danh sách bên dưới thuộc về các cửa hàng. Nhét nó xuống
-                  // cuối là chôn nó dưới một danh sách dài ở tài khoản nhiều
-                  // shop.
-                  if (onAccountTap != null) ...[
-                    _AccountRow(
-                      name: userName,
-                      email: userEmail,
-                      onTap: onAccountTap,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
                   for (var i = 0; i < shops.length; i++) ...[
                     if (i > 0) const SizedBox(height: 10),
                     _ShopRow(
@@ -1063,61 +1073,41 @@ class EcChooseShopScreen extends StatelessWidget {
   }
 }
 
-/// Thẻ Tài khoản trên màn Chọn cửa hàng — cùng khuôn với một dòng shop, nhưng
-/// icon người thay ô sàn thương mại.
-class _AccountRow extends StatelessWidget {
-  const _AccountRow({this.name, this.email, this.onTap});
+/// Nút Tài khoản ở góc phải trên màn Chọn cửa hàng — viên bo tròn xanh, đúng
+/// một chữ.
+///
+/// Trước nó là một thẻ to bằng thẻ shop, có avatar và email, đứng lẫn trong
+/// danh sách cửa hàng. Nhưng tài khoản KHÔNG phải một cửa hàng: để cùng khuôn
+/// và cùng hàng với chúng là mời người dùng chạm nhầm khi đang vội chọn shop
+/// vào ca.
+class _AccountPill extends StatelessWidget {
+  const _AccountPill({required this.onTap});
 
-  final String? name;
-  final String? email;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return PenCard(
-      gap: 16,
-      padding: const EdgeInsets.all(14),
-      onTap: onTap,
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: PenBox(
+      fill: PenColors.primary,
+      radius: 999,
+      axis: PenAxis.row,
+      gap: 7,
+      hugMain: true,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 15),
       children: [
-        const PenBox(
-          width: 52,
-          height: 52,
-          fill: PenColors.bg,
-          radius: 14,
-          axis: PenAxis.row,
-          main: MainAxisAlignment.center,
-          cross: CrossAxisAlignment.center,
-          children: [Icon(LucideIcons.user, size: 26, color: PenColors.ink)],
+        const Icon(LucideIcons.user, size: 17, color: PenColors.card),
+        PenText(
+          context.l10n.navAccount,
+          size: 14,
+          color: PenColors.card,
+          weight: FontWeight.w700,
+          softWrap: false,
         ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              PenText(
-                name?.isNotEmpty ?? false ? name! : l10n.accountNoName,
-                size: 18,
-                color: PenColors.ink,
-                weight: FontWeight.w700,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 3),
-              PenText(
-                email?.isNotEmpty ?? false ? email! : l10n.navAccount,
-                size: 12,
-                color: PenColors.mut,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-        const Icon(LucideIcons.chevronRight, size: 21, color: PenColors.mut),
       ],
-    );
-  }
+    ),
+  );
 }
 
 /// One selectable shop: platform tile, name + meta, navigation chevron. The
@@ -2044,6 +2034,11 @@ class EcShopDetailScreen extends StatelessWidget {
                   icon: LucideIcons.timer,
                   label: l10n.shopDetailClipLength,
                   value: l10n.clipDurationValue('${kFixedClipSeconds ~/ 60}'),
+                ),
+                _FixedSettingRow(
+                  icon: LucideIcons.fileUp,
+                  label: l10n.shopDetailImageSize,
+                  value: l10n.uploadSizeValue('${kFixedImageBytes ~/ 1000000}'),
                 ),
               ],
             ),

@@ -24,6 +24,14 @@ const kMinClipSeconds = 60;
 /// máy quay. Hai chỗ đọc hai nguồn là màn hình nói dối.
 const kFixedClipSeconds = 300;
 
+/// Trần dung lượng một ẢNH đính kèm: **5 MB, cố định**.
+///
+/// Trần theo byte của quota đã bỏ, nhưng cái này thì không phải quota — nó là
+/// mức chặn một tệp đơn lẻ, để một tấm ảnh máy ảnh 40MB không đi qua đường đính
+/// kèm. Cùng lý do với [kFixedClipSeconds]: cố định, hiện thẳng ở màn cài đặt,
+/// và là con số bộ đính ảnh thật sự dùng.
+const kFixedImageBytes = 5000000;
+
 /// Trần thời lượng một clip mà shop đang áp dụng.
 ///
 /// Chỉ còn một trường. Trước đây lớp này còn mang `maxImageBytes`,
@@ -48,6 +56,8 @@ class ClipBudget {
 
   Duration get maxRecording => Duration(seconds: seconds);
 
-  ClipBudget copyWith({int? seconds}) =>
-      ClipBudget(seconds: seconds ?? this.seconds, planMaxSeconds: planMaxSeconds);
+  ClipBudget copyWith({int? seconds}) => ClipBudget(
+    seconds: seconds ?? this.seconds,
+    planMaxSeconds: planMaxSeconds,
+  );
 }

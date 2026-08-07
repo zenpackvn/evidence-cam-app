@@ -576,30 +576,37 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('hàng thời lượng hiện trần đang áp dụng, không nhắc dung lượng', (
-      tester,
-    ) async {
-      await _pump(
+    testWidgets(
+      'hàng thời lượng hiện trần đang áp dụng, không nhắc dung lượng',
+      (
         tester,
-        const EcShopDetailScreen(
-          shopName: 'Shop ABC',
-          platformLabel: 'Shopee',
-          members: members,
-          videoTypes: videoTypes,
-          clipBudget: ClipBudget(seconds: 300, planMaxSeconds: 300),
-        ),
-      );
-      // Nhãn là `shopDetailClipLength` = "Thời lượng video" (không có gạch
-      // chéo) — `shopDetailClipDuration` cũ đã không còn ai dùng.
-      expect(find.text('Thời lượng video'), findsOneWidget);
-      expect(find.text('5 phút'), findsOneWidget);
-      // Mức đề xuất, cảnh báo vượt sàn và trần dung lượng đều đã bỏ.
-      expect(find.textContaining('Đề xuất'), findsNothing);
-      expect(find.textContaining('Vượt mức đề xuất'), findsNothing);
-      expect(find.textContaining('MB'), findsNothing);
-      expect(find.text('Dung lượng/tệp'), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+      ) async {
+        await _pump(
+          tester,
+          const EcShopDetailScreen(
+            shopName: 'Shop ABC',
+            platformLabel: 'Shopee',
+            members: members,
+            videoTypes: videoTypes,
+            clipBudget: ClipBudget(seconds: 300, planMaxSeconds: 300),
+          ),
+        );
+        // Nhãn là `shopDetailClipLength` = "Thời lượng video" (không có gạch
+        // chéo) — `shopDetailClipDuration` cũ đã không còn ai dùng.
+        expect(find.text('Thời lượng video'), findsOneWidget);
+        expect(find.text('5 phút'), findsOneWidget);
+        // Mức đề xuất và cảnh báo vượt sàn đã bỏ. Trần MỘT TỆP ảnh thì còn:
+        // nó không phải quota (quota tính theo số video) mà là chặn để ảnh máy
+        // ảnh 40MB không đi qua đường đính kèm.
+        expect(find.textContaining('Đề xuất'), findsNothing);
+        expect(find.textContaining('Vượt mức đề xuất'), findsNothing);
+        expect(find.text('Dung lượng ảnh'), findsOneWidget);
+        expect(find.text('5 MB'), findsOneWidget);
+        // Trần dung lượng theo GÓI thì đã bỏ hẳn.
+        expect(find.text('Dung lượng/tệp'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     // sheet chọn mốc — cả sheet lẫn lối vào đều đã bỏ.
     testWidgets('hai mức cố định hiện ra, không bấm được', (tester) async {
@@ -613,8 +620,8 @@ void main() {
         ),
       );
       expect(find.text('5 phút'), findsOneWidget);
-      // Chỉ còn MỘT hàng cố định: hàng dung lượng ảnh đã bỏ 2026-08-07.
-      expect(find.text('mặc định'), findsOneWidget);
+      expect(find.text('5 MB'), findsOneWidget);
+      expect(find.text('mặc định'), findsNWidgets(2));
       // Không còn hàng nào mở sheet.
       expect(find.text('Dung lượng/tệp'), findsNothing);
       expect(find.text('Độ phân giải quay'), findsNothing);
