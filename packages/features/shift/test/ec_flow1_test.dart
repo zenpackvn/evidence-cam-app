@@ -583,7 +583,9 @@ void main() {
           clipBudget: ClipBudget(seconds: 300, planMaxSeconds: 300),
         ),
       );
-      expect(find.text('Thời lượng/video'), findsOneWidget);
+      // Nhãn là `shopDetailClipLength` = "Thời lượng video" (không có gạch
+      // chéo) — `shopDetailClipDuration` cũ đã không còn ai dùng.
+      expect(find.text('Thời lượng video'), findsOneWidget);
       expect(find.text('5 phút'), findsOneWidget);
       // Mức đề xuất, cảnh báo vượt sàn và trần dung lượng đều đã bỏ.
       expect(find.textContaining('Đề xuất'), findsNothing);
