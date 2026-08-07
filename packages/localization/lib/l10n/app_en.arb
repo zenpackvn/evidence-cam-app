@@ -907,17 +907,9 @@
   "@clipDurationTitle": {
     "description": "Shop detail / clip budget (FR-17..FR-20)."
   },
-  "clipDurationSubtitle": "Auto-closes at this length; {minutes} min still attaches directly to {platform}",
+  "clipDurationSubtitle": "Auto-closes at this length",
   "@clipDurationSubtitle": {
-    "description": "Shop detail / clip budget (FR-17..FR-20).",
-    "placeholders": {
-      "minutes": {
-        "type": "String"
-      },
-      "platform": {
-        "type": "String"
-      }
-    }
+    "description": "Shop detail / clip budget (FR-17..FR-20)."
   },
   "clipDurationOptionRecommended": "{minutes} min (recommended)",
   "@clipDurationOptionRecommended": {

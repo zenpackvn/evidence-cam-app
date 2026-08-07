@@ -91,9 +91,6 @@ class EcApi {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
-    int? maxUploadBytes,
-    int? maxImageBytes,
-    int? maxVideoBytes,
   }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/api/shops/$shopId',
@@ -101,13 +98,9 @@ class EcApi {
         'name': ?name,
         'platform': ?platform,
         'resolution': ?resolution,
+        // Trần thời lượng là thứ DUY NHẤT còn đặt được. Mọi trần dung lượng
+        // đã bỏ 2026-08-07 — gói cước tính theo số video.
         'max_clip_seconds': ?maxClipSeconds,
-        'max_upload_bytes': ?maxUploadBytes,
-        // Trần riêng cho ảnh và cho video. Trước đây chỉ có một trần chung,
-        // nhưng ảnh đính kèm nhẹ hơn clip cả bậc — dùng chung một con số thì
-        // hoặc ảnh được nới quá tay, hoặc video bị siết oan.
-        'max_image_bytes': ?maxImageBytes,
-        'max_video_bytes': ?maxVideoBytes,
       },
     );
     return ShopDto.fromJson(res.data!);

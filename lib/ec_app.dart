@@ -73,8 +73,7 @@ import 'package:shared_contracts/shared_contracts.dart'
         EcClaimDossier,
         EcClaimEvidence,
         EcClaimOrder,
-        kFixedClipSeconds,
-        kFixedImageBytes;
+        kFixedClipSeconds;
 import 'package:storage/storage.dart';
 
 import 'app/di/injection.dart';
@@ -1137,27 +1136,15 @@ class _QuotaRouteState extends State<_QuotaRoute> {
   /// on-disk file size. Sorted largest-first so the breakdown (and its
   /// stacked bar) read biggest-type-first, matching the reference design.
   List<EcQuotaTypeUsage> _localTypeUsage() {
-    final byType = <String, (int count, int bytes)>{};
+    final byType = <String, int>{};
     for (final task in widget.queue.tasks) {
       if (task.shopId != widget.shopId) continue;
-      var bytes = 0;
-      try {
-        bytes = File(task.filePath).lengthSync();
-      } on Object {
-        // Clip's file was moved/cleaned up since it was queued — still
-        // count the video, just not its (now unknown) size.
-      }
-      final prev = byType[task.type] ?? (0, 0);
-      byType[task.type] = (prev.$1 + 1, prev.$2 + bytes);
+      byType[task.type] = (byType[task.type] ?? 0) + 1;
     }
     final usage = [
       for (final entry in byType.entries)
-        EcQuotaTypeUsage(
-          type: entry.key,
-          videoCount: entry.value.$1,
-          bytes: entry.value.$2,
-        ),
-    ]..sort((a, b) => b.bytes.compareTo(a.bytes));
+        EcQuotaTypeUsage(type: entry.key, videoCount: entry.value),
+    ]..sort((a, b) => b.videoCount.compareTo(a.videoCount));
     return usage;
   }
 
@@ -1179,29 +1166,18 @@ class _QuotaRouteState extends State<_QuotaRoute> {
         final typeUsage = quota.byType.isNotEmpty
             ? [
                 for (final t in quota.byType)
-                  EcQuotaTypeUsage(
-                    type: t.type,
-                    videoCount: t.videoCount,
-                    bytes: t.bytes,
-                  ),
+                  EcQuotaTypeUsage(type: t.type, videoCount: t.videoCount),
               ]
             : _localTypeUsage();
-        final videoCount =
-            quota.videoCount ??
-            typeUsage.fold<int>(0, (total, u) => total + u.videoCount);
         return EcQuotaScreen(
           planLabel: _planDisplayName(context.l10n, quota.planCode),
-          // Số của SERVER, không phải tổng các clip còn nằm trên máy.
-          //
-          // Bản trước cộng kích thước file trong hàng đợi upload để con số này
-          // khớp với bảng chia theo loại ngay bên dưới. Nhưng clip upload xong
-          // là rời hàng đợi, nên quay thêm bao nhiêu thì con số vẫn đứng yên —
-          // trong khi đây đúng là con số người bán đem so với hạn mức gói.
-          // Khớp nhau mà sai thì vô dụng hơn là lệch nhau mà đúng.
-          usedBytes: quota.usedBytes,
-          capBytes: quota.capBytes,
+          // Số của SERVER. Hàng đợi trên máy chỉ còn clip CHƯA upload xong, nên
+          // cộng nó lại là quay thêm bao nhiêu con số vẫn đứng yên — trong khi
+          // đây đúng là con số người bán đem so với hạn mức gói.
+          usedVideos: quota.usedVideos,
+          capVideos: quota.capVideos,
+          remainingVideos: quota.remainingVideos,
           retentionTotalDays: quota.retentionDays,
-          videoCount: videoCount,
           typeUsage: typeUsage,
           // Mua gói KHÔNG diễn ra trong app nữa — xem chú thích ở đầu lớp.
           // `canManagePlan` vẫn truyền vào vì màn hình dùng nó cho những nhãn
@@ -2152,21 +2128,15 @@ String? _rememberedAvatar(String? uid) {
   return _resolveAvatarPath(saved);
 }
 
-/// Thời lượng clip và trần ảnh nay CỐ ĐỊNH ở phía app
-/// ([kFixedClipSeconds] / [kFixedImageBytes]), không lấy theo shop nữa.
+/// Thời lượng clip CỐ ĐỊNH ở phía app ([kFixedClipSeconds]), không lấy theo
+/// shop nữa — cùng hằng số màn cài đặt in ra, nên dòng chữ trên màn không thể
+/// lệch với thứ máy quay thật sự làm.
 ///
-/// Con số của server vẫn đọc về cho những chỗ khác (mức đề xuất, trần gói),
-/// nhưng thứ máy quay và bộ đính ảnh thật sự dùng là hai hằng số đó — cùng hai
-/// hằng số màn cài đặt in ra. Một nguồn duy nhất, nên dòng chữ trên màn không
-/// thể lệch với thứ app làm.
+/// Mọi trần dung lượng đã bỏ 2026-08-07: gói cước tính theo số video, nên
+/// không còn con số byte nào để mang từ server về.
 ClipBudget _budgetFromDto(ShopDto shop) => ClipBudget(
   seconds: kFixedClipSeconds,
-  recommendedSeconds: shop.recommendedClipSeconds,
   planMaxSeconds: shop.planMaxClipSeconds,
-  maxImageBytes: kFixedImageBytes,
-  maxVideoBytes: shop.maxVideoBytes,
-  uploadBytes: kFixedImageBytes,
-  platformLimitsVerified: shop.platformLimitsVerified,
 );
 
 EcShopSummary _shopFromDto(ShopDto shop) => EcShopSummary(
@@ -2270,25 +2240,9 @@ Future<String?> _attachPhoto(
 }) async {
   final path = await _pickImagePath();
   if (path == null || !context.mounted) return null;
-  // Ảnh vượt giới hạn của sàn vẫn lưu NGUYÊN VẸN — không nén, không cắt (FR-20:
-  // chuỗi bằng chứng phải nguyên gốc). Chỉ cảnh báo để CSKH biết phải gửi bằng
-  // link hồ sơ thay vì đính thẳng lên form khiếu nại.
-  final bytes = await File(path).length();
-  // Trần dung lượng/tệp của shop (FR-21) là chặn cứng, khác cảnh báo của sàn:
-  // chặn TRƯỚC khi vào hàng đợi, nếu không một tệp khổng lồ đã kịp đốt quota và
-  // dữ liệu di động rồi mới báo. Tệp gốc còn nguyên trong máy — chủ shop nâng
-  // trần rồi đính lại, không mất bằng chứng.
-  final cap = budget?.uploadBytes;
-  if (cap != null && bytes > cap) {
-    _toast(
-      context,
-      context.l10n.fileOverUploadCap(
-        ClipBudget.megabytesLabel(bytes),
-        ClipBudget.megabytesLabel(cap),
-      ),
-    );
-    return null;
-  }
+  // Không còn trần dung lượng nào (2026-08-07): gói cước tính theo SỐ VIDEO,
+  // nên một tấm ảnh nặng bao nhiêu cũng không tốn suất nào. Ảnh luôn lưu NGUYÊN
+  // VẸN — không nén, không cắt (FR-20: chuỗi bằng chứng phải nguyên gốc).
   await queue.enqueue(
     tracking: tracking,
     type: 'Ảnh đính kèm',
@@ -2296,18 +2250,6 @@ Future<String?> _attachPhoto(
     shopId: shopId,
   );
   if (!context.mounted) return path;
-  final limit = budget?.maxImageBytes;
-  if (limit != null && bytes > limit) {
-    _toast(
-      context,
-      context.l10n.imageOverPlatformLimit(
-        ClipBudget.megabytesLabel(bytes),
-        platformLabel,
-        ClipBudget.megabytesLabel(limit),
-      ),
-    );
-    return path;
-  }
   if (toastOnQueued) _toast(context, context.l10n.toastPhotoQueued);
   return path;
 }
@@ -3101,11 +3043,18 @@ Future<void> _confirmDeleteShop(
 /// cách bản trước giấu việc endpoint không tồn tại suốt nhiều bản phát hành.
 String _avatarErrorText(AppLocalizations l10n, Object error) =>
     error is AvatarTooLargeException
-    ? l10n.avatarTooLarge(
-        ClipBudget.megabytesLabel(error.bytes),
-        ClipBudget.megabytesLabel(error.maxBytes),
-      )
+    ? l10n.avatarTooLarge(_mbLabel(error.bytes), _mbLabel(error.maxBytes))
     : l10n.avatarUploadFailed(_dataErrorText(l10n, error));
+
+/// MB thập phân, cho đúng MỘT chỗ còn lại có trần dung lượng: ảnh đại diện.
+///
+/// Đó là chốt chặn kỹ thuật của một tấm ảnh hồ sơ, không phải hạn mức gói —
+/// mọi trần dung lượng của bằng chứng đã bỏ 2026-08-07. Trước đây dùng
+/// `ClipBudget.megabytesLabel`, nay `ClipBudget` không còn biết gì về byte.
+String _mbLabel(int bytes) {
+  final mb = bytes / 1000000;
+  return mb >= 10 ? mb.round().toString() : mb.toStringAsFixed(1);
+}
 
 /// Lỗi của riêng luồng mời thành viên.
 ///

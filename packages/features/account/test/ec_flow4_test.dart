@@ -134,23 +134,22 @@ void main() {
 
   group('EcQuotaScreen', () {
     testWidgets('shows plan, quota usage and retention', (tester) async {
-      // Quota is measured in stored bytes, not a video count — the old
-      // "237 / 500 video" plan model was replaced by the storage plans.
-      const gb = 1024 * 1024 * 1024;
+      // Bản 3 (2026-08-07): trục hạn mức là SỐ VIDEO mỗi tháng, không phải
+      // dung lượng — mọi trần byte đã bỏ cùng lượt với quota theo dung lượng.
       await _pump(
         tester,
         const EcQuotaScreen(
           planLabel: 'Tiết kiệm',
-          usedBytes: 12 * gb,
-          capBytes: 60 * gb,
+          usedVideos: 200,
+          capVideos: 1000,
           retentionTotalDays: 90,
         ),
       );
       expect(find.text('Báo cáo & Quota'), findsOneWidget);
       expect(find.text('Gói hiện tại'), findsOneWidget);
       expect(find.text('Tiết kiệm'), findsOneWidget);
-      // Remaining / cap, and the matching used percentage.
-      expect(find.text('48 GB / 60 GB'), findsOneWidget);
+      // Còn lại / trần, và phần trăm đã dùng khớp với hai số đó.
+      expect(find.text('800 / 1.000'), findsOneWidget);
       expect(find.text('Đã dùng 20%'), findsOneWidget);
       expect(find.text('Lưu trữ'), findsOneWidget);
       expect(find.text('90 ngày'), findsOneWidget);

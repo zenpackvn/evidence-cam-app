@@ -560,98 +560,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-      'shows the recommendation caption and no warning at or below it',
-      (
-        tester,
-      ) async {
-        await _pump(
-          tester,
-          const EcShopDetailScreen(
-            shopName: 'Shop ABC',
-            platformLabel: 'Shopee',
-            members: members,
-            videoTypes: videoTypes,
-            clipBudget: ClipBudget(
-              seconds: 120,
-              recommendedSeconds: 120,
-              planMaxSeconds: 900,
-              maxImageBytes: 10000000,
-              maxVideoBytes: 30000000,
-              uploadBytes: 10000000,
-            ),
-          ),
-        );
-        expect(find.text('Thời lượng/video'), findsOneWidget);
-        expect(find.text('2 phút'), findsOneWidget);
-        expect(
-          find.text('Đề xuất 2 phút — theo Shopee (30 MB/video) + 720p'),
-          findsOneWidget,
-        );
-        expect(find.textContaining('Vượt mức đề xuất'), findsNothing);
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets(
-      'raising the cap past the recommendation shows the amber warning',
-      (
-        tester,
-      ) async {
-        await _pump(
-          tester,
-          const EcShopDetailScreen(
-            shopName: 'Shop ABC',
-            platformLabel: 'Shopee',
-            members: members,
-            videoTypes: videoTypes,
-            clipBudget: ClipBudget(
-              seconds: 300,
-              recommendedSeconds: 120,
-              planMaxSeconds: 900,
-              maxImageBytes: 10000000,
-              maxVideoBytes: 30000000,
-              uploadBytes: 10000000,
-            ),
-          ),
-        );
-        expect(find.text('5 phút'), findsOneWidget);
-        expect(
-          find.textContaining('Vượt mức đề xuất 2 phút của Shopee'),
-          findsOneWidget,
-        );
-        // 5 phút × 15 MB/phút = ~75 MB — con số phải thật, không phải nhãn suông.
-        expect(find.textContaining('~75 MB'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets('an unverified platform says so instead of quoting a number', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        const EcShopDetailScreen(
-          shopName: 'Kho tổng',
-          platformLabel: 'Khác',
-          members: members,
-          videoTypes: videoTypes,
-          clipBudget: ClipBudget(
-            seconds: 120,
-            recommendedSeconds: 120,
-            planMaxSeconds: 900,
-            maxImageBytes: 10000000,
-            maxVideoBytes: 30000000,
-            uploadBytes: 10000000,
-            platformLimitsVerified: false,
-          ),
-        ),
-      );
-      expect(find.textContaining('chưa xác minh'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('upload size row states the sàn limit, and warns above it', (
+    testWidgets('hàng thời lượng hiện trần đang áp dụng, không nhắc dung lượng', (
       tester,
     ) async {
       await _pump(
@@ -661,31 +570,19 @@ void main() {
           platformLabel: 'Shopee',
           members: members,
           videoTypes: videoTypes,
-          clipBudget: ClipBudget(
-            seconds: 120,
-            recommendedSeconds: 120,
-            planMaxSeconds: 900,
-            maxImageBytes: 10000000,
-            maxVideoBytes: 30000000,
-            uploadBytes: 25000000,
-          ),
+          clipBudget: ClipBudget(seconds: 300, planMaxSeconds: 300),
         ),
       );
-      expect(find.text('Dung lượng/tệp'), findsOneWidget);
-      expect(find.text('25 MB'), findsOneWidget);
-      expect(
-        find.text('Đề xuất 10 MB — theo giới hạn ảnh đính kèm của Shopee'),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining('Vượt mức đề xuất 10 MB của Shopee'),
-        findsOneWidget,
-      );
+      expect(find.text('Thời lượng/video'), findsOneWidget);
+      expect(find.text('5 phút'), findsOneWidget);
+      // Mức đề xuất, cảnh báo vượt sàn và trần dung lượng đều đã bỏ.
+      expect(find.textContaining('Đề xuất'), findsNothing);
+      expect(find.textContaining('Vượt mức đề xuất'), findsNothing);
+      expect(find.textContaining('MB'), findsNothing);
+      expect(find.text('Dung lượng/tệp'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    // Hai hàng cài đặt nay CỐ ĐỊNH: 5 phút và 5 MB, không bấm được, kèm chữ
-    // "mặc định" thay chỗ mũi tên. Ba test cũ canh việc chạm vào chúng mở ra
     // sheet chọn mốc — cả sheet lẫn lối vào đều đã bỏ.
     testWidgets('hai mức cố định hiện ra, không bấm được', (tester) async {
       await _pump(
@@ -698,8 +595,8 @@ void main() {
         ),
       );
       expect(find.text('5 phút'), findsOneWidget);
-      expect(find.text('5 MB'), findsOneWidget);
-      expect(find.text('mặc định'), findsNWidgets(2));
+      // Chỉ còn MỘT hàng cố định: hàng dung lượng ảnh đã bỏ 2026-08-07.
+      expect(find.text('mặc định'), findsOneWidget);
       // Không còn hàng nào mở sheet.
       expect(find.text('Dung lượng/tệp'), findsNothing);
       expect(find.text('Độ phân giải quay'), findsNothing);

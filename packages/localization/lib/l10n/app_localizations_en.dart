@@ -1477,9 +1477,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clipDurationTitle => 'Max length per video';
 
   @override
-  String clipDurationSubtitle(String minutes, String platform) {
-    return 'Auto-closes at this length; $minutes min still attaches directly to $platform';
-  }
+  String get clipDurationSubtitle => 'Auto-closes at this length';
 
   @override
   String clipDurationOptionRecommended(String minutes) {

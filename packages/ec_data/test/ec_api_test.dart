@@ -44,16 +44,17 @@ void main() {
     ).thenAnswer(
       (_) async => _res('/api/quota', {
         'plan_code': 'basic',
-        'used_bytes': 3,
-        'cap_bytes': 100,
-        'remaining_bytes': 97,
+        'used_videos': 3,
+        'cap_videos': 100,
+        'remaining_videos': 97,
         'retention_days': 25,
       }),
     );
 
     final q = await api.getQuota();
-    expect(q.remainingBytes, 97);
-    expect(q.capBytes, 100);
+    expect(q.usedVideos, 3);
+    expect(q.capVideos, 100);
+    expect(q.remainingVideos, 97);
     expect(q.planCode, 'basic');
     expect(q.retentionDays, 25);
   });

@@ -2727,8 +2727,8 @@ abstract class AppLocalizations {
   /// Shop detail / clip budget (FR-17..FR-20).
   ///
   /// In en, this message translates to:
-  /// **'Auto-closes at this length; {minutes} min still attaches directly to {platform}'**
-  String clipDurationSubtitle(String minutes, String platform);
+  /// **'Auto-closes at this length'**
+  String get clipDurationSubtitle;
 
   /// Shop detail / clip budget (FR-17..FR-20).
   ///

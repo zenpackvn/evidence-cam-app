@@ -1929,20 +1929,13 @@ class EcShopDetailScreen extends StatelessWidget {
               icon: LucideIcons.settings,
               label: l10n.sectionShopSettings,
               children: [
-                // Hai mức CỐ ĐỊNH, không đặt được. Độ phân giải thì đổi ngay
-                // trên thanh dưới màn quay nên không nằm ở đây.
+                // Một mức CỐ ĐỊNH, không đặt được. Độ phân giải thì đổi ngay
+                // trên thanh dưới màn quay nên không nằm ở đây. Dòng "dung
+                // lượng tối đa mỗi ảnh" đã bỏ 2026-08-07 — không còn trần nào.
                 _FixedSettingRow(
                   icon: LucideIcons.timer,
                   label: l10n.shopDetailClipLength,
                   value: l10n.clipDurationValue('${kFixedClipSeconds ~/ 60}'),
-                ),
-                _FixedSettingRow(
-                  icon: LucideIcons.fileUp,
-                  label: l10n.shopDetailImageSize,
-                  // Chia thẳng chứ không qua `megabytesLabel`: hàm đó thêm
-                  // một chữ số thập phân cho mọi mức dưới 10MB, nên 5MB in ra
-                  // "5.0 MB" — một con số cố định thì không có gì để làm tròn.
-                  value: l10n.uploadSizeValue('${kFixedImageBytes ~/ 1000000}'),
                 ),
               ],
             ),
@@ -2047,9 +2040,8 @@ class _DeleteShopRow extends StatelessWidget {
 /// đặt → trần gói → server kẹp lại) nên thứ hiện ra thường không phải thứ vừa
 /// bấm. Đặt được mà không giữ được thì khó chịu hơn hẳn không cho đặt.
 ///
-/// Giá trị lấy từ [kFixedClipSeconds] / [kFixedImageBytes] — cùng hằng số máy
-/// quay và bộ đính ảnh dùng, nên dòng chữ ở đây không thể lệch với thứ app
-/// thật sự làm.
+/// Giá trị lấy từ [kFixedClipSeconds] — cùng hằng số máy quay dùng, nên dòng
+/// chữ ở đây không thể lệch với thứ app thật sự làm.
 class _FixedSettingRow extends StatelessWidget {
   const _FixedSettingRow({
     required this.icon,
@@ -2108,8 +2100,6 @@ class _FixedSettingRow extends StatelessWidget {
 const _warnInk = Color(0xFFB6770B);
 
 String _minutes(int seconds) => '${(seconds / 60).round()}';
-
-String _megabytes(int bytes) => ClipBudget.megabytesLabel(bytes);
 
 /// A white card that opens with an icon + all-caps section label, then its
 /// rows — the shape every panel on the shop-detail screen uses.
@@ -3031,19 +3021,16 @@ class EcClipDurationSheetScreen extends StatelessWidget {
   /// worse than a short one.
   static const _marks = [1, 2, 3, 5, 8, 10, 15, 20, 25];
 
-  /// Trần thời lượng của gói, tính bằng phút.
+  /// Trần thời lượng, tính bằng phút.
   ///
-  /// Khác trần dung lượng: dung lượng thì shop trả bao nhiêu dùng bấy nhiêu nên
-  /// không chặn, còn thời lượng clip là thứ gói quy định và backend từ chối
-  /// thẳng. Chặn ở đây thì người dùng thấy con số được phép; không chặn thì họ
+  /// Thời lượng clip là trần DUY NHẤT còn lại, và backend từ chối thẳng khi
+  /// vượt. Chặn ở đây thì người dùng thấy con số được phép; không chặn thì họ
   /// thấy một lỗi mạng không liên quan gì tới việc họ vừa làm.
   int get _planMaxMinutes => (budget.planMaxSeconds / 60).floor();
 
-  /// Các mốc gợi ý, cắt theo trần gói.
+  /// Các mốc gợi ý, cắt theo trần.
   List<int> get _options {
     final marks = [..._marks];
-    final recommended = (budget.recommendedSeconds / 60).round();
-    if (recommended > 0 && !marks.contains(recommended)) marks.add(recommended);
     final max = _planMaxMinutes;
     // Mốc vượt trần gói bị bỏ hẳn, không phải làm mờ: bấm được mà máy chủ từ
     // chối thì tệ hơn không hiện. Trần bằng 0 (backend chưa trả) nghĩa là chưa
@@ -3058,10 +3045,9 @@ class EcClipDurationSheetScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final selectedMinutes = (budget.seconds / 60).round();
-    final recommended = (budget.recommendedSeconds / 60).round();
     return _EcSheetFrame(
       title: l10n.clipDurationTitle,
-      subtitle: l10n.clipDurationSubtitle('$recommended', platformLabel),
+      subtitle: l10n.clipDurationSubtitle,
       children: [
         for (final m in _options)
           _EcSheetActionRow(
@@ -3097,102 +3083,8 @@ class EcClipDurationSheetScreen extends StatelessWidget {
   }
 }
 
-/// UploadSize — bottom sheet picking the shop's max size per uploaded file.
-///
-/// Mirrors [EcClipDurationSheetScreen]: the marketplace's own attachment limit
-/// is the recommendation, everything above it stays selectable and only carries
-/// the amber warning back on the shop-detail screen (FR-21).
-/// Loại bằng chứng mà sheet dung lượng đang đặt trần.
-enum EcUploadKind {
-  /// Ảnh đính kèm — nhẹ hơn clip cả bậc nên đề xuất thấp hơn hẳn.
-  image(5),
-
-  /// Clip quay — mức sàn công bố phổ biến là 30MB.
-  video(30);
-
-  const EcUploadKind(this.defaultMegabytes);
-
-  /// Mức đề xuất mặc định khi backend chưa trả con số riêng cho loại này.
-  final int defaultMegabytes;
-}
-
-class EcUploadSizeSheetScreen extends StatelessWidget {
-  const EcUploadSizeSheetScreen({
-    required this.budget,
-    required this.platformLabel,
-    required this.kind,
-    required this.currentMb,
-    this.onSelect,
-    super.key,
-  });
-
-  final ClipBudget budget;
-  final String platformLabel;
-
-  /// Ảnh hay video — quyết định mức đề xuất và mức đang áp dụng.
-  final EcUploadKind kind;
-
-  /// Trần shop đang đặt, tính bằng MB. Bên gọi truyền thẳng vào thay vì để
-  /// sheet tự đọc từ `budget`: `budget` đi qua `selectedShop`, mà biến đó
-  /// không được làm mới sau khi lưu nên sheet mở lại luôn hiện mức mặc định
-  /// chứ không phải con số người dùng vừa nhập.
-  final int currentMb;
-
-  /// Emits the chosen cap in **bytes**.
-  final ValueChanged<int>? onSelect;
-
-  int get _currentMb => currentMb;
-
-  /// Chỉ MỘT mức đề xuất, cộng mức đang dùng nếu khác.
-  ///
-  /// Bảng mốc 1/5/10/25/50/100 cũ là phỏng đoán — shop không chọn "khoảng
-  /// chừng", họ có con số của riêng mình. Một mức đề xuất để bấm nhanh, còn
-  /// lại gõ thẳng.
-  List<int> get _options => [kind.defaultMegabytes];
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final selected = _currentMb;
-    return _EcSheetFrame(
-      title: switch (kind) {
-        EcUploadKind.image => l10n.uploadSizeTitleImage,
-        EcUploadKind.video => l10n.uploadSizeTitleVideo,
-      },
-      children: [
-        for (final m in _options)
-          _EcSheetActionRow(
-            icon: LucideIcons.fileUp,
-            // Dấu tích chỉ nằm ở mức mặc định khi shop ĐANG đặt đúng mức đó.
-            // Nhập số riêng là dấu tích rời đi — nếu không, hai con số cùng
-            // được tích và không biết mức nào đang áp dụng.
-            label: l10n.uploadSizeDefaultValue('$m'),
-            selected: m == selected,
-            onTap: () => onSelect?.call(m * 1000000),
-          ),
-        // Không giới hạn = 0 byte. Là một lựa chọn ngang hàng với mức mặc
-        // định, không phải trạng thái "chưa đặt gì": shop quay clip dài, chặn
-        // theo dung lượng chỉ làm mất đoạn cuối của bằng chứng.
-        _EcSheetActionRow(
-          icon: LucideIcons.infinity,
-          label: l10n.uploadSizeUnlimited,
-          selected: selected <= 0,
-          onTap: () => onSelect?.call(0),
-        ),
-        _EcSheetCustomInput(
-          label: l10n.uploadSizeCustomLabel,
-          unit: l10n.unitMegabytes,
-          min: kMinUploadBytes ~/ 1000000,
-          initial: selected,
-          onSubmit: (m) => onSelect?.call(m * 1000000),
-        ),
-      ],
-    );
-  }
-}
-
 /// Shared bottom-sheet chrome for flow-1 sheets (dim scrim + rounded panel).
-/// Ô nhập tự do cho các sheet giới hạn (thời lượng clip, dung lượng tệp).
+/// Ô nhập tự do cho sheet thời lượng clip.
 ///
 /// Các mốc bên trên chỉ là gợi ý — chủ shop nào cũng có thể có ràng buộc riêng
 /// mà một danh sách cố định không phủ hết, nên phải cho gõ thẳng con số. Giá

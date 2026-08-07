@@ -661,17 +661,9 @@
   "@clipDurationTitle": {
     "description": "Shop detail / clip budget (FR-17..FR-20)."
   },
-  "clipDurationSubtitle": "Chạm mốc này là tự chốt; {minutes} phút vẫn đính thẳng lên {platform} được",
+  "clipDurationSubtitle": "Chạm mốc này là tự chốt",
   "@clipDurationSubtitle": {
-    "description": "Shop detail / clip budget (FR-17..FR-20).",
-    "placeholders": {
-      "minutes": {
-        "type": "String"
-      },
-      "platform": {
-        "type": "String"
-      }
-    }
+    "description": "Shop detail / clip budget (FR-17..FR-20)."
   },
   "clipDurationOptionRecommended": "{minutes} phút (đề xuất)",
   "@clipDurationOptionRecommended": {

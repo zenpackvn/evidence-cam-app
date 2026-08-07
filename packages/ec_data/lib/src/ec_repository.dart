@@ -50,9 +50,6 @@ abstract interface class EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
-    int? maxImageBytes,
-    int? maxVideoBytes,
-    int? maxUploadBytes,
   });
 
   /// Xoá hẳn cửa hàng. Bên gọi phải chắc shop không còn thành viên nào khác.
@@ -175,18 +172,12 @@ class RemoteEcRepository implements EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
-    int? maxImageBytes,
-    int? maxVideoBytes,
-    int? maxUploadBytes,
   }) => _api.updateShop(
     shopId,
     name: name,
     platform: platform,
     resolution: resolution,
     maxClipSeconds: maxClipSeconds,
-    maxImageBytes: maxImageBytes,
-    maxVideoBytes: maxVideoBytes,
-    maxUploadBytes: maxUploadBytes,
   );
 
   @override
@@ -350,17 +341,13 @@ class FakeEcRepository implements EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
-    int? maxImageBytes,
-    int? maxVideoBytes,
-    int? maxUploadBytes,
   }) async => ShopDto(
     id: shopId,
     name: name ?? 'Shop',
     platform: platform ?? 'khac',
     resolution: resolution ?? '720p',
     role: 'owner',
-    clipSeconds: maxClipSeconds ?? 120,
-    uploadBytes: maxUploadBytes ?? 10000000,
+    clipSeconds: maxClipSeconds ?? 300,
   );
 
   @override
@@ -436,9 +423,9 @@ class FakeEcRepository implements EcRepository {
   @override
   Future<QuotaDto> quota({String? shopId}) async => const QuotaDto(
     planCode: 'basic',
-    usedBytes: 12 * 1024 * 1024 * 1024,
-    capBytes: 60 * 1024 * 1024 * 1024,
-    remainingBytes: 48 * 1024 * 1024 * 1024,
+    usedVideos: 214,
+    capVideos: 1000,
+    remainingVideos: 786,
     retentionDays: 30,
   );
 

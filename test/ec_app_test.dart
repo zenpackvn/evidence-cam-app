@@ -1024,9 +1024,9 @@ class _QuotaRepository extends _DemoRepository {
   @override
   Future<QuotaDto> quota({String? shopId}) async => const QuotaDto(
     planCode: 'basic',
-    usedBytes: 48 * 1024 * 1024 * 1024,
-    capBytes: 60 * 1024 * 1024 * 1024,
-    remainingBytes: 12 * 1024 * 1024 * 1024,
+    usedVideos: 480,
+    capVideos: 600,
+    remainingVideos: 120,
     retentionDays: 25,
   );
 }
@@ -1041,9 +1041,9 @@ class _UpgradingQuotaRepository extends _DemoRepository {
     _calls += 1;
     return QuotaDto(
       planCode: _calls == 1 ? 'basic' : 'premium',
-      usedBytes: 48 * 1024 * 1024 * 1024,
-      capBytes: 60 * 1024 * 1024 * 1024,
-      remainingBytes: 12 * 1024 * 1024 * 1024,
+      usedVideos: 480,
+      capVideos: 600,
+      remainingVideos: 120,
       retentionDays: 25,
     );
   }

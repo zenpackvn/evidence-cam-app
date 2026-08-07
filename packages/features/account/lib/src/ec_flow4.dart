@@ -675,46 +675,30 @@ class _LoginMethodRow extends StatelessWidget {
   }
 }
 
-/// Formats a byte count as a compact GB/MB/KB label (e.g. `60 GB`, `500 MB`).
-String ecHumanBytes(int b) {
-  const gb = 1024 * 1024 * 1024;
-  const mb = 1024 * 1024;
-  if (b >= gb) {
-    return '${(b / gb).toStringAsFixed(b % gb == 0 ? 0 : 1)} GB';
+/// Số nguyên với dấu chấm phân nhóm nghìn, kiểu Việt Nam: `1.000`, `12.500`.
+///
+/// Thay cho `ecHumanBytes`/`ecHumanBytesVi` cũ: màn này không còn con số dung
+/// lượng nào để rút gọn thành GB/MB — trục hạn mức giờ là SỐ VIDEO.
+String _vi(int n) {
+  final digits = n.abs().toString();
+  final buf = StringBuffer(n < 0 ? '-' : '');
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) buf.write('.');
+    buf.write(digits[i]);
   }
-  if (b >= mb) return '${(b / mb).round()} MB';
-  return '${(b / 1024).round()} KB';
+  return buf.toString();
 }
 
-/// [ecHumanBytes], but with the Vietnamese comma decimal separator (the rest
-/// of this screen's copy is Vietnamese-first).
-String ecHumanBytesVi(int b) => ecHumanBytes(b).replaceAll('.', ',');
-
-/// Drops [used]'s unit when [cap] already carries the same one, so the ratio
-/// reads "Đã dùng 28,2 / 60 GB" the way the design writes it — not
-/// "28,2 GB / 60 GB".
-String _withoutSharedUnit(String used, String cap) {
-  final unit = ' ${cap.split(' ').last}';
-  return used.endsWith(unit)
-      ? used.substring(0, used.length - unit.length)
-      : used;
-}
-
-/// One video type's local storage footprint, used by [EcQuotaScreen]'s
-/// "Dung lượng theo loại" breakdown. Computed on-device from the upload
-/// queue's actual clip files, so it always agrees with what's really stored —
-/// never a separate, possibly-stale server figure.
+/// Số video đã quay theo từng loại, cho bảng chia của [EcQuotaScreen].
+///
+/// Không còn cột dung lượng (2026-08-07): gói cước tính theo SỐ VIDEO, nên đếm
+/// là đại lượng duy nhất nói lên được điều gì về hạn mức.
 @immutable
 class EcQuotaTypeUsage {
-  const EcQuotaTypeUsage({
-    required this.type,
-    required this.videoCount,
-    required this.bytes,
-  });
+  const EcQuotaTypeUsage({required this.type, required this.videoCount});
 
   final String type;
   final int videoCount;
-  final int bytes;
 }
 
 /// The breakdown ramp, straight from the design: two greens, then amber and
@@ -747,11 +731,10 @@ class EcQuotaScreen extends StatelessWidget {
   const EcQuotaScreen({
     this.planLabel = 'Cơ bản',
     this.planCode = 'P1',
-    this.usedBytes = 0,
-    this.remainingBytes,
-    this.capBytes = 500 * 1024 * 1024,
+    this.usedVideos = 0,
+    this.remainingVideos,
+    this.capVideos = 50,
     this.retentionTotalDays = 30,
-    this.videoCount = 0,
     this.typeUsage = const [],
     this.onBack,
     this.canManagePlan = true,
@@ -762,14 +745,11 @@ class EcQuotaScreen extends StatelessWidget {
 
   /// Short plan code shown in the header chip (design: "P1").
   final String planCode;
-  final int usedBytes;
-  final int? remainingBytes;
-  final int capBytes;
+  /// Video đã tính vào gói trong tháng này, và trần của gói.
+  final int usedVideos;
+  final int? remainingVideos;
+  final int capVideos;
   final int retentionTotalDays;
-
-  /// Total clips still stored on this device — the same source of truth as
-  /// [typeUsage], so this number and the sum of the breakdown always agree.
-  final int videoCount;
 
   /// Per-type breakdown, pre-sorted largest-first by the caller.
   final List<EcQuotaTypeUsage> typeUsage;
@@ -783,20 +763,22 @@ class EcQuotaScreen extends StatelessWidget {
   final bool canManagePlan;
 
   int get _usedPercent {
-    if (capBytes <= 0) return 0;
-    final pct = (usedBytes / capBytes * 100).floor();
+    if (capVideos <= 0) return 0;
+    final pct = (usedVideos / capVideos * 100).floor();
     if (pct < 0) return 0;
     if (pct > 100) return 100;
     return pct;
   }
 
   double get _usedFraction => _usedPercent / 100;
-  int get _remainingBytes {
-    final explicit = remainingBytes;
+
+  /// Ưu tiên con số máy chủ gửi; tự trừ chỉ là đường lùi khi trường đó vắng.
+  int get _remainingVideos {
+    final explicit = remainingVideos;
     if (explicit != null) return explicit;
-    final calculated = capBytes - usedBytes;
+    final calculated = capVideos - usedVideos;
     if (calculated < 0) return 0;
-    if (calculated > capBytes) return capBytes;
+    if (calculated > capVideos) return capVideos;
     return calculated;
   }
 
@@ -848,15 +830,12 @@ class EcQuotaScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     _QuotaSummaryCard(
                       planLabel: planLabel,
-                      remainingLabel: ecHumanBytesVi(_remainingBytes),
-                      usedLabel: _withoutSharedUnit(
-                        ecHumanBytesVi(usedBytes),
-                        ecHumanBytesVi(capBytes),
-                      ),
-                      capLabel: ecHumanBytesVi(capBytes),
+                      remainingLabel: _vi(_remainingVideos),
+                      usedLabel: _vi(usedVideos),
+                      capLabel: _vi(capVideos),
                       usedPercent: _usedPercent,
                       usedFraction: _usedFraction,
-                      videoCount: videoCount,
+                      videoCount: usedVideos,
                       retentionTotalDays: retentionTotalDays,
                       canManagePlan: canManagePlan,
                     ),
@@ -1103,7 +1082,7 @@ class _QuotaBreakdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalBytes = typeUsage.fold<int>(0, (sum, u) => sum + u.bytes);
+    final totalVideos = typeUsage.fold<int>(0, (sum, u) => sum + u.videoCount);
     return PenCard(
       axis: PenAxis.column,
       stroke: null,
@@ -1122,7 +1101,7 @@ class _QuotaBreakdownCard extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             PenText(
-              ecHumanBytesVi(totalBytes),
+              _vi(totalVideos),
               size: 18,
               color: PenColors.ink,
               weight: FontWeight.w800,
@@ -1143,7 +1122,7 @@ class _QuotaBreakdownCard extends StatelessWidget {
               children: [
                 for (var i = 0; i < typeUsage.length; i++)
                   Expanded(
-                    flex: typeUsage[i].bytes.clamp(1, 1 << 40),
+                    flex: typeUsage[i].videoCount.clamp(1, 1 << 20),
                     child: ColoredBox(color: _quotaTypeColor(i)),
                   ),
               ],
@@ -1223,7 +1202,7 @@ class _QuotaBreakdownRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           PenText(
-            ecHumanBytesVi(usage.bytes),
+            _vi(usage.videoCount),
             size: 16,
             color: PenColors.ink,
             weight: FontWeight.w800,

@@ -1469,9 +1469,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get clipDurationTitle => 'Thời lượng tối đa mỗi video';
 
   @override
-  String clipDurationSubtitle(String minutes, String platform) {
-    return 'Chạm mốc này là tự chốt; $minutes phút vẫn đính thẳng lên $platform được';
-  }
+  String get clipDurationSubtitle => 'Chạm mốc này là tự chốt';
 
   @override
   String clipDurationOptionRecommended(String minutes) {
