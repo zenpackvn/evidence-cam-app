@@ -570,7 +570,9 @@ void main() {
       expect(find.text('Nguyễn Văn A'), findsOneWidget);
       expect(find.text('Trần Thị B'), findsOneWidget);
       expect(find.text('CÀI ĐẶT SHOP'), findsOneWidget);
-      expect(find.text('Độ phân giải quay'), findsOneWidget);
+      // "Độ phân giải quay" KHÔNG còn ở đây — nó đổi ngay trên thanh dưới màn
+      // quay. Test ngay dưới đã chốt điều đó; giữ assertion cũ ở đây là hai
+      // test cùng file đòi hai điều ngược nhau.
       expect(find.text('Đóng hàng'), findsOneWidget);
       expect(find.text('Cân hàng'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -839,9 +841,13 @@ void main() {
       await tester.enterText(find.byType(EditableText), 'ZZZ');
       await tester.pump();
 
+      // Vẫn báo lên trên để cha truy vấn lại…
       expect(searches, ['ZZZ']);
-      expect(find.text('SPXVN024567890'), findsOneWidget);
-      expect(find.text('SPXVN044556677'), findsOneWidget);
+      // …VÀ lọc theo mã ngay tại máy. `EcApi.orders()` không gửi tham số `q`
+      // (tìm kiếm là `searchOrders`, một đường riêng), nên tin hẳn vào server
+      // là gõ một mã xong vẫn thấy nguyên danh sách cũ.
+      expect(find.text('SPXVN024567890'), findsNothing);
+      expect(find.text('SPXVN044556677'), findsNothing);
     });
 
     testWidgets('the three filter chips start unfiltered', (tester) async {

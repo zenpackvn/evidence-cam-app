@@ -148,9 +148,9 @@ void main() {
       expect(find.text('Báo cáo & Quota'), findsOneWidget);
       expect(find.text('Gói hiện tại'), findsOneWidget);
       expect(find.text('Tiết kiệm'), findsOneWidget);
-      // Còn lại / trần, và phần trăm đã dùng khớp với hai số đó.
-      expect(find.text('800 / 1.000'), findsOneWidget);
-      expect(find.text('Đã dùng 20%'), findsOneWidget);
+      // Còn lại, rồi tỉ số đã dùng / trần kèm phần trăm khớp với hai số đó.
+      expect(find.text('800 còn lại'), findsOneWidget);
+      expect(find.text('Đã dùng 200 / 1.000 · 20%'), findsOneWidget);
       expect(find.text('Lưu trữ'), findsOneWidget);
       expect(find.text('90 ngày'), findsOneWidget);
       expect(tester.takeException(), isNull);
