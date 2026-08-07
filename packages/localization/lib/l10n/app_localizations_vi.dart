@@ -63,7 +63,58 @@ class AppLocalizationsVi extends AppLocalizations {
   String get claimsAddedLater => 'đính thêm';
 
   @override
+  String get claimsCreateTitle => 'Tạo hồ sơ khiếu nại';
+
+  @override
+  String get claimsCreateSearchHint => 'Nhập hoặc quét mã vận đơn';
+
+  @override
+  String get claimsCreateStart =>
+      'Nhập mã vận đơn hoặc bấm quét để tìm đơn cần khiếu nại.';
+
+  @override
+  String get claimsCreateNoOrder =>
+      'Không tìm thấy mã vận đơn này trong cửa hàng đang chọn.';
+
+  @override
+  String get claimsRemoveItemTitle => 'Gỡ khỏi hồ sơ';
+
+  @override
+  String get claimsRemoveItemConfirm =>
+      'Gỡ bằng chứng này khỏi hồ sơ khiếu nại? Video/ảnh trong đơn hàng vẫn còn nguyên.';
+
+  @override
+  String get claimsItemRemoved => 'Đã gỡ khỏi hồ sơ';
+
+  @override
+  String get commonRemove => 'Gỡ';
+
+  @override
   String get commonDelete => 'Xóa';
+
+  @override
+  String get settingDefaultSuffix => 'mặc định';
+
+  @override
+  String get shopDetailClipLength => 'Thời lượng video';
+
+  @override
+  String get shopDeleteTitle => 'Xóa cửa hàng';
+
+  @override
+  String get shopDeleteConfirm =>
+      'Xóa cửa hàng này? Toàn bộ đơn hàng, video và ảnh của nó sẽ mất và không lấy lại được.';
+
+  @override
+  String get shopDeleteBlockedTitle => 'Còn thành viên trong shop';
+
+  @override
+  String shopDeleteBlockedBody(int count) {
+    return 'Phải gỡ hết quản lý và nhân viên khỏi cửa hàng trước khi xóa. Hiện còn $count người.';
+  }
+
+  @override
+  String get shopDeleted => 'Đã xóa cửa hàng';
 
   @override
   String bundleSelected(int count) {
@@ -96,20 +147,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get toastPasswordChanged => 'Đã đổi mật khẩu';
-
-  @override
-  String get toastPurchaseApplied => 'Đã kích hoạt gói mới';
-
-  @override
-  String get toastPurchasePending =>
-      'Đã thanh toán. Gói sẽ được kích hoạt trong giây lát';
-
-  @override
-  String get toastPurchaseFailed =>
-      'Không hoàn tất được thanh toán. Vui lòng thử lại';
-
-  @override
-  String get purchaseSuccessTitle => 'Thanh toán thành công 🎉';
 
   @override
   String get toastPendingDossierConfirm =>
@@ -155,6 +192,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get toastPhotoQueued => 'Đã đính kèm ảnh — đưa vào hàng chờ tải';
 
   @override
+  String imageOverFixedCap(String megabytes, String limit) {
+    return 'Ảnh $megabytes MB — vượt trần $limit MB nên chưa đính. Chọn ảnh nhỏ hơn.';
+  }
+
+  @override
   String get toastInvitePending => 'Chờ lời mời vào shop';
 
   @override
@@ -189,12 +231,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get toastNoVideoTypeToDelete => 'Không có loại video để xóa';
-
-  @override
-  String get toastRoleChangedManager => 'Đã đổi vai trò: Quản lý shop';
-
-  @override
-  String get toastRoleChangedStaff => 'Đã đổi vai trò: Nhân viên';
 
   @override
   String get toastNoMemberToUpdate => 'Không có thành viên để cập nhật';
@@ -239,9 +275,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get roleOwner => 'Chủ shop';
-
-  @override
-  String get roleManager => 'Quản lý';
 
   @override
   String get roleStaff => 'Nhân viên';
@@ -426,7 +459,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get statPendingUpload => 'Chờ tải';
 
   @override
-  String get accountPlanQuota => 'Gói cước & Quota';
+  String get accountPlanQuota => 'Dung lượng';
 
   @override
   String get accountSectionApp => 'GÓI & ỨNG DỤNG';
@@ -563,15 +596,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get quotaStorage => 'Lưu trữ';
 
   @override
-  String get quotaUpgradePlan => 'Nâng cấp gói';
-
-  @override
-  String get quotaUpgradeShort => 'Nâng cấp';
-
-  @override
-  String get quotaOwnerOnlyNote => 'Chỉ chủ tài khoản mới đổi được gói cước';
-
-  @override
   String get deleteAccountTitleStep1 => 'Xóa tài khoản?';
 
   @override
@@ -642,6 +666,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get navAccount => 'Tài khoản';
 
   @override
+  String get navClaims => 'Khiếu nại';
+
+  @override
   String get changeAvatar => 'Đổi ảnh đại diện';
 
   @override
@@ -684,9 +711,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String quotaRefundNote(int days) {
     return 'Dung lượng hoàn lại khi video hết hạn lưu trữ $days ngày';
   }
-
-  @override
-  String get quotaPaymentHistory => 'Lịch sử thanh toán';
 
   @override
   String deletePendingProfilesWarning(int count) {
@@ -865,9 +889,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get quotaExhaustedNote =>
       'Hết hạn mức tháng này. Video vẫn quay được, nhưng đang nằm TRÊN MÁY NÀY và chưa được bảo vệ — chúng sẽ tự tải lên khi hạn mức được nâng.';
-
-  @override
-  String get upgradePlanShort => 'Nâng gói';
 
   @override
   String get queueEmpty => 'Chưa có video trong hàng đợi';
@@ -1202,7 +1223,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get addMemberBody =>
-      'Nhập email của tài khoản ZenPack đã đăng ký để thêm vào shop.';
+      'Nhập email của tài khoản ZenPack đã đăng ký. Họ nhận được lời mời và phải bấm xác nhận mới vào shop.';
 
   @override
   String get emailLabel => 'Email';
@@ -1212,15 +1233,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get emailInvalid => 'Nhập đúng một địa chỉ email.';
-
-  @override
-  String get inviteRoleLabel => 'Vai trò';
-
-  @override
-  String get roleStaffDesc => 'Chỉ quay + xem video mình quay';
-
-  @override
-  String get roleManagerDesc => 'Toàn quyền trong shop';
 
   @override
   String get errorInviteAccountNotFound =>
@@ -1238,12 +1250,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get addMemberSubmit => 'Thêm';
-
-  @override
-  String get setAsManager => 'Đặt làm Quản lý shop';
-
-  @override
-  String get setAsStaff => 'Đặt làm Nhân viên';
 
   @override
   String get memberOwnerLocked =>
@@ -1490,9 +1496,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get clipDurationTitle => 'Thời lượng tối đa mỗi video';
 
   @override
-  String clipDurationSubtitle(String minutes, String platform) {
-    return 'Chạm mốc này là tự chốt; $minutes phút vẫn đính thẳng lên $platform được';
-  }
+  String get clipDurationSubtitle => 'Chạm mốc này là tự chốt';
 
   @override
   String clipDurationOptionRecommended(String minutes) {
@@ -1606,6 +1610,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get inviteMemberTitle => 'Mời thành viên';
+
+  @override
+  String get inviteRoleFixedNote =>
+      'Người được mời vào shop với vai trò Nhân viên: quay video và xem lại video của chính mình.';
 
   @override
   String get inviteMemberHint => '(chưa có tài khoản → gửi lời mời)';
@@ -1758,49 +1766,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get appUpdateLater => 'Để sau';
-
-  @override
-  String get paymentHistoryEmptyTitle => 'Chưa có giao dịch nào';
-
-  @override
-  String get paymentHistoryEmptyBody => 'Các lần nâng cấp gói sẽ hiện ở đây.';
-
-  @override
-  String get paymentStatusPaid => 'Đã thanh toán';
-
-  @override
-  String get paymentStatusPending => 'Chờ thanh toán';
-
-  @override
-  String get paymentStatusCancelled => 'Đã hủy';
-
-  @override
-  String get paymentStatusExpired => 'Hết hạn';
-
-  @override
-  String get paymentStatusRefunded => 'Đã hoàn tiền';
-
-  @override
-  String get paymentSourcePayos => 'Thanh toán web';
-
-  @override
-  String get paymentSourceSepay => 'Chuyển khoản';
-
-  @override
-  String get paymentSourceAppStore => 'Mua trong ứng dụng';
-
-  @override
-  String get paymentSandboxNote =>
-      'Giao dịch thử (sandbox), không phải tiền thật.';
-
-  @override
-  String get planTerm1m => '1 tháng';
-
-  @override
-  String get planTerm6m => '6 tháng';
-
-  @override
-  String get planTerm12m => '12 tháng';
 
   @override
   String get quotaVideosThisMonth => 'Video tháng này';

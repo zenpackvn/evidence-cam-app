@@ -185,11 +185,35 @@ jobs:
           ' coverage/lcov.info > "$root_lcov"
           mv "$root_lcov" coverage/lcov.info
 
-          for package in packages/*; do
-            if [ ! -d "$package/test" ]; then
-              continue
-            fi
+          # Package NGOÀI features — tìm theo `pubspec.yaml`, không theo độ sâu.
+          for package in $(tool/ci_packages_with_tests.sh | grep -v '^packages/features/'); do
+            (
+              cd "$package"
+              flutter test --coverage --exclude-tags golden
+            )
 
+            if [ -f "$package/coverage/lcov.info" ]; then
+              sed "s|^SF:|SF:$package/|" \
+                "$package/coverage/lcov.info" >> coverage/lcov.info
+            fi
+          done
+
+      # Bốn package dưới `packages/features` CHƯA BAO GIỜ chạy ở CI: vòng lặp cũ
+      # duyệt `packages/*` nên chỉ thấy một tầng, mà `packages/features` là thư
+      # mục CHỨA package chứ tự nó không có `test/` — nó rơi vào nhánh bỏ qua và
+      # kéo theo cả bốn con. Đó là 145 test của chính lớp nghiệp vụ tính năng
+      # (quay video, ca làm, thành viên, vận đơn), và 26 trong số đó đang đỏ mà
+      # không ai biết.
+      #
+      # `continue-on-error` là TẠM THỜI, và cố ý: bật chặn ngay thì mọi PR đỏ vì
+      # nợ có sẵn, còn đánh dấu `skip` thì lại giấu chúng đi lần nữa. Cách này
+      # cho toàn bộ 145 test chạy và hiện kết quả trong log, trong lúc 26 lỗi kia
+      # được xử lý dần. Bỏ dòng đó đi ngay khi con số về 0 — mỗi lần sửa xong
+      # một nhóm thì hạ con số trong chú thích này xuống.
+      - name: Run feature-package tests (nợ đã biết, chưa chặn merge)
+        continue-on-error: true
+        run: |
+          for package in $(tool/ci_packages_with_tests.sh | grep '^packages/features/'); do
             (
               cd "$package"
               flutter test --coverage --exclude-tags golden

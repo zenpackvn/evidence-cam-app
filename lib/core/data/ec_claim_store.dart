@@ -94,6 +94,49 @@ class EcClaimStore extends ChangeNotifier {
       if (d.id != dossierId) d,
   ]);
 
+  /// Gỡ một bằng chứng khỏi hồ sơ.
+  ///
+  /// Chỉ gỡ khỏi HỒ SƠ — clip/ảnh trong đơn hàng còn nguyên. Bỏ nhầm một cái
+  /// vào hồ sơ thì phải lấy ra được mà không mất bằng chứng gốc.
+  ///
+  /// Mã đơn nào rỗng sạch thì biến mất khỏi hồ sơ luôn: một mã vận đơn không
+  /// còn gì bên dưới chỉ là một tiêu đề trống.
+  Future<void> removeEvidence(
+    String shopId,
+    String dossierId,
+    String tracking,
+    String evidenceId,
+  ) {
+    if (byId(shopId, dossierId) == null) return Future<void>.value();
+    return _write(shopId, [
+      for (final d in forShop(shopId))
+        if (d.id != dossierId)
+          d
+        else
+          d.copyWith(orders: _withoutEvidence(d, tracking, evidenceId)),
+    ]);
+  }
+
+  static List<EcClaimOrder> _withoutEvidence(
+    EcClaimDossier dossier,
+    String tracking,
+    String evidenceId,
+  ) {
+    final out = <EcClaimOrder>[];
+    for (final o in dossier.orders) {
+      if (o.tracking != tracking) {
+        out.add(o);
+        continue;
+      }
+      final left = [
+        for (final e in o.evidence)
+          if (e.id != evidenceId) e,
+      ];
+      if (left.isNotEmpty) out.add(o.copyWith(evidence: left));
+    }
+    return out;
+  }
+
   /// Đính thêm một bằng chứng vào đúng mã vận đơn trong hồ sơ.
   ///
   /// Không tìm thấy hồ sơ hoặc mã đơn thì không làm gì — người dùng có thể đã

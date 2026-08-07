@@ -398,20 +398,41 @@ class _SimpleHeader extends StatelessWidget {
 /// lại — không có chip mây. Chip đó từng nằm ở đây và đẩy toàn bộ màn xuống
 /// 9pt so với design; lối vào hàng đợi upload giờ là thẻ "Chờ tải".
 class _ShopHeader extends StatelessWidget {
-  const _ShopHeader({required this.shopName, this.onBack, this.onShopTap});
+  const _ShopHeader({
+    required this.shopName,
+    this.onBack,
+    this.onShopTap,
+    this.onSettings,
+  });
 
   final String shopName;
   final VoidCallback? onBack;
 
-  /// Chạm vào tên shop mở Chi tiết cửa hàng (F1-09). Header giữ nguyên khung
-  /// design — tên shop chính là nút, không thêm icon nào.
+  /// Chạm vào tên shop mở Chi tiết cửa hàng (F1-09).
   final VoidCallback? onShopTap;
+
+  /// Bánh răng góc phải: mở Quản lý cửa hàng.
+  ///
+  /// Lối vào đó trước nằm ở màn Chọn cửa hàng — một màn người dùng chỉ đi qua
+  /// một lần lúc vào ca rồi không quay lại nữa. Muốn sửa cài đặt shop thì phải
+  /// thoát ca ra ngoài. Nay nó nằm ngay trong ca làm.
+  final VoidCallback? onSettings;
 
   @override
   Widget build(BuildContext context) {
     // Header nằm trên [PenBrandBanner] nên chữ và mũi tên đều trắng.
+    //
+    // Đệm trên 0: header dính sát mép dưới vùng an toàn. Đây là SÀN — thấp
+    // hơn nữa phải bỏ `SafeArea`, và lúc đó tên shop chui vào tai thỏ.
+    //
+    // Vùng an toàn của iOS đã chừa sẵn chỗ cho tai thỏ, nên 28 của bản gốc là
+    // một dải trống cộng thêm, nhìn ra như lỗi căn lề chứ không phải khoảng thở.
+    //
+    // Sửa số này thì phải sửa chiều cao `PenBrandBanner` ở `EcHomeOrdersScreen`
+    // đúng bằng chừng ấy — banner neo vào tai thỏ chứ không trôi theo nội dung,
+    // nên lệch nhau là ô nhập mã vận đơn thụt vào vùng xanh.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 28, 18, 0),
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
       child: Row(
         children: [
           PenBackButton(onTap: onBack, color: PenColors.card),
@@ -431,6 +452,20 @@ class _ShopHeader extends StatelessWidget {
           ),
           // The upload-queue chip used to live here; the "Chờ tải" stat card
           // below already shows the same number and is the tap target now.
+          if (onSettings != null)
+            EcTap(
+              onTap: onSettings,
+              child: const Padding(
+                // Lề phải 0 để bánh răng thẳng hàng với mép phải của ba thẻ số
+                // bên dưới; đệm quanh chỉ để nới vùng chạm.
+                padding: EdgeInsets.fromLTRB(10, 6, 0, 6),
+                child: Icon(
+                  LucideIcons.settings,
+                  size: 24,
+                  color: PenColors.card,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -443,13 +478,19 @@ class _Nav3Bar extends StatelessWidget {
     required this.activeIndex,
     this.onOrders,
     this.onRecord,
-    this.onAccount,
+    this.onClaims,
   });
 
   final int activeIndex;
   final VoidCallback? onOrders;
   final VoidCallback? onRecord;
-  final VoidCallback? onAccount;
+
+  /// Tab thứ ba nay là Hồ sơ khiếu nại, không còn là Tài khoản.
+  ///
+  /// Tài khoản dời ra màn Chọn cửa hàng — nó là thứ mỗi ca chạm một lần, trong
+  /// khi hồ sơ khiếu nại là việc làm giữa ca, ngay sau khi quay xong. Một chỗ
+  /// đi qua hằng ngày không nên chiếm ô tab của việc làm hằng giờ.
+  final VoidCallback? onClaims;
 
   @override
   Widget build(BuildContext context) {
@@ -459,7 +500,7 @@ class _Nav3Bar extends StatelessWidget {
       tabs: [
         (LucideIcons.package, l10n.navOrders, onOrders),
         (LucideIcons.camera, l10n.navRecord, onRecord),
-        (LucideIcons.user, l10n.navAccount, onAccount),
+        (LucideIcons.fileText, l10n.navClaims, onClaims),
       ],
     );
   }
@@ -906,118 +947,167 @@ String _platformLabel(String platform) => switch (platform) {
   _ => 'Khác',
 };
 
-/// ChooseShop — "Shop của bạn": tap a shop to clock into it, a "Quản lý cửa
-/// hàng" row for owners/managers, logout, and a hint footer.
+/// ChooseShop — "Shop của bạn": chạm một shop để vào ca, một thẻ Tài khoản,
+/// rồi hai hàng ghim đáy: thêm cửa hàng và đăng xuất.
 class EcChooseShopScreen extends StatelessWidget {
   const EcChooseShopScreen({
     required this.shops,
     this.onSelect,
-    this.onManage,
+    this.onAccountTap,
     this.onAddShop,
     this.onLogout,
-    this.showManage = true,
     super.key,
   });
 
   final List<EcShopSummary> shops;
-  final ValueChanged<EcShopSummary>? onSelect;
-  final VoidCallback? onManage;
 
-  /// "Thêm cửa hàng mới" — the design puts a create entry on this screen too.
+  final ValueChanged<EcShopSummary>? onSelect;
+
+  /// Mở màn Tài khoản. Nó không còn là một tab — tab thứ ba nay là Hồ sơ khiếu
+  /// nại, thứ người bán mở giữa ca. Tài khoản thì mỗi ca chạm một lần, nên nó
+  /// về đúng chỗ đi qua một lần: màn chọn cửa hàng.
+  final VoidCallback? onAccountTap;
+
+  /// "Thêm cửa hàng mới" — lối tạo shop DUY NHẤT, cố định ở màn này.
+  ///
+  /// Quản lý cửa hàng đã dời vào bánh răng ở header trang Vận đơn, nên nó không
+  /// còn là chỗ chứa nút tạo shop được: muốn vào đó phải đang ở trong một shop.
   final VoidCallback? onAddShop;
   final VoidCallback? onLogout;
-
-  /// Whether the "Quản lý cửa hàng" row is shown — hidden when the user is only
-  /// staff (Nhân viên) and manages no shop (FR-05).
-  final bool showManage;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return PenScreen(
+      scrollable: false,
       decorations: const [
-        Positioned(left: 49, top: 25, child: PenPlatformHero()),
+        // Cụm icon sàn kéo lên sát mép trên: nút Tài khoản nay chiếm góc phải
+        // nên khoảng trống phía trên không còn chỗ dùng.
+        Positioned(left: 49, top: 4, child: PenPlatformHero()),
       ],
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(22, 186, 22, 30),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            PenText(
-              l10n.shopChooseTitle,
-              size: 30,
-              color: PenColors.ink,
-              weight: FontWeight.w800,
-              align: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            PenText(
-              l10n.shopChooseSubtitle,
-              size: 14,
-              color: PenColors.mut,
-              align: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            for (var i = 0; i < shops.length; i++) ...[
-              if (i > 0) const SizedBox(height: 10),
-              _ShopRow(
-                shop: shops[i],
-                onTap: onSelect == null ? null : () => onSelect!(shops[i]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Nút Tài khoản: viên xanh góc phải TRÊN CÙNG, chỉ một chữ.
+          //
+          // Trước nó là một thẻ to bằng thẻ shop, đứng lẫn trong danh sách —
+          // mà đây không phải một cửa hàng. Đưa lên góc và thu lại thành một
+          // viên nhỏ thì nó thôi giả làm shop, và trả chỗ cho danh sách.
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 8, 22, 0),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: onAccountTap == null
+                    ? const SizedBox.shrink()
+                    : _AccountPill(onTap: onAccountTap!),
               ),
-            ],
-            const SizedBox(height: 16),
-            if (showManage) ...[
-              PenCard(
-                gap: 16,
-                padding: const EdgeInsets.all(16),
-                onTap: onManage,
+            ),
+          ),
+          // Tiêu đề KHOÁ cùng nút Tài khoản, ngoài vùng cuộn: nó nói màn này
+          // đang hỏi gì, mà một câu hỏi trôi mất khi kéo danh sách thì người
+          // dùng phải cuộn ngược lên mới nhớ mình đang ở đâu.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 96, 22, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                PenText(
+                  l10n.shopChooseTitle,
+                  size: 30,
+                  color: PenColors.ink,
+                  weight: FontWeight.w800,
+                  align: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                PenText(
+                  l10n.shopChooseSubtitle,
+                  size: 14,
+                  color: PenColors.mut,
+                  align: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(22, 20, 22, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
-                    LucideIcons.settings,
-                    size: 26,
-                    color: PenColors.ink,
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        PenText(
-                          l10n.shopManageTitle,
-                          size: 18,
-                          color: PenColors.ink,
-                          weight: FontWeight.w700,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 3),
-                        PenText(
-                          l10n.shopManageOwnerOnly,
-                          size: 12,
-                          color: PenColors.mut,
-                        ),
-                      ],
+                  for (var i = 0; i < shops.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 10),
+                    _ShopRow(
+                      shop: shops[i],
+                      onTap: onSelect == null
+                          ? null
+                          : () => onSelect!(shops[i]),
                     ),
-                  ),
-                  const Icon(
-                    LucideIcons.chevronRight,
-                    size: 21,
-                    color: PenColors.mut,
-                  ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 12),
-            ],
-            // Không còn hàng "Tạo shop mới" ở đây: việc tạo shop đã nằm trong
-            // Quản lý cửa hàng. Hai lối vào cho cùng một việc chỉ làm màn chọn
-            // shop dài thêm mà không cho thêm khả năng nào.
-            const SizedBox(height: 8),
-            _LogoutRow(onTap: onLogout),
-          ],
-        ),
+            ),
+          ),
+          // Hai hàng này GHIM ở đáy, ngoài vùng cuộn: tài khoản nhiều shop thì
+          // danh sách dài quá màn, mà "thêm cửa hàng" với "đăng xuất" là hai
+          // việc không thuộc về cuối danh sách — chúng thuộc về cả màn hình.
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 6),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _AddShopRow(onTap: onAddShop),
+                  const SizedBox(height: 4),
+                  _LogoutRow(onTap: onLogout),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+}
+
+/// Nút Tài khoản ở góc phải trên màn Chọn cửa hàng — viên bo tròn xanh, đúng
+/// một chữ.
+///
+/// Trước nó là một thẻ to bằng thẻ shop, có avatar và email, đứng lẫn trong
+/// danh sách cửa hàng. Nhưng tài khoản KHÔNG phải một cửa hàng: để cùng khuôn
+/// và cùng hàng với chúng là mời người dùng chạm nhầm khi đang vội chọn shop
+/// vào ca.
+class _AccountPill extends StatelessWidget {
+  const _AccountPill({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: PenBox(
+      fill: PenColors.primary,
+      radius: 999,
+      axis: PenAxis.row,
+      gap: 7,
+      hugMain: true,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 15),
+      children: [
+        const Icon(LucideIcons.user, size: 17, color: PenColors.card),
+        PenText(
+          context.l10n.navAccount,
+          size: 14,
+          color: PenColors.card,
+          weight: FontWeight.w700,
+          softWrap: false,
+        ),
+      ],
+    ),
+  );
 }
 
 /// One selectable shop: platform tile, name + meta, navigation chevron. The
@@ -1085,6 +1175,41 @@ class _ShopRow extends StatelessWidget {
 
 /// The centred `log-out` + "Đăng xuất" row both shop-picking screens end on —
 /// the only way out of an account that has no shop to enter.
+/// "Thêm cửa hàng mới" — hàng viền đứt ngay dưới danh sách shop.
+///
+/// Viền chứ không nền đặc: nó là lối phụ, không phải việc chính của màn này.
+/// Việc chính là chọn một shop đã có mà vào ca.
+class _AddShopRow extends StatelessWidget {
+  const _AddShopRow({this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: PenBox(
+      width: double.infinity,
+      stroke: PenColors.soft,
+      radius: 14,
+      axis: PenAxis.row,
+      gap: 10,
+      main: MainAxisAlignment.center,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 15),
+      children: [
+        const Icon(LucideIcons.plus, size: 20, color: PenColors.ink),
+        PenText(
+          context.l10n.shopAddNew,
+          size: 16,
+          color: PenColors.link,
+          weight: FontWeight.w700,
+          softWrap: false,
+        ),
+      ],
+    ),
+  );
+}
+
 class _LogoutRow extends StatelessWidget {
   const _LogoutRow({this.onTap});
 
@@ -1717,14 +1842,10 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onBack,
     this.onMemberMore,
     this.onInviteMember,
-    this.onTapResolution,
-    this.onTapClipDuration,
-    this.onTapUploadSize,
-    this.onTapImageSize,
-    this.onTapVideoSize,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
+    this.onDeleteShop,
     this.membersError = false,
     this.membersUnavailable = false,
     this.onRetryMembers,
@@ -1765,17 +1886,17 @@ class EcShopDetailScreen extends StatelessWidget {
   final VoidCallback? onBack;
   final ValueChanged<EcShopMember>? onMemberMore;
   final VoidCallback? onInviteMember;
-  final VoidCallback? onTapResolution;
-  final VoidCallback? onTapClipDuration;
-  final VoidCallback? onTapUploadSize;
 
   /// Trần riêng cho ảnh và cho video. Rỗng thì hàng vẫn hiện nhưng bấm không
   /// ra gì — bên gọi phải nối cả hai.
-  final VoidCallback? onTapImageSize;
-  final VoidCallback? onTapVideoSize;
   final ValueChanged<EcVideoType>? onEditType;
   final ValueChanged<EcVideoType>? onDeleteType;
   final VoidCallback? onAddType;
+
+  /// Xoá hẳn cửa hàng. `null` = không hiện nút (nhân viên, hoặc bên gọi chưa
+  /// nối). Rào chắn "phải gỡ hết người trước" nằm ở bên gọi, không ở đây: màn
+  /// này biết danh sách thành viên nhưng không biết ai đang đăng nhập.
+  final VoidCallback? onDeleteShop;
 
   @override
   Widget build(BuildContext context) {
@@ -1906,21 +2027,18 @@ class EcShopDetailScreen extends StatelessWidget {
               icon: LucideIcons.settings,
               label: l10n.sectionShopSettings,
               children: [
-                // Đã bỏ "Độ phân giải quay" và "Thời lượng video" khỏi màn
-                // này. Độ phân giải đổi được ngay trên thanh dưới màn quay,
-                // còn thời lượng thì gói quyết định và server kẹp lại — để ở
-                // đây chỉ tạo cảm giác đặt được mà thực tế không.
-                _UploadSizeRow(
-                  budget: clipBudget,
-                  platformLabel: platformLabel,
-                  kind: EcUploadKind.video,
-                  onTap: onTapVideoSize ?? onTapUploadSize,
+                // Một mức CỐ ĐỊNH, không đặt được. Độ phân giải thì đổi ngay
+                // trên thanh dưới màn quay nên không nằm ở đây. Dòng "dung
+                // lượng tối đa mỗi ảnh" đã bỏ 2026-08-07 — không còn trần nào.
+                _FixedSettingRow(
+                  icon: LucideIcons.timer,
+                  label: l10n.shopDetailClipLength,
+                  value: l10n.clipDurationValue('${kFixedClipSeconds ~/ 60}'),
                 ),
-                _UploadSizeRow(
-                  budget: clipBudget,
-                  platformLabel: platformLabel,
-                  kind: EcUploadKind.image,
-                  onTap: onTapImageSize,
+                _FixedSettingRow(
+                  icon: LucideIcons.fileUp,
+                  label: l10n.shopDetailImageSize,
+                  value: l10n.uploadSizeValue('${kFixedImageBytes ~/ 1000000}'),
                 ),
               ],
             ),
@@ -1969,6 +2087,12 @@ class EcShopDetailScreen extends StatelessWidget {
                   ),
               ],
             ),
+            // Xoá shop nằm CUỐI CÙNG, tách khỏi mọi thẻ khác, và chỉ chủ shop
+            // thấy. Đây là thao tác không hoàn tác được duy nhất trên màn này.
+            if (!readOnly && onDeleteShop != null) ...[
+              const SizedBox(height: _sectionCardGap),
+              _DeleteShopRow(onTap: onDeleteShop!),
+            ],
           ],
         ),
       ),
@@ -1976,90 +2100,102 @@ class EcShopDetailScreen extends StatelessWidget {
   }
 }
 
-class _UploadSizeRow extends StatelessWidget {
-  const _UploadSizeRow({
-    required this.budget,
-    required this.platformLabel,
-    required this.kind,
-    this.onTap,
-  });
+/// Nút xoá shop — đỏ, viền, không phải nút đặc.
+///
+/// Nút đặc màu đỏ ở cuối một danh sách cài đặt hút mắt hơn mọi thứ trên màn và
+/// mời người ta chạm thử. Đây là thao tác không lấy lại được, nên nó phải nhìn
+/// ra là nghiêm trọng mà không nhìn ra là hấp dẫn.
+class _DeleteShopRow extends StatelessWidget {
+  const _DeleteShopRow({required this.onTap});
 
-  final ClipBudget budget;
-  final String platformLabel;
-
-  /// Ảnh hay video — quyết định nhãn, con số hiện ra và mức đề xuất.
-  final EcUploadKind kind;
-  final VoidCallback? onTap;
-
-  int get _currentBytes => switch (kind) {
-    EcUploadKind.image => budget.maxImageBytes,
-    EcUploadKind.video => budget.maxVideoBytes,
-  };
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: PenBox(
+      width: double.infinity,
+      stroke: PenColors.danger,
+      radius: 12,
+      axis: PenAxis.row,
+      gap: 10,
+      main: MainAxisAlignment.center,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 13),
       children: [
-        EcTap(
-          onTap: onTap,
-          child: PenBox(
-            width: double.infinity,
-            fill: PenColors.card,
-            stroke: PenColors.line,
-            radius: 10,
-            axis: PenAxis.row,
-            gap: 14,
-            cross: CrossAxisAlignment.center,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            children: [
-              const PenBox(
-                width: 38,
-                height: 38,
-                fill: PenColors.bg,
-                radius: 10,
-                axis: PenAxis.row,
-                main: MainAxisAlignment.center,
-                cross: CrossAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.fileUp, size: 22, color: PenColors.ink),
-                ],
-              ),
-              Expanded(
-                child: PenText(
-                  switch (kind) {
-                    EcUploadKind.image => l10n.shopDetailImageSize,
-                    EcUploadKind.video => l10n.shopDetailVideoSize,
-                  },
-                  size: 16,
-                  color: PenColors.ink,
-                ),
-              ),
-              PenText(
-                _currentBytes <= 0
-                    ? l10n.uploadSizeValueUnlimited
-                    : l10n.uploadSizeValue(_megabytes(_currentBytes)),
-                size: 16,
-                color: PenColors.ink,
-                weight: FontWeight.w600,
-                softWrap: false,
-              ),
-              const Icon(
-                LucideIcons.chevronRight,
-                size: 18,
-                color: PenColors.mut,
-              ),
-            ],
-          ),
+        const Icon(LucideIcons.trash2, size: 20, color: PenColors.danger),
+        PenText(
+          context.l10n.shopDeleteTitle,
+          size: 16,
+          color: PenColors.danger,
+          weight: FontWeight.w700,
+          softWrap: false,
         ),
-        // Không còn dòng "đề xuất X MB" lẫn cảnh báo vượt mức ở đây: hàng
-        // này chỉ cần trả lời một câu — shop đang đặt trần bao nhiêu. Mức đề
-        // xuất đã nằm sẵn trong sheet, còn chuyện vượt mức sàn tính sau.
       ],
-    );
-  }
+    ),
+  );
+}
+
+/// Một hàng cài đặt CỐ ĐỊNH ở màn chi tiết cửa hàng.
+///
+/// Không bấm được, không mũi tên, không sheet. Trước đây hai hàng này mở ra
+/// một danh sách mốc để chọn, nhưng con số chọn xong đi qua ba tầng kẹp (shop
+/// đặt → trần gói → server kẹp lại) nên thứ hiện ra thường không phải thứ vừa
+/// bấm. Đặt được mà không giữ được thì khó chịu hơn hẳn không cho đặt.
+///
+/// Giá trị lấy từ [kFixedClipSeconds] — cùng hằng số máy quay dùng, nên dòng
+/// chữ ở đây không thể lệch với thứ app thật sự làm.
+class _FixedSettingRow extends StatelessWidget {
+  const _FixedSettingRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => PenBox(
+    width: double.infinity,
+    fill: PenColors.card,
+    stroke: PenColors.line,
+    radius: 10,
+    axis: PenAxis.row,
+    gap: 14,
+    cross: CrossAxisAlignment.center,
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+    children: [
+      PenBox(
+        width: 38,
+        height: 38,
+        fill: PenColors.bg,
+        radius: 10,
+        axis: PenAxis.row,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
+        children: [Icon(icon, size: 22, color: PenColors.ink)],
+      ),
+      Expanded(child: PenText(label, size: 16, color: PenColors.ink)),
+      PenText(
+        value,
+        size: 16,
+        color: PenColors.ink,
+        weight: FontWeight.w600,
+        softWrap: false,
+      ),
+      // Chữ "mặc định" thay chỗ mũi tên cũ. Bỏ trống chỗ đó thì hàng trông y
+      // như một hàng bấm được vừa hỏng; nói thẳng đây là mức mặc định thì
+      // người dùng thôi tìm chỗ bấm.
+      PenText(
+        context.l10n.settingDefaultSuffix,
+        size: 13,
+        color: PenColors.mut,
+        softWrap: false,
+      ),
+    ],
+  );
 }
 
 /// Amber of the design file's warn bar (F3-05) — the one warning colour the
@@ -2067,8 +2203,6 @@ class _UploadSizeRow extends StatelessWidget {
 const _warnInk = Color(0xFFB6770B);
 
 String _minutes(int seconds) => '${(seconds / 60).round()}';
-
-String _megabytes(int bytes) => ClipBudget.megabytesLabel(bytes);
 
 /// A white card that opens with an icon + all-caps section label, then its
 /// rows — the shape every panel on the shop-detail screen uses.
@@ -2709,7 +2843,6 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
   /// Giữ nhãn tiếng Việt ở đây rồi suy ngược ra mã bằng `contains('Quản lý')`
   /// là máy để tiếng Anh thì gán nhầm ai cũng thành nhân viên. Nhãn là thứ
   /// dịch được; mã thì không.
-  String _role = 'staff';
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -2744,21 +2877,13 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
             return isInviteContact(contact) ? null : context.l10n.emailInvalid;
           },
         ),
+        // Chỉ còn MỘT vai trò mời được: nhân viên. Shop có đúng hai hạng —
+        // chủ và nhân viên — nên một danh sách một lựa chọn là thừa, và một nút
+        // radio luôn sáng mà bấm không được thì còn tệ hơn: nó trông như một
+        // lựa chọn. Nói thẳng bằng chữ.
         Text(
-          context.l10n.inviteRoleLabel,
-          style: _t(14, FontWeight.w500, BrandColors.ink),
-        ),
-        _RoleOption(
-          label: context.l10n.roleStaff,
-          desc: context.l10n.roleStaffDesc,
-          selected: _role == 'staff',
-          onTap: () => setState(() => _role = 'staff'),
-        ),
-        _RoleOption(
-          label: context.l10n.roleManager,
-          desc: context.l10n.roleManagerDesc,
-          selected: _role == 'manager',
-          onTap: () => setState(() => _role = 'manager'),
+          context.l10n.inviteRoleFixedNote,
+          style: _t(13, FontWeight.w400, BrandColors.mut),
         ),
         Row(
           children: [
@@ -2781,7 +2906,10 @@ class _EcInviteMemberScreenState extends State<EcInviteMemberScreen> {
                   final contact = widget.contactController?.text ?? '';
                   if (!isInviteContact(contact.trim())) return;
                   widget.onInvite?.call(
-                    EcMemberInvite(inviteContactOf(contact), _role),
+                    // Mã vai trò backend hiểu, KHÔNG phải nhãn hiển thị: gửi
+                    // nhãn rồi để server suy ngược là máy đổi ngôn ngữ thì gán
+                    // nhầm. Hai cấp nên chỉ còn đúng một mã.
+                    EcMemberInvite(inviteContactOf(contact), 'staff'),
                   );
                 },
               ),
@@ -2804,84 +2932,21 @@ class EcMemberInvite {
   final String role;
 }
 
-class _RoleOption extends StatelessWidget {
-  const _RoleOption({
-    required this.label,
-    required this.desc,
-    required this.selected,
-    this.onTap,
-  });
-  final String label;
-  final String desc;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return EcTap(
-      onTap: onTap,
-      child: DecoratedBox(
-        decoration: ecSquircleDecoration(
-          radius: 12,
-          side: BorderSide(
-            color: selected ? BrandColors.dark : BrandColors.line,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Icon(
-                selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                size: 20,
-                color: selected ? BrandColors.dark : BrandColors.mut,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label,
-                      style: _t(14, FontWeight.w600, BrandColors.ink),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(desc, style: _t(14, FontWeight.w400, BrandColors.mut)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// MemberActions — bottom sheet from the ⋮ on a member row: change role or
 /// remove from shop.
 class EcMemberActionsScreen extends StatelessWidget {
   const EcMemberActionsScreen({
     required this.member,
-    this.onSetManager,
-    this.onSetStaff,
     this.onRemove,
     super.key,
   });
 
   final EcShopMember member;
-  final VoidCallback? onSetManager;
-  final VoidCallback? onSetStaff;
   final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
-    // Đọc MÃ vai trò, không so chuỗi hiển thị: `member.role` là chuỗi đã dịch
-    // (và còn bị bọc thêm "· đã nhận lời mời"), nên máy để tiếng Anh là so trượt
-    // và một quản lý bị đánh dấu thành nhân viên.
-    final isManager = member.roleCode == 'manager';
     // Chủ cửa hàng KHÔNG có hàng trong shop_members — quyền sở hữu nằm ở
     // shops.owner_uid. Đổi vai trò trả 404, còn gỡ thì trước đây trả 204 mà
     // không gỡ gì: người dùng nhận thông báo "đã gỡ" cho một việc chưa xảy ra.
@@ -2904,20 +2969,9 @@ class EcMemberActionsScreen extends StatelessWidget {
             ),
           )
         else ...[
-          if (!isPendingInvite) ...[
-            _EcSheetActionRow(
-              icon: Icons.shield_outlined,
-              label: context.l10n.setAsManager,
-              selected: isManager,
-              onTap: onSetManager,
-            ),
-            _EcSheetActionRow(
-              icon: Icons.person_outline,
-              label: context.l10n.setAsStaff,
-              selected: !isManager,
-              onTap: onSetStaff,
-            ),
-          ],
+          // Không còn hai dòng đổi vai trò: shop chỉ có chủ và nhân viên, mà
+          // chủ thì không đổi được (quyền sở hữu nằm ở `shops.owner_uid`).
+          // Còn đúng một việc làm được với một thành viên: gỡ họ ra.
           _EcSheetActionRow(
             icon: isPendingInvite
                 ? Icons.delete_outline
@@ -2990,19 +3044,16 @@ class EcClipDurationSheetScreen extends StatelessWidget {
   /// worse than a short one.
   static const _marks = [1, 2, 3, 5, 8, 10, 15, 20, 25];
 
-  /// Trần thời lượng của gói, tính bằng phút.
+  /// Trần thời lượng, tính bằng phút.
   ///
-  /// Khác trần dung lượng: dung lượng thì shop trả bao nhiêu dùng bấy nhiêu nên
-  /// không chặn, còn thời lượng clip là thứ gói quy định và backend từ chối
-  /// thẳng. Chặn ở đây thì người dùng thấy con số được phép; không chặn thì họ
+  /// Thời lượng clip là trần DUY NHẤT còn lại, và backend từ chối thẳng khi
+  /// vượt. Chặn ở đây thì người dùng thấy con số được phép; không chặn thì họ
   /// thấy một lỗi mạng không liên quan gì tới việc họ vừa làm.
   int get _planMaxMinutes => (budget.planMaxSeconds / 60).floor();
 
-  /// Các mốc gợi ý, cắt theo trần gói.
+  /// Các mốc gợi ý, cắt theo trần.
   List<int> get _options {
     final marks = [..._marks];
-    final recommended = (budget.recommendedSeconds / 60).round();
-    if (recommended > 0 && !marks.contains(recommended)) marks.add(recommended);
     final max = _planMaxMinutes;
     // Mốc vượt trần gói bị bỏ hẳn, không phải làm mờ: bấm được mà máy chủ từ
     // chối thì tệ hơn không hiện. Trần bằng 0 (backend chưa trả) nghĩa là chưa
@@ -3017,10 +3068,9 @@ class EcClipDurationSheetScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final selectedMinutes = (budget.seconds / 60).round();
-    final recommended = (budget.recommendedSeconds / 60).round();
     return _EcSheetFrame(
       title: l10n.clipDurationTitle,
-      subtitle: l10n.clipDurationSubtitle('$recommended', platformLabel),
+      subtitle: l10n.clipDurationSubtitle,
       children: [
         for (final m in _options)
           _EcSheetActionRow(
@@ -3056,102 +3106,8 @@ class EcClipDurationSheetScreen extends StatelessWidget {
   }
 }
 
-/// UploadSize — bottom sheet picking the shop's max size per uploaded file.
-///
-/// Mirrors [EcClipDurationSheetScreen]: the marketplace's own attachment limit
-/// is the recommendation, everything above it stays selectable and only carries
-/// the amber warning back on the shop-detail screen (FR-21).
-/// Loại bằng chứng mà sheet dung lượng đang đặt trần.
-enum EcUploadKind {
-  /// Ảnh đính kèm — nhẹ hơn clip cả bậc nên đề xuất thấp hơn hẳn.
-  image(5),
-
-  /// Clip quay — mức sàn công bố phổ biến là 30MB.
-  video(30);
-
-  const EcUploadKind(this.defaultMegabytes);
-
-  /// Mức đề xuất mặc định khi backend chưa trả con số riêng cho loại này.
-  final int defaultMegabytes;
-}
-
-class EcUploadSizeSheetScreen extends StatelessWidget {
-  const EcUploadSizeSheetScreen({
-    required this.budget,
-    required this.platformLabel,
-    required this.kind,
-    required this.currentMb,
-    this.onSelect,
-    super.key,
-  });
-
-  final ClipBudget budget;
-  final String platformLabel;
-
-  /// Ảnh hay video — quyết định mức đề xuất và mức đang áp dụng.
-  final EcUploadKind kind;
-
-  /// Trần shop đang đặt, tính bằng MB. Bên gọi truyền thẳng vào thay vì để
-  /// sheet tự đọc từ `budget`: `budget` đi qua `selectedShop`, mà biến đó
-  /// không được làm mới sau khi lưu nên sheet mở lại luôn hiện mức mặc định
-  /// chứ không phải con số người dùng vừa nhập.
-  final int currentMb;
-
-  /// Emits the chosen cap in **bytes**.
-  final ValueChanged<int>? onSelect;
-
-  int get _currentMb => currentMb;
-
-  /// Chỉ MỘT mức đề xuất, cộng mức đang dùng nếu khác.
-  ///
-  /// Bảng mốc 1/5/10/25/50/100 cũ là phỏng đoán — shop không chọn "khoảng
-  /// chừng", họ có con số của riêng mình. Một mức đề xuất để bấm nhanh, còn
-  /// lại gõ thẳng.
-  List<int> get _options => [kind.defaultMegabytes];
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final selected = _currentMb;
-    return _EcSheetFrame(
-      title: switch (kind) {
-        EcUploadKind.image => l10n.uploadSizeTitleImage,
-        EcUploadKind.video => l10n.uploadSizeTitleVideo,
-      },
-      children: [
-        for (final m in _options)
-          _EcSheetActionRow(
-            icon: LucideIcons.fileUp,
-            // Dấu tích chỉ nằm ở mức mặc định khi shop ĐANG đặt đúng mức đó.
-            // Nhập số riêng là dấu tích rời đi — nếu không, hai con số cùng
-            // được tích và không biết mức nào đang áp dụng.
-            label: l10n.uploadSizeDefaultValue('$m'),
-            selected: m == selected,
-            onTap: () => onSelect?.call(m * 1000000),
-          ),
-        // Không giới hạn = 0 byte. Là một lựa chọn ngang hàng với mức mặc
-        // định, không phải trạng thái "chưa đặt gì": shop quay clip dài, chặn
-        // theo dung lượng chỉ làm mất đoạn cuối của bằng chứng.
-        _EcSheetActionRow(
-          icon: LucideIcons.infinity,
-          label: l10n.uploadSizeUnlimited,
-          selected: selected <= 0,
-          onTap: () => onSelect?.call(0),
-        ),
-        _EcSheetCustomInput(
-          label: l10n.uploadSizeCustomLabel,
-          unit: l10n.unitMegabytes,
-          min: kMinUploadBytes ~/ 1000000,
-          initial: selected,
-          onSubmit: (m) => onSelect?.call(m * 1000000),
-        ),
-      ],
-    );
-  }
-}
-
 /// Shared bottom-sheet chrome for flow-1 sheets (dim scrim + rounded panel).
-/// Ô nhập tự do cho các sheet giới hạn (thời lượng clip, dung lượng tệp).
+/// Ô nhập tự do cho sheet thời lượng clip.
 ///
 /// Các mốc bên trên chỉ là gợi ý — chủ shop nào cũng có thể có ràng buộc riêng
 /// mà một danh sách cố định không phủ hết, nên phải cho gõ thẳng con số. Giá
@@ -3413,37 +3369,6 @@ class EcHomeStat {
 }
 
 /// An order row on HomeOrders.
-/// Một bằng chứng có thể tick để gộp link, đủ để người dùng nhận ra nó là cái
-/// nào: loại (Đóng hàng / Ảnh đính kèm / Trả hàng), giờ quay, và ảnh đại diện.
-class EcPickableEvidence {
-  const EcPickableEvidence({
-    required this.id,
-    required this.label,
-    required this.time,
-    this.isPhoto = false,
-    this.thumbUrl,
-    this.url,
-  });
-
-  final String id;
-  final String label;
-  final String time;
-  final bool isPhoto;
-  final String? thumbUrl;
-
-  /// Link tải. Đi kèm vì hồ sơ khiếu nại chụp lại bằng chứng ngay lúc tạo —
-  /// hỏi lại server sau thì bằng chứng có thể đã hết hạn lưu trữ.
-  final String? url;
-}
-
-/// Bằng chứng đã tick của MỘT mã vận đơn, gom lại khi bấm tạo hồ sơ.
-class EcClaimOrderPick {
-  const EcClaimOrderPick({required this.orderCode, required this.evidence});
-
-  final String orderCode;
-  final List<EcPickableEvidence> evidence;
-}
-
 class EcOrderRow {
   const EcOrderRow({
     required this.code,
@@ -3589,12 +3514,11 @@ class EcHomeOrdersScreen extends StatefulWidget {
     this.emptyText = 'Shop chưa có đơn nào',
     this.onBack,
     this.onShopTap,
+    this.onSettings,
     this.onScan,
     this.onScanResult,
     this.onSearchChanged,
     this.onFiltersChanged,
-    this.onLoadEvidence,
-    this.onCreateClaim,
     this.onOrderTap,
     this.onRefresh,
     this.pageInfo = const EcOrderPage(),
@@ -3602,7 +3526,7 @@ class EcHomeOrdersScreen extends StatefulWidget {
     this.isPageLoading = false,
     this.onNavOrders,
     this.onNavRecord,
-    this.onNavAccount,
+    this.onNavClaims,
     super.key,
   });
 
@@ -3627,6 +3551,9 @@ class EcHomeOrdersScreen extends StatefulWidget {
   /// Chạm vào tên shop trên header — mở Chi tiết cửa hàng.
   final VoidCallback? onShopTap;
 
+  /// Bánh răng góc phải header — mở Quản lý cửa hàng.
+  final VoidCallback? onSettings;
+
   /// Opens the barcode scanner; the returned code fills the search box.
   final Future<String?> Function()? onScan;
 
@@ -3643,18 +3570,6 @@ class EcHomeOrdersScreen extends StatefulWidget {
   /// parent can re-query the backend with all three applied at once.
   final ValueChanged<EcOrderFilters>? onFiltersChanged;
 
-  /// Nạp danh sách bằng chứng của một mã đơn, gọi khi người dùng bung hàng đó.
-  ///
-  /// Danh sách vận đơn chỉ biết SỐ LƯỢNG, không biết từng cái là gì — mà "Đóng
-  /// hàng 1", "Ảnh đính kèm 2" thì không đủ để chọn đúng thứ cần gộp.
-  final Future<List<EcPickableEvidence>> Function(String code)? onLoadEvidence;
-
-  /// Gộp các bằng chứng đã tick thành một hồ sơ khiếu nại.
-  ///
-  /// Nhận CẢ chi tiết từng bằng chứng chứ không chỉ id: hồ sơ chụp lại nội dung
-  /// ngay lúc tạo, vì tới lúc đem đi khiếu nại thì clip có thể đã hết hạn lưu
-  /// trữ và không tra ngược được nữa.
-  final ValueChanged<List<EcClaimOrderPick>>? onCreateClaim;
   final ValueChanged<EcOrderRow>? onOrderTap;
 
   /// Pull-to-refresh — reloads the current page.
@@ -3670,7 +3585,9 @@ class EcHomeOrdersScreen extends StatefulWidget {
   final bool isPageLoading;
   final VoidCallback? onNavOrders;
   final VoidCallback? onNavRecord;
-  final VoidCallback? onNavAccount;
+
+  /// Tab thứ ba: Hồ sơ khiếu nại.
+  final VoidCallback? onNavClaims;
 
   @override
   State<EcHomeOrdersScreen> createState() => _EcHomeOrdersScreenState();
@@ -3834,55 +3751,6 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
     _applyFilters();
   }
 
-  /// Đang ở chế độ chọn bằng chứng để gộp thành một link.
-  bool _linkMode = false;
-
-  /// Mã đơn đang bung nội dung.
-  final Set<String> _expanded = <String>{};
-
-  /// Id bằng chứng đã tick, gom theo mã đơn.
-  ///
-  /// Giữ ở ĐÂY chứ không trong từng hàng: mã đóng hàng và mã trả hàng là hai
-  /// đơn khác nhau, nên người dùng phải quét tìm đơn khác giữa chừng. Danh
-  /// sách đổi, hàng bị dựng lại — nhưng những gì đã tick phải còn nguyên.
-  final Set<String> _pickedEvidence = <String>{};
-
-  /// Chi tiết bằng chứng đã nạp, theo mã đơn.
-  ///
-  /// [_pickedEvidence] chỉ có id, mà hồ sơ khiếu nại cần nhãn, giờ và link tải
-  /// của từng cái. Những thứ đó đã hiện trên màn rồi — giữ lại ở đây để lúc bấm
-  /// tạo hồ sơ không phải hỏi server lại một lượt cho đúng dữ liệu vừa xem.
-  final Map<String, List<EcPickableEvidence>> _evidenceByCode = {};
-
-  void _toggleLinkMode() => setState(() {
-    _linkMode = !_linkMode;
-    if (!_linkMode) {
-      _expanded.clear();
-      _pickedEvidence.clear();
-      _evidenceByCode.clear();
-    }
-  });
-
-  /// Bằng chứng đã tick, gom theo mã đơn và giữ đúng thứ tự đơn trên màn.
-  ///
-  /// Bỏ qua đơn nào không còn cái nào được tick: người dùng bung một đơn ra
-  /// xem rồi bỏ tick hết thì đơn đó không thuộc về hồ sơ nữa.
-  List<EcClaimOrderPick> get _claimPicks => [
-    for (final entry in _evidenceByCode.entries)
-      if (entry.value.any((e) => _pickedEvidence.contains(e.id)))
-        EcClaimOrderPick(
-          orderCode: entry.key,
-          evidence: [
-            for (final e in entry.value)
-              if (_pickedEvidence.contains(e.id)) e,
-          ],
-        ),
-  ];
-
-  void _toggleExpanded(String code) => setState(() {
-    if (!_expanded.remove(code)) _expanded.add(code);
-  });
-
   /// Opens the scanner and, if a code comes back, drops it into the search box.
   Future<void> _onScan() async {
     final code = await widget.onScan?.call();
@@ -3913,9 +3781,15 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
         children: [
           // Dải xanh chạy hết bề ngang, luồn cả sau thanh trạng thái; header
           // và ba thẻ số nằm đè lên nó.
+          // Dải xanh phải lùi ĐÚNG BẰNG lượng nội dung lùi lên (28 -> 12), nếu
+          // không thì mọi thứ trượt lên mà nền xanh đứng yên: nhìn ra là "không
+          // đổi gì", và ô nhập mã vận đơn thụt vào trong vùng xanh.
+          //
+          // `PenBrandBanner` cao `safeArea.top + height`, nên con số này là
+          // phần NẰM DƯỚI tai thỏ chứ không phải tổng chiều cao.
           const Align(
             alignment: Alignment.topCenter,
-            child: PenBrandBanner(height: 178),
+            child: PenBrandBanner(height: 150),
           ),
           SafeArea(
             bottom: false,
@@ -3925,6 +3799,7 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                   shopName: widget.shopName,
                   onBack: widget.onBack,
                   onShopTap: widget.onShopTap,
+                  onSettings: widget.onSettings,
                 ),
                 // Phần cố định: thống kê, ô tìm và hàng lọc không cuộn
                 // theo danh sách. Hất danh sách lên mà bộ lọc trôi mất thì
@@ -4091,43 +3966,10 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                                   _OrderTile(
                                     order: visible[i],
                                     platform: widget.platform,
-                                    expandable: _linkMode,
-                                    expanded: _expanded.contains(
-                                      visible[i].code,
-                                    ),
-                                    onTap: _linkMode
-                                        ? () => _toggleExpanded(visible[i].code)
-                                        : (widget.onOrderTap == null
-                                              ? null
-                                              : () => widget.onOrderTap!(
-                                                  visible[i],
-                                                )),
+                                    onTap: widget.onOrderTap == null
+                                        ? null
+                                        : () => widget.onOrderTap!(visible[i]),
                                   ),
-                                  if (_linkMode &&
-                                      _expanded.contains(visible[i].code))
-                                    _EvidencePickList(
-                                      load: widget.onLoadEvidence,
-                                      order: visible[i],
-                                      picked: _pickedEvidence,
-                                      onLoaded: (items) =>
-                                          _evidenceByCode[visible[i].code] =
-                                              items,
-                                      onToggle: (id) => setState(() {
-                                        if (!_pickedEvidence.remove(id)) {
-                                          _pickedEvidence.add(id);
-                                        }
-                                      }),
-                                      onToggleAll: (items, select) =>
-                                          setState(() {
-                                            for (final e in items) {
-                                              if (select) {
-                                                _pickedEvidence.add(e.id);
-                                              } else {
-                                                _pickedEvidence.remove(e.id);
-                                              }
-                                            }
-                                          }),
-                                    ),
                                 ],
                                 // Phân trang nằm trong thẻ, dưới một đường kẻ —
                                 // nó thuộc về danh sách chứ không trôi tự do
@@ -4156,103 +3998,10 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                   activeIndex: 0,
                   onOrders: widget.onNavOrders,
                   onRecord: widget.onNavRecord,
-                  onAccount: widget.onNavAccount,
+                  onClaims: widget.onNavClaims,
                 ),
               ],
             ),
-          ),
-          // Nút gộp link: nổi góc phải, ngay trên thanh tab.
-          //
-          // Ngoài vùng cuộn để shop có năm chục đơn vẫn bấm được ngay, và đây
-          // là thao tác áp lên cả danh sách chứ không thuộc về một đơn nào.
-          Positioned(
-            right: 18,
-            bottom: PenTabBar.heightOf(context) + 16,
-            // Đã tick thì nút phình thành đường ra: chọn xong mà không có chỗ
-            // bấm thì cả thao tác chọn là vô nghĩa.
-            child: _pickedEvidence.isEmpty
-                ? EcTap(
-                    onTap: _toggleLinkMode,
-                    child: PenBox(
-                      width: 56,
-                      height: 56,
-                      fill: _linkMode ? PenColors.card : PenColors.primary,
-                      stroke: _linkMode ? PenColors.primary : null,
-                      radius: 999,
-                      shadows: const [penCardShadow],
-                      axis: PenAxis.row,
-                      main: MainAxisAlignment.center,
-                      cross: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _linkMode ? LucideIcons.x : LucideIcons.plus,
-                          size: 26,
-                          color: _linkMode ? PenColors.primary : PenColors.card,
-                        ),
-                      ],
-                    ),
-                  )
-                : PenBox(
-                    axis: PenAxis.row,
-                    gap: 10,
-                    hugMain: true,
-                    cross: CrossAxisAlignment.center,
-                    children: [
-                      // Thoát nằm CẠNH nút tạo, không thay chỗ nó: tick nhầm
-                      // một loạt rồi đổi ý là chuyện thường, mà lúc đó nút duy
-                      // nhất trên màn lại là "Tạo link".
-                      EcTap(
-                        onTap: _toggleLinkMode,
-                        child: PenBox(
-                          width: 56,
-                          height: 56,
-                          fill: PenColors.card,
-                          stroke: PenColors.line,
-                          radius: 999,
-                          shadows: const [penCardShadow],
-                          axis: PenAxis.row,
-                          main: MainAxisAlignment.center,
-                          cross: CrossAxisAlignment.center,
-                          children: const [
-                            Icon(
-                              LucideIcons.x,
-                              size: 24,
-                              color: PenColors.ink,
-                            ),
-                          ],
-                        ),
-                      ),
-                      EcTap(
-                        onTap: () => widget.onCreateClaim?.call(_claimPicks),
-                        child: PenBox(
-                          height: 56,
-                          fill: PenColors.primary,
-                          radius: 999,
-                          shadows: const [penCardShadow],
-                          axis: PenAxis.row,
-                          gap: 10,
-                          hugMain: true,
-                          cross: CrossAxisAlignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 22),
-                          children: [
-                            const Icon(
-                              LucideIcons.fileText,
-                              size: 22,
-                              color: PenColors.card,
-                            ),
-                            PenText(
-                              '${context.l10n.bundleCreateClaim} '
-                              '(${_pickedEvidence.length})',
-                              size: 16,
-                              color: PenColors.card,
-                              weight: FontWeight.w700,
-                              softWrap: false,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
           ),
           if (widget.onBack != null) _BackSwipeEdge(onBack: widget.onBack!),
         ],
@@ -4747,206 +4496,15 @@ String? _dayLabel(int? epochMs) {
   return '${two(d.day)}/${two(d.month)}/${d.year}';
 }
 
-/// Danh sách bằng chứng bung ra dưới một mã đơn, mỗi dòng có ô tick, và một ô
-/// tick TO hơn ở trên cùng để chọn/bỏ chọn cả đơn.
-class _EvidencePickList extends StatefulWidget {
-  const _EvidencePickList({
-    required this.order,
-    required this.picked,
-    required this.onToggle,
-    required this.onToggleAll,
-    this.load,
-    this.onLoaded,
-  });
-
-  final EcOrderRow order;
-  final Set<String> picked;
-  final ValueChanged<String> onToggle;
-
-  /// Nhận cả danh sách của đơn này và cờ "đang chọn tất cả hay đang bỏ chọn".
-  final void Function(List<EcPickableEvidence> items, bool select) onToggleAll;
-
-  final Future<List<EcPickableEvidence>> Function(String code)? load;
-
-  /// Báo lên cha danh sách vừa nạp xong.
-  ///
-  /// Cha cần chi tiết từng bằng chứng (nhãn, giờ, link tải) để dựng hồ sơ khiếu
-  /// nại, mà nó chỉ giữ id. Không đẩy lên thì lúc bấm tạo hồ sơ phải hỏi lại
-  /// server một lượt nữa cho đúng những thứ vừa hiện ra trên màn.
-  final ValueChanged<List<EcPickableEvidence>>? onLoaded;
-
-  @override
-  State<_EvidencePickList> createState() => _EvidencePickListState();
-}
-
-class _EvidencePickListState extends State<_EvidencePickList> {
-  late final Future<List<EcPickableEvidence>> _items = _loadAndReport();
-
-  Future<List<EcPickableEvidence>> _loadAndReport() async {
-    final items =
-        await widget.load?.call(widget.order.code) ??
-        const <EcPickableEvidence>[];
-    widget.onLoaded?.call(items);
-    return items;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Lề phải 0, còn từng dòng tự chừa 8 — nhờ vậy ô "chọn tất cả" nhô sang
-    // phải hơn các ô nhỏ đúng 8px, đủ để mắt nhận ra nó không cùng một hàng
-    // ngũ với chúng.
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(34, 0, 0, 10),
-      child: FutureBuilder<List<EcPickableEvidence>>(
-        future: _items,
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const Padding(
-              padding: EdgeInsets.fromLTRB(0, 12, 8, 12),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: CupertinoActivityIndicator(),
-              ),
-            );
-          }
-          final items = snap.data ?? const <EcPickableEvidence>[];
-          if (items.isEmpty) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(0, 10, 8, 10),
-              child: PenText(
-                context.l10n.orderNoEvidence,
-                size: 13,
-                color: PenColors.mut,
-              ),
-            );
-          }
-          final allPicked = items.every((e) => widget.picked.contains(e.id));
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _EvidencePickAllRow(
-                picked: allPicked,
-                onTap: () => widget.onToggleAll(items, !allPicked),
-              ),
-              for (final e in items)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: _EvidencePickRow(
-                    label: e.label,
-                    time: e.time,
-                    isPhoto: e.isPhoto,
-                    picked: widget.picked.contains(e.id),
-                    onTap: () => widget.onToggle(e.id),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// Ô tick "cả đơn này", nằm trên cùng chồng ô tick của từng bằng chứng.
-///
-/// To hơn và nhô sang phải hơn các ô nhỏ. Hai khác biệt đó là toàn bộ thứ nói
-/// cho người dùng biết nó không phải một dòng bằng chứng nữa — không có nhãn
-/// chữ nào ở đây, nên nếu nó trông y hệt các ô kia thì nó chỉ là một hàng lạ
-/// không rõ của cái gì.
-class _EvidencePickAllRow extends StatelessWidget {
-  const _EvidencePickAllRow({required this.picked, required this.onTap});
-
-  final bool picked;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => EcTap(
-    onTap: onTap,
-    child: PenBox(
-      width: double.infinity,
-      axis: PenAxis.row,
-      main: MainAxisAlignment.end,
-      cross: CrossAxisAlignment.center,
-      // Vùng chạm cao 40 chứ không bó sát icon: đây là nút bấm nhiều nhất
-      // trong luồng chọn, mà nó lại không có nhãn chữ để chạm trượt vào.
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        Icon(
-          picked ? LucideIcons.squareCheckBig : LucideIcons.square,
-          size: 26,
-          color: picked ? PenColors.primary : PenColors.ink,
-        ),
-      ],
-    ),
-  );
-}
-
-class _EvidencePickRow extends StatelessWidget {
-  const _EvidencePickRow({
-    required this.label,
-    required this.time,
-    required this.picked,
-    required this.onTap,
-    this.isPhoto = false,
-  });
-
-  final bool isPhoto;
-  final String label;
-  final String time;
-  final bool picked;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => EcTap(
-    onTap: onTap,
-    child: PenBox(
-      width: double.infinity,
-      axis: PenAxis.row,
-      gap: 10,
-      cross: CrossAxisAlignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 9),
-      children: [
-        Icon(
-          isPhoto ? LucideIcons.image : LucideIcons.video,
-          size: 17,
-          color: PenColors.primary,
-        ),
-        Expanded(
-          child: PenText(
-            label,
-            size: 14,
-            color: PenColors.ink,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        PenText(time, size: 12, color: PenColors.mut, softWrap: false),
-        Icon(
-          picked ? LucideIcons.squareCheckBig : LucideIcons.square,
-          size: 20,
-          color: picked ? PenColors.primary : PenColors.mut,
-        ),
-      ],
-    ),
-  );
-}
-
 class _OrderTile extends StatelessWidget {
   const _OrderTile({
     required this.order,
     this.platform,
     this.onTap,
-    this.expandable = false,
-    this.expanded = false,
   });
   final EcOrderRow order;
   final String? platform;
   final VoidCallback? onTap;
-
-  /// Đang ở chế độ chọn bằng chứng để gộp link: mũi tên chỉ XUỐNG, vì chạm vào
-  /// hàng là bung nội dung ngay tại chỗ chứ không rời khỏi danh sách.
-  final bool expandable;
-  final bool expanded;
 
   @override
   Widget build(BuildContext context) {
@@ -5035,10 +4593,8 @@ class _OrderTile extends StatelessWidget {
                 ),
               ],
             ),
-          Icon(
-            expandable
-                ? (expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown)
-                : LucideIcons.chevronRight,
+          const Icon(
+            LucideIcons.chevronRight,
             size: 19,
             color: PenColors.mut,
           ),

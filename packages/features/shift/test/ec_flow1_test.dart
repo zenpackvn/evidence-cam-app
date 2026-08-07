@@ -102,7 +102,11 @@ void main() {
       );
     });
 
-    testWidgets('thành viên thường vẫn đủ ba hành động', (tester) async {
+    // Shop chỉ còn HAI hạng: chủ và nhân viên. Hai dòng đổi vai trò đã bỏ —
+    // không còn vai trò nào để đổi sang.
+    testWidgets('thành viên thường chỉ còn một việc: gỡ khỏi shop', (
+      tester,
+    ) async {
       await _pump(
         tester,
         const EcMemberActionsScreen(
@@ -114,9 +118,21 @@ void main() {
         ),
       );
 
-      expect(find.text('Đặt làm Quản lý shop'), findsOneWidget);
-      expect(find.text('Đặt làm Nhân viên'), findsOneWidget);
+      expect(find.text('Đặt làm Quản lý shop'), findsNothing);
+      expect(find.text('Đặt làm Nhân viên'), findsNothing);
       expect(find.text('Gỡ khỏi shop'), findsOneWidget);
+    });
+
+    // Một nút radio luôn sáng mà bấm không được trông như một lựa chọn, trong
+    // khi shop chỉ có hai hạng và người được mời luôn là hạng dưới. Nói bằng
+    // chữ, và tuyệt đối không nhắc tới vai trò đã bỏ.
+    testWidgets('màn mời nói thẳng vai trò, không bày lựa chọn', (tester) async {
+      await _pump(tester, const EcInviteMemberScreen());
+      expect(find.textContaining('vai trò Nhân viên'), findsOneWidget);
+      expect(find.textContaining('Quản lý'), findsNothing);
+      // Không còn ô chọn nào để bấm.
+      expect(find.byIcon(Icons.radio_button_checked), findsNothing);
+      expect(find.byIcon(Icons.radio_button_off), findsNothing);
     });
 
     // Gõ sai định dạng thì backend vẫn tạo lời mời, nhưng mailer bỏ qua contact
@@ -340,26 +356,54 @@ void main() {
       expect(find.text('Chọn cửa hàng'), findsOneWidget);
       expect(find.text('Shop ABC'), findsOneWidget);
       expect(find.text('Shop XYZ'), findsOneWidget);
-      expect(find.text('Quản lý cửa hàng'), findsOneWidget);
+      // "Quản lý cửa hàng" đã dời vào bánh răng ở header trang Vận đơn; chỗ
+      // này giờ là lối tạo shop duy nhất.
+      expect(find.text('Quản lý cửa hàng'), findsNothing);
+      expect(find.text('Thêm cửa hàng mới'), findsOneWidget);
       expect(find.text('Đăng xuất'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('select + manage callbacks fire', (tester) async {
+    testWidgets('select + add shop callbacks fire', (tester) async {
       EcShopSummary? selected;
-      var managed = false;
+      var added = false;
       await _pump(
         tester,
         EcChooseShopScreen(
           shops: shops,
           onSelect: (shop) => selected = shop,
-          onManage: () => managed = true,
+          onAddShop: () => added = true,
         ),
       );
       await tester.tap(find.text('Shop ABC'));
-      await tester.tap(find.text('Quản lý cửa hàng'));
+      await tester.tap(find.text('Thêm cửa hàng mới'));
       expect(selected?.name, 'Shop ABC');
-      expect(managed, isTrue);
+      expect(added, isTrue);
+    });
+  });
+
+  group('EcHomeOrdersScreen — bánh răng cài đặt', () {
+    // Quản lý cửa hàng trước nằm ở màn Chọn cửa hàng — một màn người dùng chỉ
+    // đi qua lúc vào ca rồi không quay lại. Muốn sửa cài đặt shop thì phải
+    // thoát cả ca ra ngoài.
+    testWidgets('bánh răng chỉ hiện khi bên gọi nối', (tester) async {
+      var opened = false;
+      await _pump(
+        tester,
+        EcHomeOrdersScreen(
+          shopName: 'Shop ABC',
+          orders: const [],
+          onSettings: () => opened = true,
+        ),
+      );
+      await tester.tap(find.byIcon(LucideIcons.settings));
+      expect(opened, isTrue);
+
+      await _pump(
+        tester,
+        const EcHomeOrdersScreen(shopName: 'Shop ABC', orders: []),
+      );
+      expect(find.byIcon(LucideIcons.settings), findsNothing);
     });
   });
 
@@ -526,14 +570,16 @@ void main() {
       expect(find.text('Nguyễn Văn A'), findsOneWidget);
       expect(find.text('Trần Thị B'), findsOneWidget);
       expect(find.text('CÀI ĐẶT SHOP'), findsOneWidget);
-      expect(find.text('Độ phân giải quay'), findsOneWidget);
+      // "Độ phân giải quay" KHÔNG còn ở đây — nó đổi ngay trên thanh dưới màn
+      // quay. Test ngay dưới đã chốt điều đó; giữ assertion cũ ở đây là hai
+      // test cùng file đòi hai điều ngược nhau.
       expect(find.text('Đóng hàng'), findsOneWidget);
       expect(find.text('Cân hàng'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
     testWidgets(
-      'shows the recommendation caption and no warning at or below it',
+      'hàng thời lượng hiện trần đang áp dụng, không nhắc dung lượng',
       (
         tester,
       ) async {
@@ -544,120 +590,28 @@ void main() {
             platformLabel: 'Shopee',
             members: members,
             videoTypes: videoTypes,
-            clipBudget: ClipBudget(
-              seconds: 120,
-              recommendedSeconds: 120,
-              planMaxSeconds: 900,
-              maxImageBytes: 10000000,
-              maxVideoBytes: 30000000,
-              uploadBytes: 10000000,
-            ),
+            clipBudget: ClipBudget(seconds: 300, planMaxSeconds: 300),
           ),
         );
-        expect(find.text('Thời lượng/video'), findsOneWidget);
-        expect(find.text('2 phút'), findsOneWidget);
-        expect(
-          find.text('Đề xuất 2 phút — theo Shopee (30 MB/video) + 720p'),
-          findsOneWidget,
-        );
-        expect(find.textContaining('Vượt mức đề xuất'), findsNothing);
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets(
-      'raising the cap past the recommendation shows the amber warning',
-      (
-        tester,
-      ) async {
-        await _pump(
-          tester,
-          const EcShopDetailScreen(
-            shopName: 'Shop ABC',
-            platformLabel: 'Shopee',
-            members: members,
-            videoTypes: videoTypes,
-            clipBudget: ClipBudget(
-              seconds: 300,
-              recommendedSeconds: 120,
-              planMaxSeconds: 900,
-              maxImageBytes: 10000000,
-              maxVideoBytes: 30000000,
-              uploadBytes: 10000000,
-            ),
-          ),
-        );
+        // Nhãn là `shopDetailClipLength` = "Thời lượng video" (không có gạch
+        // chéo) — `shopDetailClipDuration` cũ đã không còn ai dùng.
+        expect(find.text('Thời lượng video'), findsOneWidget);
         expect(find.text('5 phút'), findsOneWidget);
-        expect(
-          find.textContaining('Vượt mức đề xuất 2 phút của Shopee'),
-          findsOneWidget,
-        );
-        // 5 phút × 15 MB/phút = ~75 MB — con số phải thật, không phải nhãn suông.
-        expect(find.textContaining('~75 MB'), findsOneWidget);
+        // Mức đề xuất và cảnh báo vượt sàn đã bỏ. Trần MỘT TỆP ảnh thì còn:
+        // nó không phải quota (quota tính theo số video) mà là chặn để ảnh máy
+        // ảnh 40MB không đi qua đường đính kèm.
+        expect(find.textContaining('Đề xuất'), findsNothing);
+        expect(find.textContaining('Vượt mức đề xuất'), findsNothing);
+        expect(find.text('Dung lượng ảnh'), findsOneWidget);
+        expect(find.text('5 MB'), findsOneWidget);
+        // Trần dung lượng theo GÓI thì đã bỏ hẳn.
+        expect(find.text('Dung lượng/tệp'), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );
 
-    testWidgets('an unverified platform says so instead of quoting a number', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        const EcShopDetailScreen(
-          shopName: 'Kho tổng',
-          platformLabel: 'Khác',
-          members: members,
-          videoTypes: videoTypes,
-          clipBudget: ClipBudget(
-            seconds: 120,
-            recommendedSeconds: 120,
-            planMaxSeconds: 900,
-            maxImageBytes: 10000000,
-            maxVideoBytes: 30000000,
-            uploadBytes: 10000000,
-            platformLimitsVerified: false,
-          ),
-        ),
-      );
-      expect(find.textContaining('chưa xác minh'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('upload size row states the sàn limit, and warns above it', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        const EcShopDetailScreen(
-          shopName: 'Shop ABC',
-          platformLabel: 'Shopee',
-          members: members,
-          videoTypes: videoTypes,
-          clipBudget: ClipBudget(
-            seconds: 120,
-            recommendedSeconds: 120,
-            planMaxSeconds: 900,
-            maxImageBytes: 10000000,
-            maxVideoBytes: 30000000,
-            uploadBytes: 25000000,
-          ),
-        ),
-      );
-      expect(find.text('Dung lượng/tệp'), findsOneWidget);
-      expect(find.text('25 MB'), findsOneWidget);
-      expect(
-        find.text('Đề xuất 10 MB — theo giới hạn ảnh đính kèm của Shopee'),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining('Vượt mức đề xuất 10 MB của Shopee'),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('upload size row opens the picker', (tester) async {
-      var tapped = false;
+    // sheet chọn mốc — cả sheet lẫn lối vào đều đã bỏ.
+    testWidgets('hai mức cố định hiện ra, không bấm được', (tester) async {
       await _pump(
         tester,
         EcShopDetailScreen(
@@ -665,33 +619,18 @@ void main() {
           platformLabel: 'Shopee',
           members: members,
           videoTypes: videoTypes,
-          onTapUploadSize: () => tapped = true,
         ),
       );
-      await tester.tap(find.text('Dung lượng/tệp'));
-      await tester.pump();
-      expect(tapped, isTrue);
+      expect(find.text('5 phút'), findsOneWidget);
+      expect(find.text('5 MB'), findsOneWidget);
+      expect(find.text('mặc định'), findsNWidgets(2));
+      // Không còn hàng nào mở sheet.
+      expect(find.text('Dung lượng/tệp'), findsNothing);
+      expect(find.text('Độ phân giải quay'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('clip duration row opens the picker', (tester) async {
-      var tapped = false;
-      await _pump(
-        tester,
-        EcShopDetailScreen(
-          shopName: 'Shop ABC',
-          platformLabel: 'Shopee',
-          members: members,
-          videoTypes: videoTypes,
-          onTapClipDuration: () => tapped = true,
-        ),
-      );
-      await tester.tap(find.text('Thời lượng/video'));
-      await tester.pump();
-      expect(tapped, isTrue);
-    });
-
-    testWidgets('resolution + edit type callbacks fire', (tester) async {
-      var resolutionTapped = false;
+    testWidgets('sửa loại video vẫn gọi callback', (tester) async {
       EcVideoType? edited;
       await _pump(
         tester,
@@ -700,14 +639,48 @@ void main() {
           platformLabel: 'Shopee',
           members: members,
           videoTypes: videoTypes,
-          onTapResolution: () => resolutionTapped = true,
           onEditType: (type) => edited = type,
         ),
       );
-      await tester.tap(find.text('Độ phân giải quay'));
       await tester.tap(find.byIcon(LucideIcons.pencil));
-      expect(resolutionTapped, isTrue);
       expect(edited?.name, 'Cân hàng');
+    });
+
+    testWidgets('xóa shop: chỉ hiện khi bên gọi nối, và ẩn với nhân viên', (
+      tester,
+    ) async {
+      var deleted = false;
+      await _pump(
+        tester,
+        EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          members: members,
+          videoTypes: videoTypes,
+          onDeleteShop: () => deleted = true,
+        ),
+      );
+      // Nút nằm cuối một màn cuộn dài — phải kéo tới nơi rồi mới chạm được.
+      await tester.ensureVisible(find.text('Xóa cửa hàng'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xóa cửa hàng'));
+      await tester.pump();
+      expect(deleted, isTrue);
+
+      // Nhân viên: thao tác không hoàn tác được thì không được phép hiện ra,
+      // kể cả dạng nút mờ.
+      await _pump(
+        tester,
+        EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          members: members,
+          videoTypes: videoTypes,
+          readOnly: true,
+          onDeleteShop: () => deleted = true,
+        ),
+      );
+      expect(find.text('Xóa cửa hàng'), findsNothing);
     });
   });
 
@@ -810,7 +783,10 @@ void main() {
       // "Vận đơn" labels both the first stat card and the orders tab.
       expect(find.text('Vận đơn'), findsNWidgets(2));
       expect(find.text('Ghi hình'), findsOneWidget);
-      expect(find.text('Tài khoản'), findsOneWidget);
+      // Ô tab thứ ba nay là Hồ sơ khiếu nại; Tài khoản dời ra màn Chọn cửa
+      // hàng.
+      expect(find.text('Khiếu nại'), findsOneWidget);
+      expect(find.text('Tài khoản'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -865,9 +841,13 @@ void main() {
       await tester.enterText(find.byType(EditableText), 'ZZZ');
       await tester.pump();
 
+      // Vẫn báo lên trên để cha truy vấn lại…
       expect(searches, ['ZZZ']);
-      expect(find.text('SPXVN024567890'), findsOneWidget);
-      expect(find.text('SPXVN044556677'), findsOneWidget);
+      // …VÀ lọc theo mã ngay tại máy. `EcApi.orders()` không gửi tham số `q`
+      // (tìm kiếm là `searchOrders`, một đường riêng), nên tin hẳn vào server
+      // là gõ một mã xong vẫn thấy nguyên danh sách cũ.
+      expect(find.text('SPXVN024567890'), findsNothing);
+      expect(find.text('SPXVN044556677'), findsNothing);
     });
 
     testWidgets('the three filter chips start unfiltered', (tester) async {

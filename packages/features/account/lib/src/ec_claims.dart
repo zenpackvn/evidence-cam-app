@@ -6,12 +6,14 @@
 /// cho lúc người bán muốn bổ sung.
 ///
 /// Package giao diện nên KHÔNG chạm tới `EcClaimDossier` của `shared_contracts`
-/// — nó nhận những kiểu nhỏ khai ngay dưới đây, giống cách
-/// `EcPaymentHistoryScreen` không dùng thẳng `PaymentDto`. Việc quy đổi là của
-/// app shell.
+/// — nó nhận những kiểu nhỏ khai ngay dưới đây. Việc quy đổi là của app shell.
 library;
 
+import 'dart:async';
+
 import 'package:ec_ui/ec_ui.dart';
+import 'package:flutter/cupertino.dart'
+    show CupertinoActivityIndicator, CupertinoTextField;
 import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
 
@@ -41,16 +43,26 @@ class EcClaimEntry {
 class EcClaimListScreen extends StatelessWidget {
   const EcClaimListScreen({
     this.entries = const [],
-    this.onBack,
     this.onOpen,
     this.onCopy,
+    this.onCreate,
+    this.onNavOrders,
+    this.onNavRecord,
     super.key,
   });
 
   final List<EcClaimEntry> entries;
-  final VoidCallback? onBack;
   final ValueChanged<EcClaimEntry>? onOpen;
   final ValueChanged<EcClaimEntry>? onCopy;
+
+  /// Dấu cộng góc phải: mở màn tạo hồ sơ. Đây là lối tạo DUY NHẤT — trang Vận
+  /// đơn không còn nút gộp nào, vì việc tạo hồ sơ thuộc về màn hồ sơ.
+  final VoidCallback? onCreate;
+
+  /// Màn này là tab thứ ba, nên nó mang thanh điều hướng chứ không mang nút
+  /// back.
+  final VoidCallback? onNavOrders;
+  final VoidCallback? onNavRecord;
 
   @override
   Widget build(BuildContext context) {
@@ -64,8 +76,6 @@ class EcClaimListScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(18, 24, 18, 0),
             child: Row(
               children: [
-                PenBackButton(onTap: onBack),
-                const SizedBox(width: 12),
                 Expanded(
                   child: PenText(
                     l10n.claimsTitle,
@@ -75,6 +85,26 @@ class EcClaimListScreen extends StatelessWidget {
                     softWrap: false,
                   ),
                 ),
+                if (onCreate != null)
+                  EcTap(
+                    onTap: onCreate,
+                    child: PenBox(
+                      width: 40,
+                      height: 40,
+                      fill: PenColors.primary,
+                      radius: 999,
+                      axis: PenAxis.row,
+                      main: MainAxisAlignment.center,
+                      cross: CrossAxisAlignment.center,
+                      children: const [
+                        Icon(
+                          LucideIcons.plus,
+                          size: 22,
+                          color: PenColors.card,
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -86,6 +116,7 @@ class EcClaimListScreen extends StatelessWidget {
             child: _LocalOnlyNote(text: l10n.claimsLocalOnlyNote),
           ),
           Expanded(child: _body(context, l10n)),
+          _ClaimsNavBar(onOrders: onNavOrders, onRecord: onNavRecord),
         ],
       ),
     );
@@ -130,6 +161,27 @@ class EcClaimListScreen extends StatelessWidget {
   }
 }
 
+/// Thanh điều hướng ba tab, bản của màn Hồ sơ khiếu nại (tab thứ ba).
+class _ClaimsNavBar extends StatelessWidget {
+  const _ClaimsNavBar({this.onOrders, this.onRecord});
+
+  final VoidCallback? onOrders;
+  final VoidCallback? onRecord;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return PenTabBar(
+      activeIndex: 2,
+      tabs: [
+        (LucideIcons.package, l10n.navOrders, onOrders),
+        (LucideIcons.camera, l10n.navRecord, onRecord),
+        (LucideIcons.fileText, l10n.navClaims, null),
+      ],
+    );
+  }
+}
+
 class _LocalOnlyNote extends StatelessWidget {
   const _LocalOnlyNote({required this.text});
 
@@ -169,7 +221,7 @@ class _ClaimRow extends StatelessWidget {
         axis: PenAxis.row,
         gap: 12,
         cross: CrossAxisAlignment.center,
-        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+        padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
         children: [
           Expanded(
             child: Column(
@@ -200,11 +252,6 @@ class _ClaimRow extends StatelessWidget {
               child: Icon(LucideIcons.copy, size: 20, color: PenColors.primary),
             ),
           ),
-          const Icon(
-            LucideIcons.chevronRight,
-            size: 20,
-            color: PenColors.soft,
-          ),
         ],
       ),
     );
@@ -213,15 +260,28 @@ class _ClaimRow extends StatelessWidget {
 
 /// Một mã vận đơn trong hồ sơ, cùng các bằng chứng của nó.
 class EcClaimOrderGroup {
-  const EcClaimOrderGroup({required this.tracking, required this.items});
+  const EcClaimOrderGroup({
+    required this.tracking,
+    required this.items,
+    this.dateLabel,
+    this.timeLabel,
+  });
 
   final String tracking;
+
+  /// Ngày và giờ của bằng chứng mới nhất trong đơn này. `null` ở hồ sơ tạo
+  /// trước khi mốc thời gian được lưu — lúc đó dòng chỉ hiện mã, không bịa ra
+  /// một ngày nào.
+  final String? dateLabel;
+  final String? timeLabel;
+
   final List<EcClaimItem> items;
 }
 
 /// Một video/ảnh trong hồ sơ.
 class EcClaimItem {
   const EcClaimItem({
+    required this.id,
     required this.label,
     required this.time,
     this.isPhoto = false,
@@ -229,6 +289,8 @@ class EcClaimItem {
     this.addedLater = false,
   });
 
+  /// Khoá để bên gọi biết gỡ cái nào ra khỏi hồ sơ.
+  final String id;
   final String label;
   final String time;
   final bool isPhoto;
@@ -249,6 +311,7 @@ class EcClaimDetailScreen extends StatelessWidget {
     this.onCopy,
     this.onDelete,
     this.onAttachPhoto,
+    this.onRemoveItem,
     super.key,
   });
 
@@ -262,6 +325,11 @@ class EcClaimDetailScreen extends StatelessWidget {
   /// Đính thêm ảnh vào MỘT mã vận đơn của hồ sơ. Nhận mã đơn vì hồ sơ có thể
   /// gồm nhiều đơn — không có nó thì ảnh không biết thuộc về đơn nào.
   final ValueChanged<String>? onAttachPhoto;
+
+  /// Gỡ một bằng chứng khỏi hồ sơ: `(mã đơn, id bằng chứng)`. Cùng lý do với
+  /// [onAttachPhoto] — id bằng chứng là duy nhất, nhưng mã đơn nói cho bên gọi
+  /// biết phải sửa nhánh nào của hồ sơ.
+  final void Function(String tracking, String evidenceId)? onRemoveItem;
 
   @override
   Widget build(BuildContext context) {
@@ -317,7 +385,11 @@ class EcClaimDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
               children: [
                 for (final group in groups) ...[
-                  _OrderGroupCard(group: group, onAttachPhoto: onAttachPhoto),
+                  _OrderGroupCard(
+                    group: group,
+                    onAttachPhoto: onAttachPhoto,
+                    onRemoveItem: onRemoveItem,
+                  ),
                   const SizedBox(height: 12),
                 ],
                 if (groups.isEmpty)
@@ -337,10 +409,15 @@ class EcClaimDetailScreen extends StatelessWidget {
 }
 
 class _OrderGroupCard extends StatelessWidget {
-  const _OrderGroupCard({required this.group, this.onAttachPhoto});
+  const _OrderGroupCard({
+    required this.group,
+    this.onAttachPhoto,
+    this.onRemoveItem,
+  });
 
   final EcClaimOrderGroup group;
   final ValueChanged<String>? onAttachPhoto;
+  final void Function(String tracking, String evidenceId)? onRemoveItem;
 
   @override
   Widget build(BuildContext context) {
@@ -350,13 +427,36 @@ class _OrderGroupCard extends StatelessWidget {
       cross: CrossAxisAlignment.stretch,
       padding: const EdgeInsets.all(14),
       children: [
-        PenText(
-          group.tracking,
-          size: 15,
-          color: PenColors.ink,
-          weight: FontWeight.w800,
+        // Mã vận đơn + ngày giờ. Một hồ sơ gộp nhiều đơn thì các đơn có thể ở
+        // khác ngày, nên chỉ hiện giờ là không đủ để phân biệt.
+        Row(
+          children: [
+            Expanded(
+              child: PenText(
+                group.tracking,
+                size: 15,
+                color: PenColors.ink,
+                weight: FontWeight.w800,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (group.dateLabel != null)
+              PenText(
+                '${group.dateLabel}  ${group.timeLabel ?? ''}'.trim(),
+                size: 12,
+                color: PenColors.mut,
+                softWrap: false,
+              ),
+          ],
         ),
-        for (final item in group.items) _ClaimItemRow(item: item),
+        for (final item in group.items)
+          _ClaimItemRow(
+            item: item,
+            onRemove: onRemoveItem == null
+                ? null
+                : () => onRemoveItem!(group.tracking, item.id),
+          ),
         // Đính kèm ảnh ở ĐÁY mỗi mã đơn, không phải đáy màn: hồ sơ gồm nhiều
         // đơn thì một nút chung không nói được ảnh sắp thuộc về đơn nào.
         if (onAttachPhoto != null)
@@ -367,9 +467,12 @@ class _OrderGroupCard extends StatelessWidget {
 }
 
 class _ClaimItemRow extends StatelessWidget {
-  const _ClaimItemRow({required this.item});
+  const _ClaimItemRow({required this.item, this.onRemove});
 
   final EcClaimItem item;
+
+  /// Gỡ khỏi hồ sơ. `null` = không hiện icon.
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) => PenBox(
@@ -404,6 +507,16 @@ class _ClaimItemRow extends StatelessWidget {
           ),
         ),
       PenText(item.time, size: 12, color: PenColors.mut, softWrap: false),
+      if (onRemove != null)
+        // Vùng chạm rộng hơn icon: hàng chỉ cao 31pt và icon 17pt thì một ngón
+        // tay chạm trượt sang dòng bên cạnh là chuyện thường.
+        EcTap(
+          onTap: onRemove,
+          child: const Padding(
+            padding: EdgeInsets.only(left: 4, top: 6, bottom: 6),
+            child: Icon(LucideIcons.trash2, size: 17, color: PenColors.danger),
+          ),
+        ),
     ],
   );
 }
@@ -436,6 +549,502 @@ class _AttachPhotoRow extends StatelessWidget {
           softWrap: false,
         ),
       ],
+    ),
+  );
+}
+
+/// Một bằng chứng có thể tick khi tạo hồ sơ, đủ để người dùng nhận ra nó là
+/// cái nào: loại, giờ quay, và ảnh hay video.
+class EcClaimPickable {
+  const EcClaimPickable({
+    required this.id,
+    required this.label,
+    required this.time,
+    this.isPhoto = false,
+    this.capturedAt,
+  });
+
+  final String id;
+  final String label;
+  final String time;
+  final bool isPhoto;
+
+  /// Lúc quay/chụp, epoch ms — để hồ sơ hiện được ngày ở dòng mã vận đơn.
+  final int? capturedAt;
+}
+
+/// Phần đã tick của MỘT mã vận đơn, khi bấm tạo hồ sơ.
+class EcClaimOrderPicks {
+  const EcClaimOrderPicks({required this.orderCode, required this.picked});
+
+  final String orderCode;
+  final List<EcClaimPickable> picked;
+}
+
+/// Màn tạo hồ sơ khiếu nại: tra một mã vận đơn, rồi tick những video/ảnh của
+/// nó.
+///
+/// Trước đây việc này nằm ở trang Vận đơn — một nút cộng nổi mở ra chế độ tick
+/// ngay trên danh sách đơn. Nhưng tạo hồ sơ là việc của màn Hồ sơ, và ở trang
+/// Vận đơn nó phải sống chung với tìm kiếm, phân trang, ba chip lọc; mỗi thứ
+/// đều đổi được danh sách bên dưới những gì đang tick.
+///
+/// Ở đây chỉ có một mã đơn tại một thời điểm, nên không có gì trôi mất.
+class EcCreateClaimScreen extends StatefulWidget {
+  const EcCreateClaimScreen({
+    required this.onSearch,
+    this.onBack,
+    this.onScan,
+    this.onCreate,
+    super.key,
+  });
+
+  /// Tra một mã vận đơn. Trả `null` khi không có đơn nào khớp, trả danh sách
+  /// rỗng khi đơn có thật nhưng chưa có bằng chứng nào.
+  final Future<List<EcClaimPickable>?> Function(String code) onSearch;
+
+  /// Mở máy quét, trả về mã đọc được.
+  final Future<String?> Function()? onScan;
+
+  final VoidCallback? onBack;
+
+  /// Tạo hồ sơ từ MỌI mã đơn đã tra và phần đã tick của từng mã.
+  final ValueChanged<List<EcClaimOrderPicks>>? onCreate;
+
+  @override
+  State<EcCreateClaimScreen> createState() => _EcCreateClaimScreenState();
+}
+
+class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
+  final _search = TextEditingController();
+
+  /// Mọi mã đã tra trong lượt này, theo đúng thứ tự tra.
+  ///
+  /// Giữ lại để tra mã thứ hai KHÔNG làm mất phần đã tick ở mã thứ nhất — một
+  /// hồ sơ khiếu nại thường gộp vài đơn, mà quét xong mất sạch lựa chọn cũ thì
+  /// người dùng phải làm lại từ đầu và sẽ không bao giờ gộp quá một đơn.
+  final Map<String, List<EcClaimPickable>> _seen = {};
+
+  /// Thứ tự hiện ra: mã quét gần nhất đứng đầu.
+  final List<String> _order = [];
+
+  /// Id đã tick, chung cho MỌI mã. Id bằng chứng là duy nhất toàn hệ thống nên
+  /// một tập phẳng là đủ.
+  final Set<String> _picked = <String>{};
+
+  bool _loading = false;
+  bool _notFound = false;
+
+  /// Số bằng chứng đã tick trên tất cả các mã — con số hiện ở nút tạo.
+  int get _pickedCount => _picked.length;
+
+  /// Gom theo mã, bỏ mã nào không còn cái nào được tick.
+  List<EcClaimOrderPicks> get _batch => [
+    for (final e in _seen.entries)
+      if (e.value.any((i) => _picked.contains(i.id)))
+        EcClaimOrderPicks(
+          orderCode: e.key,
+          picked: [
+            for (final i in e.value)
+              if (_picked.contains(i.id)) i,
+          ],
+        ),
+  ];
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  Future<void> _lookup(String raw) async {
+    final code = raw.trim();
+    if (code.isEmpty || _loading) return;
+    // KHÔNG xoá `_picked`: tra mã mới là để THÊM vào hồ sơ, không phải bắt đầu
+    // lại. Xoá đi thì mọi hồ sơ đều chỉ gộp được đúng một đơn.
+    setState(() {
+      _loading = true;
+      _notFound = false;
+    });
+    final found = await widget.onSearch(code);
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _notFound = found == null;
+      // Không tick sẵn gì cả. Đơn có chục clip mà người bán chỉ cần một cái để
+      // khiếu nại thì tick sẵn hết bắt họ bỏ chín — nhiều thao tác hơn hẳn tự
+      // tick một.
+      if (found != null) {
+        // Mã mới lên ĐẦU: người bán vừa quét cái gì thì muốn thấy ngay cái đó,
+        // không phải cuộn qua mọi mã đã quét trước để tìm.
+        _seen
+          ..remove(code)
+          ..[code] = found;
+        _order
+          ..remove(code)
+          ..insert(0, code);
+      }
+    });
+  }
+
+  Future<void> _scan() async {
+    final code = await widget.onScan?.call();
+    if (code == null || code.isEmpty || !mounted) return;
+    _search.text = code;
+    await _lookup(code);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return PenScreen(
+      scrollable: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 24, 18, 0),
+            child: Row(
+              children: [
+                PenBackButton(onTap: widget.onBack),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: PenText(
+                    l10n.claimsCreateTitle,
+                    size: 21,
+                    color: PenColors.ink,
+                    weight: FontWeight.w800,
+                    softWrap: false,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+            child: _SearchScanBar(
+              controller: _search,
+              hint: l10n.claimsCreateSearchHint,
+              onSubmit: _lookup,
+              onScan: widget.onScan == null ? null : () => unawaited(_scan()),
+            ),
+          ),
+          Expanded(child: _body(context, l10n)),
+          // Nút tạo hiện NGAY KHI đã tick được thứ gì, kể cả lúc đang tra một
+          // mã khác chưa ra kết quả: phần đã tick ở mã trước vẫn còn nguyên,
+          // giấu nút đi thì trông như chúng đã mất.
+          if (_pickedCount > 0)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+                child: _CreateClaimButton(
+                  count: _pickedCount,
+                  onTap: widget.onCreate == null
+                      ? null
+                      : () => widget.onCreate!(_batch),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _body(BuildContext context, AppLocalizations l10n) {
+    // Chưa quét được mã nào: ba trạng thái rỗng KHÁC NHAU, không gộp thành một
+    // — đang tra, tra không thấy mã, và chưa tra gì. Gộp lại thì người dùng
+    // không biết mình gõ sai mã hay app đang bận.
+    if (_order.isEmpty) {
+      if (_loading) {
+        return const Center(child: CircularProgressIndicator.adaptive());
+      }
+      if (_notFound) {
+        return _Hint(icon: LucideIcons.searchX, text: l10n.claimsCreateNoOrder);
+      }
+      return _Hint(icon: LucideIcons.scanLine, text: l10n.claimsCreateStart);
+    }
+    // Đã có mã trên màn: lượt tra mới KHÔNG được thay chỗ chúng. Báo trạng
+    // thái bằng một dòng ở đầu, còn danh sách cũ vẫn nguyên bên dưới — quét
+    // nhầm một mã mà mất sạch phần đã tick là hỏng cả buổi làm.
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+      children: [
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 14),
+            child: Center(child: CupertinoActivityIndicator()),
+          )
+        else if (_notFound)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: PenText(
+              l10n.claimsCreateNoOrder,
+              size: 13,
+              color: PenColors.danger,
+            ),
+          ),
+        for (final code in _order) ...[
+          _OrderPickSection(
+            code: code,
+            items: _seen[code]!,
+            picked: _picked,
+            onToggle: (id) => setState(() {
+              if (!_picked.remove(id)) _picked.add(id);
+            }),
+            onToggleAll: (select) => setState(() {
+              for (final e in _seen[code]!) {
+                if (select) {
+                  _picked.add(e.id);
+                } else {
+                  _picked.remove(e.id);
+                }
+              }
+            }),
+          ),
+          const SizedBox(height: 18),
+        ],
+      ],
+    );
+  }
+}
+
+/// Một mã vận đơn đã quét, cùng mọi bằng chứng của nó.
+///
+/// Mỗi mã là một khối riêng, xếp chồng theo thứ tự quét — mã mới trên cùng.
+/// Quét mã thứ hai KHÔNG đẩy mã thứ nhất đi đâu cả: một hồ sơ khiếu nại thường
+/// gộp vài đơn, mà mất khối cũ là người dùng phải làm lại từ đầu.
+class _OrderPickSection extends StatelessWidget {
+  const _OrderPickSection({
+    required this.code,
+    required this.items,
+    required this.picked,
+    required this.onToggle,
+    required this.onToggleAll,
+  });
+
+  final String code;
+  final List<EcClaimPickable> items;
+  final Set<String> picked;
+  final ValueChanged<String> onToggle;
+  final ValueChanged<bool> onToggleAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final allPicked =
+        items.isNotEmpty && items.every((e) => picked.contains(e.id));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: PenText(
+                code,
+                size: 16,
+                color: PenColors.ink,
+                weight: FontWeight.w800,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (items.isNotEmpty)
+              EcTap(
+                onTap: () => onToggleAll(!allPicked),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 4,
+                  ),
+                  child: Icon(
+                    allPicked ? LucideIcons.squareCheckBig : LucideIcons.square,
+                    size: 26,
+                    color: allPicked ? PenColors.primary : PenColors.ink,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        if (items.isEmpty)
+          PenText(
+            context.l10n.timelineEmpty,
+            size: 13,
+            color: PenColors.mut,
+          )
+        else
+          for (final e in items)
+            _PickRow(
+              item: e,
+              picked: picked.contains(e.id),
+              onTap: () => onToggle(e.id),
+            ),
+      ],
+    );
+  }
+}
+
+/// Ô tra mã + nút quét, cùng khuôn với thanh tìm kiếm ở trang Vận đơn: một ô
+/// duy nhất, vạch ngăn, rồi nút quét nằm BÊN TRONG ô.
+class _SearchScanBar extends StatelessWidget {
+  const _SearchScanBar({
+    required this.controller,
+    required this.hint,
+    required this.onSubmit,
+    this.onScan,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final ValueChanged<String> onSubmit;
+  final VoidCallback? onScan;
+
+  @override
+  Widget build(BuildContext context) => PenBox(
+    height: 56,
+    fill: PenColors.card,
+    stroke: PenColors.line,
+    radius: 14,
+    axis: PenAxis.row,
+    gap: 10,
+    cross: CrossAxisAlignment.center,
+    padding: const EdgeInsets.only(left: 16, right: 8),
+    children: [
+      const Icon(LucideIcons.search, size: 22, color: PenColors.mut),
+      Expanded(
+        child: CupertinoTextField(
+          controller: controller,
+          padding: EdgeInsets.zero,
+          decoration: const BoxDecoration(),
+          placeholder: hint,
+          textInputAction: TextInputAction.search,
+          onSubmitted: onSubmit,
+          style: const TextStyle(fontSize: 15, color: PenColors.ink),
+        ),
+      ),
+      if (onScan != null) ...[
+        const PenBox(width: 1, height: 26, fill: PenColors.line),
+        EcTap(
+          onTap: onScan,
+          child: const PenBox(
+            width: 40,
+            height: 40,
+            fill: PenColors.bg,
+            radius: 10,
+            axis: PenAxis.row,
+            main: MainAxisAlignment.center,
+            cross: CrossAxisAlignment.center,
+            children: [
+              Icon(LucideIcons.scanLine, size: 21, color: PenColors.ink),
+            ],
+          ),
+        ),
+      ],
+    ],
+  );
+}
+
+class _PickRow extends StatelessWidget {
+  const _PickRow({
+    required this.item,
+    required this.picked,
+    required this.onTap,
+  });
+
+  final EcClaimPickable item;
+  final bool picked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: PenBox(
+      width: double.infinity,
+      axis: PenAxis.row,
+      gap: 10,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      children: [
+        Icon(
+          item.isPhoto ? LucideIcons.image : LucideIcons.video,
+          size: 17,
+          color: PenColors.primary,
+        ),
+        Expanded(
+          child: PenText(
+            item.label,
+            size: 14,
+            color: PenColors.ink,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        PenText(item.time, size: 12, color: PenColors.mut, softWrap: false),
+        Icon(
+          picked ? LucideIcons.squareCheckBig : LucideIcons.square,
+          size: 20,
+          color: picked ? PenColors.primary : PenColors.mut,
+        ),
+      ],
+    ),
+  );
+}
+
+class _CreateClaimButton extends StatelessWidget {
+  const _CreateClaimButton({required this.count, this.onTap});
+
+  final int count;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: PenBox(
+      width: double.infinity,
+      height: 54,
+      fill: onTap == null ? PenColors.soft : PenColors.primary,
+      radius: 14,
+      axis: PenAxis.row,
+      gap: 10,
+      main: MainAxisAlignment.center,
+      cross: CrossAxisAlignment.center,
+      children: [
+        const Icon(LucideIcons.fileText, size: 20, color: PenColors.card),
+        PenText(
+          '${context.l10n.bundleCreateClaim} ($count)',
+          size: 16,
+          color: PenColors.card,
+          weight: FontWeight.w700,
+          softWrap: false,
+        ),
+      ],
+    ),
+  );
+}
+
+class _Hint extends StatelessWidget {
+  const _Hint({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 32),
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 40, color: PenColors.soft),
+          const SizedBox(height: 12),
+          PenText(
+            text,
+            size: 14,
+            color: PenColors.mut,
+            align: TextAlign.center,
+            lineHeight: 1.5,
+          ),
+        ],
+      ),
     ),
   );
 }

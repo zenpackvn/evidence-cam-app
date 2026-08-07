@@ -98,14 +98,6 @@ Future<void> main() async {
         // repository comes from EC_API_URL/API_BASE_URL (empty offline seam when unset).
         final ecAuth = kFirebaseEnabled ? FirebaseEcAuth() : FakeEcAuth();
 
-        // Thanh toán trong ứng dụng. Chỉ đăng ký khi build có khai khoá công
-        // khai của RevenueCat — không có khoá thì mọi nút mua gói tự rơi về
-        // nhánh "chưa hỗ trợ" thay vì nổ lúc chạy.
-        // Khoá phải khớp NỀN TẢNG: `appl_…` cho iOS, `goog_…` cho Android.
-        // Dùng nhầm khoá thì SDK vẫn khởi tạo được nhưng mua bán hỏng im lặng.
-        if (kRevenueCatKey.isNotEmpty) {
-          getIt.registerSingleton<EcBilling>(EcBilling(apiKey: kRevenueCatKey));
-        }
         // Góp ý đi thẳng sang CMS dùng chung (tenant zenpack), không qua backend
         // EvidenceCam.
         //

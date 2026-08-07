@@ -27,7 +27,30 @@
   "claimsDeleted": "Đã xóa hồ sơ",
   "claimsPhotoAdded": "Đã thêm ảnh vào hồ sơ và đưa lên đơn hàng",
   "claimsAddedLater": "đính thêm",
+  "claimsCreateTitle": "Tạo hồ sơ khiếu nại",
+  "claimsCreateSearchHint": "Nhập hoặc quét mã vận đơn",
+  "claimsCreateStart": "Nhập mã vận đơn hoặc bấm quét để tìm đơn cần khiếu nại.",
+  "claimsCreateNoOrder": "Không tìm thấy mã vận đơn này trong cửa hàng đang chọn.",
+  "claimsRemoveItemTitle": "Gỡ khỏi hồ sơ",
+  "claimsRemoveItemConfirm": "Gỡ bằng chứng này khỏi hồ sơ khiếu nại? Video/ảnh trong đơn hàng vẫn còn nguyên.",
+  "claimsItemRemoved": "Đã gỡ khỏi hồ sơ",
+  "commonRemove": "Gỡ",
   "commonDelete": "Xóa",
+  "settingDefaultSuffix": "mặc định",
+  "shopDetailClipLength": "Thời lượng video",
+  "shopDeleteTitle": "Xóa cửa hàng",
+  "shopDeleteConfirm": "Xóa cửa hàng này? Toàn bộ đơn hàng, video và ảnh của nó sẽ mất và không lấy lại được.",
+  "shopDeleteBlockedTitle": "Còn thành viên trong shop",
+  "shopDeleteBlockedBody": "Phải gỡ hết quản lý và nhân viên khỏi cửa hàng trước khi xóa. Hiện còn {count} người.",
+  "@shopDeleteBlockedBody": {
+    "description": "Shown when delete-shop is blocked by remaining members.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopDeleted": "Đã xóa cửa hàng",
   "bundleSelected": "Đã chọn {count} bằng chứng",
   "@bundleSelected": {
     "placeholders": {
@@ -45,10 +68,6 @@
   "toastInfoSaved": "Đã lưu thông tin",
   "toastPasswordCreated": "Đã tạo mật khẩu",
   "toastPasswordChanged": "Đã đổi mật khẩu",
-  "toastPurchaseApplied": "Đã kích hoạt gói mới",
-  "toastPurchasePending": "Đã thanh toán. Gói sẽ được kích hoạt trong giây lát",
-  "toastPurchaseFailed": "Không hoàn tất được thanh toán. Vui lòng thử lại",
-  "purchaseSuccessTitle": "Thanh toán thành công 🎉",
   "toastPendingDossierConfirm": "Bạn còn hồ sơ khiếu nại đang mở, vui lòng xác nhận lại",
   "toastCopiedShareLink": "Đã sao chép link để chia sẻ",
   "toastShareFailed": "Không chia sẻ được, thử lại sau",
@@ -63,6 +82,18 @@
   "toastPhotoDownloadFailed": "Không tải được ảnh, thử lại sau",
   "toastPhotoNoDownloadLink": "Ảnh chưa có link tải",
   "toastPhotoQueued": "Đã đính kèm ảnh — đưa vào hàng chờ tải",
+  "imageOverFixedCap": "Ảnh {megabytes} MB — vượt trần {limit} MB nên chưa đính. Chọn ảnh nhỏ hơn.",
+  "@imageOverFixedCap": {
+    "description": "Ảnh vượt trần 5 MB cố định.",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
   "toastInvitePending": "Chờ lời mời vào shop",
   "toastInviteSent": "Đã gửi lời mời",
   "toastMemberAdded": "Đã thêm thành viên",
@@ -75,8 +106,6 @@
   "toastVideoTypeSaved": "Đã lưu loại video",
   "toastVideoTypeDeleted": "Đã xóa loại video",
   "toastNoVideoTypeToDelete": "Không có loại video để xóa",
-  "toastRoleChangedManager": "Đã đổi vai trò: Quản lý shop",
-  "toastRoleChangedStaff": "Đã đổi vai trò: Nhân viên",
   "toastNoMemberToUpdate": "Không có thành viên để cập nhật",
   "toastMemberRemoved": "Đã gỡ khỏi shop (video đã quay vẫn upload nốt)",
   "toastInviteRevoked": "Đã xóa lời mời — link trong email hết tác dụng",
@@ -89,7 +118,6 @@
   "accountChangePassword": "Đổi mật khẩu",
   "accountLinkedMethods": "{count} liên kết",
   "roleOwner": "Chủ shop",
-  "roleManager": "Quản lý",
   "roleStaff": "Nhân viên",
   "memberInviteSent": "{role} · đã gửi lời mời",
   "@memberInviteSent": {
@@ -161,7 +189,7 @@
   "statOrdersToday": "Vận đơn",
   "statVideosRecorded": "Video đã quay",
   "statPendingUpload": "Chờ tải",
-  "accountPlanQuota": "Gói cước & Quota",
+  "accountPlanQuota": "Dung lượng",
   "accountSectionApp": "GÓI & ỨNG DỤNG",
   "accountLanguage": "Ngôn ngữ",
   "accountSectionSecurity": "BẢO MẬT & ĐĂNG NHẬP",
@@ -210,9 +238,6 @@
     }
   },
   "quotaStorage": "Lưu trữ",
-  "quotaUpgradePlan": "Nâng cấp gói",
-  "quotaUpgradeShort": "Nâng cấp",
-  "quotaOwnerOnlyNote": "Chỉ chủ tài khoản mới đổi được gói cước",
   "deleteAccountTitleStep1": "Xóa tài khoản?",
   "deleteAccountTitleStep2": "Xác nhận xóa vĩnh viễn?",
   "deleteAccountBodyStep1": "Toàn bộ video, vận đơn và hồ sơ của bạn sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.",
@@ -235,6 +260,7 @@
   "navOrders": "Vận đơn",
   "navRecord": "Ghi hình",
   "navAccount": "Tài khoản",
+  "navClaims": "Khiếu nại",
   "changeAvatar": "Đổi ảnh đại diện",
   "quotaVideosRatio": "{remaining} / {total} video",
   "quotaUsedPercent": "Đã dùng {percent}%",
@@ -245,7 +271,6 @@
   "quotaByType": "Dung lượng theo loại",
   "quotaByTypeVideosCount": "{count} video đang lưu",
   "quotaRefundNote": "Dung lượng hoàn lại khi video hết hạn lưu trữ {days} ngày",
-  "quotaPaymentHistory": "Lịch sử thanh toán",
   "deletePendingProfilesWarning": "Bạn còn {count} hồ sơ “đã gửi sàn” — link chia sẻ sẽ ngừng hoạt động",
   "detailRecordedTime": "Giờ quay",
   "detailDuration": "Thời lượng",
@@ -302,7 +327,6 @@
   "videoTypeSettings": "Cài đặt loại video",
   "uploadQueueTitle": "Hàng đợi upload",
   "quotaExhaustedNote": "Hết hạn mức tháng này. Video vẫn quay được, nhưng đang nằm TRÊN MÁY NÀY và chưa được bảo vệ — chúng sẽ tự tải lên khi hạn mức được nâng.",
-  "upgradePlanShort": "Nâng gói",
   "queueEmpty": "Chưa có video trong hàng đợi",
   "queueAutoUploadNote": "Upload khi có mạng sẽ được tự động thực hiện",
   "waitingUpload": "Chờ upload",
@@ -418,20 +442,15 @@
   "deleteVideoTypeConfirm": "Xóa loại",
   "deleteVideoTypeNote": "(Chỉ xóa khi loại chưa có video nào)",
   "addMemberTitle": "Thêm thành viên",
-  "addMemberBody": "Nhập email của tài khoản ZenPack đã đăng ký để thêm vào shop.",
+  "addMemberBody": "Nhập email của tài khoản ZenPack đã đăng ký. Họ nhận được lời mời và phải bấm xác nhận mới vào shop.",
   "emailLabel": "Email",
   "emailRequired": "Nhập email.",
   "emailInvalid": "Nhập đúng một địa chỉ email.",
-  "inviteRoleLabel": "Vai trò",
-  "roleStaffDesc": "Chỉ quay + xem video mình quay",
-  "roleManagerDesc": "Toàn quyền trong shop",
   "errorInviteAccountNotFound": "Email này chưa có tài khoản ZenPack. Bảo họ đăng ký trước rồi mời lại.",
   "errorInviteAlreadyMember": "Người này đã là thành viên của shop.",
   "errorInviteAlreadyOwner": "Đây là chủ shop, không cần mời.",
   "errorInviteInvalidRequest": "Email không hợp lệ. Kiểm tra lại rồi gửi.",
   "addMemberSubmit": "Thêm",
-  "setAsManager": "Đặt làm Quản lý shop",
-  "setAsStaff": "Đặt làm Nhân viên",
   "memberOwnerLocked": "Chủ cửa hàng không đổi vai trò hay gỡ ở đây được — quyền sở hữu gắn với cửa hàng, không phải một hàng thành viên.",
   "removeFromShop": "Gỡ khỏi shop",
   "revokeInvite": "Xóa lời mời",
@@ -662,17 +681,9 @@
   "@clipDurationTitle": {
     "description": "Shop detail / clip budget (FR-17..FR-20)."
   },
-  "clipDurationSubtitle": "Chạm mốc này là tự chốt; {minutes} phút vẫn đính thẳng lên {platform} được",
+  "clipDurationSubtitle": "Chạm mốc này là tự chốt",
   "@clipDurationSubtitle": {
-    "description": "Shop detail / clip budget (FR-17..FR-20).",
-    "placeholders": {
-      "minutes": {
-        "type": "String"
-      },
-      "platform": {
-        "type": "String"
-      }
-    }
+    "description": "Shop detail / clip budget (FR-17..FR-20)."
   },
   "clipDurationOptionRecommended": "{minutes} phút (đề xuất)",
   "@clipDurationOptionRecommended": {
@@ -851,6 +862,7 @@
     "description": "Shop detail: shopDetailAddType."
   },
   "inviteMemberTitle": "Mời thành viên",
+  "inviteRoleFixedNote": "Người được mời vào shop với vai trò Nhân viên: quay video và xem lại video của chính mình.",
   "@inviteMemberTitle": {
     "description": "Shop detail: inviteMemberTitle."
   },
@@ -965,20 +977,6 @@
   "appUpdateMessage": "Cập nhật ZenPack để dùng bản mới nhất.",
   "appUpdateNow": "Cập nhật",
   "appUpdateLater": "Để sau",
-  "paymentHistoryEmptyTitle": "Chưa có giao dịch nào",
-  "paymentHistoryEmptyBody": "Các lần nâng cấp gói sẽ hiện ở đây.",
-  "paymentStatusPaid": "Đã thanh toán",
-  "paymentStatusPending": "Chờ thanh toán",
-  "paymentStatusCancelled": "Đã hủy",
-  "paymentStatusExpired": "Hết hạn",
-  "paymentStatusRefunded": "Đã hoàn tiền",
-  "paymentSourcePayos": "Thanh toán web",
-  "paymentSourceSepay": "Chuyển khoản",
-  "paymentSourceAppStore": "Mua trong ứng dụng",
-  "paymentSandboxNote": "Giao dịch thử (sandbox), không phải tiền thật.",
-  "planTerm1m": "1 tháng",
-  "planTerm6m": "6 tháng",
-  "planTerm12m": "12 tháng",
   "quotaVideosThisMonth": "Video tháng này",
   "quotaSubtitleVideos": "Theo dõi số video đã quay trong tháng",
   "quotaBlockedTitle": "Đã hết hạn mức video",

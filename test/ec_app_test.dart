@@ -554,7 +554,7 @@ void main() {
       await signInWithGoogle(tester);
       await tester.tap(find.text('Tài khoản').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Gói cước & Quota'));
+      await tester.tap(find.text('Dung lượng'));
       await tester.pumpAndSettle();
 
       expect(find.text('12 GB / 60 GB'), findsOneWidget);
@@ -582,7 +582,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Cơ bản'), findsWidgets);
 
-      await tester.tap(find.text('Gói cước & Quota'));
+      await tester.tap(find.text('Dung lượng'));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(PenBackButton).first);
       await tester.pumpAndSettle();
@@ -1024,9 +1024,9 @@ class _QuotaRepository extends _DemoRepository {
   @override
   Future<QuotaDto> quota({String? shopId}) async => const QuotaDto(
     planCode: 'basic',
-    usedBytes: 48 * 1024 * 1024 * 1024,
-    capBytes: 60 * 1024 * 1024 * 1024,
-    remainingBytes: 12 * 1024 * 1024 * 1024,
+    usedVideos: 480,
+    capVideos: 600,
+    remainingVideos: 120,
     retentionDays: 25,
   );
 }
@@ -1041,9 +1041,9 @@ class _UpgradingQuotaRepository extends _DemoRepository {
     _calls += 1;
     return QuotaDto(
       planCode: _calls == 1 ? 'basic' : 'premium',
-      usedBytes: 48 * 1024 * 1024 * 1024,
-      capBytes: 60 * 1024 * 1024 * 1024,
-      remainingBytes: 12 * 1024 * 1024 * 1024,
+      usedVideos: 480,
+      capVideos: 600,
+      remainingVideos: 120,
       retentionDays: 25,
     );
   }
@@ -1128,9 +1128,6 @@ class _ManageableShopRepository extends _DemoRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
-    int? maxImageBytes,
-    int? maxVideoBytes,
-    int? maxUploadBytes,
   }) async {
     updatedResolution = resolution;
     updatedClipSeconds = maxClipSeconds;

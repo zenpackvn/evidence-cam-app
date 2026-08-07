@@ -4,6 +4,11 @@
 /// the API surface can evolve independently.
 library;
 
+/// Trần thời lượng clip, giây — bản sao của `kFixedClipSeconds`
+/// (shared_contracts/clip_budget.dart). Lặp lại ở đây vì `ec_data` cố ý không
+/// phụ thuộc `shared_contracts`; đổi một chỗ thì đổi cả hai.
+const _kFixedClipSeconds = 300;
+
 int _int(Object? v, [int fallback = 0]) => (v as num?)?.toInt() ?? fallback;
 int? _intN(Object? v) => (v as num?)?.toInt();
 
@@ -85,13 +90,8 @@ class ShopDto {
     required this.platform,
     required this.resolution,
     required this.role,
-    this.clipSeconds = 120,
-    this.recommendedClipSeconds = 120,
-    this.planMaxClipSeconds = 900,
-    this.maxImageBytes = 0,
-    this.maxVideoBytes = 0,
-    this.uploadBytes = 10000000,
-    this.platformLimitsVerified = true,
+    this.clipSeconds = _kFixedClipSeconds,
+    this.planMaxClipSeconds = _kFixedClipSeconds,
   });
 
   factory ShopDto.fromJson(Map<String, dynamic> j) => ShopDto(
@@ -100,16 +100,8 @@ class ShopDto {
     platform: j['platform'] as String,
     resolution: (j['resolution'] as String?) ?? '720p',
     role: (j['role'] as String?) ?? 'owner',
-    clipSeconds: _int(j['effective_clip_seconds'], 120),
-    recommendedClipSeconds: _int(j['recommended_clip_seconds'], 120),
-    planMaxClipSeconds: _int(j['plan_max_clip_seconds'], 900),
-    // 0 = shop chưa đặt trần riêng cho loại này. Trước đây mặc định ngầm
-    // 10MB/30MB nên màn cài đặt luôn hiện một con số như thể đã đặt rồi,
-    // không phân biệt được "đã chọn 30MB" với "chưa chọn gì".
-    maxImageBytes: _int(j['max_image_bytes'], 0),
-    maxVideoBytes: _int(j['max_video_bytes'], 0),
-    uploadBytes: _int(j['effective_upload_bytes'], 10000000),
-    platformLimitsVerified: (j['platform_limits_verified'] as bool?) ?? true,
+    clipSeconds: _int(j['effective_clip_seconds'], _kFixedClipSeconds),
+    planMaxClipSeconds: _int(j['plan_max_clip_seconds'], _kFixedClipSeconds),
   );
 
   final String id;
@@ -120,17 +112,14 @@ class ShopDto {
   /// owner | manager | staff
   final String role;
 
-  /// Ngân sách clip (FR-17/FR-18). Backend đã kẹp [clipSeconds] vào trần gói,
-  /// nên app dùng thẳng, không tính lại.
+  /// Ngân sách clip (FR-17/FR-18). Backend đã kẹp [clipSeconds] vào khoảng
+  /// [1 phút, 5 phút], nên app dùng thẳng.
+  ///
+  /// Các trường dung lượng (`max_image_bytes`, `max_video_bytes`,
+  /// `effective_upload_bytes`) và `recommended_clip_seconds` đã bỏ 2026-08-07 —
+  /// backend không còn gửi, gói cước tính theo số video.
   final int clipSeconds;
-  final int recommendedClipSeconds;
   final int planMaxClipSeconds;
-  final int maxImageBytes;
-  final int maxVideoBytes;
-
-  /// Trần dung lượng một tệp bằng chứng đang áp dụng (FR-21).
-  final int uploadBytes;
-  final bool platformLimitsVerified;
 }
 
 class MemberDto {
@@ -478,23 +467,19 @@ class OrderDetailDto {
 }
 
 /// Một dòng của bảng "Dung lượng theo loại".
+/// Số video đã quay theo từng loại. Chỉ còn ĐẾM — cột dung lượng đã bỏ
+/// 2026-08-07 cùng lượt với quota theo byte.
 class QuotaTypeUsageDto {
-  const QuotaTypeUsageDto({
-    required this.type,
-    required this.videoCount,
-    required this.bytes,
-  });
+  const QuotaTypeUsageDto({required this.type, required this.videoCount});
 
   factory QuotaTypeUsageDto.fromJson(Map<String, dynamic> j) =>
       QuotaTypeUsageDto(
         type: (j['type'] as String?) ?? (j['name'] as String?) ?? '',
         videoCount: _int(j['video_count']),
-        bytes: _int(j['bytes']),
       );
 
   final String type;
   final int videoCount;
-  final int bytes;
 }
 
 /// Mốc cảnh báo hạn mức video. `blocked` = đã vượt 110%, không quay mới được.
@@ -508,136 +493,71 @@ QuotaWarnLevel _warnLevel(Object? raw) => switch (raw) {
   _ => QuotaWarnLevel.none,
 };
 
+/// Mức dùng của gói — trục là SỐ VIDEO trong tháng dương lịch (giờ VN).
+///
+/// Trước 2026-08-07 lớp này đọc `used_bytes`/`cap_bytes` (thanh dung lượng) và
+/// `video_count`/`by_type` — hai trường sau backend CHƯA BAO GIỜ gửi, nên màn
+/// Gói cước luôn hiện 0 video. Nay đọc đúng những trường backend thật sự trả,
+/// và mọi trần dung lượng đã bị gỡ khỏi trục tính tiền.
 class QuotaDto {
   const QuotaDto({
     required this.planCode,
-    required this.usedBytes,
-    required this.capBytes,
-    required this.remainingBytes,
-    this.usedVideos = 0,
-    this.capVideos = 0,
+    required this.usedVideos,
+    required this.capVideos,
+    required this.remainingVideos,
     this.topupVideos = 0,
     this.blockAtVideos = 0,
-    this.remainingVideos = 0,
     this.blocked = false,
     this.warnLevel = QuotaWarnLevel.none,
     this.retentionDays = 30,
     this.canManagePlan = true,
-    this.videoCount,
     this.byType = const [],
   });
 
   factory QuotaDto.fromJson(Map<String, dynamic> j) => QuotaDto(
     planCode: (j['plan_code'] as String?) ?? 'free',
-    usedBytes: _int(j['used_bytes']),
-    capBytes: _int(j['cap_bytes']),
-    remainingBytes: _int(j['remaining_bytes']),
     usedVideos: _int(j['used_videos']),
     capVideos: _int(j['cap_videos']),
+    remainingVideos: _int(j['remaining_videos']),
     topupVideos: _int(j['topup_videos']),
     blockAtVideos: _int(j['block_at_videos']),
-    remainingVideos: _int(j['remaining_videos']),
     blocked: (j['blocked'] as bool?) ?? false,
     warnLevel: _warnLevel(j['warn_level']),
     retentionDays: _intN(j['retention_days']) ?? 30,
     canManagePlan: (j['can_manage_plan'] as bool?) ?? true,
-    videoCount: _intN(j['video_count']),
     byType: [
       for (final e in (j['by_type'] as List<dynamic>? ?? const []))
         QuotaTypeUsageDto.fromJson(e as Map<String, dynamic>),
     ],
   );
 
-  /// Trục tính tiền: SỐ LƯỢNG video trong tháng, không phải dung lượng. Đếm lại
-  /// từ đầu mỗi tháng, không cộng dồn.
-  final int usedVideos;
-  final int capVideos;
-
   /// Lượt mua thêm còn lại — trả trước, không mất theo tháng.
   final int topupVideos;
 
   /// Mốc bị chặn quay mới = trần gói × 1,1 + lượt mua thêm.
   final int blockAtVideos;
-  final int remainingVideos;
 
   /// Đã vượt mốc chặn. Video ĐÃ QUAY vẫn tra cứu và gửi cho sàn bình thường —
   /// chặn chỉ áp cho việc quay mới.
   final bool blocked;
   final QuotaWarnLevel warnLevel;
 
-  /// Tổng số video đang lưu của shop; `null` khi backend chưa trả trường này.
-  final int? videoCount;
-
-  /// Bảng chia dung lượng theo loại video, do backend tính trên TOÀN BỘ clip
-  /// của shop. Rỗng thì màn Gói cước lùi về số liệu của riêng máy này.
+  /// Bảng chia theo loại video, do backend tính trên TOÀN BỘ clip của shop.
+  /// Rỗng thì màn Gói cước lùi về đếm trên hàng đợi của riêng máy này.
   final List<QuotaTypeUsageDto> byType;
 
   final String planCode;
-  final int usedBytes;
-  final int capBytes;
-  final int remainingBytes;
+
+  /// Video đã tính vào gói trong tháng này, và trần của gói. Đếm lại từ đầu
+  /// mỗi tháng, không cộng dồn.
+  final int usedVideos;
+  final int capVideos;
+  final int remainingVideos;
   final int retentionDays;
 
   /// Chỉ chủ shop mới đổi được gói — gói cước gắn với tài khoản trả tiền.
-  /// Quản lý/nhân viên xem được gói đang chi phối ca làm nhưng không mua.
+  /// Nhân viên xem được gói đang chi phối ca làm nhưng không mua.
   final bool canManagePlan;
-}
-
-/// Một lần trả tiền, gộp từ ba đường thu của backend (`GET /api/payments`).
-///
-/// Người dùng không cần biết tiền đi qua PayOS, chuyển khoản hay App Store —
-/// nhưng [source] vẫn hiện ra vì nó quyết định họ phải hỏi ai khi cần hóa đơn
-/// hay khiếu nại: mua trong ứng dụng thì Apple giữ, không phải mình.
-class PaymentDto {
-  const PaymentDto({
-    required this.id,
-    required this.source,
-    required this.planCode,
-    required this.status,
-    required this.createdAt,
-    this.term,
-    this.days,
-    this.amount,
-    this.paidAt,
-    this.sandbox = false,
-  });
-
-  factory PaymentDto.fromJson(Map<String, dynamic> j) => PaymentDto(
-    id: (j['id'] as String?) ?? '',
-    source: (j['source'] as String?) ?? 'payos',
-    planCode: (j['plan_code'] as String?) ?? 'free',
-    status: (j['status'] as String?) ?? 'pending',
-    createdAt: _int(j['created_at']),
-    term: j['term'] as String?,
-    days: _intN(j['days']),
-    amount: _intN(j['amount']),
-    paidAt: _intN(j['paid_at']),
-    sandbox: (j['sandbox'] as bool?) ?? false,
-  );
-
-  /// Mã đối soát của nguồn tương ứng — người dùng đọc mã này cho CSKH.
-  final String id;
-
-  /// `payos` | `sepay` | `appstore`.
-  final String source;
-  final String planCode;
-
-  /// `1m`/`6m`/`12m`, null với SePay và mua trong ứng dụng.
-  final String? term;
-  final int? days;
-
-  /// VND. **Null với mua trong ứng dụng** — App Store giữ điểm giá theo từng
-  /// SKU nên backend không có con số nào đứng tên được. UI phải chịu được null
-  /// chứ không được thay bằng 0.
-  final int? amount;
-
-  /// `paid` | `pending` | `cancelled` | `expired` | `refunded`.
-  final String status;
-  final int createdAt;
-  final int? paidAt;
-
-  /// Giao dịch thử của App Store sandbox — không phải tiền thật.
-  final bool sandbox;
 }
 
 class PresignDto {

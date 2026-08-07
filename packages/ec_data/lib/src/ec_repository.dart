@@ -50,16 +50,12 @@ abstract interface class EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
-    int? maxImageBytes,
-    int? maxVideoBytes,
-    int? maxUploadBytes,
   });
+
+  /// Xoá hẳn cửa hàng. Bên gọi phải chắc shop không còn thành viên nào khác.
+  Future<void> deleteShop(String shopId);
+
   Future<List<MemberDto>> members(String shopId);
-  Future<void> addMember(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  });
   Future<ShopInviteDto> sendShopInvite(
     String shopId, {
     required String contact,
@@ -70,11 +66,6 @@ abstract interface class EcRepository {
   /// của lời mời, không phải của [removeMember].
   Future<void> revokeShopInvite(String shopId, String inviteId);
 
-  Future<void> updateMemberRole(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  });
   Future<void> removeMember(String shopId, String accountUid);
   Future<List<VideoTypeDto>> videoTypes(String shopId);
   Future<VideoTypeDto> addVideoType(
@@ -102,9 +93,6 @@ abstract interface class EcRepository {
     int pendingBytes,
     int? oldestAt,
   });
-
-  /// Lịch sử thanh toán của tài khoản đang đăng nhập, mới nhất trước.
-  Future<List<PaymentDto>> payments();
 
   /// Page [page] (1-based) of orders, newest first. [uploadState] /
   /// [fromTs]–[toTs] / [videoTypeId] are the "Vận đơn" tab's three filters; they are applied by
@@ -189,29 +177,19 @@ class RemoteEcRepository implements EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
-    int? maxImageBytes,
-    int? maxVideoBytes,
-    int? maxUploadBytes,
   }) => _api.updateShop(
     shopId,
     name: name,
     platform: platform,
     resolution: resolution,
     maxClipSeconds: maxClipSeconds,
-    maxImageBytes: maxImageBytes,
-    maxVideoBytes: maxVideoBytes,
-    maxUploadBytes: maxUploadBytes,
   );
 
   @override
-  Future<List<MemberDto>> members(String shopId) => _api.listMembers(shopId);
+  Future<void> deleteShop(String shopId) => _api.deleteShop(shopId);
 
   @override
-  Future<void> addMember(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  }) => _api.addMember(shopId, accountUid: accountUid, role: role);
+  Future<List<MemberDto>> members(String shopId) => _api.listMembers(shopId);
 
   @override
   Future<ShopInviteDto> sendShopInvite(
@@ -223,13 +201,6 @@ class RemoteEcRepository implements EcRepository {
   @override
   Future<void> revokeShopInvite(String shopId, String inviteId) =>
       _api.revokeShopInvite(shopId, inviteId);
-
-  @override
-  Future<void> updateMemberRole(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  }) => _api.updateMemberRole(shopId, accountUid: accountUid, role: role);
 
   @override
   Future<void> removeMember(String shopId, String accountUid) =>
@@ -282,9 +253,6 @@ class RemoteEcRepository implements EcRepository {
       // Lần đổi hàng đợi kế tiếp sẽ khai lại.
     }
   }
-
-  @override
-  Future<List<PaymentDto>> payments() => _api.listPayments();
 
   @override
   Future<OrderPageDto> orders(
@@ -391,30 +359,22 @@ class FakeEcRepository implements EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
-    int? maxImageBytes,
-    int? maxVideoBytes,
-    int? maxUploadBytes,
   }) async => ShopDto(
     id: shopId,
     name: name ?? 'Shop',
     platform: platform ?? 'khac',
     resolution: resolution ?? '720p',
     role: 'owner',
-    clipSeconds: maxClipSeconds ?? 120,
-    uploadBytes: maxUploadBytes ?? 10000000,
+    clipSeconds: maxClipSeconds ?? 300,
   );
+
+  @override
+  Future<void> deleteShop(String shopId) async {}
 
   @override
   Future<List<MemberDto>> members(String shopId) async => const [
     MemberDto(accountUid: 'fake-uid', role: 'owner'),
   ];
-
-  @override
-  Future<void> addMember(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  }) async {}
 
   @override
   Future<ShopInviteDto> sendShopInvite(
@@ -432,13 +392,6 @@ class FakeEcRepository implements EcRepository {
 
   @override
   Future<void> revokeShopInvite(String shopId, String inviteId) async {}
-
-  @override
-  Future<void> updateMemberRole(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  }) async {}
 
   @override
   Future<void> removeMember(String shopId, String accountUid) async {}
@@ -489,14 +442,11 @@ class FakeEcRepository implements EcRepository {
   @override
   Future<QuotaDto> quota({String? shopId}) async => const QuotaDto(
     planCode: 'basic',
-    usedBytes: 12 * 1024 * 1024 * 1024,
-    capBytes: 60 * 1024 * 1024 * 1024,
-    remainingBytes: 48 * 1024 * 1024 * 1024,
+    usedVideos: 214,
+    capVideos: 1000,
+    remainingVideos: 786,
     retentionDays: 30,
   );
-
-  @override
-  Future<List<PaymentDto>> payments() async => const [];
 
   @override
   Future<OrderPageDto> orders(

@@ -75,7 +75,6 @@ const _ordersPage = shift.EcOrderPage(
 
 void _noopPage(int page) {}
 
-const _gb = 1024 * 1024 * 1024;
 
 Future<void> _warmDesignArtwork() async {
   final files = Directory('packages/ec_ui/assets/design')
@@ -383,32 +382,15 @@ void main() {
     ),
     // Same sample figures the design frame shows, so the diff is about
     // layout rather than about which numbers happen to be loaded.
-    'ported_f4_04_quota': EcQuotaScreen(
-      usedBytes: (28.2 * _gb).round(),
-      capBytes: (60 * _gb).round(),
+    'ported_f4_04_quota': const EcQuotaScreen(
+      usedVideos: 263,
+      capVideos: 1000,
       retentionTotalDays: 25,
-      videoCount: 263,
       typeUsage: [
-        EcQuotaTypeUsage(
-          type: 'Đóng hàng',
-          videoCount: 148,
-          bytes: (15.4 * _gb).round(),
-        ),
-        EcQuotaTypeUsage(
-          type: 'Đơn vị vận chuyển',
-          videoCount: 72,
-          bytes: (7.7 * _gb).round(),
-        ),
-        EcQuotaTypeUsage(
-          type: 'Trả hàng',
-          videoCount: 31,
-          bytes: (3.3 * _gb).round(),
-        ),
-        EcQuotaTypeUsage(
-          type: 'Cân hàng',
-          videoCount: 12,
-          bytes: (1.8 * _gb).round(),
-        ),
+        EcQuotaTypeUsage(type: 'Đóng hàng', videoCount: 148),
+        EcQuotaTypeUsage(type: 'Đơn vị vận chuyển', videoCount: 72),
+        EcQuotaTypeUsage(type: 'Trả hàng', videoCount: 31),
+        EcQuotaTypeUsage(type: 'Cân hàng', videoCount: 12),
       ],
     ),
     'ported_f4_05_password': _over(

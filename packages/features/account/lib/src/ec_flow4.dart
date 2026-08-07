@@ -43,13 +43,11 @@ class EcAccountTabScreen extends StatelessWidget {
     this.onQuotaTap,
     this.onLanguageTap,
     this.onEndQrTap,
-    this.onClaimsTap,
     this.onChangePasswordTap,
     this.onLoginMethodsTap,
     this.onLogout,
     this.onDeleteAccount,
-    this.onNavOrders,
-    this.onNavCapture,
+    this.onBack,
     this.onFacebook,
     this.onZalo,
     this.onCall,
@@ -77,13 +75,13 @@ class EcAccountTabScreen extends StatelessWidget {
   final VoidCallback? onEndQrTap;
 
   /// Mở danh sách hồ sơ khiếu nại đã tạo.
-  final VoidCallback? onClaimsTap;
   final VoidCallback? onChangePasswordTap;
   final VoidCallback? onLoginMethodsTap;
   final VoidCallback? onLogout;
   final VoidCallback? onDeleteAccount;
-  final VoidCallback? onNavOrders;
-  final VoidCallback? onNavCapture;
+
+  /// Quay về màn Chọn cửa hàng. Màn này được ĐẨY, không còn là tab.
+  final VoidCallback? onBack;
 
   /// Ba kênh hỗ trợ nổi ở góc trái dưới.
   final VoidCallback? onFacebook;
@@ -94,17 +92,18 @@ class EcAccountTabScreen extends StatelessWidget {
   final VoidCallback? onFeedback;
   final VoidCallback? onRateApp;
 
-  /// Chiều cao dải xanh, dùng cả ở chỗ vẽ lẫn chỗ tính trần khối cố định —
+  /// Chiều cao dải xanh (phần NẰM DƯỚI tai thỏ — `PenBrandBanner` tự cộng
+  /// `safeArea.top` vào), dùng cả ở chỗ vẽ lẫn chỗ tính trần khối cố định —
   /// hai chỗ lệch nhau là sinh ra khe hở hoặc phần xanh bị đè.
-  static const _bannerHeight = 140.0;
-
-  /// Chiều cao khối cố định tính từ mép dưới tai thỏ: lề trên 26 + thẻ tài
-  /// khoản (đệm 16 mỗi phía quanh nội dung cao 62).
   ///
-  /// Vùng cuộn lấy đúng số này làm lề trên. Lấy theo [_bannerHeight] như bản
-  /// trước là sai: đáy thẻ nằm thấp hơn đáy dải xanh, nên mục đầu tiên bị thẻ
-  /// che mất một phần ngay khi chưa cuộn.
-  static const _headerBlockHeight = 26.0 + 62.0 + 32.0;
+  /// Thẻ tài khoản nằm gọn bên trong ô này, căn giữa theo chiều dọc.
+  static const _bannerHeight = 126.0;
+
+  /// Vùng cuộn lấy đúng đáy ô xanh làm lề trên.
+  ///
+  /// Thẻ tài khoản nay nằm GỌN trong ô xanh (căn giữa), nên đáy ô xanh cũng là
+  /// đáy khối cố định — không còn phải cộng thêm chiều cao thẻ như bản trước.
+  static const _headerBlockHeight = _bannerHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +131,6 @@ class EcAccountTabScreen extends StatelessWidget {
                       _SettingsRow(
                         icon: LucideIcons.creditCard,
                         label: context.l10n.accountPlanQuota,
-                        value: planLabel,
                         onTap: onQuotaTap,
                       ),
                       _SettingsRow(
@@ -145,11 +143,6 @@ class EcAccountTabScreen extends StatelessWidget {
                         icon: LucideIcons.qrCode,
                         label: context.l10n.accountEndQr,
                         onTap: onEndQrTap,
-                      ),
-                      _SettingsRow(
-                        icon: LucideIcons.fileText,
-                        label: context.l10n.accountClaims,
-                        onTap: onClaimsTap,
                       ),
                     ],
                   ),
@@ -197,9 +190,8 @@ class EcAccountTabScreen extends StatelessWidget {
                     ],
                   ),
                   _AppFooter(version: appVersion),
-                  // Chừa chỗ cho thanh tab nổi bên dưới, nếu không mục cuối
-                  // nằm khuất sau nó. Cùng nguồn số với chỗ kê nút liên hệ.
-                  SizedBox(height: PenTabBar.heightOf(context) + 16),
+                  // Chừa chỗ cho cụm liên hệ nổi ở góc phải dưới.
+                  const SizedBox(height: 96),
                 ],
               ),
             ),
@@ -209,38 +201,50 @@ class EcAccountTabScreen extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: PenBrandBanner(height: _bannerHeight),
           ),
-          // Thẻ tài khoản khoá, nằm trên cùng.
+          // Thẻ tài khoản căn GIỮA ô xanh theo chiều dọc.
+          //
+          // Nút back nằm trong `Stack` chứ không xếp trên thẻ: xếp trên thì nó
+          // đẩy thẻ tụt xuống và thẻ hết nằm giữa. Màn này được ĐẨY từ màn Chọn
+          // cửa hàng nên phải có đường quay ra — trước đây thanh tab ở đáy làm
+          // việc đó.
           SafeArea(
             bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
-              child: _UserRow(
-                name: userName,
-                email: userEmail,
-                avatarPath: avatarPath,
-                onTap: onProfileTap,
+            child: SizedBox(
+              height: _bannerHeight,
+              child: Stack(
+                children: [
+                  if (onBack != null)
+                    Positioned(
+                      left: 14,
+                      top: 2,
+                      child: PenBackButton(
+                        onTap: onBack,
+                        color: PenColors.card,
+                      ),
+                    ),
+                  Align(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      child: _UserRow(
+                        name: userName,
+                        email: userEmail,
+                        avatarPath: avatarPath,
+                        onTap: onProfileTap,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: _BottomNav(
-              active: _NavTab.account,
-              onOrders: onNavOrders,
-              onCapture: onNavCapture,
             ),
           ),
           // Cụm liên hệ nổi ở góc phải dưới. Nằm trong Stack nên nó không cuộn
           // theo nội dung — người cần hỗ trợ thường đang bí, bắt họ cuộn tìm
           // là thêm một rào nữa.
           //
-          // Kê lên đúng chiều cao thật của thanh tab, để nút dưới cùng không
-          // đè lên mục "Tài khoản" — đè lên là bấm nhầm sang tab khác thay vì
-          // gọi hỗ trợ. Lấy từ `PenTabBar.heightOf` chứ không chép số: bản
-          // trước chép 82 trong khi thanh cao 92, lệch đúng 10pt.
+          // Màn này không còn thanh tab nên chỉ cần né vùng an toàn đáy.
           Positioned(
             right: 16,
-            bottom: PenTabBar.heightOf(context) + 12,
+            bottom: MediaQuery.paddingOf(context).bottom + 16,
             child: _SupportContactColumn(
               onFacebook: onFacebook,
               onZalo: onZalo,
@@ -664,46 +668,30 @@ class _LoginMethodRow extends StatelessWidget {
   }
 }
 
-/// Formats a byte count as a compact GB/MB/KB label (e.g. `60 GB`, `500 MB`).
-String ecHumanBytes(int b) {
-  const gb = 1024 * 1024 * 1024;
-  const mb = 1024 * 1024;
-  if (b >= gb) {
-    return '${(b / gb).toStringAsFixed(b % gb == 0 ? 0 : 1)} GB';
+/// Số nguyên với dấu chấm phân nhóm nghìn, kiểu Việt Nam: `1.000`, `12.500`.
+///
+/// Thay cho `ecHumanBytes`/`ecHumanBytesVi` cũ: màn này không còn con số dung
+/// lượng nào để rút gọn thành GB/MB — trục hạn mức giờ là SỐ VIDEO.
+String _vi(int n) {
+  final digits = n.abs().toString();
+  final buf = StringBuffer(n < 0 ? '-' : '');
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) buf.write('.');
+    buf.write(digits[i]);
   }
-  if (b >= mb) return '${(b / mb).round()} MB';
-  return '${(b / 1024).round()} KB';
+  return buf.toString();
 }
 
-/// [ecHumanBytes], but with the Vietnamese comma decimal separator (the rest
-/// of this screen's copy is Vietnamese-first).
-String ecHumanBytesVi(int b) => ecHumanBytes(b).replaceAll('.', ',');
-
-/// Drops [used]'s unit when [cap] already carries the same one, so the ratio
-/// reads "Đã dùng 28,2 / 60 GB" the way the design writes it — not
-/// "28,2 GB / 60 GB".
-String _withoutSharedUnit(String used, String cap) {
-  final unit = ' ${cap.split(' ').last}';
-  return used.endsWith(unit)
-      ? used.substring(0, used.length - unit.length)
-      : used;
-}
-
-/// One video type's local storage footprint, used by [EcQuotaScreen]'s
-/// "Dung lượng theo loại" breakdown. Computed on-device from the upload
-/// queue's actual clip files, so it always agrees with what's really stored —
-/// never a separate, possibly-stale server figure.
+/// Số video đã quay theo từng loại, cho bảng chia của [EcQuotaScreen].
+///
+/// Không còn cột dung lượng (2026-08-07): gói cước tính theo SỐ VIDEO, nên đếm
+/// là đại lượng duy nhất nói lên được điều gì về hạn mức.
 @immutable
 class EcQuotaTypeUsage {
-  const EcQuotaTypeUsage({
-    required this.type,
-    required this.videoCount,
-    required this.bytes,
-  });
+  const EcQuotaTypeUsage({required this.type, required this.videoCount});
 
   final String type;
   final int videoCount;
-  final int bytes;
 }
 
 /// The breakdown ramp, straight from the design: two greens, then amber and
@@ -736,19 +724,15 @@ class EcQuotaScreen extends StatelessWidget {
   const EcQuotaScreen({
     this.planLabel = 'Cơ bản',
     this.planCode = 'P1',
-    this.usedBytes = 0,
-    this.remainingBytes,
-    this.capBytes = 500 * 1024 * 1024,
     this.usedVideos = 0,
-    this.capVideos = 0,
+    this.remainingVideos,
+    this.capVideos = 50,
     this.topupVideos = 0,
     this.blockAtVideos = 0,
     this.blocked = false,
     this.retentionTotalDays = 30,
-    this.videoCount = 0,
     this.typeUsage = const [],
     this.onBack,
-    this.onPaymentHistoryTap,
     this.canManagePlan = true,
     super.key,
   });
@@ -757,15 +741,16 @@ class EcQuotaScreen extends StatelessWidget {
 
   /// Short plan code shown in the header chip (design: "P1").
   final String planCode;
-  final int usedBytes;
-  final int? remainingBytes;
-  final int capBytes;
 
-  /// Trục tính tiền: SỐ LƯỢNG video trong tháng, không phải dung lượng
-  /// (mục 6.3). `capVideos == 0` = backend cũ chưa trả trường này → màn lùi về
-  /// hiển thị theo dung lượng như trước.
+  /// Video đã tính vào gói trong tháng này, và trần của gói.
+  ///
+  /// Trục tính tiền là SỐ LƯỢNG video, không còn dung lượng: mọi trần byte đã
+  /// bị gỡ khỏi màn này. `capVideos == 0` = backend cũ chưa trả trường này.
   final int usedVideos;
+  final int? remainingVideos;
   final int capVideos;
+
+  /// Lượt mua thêm ngoài trần gói.
   final int topupVideos;
 
   /// Mốc bị chặn quay mới = trần gói × 1,1 + lượt mua thêm.
@@ -776,52 +761,45 @@ class EcQuotaScreen extends StatelessWidget {
   final bool blocked;
   final int retentionTotalDays;
 
-  /// Total clips still stored on this device — the same source of truth as
-  /// [typeUsage], so this number and the sum of the breakdown always agree.
-  final int videoCount;
-
   /// Per-type breakdown, pre-sorted largest-first by the caller.
   final List<EcQuotaTypeUsage> typeUsage;
   final VoidCallback? onBack;
-  final VoidCallback? onPaymentHistoryTap;
 
-  /// Gói cước gắn với tài khoản CHỦ shop. Quản lý/nhân viên vẫn thấy gói đang
-  /// chi phối ca làm (giới hạn quay, retention).
+  /// Gói cước gắn với tài khoản CHỦ shop; quản lý/nhân viên chỉ xem.
   ///
-  /// KHÔNG còn dùng để hiện nút mua: app không bán gói nữa (xem chú thích ở
-  /// [build]). Giữ lại vì nó quyết định câu giải thích khi hết hạn mức — chủ
-  /// shop tự xử lý được, nhân viên thì phải đi hỏi ai đó.
+  /// Từ khi app không bán gói nữa thì AI CŨNG chỉ xem, nên cờ này không còn bật
+  /// tắt nút nào. Giữ lại vì nó quyết định câu giải thích khi hết hạn mức —
+  /// chủ shop tự xử lý được, nhân viên thì phải đi hỏi ai đó.
   final bool canManagePlan;
 
   /// Backend đã đổi trục sang số lượng video chưa.
   bool get _videoAxis => capVideos > 0;
 
   int get _usedPercent {
-    final used = _videoAxis ? usedVideos : usedBytes;
-    final cap = _videoAxis ? capVideos : capBytes;
-    if (cap <= 0) return 0;
+    if (capVideos <= 0) return 0;
+    final pct = (usedVideos / capVideos * 100).floor();
     // Kẹp 100%: khoảng đệm 10% là CỐ Ý, và "112%" cạnh một thanh đầy đọc như
     // lỗi hiển thị chứ không như "bạn đang vượt".
-    final pct = (used / cap * 100).floor();
     if (pct < 0) return 0;
     if (pct > 100) return 100;
     return pct;
   }
 
-  /// Còn quay được bao nhiêu clip trước khi bị chặn.
-  int get _remainingVideos {
-    final left = blockAtVideos - usedVideos;
-    return left < 0 ? 0 : left;
-  }
-
   double get _usedFraction => _usedPercent / 100;
-  int get _remainingBytes {
-    final explicit = remainingBytes;
-    if (explicit != null) return explicit;
-    final calculated = capBytes - usedBytes;
-    if (calculated < 0) return 0;
-    if (calculated > capBytes) return capBytes;
-    return calculated;
+
+  /// Còn quay được bao nhiêu clip trước khi bị chặn.
+  ///
+  /// Ưu tiên con số máy chủ gửi — `remaining_videos` của backend đã tính cả
+  /// khoảng đệm 10% lẫn lượt mua thêm, nên nó CHÍNH LÀ khoảng cách tới mốc
+  /// chặn. Tự trừ chỉ là đường lùi khi trường đó vắng, và khi đó phải trừ theo
+  /// [blockAtVideos] chứ không phải trần gói, nếu không màn hình báo hết sạch
+  /// trong khi máy vẫn quay được.
+  int get _remainingVideos {
+    final explicit = remainingVideos;
+    if (explicit != null) return explicit < 0 ? 0 : explicit;
+    final ceiling = blockAtVideos > 0 ? blockAtVideos : capVideos;
+    final left = ceiling - usedVideos;
+    return left < 0 ? 0 : left;
   }
 
   @override
@@ -867,33 +845,23 @@ class EcQuotaScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        _PlanChip(label: planCode),
                       ],
                     ),
                     const SizedBox(height: 12),
                     _QuotaSummaryCard(
                       planLabel: planLabel,
-                      // Trục tính tiền là số lượng video (mục 6.3). Dung lượng
-                      // chỉ còn là chỉ số kỹ thuật nội bộ — đưa nó lên đây là
-                      // nói sai điều người bán phải để ý.
-                      remainingLabel: _videoAxis
-                          ? '$_remainingVideos'
-                          : ecHumanBytesVi(_remainingBytes),
-                      usedLabel: _videoAxis
-                          ? '$usedVideos'
-                          : _withoutSharedUnit(
-                              ecHumanBytesVi(usedBytes),
-                              ecHumanBytesVi(capBytes),
-                            ),
-                      capLabel: _videoAxis
-                          ? '$capVideos'
-                          : ecHumanBytesVi(capBytes),
+                      // Trục tính tiền là số lượng video (mục 6.3). Mọi trần
+                      // dung lượng đã bị gỡ — đưa byte lên đây là nói sai điều
+                      // người bán phải để ý.
+                      remainingLabel: _vi(_remainingVideos),
+                      usedLabel: _vi(usedVideos),
+                      capLabel: _vi(capVideos),
                       usedPercent: _usedPercent,
                       usedFraction: _usedFraction,
-                      videoCount: videoCount,
+                      videoCount: usedVideos,
                       retentionTotalDays: retentionTotalDays,
                       blocked: blocked,
+                      canManagePlan: canManagePlan,
                     ),
                     if (_videoAxis) ...[
                       const SizedBox(height: 12),
@@ -912,85 +880,11 @@ class EcQuotaScreen extends StatelessWidget {
                 ),
               ),
             ),
-            // Design `FooterWrap`: gap 8, padding [0, 18, 20, 18].
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 0, 18, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  PenCard(
-                    axis: PenAxis.column,
-                    stroke: null,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      EcTap(
-                        onTap: onPaymentHistoryTap,
-                        child: PenBox(
-                          width: double.infinity,
-                          axis: PenAxis.row,
-                          gap: 12,
-                          cross: CrossAxisAlignment.center,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          children: [
-                            const Icon(
-                              LucideIcons.receiptText,
-                              size: 21,
-                              color: PenColors.ink,
-                            ),
-                            Expanded(
-                              child: PenText(
-                                l10n.quotaPaymentHistory,
-                                size: 15,
-                                color: PenColors.ink,
-                                weight: FontWeight.w600,
-                              ),
-                            ),
-                            const Icon(
-                              LucideIcons.chevronRight,
-                              size: 18,
-                              color: PenColors.mut,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
     );
   }
-}
-
-/// The amber `PlanChip` in the quota header — the plan's short code.
-class _PlanChip extends StatelessWidget {
-  const _PlanChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => PenBox(
-    fill: const Color(0xFFFFF6E5),
-    radius: 999,
-    axis: PenAxis.row,
-    gap: 6,
-    cross: CrossAxisAlignment.center,
-    hugMain: true,
-    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 11),
-    children: [
-      const Icon(LucideIcons.badgeCheck, size: 15, color: _warning),
-      PenText(
-        label,
-        size: 13,
-        color: _warning,
-        weight: FontWeight.w800,
-        softWrap: false,
-      ),
-    ],
-  );
 }
 
 /// `--warning` / `--chart-4` — the amber the design uses for plan and
@@ -1112,6 +1006,7 @@ class _QuotaSummaryCard extends StatelessWidget {
     required this.videoCount,
     required this.retentionTotalDays,
     required this.blocked,
+    required this.canManagePlan,
   });
 
   final String planLabel;
@@ -1123,6 +1018,7 @@ class _QuotaSummaryCard extends StatelessWidget {
   final int videoCount;
   final int retentionTotalDays;
   final bool blocked;
+  final bool canManagePlan;
 
   @override
   Widget build(BuildContext context) {
@@ -1323,7 +1219,7 @@ class _QuotaBreakdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalBytes = typeUsage.fold<int>(0, (sum, u) => sum + u.bytes);
+    final totalVideos = typeUsage.fold<int>(0, (sum, u) => sum + u.videoCount);
     return PenCard(
       axis: PenAxis.column,
       stroke: null,
@@ -1342,7 +1238,7 @@ class _QuotaBreakdownCard extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             PenText(
-              ecHumanBytesVi(totalBytes),
+              _vi(totalVideos),
               size: 18,
               color: PenColors.ink,
               weight: FontWeight.w800,
@@ -1363,7 +1259,7 @@ class _QuotaBreakdownCard extends StatelessWidget {
               children: [
                 for (var i = 0; i < typeUsage.length; i++)
                   Expanded(
-                    flex: typeUsage[i].bytes.clamp(1, 1 << 40),
+                    flex: typeUsage[i].videoCount.clamp(1, 1 << 20),
                     child: ColoredBox(color: _quotaTypeColor(i)),
                   ),
               ],
@@ -1443,7 +1339,7 @@ class _QuotaBreakdownRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           PenText(
-            ecHumanBytesVi(usage.bytes),
+            _vi(usage.videoCount),
             size: 16,
             color: PenColors.ink,
             weight: FontWeight.w800,
@@ -2487,7 +2383,7 @@ class _SettingsGroup extends StatelessWidget {
   }
 }
 
-enum _NavTab { orders, capture, account }
+enum _NavTab { orders, capture, claims }
 
 class _BottomNav extends StatelessWidget {
   const _BottomNav({required this.active, this.onOrders, this.onCapture});
@@ -2503,12 +2399,12 @@ class _BottomNav extends StatelessWidget {
       activeIndex: switch (active) {
         _NavTab.orders => 0,
         _NavTab.capture => 1,
-        _NavTab.account => 2,
+        _NavTab.claims => 2,
       },
       tabs: [
         (LucideIcons.package, l10n.navOrders, onOrders),
         (LucideIcons.camera, l10n.navRecord, onCapture),
-        (LucideIcons.user, l10n.navAccount, null),
+        (LucideIcons.fileText, l10n.navClaims, null),
       ],
     );
   }

@@ -69,7 +69,13 @@ import 'package:network/network.dart' show Dio, DioException, DioExceptionType;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_contracts/shared_contracts.dart'
-    show ClipBudget, EcClaimDossier, EcClaimEvidence, EcClaimOrder;
+    show
+        ClipBudget,
+        kFixedImageBytes,
+        EcClaimDossier,
+        EcClaimEvidence,
+        EcClaimOrder,
+        kFixedClipSeconds;
 import 'package:storage/storage.dart';
 
 import 'app/di/injection.dart';
@@ -878,8 +884,7 @@ class _AccountRouteState extends State<_AccountRoute> {
             // dùng URL trên hồ sơ Firebase — đường này phục vụ máy mới hoặc
             // sau khi cài lại app.
             avatarPath: _rememberedAvatar(user?.uid) ?? user?.photoUrl,
-            onNavOrders: () => context.go('/home'),
-            onNavCapture: () => context.go('/record'),
+            onBack: () => _back(context, '/shops'),
             onFacebook: () => _openSupport(context, _kSupportFacebook),
             onZalo: () => _openSupport(context, _kSupportZalo),
             onCall: () => _openSupport(context, _kSupportPhone),
@@ -906,7 +911,6 @@ class _AccountRouteState extends State<_AccountRoute> {
               share: _maybeGetIt<ShareService>(),
               gallery: _maybeGetIt<GallerySaveService>(),
             ),
-            onClaimsTap: () => context.push('/claims'),
             onChangePasswordTap: () => context.push('/change-password'),
             onDeleteAccount: () => context.push('/delete-account'),
             onLoginMethodsTap: () => context.push('/login-methods'),
@@ -1155,6 +1159,14 @@ class _LoginMethodsRoute extends StatelessWidget {
 /// usage (bytes used, video counts, per-type breakdown) from the clips
 /// actually sitting in [queue] so the numbers on screen can never disagree
 /// with what's really stored on the device.
+///
+/// **Chỉ xem, không mua.** Gói cước bán ở web, không bán trong app. Màn này
+/// trả lời đúng một câu hỏi: tôi đang ở gói nào và còn bao nhiêu dung lượng.
+///
+/// App cũng KHÔNG nói mua ở đâu — không một dòng chữ, không một đường dẫn.
+/// Guideline 3.1.1 của App Store cấm hướng người dùng ra ngoài để mua nội dung
+/// số, và một câu "nâng gói tại zenpack.vn" là đủ để bị trả hồ sơ. Chủ shop
+/// vốn đã mua ở web nên họ không cần app chỉ đường.
 class _QuotaRoute extends StatefulWidget {
   const _QuotaRoute({required this.repo, required this.queue, this.shopId});
 
@@ -1162,8 +1174,7 @@ class _QuotaRoute extends StatefulWidget {
   final EcUploadQueue queue;
 
   /// Shop đang chọn. Gói cước gắn với tài khoản CHỦ shop, nên phải hỏi theo
-  /// shop thì quản lý/nhân viên mới thấy đúng gói đang chi phối ca làm của họ
-  /// (và `canManagePlan=false` để ẩn nút nâng gói).
+  /// shop thì quản lý/nhân viên mới thấy đúng gói đang chi phối ca làm của họ.
   final String? shopId;
 
   @override
@@ -1173,47 +1184,19 @@ class _QuotaRoute extends StatefulWidget {
 class _QuotaRouteState extends State<_QuotaRoute> {
   late Future<QuotaDto> _quota = widget.repo.quota(shopId: widget.shopId);
 
-  @override
-  void initState() {
-    super.initState();
-    _analytics()?.trackPaywallViewed();
-  }
-
-  // ĐÃ GỠ: `_upgrade()` và đường mở paywall RevenueCat.
-  //
-  // App không bán gói nữa — mọi giao dịch diễn ra trên web. Quy tắc chống dẫn
-  // dắt của Apple (App Review Guidelines 3.1) cấm cả nút, cả link, cả câu chữ
-  // chỉ đường sang trang thanh toán trong app iOS. Việc nhắc gia hạn đi qua
-  // email, push và Zalo — nằm ngoài app store nên không vướng quy tắc.
-  //
-  // Đổi lại: không mất 15–30% hoa hồng, không phải xử lý entitlement chưa gán,
-  // không phải đối soát ba dòng tiền.
-
   /// Groups this shop's clips by [UploadTask.type], summing each clip's
   /// on-disk file size. Sorted largest-first so the breakdown (and its
   /// stacked bar) read biggest-type-first, matching the reference design.
   List<EcQuotaTypeUsage> _localTypeUsage() {
-    final byType = <String, (int count, int bytes)>{};
+    final byType = <String, int>{};
     for (final task in widget.queue.tasks) {
       if (task.shopId != widget.shopId) continue;
-      var bytes = 0;
-      try {
-        bytes = File(task.filePath).lengthSync();
-      } on Object {
-        // Clip's file was moved/cleaned up since it was queued — still
-        // count the video, just not its (now unknown) size.
-      }
-      final prev = byType[task.type] ?? (0, 0);
-      byType[task.type] = (prev.$1 + 1, prev.$2 + bytes);
+      byType[task.type] = (byType[task.type] ?? 0) + 1;
     }
     final usage = [
       for (final entry in byType.entries)
-        EcQuotaTypeUsage(
-          type: entry.key,
-          videoCount: entry.value.$1,
-          bytes: entry.value.$2,
-        ),
-    ]..sort((a, b) => b.bytes.compareTo(a.bytes));
+        EcQuotaTypeUsage(type: entry.key, videoCount: entry.value),
+    ]..sort((a, b) => b.videoCount.compareTo(a.videoCount));
     return usage;
   }
 
@@ -1235,41 +1218,28 @@ class _QuotaRouteState extends State<_QuotaRoute> {
         final typeUsage = quota.byType.isNotEmpty
             ? [
                 for (final t in quota.byType)
-                  EcQuotaTypeUsage(
-                    type: t.type,
-                    videoCount: t.videoCount,
-                    bytes: t.bytes,
-                  ),
+                  EcQuotaTypeUsage(type: t.type, videoCount: t.videoCount),
               ]
             : _localTypeUsage();
-        final videoCount =
-            quota.videoCount ??
-            typeUsage.fold<int>(0, (total, u) => total + u.videoCount);
         return EcQuotaScreen(
           planLabel: _planDisplayName(context.l10n, quota.planCode),
-          // Số của SERVER, không phải tổng các clip còn nằm trên máy.
-          //
-          // Bản trước cộng kích thước file trong hàng đợi upload để con số này
-          // khớp với bảng chia theo loại ngay bên dưới. Nhưng clip upload xong
-          // là rời hàng đợi, nên quay thêm bao nhiêu thì con số vẫn đứng yên —
-          // trong khi đây đúng là con số người bán đem so với hạn mức gói.
-          // Khớp nhau mà sai thì vô dụng hơn là lệch nhau mà đúng.
-          usedBytes: quota.usedBytes,
-          capBytes: quota.capBytes,
+          // Số của SERVER, không phải tổng các clip còn nằm trên máy: hàng
+          // đợi chỉ còn clip CHƯA upload xong, nên cộng nó lại thì quay thêm
+          // bao nhiêu con số vẫn đứng yên — trong khi đây đúng là con số người
+          // bán đem so với hạn mức gói.
           usedVideos: quota.usedVideos,
           capVideos: quota.capVideos,
+          remainingVideos: quota.remainingVideos,
           topupVideos: quota.topupVideos,
           blockAtVideos: quota.blockAtVideos,
           blocked: quota.blocked,
           retentionTotalDays: quota.retentionDays,
-          videoCount: videoCount,
           typeUsage: typeUsage,
+          // Mua gói KHÔNG diễn ra trong app nữa — xem chú thích ở đầu lớp.
+          // `canManagePlan` vẫn truyền vào vì màn hình dùng nó cho những nhãn
+          // khác, nhưng không còn nút nào để nó bật/tắt.
           canManagePlan: quota.canManagePlan,
           onBack: () => _back(context, '/account'),
-          // KHÔNG có `onUpgrade`: app không bán gói. Quy tắc chống dẫn dắt của
-          // Apple cấm cả nút, cả link, cả câu chữ chỉ đường sang trang thanh
-          // toán — nhắc gia hạn đi qua email/push/Zalo.
-          onPaymentHistoryTap: () => context.push('/payment-history'),
         );
       },
     );
@@ -1678,169 +1648,17 @@ class _EndQrActionRow extends StatelessWidget {
   );
 }
 
-/// Đăng xuất khỏi TẤT CẢ: tài khoản và phiên mua hàng.
+/// Đăng xuất.
 ///
-/// Bỏ [EcBilling.signOut] là để lại một lỗi tiền: RevenueCat vẫn giữ
-/// `app_user_id` của người trước trên thiết bị này, nên người đăng nhập sau mà
-/// mua gói thì webhook gửi về uid CŨ — tiền của người này, ngày cộng cho người
-/// kia. Máy dùng chung ở kho là chuyện bình thường, không phải trường hợp hiếm.
-Future<void> _signOutAll(EcAuth auth) async {
-  await auth.signOut();
-  await _billing()?.signOut();
-}
+/// Trước đây hàm này còn phải gỡ phiên mua hàng RevenueCat khỏi thiết bị, nếu
+/// không thì người đăng nhập sau mua gói lại cộng ngày cho tài khoản trước.
+/// Không còn cửa hàng nào trong app nên lỗi đó cũng không còn chỗ để xảy ra.
+Future<void> _signOutAll(EcAuth auth) => auth.signOut();
 
 T? _maybeGetIt<T extends Object>() =>
     getIt.isRegistered<T>() ? getIt<T>() : null;
 
 AnalyticsService? _analytics() => _maybeGetIt<AnalyticsService>();
-
-/// Vắng mặt khi build không khai `RC_IOS_API_KEY` (test, bản offline) — mọi
-/// đường mua gói phải chịu được `null` chứ không được giả định luôn có.
-EcBilling? _billing() => _maybeGetIt<EcBilling>();
-
-/// Giá mẫu khớp bảng giá đã tạo trên App Store Connect (bang-gia.md §4). CHỈ
-/// dùng khi cửa hàng không trả về gì — simulator, hoặc sản phẩm chưa được duyệt.
-/// Không bao giờ dùng để tính tiền: mua vẫn phải đi qua package thật.
-const _sampleOffers = <(String, String, String, double)>[
-  ('basic', '1m', '169.000 ₫', 169000),
-  ('saver', '1m', '319.000 ₫', 319000),
-  ('premium', '1m', '459.000 ₫', 459000),
-  ('basic', '6m', '939.000 ₫', 939000),
-  ('saver', '6m', '1.749.000 ₫', 1749000),
-  ('premium', '6m', '2.549.000 ₫', 2549000),
-  ('basic', '12m', '1.799.000 ₫', 1799000),
-  ('saver', '12m', '3.390.000 ₫', 3390000),
-  ('premium', '12m', '4.849.000 ₫', 4849000),
-];
-
-/// Mở paywall trực tiếp qua `--dart-define=EC_START=/paywall`.
-class _PaywallPreviewRoute extends StatefulWidget {
-  const _PaywallPreviewRoute({required this.billing});
-
-  final EcBilling? billing;
-
-  @override
-  State<_PaywallPreviewRoute> createState() => _PaywallPreviewRouteState();
-}
-
-class _PaywallPreviewRouteState extends State<_PaywallPreviewRoute> {
-  List<EcPlanOffer>? _offers;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final live = await widget.billing?.offers() ?? const <EcPlanOffer>[];
-    if (mounted) setState(() => _offers = live);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final live = _offers;
-    if (live == null) {
-      return const CupertinoPageScaffold(
-        child: Center(child: CupertinoActivityIndicator()),
-      );
-    }
-    if (live.isNotEmpty) {
-      return _PaywallRoute(billing: widget.billing, offers: live);
-    }
-    return EcPaywallScreen(
-      offers: [
-        for (final (plan, term, label, amount) in _sampleOffers)
-          EcPaywallOffer(
-            planCode: plan,
-            termKey: term,
-            priceLabel: label,
-            priceAmount: amount,
-          ),
-      ],
-      onBack: () => Navigator.of(context).maybePop(),
-    );
-  }
-}
-
-/// Bọc [EcPaywallScreen] với phần gọi cửa hàng. Màn hình thuần hiển thị, không
-/// biết gì về SDK — nhờ vậy test được mà không cần cửa hàng thật.
-///
-/// Đóng route trả về kết quả mua; phía gọi mới là chỗ chờ backend áp giao dịch,
-/// vì paywall đã đóng rồi mà vòng chờ vẫn phải chạy tiếp.
-class _PaywallRoute extends StatefulWidget {
-  const _PaywallRoute({required this.billing, required this.offers});
-
-  /// Null khi build không có khoá RevenueCat — màn vẫn mở, chỉ không mua được.
-  final EcBilling? billing;
-  final List<EcPlanOffer> offers;
-
-  @override
-  State<_PaywallRoute> createState() => _PaywallRouteState();
-}
-
-/// Trang điều khoản và chính sách trên web công ty. Apple đòi hai đường dẫn này
-/// với tới được từ màn bán hàng; để chúng ở đây thay vì hardcode trong package
-/// giao diện, vì đây là chuyện cấu hình sản phẩm chứ không phải chuyện dựng UI.
-const _kTermsUrl = 'https://zenpack.vn/terms';
-const _kPrivacyUrl = 'https://zenpack.vn/privacy';
-
-class _PaywallRouteState extends State<_PaywallRoute> {
-  bool _busy = false;
-
-  /// Nạp lại biên nhận rồi chờ backend áp. Cứu đúng tình huống đã trừ tiền mà
-  /// chưa được cộng ngày; backend chống trùng theo mã giao dịch nên bấm nhiều
-  /// lần cũng không cộng dư.
-  Future<void> _sync() async {
-    final billing = widget.billing;
-    if (billing == null || _busy) return;
-    setState(() => _busy = true);
-    final ok = await billing.syncPurchases();
-    if (!mounted) return;
-    setState(() => _busy = false);
-    _toast(
-      context,
-      ok ? context.l10n.toastPurchasePending : context.l10n.toastPurchaseFailed,
-    );
-  }
-
-  Future<void> _buy(EcPaywallOffer choice) async {
-    final billing = widget.billing;
-    if (billing == null) return;
-    final offer = widget.offers.firstWhere(
-      (o) => o.planCode == choice.planCode && o.termKey == choice.termKey,
-    );
-    setState(() => _busy = true);
-    final outcome = await billing.buy(offer);
-    if (!mounted) return;
-    setState(() => _busy = false);
-    // Huỷ ở hộp thoại cửa hàng thì ở lại paywall — người dùng có thể đổi ý và
-    // chọn gói khác, đá họ ra ngoài là bắt bấm lại từ đầu.
-    if (outcome == EcPurchaseOutcome.cancelled) return;
-    Navigator.of(context).pop(outcome);
-  }
-
-  @override
-  Widget build(BuildContext context) => EcPaywallScreen(
-    busy: _busy,
-    offers: [
-      for (final o in widget.offers)
-        EcPaywallOffer(
-          planCode: o.planCode,
-          termKey: o.termKey,
-          priceLabel: o.priceLabel,
-          priceAmount: o.priceAmount,
-        ),
-    ],
-    onBack: () => Navigator.of(context).pop(EcPurchaseOutcome.cancelled),
-    onBuy: _buy,
-    onTerms: () => _openSupport(context, _kTermsUrl),
-    onPrivacy: () => _openSupport(context, _kPrivacyUrl),
-    // Chỉ hiện đường đồng bộ khi thật sự mua được — không có cửa hàng thì nút
-    // đó không cứu được gì, để lại chỉ tạo thêm một nút chết.
-    onSync: widget.billing == null ? null : _sync,
-  );
-}
 
 CrashReporter? _crashReporter() => _maybeGetIt<CrashReporter>();
 
@@ -2297,9 +2115,6 @@ Future<bool> _confirmManualTracking(
 }
 
 /// Khoá lưu trần dung lượng người dùng tự đặt, theo từng shop.
-String _sizeKey(String shopId, EcUploadKind kind) =>
-    'shop.$shopId.max${kind == EcUploadKind.image ? 'Image' : 'Video'}Bytes';
-
 /// Khoá lưu đơn đang quay dở lúc bị cắt ngang.
 ///
 /// Ghi xuống ĐĨA chứ không giữ trong bộ nhớ: quay video + camera + cuộc gọi là
@@ -2318,7 +2133,7 @@ Future<void> ecRememberPendingRecord(String? code) =>
 
 /// Ảnh đại diện vừa chọn, giữ trong bộ nhớ tiến trình.
 ///
-/// Cùng lý do với [_sizeCapCache]: `KeyValueStore` lấy qua service locator có
+/// `KeyValueStore` lấy qua service locator có
 /// thể chưa đăng ký, lúc đó `setString` im lặng không làm gì và ảnh vừa chọn
 /// biến mất ngay khi trang Tài khoản dựng lại.
 final _avatarCache = <String, String>{};
@@ -2338,70 +2153,15 @@ String? _rememberedAvatar(String? uid) {
   return _resolveAvatarPath(saved);
 }
 
-/// Trần dung lượng người dùng vừa đặt, giữ trong bộ nhớ tiến trình.
+/// Thời lượng clip CỐ ĐỊNH ở phía app ([kFixedClipSeconds]), không lấy theo
+/// shop nữa — cùng hằng số màn cài đặt in ra, nên dòng chữ trên màn không thể
+/// lệch với thứ máy quay thật sự làm.
 ///
-/// Có bản nhớ này vì `KeyValueStore` lấy qua service locator có thể chưa đăng
-/// ký — lúc đó `setString` im lặng không làm gì và lựa chọn biến mất ngay khi
-/// màn cài đặt nạp lại, không một dấu hiệu nào. Map này luôn có mặt nên trong
-/// phiên hiện tại con số chắc chắn hiển thị đúng; đĩa chỉ là lớp bền hoá thêm.
-final _sizeCapCache = <String, int>{};
-
-/// Ghi nhớ trần vừa đặt.
-///
-/// `PATCH /api/shops/{id}` hiện chưa nhận `max_image_bytes`/`max_video_bytes`,
-/// nên con số gửi lên không quay về trong phản hồi và màn cài đặt lại hiện 0
-/// như chưa đặt gì. Nhớ tại chỗ để lựa chọn có hiệu lực ngay; lời gọi API vẫn
-/// giữ nguyên nên khi backend mở hai trường đó, server thành nguồn chuẩn.
-Future<void> _rememberSizeCap(String shopId, EcUploadKind kind, int bytes) {
-  final key = _sizeKey(shopId, kind);
-  _sizeCapCache[key] = bytes;
-  return _appMemory()?.setString(key, '$bytes') ?? Future<void>.value();
-}
-
-int _rememberedSizeCap(String shopId, EcUploadKind kind, int fromServer) {
-  // Lựa chọn của người dùng THẮNG giá trị server.
-  //
-  // Bản trước ưu tiên server, nhưng `max_video_bytes`/`max_image_bytes` mà
-  // server trả về là trần của SÀN (30MB, 5MB) chứ không phải mức shop đặt —
-  // nó luôn khác 0, nên con số vừa nhập không bao giờ được dùng và màn cài
-  // đặt cứ hiện 30 như chưa đổi gì. Khi backend nhận hai trường đó thật thì
-  // đảo lại thứ tự này.
-  final key = _sizeKey(shopId, kind);
-  final cached = _sizeCapCache[key];
-  if (cached != null) return cached;
-  final saved = _appMemory()?.getString(key);
-  final parsed = int.tryParse(saved ?? '');
-  if (parsed != null) {
-    _sizeCapCache[key] = parsed;
-    return parsed;
-  }
-  // Chưa đặt gì = KHÔNG GIỚI HẠN (0 byte).
-  //
-  // Mặc định cũ là 30MB cho video, 5MB cho ảnh — tức app tự chặn bằng chứng
-  // của shop khi chưa ai yêu cầu. Clip đóng hàng dài quá mức đó bị cắt mất
-  // đoạn cuối, đúng đoạn dán tem và niêm phong. Shop nào cần trần thì tự đặt.
-  //
-  // Con số server trả về vẫn không dùng ở đây: đó là trần của SÀN, không phải
-  // mức shop đặt.
-  return 0;
-}
-
+/// Mọi trần dung lượng đã bỏ 2026-08-07: gói cước tính theo số video, nên
+/// không còn con số byte nào để mang từ server về.
 ClipBudget _budgetFromDto(ShopDto shop) => ClipBudget(
-  seconds: shop.clipSeconds,
-  recommendedSeconds: shop.recommendedClipSeconds,
+  seconds: kFixedClipSeconds,
   planMaxSeconds: shop.planMaxClipSeconds,
-  maxImageBytes: _rememberedSizeCap(
-    shop.id,
-    EcUploadKind.image,
-    shop.maxImageBytes,
-  ),
-  maxVideoBytes: _rememberedSizeCap(
-    shop.id,
-    EcUploadKind.video,
-    shop.maxVideoBytes,
-  ),
-  uploadBytes: shop.uploadBytes,
-  platformLimitsVerified: shop.platformLimitsVerified,
 );
 
 EcShopSummary _shopFromDto(ShopDto shop) => EcShopSummary(
@@ -2414,39 +2174,11 @@ EcShopSummary _shopFromDto(ShopDto shop) => EcShopSummary(
   clipBudget: _budgetFromDto(shop),
 );
 
-EcShopMgmtEntry _shopMgmtFromDto(
-  AppLocalizations l10n,
-  ShopDto shop,
-) => EcShopMgmtEntry(
-  id: shop.id,
-  name: shop.name,
-  platform: shop.platform,
-  resolution: shop.resolution,
-  role: shop.role,
-  clipBudget: _budgetFromDto(shop),
-  meta:
-      '${_platformDisplayName(shop.platform)} · ${_roleDisplayName(l10n, shop.role)}',
-);
-
 /// Nhân viên chỉ được XEM cửa hàng.
 ///
 /// Họ vẫn quay video và tạo đơn bình thường ở luồng chính — đó là việc của họ.
 /// Cái bị khoá là sửa cấu hình shop, mời/gỡ người, và mọi thao tác xoá.
 bool _shopDetailIsReadOnly(EcShopSummary shop) => shop.role == 'staff';
-
-EcShopSummary? _shopFromMgmt(EcShopMgmtEntry shop) {
-  final id = shop.id;
-  if (id == null) return null;
-  return EcShopSummary(
-    id: id,
-    name: shop.name,
-    platform: shop.platform ?? 'other',
-    meta: shop.meta,
-    role: shop.role ?? 'staff',
-    resolution: shop.resolution ?? '720p',
-    clipBudget: shop.clipBudget,
-  );
-}
 
 String _platformDisplayName(String platform) => switch (platform) {
   'shopee' => 'Shopee',
@@ -2458,8 +2190,10 @@ String _platformDisplayName(String platform) => switch (platform) {
 
 String _roleDisplayName(AppLocalizations l10n, String role) => switch (role) {
   'owner' => l10n.roleOwner,
-  'manager' => l10n.roleManager,
-  'staff' => l10n.roleStaff,
+  // `manager` là mã CŨ. Hai cấp (2026-08-07) không còn vai trò đó, và backend
+  // hạ mọi hàng còn sót về `staff`; hiện nó là "Quản lý" thì màn hình hứa một
+  // quyền hạn mà máy chủ đã không còn công nhận.
+  'manager' || 'staff' => l10n.roleStaff,
   // Rỗng chứ không phải một vai trò lạ — in ra chuỗi rỗng thì hàng trông như
   // lỗi hiển thị, trong khi sự thật là dữ liệu không nói vai trò là gì.
   '' => l10n.roleUnknown,
@@ -2505,23 +2239,25 @@ Future<String?> _attachPhoto(
 }) async {
   final path = await _pickImagePath();
   if (path == null || !context.mounted) return null;
-  // Ảnh vượt giới hạn của sàn vẫn lưu NGUYÊN VẸN — không nén, không cắt (FR-20:
-  // chuỗi bằng chứng phải nguyên gốc). Chỉ cảnh báo để CSKH biết phải gửi bằng
-  // link hồ sơ thay vì đính thẳng lên form khiếu nại.
+  // Trần 5 MB cho MỘT tấm ảnh — đúng con số màn Chi tiết cửa hàng in ra.
+  //
+  // Đây không phải quota (quota tính theo SỐ VIDEO, một tấm ảnh nặng bao nhiêu
+  // cũng không tốn suất nào). Đây là chặn một tệp đơn lẻ, để ảnh máy ảnh 40MB
+  // không đi qua đường đính kèm. Ảnh trong trần thì lưu NGUYÊN VẸN — không nén,
+  // không cắt (FR-20: chuỗi bằng chứng phải nguyên gốc).
+  //
+  // Đọc cùng hằng số màn cài đặt dùng: hai chỗ hai nguồn là dòng chữ nói dối.
   final bytes = await File(path).length();
-  // Trần dung lượng/tệp của shop (FR-21) là chặn cứng, khác cảnh báo của sàn:
-  // chặn TRƯỚC khi vào hàng đợi, nếu không một tệp khổng lồ đã kịp đốt quota và
-  // dữ liệu di động rồi mới báo. Tệp gốc còn nguyên trong máy — chủ shop nâng
-  // trần rồi đính lại, không mất bằng chứng.
-  final cap = budget?.uploadBytes;
-  if (cap != null && bytes > cap) {
-    _toast(
-      context,
-      context.l10n.fileOverUploadCap(
-        ClipBudget.megabytesLabel(bytes),
-        ClipBudget.megabytesLabel(cap),
-      ),
-    );
+  if (bytes > kFixedImageBytes) {
+    if (context.mounted) {
+      _toast(
+        context,
+        context.l10n.imageOverFixedCap(
+          '${(bytes / 1000000).toStringAsFixed(1)}',
+          '${kFixedImageBytes ~/ 1000000}',
+        ),
+      );
+    }
     return null;
   }
   await queue.enqueue(
@@ -2531,18 +2267,6 @@ Future<String?> _attachPhoto(
     shopId: shopId,
   );
   if (!context.mounted) return path;
-  final limit = budget?.maxImageBytes;
-  if (limit != null && bytes > limit) {
-    _toast(
-      context,
-      context.l10n.imageOverPlatformLimit(
-        ClipBudget.megabytesLabel(bytes),
-        platformLabel,
-        ClipBudget.megabytesLabel(limit),
-      ),
-    );
-    return path;
-  }
   if (toastOnQueued) _toast(context, context.l10n.toastPhotoQueued);
   return path;
 }
@@ -2553,7 +2277,7 @@ class _ChooseShopRoute extends StatefulWidget {
   const _ChooseShopRoute({
     required this.repo,
     this.onSelect,
-    this.onManage,
+    this.onAccount,
     this.onCreateShop,
     this.onLogout,
     this.autoEnter = true,
@@ -2561,7 +2285,10 @@ class _ChooseShopRoute extends StatefulWidget {
 
   final EcRepository repo;
   final ValueChanged<EcShopSummary>? onSelect;
-  final VoidCallback? onManage;
+
+  /// Mở màn Tài khoản. Nó rời khỏi thanh tab để nhường ô thứ ba cho Hồ sơ
+  /// khiếu nại, và về đây — màn người dùng đi qua mỗi lần vào ca.
+  final VoidCallback? onAccount;
   final VoidCallback? onCreateShop;
   final VoidCallback? onLogout;
 
@@ -2661,7 +2388,7 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
         _last = shops;
         if (shops.isEmpty) {
           return EcNoShopScreen(
-            onCreate: widget.onCreateShop ?? widget.onManage,
+            onCreate: widget.onCreateShop,
             // Nạp lại thật, không chỉ hiện thông báo: người vừa được mời bấm
             // vào đây là để hỏi "đã vào chưa", mà một câu toast thì không trả
             // lời được câu đó.
@@ -2675,84 +2402,11 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
         _autoSelectIfNeeded(shops);
         return EcChooseShopScreen(
           shops: shops,
-          // Luôn hiện "Quản lý cửa hàng".
-          //
-          // Trước đây ẩn khi mọi shop đều là vai trò nhân viên, nên tài khoản
-          // chỉ đi làm thuê thì lối vào biến mất hẳn — nhìn ra như app mất
-          // tính năng. Danh sách bên trong giờ đã hiện đủ mọi shop, nên vào
-          // vẫn xem được, chỉ là không sửa được thứ mình không có quyền.
-          showManage: true,
+          onAccountTap: widget.onAccount,
           onSelect: widget.onSelect,
-          onManage: widget.onManage,
-          // Cùng đích với nút "Tạo shop" ở màn chưa-có-shop; thiếu dòng này
-          // hàng "Tạo shop mới" vẫn vẽ ra nhưng bấm không ra gì.
-          onAddShop: widget.onCreateShop ?? widget.onManage,
+          // Cùng đích với nút "Tạo shop" ở màn chưa-có-shop.
+          onAddShop: widget.onCreateShop,
           onLogout: widget.onLogout,
-        );
-      },
-    );
-  }
-}
-
-class _ShopMgmtRoute extends StatefulWidget {
-  const _ShopMgmtRoute({
-    required this.repo,
-    this.onBack,
-    this.onAddShop,
-    this.onShopTap,
-  });
-
-  final EcRepository repo;
-  final VoidCallback? onBack;
-  final VoidCallback? onAddShop;
-  final ValueChanged<EcShopMgmtEntry>? onShopTap;
-
-  @override
-  State<_ShopMgmtRoute> createState() => _ShopMgmtRouteState();
-}
-
-class _ShopMgmtRouteState extends State<_ShopMgmtRoute> {
-  late Future<List<EcShopMgmtEntry>> _shops = _load();
-
-  Future<List<EcShopMgmtEntry>> _load() async {
-    final l10n = context.l10n;
-    final shops = await widget.repo.shops();
-    // Hiện ĐỦ mọi shop, kể cả shop mình chỉ là nhân viên.
-    //
-    // Bản trước lọc bỏ chúng, nên danh sách ở đây ít hơn màn chọn cửa hàng —
-    // nhìn ra như app làm mất một shop. Không quản lý được thì hàng đó chỉ
-    // không bấm vào được (xem chỗ dựng màn), chứ không được giấu đi.
-    return shops.map((s) => _shopMgmtFromDto(l10n, s)).toList();
-  }
-
-  /// Kết quả tốt gần nhất — giữ màn hình đứng yên trong lúc làm mới ngầm.
-  List<EcShopMgmtEntry>? _last;
-
-  void _retry() => setState(() {
-    _shops = _load();
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _RefreshingFuture<List<EcShopMgmtEntry>>(
-      future: _shops,
-      last: _last,
-      loading: const CupertinoPageScaffold(
-        backgroundColor: BrandColors.bg,
-        child: Center(child: CupertinoActivityIndicator()),
-      ),
-      error: (error) => _RouteLoadError(
-        title: context.l10n.errorLoadShopMgmt,
-        detail: _dataErrorText(context.l10n, error),
-        onRetry: _retry,
-      ),
-      builder: (context, shops) {
-        _last = shops;
-        return EcShopMgmtScreen(
-          shops: shops,
-          onBack: widget.onBack,
-          onAddShop: widget.onAddShop,
-          onShopTap: widget.onShopTap,
         );
       },
     );
@@ -2817,13 +2471,10 @@ class _ShopDetailRoute extends StatefulWidget {
     this.onBack,
     this.onMemberMore,
     this.onInviteMember,
-    this.onTapResolution,
-    this.onTapClipDuration,
-    this.onTapImageSize,
-    this.onTapVideoSize,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
+    this.onDeleteShop,
     this.readOnly = false,
   });
 
@@ -2840,13 +2491,13 @@ class _ShopDetailRoute extends StatefulWidget {
   final VoidCallback? onBack;
   final Future<void> Function(EcShopMember member)? onMemberMore;
   final Future<void> Function()? onInviteMember;
-  final Future<void> Function()? onTapResolution;
-  final Future<void> Function()? onTapClipDuration;
-  final Future<void> Function()? onTapImageSize;
-  final Future<void> Function()? onTapVideoSize;
   final Future<void> Function(EcVideoType type)? onEditType;
   final Future<void> Function(EcVideoType type)? onDeleteType;
   final Future<void> Function()? onAddType;
+
+  /// Xoá hẳn cửa hàng. Rào chắn "phải gỡ hết người trước" nằm ở router, nơi
+  /// biết danh sách thành viên vừa đọc về.
+  final Future<void> Function()? onDeleteShop;
 
   /// Vai trò trên [shop] có bị khoá sửa không.
   ///
@@ -2981,26 +2632,6 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
               : () => widget.onInviteMember!().then((_) {
                   if (mounted) _retry();
                 }),
-          onTapResolution: locked || widget.onTapResolution == null
-              ? null
-              : () => widget.onTapResolution!().then((_) {
-                  if (mounted) _retry();
-                }),
-          onTapClipDuration: locked || widget.onTapClipDuration == null
-              ? null
-              : () => widget.onTapClipDuration!().then((_) {
-                  if (mounted) _retry();
-                }),
-          onTapImageSize: locked || widget.onTapImageSize == null
-              ? null
-              : () => widget.onTapImageSize!().then((_) {
-                  if (mounted) _retry();
-                }),
-          onTapVideoSize: locked || widget.onTapVideoSize == null
-              ? null
-              : () => widget.onTapVideoSize!().then((_) {
-                  if (mounted) _retry();
-                }),
           onEditType: locked || widget.onEditType == null
               ? null
               : (type) => widget.onEditType!(type).then((_) {
@@ -3011,6 +2642,9 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
               : (type) => widget.onDeleteType!(type).then((_) {
                   if (mounted) _retry();
                 }),
+          onDeleteShop: locked || widget.onDeleteShop == null
+              ? null
+              : () => unawaited(widget.onDeleteShop!()),
           onAddType: locked || widget.onAddType == null
               ? null
               : () => widget.onAddType!().then((_) {
@@ -3265,12 +2899,11 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
       );
       if (!mounted) return;
       context.pop();
-      _toast(
-        context,
-        result.status == 'pending'
-            ? context.l10n.toastInviteSent
-            : context.l10n.toastMemberAdded,
-      );
+      // `POST /invites` luôn trả `pending`: người được mời phải tự bấm link
+      // xác nhận mới vào shop. Nhánh "đã thêm thành viên" ở đây là di tích của
+      // thời tự-vào-shop, không có đường nào chạy tới nữa.
+      assert(result.status == 'pending', 'lời mời mới phải là pending');
+      _toast(context, context.l10n.toastInviteSent);
     } on Object catch (error) {
       if (mounted) _toast(context, _inviteErrorText(context.l10n, error));
     } finally {
@@ -3286,6 +2919,82 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
   );
 }
 
+/// Xoá cửa hàng — sau khi kiểm tra shop đã sạch người và hỏi lại một lần.
+///
+/// Rào chắn đọc lại danh sách thành viên NGAY LÚC BẤM chứ không tin vào bản đã
+/// vẽ trên màn: người dùng có thể mở màn này, đi mời thêm một quản lý ở tab
+/// khác, rồi quay lại bấm xoá. Danh sách cũ sẽ nói "sạch rồi" trong khi shop
+/// vừa có thêm người.
+///
+/// Chủ shop luôn nằm trong danh sách và không tự gỡ mình được, nên phép đếm bỏ
+/// qua vai trò `owner` — đếm cả owner thì rào chắn không bao giờ mở ra.
+Future<void> _confirmDeleteShop(
+  BuildContext context,
+  EcRepository repo,
+  EcShopSummary shop,
+) async {
+  final l10n = context.l10n;
+  List<MemberDto> members;
+  try {
+    members = await repo.members(shop.id);
+  } on Object catch (error) {
+    // Không đọc được danh sách thì KHÔNG xoá. Đoán bừa là sạch rồi xoá nhầm
+    // một shop còn người là hỏng không lấy lại được.
+    if (context.mounted) _toast(context, _dataErrorText(l10n, error));
+    return;
+  }
+  if (!context.mounted) return;
+  final others = members.where((m) => m.role != 'owner').length;
+  if (others > 0) {
+    await showCupertinoDialog<void>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(l10n.shopDeleteBlockedTitle),
+        content: Text(l10n.shopDeleteBlockedBody(others)),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.commonClose),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+  final confirmed = await showCupertinoDialog<bool>(
+    context: context,
+    builder: (dialogContext) => CupertinoAlertDialog(
+      title: Text(l10n.shopDeleteTitle),
+      content: Text(l10n.shopDeleteConfirm),
+      actions: [
+        CupertinoDialogAction(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: Text(l10n.commonCancel),
+        ),
+        CupertinoDialogAction(
+          isDestructiveAction: true,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: Text(l10n.commonDelete),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+  try {
+    await repo.deleteShop(shop.id);
+  } on Object catch (error) {
+    // `DELETE /api/shops/:id` backend CHƯA mở — hiện trả 404, và
+    // `_dataErrorText` dịch nó thành một câu chung chung. Thà vậy còn hơn nuốt
+    // im lặng rồi đưa người dùng về màn danh sách như thể đã xoá xong.
+    if (context.mounted) _toast(context, _dataErrorText(l10n, error));
+    return;
+  }
+  if (!context.mounted) return;
+  _toast(context, l10n.shopDeleted);
+  // Shop vừa bị xoá nên không quay về chi tiết của nó được nữa.
+  context.go('/shops');
+}
+
 /// Vì sao ảnh đại diện không lên được máy chủ.
 ///
 /// Tên và SĐT vẫn lưu bình thường, ảnh vẫn hiện từ bản trên máy — nên đây là
@@ -3293,11 +3002,18 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
 /// cách bản trước giấu việc endpoint không tồn tại suốt nhiều bản phát hành.
 String _avatarErrorText(AppLocalizations l10n, Object error) =>
     error is AvatarTooLargeException
-    ? l10n.avatarTooLarge(
-        ClipBudget.megabytesLabel(error.bytes),
-        ClipBudget.megabytesLabel(error.maxBytes),
-      )
+    ? l10n.avatarTooLarge(_mbLabel(error.bytes), _mbLabel(error.maxBytes))
     : l10n.avatarUploadFailed(_dataErrorText(l10n, error));
+
+/// MB thập phân, cho đúng MỘT chỗ còn lại có trần dung lượng: ảnh đại diện.
+///
+/// Đó là chốt chặn kỹ thuật của một tấm ảnh hồ sơ, không phải hạn mức gói —
+/// mọi trần dung lượng của bằng chứng đã bỏ 2026-08-07. Trước đây dùng
+/// `ClipBudget.megabytesLabel`, nay `ClipBudget` không còn biết gì về byte.
+String _mbLabel(int bytes) {
+  final mb = bytes / 1000000;
+  return mb >= 10 ? mb.round().toString() : mb.toStringAsFixed(1);
+}
 
 /// Lỗi của riêng luồng mời thành viên.
 ///
@@ -3327,8 +3043,9 @@ class _OrdersRoute extends StatefulWidget {
     this.evidenceCountOverrides,
     this.onBack,
     this.onShopTap,
+    this.onSettings,
     this.onNavRecord,
-    this.onNavAccount,
+    this.onNavClaims,
     this.onQueueTap,
     this.onOrderTap,
     this.onScan,
@@ -3344,8 +3061,13 @@ class _OrdersRoute extends StatefulWidget {
   final _EvidenceCountOverrides? evidenceCountOverrides;
   final VoidCallback? onBack;
   final VoidCallback? onShopTap;
+
+  /// Bánh răng góc phải header — mở Quản lý cửa hàng.
+  final VoidCallback? onSettings;
   final VoidCallback? onNavRecord;
-  final VoidCallback? onNavAccount;
+
+  /// Tab thứ ba: Hồ sơ khiếu nại.
+  final VoidCallback? onNavClaims;
   final VoidCallback? onQueueTap;
   final Future<void> Function(OrderSummaryDto order)? onOrderTap;
   final Future<String?> Function()? onScan;
@@ -3470,73 +3192,6 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   ///
   /// Danh sách vận đơn chỉ có số đếm, nên phải hỏi thêm chi tiết đơn. Hỏng thì
   /// trả rỗng: hàng bung ra báo "chưa có bằng chứng" chứ không làm vỡ màn.
-  /// Gom những gì vừa tick thành một hồ sơ khiếu nại và lưu lại.
-  ///
-  /// Chụp NGUYÊN nội dung bằng chứng chứ không giữ id rồi tra sau: clip có hạn
-  /// lưu trữ, và một hồ sơ khiếu nại phải nói được nó ĐÃ gồm những gì kể cả khi
-  /// bằng chứng gốc đã hết hạn. Không có gì gửi lên máy chủ ở bước này — backend
-  /// chưa có endpoint gộp; xem `EcClaimStore`.
-  Future<void> _createClaim(List<EcClaimOrderPick> picks) async {
-    final l10n = context.l10n;
-    if (picks.isEmpty) {
-      _toast(context, l10n.claimsPickNothing);
-      return;
-    }
-    final now = DateTime.now();
-    await _claimStore.add(
-      EcClaimDossier(
-        id: now.microsecondsSinceEpoch.toString(),
-        shopId: widget.shopId,
-        createdAt: now,
-        orders: [
-          for (final pick in picks)
-            EcClaimOrder(
-              tracking: pick.orderCode,
-              orderId: _orders
-                  .where((o) => o.tracking == pick.orderCode)
-                  .firstOrNull
-                  ?.id,
-              evidence: [
-                for (final e in pick.evidence)
-                  EcClaimEvidence(
-                    id: e.id,
-                    label: e.label,
-                    time: e.time,
-                    isPhoto: e.isPhoto,
-                    url: e.url,
-                    thumbUrl: e.thumbUrl,
-                  ),
-              ],
-            ),
-        ],
-      ),
-    );
-    if (mounted) _toast(context, l10n.claimsCreated);
-  }
-
-  Future<List<EcPickableEvidence>> _pickableEvidence(String code) async {
-    final match = _orders.where((o) => o.tracking == code);
-    if (match.isEmpty) return const [];
-    try {
-      final detail = await widget.repo.order(widget.shopId, match.first.id);
-      final l10n = context.l10n;
-      return [
-        for (final e in detail.evidence)
-          if (e.uploadStatus != 'deleted')
-            EcPickableEvidence(
-              id: e.id,
-              label: _kindLabel(l10n, e.kind),
-              time: _hhmm(DateTime.fromMillisecondsSinceEpoch(e.capturedAt)),
-              isPhoto: e.kind == 'photo',
-              thumbUrl: e.kind == 'photo' ? e.url : e.thumbUrl,
-              url: e.url,
-            ),
-      ];
-    } on Object {
-      return const [];
-    }
-  }
-
   /// Gửi CẢ khoảng ngày lên server, và phân trang bình thường.
   ///
   /// Bản trước cố ý giữ `from`/`to` lại rồi lọc tại máy theo ngày QUAY, vì
@@ -3768,8 +3423,9 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         emptyText: context.l10n.ordersEmpty,
         onBack: widget.onBack,
         onShopTap: widget.onShopTap,
+        onSettings: widget.onSettings,
         onNavRecord: widget.onNavRecord,
-        onNavAccount: widget.onNavAccount,
+        onNavClaims: widget.onNavClaims,
         onOrderTap: widget.onOrderTap == null
             ? null
             : (row) {
@@ -3796,8 +3452,6 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         onSearchChanged: _search,
         videoTypes: _videoTypes,
         onFiltersChanged: _applyFilters,
-        onLoadEvidence: _pickableEvidence,
-        onCreateClaim: _createClaim,
         onRefresh: _refresh,
         pageInfo: _page,
         onPageChanged: _goToPage,
@@ -4700,10 +4354,17 @@ String _dayLabelOf(DateTime d) {
 /// đơn trong lúc màn này còn nằm trong stack, và người dùng quay lại phải thấy
 /// nó ngay chứ không phải sau khi khởi động lại app.
 class _ClaimListRoute extends StatelessWidget {
-  const _ClaimListRoute({required this.shopId, this.onBack});
+  const _ClaimListRoute({
+    required this.shopId,
+    this.onNavOrders,
+    this.onNavRecord,
+    this.onCreate,
+  });
 
   final String shopId;
-  final VoidCallback? onBack;
+  final VoidCallback? onNavOrders;
+  final VoidCallback? onNavRecord;
+  final VoidCallback? onCreate;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -4711,7 +4372,9 @@ class _ClaimListRoute extends StatelessWidget {
     builder: (context, _) {
       final dossiers = _claimStore.forShop(shopId);
       return EcClaimListScreen(
-        onBack: onBack,
+        onNavOrders: onNavOrders,
+        onNavRecord: onNavRecord,
+        onCreate: onCreate,
         entries: [
           for (final d in dossiers)
             EcClaimEntry(
@@ -4732,6 +4395,131 @@ class _ClaimListRoute extends StatelessWidget {
       );
     },
   );
+}
+
+/// Màn tạo hồ sơ khiếu nại: tra một mã đơn rồi tick bằng chứng của nó.
+///
+/// Tra bằng `searchOrders` chứ không lọc danh sách đã nạp: người bán vào đây
+/// với một mã cụ thể trong tay, mà mã đó thường là đơn cũ đã trôi khỏi trang
+/// đầu. Lọc tại chỗ thì gõ đúng mã vẫn ra rỗng.
+class _CreateClaimRoute extends StatelessWidget {
+  const _CreateClaimRoute({
+    required this.repo,
+    required this.shopId,
+    this.onScan,
+    this.onBack,
+  });
+
+  final EcRepository repo;
+  final String shopId;
+  final Future<String?> Function()? onScan;
+  final VoidCallback? onBack;
+
+  /// `null` = không có đơn nào mang mã đó; danh sách rỗng = đơn có thật nhưng
+  /// chưa có bằng chứng. Hai thứ khác nhau nên màn hình nói hai câu khác nhau.
+  Future<List<EcClaimPickable>?> _search(
+    BuildContext context,
+    String code,
+  ) async {
+    final l10n = context.l10n;
+    try {
+      final hits = await repo.searchOrders(shopId, code);
+      final match = hits.where(
+        (o) => o.tracking.toLowerCase() == code.toLowerCase(),
+      );
+      if (match.isEmpty) return null;
+      final detail = await repo.order(shopId, match.first.id);
+      // Tên loại video, không phải chữ "Video" chung chung.
+      //
+      // Cả đơn đều là "Video" thì danh sách không nói được cái nào là đóng
+      // hàng, cái nào là trả hàng — mà đó chính là thứ quyết định người bán
+      // tick cái nào để đi khiếu nại. Hỏng thì rơi về nhãn chung.
+      final typeNames = <String, String>{};
+      try {
+        for (final t in await repo.videoTypes(shopId)) {
+          typeNames[t.id] = t.name;
+        }
+      } on Object {
+        // Danh sách loại chỉ làm nhãn đẹp hơn, không chặn việc chọn.
+      }
+      return [
+        for (final e in detail.evidence)
+          if (e.uploadStatus != 'deleted')
+            EcClaimPickable(
+              id: e.id,
+              label: typeNames[e.videoTypeId] ?? _kindLabel(l10n, e.kind),
+              time: _hhmm(DateTime.fromMillisecondsSinceEpoch(e.capturedAt)),
+              isPhoto: e.kind == 'photo',
+              capturedAt: e.capturedAt,
+            ),
+      ];
+    } on Object {
+      // Mạng hỏng đọc ra y như "không tìm thấy mã" — cùng một màn hình rỗng.
+      // Chấp nhận được vì bước sau của người dùng giống nhau: thử lại.
+      return null;
+    }
+  }
+
+  Future<void> _create(
+    BuildContext context,
+    List<EcClaimOrderPicks> batch,
+  ) async {
+    final l10n = context.l10n;
+    final now = DateTime.now();
+    // Chụp lại NGUYÊN nội dung chứ không giữ id rồi tra sau: clip có hạn lưu
+    // trữ, mà hồ sơ khiếu nại phải nói được nó ĐÃ gồm những gì.
+    await _claimStore.add(
+      EcClaimDossier(
+        id: now.microsecondsSinceEpoch.toString(),
+        shopId: shopId,
+        createdAt: now,
+        orders: [
+          for (final order in batch)
+            EcClaimOrder(
+              tracking: order.orderCode,
+              evidence: [
+                for (final e in order.picked)
+                  EcClaimEvidence(
+                    id: e.id,
+                    label: e.label,
+                    time: e.time,
+                    isPhoto: e.isPhoto,
+                    capturedAt: e.capturedAt,
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+    if (!context.mounted) return;
+    _toast(context, l10n.claimsCreated);
+    onBack?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) => EcCreateClaimScreen(
+    onBack: onBack,
+    onScan: onScan,
+    onSearch: (code) => _search(context, code),
+    onCreate: (batch) => unawaited(_create(context, batch)),
+  );
+}
+
+/// Ngày và giờ của bằng chứng MỚI NHẤT trong một mã đơn, cho dòng tiêu đề của
+/// lớp con.
+///
+/// Lấy cái mới nhất chứ không cái đầu: một đơn quay nhiều lần thì mốc đáng nhớ
+/// là lần cuối. `null` khi không bằng chứng nào có mốc thời gian — hồ sơ tạo
+/// trước khi trường đó được lưu — và lúc đó dòng chỉ hiện mã, không bịa ngày.
+(String, String)? _claimOrderStamp(EcClaimOrder order) {
+  int? newest;
+  for (final e in order.evidence) {
+    final at = e.capturedAt;
+    if (at != null && (newest == null || at > newest)) newest = at;
+  }
+  if (newest == null) return null;
+  final at = DateTime.fromMillisecondsSinceEpoch(newest);
+  return (_dayLabelOf(at), _hhmm(at));
 }
 
 /// Sao chép nội dung hồ sơ dưới dạng chữ.
@@ -4798,6 +4586,41 @@ class _ClaimDetailRoute extends StatelessWidget {
     if (context.mounted) _toast(context, l10n.claimsPhotoAdded);
   }
 
+  /// Gỡ một bằng chứng khỏi hồ sơ, sau khi hỏi lại.
+  ///
+  /// Hỏi lại vì icon thùng rác nằm ngay cạnh giờ quay, cách ngón tay đúng vài
+  /// pixel — chạm trượt là mất một dòng bằng chứng khỏi hồ sơ mà không có gì
+  /// hoàn tác. Hộp thoại cũng nói rõ đơn hàng không bị đụng tới, nếu không thì
+  /// "xóa" ở đây đọc ra như xóa hẳn clip.
+  Future<void> _removeItem(
+    BuildContext context,
+    String tracking,
+    String evidenceId,
+  ) async {
+    final l10n = context.l10n;
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(l10n.claimsRemoveItemTitle),
+        content: Text(l10n.claimsRemoveItemConfirm),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.commonRemove),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await _claimStore.removeEvidence(shopId, dossierId, tracking, evidenceId);
+    if (context.mounted) _toast(context, l10n.claimsItemRemoved);
+  }
+
   Future<void> _confirmDelete(BuildContext context) async {
     final l10n = context.l10n;
     final confirmed = await showCupertinoDialog<bool>(
@@ -4845,13 +4668,18 @@ class _ClaimDetailRoute extends StatelessWidget {
         onCopy: () => _copyClaimSummary(context, dossier),
         onDelete: () => unawaited(_confirmDelete(context)),
         onAttachPhoto: (tracking) => unawaited(_attach(context, tracking)),
+        onRemoveItem: (tracking, evidenceId) =>
+            unawaited(_removeItem(context, tracking, evidenceId)),
         groups: [
           for (final order in dossier.orders)
             EcClaimOrderGroup(
               tracking: order.tracking,
+              dateLabel: _claimOrderStamp(order)?.$1,
+              timeLabel: _claimOrderStamp(order)?.$2,
               items: [
                 for (final e in order.evidence)
                   EcClaimItem(
+                    id: e.id,
                     label: e.label,
                     time: e.time,
                     isPhoto: e.isPhoto,
@@ -4864,100 +4692,6 @@ class _ClaimDetailRoute extends StatelessWidget {
       );
     },
   );
-}
-
-/// Màn lịch sử thanh toán. Đọc một lần khi mở, có nút thử lại khi mạng hỏng.
-///
-/// Không cache: người dùng vào đây đúng lúc muốn kiểm tra một giao dịch vừa
-/// trả — đọc lại từ server mỗi lần mở là thứ họ mong đợi.
-class _PaymentHistoryRoute extends StatefulWidget {
-  const _PaymentHistoryRoute({required this.repo});
-
-  final EcRepository repo;
-
-  @override
-  State<_PaymentHistoryRoute> createState() => _PaymentHistoryRouteState();
-}
-
-class _PaymentHistoryRouteState extends State<_PaymentHistoryRoute> {
-  late Future<List<PaymentDto>> _future = widget.repo.payments();
-
-  // Thân khối, KHÔNG phải arrow: closure của setState mà trả về Future thì
-  // Flutter ném assertion và bỏ luôn lượt dựng lại — nút "Thử lại" thành nút
-  // chết.
-  void _retry() {
-    setState(() {
-      _future = widget.repo.payments();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return FutureBuilder<List<PaymentDto>>(
-      future: _future,
-      builder: (context, snap) => EcPaymentHistoryScreen(
-        loading: snap.connectionState == ConnectionState.waiting,
-        errorMessage: snap.hasError ? _dataErrorText(l10n, snap.error!) : null,
-        entries: (snap.data ?? const <PaymentDto>[])
-            .map((p) => _paymentEntry(l10n, p))
-            .toList(),
-        onBack: () => _back(context, '/quota'),
-        onRetry: _retry,
-      ),
-    );
-  }
-}
-
-EcPaymentEntry _paymentEntry(AppLocalizations l10n, PaymentDto p) {
-  final plan = _planDisplayName(l10n, p.planCode);
-  final term = _termLabel(l10n, p.term);
-  return EcPaymentEntry(
-    id: p.id,
-    title: term == null ? plan : '$plan · $term',
-    status: _paymentStatus(p.status),
-    dateLabel: _dateLabel(
-      DateTime.fromMillisecondsSinceEpoch(p.createdAt).toLocal(),
-    ),
-    sourceLabel: switch (p.source) {
-      'sepay' => l10n.paymentSourceSepay,
-      'appstore' => l10n.paymentSourceAppStore,
-      _ => l10n.paymentSourcePayos,
-    },
-    // Backend trả null khi không biết giá (mua trong ứng dụng). Giữ nguyên
-    // null tới tận UI thay vì đổi thành 0 — xem [PaymentDto.amount].
-    amountLabel: p.amount == null ? null : _vndLabel(p.amount!),
-    sandbox: p.sandbox,
-  );
-}
-
-/// `1m`/`6m`/`12m` → nhãn đọc được; null giữ nguyên null (SePay và App Store
-/// không có thời hạn để hiện).
-String? _termLabel(AppLocalizations l10n, String? term) => switch (term) {
-  '1m' => l10n.planTerm1m,
-  '6m' => l10n.planTerm6m,
-  '12m' => l10n.planTerm12m,
-  _ => null,
-};
-
-EcPaymentStatus _paymentStatus(String raw) => switch (raw) {
-  'paid' => EcPaymentStatus.paid,
-  'cancelled' => EcPaymentStatus.cancelled,
-  'expired' => EcPaymentStatus.expired,
-  'refunded' => EcPaymentStatus.refunded,
-  _ => EcPaymentStatus.pending,
-};
-
-/// `1569000` → `1.569.000 ₫`. Dấu chấm phân nhóm nghìn theo cách viết tiền
-/// Việt Nam, không dùng dấu phẩy kiểu Anh–Mỹ.
-String _vndLabel(int amount) {
-  final digits = amount.abs().toString();
-  final buffer = StringBuffer();
-  for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write('.');
-    buffer.write(digits[i]);
-  }
-  return '${amount < 0 ? '-' : ''}$buffer ₫';
 }
 
 String _kindLabel(AppLocalizations l10n, String kind) =>
@@ -5353,13 +5087,13 @@ GoRouter _buildRouter(
             // ghi chú trên màn này). Đăng nhập là hành động có chủ đích nên
             // luôn dừng ở đây để người dùng chọn shop.
             autoEnter: s.extra == _resumedSession,
+            onAccount: () => c.push('/account'),
             onSelect: (shop) {
               selectedShop.value = shop;
               _rememberShop(shop);
               _analytics()?.trackShopSelected(platform: shop.platform);
               c.go('/home');
             },
-            onManage: () => c.push('/shop-mgmt'),
             onCreateShop: () => c.push('/create-shop'),
             onLogout: () {
               _analytics()?.trackSignOut();
@@ -5372,22 +5106,10 @@ GoRouter _buildRouter(
         ),
       ),
       GoRoute(
-        path: '/shop-mgmt',
-        builder: (c, s) => _ShopMgmtRoute(
-          repo: repo,
-          onBack: () => _back(c, '/shops'),
-          onAddShop: () => c.push('/create-shop'),
-          onShopTap: (shop) {
-            final selected = _shopFromMgmt(shop);
-            if (selected != null) c.push('/shop-detail', extra: selected);
-          },
-        ),
-      ),
-      GoRoute(
         path: '/create-shop',
         builder: (c, s) => _CreateShopRoute(
           repo: repo,
-          onBack: () => _back(c, '/shop-mgmt'),
+          onBack: () => _back(c, '/shops'),
           onCreated: (shop) {
             selectedShop.value = shop;
             _rememberShop(shop);
@@ -5458,8 +5180,14 @@ GoRouter _buildRouter(
                     // không thì màn F1-09 chỉ tới được qua đường vòng
                     // Chọn cửa hàng → Quản lý cửa hàng.
                     onShopTap: () => c.push('/shop-detail', extra: shop),
+                    // Bánh răng vào THẲNG chi tiết cửa hàng của shop đang mở.
+                    //
+                    // Trước nó qua màn Quản lý cửa hàng — một danh sách shop,
+                    // mà người dùng đã ở trong đúng một shop rồi: bắt họ chọn
+                    // lại chính cái đang mở là một bước thừa. Màn đó đã bỏ.
+                    onSettings: () => c.push('/shop-detail', extra: shop),
                     onNavRecord: () => c.go('/record'),
-                    onNavAccount: () => c.go('/account'),
+                    onNavClaims: () => c.go('/claims'),
                     onQueueTap: () => c.push('/queue'),
                     onOrderTap: (order) {
                       _analytics()?.trackOrderOpened(
@@ -5552,38 +5280,12 @@ GoRouter _buildRouter(
                                             ),
                                           )
                                           .then((_) {}),
-                                      // Đường vào thứ hai của màn chi tiết cửa
-                                      // hàng (từ sheet chọn loại). Thiếu hai
-                                      // callback này thì hai hàng dung lượng
-                                      // vẫn vẽ ra nhưng bấm không ra gì.
-                                      onTapImageSize: () => router
-                                          .push<void>(
-                                            '/upload-size',
-                                            extra: (
-                                              shop.id,
-                                              EcUploadKind.image,
-                                            ),
-                                          )
-                                          .then((_) {}),
-                                      onTapVideoSize: () => router
-                                          .push<void>(
-                                            '/upload-size',
-                                            extra: (
-                                              shop.id,
-                                              EcUploadKind.video,
-                                            ),
-                                          )
-                                          .then((_) {}),
                                       onInviteMember: () => router
                                           .push(
                                             '/invite-member',
                                             extra: shop.id,
                                           )
                                           .then((_) {}),
-                                      onTapResolution: () => router.push(
-                                        '/resolution',
-                                        extra: shop.id,
-                                      ),
                                       onEditType: (type) => router
                                           .push(
                                             '/create-type',
@@ -5621,7 +5323,7 @@ GoRouter _buildRouter(
                             }
                           },
                       onNavOrders: () => c.go('/home'),
-                      onNavAccount: () => c.go('/account'),
+                      onNavClaims: () => c.go('/claims'),
                       onSettings: () => c.push('/type-sheet'),
                       deviceConditions: const PlatformDeviceConditions(),
                       onSaved:
@@ -5664,21 +5366,33 @@ GoRouter _buildRouter(
               ),
             ],
           ),
+          // Tab thứ ba nay là Hồ sơ khiếu nại. Tài khoản rời khỏi shell và
+          // thành một route đẩy từ màn Chọn cửa hàng — nó là thứ mỗi ca chạm
+          // một lần, không đáng chiếm ô tab của việc làm hằng giờ.
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/account',
-                builder: (c, s) => _AccountRoute(
-                  auth: auth,
-                  repo: repo,
-                  language: language,
-                  selectedShop: selectedShop,
-                  queue: queue,
+                path: '/claims',
+                builder: (c, s) => _ClaimListRoute(
+                  shopId: _selected(selectedShop)?.id ?? '',
+                  onNavOrders: () => c.go('/home'),
+                  onNavRecord: () => c.go('/record'),
+                  onCreate: () => c.push('/create-claim'),
                 ),
               ),
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/account',
+        builder: (c, s) => _AccountRoute(
+          auth: auth,
+          repo: repo,
+          language: language,
+          selectedShop: selectedShop,
+          queue: queue,
+        ),
       ),
       // --- order detail + evidence (Flow 2) ---
       GoRoute(
@@ -6062,7 +5776,7 @@ GoRouter _buildRouter(
             return _RouteLoadError(
               title: c.l10n.accountNoShop,
               detail: c.l10n.noShopSelectedManageDetail,
-              onRetry: () => c.go('/shop-mgmt'),
+              onRetry: () => c.go('/shops'),
             );
           }
           // Nhân viên: bỏ trống mọi callback nên màn chi tiết dựng ra ở dạng
@@ -6074,7 +5788,7 @@ GoRouter _buildRouter(
             repo: repo,
             shop: shop,
             readOnly: readOnly,
-            onBack: () => _back(c, '/shop-mgmt'),
+            onBack: () => _back(c, '/home'),
             onMemberMore: readOnly
                 ? null
                 : (member) => c
@@ -6089,31 +5803,9 @@ GoRouter _buildRouter(
             onInviteMember: readOnly
                 ? null
                 : () => c.push('/invite-member', extra: shop.id).then((_) {}),
-            onTapResolution: readOnly
+            onDeleteShop: readOnly
                 ? null
-                : () =>
-                      c.push<void>('/resolution', extra: shop.id).then((_) {}),
-            onTapClipDuration: readOnly
-                ? null
-                : () => c
-                      .push<void>('/clip-duration', extra: shop.id)
-                      .then((_) {}),
-            onTapImageSize: readOnly
-                ? null
-                : () => c
-                      .push<void>(
-                        '/upload-size',
-                        extra: (shop.id, EcUploadKind.image),
-                      )
-                      .then((_) {}),
-            onTapVideoSize: readOnly
-                ? null
-                : () => c
-                      .push<void>(
-                        '/upload-size',
-                        extra: (shop.id, EcUploadKind.video),
-                      )
-                      .then((_) {}),
+                : () => _confirmDeleteShop(c, repo, shop),
             onEditType: readOnly
                 ? null
                 : (type) => c
@@ -6200,51 +5892,6 @@ GoRouter _buildRouter(
                     name: c.l10n.memberFallbackName,
                     role: c.l10n.roleUnknown,
                   ),
-            onSetManager: () async {
-              final extra = s.extra;
-              if (extra is _MemberActionExtra &&
-                  extra.member.accountUid != null) {
-                try {
-                  await repo.updateMemberRole(
-                    extra.shopId,
-                    accountUid: extra.member.accountUid!,
-                    role: 'manager',
-                  );
-                  if (!c.mounted) return;
-                  c.pop();
-                  _toast(c, c.l10n.toastRoleChangedManager);
-                } on Object catch (error) {
-                  if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
-                }
-                return;
-              }
-              c.pop();
-              _toast(c, c.l10n.toastNoMemberToUpdate);
-            },
-            onSetStaff: () async {
-              final extra = s.extra;
-              if (extra is _MemberActionExtra &&
-                  extra.member.accountUid != null) {
-                try {
-                  await repo.updateMemberRole(
-                    extra.shopId,
-                    accountUid: extra.member.accountUid!,
-                    role: 'staff',
-                  );
-                  if (!c.mounted) return;
-                  c.pop();
-                  _toast(c, c.l10n.toastRoleChangedStaff);
-                } on Object catch (error) {
-                  if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
-                }
-                return;
-              }
-              c.pop();
-              _toast(c, c.l10n.toastNoMemberToUpdate);
-            },
-            // Lời mời còn treo không có uid — gỡ nó là `DELETE /invites/:id`,
-            // thứ cũng làm link trong email chết ngay. Trước đây nhánh này đòi
-            // uid nên hàng "đã mời" không xóa nổi, chỉ báo "không có ai để sửa".
             onRemove: () async {
               final extra = s.extra;
               final inviteId = extra is _MemberActionExtra
@@ -6314,123 +5961,6 @@ GoRouter _buildRouter(
       ),
       // --- account sub-screens (pushed, back via pop) ---
       GoRoute(
-        path: '/clip-duration',
-        pageBuilder: (c, s) {
-          final shop = _selected(selectedShop);
-          final shopId = s.extra is String
-              ? s.extra! as String
-              : shop?.id ?? '';
-          return _modalPage(
-            s,
-            EcClipDurationSheetScreen(
-              budget: shop?.clipBudget ?? ClipBudget.fallback,
-              platformLabel: _platformDisplayName(shop?.platform ?? 'other'),
-              // Không còn hộp thoại "máy chủ đã kẹp giá trị": sheet đã kẹp theo
-              // `plan_max_clip_seconds` trước khi gửi, nên con số tới đây luôn
-              // nằm trong trần và nhánh đó không bao giờ chạy được. Giữ lại chỉ
-              // là giữ một lời giải thích cho tình huống không tồn tại.
-              onSelect: (seconds) {
-                repo
-                    .updateShop(shopId, maxClipSeconds: seconds)
-                    .then((updated) {
-                      if (!c.mounted) return;
-                      final current = _selected(selectedShop);
-                      if (current?.id == updated.id) {
-                        selectedShop.value = _shopFromDto(updated);
-                      }
-                      c.pop();
-                      _toast(
-                        c,
-                        c.l10n.clipDurationChanged(
-                          '${(updated.clipSeconds / 60).round()}',
-                        ),
-                      );
-                    })
-                    .catchError((Object error) {
-                      if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
-                    });
-              },
-            ),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/upload-size',
-        pageBuilder: (c, s) {
-          final shop = _selected(selectedShop);
-          // `extra` mang theo CẢ id shop lẫn loại bằng chứng.
-          //
-          // Trước đây chỉ mang loại, còn id lấy từ `selectedShop` — mà màn chi
-          // tiết cửa hàng mở được cả khi `selectedShop` chưa đặt, lúc đó id là
-          // chuỗi rỗng. Ghi vào khoá `shop..maxVideoBytes` rồi đọc ở khoá
-          // `shop.<id thật>.maxVideoBytes`: hai khoá khác nhau nên con số vừa
-          // nhập không bao giờ đọc lại được.
-          final extra = s.extra;
-          final (shopId, kind) = extra is (String, EcUploadKind)
-              ? extra
-              : (shop?.id ?? '', EcUploadKind.video);
-          return _modalPage(
-            s,
-            EcUploadSizeSheetScreen(
-              budget: shop?.clipBudget ?? ClipBudget.fallback,
-              platformLabel: _platformDisplayName(shop?.platform ?? 'other'),
-              kind: kind,
-              // Đọc thẳng từ bản nhớ, không qua `selectedShop`: biến đó không
-              // được làm mới sau khi lưu nên sheet mở lại sẽ hiện mức mặc
-              // định thay vì con số vừa nhập.
-              currentMb: _rememberedSizeCap(shopId, kind, 0) ~/ 1000000,
-              onSelect: (bytes) async {
-                final id = shopId.isEmpty ? (shop?.id ?? '') : shopId;
-                assert(id.isNotEmpty, 'thiếu shopId khi lưu trần dung lượng');
-                // Ghi nhớ rồi ĐÓNG NGAY, không chờ server.
-                //
-                // Bản trước chỉ đóng sheet trong nhánh thành công của
-                // `updateShop`. Backend chưa nhận `max_image_bytes` /
-                // `max_video_bytes` nên lời gọi ném lỗi, nhánh đó không bao
-                // giờ chạy — bấm "Áp dụng" xong sheet đứng im, nhìn y như nút
-                // hỏng.
-                await _rememberSizeCap(id, kind, bytes);
-                if (!c.mounted) return;
-                c.pop();
-                _toast(
-                  c,
-                  bytes <= 0
-                      ? c.l10n.uploadSizeChanged(
-                          c.l10n.uploadSizeValueUnlimited,
-                        )
-                      : c.l10n.uploadSizeChanged(
-                          '${ClipBudget.megabytesLabel(bytes)} MB',
-                        ),
-                );
-                // Đồng bộ ngầm: thành công thì server thành nguồn chuẩn, hỏng
-                // thì bản nhớ tại chỗ vẫn giữ lựa chọn của người dùng.
-                unawaited(
-                  repo
-                      .updateShop(
-                        id,
-                        maxImageBytes: kind == EcUploadKind.image
-                            ? bytes
-                            : null,
-                        maxVideoBytes: kind == EcUploadKind.video
-                            ? bytes
-                            : null,
-                      )
-                      .then((updated) {
-                        final current = _selected(selectedShop);
-                        if (current?.id == updated.id) {
-                          selectedShop.value = _shopFromDto(updated);
-                        }
-                      })
-                      .catchError((Object _) {
-                        // Xem trên: lựa chọn đã nằm trong bản nhớ tại chỗ.
-                      }),
-                );
-              },
-            ),
-          );
-        },
-      ),
-      GoRoute(
         path: '/quota',
         builder: (c, s) => _QuotaRoute(
           repo: repo,
@@ -6439,14 +5969,12 @@ GoRouter _buildRouter(
         ),
       ),
       GoRoute(
-        path: '/payment-history',
-        builder: (c, s) => _PaymentHistoryRoute(repo: repo),
-      ),
-      GoRoute(
-        path: '/claims',
-        builder: (c, s) => _ClaimListRoute(
+        path: '/create-claim',
+        builder: (c, s) => _CreateClaimRoute(
+          repo: repo,
           shopId: _selected(selectedShop)?.id ?? '',
-          onBack: () => _back(c, '/account'),
+          onScan: () => c.push<String>('/scan'),
+          onBack: () => _back(c, '/claims'),
         ),
       ),
       GoRoute(
@@ -6464,15 +5992,6 @@ GoRouter _buildRouter(
             onBack: () => _back(c, '/claims'),
           );
         },
-      ),
-      // Paywall mở thẳng, cho QA và cho ảnh chụp nộp App Review.
-      //
-      // Simulator không có StoreKit thật nên `offers()` trả rỗng và màn hình sẽ
-      // hiện "chưa tải được bảng giá" — vô dụng để chụp ảnh. Route này rơi về
-      // bảng giá mẫu khi cửa hàng im lặng, nên vẫn xem và chụp được.
-      GoRoute(
-        path: '/paywall',
-        builder: (c, s) => _PaywallPreviewRoute(billing: _billing()),
       ),
       GoRoute(
         path: '/language',

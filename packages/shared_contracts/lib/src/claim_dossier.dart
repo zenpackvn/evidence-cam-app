@@ -110,6 +110,7 @@ class EcClaimEvidence {
     this.url,
     this.thumbUrl,
     this.addedLater = false,
+    this.capturedAt,
   });
 
   factory EcClaimEvidence.fromJson(Map<String, dynamic> j) => EcClaimEvidence(
@@ -120,6 +121,7 @@ class EcClaimEvidence {
     url: j['url'] as String?,
     thumbUrl: j['thumb_url'] as String?,
     addedLater: (j['added_later'] as bool?) ?? false,
+    capturedAt: (j['captured_at'] as num?)?.toInt(),
   );
 
   final String id;
@@ -141,6 +143,13 @@ class EcClaimEvidence {
   /// Người dùng đính thêm SAU khi hồ sơ đã tạo, không phải thứ họ tick lúc đầu.
   final bool addedLater;
 
+  /// Lúc quay/chụp, epoch ms. Dùng để hiện NGÀY ở dòng mã vận đơn — [time] chỉ
+  /// có `HH:mm`, mà một hồ sơ gộp nhiều đơn thì các đơn có thể ở khác ngày.
+  ///
+  /// `null` ở hồ sơ tạo trước khi trường này tồn tại; lúc đó dòng mã đơn chỉ
+  /// hiện mã, không bịa ra một ngày nào.
+  final int? capturedAt;
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'label': label,
@@ -149,5 +158,6 @@ class EcClaimEvidence {
     'url': ?url,
     'thumb_url': ?thumbUrl,
     'added_later': addedLater,
+    'captured_at': ?capturedAt,
   };
 }

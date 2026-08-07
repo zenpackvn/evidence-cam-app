@@ -95,13 +95,6 @@ class EcApi {
     QuotaDto.fromJson,
   );
 
-  /// Lịch sử thanh toán của chính tài khoản đang đăng nhập, mới nhất trước.
-  ///
-  /// Backend đã gộp sẵn cả ba đường thu (PayOS / chuyển khoản cũ / App Store)
-  /// — client không ghép, không sắp xếp lại.
-  Future<List<PaymentDto>> listPayments() =>
-      _getList('/api/payments', PaymentDto.fromJson);
-
   // --- shops / members (FR-05) ---
   Future<List<ShopDto>> listShops() => _getList('/api/shops', ShopDto.fromJson);
 
@@ -123,9 +116,6 @@ class EcApi {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
-    int? maxUploadBytes,
-    int? maxImageBytes,
-    int? maxVideoBytes,
   }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/api/shops/$shopId',
@@ -133,17 +123,21 @@ class EcApi {
         'name': ?name,
         'platform': ?platform,
         'resolution': ?resolution,
+        // Trần thời lượng là thứ DUY NHẤT còn đặt được. Mọi trần dung lượng
+        // đã bỏ 2026-08-07 — gói cước tính theo số video.
         'max_clip_seconds': ?maxClipSeconds,
-        'max_upload_bytes': ?maxUploadBytes,
-        // Trần riêng cho ảnh và cho video. Trước đây chỉ có một trần chung,
-        // nhưng ảnh đính kèm nhẹ hơn clip cả bậc — dùng chung một con số thì
-        // hoặc ảnh được nới quá tay, hoặc video bị siết oan.
-        'max_image_bytes': ?maxImageBytes,
-        'max_video_bytes': ?maxVideoBytes,
       },
     );
     return ShopDto.fromJson(res.data!);
   }
+
+  /// Xoá hẳn cửa hàng.
+  ///
+  /// ponytail: endpoint này backend CHƯA mở — hiện trả 404. Đường REST chuẩn
+  /// cho tài nguyên đã có `GET/PATCH /api/shops/:id`, nên khi backend làm thì
+  /// gần như chắc chắn là đường này. App bắt lỗi và nói rõ thay vì nuốt.
+  Future<void> deleteShop(String shopId) =>
+      _dio.delete<void>('/api/shops/$shopId');
 
   Future<ShopDto> getShop(String shopId) async {
     final res = await _dio.get<Map<String, dynamic>>('/api/shops/$shopId');
@@ -152,15 +146,6 @@ class EcApi {
 
   Future<List<MemberDto>> listMembers(String shopId) =>
       _getList('/api/shops/$shopId/members', MemberDto.fromJson);
-
-  Future<void> addMember(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  }) => _dio.post<void>(
-    '/api/shops/$shopId/members',
-    data: {'account_uid': accountUid, 'role': role},
-  );
 
   Future<ShopInviteDto> sendShopInvite(
     String shopId, {
@@ -177,15 +162,6 @@ class EcApi {
   /// Thu hồi lời mời còn treo — link trong email chết ngay.
   Future<void> revokeShopInvite(String shopId, String inviteId) =>
       _dio.delete<void>('/api/shops/$shopId/invites/$inviteId');
-
-  Future<void> updateMemberRole(
-    String shopId, {
-    required String accountUid,
-    required String role,
-  }) => _dio.patch<void>(
-    '/api/shops/$shopId/members/$accountUid',
-    data: {'role': role},
-  );
 
   Future<void> removeMember(String shopId, String accountUid) =>
       _dio.delete<void>('/api/shops/$shopId/members/$accountUid');

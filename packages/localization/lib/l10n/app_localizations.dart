@@ -194,11 +194,101 @@ abstract class AppLocalizations {
   /// **'added later'**
   String get claimsAddedLater;
 
+  /// No description provided for @claimsCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New claim dossier'**
+  String get claimsCreateTitle;
+
+  /// No description provided for @claimsCreateSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type or scan a tracking code'**
+  String get claimsCreateSearchHint;
+
+  /// No description provided for @claimsCreateStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a tracking code, or tap scan, to find the order you are claiming for.'**
+  String get claimsCreateStart;
+
+  /// No description provided for @claimsCreateNoOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'No order with that tracking code in the selected shop.'**
+  String get claimsCreateNoOrder;
+
+  /// No description provided for @claimsRemoveItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from dossier'**
+  String get claimsRemoveItemTitle;
+
+  /// No description provided for @claimsRemoveItemConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this evidence from the claim dossier? The video/photo on the order itself is untouched.'**
+  String get claimsRemoveItemConfirm;
+
+  /// No description provided for @claimsItemRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from the dossier'**
+  String get claimsItemRemoved;
+
+  /// No description provided for @commonRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get commonRemove;
+
   /// No description provided for @commonDelete.
   ///
   /// In en, this message translates to:
   /// **'Delete'**
   String get commonDelete;
+
+  /// No description provided for @settingDefaultSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'default'**
+  String get settingDefaultSuffix;
+
+  /// No description provided for @shopDetailClipLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Video length'**
+  String get shopDetailClipLength;
+
+  /// No description provided for @shopDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete shop'**
+  String get shopDeleteTitle;
+
+  /// No description provided for @shopDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this shop? All of its orders, videos and photos go with it, and can\'t be recovered.'**
+  String get shopDeleteConfirm;
+
+  /// No description provided for @shopDeleteBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The shop still has members'**
+  String get shopDeleteBlockedTitle;
+
+  /// Shown when delete-shop is blocked by remaining members.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove every manager and staff member from the shop before deleting it. {count} still remain.'**
+  String shopDeleteBlockedBody(int count);
+
+  /// No description provided for @shopDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop deleted'**
+  String get shopDeleted;
 
   /// No description provided for @bundleSelected.
   ///
@@ -259,30 +349,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Password changed'**
   String get toastPasswordChanged;
-
-  /// No description provided for @toastPurchaseApplied.
-  ///
-  /// In en, this message translates to:
-  /// **'New plan activated'**
-  String get toastPurchaseApplied;
-
-  /// No description provided for @toastPurchasePending.
-  ///
-  /// In en, this message translates to:
-  /// **'Payment received. Your plan will activate shortly'**
-  String get toastPurchasePending;
-
-  /// No description provided for @toastPurchaseFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Payment could not be completed. Please try again'**
-  String get toastPurchaseFailed;
-
-  /// No description provided for @purchaseSuccessTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Payment successful 🎉'**
-  String get purchaseSuccessTitle;
 
   /// No description provided for @toastPendingDossierConfirm.
   ///
@@ -368,6 +434,12 @@ abstract class AppLocalizations {
   /// **'Photo attached — added to the upload queue'**
   String get toastPhotoQueued;
 
+  /// Ảnh vượt trần 5 MB cố định.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo is {megabytes} MB — over the {limit} MB cap, not attached. Pick a smaller image.'**
+  String imageOverFixedCap(String megabytes, String limit);
+
   /// No description provided for @toastInvitePending.
   ///
   /// In en, this message translates to:
@@ -440,18 +512,6 @@ abstract class AppLocalizations {
   /// **'No video type to delete'**
   String get toastNoVideoTypeToDelete;
 
-  /// No description provided for @toastRoleChangedManager.
-  ///
-  /// In en, this message translates to:
-  /// **'Role changed: Shop manager'**
-  String get toastRoleChangedManager;
-
-  /// No description provided for @toastRoleChangedStaff.
-  ///
-  /// In en, this message translates to:
-  /// **'Role changed: Staff'**
-  String get toastRoleChangedStaff;
-
   /// No description provided for @toastNoMemberToUpdate.
   ///
   /// In en, this message translates to:
@@ -523,12 +583,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Owner'**
   String get roleOwner;
-
-  /// No description provided for @roleManager.
-  ///
-  /// In en, this message translates to:
-  /// **'Manager'**
-  String get roleManager;
 
   /// No description provided for @roleStaff.
   ///
@@ -863,7 +917,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountPlanQuota.
   ///
   /// In en, this message translates to:
-  /// **'Plan & Quota'**
+  /// **'Storage'**
   String get accountPlanQuota;
 
   /// No description provided for @accountSectionApp.
@@ -1112,24 +1166,6 @@ abstract class AppLocalizations {
   /// **'Storage'**
   String get quotaStorage;
 
-  /// No description provided for @quotaUpgradePlan.
-  ///
-  /// In en, this message translates to:
-  /// **'Upgrade plan'**
-  String get quotaUpgradePlan;
-
-  /// No description provided for @quotaUpgradeShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Upgrade'**
-  String get quotaUpgradeShort;
-
-  /// No description provided for @quotaOwnerOnlyNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Only the account owner can change the plan'**
-  String get quotaOwnerOnlyNote;
-
   /// No description provided for @deleteAccountTitleStep1.
   ///
   /// In en, this message translates to:
@@ -1262,6 +1298,12 @@ abstract class AppLocalizations {
   /// **'Account'**
   String get navAccount;
 
+  /// No description provided for @navClaims.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims'**
+  String get navClaims;
+
   /// No description provided for @changeAvatar.
   ///
   /// In en, this message translates to:
@@ -1321,12 +1363,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Storage is freed once a video passes its {days}-day retention window'**
   String quotaRefundNote(int days);
-
-  /// No description provided for @quotaPaymentHistory.
-  ///
-  /// In en, this message translates to:
-  /// **'Payment history'**
-  String get quotaPaymentHistory;
 
   /// No description provided for @deletePendingProfilesWarning.
   ///
@@ -1645,12 +1681,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Monthly allowance used up. Recording still works, but these clips are ON THIS PHONE and not protected yet — they upload by themselves once the allowance is raised.'**
   String get quotaExhaustedNote;
-
-  /// No description provided for @upgradePlanShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Upgrade'**
-  String get upgradePlanShort;
 
   /// No description provided for @queueEmpty.
   ///
@@ -2249,7 +2279,7 @@ abstract class AppLocalizations {
   /// No description provided for @addMemberBody.
   ///
   /// In en, this message translates to:
-  /// **'Enter the email of a registered ZenPack account to add them to the shop.'**
+  /// **'Enter the email of a registered ZenPack account. They get an invitation and must confirm it to join the shop.'**
   String get addMemberBody;
 
   /// No description provided for @emailLabel.
@@ -2269,24 +2299,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter one valid email address.'**
   String get emailInvalid;
-
-  /// No description provided for @inviteRoleLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Role'**
-  String get inviteRoleLabel;
-
-  /// No description provided for @roleStaffDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Record and view their own clips only'**
-  String get roleStaffDesc;
-
-  /// No description provided for @roleManagerDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Full control of the shop'**
-  String get roleManagerDesc;
 
   /// No description provided for @errorInviteAccountNotFound.
   ///
@@ -2317,18 +2329,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get addMemberSubmit;
-
-  /// No description provided for @setAsManager.
-  ///
-  /// In en, this message translates to:
-  /// **'Set as shop manager'**
-  String get setAsManager;
-
-  /// No description provided for @setAsStaff.
-  ///
-  /// In en, this message translates to:
-  /// **'Set as staff'**
-  String get setAsStaff;
 
   /// No description provided for @memberOwnerLocked.
   ///
@@ -2763,8 +2763,8 @@ abstract class AppLocalizations {
   /// Shop detail / clip budget (FR-17..FR-20).
   ///
   /// In en, this message translates to:
-  /// **'Auto-closes at this length; {minutes} min still attaches directly to {platform}'**
-  String clipDurationSubtitle(String minutes, String platform);
+  /// **'Auto-closes at this length'**
+  String get clipDurationSubtitle;
 
   /// Shop detail / clip budget (FR-17..FR-20).
   ///
@@ -2923,6 +2923,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invite a member'**
   String get inviteMemberTitle;
+
+  /// No description provided for @inviteRoleFixedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'They join as a staff member: record videos and review their own.'**
+  String get inviteRoleFixedNote;
 
   /// Shop detail: inviteMemberHint.
   ///
@@ -3205,90 +3211,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Later'**
   String get appUpdateLater;
-
-  /// No description provided for @paymentHistoryEmptyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No transactions yet'**
-  String get paymentHistoryEmptyTitle;
-
-  /// No description provided for @paymentHistoryEmptyBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan upgrades will show up here.'**
-  String get paymentHistoryEmptyBody;
-
-  /// No description provided for @paymentStatusPaid.
-  ///
-  /// In en, this message translates to:
-  /// **'Paid'**
-  String get paymentStatusPaid;
-
-  /// No description provided for @paymentStatusPending.
-  ///
-  /// In en, this message translates to:
-  /// **'Awaiting payment'**
-  String get paymentStatusPending;
-
-  /// No description provided for @paymentStatusCancelled.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancelled'**
-  String get paymentStatusCancelled;
-
-  /// No description provided for @paymentStatusExpired.
-  ///
-  /// In en, this message translates to:
-  /// **'Expired'**
-  String get paymentStatusExpired;
-
-  /// No description provided for @paymentStatusRefunded.
-  ///
-  /// In en, this message translates to:
-  /// **'Refunded'**
-  String get paymentStatusRefunded;
-
-  /// No description provided for @paymentSourcePayos.
-  ///
-  /// In en, this message translates to:
-  /// **'Web payment'**
-  String get paymentSourcePayos;
-
-  /// No description provided for @paymentSourceSepay.
-  ///
-  /// In en, this message translates to:
-  /// **'Bank transfer'**
-  String get paymentSourceSepay;
-
-  /// No description provided for @paymentSourceAppStore.
-  ///
-  /// In en, this message translates to:
-  /// **'In-app purchase'**
-  String get paymentSourceAppStore;
-
-  /// No description provided for @paymentSandboxNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Sandbox test transaction, not a real payment.'**
-  String get paymentSandboxNote;
-
-  /// No description provided for @planTerm1m.
-  ///
-  /// In en, this message translates to:
-  /// **'1 month'**
-  String get planTerm1m;
-
-  /// No description provided for @planTerm6m.
-  ///
-  /// In en, this message translates to:
-  /// **'6 months'**
-  String get planTerm6m;
-
-  /// No description provided for @planTerm12m.
-  ///
-  /// In en, this message translates to:
-  /// **'12 months'**
-  String get planTerm12m;
 
   /// No description provided for @quotaVideosThisMonth.
   ///

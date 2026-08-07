@@ -63,7 +63,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsAddedLater => 'added later';
 
   @override
+  String get claimsCreateTitle => 'New claim dossier';
+
+  @override
+  String get claimsCreateSearchHint => 'Type or scan a tracking code';
+
+  @override
+  String get claimsCreateStart =>
+      'Type a tracking code, or tap scan, to find the order you are claiming for.';
+
+  @override
+  String get claimsCreateNoOrder =>
+      'No order with that tracking code in the selected shop.';
+
+  @override
+  String get claimsRemoveItemTitle => 'Remove from dossier';
+
+  @override
+  String get claimsRemoveItemConfirm =>
+      'Remove this evidence from the claim dossier? The video/photo on the order itself is untouched.';
+
+  @override
+  String get claimsItemRemoved => 'Removed from the dossier';
+
+  @override
+  String get commonRemove => 'Remove';
+
+  @override
   String get commonDelete => 'Delete';
+
+  @override
+  String get settingDefaultSuffix => 'default';
+
+  @override
+  String get shopDetailClipLength => 'Video length';
+
+  @override
+  String get shopDeleteTitle => 'Delete shop';
+
+  @override
+  String get shopDeleteConfirm =>
+      'Delete this shop? All of its orders, videos and photos go with it, and can\'t be recovered.';
+
+  @override
+  String get shopDeleteBlockedTitle => 'The shop still has members';
+
+  @override
+  String shopDeleteBlockedBody(int count) {
+    return 'Remove every manager and staff member from the shop before deleting it. $count still remain.';
+  }
+
+  @override
+  String get shopDeleted => 'Shop deleted';
 
   @override
   String bundleSelected(int count) {
@@ -96,20 +147,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toastPasswordChanged => 'Password changed';
-
-  @override
-  String get toastPurchaseApplied => 'New plan activated';
-
-  @override
-  String get toastPurchasePending =>
-      'Payment received. Your plan will activate shortly';
-
-  @override
-  String get toastPurchaseFailed =>
-      'Payment could not be completed. Please try again';
-
-  @override
-  String get purchaseSuccessTitle => 'Payment successful 🎉';
 
   @override
   String get toastPendingDossierConfirm =>
@@ -157,6 +194,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toastPhotoQueued => 'Photo attached — added to the upload queue';
 
   @override
+  String imageOverFixedCap(String megabytes, String limit) {
+    return 'Photo is $megabytes MB — over the $limit MB cap, not attached. Pick a smaller image.';
+  }
+
+  @override
   String get toastInvitePending => 'Waiting for a shop invitation';
 
   @override
@@ -191,12 +233,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toastNoVideoTypeToDelete => 'No video type to delete';
-
-  @override
-  String get toastRoleChangedManager => 'Role changed: Shop manager';
-
-  @override
-  String get toastRoleChangedStaff => 'Role changed: Staff';
 
   @override
   String get toastNoMemberToUpdate => 'No member to update';
@@ -241,9 +277,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roleOwner => 'Owner';
-
-  @override
-  String get roleManager => 'Manager';
 
   @override
   String get roleStaff => 'Staff';
@@ -428,7 +461,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statPendingUpload => 'Pending upload';
 
   @override
-  String get accountPlanQuota => 'Plan & Quota';
+  String get accountPlanQuota => 'Storage';
 
   @override
   String get accountSectionApp => 'PLAN & APP';
@@ -565,15 +598,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaStorage => 'Storage';
 
   @override
-  String get quotaUpgradePlan => 'Upgrade plan';
-
-  @override
-  String get quotaUpgradeShort => 'Upgrade';
-
-  @override
-  String get quotaOwnerOnlyNote => 'Only the account owner can change the plan';
-
-  @override
   String get deleteAccountTitleStep1 => 'Delete account?';
 
   @override
@@ -645,6 +669,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navAccount => 'Account';
 
   @override
+  String get navClaims => 'Claims';
+
+  @override
   String get changeAvatar => 'Change profile photo';
 
   @override
@@ -687,9 +714,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String quotaRefundNote(int days) {
     return 'Storage is freed once a video passes its $days-day retention window';
   }
-
-  @override
-  String get quotaPaymentHistory => 'Payment history';
 
   @override
   String deletePendingProfilesWarning(int count) {
@@ -868,9 +892,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get quotaExhaustedNote =>
       'Monthly allowance used up. Recording still works, but these clips are ON THIS PHONE and not protected yet — they upload by themselves once the allowance is raised.';
-
-  @override
-  String get upgradePlanShort => 'Upgrade';
 
   @override
   String get queueEmpty => 'No videos in the queue yet';
@@ -1206,7 +1227,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addMemberBody =>
-      'Enter the email of a registered ZenPack account to add them to the shop.';
+      'Enter the email of a registered ZenPack account. They get an invitation and must confirm it to join the shop.';
 
   @override
   String get emailLabel => 'Email';
@@ -1216,15 +1237,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emailInvalid => 'Enter one valid email address.';
-
-  @override
-  String get inviteRoleLabel => 'Role';
-
-  @override
-  String get roleStaffDesc => 'Record and view their own clips only';
-
-  @override
-  String get roleManagerDesc => 'Full control of the shop';
 
   @override
   String get errorInviteAccountNotFound =>
@@ -1244,12 +1256,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addMemberSubmit => 'Add';
-
-  @override
-  String get setAsManager => 'Set as shop manager';
-
-  @override
-  String get setAsStaff => 'Set as staff';
 
   @override
   String get memberOwnerLocked =>
@@ -1497,9 +1503,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clipDurationTitle => 'Max length per video';
 
   @override
-  String clipDurationSubtitle(String minutes, String platform) {
-    return 'Auto-closes at this length; $minutes min still attaches directly to $platform';
-  }
+  String get clipDurationSubtitle => 'Auto-closes at this length';
 
   @override
   String clipDurationOptionRecommended(String minutes) {
@@ -1613,6 +1617,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inviteMemberTitle => 'Invite a member';
+
+  @override
+  String get inviteRoleFixedNote =>
+      'They join as a staff member: record videos and review their own.';
 
   @override
   String get inviteMemberHint => '(no account yet → send an invite)';
@@ -1766,49 +1774,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appUpdateLater => 'Later';
-
-  @override
-  String get paymentHistoryEmptyTitle => 'No transactions yet';
-
-  @override
-  String get paymentHistoryEmptyBody => 'Plan upgrades will show up here.';
-
-  @override
-  String get paymentStatusPaid => 'Paid';
-
-  @override
-  String get paymentStatusPending => 'Awaiting payment';
-
-  @override
-  String get paymentStatusCancelled => 'Cancelled';
-
-  @override
-  String get paymentStatusExpired => 'Expired';
-
-  @override
-  String get paymentStatusRefunded => 'Refunded';
-
-  @override
-  String get paymentSourcePayos => 'Web payment';
-
-  @override
-  String get paymentSourceSepay => 'Bank transfer';
-
-  @override
-  String get paymentSourceAppStore => 'In-app purchase';
-
-  @override
-  String get paymentSandboxNote =>
-      'Sandbox test transaction, not a real payment.';
-
-  @override
-  String get planTerm1m => '1 month';
-
-  @override
-  String get planTerm6m => '6 months';
-
-  @override
-  String get planTerm12m => '12 months';
 
   @override
   String get quotaVideosThisMonth => 'Videos this month';

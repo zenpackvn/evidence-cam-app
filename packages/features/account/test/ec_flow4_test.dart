@@ -33,18 +33,18 @@ Future<void> _pump(WidgetTester tester, Widget screen) {
 
 void main() {
   group('EcAccountTabScreen', () {
-    testWidgets('shows profile, both setting groups and bottom nav', (
-      tester,
-    ) async {
+    testWidgets('shows profile and both setting groups', (tester) async {
       await _pump(tester, const EcAccountTabScreen());
-      // Không có tên shop ở đây: màn này là tab gốc, header shop thuộc về tab
-      // Vận đơn (xem doc của EcAccountTabScreen).
+      // Không có tên shop ở đây: màn này đứng ngoài lớp shop, mở từ màn Chọn
+      // cửa hàng.
       expect(find.text('Shop ABC'), findsNothing);
       expect(find.text('Nguyễn Văn A'), findsOneWidget);
       expect(find.text('nguyenvana@gmail.com'), findsOneWidget);
       expect(find.text('GÓI & ỨNG DỤNG'), findsOneWidget);
-      expect(find.text('Gói cước & Quota'), findsOneWidget);
-      expect(find.text('Cơ bản'), findsOneWidget);
+      // "Gói cước & Quota" -> "Dung lượng", và không còn nhắc tên gói: app
+      // không bán gói nên tên gói ở đây không giúp người dùng làm được gì.
+      expect(find.text('Dung lượng'), findsOneWidget);
+      expect(find.text('Cơ bản'), findsNothing);
       expect(find.text('Ngôn ngữ'), findsOneWidget);
       expect(find.text('BẢO MẬT & ĐĂNG NHẬP'), findsOneWidget);
       expect(find.text('Đổi mật khẩu'), findsOneWidget);
@@ -52,9 +52,9 @@ void main() {
       expect(find.text('3 liên kết'), findsOneWidget);
       expect(find.text('Đăng xuất'), findsOneWidget);
       expect(find.text('Xóa tài khoản'), findsOneWidget);
-      expect(find.text('Vận đơn'), findsOneWidget);
-      expect(find.text('Ghi hình'), findsOneWidget);
-      expect(find.text('Tài khoản'), findsOneWidget);
+      // Không còn thanh tab: màn này rời khỏi shell để nhường ô thứ ba cho Hồ
+      // sơ khiếu nại, và nay được ĐẨY từ màn Chọn cửa hàng.
+      expect(find.text('Ghi hình'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -73,7 +73,7 @@ void main() {
         tester,
         EcAccountTabScreen(onQuotaTap: () => tapped = true),
       );
-      await tester.tap(find.text('Gói cước & Quota'));
+      await tester.tap(find.text('Dung lượng'));
       expect(tapped, isTrue);
     });
   });
@@ -133,38 +133,34 @@ void main() {
   });
 
   group('EcQuotaScreen', () {
-    // Backend cũ chưa trả trục video (`capVideos == 0`) → màn lùi về dung
-    // lượng. Nhánh này phải sống cho tới khi mọi bản app cũ ngoài thị trường
-    // đã cập nhật.
-    testWidgets('backend cũ: vẫn hiện được theo dung lượng', (tester) async {
-      const gb = 1024 * 1024 * 1024;
+    testWidgets('shows plan, quota usage and retention', (tester) async {
+      // Bản 3 (2026-08-07): trục hạn mức là SỐ VIDEO mỗi tháng, không phải
+      // dung lượng — mọi trần byte đã bỏ cùng lượt với quota theo dung lượng.
       await _pump(
         tester,
         const EcQuotaScreen(
-          planLabel: 'Chuyên nghiệp',
-          usedBytes: 12 * gb,
-          capBytes: 60 * gb,
+          planLabel: 'Tiết kiệm',
+          usedVideos: 200,
+          capVideos: 1000,
           retentionTotalDays: 90,
         ),
       );
       expect(find.text('Báo cáo & Quota'), findsOneWidget);
       expect(find.text('Gói hiện tại'), findsOneWidget);
-      expect(find.text('Chuyên nghiệp'), findsOneWidget);
-      // Dòng này từng canh chuỗi '48 GB / 60 GB' — một định dạng màn hình
-      // chưa bao giờ vẽ, nên test đỏ từ trước khi đổi trục. Canh đúng cái
-      // widget thật sự dựng.
-      expect(find.text('48 GB còn lại'), findsOneWidget);
-      expect(find.text('Đã dùng 12 / 60 GB · 20%'), findsOneWidget);
-      expect(find.text('90 ngày'), findsWidgets);
+      expect(find.text('Tiết kiệm'), findsOneWidget);
+      // Còn lại, rồi tỉ số đã dùng / trần kèm phần trăm khớp với hai số đó.
+      expect(find.text('800 còn lại'), findsOneWidget);
+      expect(find.text('Đã dùng 200 / 1.000 · 20%'), findsOneWidget);
+      expect(find.text('Lưu trữ'), findsOneWidget);
+      expect(find.text('90 ngày'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    // App KHÔNG bán gói (quy tắc chống dẫn dắt của Apple, App Review 3.1):
-    // không nút, không link, không câu chữ chỉ đường sang trang thanh toán.
-    // Test này là hàng rào — thêm lại một nút "Nâng cấp" ở đây là đủ để bản
-    // nộp bị từ chối.
-    testWidgets('không có bất kỳ lối mua nào trong app', (tester) async {
-      await _pump(tester, const EcQuotaScreen(canManagePlan: true));
+    // App KHÔNG bán gói nữa — mua ở web. Màn này chỉ trả lời "tôi đang ở gói
+    // nào, còn bao nhiêu". Ba test cũ canh nút "Nâng cấp gói", pill "Nâng cấp"
+    // và dòng "chỉ chủ tài khoản mới đổi được gói" đã bỏ cùng chúng.
+    testWidgets('không còn đường mua gói nào trên màn này', (tester) async {
+      await _pump(tester, const EcQuotaScreen());
       expect(find.text('Nâng cấp gói'), findsNothing);
       expect(find.text('Nâng cấp'), findsNothing);
       expect(tester.takeException(), isNull);
@@ -188,7 +184,7 @@ void main() {
     });
 
     // Trục tính tiền là SỐ LƯỢNG video, không phải dung lượng (mục 6.3).
-    testWidgets('hạn mức hiện theo số video khi backend trả trục mới', (
+    testWidgets('nhân viên cũng thấy đúng màn đó, không thiếu không thừa', (
       tester,
     ) async {
       await _pump(
@@ -199,7 +195,8 @@ void main() {
           blockAtVideos: 1100,
         ),
       );
-      expect(find.text('Đã dùng 200 / 1000 · 20%'), findsOneWidget);
+      // Con số đi qua `_vi()` nên có dấu nhóm nghìn kiểu Việt.
+      expect(find.text('Đã dùng 200 / 1.000 · 20%'), findsOneWidget);
       expect(find.text('Chặn quay mới từ 1100 video'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

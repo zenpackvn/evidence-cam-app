@@ -44,16 +44,17 @@ void main() {
     ).thenAnswer(
       (_) async => _res('/api/quota', {
         'plan_code': 'basic',
-        'used_bytes': 3,
-        'cap_bytes': 100,
-        'remaining_bytes': 97,
+        'used_videos': 3,
+        'cap_videos': 100,
+        'remaining_videos': 97,
         'retention_days': 25,
       }),
     );
 
     final q = await api.getQuota();
-    expect(q.remainingBytes, 97);
-    expect(q.capBytes, 100);
+    expect(q.usedVideos, 3);
+    expect(q.capVideos, 100);
+    expect(q.remainingVideos, 97);
     expect(q.planCode, 'basic');
     expect(q.retentionDays, 25);
   });
@@ -349,40 +350,26 @@ void main() {
 
   test('member mutations call the shop member endpoints', () async {
     when(
-      () => dio.post<void>('/api/shops/s1/members', data: any(named: 'data')),
-    ).thenAnswer((_) async => _res('/api/shops/s1/members', null));
-    when(
-      () => dio.patch<void>(
-        '/api/shops/s1/members/u2',
-        data: any(named: 'data'),
-      ),
-    ).thenAnswer((_) async => _res('/api/shops/s1/members/u2', null));
-    when(
       () => dio.delete<void>('/api/shops/s1/members/u2'),
     ).thenAnswer((_) async => _res('/api/shops/s1/members/u2', null));
 
-    await api.addMember('s1', accountUid: 'u2', role: 'staff');
-    await api.updateMemberRole('s1', accountUid: 'u2', role: 'manager');
     await api.removeMember('s1', 'u2');
 
-    verify(
-      () => dio.post<void>(
-        '/api/shops/s1/members',
-        data: {
-          'account_uid': 'u2',
-          'role': 'staff',
-        },
-      ),
-    ).called(1);
-    verify(
-      () => dio.patch<void>(
-        '/api/shops/s1/members/u2',
-        data: {
-          'role': 'manager',
-        },
-      ),
-    ).called(1);
     verify(() => dio.delete<void>('/api/shops/s1/members/u2')).called(1);
+    // Hai cấp quyền (2026-08-07): KHÔNG còn đường đổi vai trò. Máy chủ nhận
+    // `manager` rồi lặng lẽ hạ về `staff` và vẫn trả 200, nên mọi lời gọi từ
+    // app chỉ là một lời hứa sai — `updateMemberRole` đã gỡ khỏi cả ba tầng.
+    verifyNever(
+      () => dio.patch<void>(
+        any(that: contains('/members/')),
+        data: any(named: 'data'),
+      ),
+    );
+    // Không còn `POST /members`: đường vào shop duy nhất là lời mời, và lời
+    // mời thì người được mời phải tự bấm nhận.
+    verifyNever(
+      () => dio.post<void>('/api/shops/s1/members', data: any(named: 'data')),
+    );
   });
 
   test(

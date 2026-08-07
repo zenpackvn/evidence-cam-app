@@ -27,7 +27,30 @@
   "claimsDeleted": "Dossier deleted",
   "claimsPhotoAdded": "Photo added to the dossier and queued onto the order",
   "claimsAddedLater": "added later",
+  "claimsCreateTitle": "New claim dossier",
+  "claimsCreateSearchHint": "Type or scan a tracking code",
+  "claimsCreateStart": "Type a tracking code, or tap scan, to find the order you are claiming for.",
+  "claimsCreateNoOrder": "No order with that tracking code in the selected shop.",
+  "claimsRemoveItemTitle": "Remove from dossier",
+  "claimsRemoveItemConfirm": "Remove this evidence from the claim dossier? The video/photo on the order itself is untouched.",
+  "claimsItemRemoved": "Removed from the dossier",
+  "commonRemove": "Remove",
   "commonDelete": "Delete",
+  "settingDefaultSuffix": "default",
+  "shopDetailClipLength": "Video length",
+  "shopDeleteTitle": "Delete shop",
+  "shopDeleteConfirm": "Delete this shop? All of its orders, videos and photos go with it, and can't be recovered.",
+  "shopDeleteBlockedTitle": "The shop still has members",
+  "shopDeleteBlockedBody": "Remove every manager and staff member from the shop before deleting it. {count} still remain.",
+  "@shopDeleteBlockedBody": {
+    "description": "Shown when delete-shop is blocked by remaining members.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopDeleted": "Shop deleted",
   "bundleSelected": "{count} selected",
   "@bundleSelected": {
     "placeholders": {
@@ -45,10 +68,6 @@
   "toastInfoSaved": "Info saved",
   "toastPasswordCreated": "Password created",
   "toastPasswordChanged": "Password changed",
-  "toastPurchaseApplied": "New plan activated",
-  "toastPurchasePending": "Payment received. Your plan will activate shortly",
-  "toastPurchaseFailed": "Payment could not be completed. Please try again",
-  "purchaseSuccessTitle": "Payment successful 🎉",
   "toastPendingDossierConfirm": "You still have an open claim dossier, please confirm again",
   "toastCopiedShareLink": "Share link copied",
   "toastShareFailed": "Couldn't share, try again later",
@@ -63,6 +82,18 @@
   "toastPhotoDownloadFailed": "Couldn't download photo, try again later",
   "toastPhotoNoDownloadLink": "Photo has no download link yet",
   "toastPhotoQueued": "Photo attached — added to the upload queue",
+  "imageOverFixedCap": "Photo is {megabytes} MB — over the {limit} MB cap, not attached. Pick a smaller image.",
+  "@imageOverFixedCap": {
+    "description": "Ảnh vượt trần 5 MB cố định.",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
   "toastInvitePending": "Waiting for a shop invitation",
   "toastInviteSent": "Invitation sent",
   "toastMemberAdded": "Member added",
@@ -75,8 +106,6 @@
   "toastVideoTypeSaved": "Video type saved",
   "toastVideoTypeDeleted": "Video type deleted",
   "toastNoVideoTypeToDelete": "No video type to delete",
-  "toastRoleChangedManager": "Role changed: Shop manager",
-  "toastRoleChangedStaff": "Role changed: Staff",
   "toastNoMemberToUpdate": "No member to update",
   "toastMemberRemoved": "Removed from shop (recorded videos still finish uploading)",
   "toastInviteRevoked": "Invitation deleted — the emailed link no longer works",
@@ -113,7 +142,6 @@
     }
   },
   "roleOwner": "Owner",
-  "roleManager": "Manager",
   "roleStaff": "Staff",
   "memberInviteSent": "{role} · invite sent",
   "@memberInviteSent": {
@@ -201,7 +229,7 @@
   "statOrdersToday": "Orders",
   "statVideosRecorded": "Videos recorded",
   "statPendingUpload": "Pending upload",
-  "accountPlanQuota": "Plan & Quota",
+  "accountPlanQuota": "Storage",
   "accountSectionApp": "PLAN & APP",
   "accountLanguage": "Language",
   "accountSectionSecurity": "SECURITY & SIGN-IN",
@@ -258,9 +286,6 @@
     }
   },
   "quotaStorage": "Storage",
-  "quotaUpgradePlan": "Upgrade plan",
-  "quotaUpgradeShort": "Upgrade",
-  "quotaOwnerOnlyNote": "Only the account owner can change the plan",
   "deleteAccountTitleStep1": "Delete account?",
   "deleteAccountTitleStep2": "Confirm permanent deletion?",
   "deleteAccountBodyStep1": "All your videos, shipments and dossiers will be permanently deleted. This action cannot be undone.",
@@ -283,6 +308,7 @@
   "navOrders": "Orders",
   "navRecord": "Record",
   "navAccount": "Account",
+  "navClaims": "Claims",
   "changeAvatar": "Change profile photo",
   "quotaVideosRatio": "{remaining} / {total} videos",
   "@quotaVideosRatio": {
@@ -351,7 +377,6 @@
       }
     }
   },
-  "quotaPaymentHistory": "Payment history",
   "deletePendingProfilesWarning": "You still have {count} dossiers “sent to the platform” — their share links will stop working",
   "@deletePendingProfilesWarning": {
     "placeholders": {
@@ -448,7 +473,6 @@
   "videoTypeSettings": "Video type settings",
   "uploadQueueTitle": "Upload queue",
   "quotaExhaustedNote": "Monthly allowance used up. Recording still works, but these clips are ON THIS PHONE and not protected yet — they upload by themselves once the allowance is raised.",
-  "upgradePlanShort": "Upgrade",
   "queueEmpty": "No videos in the queue yet",
   "queueAutoUploadNote": "Upload happens automatically when you're online",
   "waitingUpload": "Waiting to upload",
@@ -629,20 +653,15 @@
   "deleteVideoTypeConfirm": "Delete type",
   "deleteVideoTypeNote": "(Only deletable while the type has no videos)",
   "addMemberTitle": "Add member",
-  "addMemberBody": "Enter the email of a registered ZenPack account to add them to the shop.",
+  "addMemberBody": "Enter the email of a registered ZenPack account. They get an invitation and must confirm it to join the shop.",
   "emailLabel": "Email",
   "emailRequired": "Enter an email address.",
   "emailInvalid": "Enter one valid email address.",
-  "inviteRoleLabel": "Role",
-  "roleStaffDesc": "Record and view their own clips only",
-  "roleManagerDesc": "Full control of the shop",
   "errorInviteAccountNotFound": "This email has no ZenPack account yet. Ask them to sign up first, then invite again.",
   "errorInviteAlreadyMember": "They are already a member of this shop.",
   "errorInviteAlreadyOwner": "That is the shop owner — no invite needed.",
   "errorInviteInvalidRequest": "That email isn't valid. Check it and send again.",
   "addMemberSubmit": "Add",
-  "setAsManager": "Set as shop manager",
-  "setAsStaff": "Set as staff",
   "memberOwnerLocked": "The owner cannot be re-roled or removed here — ownership belongs to the shop, not to a membership row.",
   "removeFromShop": "Remove from shop",
   "revokeInvite": "Delete invitation",
@@ -908,17 +927,9 @@
   "@clipDurationTitle": {
     "description": "Shop detail / clip budget (FR-17..FR-20)."
   },
-  "clipDurationSubtitle": "Auto-closes at this length; {minutes} min still attaches directly to {platform}",
+  "clipDurationSubtitle": "Auto-closes at this length",
   "@clipDurationSubtitle": {
-    "description": "Shop detail / clip budget (FR-17..FR-20).",
-    "placeholders": {
-      "minutes": {
-        "type": "String"
-      },
-      "platform": {
-        "type": "String"
-      }
-    }
+    "description": "Shop detail / clip budget (FR-17..FR-20)."
   },
   "clipDurationOptionRecommended": "{minutes} min (recommended)",
   "@clipDurationOptionRecommended": {
@@ -1097,6 +1108,7 @@
     "description": "Shop detail: shopDetailAddType."
   },
   "inviteMemberTitle": "Invite a member",
+  "inviteRoleFixedNote": "They join as a staff member: record videos and review their own.",
   "@inviteMemberTitle": {
     "description": "Shop detail: inviteMemberTitle."
   },
@@ -1217,20 +1229,6 @@
   },
   "appUpdateNow": "Update",
   "appUpdateLater": "Later",
-  "paymentHistoryEmptyTitle": "No transactions yet",
-  "paymentHistoryEmptyBody": "Plan upgrades will show up here.",
-  "paymentStatusPaid": "Paid",
-  "paymentStatusPending": "Awaiting payment",
-  "paymentStatusCancelled": "Cancelled",
-  "paymentStatusExpired": "Expired",
-  "paymentStatusRefunded": "Refunded",
-  "paymentSourcePayos": "Web payment",
-  "paymentSourceSepay": "Bank transfer",
-  "paymentSourceAppStore": "In-app purchase",
-  "paymentSandboxNote": "Sandbox test transaction, not a real payment.",
-  "planTerm1m": "1 month",
-  "planTerm6m": "6 months",
-  "planTerm12m": "12 months",
   "quotaVideosThisMonth": "Videos this month",
   "quotaSubtitleVideos": "Track how many videos you recorded this month",
   "quotaBlockedTitle": "Video allowance exhausted",

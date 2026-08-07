@@ -53,7 +53,7 @@ class EcRecordRoute extends StatefulWidget {
     this.onConfirmManualCode,
     this.onRequestType,
     this.onNavOrders,
-    this.onNavAccount,
+    this.onNavClaims,
     this.onSettings,
     this.onSaved,
     this.deviceConditions,
@@ -96,7 +96,7 @@ class EcRecordRoute extends StatefulWidget {
   final VoidCallback? onNavOrders;
 
   /// Called when the "Tài khoản" tab is tapped.
-  final VoidCallback? onNavAccount;
+  final VoidCallback? onNavClaims;
 
   /// Asks for a video type (opens the type sheet); the chosen label is applied
   /// to the current/next recording. Returns `null` if dismissed.
@@ -953,8 +953,8 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           onSettings: null,
           onNavOrders: () =>
               unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
-          onNavAccount: () =>
-              unawaited(_leaveAfterFinalizing(widget.onNavAccount)),
+          onNavClaims: () =>
+              unawaited(_leaveAfterFinalizing(widget.onNavClaims)),
           onStop: () => _bloc.add(const RecordingStopRequested()),
         );
       }
@@ -983,8 +983,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         onPickType: null,
         onSettings: null,
         onNavOrders: () => unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
-        onNavAccount: () =>
-            unawaited(_leaveAfterFinalizing(widget.onNavAccount)),
+        onNavClaims: () => unawaited(_leaveAfterFinalizing(widget.onNavClaims)),
         onStop: () => _bloc.add(const RecordingStopRequested()),
       );
     }
@@ -1004,7 +1003,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           : null,
       onManualEntry: _manualEntry,
       onNavOrders: widget.onNavOrders,
-      onNavAccount: widget.onNavAccount,
+      onNavClaims: widget.onNavClaims,
     );
   }
 }
