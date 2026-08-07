@@ -98,20 +98,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toastPasswordChanged => 'Password changed';
 
   @override
-  String get toastPurchaseApplied => 'New plan activated';
-
-  @override
-  String get toastPurchasePending =>
-      'Payment received. Your plan will activate shortly';
-
-  @override
-  String get toastPurchaseFailed =>
-      'Payment could not be completed. Please try again';
-
-  @override
-  String get purchaseSuccessTitle => 'Payment successful 🎉';
-
-  @override
   String get toastPendingDossierConfirm =>
       'You still have an open claim dossier, please confirm again';
 
@@ -565,15 +551,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaStorage => 'Storage';
 
   @override
-  String get quotaUpgradePlan => 'Upgrade plan';
-
-  @override
-  String get quotaUpgradeShort => 'Upgrade';
-
-  @override
-  String get quotaOwnerOnlyNote => 'Only the account owner can change the plan';
-
-  @override
   String get deleteAccountTitleStep1 => 'Delete account?';
 
   @override
@@ -687,9 +664,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String quotaRefundNote(int days) {
     return 'Storage is freed once a video passes its $days-day retention window';
   }
-
-  @override
-  String get quotaPaymentHistory => 'Payment history';
 
   @override
   String deletePendingProfilesWarning(int count) {
@@ -840,9 +814,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get quotaExhaustedNote =>
       'Out of quota this month — videos will wait for quota';
-
-  @override
-  String get upgradePlanShort => 'Upgrade';
 
   @override
   String get queueEmpty => 'No videos in the queue yet';
@@ -1738,47 +1709,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appUpdateLater => 'Later';
-
-  @override
-  String get paymentHistoryEmptyTitle => 'No transactions yet';
-
-  @override
-  String get paymentHistoryEmptyBody => 'Plan upgrades will show up here.';
-
-  @override
-  String get paymentStatusPaid => 'Paid';
-
-  @override
-  String get paymentStatusPending => 'Awaiting payment';
-
-  @override
-  String get paymentStatusCancelled => 'Cancelled';
-
-  @override
-  String get paymentStatusExpired => 'Expired';
-
-  @override
-  String get paymentStatusRefunded => 'Refunded';
-
-  @override
-  String get paymentSourcePayos => 'Web payment';
-
-  @override
-  String get paymentSourceSepay => 'Bank transfer';
-
-  @override
-  String get paymentSourceAppStore => 'In-app purchase';
-
-  @override
-  String get paymentSandboxNote =>
-      'Sandbox test transaction, not a real payment.';
-
-  @override
-  String get planTerm1m => '1 month';
-
-  @override
-  String get planTerm6m => '6 months';
-
-  @override
-  String get planTerm12m => '12 months';
 }

@@ -94,17 +94,28 @@ class EcAccountTabScreen extends StatelessWidget {
   final VoidCallback? onFeedback;
   final VoidCallback? onRateApp;
 
-  /// Chiều cao dải xanh, dùng cả ở chỗ vẽ lẫn chỗ tính trần khối cố định —
+  /// Chiều cao dải xanh (phần NẰM DƯỚI tai thỏ — `PenBrandBanner` tự cộng
+  /// `safeArea.top` vào), dùng cả ở chỗ vẽ lẫn chỗ tính trần khối cố định —
   /// hai chỗ lệch nhau là sinh ra khe hở hoặc phần xanh bị đè.
-  static const _bannerHeight = 140.0;
+  ///
+  /// Lùi 14 cùng lúc với [_cardTopGap] (26 -> 12). Kéo thẻ lên mà để nền xanh
+  /// đứng yên thì trông y như chưa sửa gì.
+  static const _bannerHeight = 126.0;
 
-  /// Chiều cao khối cố định tính từ mép dưới tai thỏ: lề trên 26 + thẻ tài
+  /// Khoảng hở giữa mép dưới tai thỏ và thẻ tài khoản.
+  ///
+  /// Vùng an toàn của iOS đã chừa sẵn chỗ cho tai thỏ, nên con số này chỉ là
+  /// khoảng thở thêm. 26 cũ tạo ra một dải trống nhìn như lỗi căn lề.
+  static const _cardTopGap = 12.0;
+
+  /// Chiều cao khối cố định tính từ mép dưới tai thỏ: [_cardTopGap] + thẻ tài
   /// khoản (đệm 16 mỗi phía quanh nội dung cao 62).
   ///
   /// Vùng cuộn lấy đúng số này làm lề trên. Lấy theo [_bannerHeight] như bản
   /// trước là sai: đáy thẻ nằm thấp hơn đáy dải xanh, nên mục đầu tiên bị thẻ
-  /// che mất một phần ngay khi chưa cuộn.
-  static const _headerBlockHeight = 26.0 + 62.0 + 32.0;
+  /// che mất một phần ngay khi chưa cuộn. Suy ra từ [_cardTopGap] chứ không gõ
+  /// lại số: sửa một chỗ mà quên chỗ kia là sinh đúng cái khe hở này.
+  static const _headerBlockHeight = _cardTopGap + 62.0 + 32.0;
 
   @override
   Widget build(BuildContext context) {
@@ -213,7 +224,7 @@ class EcAccountTabScreen extends StatelessWidget {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
+              padding: const EdgeInsets.fromLTRB(18, _cardTopGap, 18, 0),
               child: _UserRow(
                 name: userName,
                 email: userEmail,
@@ -743,8 +754,6 @@ class EcQuotaScreen extends StatelessWidget {
     this.videoCount = 0,
     this.typeUsage = const [],
     this.onBack,
-    this.onUpgrade,
-    this.onPaymentHistoryTap,
     this.canManagePlan = true,
     super.key,
   });
@@ -765,12 +774,12 @@ class EcQuotaScreen extends StatelessWidget {
   /// Per-type breakdown, pre-sorted largest-first by the caller.
   final List<EcQuotaTypeUsage> typeUsage;
   final VoidCallback? onBack;
-  final VoidCallback? onUpgrade;
-  final VoidCallback? onPaymentHistoryTap;
 
-  /// Gói cước gắn với tài khoản CHỦ shop. Quản lý/nhân viên vẫn thấy gói đang
-  /// chi phối ca làm (giới hạn quay, retention) nhưng không có đường nâng gói —
-  /// thay nút bằng một dòng giải thích để họ biết hỏi ai.
+  /// Gói cước gắn với tài khoản CHỦ shop; quản lý/nhân viên chỉ xem.
+  ///
+  /// Từ khi app không bán gói nữa thì AI CŨNG chỉ xem, nên cờ này không còn bật
+  /// tắt nút nào. Giữ lại vì backend vẫn trả về và màn hình còn có thể cần phân
+  /// biệt hai vai trò sau này.
   final bool canManagePlan;
 
   int get _usedPercent {
@@ -850,7 +859,6 @@ class EcQuotaScreen extends StatelessWidget {
                       videoCount: videoCount,
                       retentionTotalDays: retentionTotalDays,
                       canManagePlan: canManagePlan,
-                      onUpgrade: onUpgrade,
                     ),
                     if (typeUsage.isNotEmpty) ...[
                       const SizedBox(height: 12),
@@ -858,88 +866,6 @@ class EcQuotaScreen extends StatelessWidget {
                     ],
                   ],
                 ),
-              ),
-            ),
-            // Design `FooterWrap`: gap 8, padding [0, 18, 20, 18].
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 0, 18, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  PenCard(
-                    axis: PenAxis.column,
-                    stroke: null,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      EcTap(
-                        onTap: onPaymentHistoryTap,
-                        child: PenBox(
-                          width: double.infinity,
-                          axis: PenAxis.row,
-                          gap: 12,
-                          cross: CrossAxisAlignment.center,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          children: [
-                            const Icon(
-                              LucideIcons.receiptText,
-                              size: 21,
-                              color: PenColors.ink,
-                            ),
-                            Expanded(
-                              child: PenText(
-                                l10n.quotaPaymentHistory,
-                                size: 15,
-                                color: PenColors.ink,
-                                weight: FontWeight.w600,
-                              ),
-                            ),
-                            const Icon(
-                              LucideIcons.chevronRight,
-                              size: 18,
-                              color: PenColors.mut,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (canManagePlan)
-                    EcTap(
-                      onTap: onUpgrade,
-                      child: PenBox(
-                        width: double.infinity,
-                        height: 52,
-                        fill: PenColors.primary,
-                        radius: 14,
-                        axis: PenAxis.row,
-                        gap: 8,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            LucideIcons.arrowUpCircle,
-                            size: 20,
-                            color: PenColors.card,
-                          ),
-                          PenText(
-                            l10n.quotaUpgradePlan,
-                            size: 17,
-                            color: PenColors.card,
-                            weight: FontWeight.w800,
-                            softWrap: false,
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    PenText(
-                      l10n.quotaOwnerOnlyNote,
-                      align: TextAlign.center,
-                      size: 14,
-                      color: PenColors.mut,
-                    ),
-                ],
               ),
             ),
           ],
@@ -994,7 +920,6 @@ class _QuotaSummaryCard extends StatelessWidget {
     required this.videoCount,
     required this.retentionTotalDays,
     required this.canManagePlan,
-    this.onUpgrade,
   });
 
   final String planLabel;
@@ -1006,7 +931,6 @@ class _QuotaSummaryCard extends StatelessWidget {
   final int videoCount;
   final int retentionTotalDays;
   final bool canManagePlan;
-  final VoidCallback? onUpgrade;
 
   @override
   Widget build(BuildContext context) {
@@ -1041,30 +965,6 @@ class _QuotaSummaryCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (canManagePlan) ...[
-              const SizedBox(width: 12),
-              EcTap(
-                onTap: onUpgrade,
-                child: PenBox(
-                  fill: PenColors.primary,
-                  radius: 999,
-                  hugMain: true,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 9,
-                    horizontal: 12,
-                  ),
-                  children: [
-                    PenText(
-                      l10n.quotaUpgradeShort,
-                      size: 13,
-                      color: PenColors.card,
-                      weight: FontWeight.w700,
-                      softWrap: false,
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
         Column(

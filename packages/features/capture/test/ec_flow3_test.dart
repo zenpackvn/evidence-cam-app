@@ -199,21 +199,27 @@ void main() {
       expect(find.textContaining('video đang chờ'), findsNothing);
     });
 
-    testWidgets('retry and upgrade callbacks fire', (tester) async {
+    testWidgets('retry callback fires', (tester) async {
       EcUploadItem? retried;
-      var upgraded = false;
       await _pump(
         tester,
         EcUploadQueueScreen(
           items: ecDefaultUploadItems,
           onRetry: (item) => retried = item,
-          onUpgrade: () => upgraded = true,
         ),
       );
       await tester.tap(find.text('Thử lại'));
-      await tester.tap(find.text('Nâng gói'));
       expect(retried?.status, EcUploadStatus.error);
-      expect(upgraded, isTrue);
+    });
+
+    // Biển báo hết dung lượng chỉ BÁO, không dẫn đi mua: app không bán gói, và
+    // một dòng chỉ đường sang web để trả tiền là thứ guideline 3.1.1 cấm.
+    testWidgets('biển báo quota không còn đường nâng gói', (tester) async {
+      await _pump(
+        tester,
+        const EcUploadQueueScreen(items: ecDefaultUploadItems),
+      );
+      expect(find.text('Nâng gói'), findsNothing);
     });
 
     // FR-02 — Nhân viên không được xóa bằng chứng. Vai trò được chuyển xuống

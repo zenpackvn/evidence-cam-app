@@ -106,24 +106,3 @@ class _BearerTokenInterceptor extends Interceptor {
     handler.next(options);
   }
 }
-
-/// SDK key công khai của RevenueCat cho bản iOS (`appl_…`). Đây là khoá **công
-/// khai** — nó chỉ định danh app với RevenueCat, không ký được giao dịch nào,
-/// nên nằm trong bundle là đúng chỗ. Khoá bí mật (`sk_…`) tuyệt đối không.
-const kRevenueCatIosKey = String.fromEnvironment('RC_IOS_API_KEY');
-
-/// Khoá công khai của RevenueCat cho bản Android (`goog_…`). Chưa cấu hình —
-/// Google Play chưa có sản phẩm nào.
-const kRevenueCatAndroidKey = String.fromEnvironment('RC_ANDROID_API_KEY');
-
-/// Khoá đúng cho nền tảng đang chạy, rỗng nếu nền tảng đó chưa cấu hình.
-///
-/// Mỗi nền tảng có khoá RIÊNG. Đưa khoá `appl_…` cho bản Android thì
-/// `Purchases.configure` nhận nhưng mọi lời gọi sau đó đều hỏng, và hỏng theo
-/// kiểu khó đoán chứ không báo "sai khoá" — nên phải chọn theo nền tảng chứ
-/// không dùng chung một hằng số.
-String get kRevenueCatKey => switch (defaultTargetPlatform) {
-  TargetPlatform.iOS => kRevenueCatIosKey,
-  TargetPlatform.android => kRevenueCatAndroidKey,
-  _ => '',
-};

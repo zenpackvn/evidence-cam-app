@@ -98,20 +98,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get toastPasswordChanged => 'Đã đổi mật khẩu';
 
   @override
-  String get toastPurchaseApplied => 'Đã kích hoạt gói mới';
-
-  @override
-  String get toastPurchasePending =>
-      'Đã thanh toán. Gói sẽ được kích hoạt trong giây lát';
-
-  @override
-  String get toastPurchaseFailed =>
-      'Không hoàn tất được thanh toán. Vui lòng thử lại';
-
-  @override
-  String get purchaseSuccessTitle => 'Thanh toán thành công 🎉';
-
-  @override
   String get toastPendingDossierConfirm =>
       'Bạn còn hồ sơ khiếu nại đang mở, vui lòng xác nhận lại';
 
@@ -563,15 +549,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get quotaStorage => 'Lưu trữ';
 
   @override
-  String get quotaUpgradePlan => 'Nâng cấp gói';
-
-  @override
-  String get quotaUpgradeShort => 'Nâng cấp';
-
-  @override
-  String get quotaOwnerOnlyNote => 'Chỉ chủ tài khoản mới đổi được gói cước';
-
-  @override
   String get deleteAccountTitleStep1 => 'Xóa tài khoản?';
 
   @override
@@ -684,9 +661,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String quotaRefundNote(int days) {
     return 'Dung lượng hoàn lại khi video hết hạn lưu trữ $days ngày';
   }
-
-  @override
-  String get quotaPaymentHistory => 'Lịch sử thanh toán';
 
   @override
   String deletePendingProfilesWarning(int count) {
@@ -836,9 +810,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get quotaExhaustedNote => 'Hết quota tháng này — video sẽ chờ quota';
-
-  @override
-  String get upgradePlanShort => 'Nâng gói';
 
   @override
   String get queueEmpty => 'Chưa có video trong hàng đợi';
@@ -1729,47 +1700,4 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get appUpdateLater => 'Để sau';
-
-  @override
-  String get paymentHistoryEmptyTitle => 'Chưa có giao dịch nào';
-
-  @override
-  String get paymentHistoryEmptyBody => 'Các lần nâng cấp gói sẽ hiện ở đây.';
-
-  @override
-  String get paymentStatusPaid => 'Đã thanh toán';
-
-  @override
-  String get paymentStatusPending => 'Chờ thanh toán';
-
-  @override
-  String get paymentStatusCancelled => 'Đã hủy';
-
-  @override
-  String get paymentStatusExpired => 'Hết hạn';
-
-  @override
-  String get paymentStatusRefunded => 'Đã hoàn tiền';
-
-  @override
-  String get paymentSourcePayos => 'Thanh toán web';
-
-  @override
-  String get paymentSourceSepay => 'Chuyển khoản';
-
-  @override
-  String get paymentSourceAppStore => 'Mua trong ứng dụng';
-
-  @override
-  String get paymentSandboxNote =>
-      'Giao dịch thử (sandbox), không phải tiền thật.';
-
-  @override
-  String get planTerm1m => '1 tháng';
-
-  @override
-  String get planTerm6m => '6 tháng';
-
-  @override
-  String get planTerm12m => '12 tháng';
 }

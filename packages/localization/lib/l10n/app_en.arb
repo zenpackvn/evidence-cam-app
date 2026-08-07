@@ -45,10 +45,6 @@
   "toastInfoSaved": "Info saved",
   "toastPasswordCreated": "Password created",
   "toastPasswordChanged": "Password changed",
-  "toastPurchaseApplied": "New plan activated",
-  "toastPurchasePending": "Payment received. Your plan will activate shortly",
-  "toastPurchaseFailed": "Payment could not be completed. Please try again",
-  "purchaseSuccessTitle": "Payment successful 🎉",
   "toastPendingDossierConfirm": "You still have an open claim dossier, please confirm again",
   "toastCopiedShareLink": "Share link copied",
   "toastShareFailed": "Couldn't share, try again later",
@@ -258,9 +254,6 @@
     }
   },
   "quotaStorage": "Storage",
-  "quotaUpgradePlan": "Upgrade plan",
-  "quotaUpgradeShort": "Upgrade",
-  "quotaOwnerOnlyNote": "Only the account owner can change the plan",
   "deleteAccountTitleStep1": "Delete account?",
   "deleteAccountTitleStep2": "Confirm permanent deletion?",
   "deleteAccountBodyStep1": "All your videos, shipments and dossiers will be permanently deleted. This action cannot be undone.",
@@ -351,7 +344,6 @@
       }
     }
   },
-  "quotaPaymentHistory": "Payment history",
   "deletePendingProfilesWarning": "You still have {count} dossiers “sent to the platform” — their share links will stop working",
   "@deletePendingProfilesWarning": {
     "placeholders": {
@@ -437,7 +429,6 @@
   "videoTypeSettings": "Video type settings",
   "uploadQueueTitle": "Upload queue",
   "quotaExhaustedNote": "Out of quota this month — videos will wait for quota",
-  "upgradePlanShort": "Upgrade",
   "queueEmpty": "No videos in the queue yet",
   "queueAutoUploadNote": "Upload happens automatically when you're online",
   "waitingUpload": "Waiting to upload",
@@ -1205,19 +1196,5 @@
     "description": "Fallback body of the update dialog when Remote Config supplies none."
   },
   "appUpdateNow": "Update",
-  "appUpdateLater": "Later",
-  "paymentHistoryEmptyTitle": "No transactions yet",
-  "paymentHistoryEmptyBody": "Plan upgrades will show up here.",
-  "paymentStatusPaid": "Paid",
-  "paymentStatusPending": "Awaiting payment",
-  "paymentStatusCancelled": "Cancelled",
-  "paymentStatusExpired": "Expired",
-  "paymentStatusRefunded": "Refunded",
-  "paymentSourcePayos": "Web payment",
-  "paymentSourceSepay": "Bank transfer",
-  "paymentSourceAppStore": "In-app purchase",
-  "paymentSandboxNote": "Sandbox test transaction, not a real payment.",
-  "planTerm1m": "1 month",
-  "planTerm6m": "6 months",
-  "planTerm12m": "12 months"
+  "appUpdateLater": "Later"
 }

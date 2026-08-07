@@ -1102,6 +1102,14 @@ class _LoginMethodsRoute extends StatelessWidget {
 /// usage (bytes used, video counts, per-type breakdown) from the clips
 /// actually sitting in [queue] so the numbers on screen can never disagree
 /// with what's really stored on the device.
+///
+/// **Chỉ xem, không mua.** Gói cước bán ở web, không bán trong app. Màn này
+/// trả lời đúng một câu hỏi: tôi đang ở gói nào và còn bao nhiêu dung lượng.
+///
+/// App cũng KHÔNG nói mua ở đâu — không một dòng chữ, không một đường dẫn.
+/// Guideline 3.1.1 của App Store cấm hướng người dùng ra ngoài để mua nội dung
+/// số, và một câu "nâng gói tại zenpack.vn" là đủ để bị trả hồ sơ. Chủ shop
+/// vốn đã mua ở web nên họ không cần app chỉ đường.
 class _QuotaRoute extends StatefulWidget {
   const _QuotaRoute({required this.repo, required this.queue, this.shopId});
 
@@ -1109,8 +1117,7 @@ class _QuotaRoute extends StatefulWidget {
   final EcUploadQueue queue;
 
   /// Shop đang chọn. Gói cước gắn với tài khoản CHỦ shop, nên phải hỏi theo
-  /// shop thì quản lý/nhân viên mới thấy đúng gói đang chi phối ca làm của họ
-  /// (và `canManagePlan=false` để ẩn nút nâng gói).
+  /// shop thì quản lý/nhân viên mới thấy đúng gói đang chi phối ca làm của họ.
   final String? shopId;
 
   @override
@@ -1119,119 +1126,6 @@ class _QuotaRoute extends StatefulWidget {
 
 class _QuotaRouteState extends State<_QuotaRoute> {
   late Future<QuotaDto> _quota = widget.repo.quota(shopId: widget.shopId);
-  bool _buying = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _analytics()?.trackPaywallViewed();
-  }
-
-  /// Chữ ký quyền dùng dựng từ mỗi mã gói, dùng khi backend chưa trả
-  /// `entitlement` trong `/api/me`.
-  ///
-  /// Khuôn phải trùng [EntitlementDto.signature] để hai nguồn so được với nhau
-  /// — trộn hai khuôn là lần hỏi đầu tiên đã "khác" và mọi lượt mua đều báo
-  /// thành công, kể cả lượt webhook chưa về.
-  static String _entitlementSignature(String planCode) => '$planCode|null|null';
-
-  /// Mở paywall RevenueCat rồi chờ backend áp xong giao dịch.
-  ///
-  /// Cửa hàng báo "đã mua" TRƯỚC khi RevenueCat kịp gọi webhook về backend, nên
-  /// không thể đọc lại gói ngay — phải hỏi lại vài giây. Hết thời gian chờ mà
-  /// gói chưa đổi thì báo "đang xử lý", KHÔNG báo lỗi: tiền đã trừ thật và
-  /// webhook thường về ngay sau đó.
-  Future<void> _upgrade(String currentPlanCode) async {
-    _analytics()?.trackPurchaseStarted(planCode: currentPlanCode);
-    setState(() => _buying = true);
-    try {
-      final billing = _billing();
-      // Gắn phiên mua với tài khoản NGAY TRƯỚC khi mở paywall. RevenueCat gửi
-      // uid này lên webhook; nếu mua khi chưa gắn thì giao dịch rơi vào một
-      // người dùng ẩn danh và backend không biết cộng ngày cho ai.
-      //
-      // Cửa hàng vắng mặt (build thiếu khoá RevenueCat, hoặc mạng hỏng) KHÔNG
-      // chặn việc mở màn: paywall tự hiện trạng thái "chưa tải được bảng giá".
-      // Nút bấm không được dẫn tới ngõ cụt im lặng.
-      var offers = const <EcPlanOffer>[];
-      // Ảnh chụp quyền dùng TRƯỚC khi mở paywall — mốc để biết webhook đã về
-      // hay chưa. Phải đọc ở đây chứ không sau khi mua: đọc sau thì có thể đã
-      // là trạng thái mới rồi, và phép so luôn ra "chưa đổi".
-      var beforeSignature = _entitlementSignature(currentPlanCode);
-      if (billing != null) {
-        try {
-          // repo.account() có thể ném (mất mạng, token hết hạn). Không được để
-          // nó chặn việc mở paywall — nút bấm mà không có gì xảy ra là lỗi tệ
-          // hơn việc hiện bảng giá rỗng.
-          final account = await widget.repo.account();
-          beforeSignature =
-              account.entitlement?.signature ??
-              _entitlementSignature(currentPlanCode);
-          if (await billing.start(account.uid)) {
-            offers = await billing.offers();
-          }
-        } on Object {
-          offers = const [];
-        }
-      }
-      if (!mounted) return;
-      final outcome = await Navigator.of(context).push<EcPurchaseOutcome>(
-        CupertinoPageRoute(
-          builder: (_) => _PaywallRoute(billing: billing, offers: offers),
-        ),
-      );
-      if (!mounted ||
-          outcome == null ||
-          outcome == EcPurchaseOutcome.cancelled) {
-        return;
-      }
-      if (outcome == EcPurchaseOutcome.failed) {
-        _toast(context, context.l10n.toastPurchaseFailed);
-        return;
-      }
-      final applied = await EcBilling.waitForEntitlementChange(
-        // `/api/me` chứ không phải `/api/quota`: chỉ chỗ này mang ngày hết hạn,
-        // thứ duy nhất đổi khi người dùng mua lại đúng gói đang dùng. Web poll
-        // đúng endpoint này vì cùng lý do.
-        fetchSignature: () async {
-          final account = await widget.repo.account();
-          return account.entitlement?.signature ??
-              _entitlementSignature(
-                (await widget.repo.quota(shopId: widget.shopId)).planCode,
-              );
-        },
-        previousSignature: beforeSignature,
-      );
-      if (!mounted) return;
-      // Nạp lại quota TRƯỚC khi mở hộp thoại, để lúc người dùng bấm Đóng thì
-      // trang phía sau đã là số liệu của gói mới, không phải gói cũ.
-      //
-      // Thân khối, KHÔNG phải arrow: closure của setState mà trả về Future thì
-      // Flutter ném assertion và bỏ luôn lượt dựng lại — trang đứng im ở gói cũ.
-      setState(() {
-        _quota = widget.repo.quota(shopId: widget.shopId);
-      });
-      await showCupertinoDialog<void>(
-        context: context,
-        builder: (dialogContext) => CupertinoAlertDialog(
-          title: Text(context.l10n.purchaseSuccessTitle),
-          content: Text(
-            applied
-                ? context.l10n.toastPurchaseApplied
-                : context.l10n.toastPurchasePending,
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(context.l10n.commonClose),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _buying = false);
-    }
-  }
 
   /// Groups this shop's clips by [UploadTask.type], summing each clip's
   /// on-disk file size. Sorted largest-first so the breakdown (and its
@@ -1303,10 +1197,11 @@ class _QuotaRouteState extends State<_QuotaRoute> {
           retentionTotalDays: quota.retentionDays,
           videoCount: videoCount,
           typeUsage: typeUsage,
+          // Mua gói KHÔNG diễn ra trong app nữa — xem chú thích ở đầu lớp.
+          // `canManagePlan` vẫn truyền vào vì màn hình dùng nó cho những nhãn
+          // khác, nhưng không còn nút nào để nó bật/tắt.
           canManagePlan: quota.canManagePlan,
           onBack: () => _back(context, '/account'),
-          onUpgrade: _buying ? null : () => _upgrade(quota.planCode),
-          onPaymentHistoryTap: () => context.push('/payment-history'),
         );
       },
     );
@@ -1715,169 +1610,17 @@ class _EndQrActionRow extends StatelessWidget {
   );
 }
 
-/// Đăng xuất khỏi TẤT CẢ: tài khoản và phiên mua hàng.
+/// Đăng xuất.
 ///
-/// Bỏ [EcBilling.signOut] là để lại một lỗi tiền: RevenueCat vẫn giữ
-/// `app_user_id` của người trước trên thiết bị này, nên người đăng nhập sau mà
-/// mua gói thì webhook gửi về uid CŨ — tiền của người này, ngày cộng cho người
-/// kia. Máy dùng chung ở kho là chuyện bình thường, không phải trường hợp hiếm.
-Future<void> _signOutAll(EcAuth auth) async {
-  await auth.signOut();
-  await _billing()?.signOut();
-}
+/// Trước đây hàm này còn phải gỡ phiên mua hàng RevenueCat khỏi thiết bị, nếu
+/// không thì người đăng nhập sau mua gói lại cộng ngày cho tài khoản trước.
+/// Không còn cửa hàng nào trong app nên lỗi đó cũng không còn chỗ để xảy ra.
+Future<void> _signOutAll(EcAuth auth) => auth.signOut();
 
 T? _maybeGetIt<T extends Object>() =>
     getIt.isRegistered<T>() ? getIt<T>() : null;
 
 AnalyticsService? _analytics() => _maybeGetIt<AnalyticsService>();
-
-/// Vắng mặt khi build không khai `RC_IOS_API_KEY` (test, bản offline) — mọi
-/// đường mua gói phải chịu được `null` chứ không được giả định luôn có.
-EcBilling? _billing() => _maybeGetIt<EcBilling>();
-
-/// Giá mẫu khớp bảng giá đã tạo trên App Store Connect (bang-gia.md §4). CHỈ
-/// dùng khi cửa hàng không trả về gì — simulator, hoặc sản phẩm chưa được duyệt.
-/// Không bao giờ dùng để tính tiền: mua vẫn phải đi qua package thật.
-const _sampleOffers = <(String, String, String, double)>[
-  ('basic', '1m', '169.000 ₫', 169000),
-  ('saver', '1m', '319.000 ₫', 319000),
-  ('premium', '1m', '459.000 ₫', 459000),
-  ('basic', '6m', '939.000 ₫', 939000),
-  ('saver', '6m', '1.749.000 ₫', 1749000),
-  ('premium', '6m', '2.549.000 ₫', 2549000),
-  ('basic', '12m', '1.799.000 ₫', 1799000),
-  ('saver', '12m', '3.390.000 ₫', 3390000),
-  ('premium', '12m', '4.849.000 ₫', 4849000),
-];
-
-/// Mở paywall trực tiếp qua `--dart-define=EC_START=/paywall`.
-class _PaywallPreviewRoute extends StatefulWidget {
-  const _PaywallPreviewRoute({required this.billing});
-
-  final EcBilling? billing;
-
-  @override
-  State<_PaywallPreviewRoute> createState() => _PaywallPreviewRouteState();
-}
-
-class _PaywallPreviewRouteState extends State<_PaywallPreviewRoute> {
-  List<EcPlanOffer>? _offers;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final live = await widget.billing?.offers() ?? const <EcPlanOffer>[];
-    if (mounted) setState(() => _offers = live);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final live = _offers;
-    if (live == null) {
-      return const CupertinoPageScaffold(
-        child: Center(child: CupertinoActivityIndicator()),
-      );
-    }
-    if (live.isNotEmpty) {
-      return _PaywallRoute(billing: widget.billing, offers: live);
-    }
-    return EcPaywallScreen(
-      offers: [
-        for (final (plan, term, label, amount) in _sampleOffers)
-          EcPaywallOffer(
-            planCode: plan,
-            termKey: term,
-            priceLabel: label,
-            priceAmount: amount,
-          ),
-      ],
-      onBack: () => Navigator.of(context).maybePop(),
-    );
-  }
-}
-
-/// Bọc [EcPaywallScreen] với phần gọi cửa hàng. Màn hình thuần hiển thị, không
-/// biết gì về SDK — nhờ vậy test được mà không cần cửa hàng thật.
-///
-/// Đóng route trả về kết quả mua; phía gọi mới là chỗ chờ backend áp giao dịch,
-/// vì paywall đã đóng rồi mà vòng chờ vẫn phải chạy tiếp.
-class _PaywallRoute extends StatefulWidget {
-  const _PaywallRoute({required this.billing, required this.offers});
-
-  /// Null khi build không có khoá RevenueCat — màn vẫn mở, chỉ không mua được.
-  final EcBilling? billing;
-  final List<EcPlanOffer> offers;
-
-  @override
-  State<_PaywallRoute> createState() => _PaywallRouteState();
-}
-
-/// Trang điều khoản và chính sách trên web công ty. Apple đòi hai đường dẫn này
-/// với tới được từ màn bán hàng; để chúng ở đây thay vì hardcode trong package
-/// giao diện, vì đây là chuyện cấu hình sản phẩm chứ không phải chuyện dựng UI.
-const _kTermsUrl = 'https://zenpack.vn/terms';
-const _kPrivacyUrl = 'https://zenpack.vn/privacy';
-
-class _PaywallRouteState extends State<_PaywallRoute> {
-  bool _busy = false;
-
-  /// Nạp lại biên nhận rồi chờ backend áp. Cứu đúng tình huống đã trừ tiền mà
-  /// chưa được cộng ngày; backend chống trùng theo mã giao dịch nên bấm nhiều
-  /// lần cũng không cộng dư.
-  Future<void> _sync() async {
-    final billing = widget.billing;
-    if (billing == null || _busy) return;
-    setState(() => _busy = true);
-    final ok = await billing.syncPurchases();
-    if (!mounted) return;
-    setState(() => _busy = false);
-    _toast(
-      context,
-      ok ? context.l10n.toastPurchasePending : context.l10n.toastPurchaseFailed,
-    );
-  }
-
-  Future<void> _buy(EcPaywallOffer choice) async {
-    final billing = widget.billing;
-    if (billing == null) return;
-    final offer = widget.offers.firstWhere(
-      (o) => o.planCode == choice.planCode && o.termKey == choice.termKey,
-    );
-    setState(() => _busy = true);
-    final outcome = await billing.buy(offer);
-    if (!mounted) return;
-    setState(() => _busy = false);
-    // Huỷ ở hộp thoại cửa hàng thì ở lại paywall — người dùng có thể đổi ý và
-    // chọn gói khác, đá họ ra ngoài là bắt bấm lại từ đầu.
-    if (outcome == EcPurchaseOutcome.cancelled) return;
-    Navigator.of(context).pop(outcome);
-  }
-
-  @override
-  Widget build(BuildContext context) => EcPaywallScreen(
-    busy: _busy,
-    offers: [
-      for (final o in widget.offers)
-        EcPaywallOffer(
-          planCode: o.planCode,
-          termKey: o.termKey,
-          priceLabel: o.priceLabel,
-          priceAmount: o.priceAmount,
-        ),
-    ],
-    onBack: () => Navigator.of(context).pop(EcPurchaseOutcome.cancelled),
-    onBuy: _buy,
-    onTerms: () => _openSupport(context, _kTermsUrl),
-    onPrivacy: () => _openSupport(context, _kPrivacyUrl),
-    // Chỉ hiện đường đồng bộ khi thật sự mua được — không có cửa hàng thì nút
-    // đó không cứu được gì, để lại chỉ tạo thêm một nút chết.
-    onSync: widget.billing == null ? null : _sync,
-  );
-}
 
 CrashReporter? _crashReporter() => _maybeGetIt<CrashReporter>();
 
@@ -4931,100 +4674,6 @@ class _ClaimDetailRoute extends StatelessWidget {
   );
 }
 
-/// Màn lịch sử thanh toán. Đọc một lần khi mở, có nút thử lại khi mạng hỏng.
-///
-/// Không cache: người dùng vào đây đúng lúc muốn kiểm tra một giao dịch vừa
-/// trả — đọc lại từ server mỗi lần mở là thứ họ mong đợi.
-class _PaymentHistoryRoute extends StatefulWidget {
-  const _PaymentHistoryRoute({required this.repo});
-
-  final EcRepository repo;
-
-  @override
-  State<_PaymentHistoryRoute> createState() => _PaymentHistoryRouteState();
-}
-
-class _PaymentHistoryRouteState extends State<_PaymentHistoryRoute> {
-  late Future<List<PaymentDto>> _future = widget.repo.payments();
-
-  // Thân khối, KHÔNG phải arrow: closure của setState mà trả về Future thì
-  // Flutter ném assertion và bỏ luôn lượt dựng lại — nút "Thử lại" thành nút
-  // chết.
-  void _retry() {
-    setState(() {
-      _future = widget.repo.payments();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return FutureBuilder<List<PaymentDto>>(
-      future: _future,
-      builder: (context, snap) => EcPaymentHistoryScreen(
-        loading: snap.connectionState == ConnectionState.waiting,
-        errorMessage: snap.hasError ? _dataErrorText(l10n, snap.error!) : null,
-        entries: (snap.data ?? const <PaymentDto>[])
-            .map((p) => _paymentEntry(l10n, p))
-            .toList(),
-        onBack: () => _back(context, '/quota'),
-        onRetry: _retry,
-      ),
-    );
-  }
-}
-
-EcPaymentEntry _paymentEntry(AppLocalizations l10n, PaymentDto p) {
-  final plan = _planDisplayName(l10n, p.planCode);
-  final term = _termLabel(l10n, p.term);
-  return EcPaymentEntry(
-    id: p.id,
-    title: term == null ? plan : '$plan · $term',
-    status: _paymentStatus(p.status),
-    dateLabel: _dateLabel(
-      DateTime.fromMillisecondsSinceEpoch(p.createdAt).toLocal(),
-    ),
-    sourceLabel: switch (p.source) {
-      'sepay' => l10n.paymentSourceSepay,
-      'appstore' => l10n.paymentSourceAppStore,
-      _ => l10n.paymentSourcePayos,
-    },
-    // Backend trả null khi không biết giá (mua trong ứng dụng). Giữ nguyên
-    // null tới tận UI thay vì đổi thành 0 — xem [PaymentDto.amount].
-    amountLabel: p.amount == null ? null : _vndLabel(p.amount!),
-    sandbox: p.sandbox,
-  );
-}
-
-/// `1m`/`6m`/`12m` → nhãn đọc được; null giữ nguyên null (SePay và App Store
-/// không có thời hạn để hiện).
-String? _termLabel(AppLocalizations l10n, String? term) => switch (term) {
-  '1m' => l10n.planTerm1m,
-  '6m' => l10n.planTerm6m,
-  '12m' => l10n.planTerm12m,
-  _ => null,
-};
-
-EcPaymentStatus _paymentStatus(String raw) => switch (raw) {
-  'paid' => EcPaymentStatus.paid,
-  'cancelled' => EcPaymentStatus.cancelled,
-  'expired' => EcPaymentStatus.expired,
-  'refunded' => EcPaymentStatus.refunded,
-  _ => EcPaymentStatus.pending,
-};
-
-/// `1569000` → `1.569.000 ₫`. Dấu chấm phân nhóm nghìn theo cách viết tiền
-/// Việt Nam, không dùng dấu phẩy kiểu Anh–Mỹ.
-String _vndLabel(int amount) {
-  final digits = amount.abs().toString();
-  final buffer = StringBuffer();
-  for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write('.');
-    buffer.write(digits[i]);
-  }
-  return '${amount < 0 ? '-' : ''}$buffer ₫';
-}
-
 String _kindLabel(AppLocalizations l10n, String kind) =>
     kind == 'photo' ? l10n.kindPhoto : l10n.kindVideo;
 
@@ -5211,7 +4860,6 @@ class _QueueRoute extends StatelessWidget {
     required this.queue,
     required this.canDelete,
     this.onBack,
-    this.onUpgrade,
   });
 
   final EcUploadQueue queue;
@@ -5221,7 +4869,6 @@ class _QueueRoute extends StatelessWidget {
   /// chưa có bản sao nào để chặn hộ.
   final bool canDelete;
   final VoidCallback? onBack;
-  final VoidCallback? onUpgrade;
 
   @override
   Widget build(BuildContext context) {
@@ -5234,7 +4881,6 @@ class _QueueRoute extends StatelessWidget {
         return EcUploadQueueScreen(
           items: items,
           onBack: onBack,
-          onUpgrade: onUpgrade,
           onRetry: (item) {
             final id = item.id;
             if (id != null) queue.retry(id);
@@ -6020,7 +5666,6 @@ GoRouter _buildRouter(
           // affordance; evidence is easier to re-record than to un-delete.
           canDelete: (_selected(selectedShop)?.role ?? 'staff') != 'staff',
           onBack: () => _back(c, '/home'),
-          onUpgrade: () => c.push('/quota'),
         ),
       ),
       GoRoute(
@@ -6478,10 +6123,6 @@ GoRouter _buildRouter(
         ),
       ),
       GoRoute(
-        path: '/payment-history',
-        builder: (c, s) => _PaymentHistoryRoute(repo: repo),
-      ),
-      GoRoute(
         path: '/claims',
         builder: (c, s) => _ClaimListRoute(
           shopId: _selected(selectedShop)?.id ?? '',
@@ -6503,15 +6144,6 @@ GoRouter _buildRouter(
             onBack: () => _back(c, '/claims'),
           );
         },
-      ),
-      // Paywall mở thẳng, cho QA và cho ảnh chụp nộp App Review.
-      //
-      // Simulator không có StoreKit thật nên `offers()` trả rỗng và màn hình sẽ
-      // hiện "chưa tải được bảng giá" — vô dụng để chụp ảnh. Route này rơi về
-      // bảng giá mẫu khi cửa hàng im lặng, nên vẫn xem và chụp được.
-      GoRoute(
-        path: '/paywall',
-        builder: (c, s) => _PaywallPreviewRoute(billing: _billing()),
       ),
       GoRoute(
         path: '/language',

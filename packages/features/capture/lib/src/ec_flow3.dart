@@ -1590,7 +1590,6 @@ class EcUploadQueueScreen extends StatelessWidget {
   const EcUploadQueueScreen({
     this.items = const [],
     this.onBack,
-    this.onUpgrade,
     this.onSettings,
     this.onRetry,
     this.onPause,
@@ -1601,7 +1600,6 @@ class EcUploadQueueScreen extends StatelessWidget {
 
   final List<EcUploadItem> items;
   final VoidCallback? onBack;
-  final VoidCallback? onUpgrade;
 
   /// F3-06's header gear. Optional: no upload-settings screen exists yet, so
   /// the icon only appears once a caller has somewhere to send it.
@@ -1682,7 +1680,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                     // this used to render unconditionally, showing "out of
                     // quota" even when nothing was quota-blocked.
                     if (quotaWaiting > 0) ...[
-                      _QuotaBanner(onUpgrade: onUpgrade),
+                      const _QuotaBanner(),
                       const SizedBox(height: 16),
                     ],
                     if (items.isEmpty)
@@ -1750,12 +1748,13 @@ class EcUploadQueueScreen extends StatelessWidget {
 }
 
 /// F3-06's quota banner. Amber-tinted, not grey: something is blocked, and the
-/// grey version read as a neutral tip nobody acted on. "Nâng gói" is a link
-/// rather than a boxed button — one less box competing with the list below.
+/// grey version read as a neutral tip nobody acted on.
+///
+/// Chỉ BÁO đầy, không nói mua ở đâu. Link "Nâng gói" từng đứng cạnh đây, nhưng
+/// app không bán gói nữa — và một dòng chỉ đường sang web để trả tiền là đúng
+/// thứ guideline 3.1.1 của App Store cấm. Chủ shop mua ở web, họ biết chỗ.
 class _QuotaBanner extends StatelessWidget {
-  const _QuotaBanner({this.onUpgrade});
-
-  final VoidCallback? onUpgrade;
+  const _QuotaBanner();
 
   @override
   Widget build(BuildContext context) {
@@ -1777,17 +1776,6 @@ class _QuotaBanner extends StatelessWidget {
             child: Text(
               context.l10n.quotaExhaustedNote,
               style: _t(13, FontWeight.w400, BrandColors.ink),
-            ),
-          ),
-          const SizedBox(width: 10),
-          EcTap(
-            onTap: onUpgrade,
-            child: Text(
-              context.l10n.upgradePlanShort,
-              style: _t(13, FontWeight.w700, BrandColors.dark).copyWith(
-                decoration: TextDecoration.underline,
-                decorationColor: BrandColors.dark,
-              ),
             ),
           ),
         ],

@@ -154,38 +154,24 @@ void main() {
       expect(find.text('Đã dùng 20%'), findsOneWidget);
       expect(find.text('Lưu trữ'), findsOneWidget);
       expect(find.text('90 ngày'), findsOneWidget);
-      expect(find.text('Nâng cấp gói'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('upgrade button fires callback', (tester) async {
-      var upgraded = false;
-      await _pump(tester, EcQuotaScreen(onUpgrade: () => upgraded = true));
-      await tester.tap(find.text('Nâng cấp gói'));
-      expect(upgraded, isTrue);
+    // App KHÔNG bán gói nữa — mua ở web. Màn này chỉ trả lời "tôi đang ở gói
+    // nào, còn bao nhiêu". Ba test cũ canh nút "Nâng cấp gói", pill "Nâng cấp"
+    // và dòng "chỉ chủ tài khoản mới đổi được gói" đã bỏ cùng chúng.
+    testWidgets('không còn đường mua gói nào trên màn này', (tester) async {
+      await _pump(tester, const EcQuotaScreen());
+      expect(find.text('Nâng cấp gói'), findsNothing);
+      expect(find.text('Nâng cấp'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('pill "Nâng cấp" trong thẻ gói cũng mở đường nâng cấp', (
-      tester,
-    ) async {
-      // Màn có HAI chỗ nâng cấp: nút lớn dưới cùng và pill nhỏ cạnh tên gói.
-      // Pill là thứ người dùng chạm nhiều hơn vì nó nằm ngay tầm mắt, nhưng
-      // trước đây không có test nào canh nó.
-      var upgraded = false;
-      await _pump(tester, EcQuotaScreen(onUpgrade: () => upgraded = true));
-      await tester.tap(find.text('Nâng cấp'));
-      expect(upgraded, isTrue);
-    });
-
-    testWidgets('nhân viên: không có nút nâng gói, chỉ dòng giải thích', (
+    testWidgets('nhân viên cũng thấy đúng màn đó, không thiếu không thừa', (
       tester,
     ) async {
       await _pump(tester, const EcQuotaScreen(canManagePlan: false));
       expect(find.text('Nâng cấp gói'), findsNothing);
-      expect(
-        find.text('Chỉ chủ tài khoản mới đổi được gói cước'),
-        findsOneWidget,
-      );
       expect(tester.takeException(), isNull);
     });
   });

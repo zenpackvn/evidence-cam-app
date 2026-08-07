@@ -6,9 +6,7 @@
 /// cho lúc người bán muốn bổ sung.
 ///
 /// Package giao diện nên KHÔNG chạm tới `EcClaimDossier` của `shared_contracts`
-/// — nó nhận những kiểu nhỏ khai ngay dưới đây, giống cách
-/// `EcPaymentHistoryScreen` không dùng thẳng `PaymentDto`. Việc quy đổi là của
-/// app shell.
+/// — nó nhận những kiểu nhỏ khai ngay dưới đây. Việc quy đổi là của app shell.
 library;
 
 import 'package:ec_ui/ec_ui.dart';

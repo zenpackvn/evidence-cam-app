@@ -507,63 +507,6 @@ class QuotaDto {
   final bool canManagePlan;
 }
 
-/// Một lần trả tiền, gộp từ ba đường thu của backend (`GET /api/payments`).
-///
-/// Người dùng không cần biết tiền đi qua PayOS, chuyển khoản hay App Store —
-/// nhưng [source] vẫn hiện ra vì nó quyết định họ phải hỏi ai khi cần hóa đơn
-/// hay khiếu nại: mua trong ứng dụng thì Apple giữ, không phải mình.
-class PaymentDto {
-  const PaymentDto({
-    required this.id,
-    required this.source,
-    required this.planCode,
-    required this.status,
-    required this.createdAt,
-    this.term,
-    this.days,
-    this.amount,
-    this.paidAt,
-    this.sandbox = false,
-  });
-
-  factory PaymentDto.fromJson(Map<String, dynamic> j) => PaymentDto(
-    id: (j['id'] as String?) ?? '',
-    source: (j['source'] as String?) ?? 'payos',
-    planCode: (j['plan_code'] as String?) ?? 'free',
-    status: (j['status'] as String?) ?? 'pending',
-    createdAt: _int(j['created_at']),
-    term: j['term'] as String?,
-    days: _intN(j['days']),
-    amount: _intN(j['amount']),
-    paidAt: _intN(j['paid_at']),
-    sandbox: (j['sandbox'] as bool?) ?? false,
-  );
-
-  /// Mã đối soát của nguồn tương ứng — người dùng đọc mã này cho CSKH.
-  final String id;
-
-  /// `payos` | `sepay` | `appstore`.
-  final String source;
-  final String planCode;
-
-  /// `1m`/`6m`/`12m`, null với SePay và mua trong ứng dụng.
-  final String? term;
-  final int? days;
-
-  /// VND. **Null với mua trong ứng dụng** — App Store giữ điểm giá theo từng
-  /// SKU nên backend không có con số nào đứng tên được. UI phải chịu được null
-  /// chứ không được thay bằng 0.
-  final int? amount;
-
-  /// `paid` | `pending` | `cancelled` | `expired` | `refunded`.
-  final String status;
-  final int createdAt;
-  final int? paidAt;
-
-  /// Giao dịch thử của App Store sandbox — không phải tiền thật.
-  final bool sandbox;
-}
-
 class PresignDto {
   const PresignDto({
     required this.evidenceId,

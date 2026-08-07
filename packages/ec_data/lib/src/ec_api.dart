@@ -70,13 +70,6 @@ class EcApi {
     QuotaDto.fromJson,
   );
 
-  /// Lịch sử thanh toán của chính tài khoản đang đăng nhập, mới nhất trước.
-  ///
-  /// Backend đã gộp sẵn cả ba đường thu (PayOS / chuyển khoản cũ / App Store)
-  /// — client không ghép, không sắp xếp lại.
-  Future<List<PaymentDto>> listPayments() =>
-      _getList('/api/payments', PaymentDto.fromJson);
-
   // --- shops / members (FR-05) ---
   Future<List<ShopDto>> listShops() => _getList('/api/shops', ShopDto.fromJson);
 

@@ -410,8 +410,18 @@ class _ShopHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Header nằm trên [PenBrandBanner] nên chữ và mũi tên đều trắng.
+    //
+    // Đệm trên 0: header dính sát mép dưới vùng an toàn. Đây là SÀN — thấp
+    // hơn nữa phải bỏ `SafeArea`, và lúc đó tên shop chui vào tai thỏ.
+    //
+    // Vùng an toàn của iOS đã chừa sẵn chỗ cho tai thỏ, nên 28 của bản gốc là
+    // một dải trống cộng thêm, nhìn ra như lỗi căn lề chứ không phải khoảng thở.
+    //
+    // Sửa số này thì phải sửa chiều cao `PenBrandBanner` ở `EcHomeOrdersScreen`
+    // đúng bằng chừng ấy — banner neo vào tai thỏ chứ không trôi theo nội dung,
+    // nên lệch nhau là ô nhập mã vận đơn thụt vào vùng xanh.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 28, 18, 0),
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
       child: Row(
         children: [
           PenBackButton(onTap: onBack, color: PenColors.card),
@@ -3856,12 +3866,20 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
 
   void _toggleLinkMode() => setState(() {
     _linkMode = !_linkMode;
-    if (!_linkMode) {
-      _expanded.clear();
-      _pickedEvidence.clear();
-      _evidenceByCode.clear();
-    }
+    if (!_linkMode) _clearPicks();
   });
+
+  /// Thoát hẳn chế độ chọn, về lại nút dấu cộng.
+  void _exitLinkMode() => setState(() {
+    _linkMode = false;
+    _clearPicks();
+  });
+
+  void _clearPicks() {
+    _expanded.clear();
+    _pickedEvidence.clear();
+    _evidenceByCode.clear();
+  }
 
   /// Bằng chứng đã tick, gom theo mã đơn và giữ đúng thứ tự đơn trên màn.
   ///
@@ -3913,9 +3931,15 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
         children: [
           // Dải xanh chạy hết bề ngang, luồn cả sau thanh trạng thái; header
           // và ba thẻ số nằm đè lên nó.
+          // Dải xanh phải lùi ĐÚNG BẰNG lượng nội dung lùi lên (28 -> 12), nếu
+          // không thì mọi thứ trượt lên mà nền xanh đứng yên: nhìn ra là "không
+          // đổi gì", và ô nhập mã vận đơn thụt vào trong vùng xanh.
+          //
+          // `PenBrandBanner` cao `safeArea.top + height`, nên con số này là
+          // phần NẰM DƯỚI tai thỏ chứ không phải tổng chiều cao.
           const Align(
             alignment: Alignment.topCenter,
-            child: PenBrandBanner(height: 178),
+            child: PenBrandBanner(height: 150),
           ),
           SafeArea(
             bottom: false,
@@ -4223,7 +4247,14 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                         ),
                       ),
                       EcTap(
-                        onTap: () => widget.onCreateClaim?.call(_claimPicks),
+                        // Tạo xong là ĐÓNG chế độ chọn, về lại dấu cộng. Ở lại
+                        // với nguyên đống tick cũ thì không có gì nói cho người
+                        // dùng biết hồ sơ đã tạo xong — và bấm thêm lần nữa là
+                        // ra một hồ sơ thứ hai trùng hệt cái đầu.
+                        onTap: () {
+                          widget.onCreateClaim?.call(_claimPicks);
+                          _exitLinkMode();
+                        },
                         child: PenBox(
                           height: 56,
                           fill: PenColors.primary,

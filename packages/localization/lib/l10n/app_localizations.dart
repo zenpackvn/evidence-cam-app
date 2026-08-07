@@ -260,30 +260,6 @@ abstract class AppLocalizations {
   /// **'Password changed'**
   String get toastPasswordChanged;
 
-  /// No description provided for @toastPurchaseApplied.
-  ///
-  /// In en, this message translates to:
-  /// **'New plan activated'**
-  String get toastPurchaseApplied;
-
-  /// No description provided for @toastPurchasePending.
-  ///
-  /// In en, this message translates to:
-  /// **'Payment received. Your plan will activate shortly'**
-  String get toastPurchasePending;
-
-  /// No description provided for @toastPurchaseFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Payment could not be completed. Please try again'**
-  String get toastPurchaseFailed;
-
-  /// No description provided for @purchaseSuccessTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Payment successful 🎉'**
-  String get purchaseSuccessTitle;
-
   /// No description provided for @toastPendingDossierConfirm.
   ///
   /// In en, this message translates to:
@@ -1112,24 +1088,6 @@ abstract class AppLocalizations {
   /// **'Storage'**
   String get quotaStorage;
 
-  /// No description provided for @quotaUpgradePlan.
-  ///
-  /// In en, this message translates to:
-  /// **'Upgrade plan'**
-  String get quotaUpgradePlan;
-
-  /// No description provided for @quotaUpgradeShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Upgrade'**
-  String get quotaUpgradeShort;
-
-  /// No description provided for @quotaOwnerOnlyNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Only the account owner can change the plan'**
-  String get quotaOwnerOnlyNote;
-
   /// No description provided for @deleteAccountTitleStep1.
   ///
   /// In en, this message translates to:
@@ -1321,12 +1279,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Storage is freed once a video passes its {days}-day retention window'**
   String quotaRefundNote(int days);
-
-  /// No description provided for @quotaPaymentHistory.
-  ///
-  /// In en, this message translates to:
-  /// **'Payment history'**
-  String get quotaPaymentHistory;
 
   /// No description provided for @deletePendingProfilesWarning.
   ///
@@ -1597,12 +1549,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Out of quota this month — videos will wait for quota'**
   String get quotaExhaustedNote;
-
-  /// No description provided for @upgradePlanShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Upgrade'**
-  String get upgradePlanShort;
 
   /// No description provided for @queueEmpty.
   ///
@@ -3157,90 +3103,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Later'**
   String get appUpdateLater;
-
-  /// No description provided for @paymentHistoryEmptyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No transactions yet'**
-  String get paymentHistoryEmptyTitle;
-
-  /// No description provided for @paymentHistoryEmptyBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan upgrades will show up here.'**
-  String get paymentHistoryEmptyBody;
-
-  /// No description provided for @paymentStatusPaid.
-  ///
-  /// In en, this message translates to:
-  /// **'Paid'**
-  String get paymentStatusPaid;
-
-  /// No description provided for @paymentStatusPending.
-  ///
-  /// In en, this message translates to:
-  /// **'Awaiting payment'**
-  String get paymentStatusPending;
-
-  /// No description provided for @paymentStatusCancelled.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancelled'**
-  String get paymentStatusCancelled;
-
-  /// No description provided for @paymentStatusExpired.
-  ///
-  /// In en, this message translates to:
-  /// **'Expired'**
-  String get paymentStatusExpired;
-
-  /// No description provided for @paymentStatusRefunded.
-  ///
-  /// In en, this message translates to:
-  /// **'Refunded'**
-  String get paymentStatusRefunded;
-
-  /// No description provided for @paymentSourcePayos.
-  ///
-  /// In en, this message translates to:
-  /// **'Web payment'**
-  String get paymentSourcePayos;
-
-  /// No description provided for @paymentSourceSepay.
-  ///
-  /// In en, this message translates to:
-  /// **'Bank transfer'**
-  String get paymentSourceSepay;
-
-  /// No description provided for @paymentSourceAppStore.
-  ///
-  /// In en, this message translates to:
-  /// **'In-app purchase'**
-  String get paymentSourceAppStore;
-
-  /// No description provided for @paymentSandboxNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Sandbox test transaction, not a real payment.'**
-  String get paymentSandboxNote;
-
-  /// No description provided for @planTerm1m.
-  ///
-  /// In en, this message translates to:
-  /// **'1 month'**
-  String get planTerm1m;
-
-  /// No description provided for @planTerm6m.
-  ///
-  /// In en, this message translates to:
-  /// **'6 months'**
-  String get planTerm6m;
-
-  /// No description provided for @planTerm12m.
-  ///
-  /// In en, this message translates to:
-  /// **'12 months'**
-  String get planTerm12m;
 }
 
 class _AppLocalizationsDelegate
