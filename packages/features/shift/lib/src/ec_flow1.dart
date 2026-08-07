@@ -398,14 +398,25 @@ class _SimpleHeader extends StatelessWidget {
 /// lại — không có chip mây. Chip đó từng nằm ở đây và đẩy toàn bộ màn xuống
 /// 9pt so với design; lối vào hàng đợi upload giờ là thẻ "Chờ tải".
 class _ShopHeader extends StatelessWidget {
-  const _ShopHeader({required this.shopName, this.onBack, this.onShopTap});
+  const _ShopHeader({
+    required this.shopName,
+    this.onBack,
+    this.onShopTap,
+    this.onSettings,
+  });
 
   final String shopName;
   final VoidCallback? onBack;
 
-  /// Chạm vào tên shop mở Chi tiết cửa hàng (F1-09). Header giữ nguyên khung
-  /// design — tên shop chính là nút, không thêm icon nào.
+  /// Chạm vào tên shop mở Chi tiết cửa hàng (F1-09).
   final VoidCallback? onShopTap;
+
+  /// Bánh răng góc phải: mở Quản lý cửa hàng.
+  ///
+  /// Lối vào đó trước nằm ở màn Chọn cửa hàng — một màn người dùng chỉ đi qua
+  /// một lần lúc vào ca rồi không quay lại nữa. Muốn sửa cài đặt shop thì phải
+  /// thoát ca ra ngoài. Nay nó nằm ngay trong ca làm.
+  final VoidCallback? onSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -441,6 +452,20 @@ class _ShopHeader extends StatelessWidget {
           ),
           // The upload-queue chip used to live here; the "Chờ tải" stat card
           // below already shows the same number and is the tap target now.
+          if (onSettings != null)
+            EcTap(
+              onTap: onSettings,
+              child: const Padding(
+                // Lề phải 0 để bánh răng thẳng hàng với mép phải của ba thẻ số
+                // bên dưới; đệm quanh chỉ để nới vùng chạm.
+                padding: EdgeInsets.fromLTRB(10, 6, 0, 6),
+                child: Icon(
+                  LucideIcons.settings,
+                  size: 24,
+                  color: PenColors.card,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -922,24 +947,20 @@ class EcChooseShopScreen extends StatelessWidget {
   const EcChooseShopScreen({
     required this.shops,
     this.onSelect,
-    this.onManage,
     this.onAddShop,
     this.onLogout,
-    this.showManage = true,
     super.key,
   });
 
   final List<EcShopSummary> shops;
   final ValueChanged<EcShopSummary>? onSelect;
-  final VoidCallback? onManage;
 
-  /// "Thêm cửa hàng mới" — the design puts a create entry on this screen too.
+  /// "Thêm cửa hàng mới" — lối tạo shop DUY NHẤT, cố định ở màn này.
+  ///
+  /// Quản lý cửa hàng đã dời vào bánh răng ở header trang Vận đơn, nên nó không
+  /// còn là chỗ chứa nút tạo shop được: muốn vào đó phải đang ở trong một shop.
   final VoidCallback? onAddShop;
   final VoidCallback? onLogout;
-
-  /// Whether the "Quản lý cửa hàng" row is shown — hidden when the user is only
-  /// staff (Nhân viên) and manages no shop (FR-05).
-  final bool showManage;
 
   @override
   Widget build(BuildContext context) {
@@ -976,52 +997,13 @@ class EcChooseShopScreen extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 16),
-            if (showManage) ...[
-              PenCard(
-                gap: 16,
-                padding: const EdgeInsets.all(16),
-                onTap: onManage,
-                children: [
-                  const Icon(
-                    LucideIcons.settings,
-                    size: 26,
-                    color: PenColors.ink,
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        PenText(
-                          l10n.shopManageTitle,
-                          size: 18,
-                          color: PenColors.ink,
-                          weight: FontWeight.w700,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 3),
-                        PenText(
-                          l10n.shopManageOwnerOnly,
-                          size: 12,
-                          color: PenColors.mut,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    LucideIcons.chevronRight,
-                    size: 21,
-                    color: PenColors.mut,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-            ],
-            // Không còn hàng "Tạo shop mới" ở đây: việc tạo shop đã nằm trong
-            // Quản lý cửa hàng. Hai lối vào cho cùng một việc chỉ làm màn chọn
-            // shop dài thêm mà không cho thêm khả năng nào.
-            const SizedBox(height: 8),
+            // "Thêm cửa hàng mới" ở ĐÂY, ngay dưới danh sách shop.
+            //
+            // Trước nó nằm trong Quản lý cửa hàng — mà muốn vào đó thì đã phải
+            // có ít nhất một shop. Người vừa đăng ký, chưa có shop nào, không
+            // có đường nào tạo shop đầu tiên ngoài màn này.
+            _AddShopRow(onTap: onAddShop),
+            const SizedBox(height: 12),
             _LogoutRow(onTap: onLogout),
           ],
         ),
@@ -1095,6 +1077,41 @@ class _ShopRow extends StatelessWidget {
 
 /// The centred `log-out` + "Đăng xuất" row both shop-picking screens end on —
 /// the only way out of an account that has no shop to enter.
+/// "Thêm cửa hàng mới" — hàng viền đứt ngay dưới danh sách shop.
+///
+/// Viền chứ không nền đặc: nó là lối phụ, không phải việc chính của màn này.
+/// Việc chính là chọn một shop đã có mà vào ca.
+class _AddShopRow extends StatelessWidget {
+  const _AddShopRow({this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: PenBox(
+      width: double.infinity,
+      stroke: PenColors.soft,
+      radius: 14,
+      axis: PenAxis.row,
+      gap: 10,
+      main: MainAxisAlignment.center,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 15),
+      children: [
+        const Icon(LucideIcons.plus, size: 20, color: PenColors.ink),
+        PenText(
+          context.l10n.shopAddNew,
+          size: 16,
+          color: PenColors.link,
+          weight: FontWeight.w700,
+          softWrap: false,
+        ),
+      ],
+    ),
+  );
+}
+
 class _LogoutRow extends StatelessWidget {
   const _LogoutRow({this.onTap});
 
@@ -3613,6 +3630,7 @@ class EcHomeOrdersScreen extends StatefulWidget {
     this.emptyText = 'Shop chưa có đơn nào',
     this.onBack,
     this.onShopTap,
+    this.onSettings,
     this.onScan,
     this.onScanResult,
     this.onSearchChanged,
@@ -3650,6 +3668,9 @@ class EcHomeOrdersScreen extends StatefulWidget {
 
   /// Chạm vào tên shop trên header — mở Chi tiết cửa hàng.
   final VoidCallback? onShopTap;
+
+  /// Bánh răng góc phải header — mở Quản lý cửa hàng.
+  final VoidCallback? onSettings;
 
   /// Opens the barcode scanner; the returned code fills the search box.
   final Future<String?> Function()? onScan;
@@ -3963,6 +3984,7 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                   shopName: widget.shopName,
                   onBack: widget.onBack,
                   onShopTap: widget.onShopTap,
+                  onSettings: widget.onSettings,
                 ),
                 // Phần cố định: thống kê, ô tìm và hàng lọc không cuộn
                 // theo danh sách. Hất danh sách lên mà bộ lọc trôi mất thì

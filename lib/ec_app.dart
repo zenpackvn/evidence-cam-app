@@ -2318,7 +2318,6 @@ class _ChooseShopRoute extends StatefulWidget {
   const _ChooseShopRoute({
     required this.repo,
     this.onSelect,
-    this.onManage,
     this.onCreateShop,
     this.onLogout,
     this.autoEnter = true,
@@ -2326,7 +2325,6 @@ class _ChooseShopRoute extends StatefulWidget {
 
   final EcRepository repo;
   final ValueChanged<EcShopSummary>? onSelect;
-  final VoidCallback? onManage;
   final VoidCallback? onCreateShop;
   final VoidCallback? onLogout;
 
@@ -2426,7 +2424,7 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
         _last = shops;
         if (shops.isEmpty) {
           return EcNoShopScreen(
-            onCreate: widget.onCreateShop ?? widget.onManage,
+            onCreate: widget.onCreateShop,
             // Nạp lại thật, không chỉ hiện thông báo: người vừa được mời bấm
             // vào đây là để hỏi "đã vào chưa", mà một câu toast thì không trả
             // lời được câu đó.
@@ -2440,18 +2438,9 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
         _autoSelectIfNeeded(shops);
         return EcChooseShopScreen(
           shops: shops,
-          // Luôn hiện "Quản lý cửa hàng".
-          //
-          // Trước đây ẩn khi mọi shop đều là vai trò nhân viên, nên tài khoản
-          // chỉ đi làm thuê thì lối vào biến mất hẳn — nhìn ra như app mất
-          // tính năng. Danh sách bên trong giờ đã hiện đủ mọi shop, nên vào
-          // vẫn xem được, chỉ là không sửa được thứ mình không có quyền.
-          showManage: true,
           onSelect: widget.onSelect,
-          onManage: widget.onManage,
-          // Cùng đích với nút "Tạo shop" ở màn chưa-có-shop; thiếu dòng này
-          // hàng "Tạo shop mới" vẫn vẽ ra nhưng bấm không ra gì.
-          onAddShop: widget.onCreateShop ?? widget.onManage,
+          // Cùng đích với nút "Tạo shop" ở màn chưa-có-shop.
+          onAddShop: widget.onCreateShop,
           onLogout: widget.onLogout,
         );
       },
@@ -3146,6 +3135,7 @@ class _OrdersRoute extends StatefulWidget {
     this.evidenceCountOverrides,
     this.onBack,
     this.onShopTap,
+    this.onSettings,
     this.onNavRecord,
     this.onNavAccount,
     this.onQueueTap,
@@ -3163,6 +3153,9 @@ class _OrdersRoute extends StatefulWidget {
   final _EvidenceCountOverrides? evidenceCountOverrides;
   final VoidCallback? onBack;
   final VoidCallback? onShopTap;
+
+  /// Bánh răng góc phải header — mở Quản lý cửa hàng.
+  final VoidCallback? onSettings;
   final VoidCallback? onNavRecord;
   final VoidCallback? onNavAccount;
   final VoidCallback? onQueueTap;
@@ -3587,6 +3580,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         emptyText: context.l10n.ordersEmpty,
         onBack: widget.onBack,
         onShopTap: widget.onShopTap,
+        onSettings: widget.onSettings,
         onNavRecord: widget.onNavRecord,
         onNavAccount: widget.onNavAccount,
         onOrderTap: widget.onOrderTap == null
@@ -5089,7 +5083,6 @@ GoRouter _buildRouter(
               _analytics()?.trackShopSelected(platform: shop.platform);
               c.go('/home');
             },
-            onManage: () => c.push('/shop-mgmt'),
             onCreateShop: () => c.push('/create-shop'),
             onLogout: () {
               _analytics()?.trackSignOut();
@@ -5188,6 +5181,10 @@ GoRouter _buildRouter(
                     // không thì màn F1-09 chỉ tới được qua đường vòng
                     // Chọn cửa hàng → Quản lý cửa hàng.
                     onShopTap: () => c.push('/shop-detail', extra: shop),
+                    // Bánh răng góc phải header: Quản lý cửa hàng, lối vào
+                    // trước nằm ở màn Chọn cửa hàng — một màn người dùng chỉ đi
+                    // qua lúc vào ca rồi không quay lại nữa.
+                    onSettings: () => c.push('/shop-mgmt'),
                     onNavRecord: () => c.go('/record'),
                     onNavAccount: () => c.go('/account'),
                     onQueueTap: () => c.push('/queue'),

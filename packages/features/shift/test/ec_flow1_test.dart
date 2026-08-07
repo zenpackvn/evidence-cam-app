@@ -340,26 +340,54 @@ void main() {
       expect(find.text('Chọn cửa hàng'), findsOneWidget);
       expect(find.text('Shop ABC'), findsOneWidget);
       expect(find.text('Shop XYZ'), findsOneWidget);
-      expect(find.text('Quản lý cửa hàng'), findsOneWidget);
+      // "Quản lý cửa hàng" đã dời vào bánh răng ở header trang Vận đơn; chỗ
+      // này giờ là lối tạo shop duy nhất.
+      expect(find.text('Quản lý cửa hàng'), findsNothing);
+      expect(find.text('Thêm cửa hàng mới'), findsOneWidget);
       expect(find.text('Đăng xuất'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('select + manage callbacks fire', (tester) async {
+    testWidgets('select + add shop callbacks fire', (tester) async {
       EcShopSummary? selected;
-      var managed = false;
+      var added = false;
       await _pump(
         tester,
         EcChooseShopScreen(
           shops: shops,
           onSelect: (shop) => selected = shop,
-          onManage: () => managed = true,
+          onAddShop: () => added = true,
         ),
       );
       await tester.tap(find.text('Shop ABC'));
-      await tester.tap(find.text('Quản lý cửa hàng'));
+      await tester.tap(find.text('Thêm cửa hàng mới'));
       expect(selected?.name, 'Shop ABC');
-      expect(managed, isTrue);
+      expect(added, isTrue);
+    });
+  });
+
+  group('EcHomeOrdersScreen — bánh răng cài đặt', () {
+    // Quản lý cửa hàng trước nằm ở màn Chọn cửa hàng — một màn người dùng chỉ
+    // đi qua lúc vào ca rồi không quay lại. Muốn sửa cài đặt shop thì phải
+    // thoát cả ca ra ngoài.
+    testWidgets('bánh răng chỉ hiện khi bên gọi nối', (tester) async {
+      var opened = false;
+      await _pump(
+        tester,
+        EcHomeOrdersScreen(
+          shopName: 'Shop ABC',
+          orders: const [],
+          onSettings: () => opened = true,
+        ),
+      );
+      await tester.tap(find.byIcon(LucideIcons.settings));
+      expect(opened, isTrue);
+
+      await _pump(
+        tester,
+        const EcHomeOrdersScreen(shopName: 'Shop ABC', orders: []),
+      );
+      expect(find.byIcon(LucideIcons.settings), findsNothing);
     });
   });
 
