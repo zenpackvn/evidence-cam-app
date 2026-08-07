@@ -93,6 +93,16 @@ abstract interface class EcRepository {
   Future<void> deleteVideoType(String shopId, String typeId);
   Future<QuotaDto> quota({String? shopId});
 
+  /// Khai số clip chưa upload được đang nằm trên máy này (xem
+  /// [EcApi.reportQueueDepth]). Nuốt lỗi ở tầng hiện thực: đây là báo cáo phụ
+  /// trợ, hỏng thì không được làm gì khác hỏng theo.
+  Future<void> reportQueueDepth(
+    String shopId, {
+    required int pending,
+    int pendingBytes,
+    int? oldestAt,
+  });
+
   /// Lịch sử thanh toán của tài khoản đang đăng nhập, mới nhất trước.
   Future<List<PaymentDto>> payments();
 
@@ -252,6 +262,26 @@ class RemoteEcRepository implements EcRepository {
 
   @override
   Future<QuotaDto> quota({String? shopId}) => _api.getQuota(shopId: shopId);
+
+  @override
+  Future<void> reportQueueDepth(
+    String shopId, {
+    required int pending,
+    int pendingBytes = 0,
+    int? oldestAt,
+  }) async {
+    try {
+      await _api.reportQueueDepth(
+        shopId,
+        pending: pending,
+        pendingBytes: pendingBytes,
+        oldestAt: oldestAt,
+      );
+    } on Object {
+      // Báo cáo phụ trợ: mất mạng hay 4xx đều không đáng làm hỏng thứ gì khác.
+      // Lần đổi hàng đợi kế tiếp sẽ khai lại.
+    }
+  }
 
   @override
   Future<List<PaymentDto>> payments() => _api.listPayments();
@@ -447,6 +477,14 @@ class FakeEcRepository implements EcRepository {
 
   @override
   Future<void> deleteVideoType(String shopId, String typeId) async {}
+
+  @override
+  Future<void> reportQueueDepth(
+    String shopId, {
+    required int pending,
+    int pendingBytes = 0,
+    int? oldestAt,
+  }) async {}
 
   @override
   Future<QuotaDto> quota({String? shopId}) async => const QuotaDto(

@@ -223,14 +223,66 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _queue.load();
+    // Hàng đợi đổi → khai lại số clip đang kẹt trên máy này. Có giãn cách bên
+    // trong [_reportQueueDepth]: mỗi phần trăm tiến độ upload cũng bắn một lượt
+    // notify, và bắn một request theo từng phần trăm là điên rồ.
+    _queue.addListener(_onQueueChangedForReporting);
     // Máy dựng trên bàn đóng hàng, người quay không chạm vào suốt cả ca — để
     // màn tự tắt là camera preview ngủ theo và phiên quay đứt giữa chừng.
     unawaited(WakelockPlus.enable().catchError((_) {}));
   }
 
+  /// App quay lại foreground.
+  ///
+  /// Hai việc, cùng một lý do: trong lúc app ngủ, chủ shop có thể đã mua thêm
+  /// lượt trên web, hoặc đã sang tháng mới. Không có tín hiệu nào từ máy chủ
+  /// báo cho máy này biết, nên đây là dịp tự nhiên nhất để thử lại những clip
+  /// đang đỗ vì hết hạn mức — và để khai lại con số cho chủ shop.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state != AppLifecycleState.resumed) return;
+    unawaited(_queue.retryQuotaWaiting());
+    _reportQueueDepth(force: true);
+  }
+
+  DateTime? _lastDepthReport;
+  int? _lastDepthReported;
+
+  void _onQueueChangedForReporting() => _reportQueueDepth();
+
+  /// Khai số clip còn kẹt lên máy chủ.
+  ///
+  /// Giãn cách 30 giây VÀ chỉ gửi khi con số thật sự đổi: hàng đợi bắn notify
+  /// theo từng phần trăm tiến độ upload, nên gửi theo mỗi lần notify là hàng
+  /// trăm request cho một clip.
+  ///
+  /// Số 0 vẫn phải gửi — đó là cách chủ shop biết cảnh báo đã tắt.
+  void _reportQueueDepth({bool force = false}) {
+    final shopId = _selectedShop.value?.id;
+    if (shopId == null || shopId.isEmpty) return;
+    final pending = _queue.strandedCount;
+    final now = DateTime.now();
+    final last = _lastDepthReport;
+    final unchanged = _lastDepthReported == pending;
+    final tooSoon = last != null && now.difference(last).inSeconds < 30;
+    if (!force && (unchanged || tooSoon)) return;
+    _lastDepthReport = now;
+    _lastDepthReported = pending;
+    unawaited(
+      widget.repo.reportQueueDepth(
+        shopId,
+        pending: pending,
+        pendingBytes: _queue.strandedBytes,
+        oldestAt: _queue.strandedOldestAt?.millisecondsSinceEpoch,
+      ),
+    );
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _queue.removeListener(_onQueueChangedForReporting);
     unawaited(WakelockPlus.disable().catchError((_) {}));
     _router.dispose();
     _language
@@ -1119,7 +1171,6 @@ class _QuotaRoute extends StatefulWidget {
 
 class _QuotaRouteState extends State<_QuotaRoute> {
   late Future<QuotaDto> _quota = widget.repo.quota(shopId: widget.shopId);
-  bool _buying = false;
 
   @override
   void initState() {
@@ -1127,111 +1178,15 @@ class _QuotaRouteState extends State<_QuotaRoute> {
     _analytics()?.trackPaywallViewed();
   }
 
-  /// Chữ ký quyền dùng dựng từ mỗi mã gói, dùng khi backend chưa trả
-  /// `entitlement` trong `/api/me`.
-  ///
-  /// Khuôn phải trùng [EntitlementDto.signature] để hai nguồn so được với nhau
-  /// — trộn hai khuôn là lần hỏi đầu tiên đã "khác" và mọi lượt mua đều báo
-  /// thành công, kể cả lượt webhook chưa về.
-  static String _entitlementSignature(String planCode) => '$planCode|null|null';
-
-  /// Mở paywall RevenueCat rồi chờ backend áp xong giao dịch.
-  ///
-  /// Cửa hàng báo "đã mua" TRƯỚC khi RevenueCat kịp gọi webhook về backend, nên
-  /// không thể đọc lại gói ngay — phải hỏi lại vài giây. Hết thời gian chờ mà
-  /// gói chưa đổi thì báo "đang xử lý", KHÔNG báo lỗi: tiền đã trừ thật và
-  /// webhook thường về ngay sau đó.
-  Future<void> _upgrade(String currentPlanCode) async {
-    _analytics()?.trackPurchaseStarted(planCode: currentPlanCode);
-    setState(() => _buying = true);
-    try {
-      final billing = _billing();
-      // Gắn phiên mua với tài khoản NGAY TRƯỚC khi mở paywall. RevenueCat gửi
-      // uid này lên webhook; nếu mua khi chưa gắn thì giao dịch rơi vào một
-      // người dùng ẩn danh và backend không biết cộng ngày cho ai.
-      //
-      // Cửa hàng vắng mặt (build thiếu khoá RevenueCat, hoặc mạng hỏng) KHÔNG
-      // chặn việc mở màn: paywall tự hiện trạng thái "chưa tải được bảng giá".
-      // Nút bấm không được dẫn tới ngõ cụt im lặng.
-      var offers = const <EcPlanOffer>[];
-      // Ảnh chụp quyền dùng TRƯỚC khi mở paywall — mốc để biết webhook đã về
-      // hay chưa. Phải đọc ở đây chứ không sau khi mua: đọc sau thì có thể đã
-      // là trạng thái mới rồi, và phép so luôn ra "chưa đổi".
-      var beforeSignature = _entitlementSignature(currentPlanCode);
-      if (billing != null) {
-        try {
-          // repo.account() có thể ném (mất mạng, token hết hạn). Không được để
-          // nó chặn việc mở paywall — nút bấm mà không có gì xảy ra là lỗi tệ
-          // hơn việc hiện bảng giá rỗng.
-          final account = await widget.repo.account();
-          beforeSignature =
-              account.entitlement?.signature ??
-              _entitlementSignature(currentPlanCode);
-          if (await billing.start(account.uid)) {
-            offers = await billing.offers();
-          }
-        } on Object {
-          offers = const [];
-        }
-      }
-      if (!mounted) return;
-      final outcome = await Navigator.of(context).push<EcPurchaseOutcome>(
-        CupertinoPageRoute(
-          builder: (_) => _PaywallRoute(billing: billing, offers: offers),
-        ),
-      );
-      if (!mounted ||
-          outcome == null ||
-          outcome == EcPurchaseOutcome.cancelled) {
-        return;
-      }
-      if (outcome == EcPurchaseOutcome.failed) {
-        _toast(context, context.l10n.toastPurchaseFailed);
-        return;
-      }
-      final applied = await EcBilling.waitForEntitlementChange(
-        // `/api/me` chứ không phải `/api/quota`: chỉ chỗ này mang ngày hết hạn,
-        // thứ duy nhất đổi khi người dùng mua lại đúng gói đang dùng. Web poll
-        // đúng endpoint này vì cùng lý do.
-        fetchSignature: () async {
-          final account = await widget.repo.account();
-          return account.entitlement?.signature ??
-              _entitlementSignature(
-                (await widget.repo.quota(shopId: widget.shopId)).planCode,
-              );
-        },
-        previousSignature: beforeSignature,
-      );
-      if (!mounted) return;
-      // Nạp lại quota TRƯỚC khi mở hộp thoại, để lúc người dùng bấm Đóng thì
-      // trang phía sau đã là số liệu của gói mới, không phải gói cũ.
-      //
-      // Thân khối, KHÔNG phải arrow: closure của setState mà trả về Future thì
-      // Flutter ném assertion và bỏ luôn lượt dựng lại — trang đứng im ở gói cũ.
-      setState(() {
-        _quota = widget.repo.quota(shopId: widget.shopId);
-      });
-      await showCupertinoDialog<void>(
-        context: context,
-        builder: (dialogContext) => CupertinoAlertDialog(
-          title: Text(context.l10n.purchaseSuccessTitle),
-          content: Text(
-            applied
-                ? context.l10n.toastPurchaseApplied
-                : context.l10n.toastPurchasePending,
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(context.l10n.commonClose),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _buying = false);
-    }
-  }
+  // ĐÃ GỠ: `_upgrade()` và đường mở paywall RevenueCat.
+  //
+  // App không bán gói nữa — mọi giao dịch diễn ra trên web. Quy tắc chống dẫn
+  // dắt của Apple (App Review Guidelines 3.1) cấm cả nút, cả link, cả câu chữ
+  // chỉ đường sang trang thanh toán trong app iOS. Việc nhắc gia hạn đi qua
+  // email, push và Zalo — nằm ngoài app store nên không vướng quy tắc.
+  //
+  // Đổi lại: không mất 15–30% hoa hồng, không phải xử lý entitlement chưa gán,
+  // không phải đối soát ba dòng tiền.
 
   /// Groups this shop's clips by [UploadTask.type], summing each clip's
   /// on-disk file size. Sorted largest-first so the breakdown (and its
@@ -1300,12 +1255,19 @@ class _QuotaRouteState extends State<_QuotaRoute> {
           // Khớp nhau mà sai thì vô dụng hơn là lệch nhau mà đúng.
           usedBytes: quota.usedBytes,
           capBytes: quota.capBytes,
+          usedVideos: quota.usedVideos,
+          capVideos: quota.capVideos,
+          topupVideos: quota.topupVideos,
+          blockAtVideos: quota.blockAtVideos,
+          blocked: quota.blocked,
           retentionTotalDays: quota.retentionDays,
           videoCount: videoCount,
           typeUsage: typeUsage,
           canManagePlan: quota.canManagePlan,
           onBack: () => _back(context, '/account'),
-          onUpgrade: _buying ? null : () => _upgrade(quota.planCode),
+          // KHÔNG có `onUpgrade`: app không bán gói. Quy tắc chống dẫn dắt của
+          // Apple cấm cả nút, cả link, cả câu chữ chỉ đường sang trang thanh
+          // toán — nhắc gia hạn đi qua email/push/Zalo.
           onPaymentHistoryTap: () => context.push('/payment-history'),
         );
       },
@@ -1903,59 +1865,28 @@ Future<void> _copyText(BuildContext context, String text, String label) async {
   if (context.mounted) _toast(context, context.l10n.copiedLabel(label));
 }
 
-/// Ba dòng nung vào clip lúc xuất, khớp với lớp chữ của màn ghi hình.
+/// Tải clip về rồi giao ra ngoài app — KHÔNG đóng dấu lại.
 ///
-/// Dòng giờ ở giữa là dòng chạy: `EcVideoStampService` vẽ sẵn một ô cho mỗi
-/// giây rồi để ffmpeg cắt đúng ô theo thời gian, nên clip tải về đọc giống hệt
-/// lúc bấm phát trong app. Thiếu thời lượng thì nó tự đứng im ở mốc bắt đầu.
-///
-/// Thiếu mốc epoch (bằng chứng cũ) thì lùi về chuỗi đã định dạng sẵn, còn hơn
-/// giao ra một clip không có giờ nào.
-List<String> _stampLines(EcVideoDetail video, String tracking) {
-  String two(int n) => n.toString().padLeft(2, '0');
-  final at = video.capturedAtMs;
-  final code = tracking.isNotEmpty ? tracking : (video.tracking ?? '');
-  if (at == null) {
-    return [video.recordedAt, if (code.isNotEmpty) code];
-  }
-  final d = DateTime.fromMillisecondsSinceEpoch(at);
-  return [
-    '${two(d.day)}/${two(d.month)}/${d.year}',
-    '${two(d.hour)}:${two(d.minute)}:${two(d.second)}',
-    if (code.isNotEmpty) code,
-  ];
-}
-
+/// Bản nằm trên cloud đã mang dấu sẵn, nên nung thêm lần nữa ở đây là chồng
+/// hai khối chữ lên cùng một góc. Nặng hơn: nung là ghi lại file, nên bản
+/// người dùng cầm sẽ không còn khớp `sha256` server đã lưu — mất luôn khả
+/// năng kiểm chứng đúng lúc cần nó nhất. Byte nào server trả về thì giao
+/// nguyên byte đó.
 Future<void> _downloadAndShareVideo(
   BuildContext context,
   Dio dio,
   ShareService? share,
   GallerySaveService? gallery,
-  EcVideoDetail video, {
-  String tracking = '',
-}) async {
+  EcVideoDetail video,
+) async {
   final url = video.mediaUrl;
   if (url == null) return;
   try {
     _toast(context, context.l10n.toastDownloadingVideo);
     final dir = await getApplicationDocumentsDirectory();
     final filename = _safeFilename('${video.title}.mp4');
-    var path = '${dir.path}/$filename';
+    final path = '${dir.path}/$filename';
     await _downloadWithRetry(dio, url, path);
-    if (!context.mounted) return;
-    // Nung đúng ba dòng màn ghi hình đã hiện — ngày, giờ đến giây, mã vận đơn
-    // — trước khi giao file ra ngoài: rời khỏi app thì clip chỉ còn là một mp4
-    // trần, người nhận không có cách nào biết nó của đơn nào. Hỏng dấu thì
-    // `stamp` trả lại bản gốc, người dùng vẫn cầm được file.
-    final at = video.capturedAtMs;
-    final stamped = await EcVideoStampService().stamp(
-      path,
-      lines: _stampLines(video, tracking),
-      clockStart: at == null ? null : DateTime.fromMillisecondsSinceEpoch(at),
-      clockSeconds: video.durationSeconds,
-    );
-    if (stamped != path) await _deleteQuietly(path);
-    path = stamped;
     if (!context.mounted) return;
     // gal's `put*` calls throw if the add-to-gallery permission was never
     // granted — request it first rather than let that surface as a generic
@@ -5212,7 +5143,6 @@ class _QueueRoute extends StatelessWidget {
     required this.queue,
     required this.canDelete,
     this.onBack,
-    this.onUpgrade,
   });
 
   final EcUploadQueue queue;
@@ -5222,7 +5152,6 @@ class _QueueRoute extends StatelessWidget {
   /// chưa có bản sao nào để chặn hộ.
   final bool canDelete;
   final VoidCallback? onBack;
-  final VoidCallback? onUpgrade;
 
   @override
   Widget build(BuildContext context) {
@@ -5235,7 +5164,6 @@ class _QueueRoute extends StatelessWidget {
         return EcUploadQueueScreen(
           items: items,
           onBack: onBack,
-          onUpgrade: onUpgrade,
           onRetry: (item) {
             final id = item.id;
             if (id != null) queue.retry(id);
@@ -5819,7 +5747,6 @@ GoRouter _buildRouter(
                     share,
                     gallery,
                     video!,
-                    tracking: extra?.tracking ?? '',
                   );
                 },
                 onDelete: () async {
@@ -6021,7 +5948,6 @@ GoRouter _buildRouter(
           // affordance; evidence is easier to re-record than to un-delete.
           canDelete: (_selected(selectedShop)?.role ?? 'staff') != 'staff',
           onBack: () => _back(c, '/home'),
-          onUpgrade: () => c.push('/quota'),
         ),
       ),
       GoRoute(

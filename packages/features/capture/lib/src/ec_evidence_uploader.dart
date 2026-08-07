@@ -1,5 +1,30 @@
 import 'dart:io';
 
+/// Máy chủ từ chối nhận clip vì shop đã vượt hạn mức video của tháng.
+///
+/// Khác MỌI lỗi upload khác ở một điểm quyết định: thử lại ngay không bao giờ
+/// ăn thua. Hạn mức chỉ mở lại khi chủ shop mua thêm lượt hoặc sang tháng mới,
+/// nên hàng đợi phải ĐỖ clip lại chứ không đếm nó vào số lần thất bại.
+///
+/// Sống ở package tính năng chứ không ở tầng app: hàng đợi cần phân biệt được
+/// trường hợp này, mà `EcUploadQueue` thì không được phép import tầng app. Hiện
+/// thực thật (`ApiEvidenceUploader`) implement giao diện dưới đây nên ném được
+/// đúng kiểu này.
+///
+/// Trước đây hàng đợi dò bằng cách so chuỗi trong `error.toString()`. Cách đó
+/// im lặng chết khi Dio bọc 403 thành "Máy chủ báo lỗi (mã 403)" — không còn
+/// chữ `quota` nào, nên clip rơi vào nhánh `error` và người dùng đọc thành lỗi
+/// máy chủ. Một kiểu dữ liệu thì không hỏng theo cách đó.
+class EcQuotaExceededException implements Exception {
+  const EcQuotaExceededException([this.message]);
+
+  final String? message;
+
+  @override
+  String toString() =>
+      message ?? 'video_quota_exceeded: shop đã hết hạn mức video tháng này';
+}
+
 /// Uploads a recorded evidence clip to the backend, reporting progress 0..1.
 ///
 /// A seam so the offline queue can be tested with a fake and pointed at a real

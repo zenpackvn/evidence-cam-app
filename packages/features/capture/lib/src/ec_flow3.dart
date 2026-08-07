@@ -1104,10 +1104,13 @@ class _CamHeader extends StatelessWidget {
 
 /// Mốc thời gian + mã vận đơn ở góc phải khi đang quay.
 ///
-/// Lặp lại đúng ba dòng mà [EcVideoStampService] đóng vào khung hình lúc xuất
-/// clip, nên người quay nhìn thấy trước cái mà người nhận bằng chứng sẽ đọc —
-/// sai ngày giờ máy hay quay nhầm mã thì lộ ra ngay tại chỗ, không phải đợi
-/// đến lúc tải về mới biết.
+/// Hai hàng, đúng bố cục mà hệ thống đóng vào khung hình lúc render: hàng trên
+/// là ngày kèm giờ đến giây, hàng dưới là mã vận đơn. Người quay nhìn thấy
+/// trước đúng thứ người nhận bằng chứng sẽ đọc — sai ngày giờ máy hay quay
+/// nhầm mã thì lộ ra ngay tại chỗ, không phải đợi tới lúc gửi cho sàn.
+///
+/// Chỉ GIÁ TRỊ thời gian được phép khác bản render (ở đây là đồng hồ máy chạy
+/// trực tiếp, bên kia là trục giờ hệ thống chốt). Bố cục thì không.
 class _RecStamp extends StatefulWidget {
   const _RecStamp({required this.code});
 
@@ -1143,16 +1146,14 @@ class _RecStampState extends State<_RecStamp> {
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Ngày và giờ CÙNG một hàng. Có cả giây: hai clip liền nhau của cùng
+        // một ca chỉ khác nhau ở đây.
         Text(
-          '${_two(now.day)}/${_two(now.month)}/${now.year}',
-          style: _stampStyle(15, FontWeight.w500),
-          softWrap: false,
-        ),
-        // Có cả giây: hai clip liền nhau của cùng một ca chỉ khác nhau ở đây.
-        Text(
+          '${_two(now.day)}/${_two(now.month)}/${now.year} '
           '${_two(now.hour)}:${_two(now.minute)}:${_two(now.second)}',
-          style: _stampStyle(22, FontWeight.w700),
+          style: _stampStyle(18, FontWeight.w700),
           softWrap: false,
+          overflow: TextOverflow.visible,
         ),
         // Một hàng, không cắt bằng `...` và không xuống dòng: một mã vận đơn
         // thiếu đuôi thì vô dụng. Mã dài thì để nó dài sang trái.
@@ -1590,7 +1591,6 @@ class EcUploadQueueScreen extends StatelessWidget {
   const EcUploadQueueScreen({
     this.items = const [],
     this.onBack,
-    this.onUpgrade,
     this.onSettings,
     this.onRetry,
     this.onPause,
@@ -1601,7 +1601,6 @@ class EcUploadQueueScreen extends StatelessWidget {
 
   final List<EcUploadItem> items;
   final VoidCallback? onBack;
-  final VoidCallback? onUpgrade;
 
   /// F3-06's header gear. Optional: no upload-settings screen exists yet, so
   /// the icon only appears once a caller has somewhere to send it.
@@ -1682,7 +1681,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                     // this used to render unconditionally, showing "out of
                     // quota" even when nothing was quota-blocked.
                     if (quotaWaiting > 0) ...[
-                      _QuotaBanner(onUpgrade: onUpgrade),
+                      const _QuotaBanner(),
                       const SizedBox(height: 16),
                     ],
                     if (items.isEmpty)
@@ -1749,16 +1748,22 @@ class EcUploadQueueScreen extends StatelessWidget {
   }
 }
 
-/// F3-06's quota banner. Amber-tinted, not grey: something is blocked, and the
-/// grey version read as a neutral tip nobody acted on. "Nâng gói" is a link
-/// rather than a boxed button — one less box competing with the list below.
+/// Băng cảnh báo hạn mức trên màn hàng đợi.
+///
+/// Nói đúng MỘT sự thật mà người đóng gói cần biết ngay: những clip này đang
+/// nằm trên chính cái điện thoại họ đang cầm, và chưa được bảo vệ. Bản cũ viết
+/// "video sẽ chờ quota" — nghe như máy chủ đang giữ hộ, đúng cái hiểu nhầm nguy
+/// hiểm nhất ở đây.
+///
+/// KHÔNG có link "Nâng gói". Người cầm máy thường không phải người trả tiền, và
+/// quy tắc chống dẫn dắt của Apple (App Review 3.1) cấm mọi lối chỉ sang trang
+/// thanh toán trong app. Việc nhắc mua đi qua email tới chủ shop.
 class _QuotaBanner extends StatelessWidget {
-  const _QuotaBanner({this.onUpgrade});
-
-  final VoidCallback? onUpgrade;
+  const _QuotaBanner();
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
       decoration: ecSquircleDecoration(
@@ -1766,6 +1771,7 @@ class _QuotaBanner extends StatelessWidget {
         color: BrandColors.warningTint,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(
             LucideIcons.circleAlert,
@@ -1774,20 +1780,19 @@ class _QuotaBanner extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              context.l10n.quotaExhaustedNote,
-              style: _t(13, FontWeight.w400, BrandColors.ink),
-            ),
-          ),
-          const SizedBox(width: 10),
-          EcTap(
-            onTap: onUpgrade,
-            child: Text(
-              context.l10n.upgradePlanShort,
-              style: _t(13, FontWeight.w700, BrandColors.dark).copyWith(
-                decoration: TextDecoration.underline,
-                decorationColor: BrandColors.dark,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.quotaExhaustedNote,
+                  style: _t(13, FontWeight.w400, BrandColors.ink),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.quotaExhaustedWarn,
+                  style: _t(12.5, FontWeight.w700, BrandColors.ink),
+                ),
+              ],
             ),
           ),
         ],

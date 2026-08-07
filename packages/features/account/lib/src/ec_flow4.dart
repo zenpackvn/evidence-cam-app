@@ -739,11 +739,15 @@ class EcQuotaScreen extends StatelessWidget {
     this.usedBytes = 0,
     this.remainingBytes,
     this.capBytes = 500 * 1024 * 1024,
+    this.usedVideos = 0,
+    this.capVideos = 0,
+    this.topupVideos = 0,
+    this.blockAtVideos = 0,
+    this.blocked = false,
     this.retentionTotalDays = 30,
     this.videoCount = 0,
     this.typeUsage = const [],
     this.onBack,
-    this.onUpgrade,
     this.onPaymentHistoryTap,
     this.canManagePlan = true,
     super.key,
@@ -756,6 +760,20 @@ class EcQuotaScreen extends StatelessWidget {
   final int usedBytes;
   final int? remainingBytes;
   final int capBytes;
+
+  /// Trục tính tiền: SỐ LƯỢNG video trong tháng, không phải dung lượng
+  /// (mục 6.3). `capVideos == 0` = backend cũ chưa trả trường này → màn lùi về
+  /// hiển thị theo dung lượng như trước.
+  final int usedVideos;
+  final int capVideos;
+  final int topupVideos;
+
+  /// Mốc bị chặn quay mới = trần gói × 1,1 + lượt mua thêm.
+  final int blockAtVideos;
+
+  /// Đã vượt mốc chặn. Chặn CHỈ áp cho việc quay mới — video đã quay vẫn tra
+  /// cứu và gửi cho sàn bình thường.
+  final bool blocked;
   final int retentionTotalDays;
 
   /// Total clips still stored on this device — the same source of truth as
@@ -765,20 +783,35 @@ class EcQuotaScreen extends StatelessWidget {
   /// Per-type breakdown, pre-sorted largest-first by the caller.
   final List<EcQuotaTypeUsage> typeUsage;
   final VoidCallback? onBack;
-  final VoidCallback? onUpgrade;
   final VoidCallback? onPaymentHistoryTap;
 
   /// Gói cước gắn với tài khoản CHỦ shop. Quản lý/nhân viên vẫn thấy gói đang
-  /// chi phối ca làm (giới hạn quay, retention) nhưng không có đường nâng gói —
-  /// thay nút bằng một dòng giải thích để họ biết hỏi ai.
+  /// chi phối ca làm (giới hạn quay, retention).
+  ///
+  /// KHÔNG còn dùng để hiện nút mua: app không bán gói nữa (xem chú thích ở
+  /// [build]). Giữ lại vì nó quyết định câu giải thích khi hết hạn mức — chủ
+  /// shop tự xử lý được, nhân viên thì phải đi hỏi ai đó.
   final bool canManagePlan;
 
+  /// Backend đã đổi trục sang số lượng video chưa.
+  bool get _videoAxis => capVideos > 0;
+
   int get _usedPercent {
-    if (capBytes <= 0) return 0;
-    final pct = (usedBytes / capBytes * 100).floor();
+    final used = _videoAxis ? usedVideos : usedBytes;
+    final cap = _videoAxis ? capVideos : capBytes;
+    if (cap <= 0) return 0;
+    // Kẹp 100%: khoảng đệm 10% là CỐ Ý, và "112%" cạnh một thanh đầy đọc như
+    // lỗi hiển thị chứ không như "bạn đang vượt".
+    final pct = (used / cap * 100).floor();
     if (pct < 0) return 0;
     if (pct > 100) return 100;
     return pct;
+  }
+
+  /// Còn quay được bao nhiêu clip trước khi bị chặn.
+  int get _remainingVideos {
+    final left = blockAtVideos - usedVideos;
+    return left < 0 ? 0 : left;
   }
 
   double get _usedFraction => _usedPercent / 100;
@@ -824,7 +857,9 @@ class EcQuotaScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 2),
                               PenText(
-                                l10n.quotaSubtitle,
+                                _videoAxis
+                                    ? l10n.quotaSubtitleVideos
+                                    : l10n.quotaSubtitle,
                                 size: 12,
                                 color: PenColors.mut,
                                 softWrap: false,
@@ -839,19 +874,36 @@ class EcQuotaScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     _QuotaSummaryCard(
                       planLabel: planLabel,
-                      remainingLabel: ecHumanBytesVi(_remainingBytes),
-                      usedLabel: _withoutSharedUnit(
-                        ecHumanBytesVi(usedBytes),
-                        ecHumanBytesVi(capBytes),
-                      ),
-                      capLabel: ecHumanBytesVi(capBytes),
+                      // Trục tính tiền là số lượng video (mục 6.3). Dung lượng
+                      // chỉ còn là chỉ số kỹ thuật nội bộ — đưa nó lên đây là
+                      // nói sai điều người bán phải để ý.
+                      remainingLabel: _videoAxis
+                          ? '$_remainingVideos'
+                          : ecHumanBytesVi(_remainingBytes),
+                      usedLabel: _videoAxis
+                          ? '$usedVideos'
+                          : _withoutSharedUnit(
+                              ecHumanBytesVi(usedBytes),
+                              ecHumanBytesVi(capBytes),
+                            ),
+                      capLabel: _videoAxis
+                          ? '$capVideos'
+                          : ecHumanBytesVi(capBytes),
                       usedPercent: _usedPercent,
                       usedFraction: _usedFraction,
                       videoCount: videoCount,
                       retentionTotalDays: retentionTotalDays,
-                      canManagePlan: canManagePlan,
-                      onUpgrade: onUpgrade,
+                      blocked: blocked,
                     ),
+                    if (_videoAxis) ...[
+                      const SizedBox(height: 12),
+                      _VideoQuotaFacts(
+                        topupVideos: topupVideos,
+                        blockAtVideos: blockAtVideos,
+                        blocked: blocked,
+                        canManagePlan: canManagePlan,
+                      ),
+                    ],
                     if (typeUsage.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       _QuotaBreakdownCard(typeUsage: typeUsage),
@@ -903,42 +955,6 @@ class EcQuotaScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  if (canManagePlan)
-                    EcTap(
-                      onTap: onUpgrade,
-                      child: PenBox(
-                        width: double.infinity,
-                        height: 52,
-                        fill: PenColors.primary,
-                        radius: 14,
-                        axis: PenAxis.row,
-                        gap: 8,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            LucideIcons.arrowUpCircle,
-                            size: 20,
-                            color: PenColors.card,
-                          ),
-                          PenText(
-                            l10n.quotaUpgradePlan,
-                            size: 17,
-                            color: PenColors.card,
-                            weight: FontWeight.w800,
-                            softWrap: false,
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    PenText(
-                      l10n.quotaOwnerOnlyNote,
-                      align: TextAlign.center,
-                      size: 14,
-                      color: PenColors.mut,
-                    ),
                 ],
               ),
             ),
@@ -983,6 +999,108 @@ const _warning = Color(0xFFB6770B);
 
 /// `CardUsageSummary` — plan, remaining headline, usage bar and the two
 /// stored/retention stats.
+/// Ba con số của hạn mức video mà thẻ tóm tắt không nói được: lượt mua thêm,
+/// mốc bị chặn, và chu kỳ đếm.
+///
+/// Mốc chặn phải hiện thành SỐ. Khoảng đệm 10% là thứ duy nhất đứng giữa "vượt
+/// hạn mức" và "nhân viên đứng chờ giữa ca đóng hàng" — nói bằng chữ "sắp hết"
+/// thì không ai ước lượng được còn bao lâu.
+class _VideoQuotaFacts extends StatelessWidget {
+  const _VideoQuotaFacts({
+    required this.topupVideos,
+    required this.blockAtVideos,
+    required this.blocked,
+    required this.canManagePlan,
+  });
+
+  final int topupVideos;
+  final int blockAtVideos;
+  final bool blocked;
+  final bool canManagePlan;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return PenCard(
+      axis: PenAxis.column,
+      stroke: null,
+      gap: 10,
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (blocked) ...[
+          PenBox(
+            width: double.infinity,
+            axis: PenAxis.column,
+            gap: 4,
+            radius: 12,
+            fill: BrandColors.warningTint,
+            padding: const EdgeInsets.all(12),
+            cross: CrossAxisAlignment.start,
+            children: [
+              PenText(
+                l10n.quotaBlockedTitle,
+                size: 14,
+                color: BrandColors.ink,
+                weight: FontWeight.w700,
+              ),
+              PenText(
+                l10n.quotaBlockedNote,
+                size: 13,
+                color: PenColors.mut,
+              ),
+              // Nhân viên không sửa được gói cước — nói cho họ biết hỏi ai,
+              // KHÔNG chỉ đường sang trang thanh toán.
+              if (!canManagePlan)
+                PenText(
+                  l10n.quotaBlockedOwnerNote,
+                  size: 13,
+                  color: PenColors.mut,
+                ),
+            ],
+          ),
+        ],
+        if (topupVideos > 0)
+          _FactRow(label: l10n.quotaTopupCredits, value: '+$topupVideos'),
+        _FactRow(
+          label: l10n.quotaBlockAt(blockAtVideos),
+          value: '',
+        ),
+        PenText(
+          l10n.quotaResetMonthly,
+          size: 12,
+          color: PenColors.mut,
+        ),
+      ],
+    );
+  }
+}
+
+class _FactRow extends StatelessWidget {
+  const _FactRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: PenText(label, size: 13, color: PenColors.mut),
+        ),
+        if (value.isNotEmpty)
+          PenText(
+            value,
+            size: 13,
+            color: PenColors.ink,
+            weight: FontWeight.w700,
+            softWrap: false,
+          ),
+      ],
+    );
+  }
+}
+
 class _QuotaSummaryCard extends StatelessWidget {
   const _QuotaSummaryCard({
     required this.planLabel,
@@ -993,8 +1111,7 @@ class _QuotaSummaryCard extends StatelessWidget {
     required this.usedFraction,
     required this.videoCount,
     required this.retentionTotalDays,
-    required this.canManagePlan,
-    this.onUpgrade,
+    required this.blocked,
   });
 
   final String planLabel;
@@ -1005,8 +1122,7 @@ class _QuotaSummaryCard extends StatelessWidget {
   final double usedFraction;
   final int videoCount;
   final int retentionTotalDays;
-  final bool canManagePlan;
-  final VoidCallback? onUpgrade;
+  final bool blocked;
 
   @override
   Widget build(BuildContext context) {
@@ -1041,28 +1157,32 @@ class _QuotaSummaryCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (canManagePlan) ...[
+            // KHÔNG có nút mua ở đây, và cũng không có câu chữ chỉ đường sang
+            // trang thanh toán. App chỉ đăng nhập và sử dụng; mọi giao dịch
+            // diễn ra trên web. Đây là quy tắc chống dẫn dắt của Apple
+            // (App Review Guidelines 3.1) — thêm lại một cái nút "Nâng gói" ở
+            // chỗ này là đủ để bị từ chối phát hành.
+            //
+            // Việc nhắc gia hạn đi qua email/push/Zalo, nằm ngoài app store.
+            if (blocked) ...[
               const SizedBox(width: 12),
-              EcTap(
-                onTap: onUpgrade,
-                child: PenBox(
-                  fill: PenColors.primary,
-                  radius: 999,
-                  hugMain: true,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 9,
-                    horizontal: 12,
-                  ),
-                  children: [
-                    PenText(
-                      l10n.quotaUpgradeShort,
-                      size: 13,
-                      color: PenColors.card,
-                      weight: FontWeight.w700,
-                      softWrap: false,
-                    ),
-                  ],
+              PenBox(
+                fill: BrandColors.warningTint,
+                radius: 999,
+                hugMain: true,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 9,
+                  horizontal: 12,
                 ),
+                children: [
+                  PenText(
+                    l10n.quotaBlockedTitle,
+                    size: 13,
+                    color: BrandColors.warning,
+                    weight: FontWeight.w700,
+                    softWrap: false,
+                  ),
+                ],
               ),
             ],
           ],

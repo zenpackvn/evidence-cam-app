@@ -33,6 +33,21 @@ class _FakeUploader implements EcEvidenceUploader {
   }
 }
 
+/// Kho sống qua nhiều lần dựng hàng đợi — thứ mô phỏng ObjectBox thật, và là
+/// điều kiện cần để test được kịch bản khôi phục máy.
+class _MemoryStore implements EvidenceClipStore {
+  final _rows = <String, UploadTask>{};
+
+  @override
+  Future<List<UploadTask>> loadAll() async => _rows.values.toList();
+
+  @override
+  Future<void> save(UploadTask task) async => _rows[task.id] = task;
+
+  @override
+  Future<void> remove(String id) async => _rows.remove(id);
+}
+
 void main() {
   late Directory dir;
   late File clip;
@@ -65,7 +80,10 @@ void main() {
     expect(task.remoteUrl, 'https://cdn/x.mp4');
     // The clip was copied into the queue's own directory (not the temp source).
     expect(task.filePath, isNot(clip.path));
-    expect(File(task.filePath).existsSync(), isTrue);
+    // `filePath` lưu tên tệp TRẦN, không phải đường dẫn tuyệt đối — xem
+    // [EcUploadQueue.absolutePathOf] và lý do (iOS đổi UUID container).
+    expect(task.filePath, isNot(contains('/')));
+    expect(File(queue.absolutePathOf(task.filePath)).existsSync(), isTrue);
   });
 
   test('a failed upload goes to error and retry re-uploads to done', () async {
@@ -179,7 +197,59 @@ void main() {
       );
 
       expect(source.existsSync(), isFalse);
-      expect(File(queue.tasks.single.filePath).existsSync(), isTrue);
+      expect(
+        File(queue.absolutePathOf(queue.tasks.single.filePath)).existsSync(),
+        isTrue,
+      );
+    });
+
+    // LỖI MẤT BẰNG CHỨNG (sửa 2026-08-07). Trước đây `filePath` lưu đường dẫn
+    // TUYỆT ĐỐI. Trên iOS, mã UUID của container đổi mỗi lần khôi phục từ sao
+    // lưu hoặc chuyển sang máy mới — mọi đường dẫn chết cùng lúc, `load()` rụng
+    // sạch hàng đợi, rồi `_sweepOrphans()` thấy 0 tham chiếu và XOÁ LUÔN những
+    // tệp vừa được khôi phục. Bản duy nhất sống sót qua việc mất máy bị chính
+    // app xoá, im lặng, ngay lần mở đầu tiên.
+    test(
+      'clip sống sót khi thư mục app đổi đường dẫn (khôi phục iOS)',
+      () async {
+        final store = _MemoryStore();
+        final before = EcUploadQueue(directory: dir, store: store);
+        await before.enqueue(
+          tracking: 'SPX-restore',
+          type: 'Đóng hàng',
+          filePath: clip.path,
+        );
+        final stored = before.tasks.single.filePath;
+
+        // Giả lập khôi phục: cùng nội dung, thư mục mới (UUID container mới).
+        final restored = Directory.systemTemp.createTempSync(
+          'ec_queue_restored',
+        );
+        File('${dir.path}/$stored').copySync('${restored.path}/$stored');
+
+        final after = EcUploadQueue(directory: restored, store: store);
+        await after.load();
+
+        expect(after.tasks, hasLength(1), reason: 'hàng đợi phải sống sót');
+        expect(
+          File(after.absolutePathOf(after.tasks.single.filePath)).existsSync(),
+          isTrue,
+          reason: 'tệp phải còn nguyên, không bị sweep xoá',
+        );
+        restored.deleteSync(recursive: true);
+      },
+    );
+
+    // Sàn an toàn: một lượt "dọn rác" sắp xoá 100% thư mục là tín hiệu có bug,
+    // không phải một lượt dọn dẹp. Chịu tốn vài MB rác còn hơn xoá nhầm bản
+    // duy nhất của một clip bằng chứng.
+    test('không xoá sạch thư mục khi hàng đợi rỗng', () async {
+      final orphan = File('${dir.path}/1754000000000.mp4')
+        ..writeAsStringSync('có thể là bằng chứng vừa khôi phục');
+
+      await EcUploadQueue(directory: dir, temporaryDirectory: temp).load();
+
+      expect(orphan.existsSync(), isTrue);
     });
 
     test('never deletes a source outside the temp dir', () async {
@@ -196,6 +266,16 @@ void main() {
     });
 
     test('load reclaims unreferenced clips in both directories', () async {
+      // Có ÍT NHẤT một clip còn được tham chiếu — nếu không, sàn an toàn của
+      // [_sweepOrphans] sẽ chặn cả lượt dọn (xem test ngay dưới). Ở đây ta
+      // đang kiểm tra việc dọn rác bình thường, không phải cái sàn đó.
+      final live = EcUploadQueue(directory: dir, temporaryDirectory: temp);
+      await live.enqueue(
+        tracking: 'SPX-live',
+        type: 'Đóng hàng',
+        filePath: clip.path,
+      );
+
       final orphanStored = File('${dir.path}/stale.mp4')
         ..writeAsStringSync('orphan');
       final orphanRemux = File('${temp.path}/${evidenceFaststartPrefix}9.mp4')
@@ -203,7 +283,7 @@ void main() {
       final unrelated = File('${temp.path}/somebody-elses.mp4')
         ..writeAsStringSync('keep');
 
-      await EcUploadQueue(directory: dir, temporaryDirectory: temp).load();
+      await live.load();
 
       expect(orphanStored.existsSync(), isFalse);
       expect(orphanRemux.existsSync(), isFalse);

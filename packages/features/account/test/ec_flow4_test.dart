@@ -133,14 +133,15 @@ void main() {
   });
 
   group('EcQuotaScreen', () {
-    testWidgets('shows plan, quota usage and retention', (tester) async {
-      // Quota is measured in stored bytes, not a video count — the old
-      // "237 / 500 video" plan model was replaced by the storage plans.
+    // Backend cũ chưa trả trục video (`capVideos == 0`) → màn lùi về dung
+    // lượng. Nhánh này phải sống cho tới khi mọi bản app cũ ngoài thị trường
+    // đã cập nhật.
+    testWidgets('backend cũ: vẫn hiện được theo dung lượng', (tester) async {
       const gb = 1024 * 1024 * 1024;
       await _pump(
         tester,
         const EcQuotaScreen(
-          planLabel: 'Tiết kiệm',
+          planLabel: 'Chuyên nghiệp',
           usedBytes: 12 * gb,
           capBytes: 60 * gb,
           retentionTotalDays: 90,
@@ -148,42 +149,79 @@ void main() {
       );
       expect(find.text('Báo cáo & Quota'), findsOneWidget);
       expect(find.text('Gói hiện tại'), findsOneWidget);
-      expect(find.text('Tiết kiệm'), findsOneWidget);
-      // Remaining / cap, and the matching used percentage.
-      expect(find.text('48 GB / 60 GB'), findsOneWidget);
-      expect(find.text('Đã dùng 20%'), findsOneWidget);
-      expect(find.text('Lưu trữ'), findsOneWidget);
-      expect(find.text('90 ngày'), findsOneWidget);
-      expect(find.text('Nâng cấp gói'), findsOneWidget);
+      expect(find.text('Chuyên nghiệp'), findsOneWidget);
+      // Dòng này từng canh chuỗi '48 GB / 60 GB' — một định dạng màn hình
+      // chưa bao giờ vẽ, nên test đỏ từ trước khi đổi trục. Canh đúng cái
+      // widget thật sự dựng.
+      expect(find.text('48 GB còn lại'), findsOneWidget);
+      expect(find.text('Đã dùng 12 / 60 GB · 20%'), findsOneWidget);
+      expect(find.text('90 ngày'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('upgrade button fires callback', (tester) async {
-      var upgraded = false;
-      await _pump(tester, EcQuotaScreen(onUpgrade: () => upgraded = true));
-      await tester.tap(find.text('Nâng cấp gói'));
-      expect(upgraded, isTrue);
+    // App KHÔNG bán gói (quy tắc chống dẫn dắt của Apple, App Review 3.1):
+    // không nút, không link, không câu chữ chỉ đường sang trang thanh toán.
+    // Test này là hàng rào — thêm lại một nút "Nâng cấp" ở đây là đủ để bản
+    // nộp bị từ chối.
+    testWidgets('không có bất kỳ lối mua nào trong app', (tester) async {
+      await _pump(tester, const EcQuotaScreen(canManagePlan: true));
+      expect(find.text('Nâng cấp gói'), findsNothing);
+      expect(find.text('Nâng cấp'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('pill "Nâng cấp" trong thẻ gói cũng mở đường nâng cấp', (
+    testWidgets('hết hạn mức: báo trạng thái, vẫn không có lối mua', (
       tester,
     ) async {
-      // Màn có HAI chỗ nâng cấp: nút lớn dưới cùng và pill nhỏ cạnh tên gói.
-      // Pill là thứ người dùng chạm nhiều hơn vì nó nằm ngay tầm mắt, nhưng
-      // trước đây không có test nào canh nó.
-      var upgraded = false;
-      await _pump(tester, EcQuotaScreen(onUpgrade: () => upgraded = true));
-      await tester.tap(find.text('Nâng cấp'));
-      expect(upgraded, isTrue);
+      await _pump(
+        tester,
+        const EcQuotaScreen(
+          usedVideos: 1101,
+          capVideos: 1000,
+          blockAtVideos: 1100,
+          blocked: true,
+        ),
+      );
+      expect(find.text('Đã hết hạn mức video'), findsWidgets);
+      expect(find.text('Nâng cấp'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('nhân viên: không có nút nâng gói, chỉ dòng giải thích', (
+    // Trục tính tiền là SỐ LƯỢNG video, không phải dung lượng (mục 6.3).
+    testWidgets('hạn mức hiện theo số video khi backend trả trục mới', (
       tester,
     ) async {
-      await _pump(tester, const EcQuotaScreen(canManagePlan: false));
+      await _pump(
+        tester,
+        const EcQuotaScreen(
+          usedVideos: 200,
+          capVideos: 1000,
+          blockAtVideos: 1100,
+        ),
+      );
+      expect(find.text('Đã dùng 200 / 1000 · 20%'), findsOneWidget);
+      expect(find.text('Chặn quay mới từ 1100 video'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Nhân viên không sửa được gói. Khi bị chặn thì phải biết đi hỏi ai —
+    // KHÔNG phải được chỉ đường sang trang thanh toán.
+    testWidgets('nhân viên bị chặn: được chỉ đi hỏi chủ tài khoản', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcQuotaScreen(
+          usedVideos: 1101,
+          capVideos: 1000,
+          blockAtVideos: 1100,
+          blocked: true,
+          canManagePlan: false,
+        ),
+      );
       expect(find.text('Nâng cấp gói'), findsNothing);
       expect(
-        find.text('Chỉ chủ tài khoản mới đổi được gói cước'),
+        find.text('Liên hệ chủ tài khoản để được nâng hạn mức.'),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);

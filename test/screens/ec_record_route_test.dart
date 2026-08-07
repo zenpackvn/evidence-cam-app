@@ -25,6 +25,26 @@ void main() {
         );
   });
 
+  // NGUYÊN TẮC BẤT DI BẤT DỊCH: hệ thống không bao giờ từ chối ghi hình.
+  //
+  // Hạn mức chặn ở ranh giới UPLOAD (backend trả 403 lúc xin presign), không
+  // phải ở ranh giới ghi hình. Clip vẫn được quay và nằm lại hàng đợi trên máy.
+  // Test này là hàng rào: cắm lại một cái gate quota vào màn quay là test đỏ.
+  testWidgets('màn quay KHÔNG có hàng rào hạn mức nào', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        locale: Locale('vi'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: EcRecordRoute(onRequestType: _picksType),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Đã hết hạn mức video'), findsNothing);
+  });
+
   testWidgets(
     'degrades to the idle screen when no camera is available',
     (tester) async {

@@ -290,13 +290,13 @@
   "stopRecording": "Dừng quay",
   "videoTypeSettings": "Cài đặt loại video",
   "uploadQueueTitle": "Hàng đợi upload",
-  "quotaExhaustedNote": "Hết quota tháng này — video sẽ chờ quota",
+  "quotaExhaustedNote": "Hết hạn mức tháng này. Video vẫn quay được, nhưng đang nằm TRÊN MÁY NÀY và chưa được bảo vệ — chúng sẽ tự tải lên khi hạn mức được nâng.",
   "upgradePlanShort": "Nâng gói",
   "queueEmpty": "Chưa có video trong hàng đợi",
   "queueAutoUploadNote": "Upload khi có mạng sẽ được tự động thực hiện",
   "waitingUpload": "Chờ upload",
   "uploaded": "Đã upload",
-  "waitingQuota": "Chờ quota",
+  "waitingQuota": "Chờ hạn mức · còn trên máy",
   "pausedUpload": "Đã tạm dừng",
   "queuePauseAction": "Tạm dừng",
   "queueResumeAction": "Tiếp tục",
@@ -319,7 +319,7 @@
   "queueFilterAll": "Tất cả ({count})",
   "queueFilterUploading": "Đang tải ({count})",
   "queueFilterErrored": "Lỗi ({count})",
-  "queueFilterQuotaWait": "Chờ quota ({count})",
+  "queueFilterQuotaWait": "Chờ hạn mức ({count})",
   "queueSummary": "{pending} video đang chờ · {uploading} đang tải · {errored} lỗi",
   "uploadingProgress": "Đang tải {percent}%",
   "errorRetryCount": "Lỗi · Thử lại ({count})",
@@ -967,5 +967,54 @@
   "paymentSandboxNote": "Giao dịch thử (sandbox), không phải tiền thật.",
   "planTerm1m": "1 tháng",
   "planTerm6m": "6 tháng",
-  "planTerm12m": "12 tháng"
+  "planTerm12m": "12 tháng",
+  "quotaVideosThisMonth": "Video tháng này",
+  "quotaSubtitleVideos": "Theo dõi số video đã quay trong tháng",
+  "quotaBlockedTitle": "Đã hết hạn mức video",
+  "quotaBlockedNote": "Video vẫn quay bình thường, nhưng chưa tải lên được — chúng đang nằm trên máy và chưa được bảo vệ. Hạn mức được nâng thì chúng tự tải lên.",
+  "quotaBlockedOwnerNote": "Liên hệ chủ tài khoản để được nâng hạn mức.",
+  "quotaTopupCredits": "Lượt mua thêm",
+  "quotaBlockAt": "Chặn quay mới từ {n} video",
+  "@quotaBlockAt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaResetMonthly": "Đếm lại từ đầu tháng sau, không cộng dồn",
+  "storageOwnTitle": "Kho riêng của shop",
+  "storageOwnPending": "{count} video đang chờ đẩy sang kho của bạn",
+  "@storageOwnPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storageOwnProblem": "{count} video trong kho của bạn có vấn đề",
+  "@storageOwnProblem": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaExhaustedWarn": "Đừng gỡ app hay xoá dữ liệu app cho tới khi tải lên xong.",
+  "@queueFilterQuotaWait": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaStrandedTitle": "{count} video đang chờ trên máy này",
+  "@quotaStrandedTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaStrandedNote": "Những video này chỉ tồn tại trên điện thoại. Mất máy, gỡ app hoặc xoá dữ liệu app là mất luôn."
 }

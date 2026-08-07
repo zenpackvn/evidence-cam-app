@@ -463,12 +463,30 @@ class QuotaTypeUsageDto {
   final int bytes;
 }
 
+/// Mốc cảnh báo hạn mức video. `blocked` = đã vượt 110%, không quay mới được.
+enum QuotaWarnLevel { none, w80, w95, w100, blocked }
+
+QuotaWarnLevel _warnLevel(Object? raw) => switch (raw) {
+  'w80' => QuotaWarnLevel.w80,
+  'w95' => QuotaWarnLevel.w95,
+  'w100' => QuotaWarnLevel.w100,
+  'blocked' => QuotaWarnLevel.blocked,
+  _ => QuotaWarnLevel.none,
+};
+
 class QuotaDto {
   const QuotaDto({
     required this.planCode,
     required this.usedBytes,
     required this.capBytes,
     required this.remainingBytes,
+    this.usedVideos = 0,
+    this.capVideos = 0,
+    this.topupVideos = 0,
+    this.blockAtVideos = 0,
+    this.remainingVideos = 0,
+    this.blocked = false,
+    this.warnLevel = QuotaWarnLevel.none,
     this.retentionDays = 30,
     this.canManagePlan = true,
     this.videoCount,
@@ -480,6 +498,13 @@ class QuotaDto {
     usedBytes: _int(j['used_bytes']),
     capBytes: _int(j['cap_bytes']),
     remainingBytes: _int(j['remaining_bytes']),
+    usedVideos: _int(j['used_videos']),
+    capVideos: _int(j['cap_videos']),
+    topupVideos: _int(j['topup_videos']),
+    blockAtVideos: _int(j['block_at_videos']),
+    remainingVideos: _int(j['remaining_videos']),
+    blocked: (j['blocked'] as bool?) ?? false,
+    warnLevel: _warnLevel(j['warn_level']),
     retentionDays: _intN(j['retention_days']) ?? 30,
     canManagePlan: (j['can_manage_plan'] as bool?) ?? true,
     videoCount: _intN(j['video_count']),
@@ -488,6 +513,23 @@ class QuotaDto {
         QuotaTypeUsageDto.fromJson(e as Map<String, dynamic>),
     ],
   );
+
+  /// Trục tính tiền: SỐ LƯỢNG video trong tháng, không phải dung lượng. Đếm lại
+  /// từ đầu mỗi tháng, không cộng dồn.
+  final int usedVideos;
+  final int capVideos;
+
+  /// Lượt mua thêm còn lại — trả trước, không mất theo tháng.
+  final int topupVideos;
+
+  /// Mốc bị chặn quay mới = trần gói × 1,1 + lượt mua thêm.
+  final int blockAtVideos;
+  final int remainingVideos;
+
+  /// Đã vượt mốc chặn. Video ĐÃ QUAY vẫn tra cứu và gửi cho sàn bình thường —
+  /// chặn chỉ áp cho việc quay mới.
+  final bool blocked;
+  final QuotaWarnLevel warnLevel;
 
   /// Tổng số video đang lưu của shop; `null` khi backend chưa trả trường này.
   final int? videoCount;

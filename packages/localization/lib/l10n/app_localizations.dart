@@ -1595,7 +1595,7 @@ abstract class AppLocalizations {
   /// No description provided for @quotaExhaustedNote.
   ///
   /// In en, this message translates to:
-  /// **'Out of quota this month — videos will wait for quota'**
+  /// **'Monthly allowance used up. Recording still works, but these clips are ON THIS PHONE and not protected yet — they upload by themselves once the allowance is raised.'**
   String get quotaExhaustedNote;
 
   /// No description provided for @upgradePlanShort.
@@ -1631,7 +1631,7 @@ abstract class AppLocalizations {
   /// No description provided for @waitingQuota.
   ///
   /// In en, this message translates to:
-  /// **'Waiting for quota'**
+  /// **'Waiting for allowance · still on device'**
   String get waitingQuota;
 
   /// No description provided for @pausedUpload.
@@ -1769,7 +1769,7 @@ abstract class AppLocalizations {
   /// No description provided for @queueFilterQuotaWait.
   ///
   /// In en, this message translates to:
-  /// **'Quota wait ({count})'**
+  /// **'Waiting for allowance ({count})'**
   String queueFilterQuotaWait(int count);
 
   /// No description provided for @queueSummary.
@@ -3241,6 +3241,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'12 months'**
   String get planTerm12m;
+
+  /// No description provided for @quotaVideosThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos this month'**
+  String get quotaVideosThisMonth;
+
+  /// No description provided for @quotaSubtitleVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Track how many videos you recorded this month'**
+  String get quotaSubtitleVideos;
+
+  /// No description provided for @quotaBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Video allowance exhausted'**
+  String get quotaBlockedTitle;
+
+  /// No description provided for @quotaBlockedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording still works, but clips cannot upload yet — they are sitting on this phone, unprotected. They upload by themselves once the allowance is raised.'**
+  String get quotaBlockedNote;
+
+  /// No description provided for @quotaBlockedOwnerNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the account owner to raise the allowance.'**
+  String get quotaBlockedOwnerNote;
+
+  /// No description provided for @quotaTopupCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Top-up credits'**
+  String get quotaTopupCredits;
+
+  /// No description provided for @quotaBlockAt.
+  ///
+  /// In en, this message translates to:
+  /// **'New recordings blocked at {n} videos'**
+  String quotaBlockAt(int n);
+
+  /// No description provided for @quotaResetMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Resets at the start of next month; nothing carries over'**
+  String get quotaResetMonthly;
+
+  /// No description provided for @storageOwnTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own storage'**
+  String get storageOwnTitle;
+
+  /// No description provided for @storageOwnPending.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} videos waiting to be pushed to your storage'**
+  String storageOwnPending(int count);
+
+  /// No description provided for @storageOwnProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} videos in your storage have problems'**
+  String storageOwnProblem(int count);
+
+  /// No description provided for @quotaExhaustedWarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t uninstall the app or clear its data until they have uploaded.'**
+  String get quotaExhaustedWarn;
+
+  /// No description provided for @quotaStrandedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} videos waiting on this phone'**
+  String quotaStrandedTitle(int count);
+
+  /// No description provided for @quotaStrandedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'These videos exist only on this phone. Losing it, uninstalling the app or clearing its data loses them.'**
+  String get quotaStrandedNote;
 }
 
 class _AppLocalizationsDelegate

@@ -839,7 +839,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quotaExhaustedNote =>
-      'Out of quota this month — videos will wait for quota';
+      'Monthly allowance used up. Recording still works, but these clips are ON THIS PHONE and not protected yet — they upload by themselves once the allowance is raised.';
 
   @override
   String get upgradePlanShort => 'Upgrade';
@@ -858,7 +858,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploaded => 'Uploaded';
 
   @override
-  String get waitingQuota => 'Waiting for quota';
+  String get waitingQuota => 'Waiting for allowance · still on device';
 
   @override
   String get pausedUpload => 'Paused';
@@ -936,7 +936,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String queueFilterQuotaWait(int count) {
-    return 'Quota wait ($count)';
+    return 'Waiting for allowance ($count)';
   }
 
   @override
@@ -1781,4 +1781,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get planTerm12m => '12 months';
+
+  @override
+  String get quotaVideosThisMonth => 'Videos this month';
+
+  @override
+  String get quotaSubtitleVideos =>
+      'Track how many videos you recorded this month';
+
+  @override
+  String get quotaBlockedTitle => 'Video allowance exhausted';
+
+  @override
+  String get quotaBlockedNote =>
+      'Recording still works, but clips cannot upload yet — they are sitting on this phone, unprotected. They upload by themselves once the allowance is raised.';
+
+  @override
+  String get quotaBlockedOwnerNote =>
+      'Ask the account owner to raise the allowance.';
+
+  @override
+  String get quotaTopupCredits => 'Top-up credits';
+
+  @override
+  String quotaBlockAt(int n) {
+    return 'New recordings blocked at $n videos';
+  }
+
+  @override
+  String get quotaResetMonthly =>
+      'Resets at the start of next month; nothing carries over';
+
+  @override
+  String get storageOwnTitle => 'Your own storage';
+
+  @override
+  String storageOwnPending(int count) {
+    return '$count videos waiting to be pushed to your storage';
+  }
+
+  @override
+  String storageOwnProblem(int count) {
+    return '$count videos in your storage have problems';
+  }
+
+  @override
+  String get quotaExhaustedWarn =>
+      'Don\'t uninstall the app or clear its data until they have uploaded.';
+
+  @override
+  String quotaStrandedTitle(int count) {
+    return '$count videos waiting on this phone';
+  }
+
+  @override
+  String get quotaStrandedNote =>
+      'These videos exist only on this phone. Losing it, uninstalling the app or clearing its data loses them.';
 }

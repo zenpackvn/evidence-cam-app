@@ -58,6 +58,61 @@ void main() {
     expect(q.retentionDays, 25);
   });
 
+  // Trục tính tiền là SỐ LƯỢNG video mỗi tháng (mục 6.3). Dung lượng vẫn được
+  // trả nhưng chỉ còn là chỉ số kỹ thuật nội bộ.
+  test('getQuota parses the video axis', () async {
+    when(
+      () => dio.get<Map<String, dynamic>>(
+        '/api/quota',
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => _res('/api/quota', {
+        'plan_code': 'basic',
+        'used_videos': 1101,
+        'cap_videos': 1000,
+        'topup_videos': 0,
+        'block_at_videos': 1100,
+        'remaining_videos': 0,
+        'blocked': true,
+        'warn_level': 'blocked',
+        'used_bytes': 3,
+        'cap_bytes': 100,
+        'remaining_bytes': 97,
+      }),
+    );
+
+    final q = await api.getQuota();
+    expect(q.usedVideos, 1101);
+    expect(q.capVideos, 1000);
+    expect(q.blockAtVideos, 1100);
+    expect(q.blocked, isTrue);
+    expect(q.warnLevel, QuotaWarnLevel.blocked);
+  });
+
+  // Backend cũ chưa có trục video: app phải đọc được mà không nổ, và KHÔNG
+  // được tự coi là đang bị chặn.
+  test('getQuota chịu được backend chưa có trục video', () async {
+    when(
+      () => dio.get<Map<String, dynamic>>(
+        '/api/quota',
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => _res('/api/quota', {
+        'plan_code': 'free',
+        'used_bytes': 3,
+        'cap_bytes': 100,
+        'remaining_bytes': 97,
+      }),
+    );
+
+    final q = await api.getQuota();
+    expect(q.capVideos, 0);
+    expect(q.blocked, isFalse);
+    expect(q.warnLevel, QuotaWarnLevel.none);
+  });
+
   test('listShops maps the list with roles', () async {
     when(
       () => dio.get<List<dynamic>>(

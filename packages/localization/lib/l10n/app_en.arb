@@ -436,13 +436,13 @@
   "stopRecording": "Stop recording",
   "videoTypeSettings": "Video type settings",
   "uploadQueueTitle": "Upload queue",
-  "quotaExhaustedNote": "Out of quota this month — videos will wait for quota",
+  "quotaExhaustedNote": "Monthly allowance used up. Recording still works, but these clips are ON THIS PHONE and not protected yet — they upload by themselves once the allowance is raised.",
   "upgradePlanShort": "Upgrade",
   "queueEmpty": "No videos in the queue yet",
   "queueAutoUploadNote": "Upload happens automatically when you're online",
   "waitingUpload": "Waiting to upload",
   "uploaded": "Uploaded",
-  "waitingQuota": "Waiting for quota",
+  "waitingQuota": "Waiting for allowance · still on device",
   "pausedUpload": "Paused",
   "queuePauseAction": "Pause",
   "queueResumeAction": "Resume",
@@ -486,7 +486,7 @@
       }
     }
   },
-  "queueFilterQuotaWait": "Quota wait ({count})",
+  "queueFilterQuotaWait": "Waiting for allowance ({count})",
   "@queueFilterQuotaWait": {
     "placeholders": {
       "count": {
@@ -1219,5 +1219,47 @@
   "paymentSandboxNote": "Sandbox test transaction, not a real payment.",
   "planTerm1m": "1 month",
   "planTerm6m": "6 months",
-  "planTerm12m": "12 months"
+  "planTerm12m": "12 months",
+  "quotaVideosThisMonth": "Videos this month",
+  "quotaSubtitleVideos": "Track how many videos you recorded this month",
+  "quotaBlockedTitle": "Video allowance exhausted",
+  "quotaBlockedNote": "Recording still works, but clips cannot upload yet — they are sitting on this phone, unprotected. They upload by themselves once the allowance is raised.",
+  "quotaBlockedOwnerNote": "Ask the account owner to raise the allowance.",
+  "quotaTopupCredits": "Top-up credits",
+  "quotaBlockAt": "New recordings blocked at {n} videos",
+  "@quotaBlockAt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaResetMonthly": "Resets at the start of next month; nothing carries over",
+  "storageOwnTitle": "Your own storage",
+  "storageOwnPending": "{count} videos waiting to be pushed to your storage",
+  "@storageOwnPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storageOwnProblem": "{count} videos in your storage have problems",
+  "@storageOwnProblem": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaExhaustedWarn": "Don't uninstall the app or clear its data until they have uploaded.",
+  "quotaStrandedTitle": "{count} videos waiting on this phone",
+  "@quotaStrandedTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaStrandedNote": "These videos exist only on this phone. Losing it, uninstalling the app or clearing its data loses them."
 }

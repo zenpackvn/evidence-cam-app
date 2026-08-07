@@ -63,6 +63,31 @@ class EcApi {
 
   /// Có [shopId] → backend trả gói của CHỦ shop đó kèm `can_manage_plan=false`
   /// cho quản lý/nhân viên. Không truyền → gói của chính tài khoản đang đăng nhập.
+  /// Khai số clip chưa upload được đang nằm trên máy này.
+  ///
+  /// Máy chủ KHÔNG tự biết con số này: khi shop vượt hạn mức, lượt upload bị từ
+  /// chối ở bước presign, trước khi có hàng nào trong cơ sở dữ liệu. Không khai
+  /// thì chủ shop nhìn bảng điều khiển thấy mọi thứ bình thường trong khi hàng
+  /// trăm clip đang chất trên điện thoại nhân viên.
+  ///
+  /// Gửi `pending: 0` khi hàng đợi đã sạch — nếu không cảnh báo bên chủ shop
+  /// sẽ không bao giờ tắt.
+  Future<void> reportQueueDepth(
+    String shopId, {
+    required int pending,
+    int pendingBytes = 0,
+    int? oldestAt,
+  }) async {
+    await _dio.post<void>(
+      '/api/shops/$shopId/queue-depth',
+      data: {
+        'pending': pending,
+        'pending_bytes': pendingBytes,
+        'oldest_at': oldestAt,
+      },
+    );
+  }
+
   Future<QuotaDto> getQuota({String? shopId}) => _get(
     shopId == null
         ? '/api/quota'

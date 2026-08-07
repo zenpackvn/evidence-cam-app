@@ -835,7 +835,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get uploadQueueTitle => 'Hàng đợi upload';
 
   @override
-  String get quotaExhaustedNote => 'Hết quota tháng này — video sẽ chờ quota';
+  String get quotaExhaustedNote =>
+      'Hết hạn mức tháng này. Video vẫn quay được, nhưng đang nằm TRÊN MÁY NÀY và chưa được bảo vệ — chúng sẽ tự tải lên khi hạn mức được nâng.';
 
   @override
   String get upgradePlanShort => 'Nâng gói';
@@ -854,7 +855,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get uploaded => 'Đã upload';
 
   @override
-  String get waitingQuota => 'Chờ quota';
+  String get waitingQuota => 'Chờ hạn mức · còn trên máy';
 
   @override
   String get pausedUpload => 'Đã tạm dừng';
@@ -932,7 +933,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String queueFilterQuotaWait(int count) {
-    return 'Chờ quota ($count)';
+    return 'Chờ hạn mức ($count)';
   }
 
   @override
@@ -1772,4 +1773,58 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get planTerm12m => '12 tháng';
+
+  @override
+  String get quotaVideosThisMonth => 'Video tháng này';
+
+  @override
+  String get quotaSubtitleVideos => 'Theo dõi số video đã quay trong tháng';
+
+  @override
+  String get quotaBlockedTitle => 'Đã hết hạn mức video';
+
+  @override
+  String get quotaBlockedNote =>
+      'Video vẫn quay bình thường, nhưng chưa tải lên được — chúng đang nằm trên máy và chưa được bảo vệ. Hạn mức được nâng thì chúng tự tải lên.';
+
+  @override
+  String get quotaBlockedOwnerNote =>
+      'Liên hệ chủ tài khoản để được nâng hạn mức.';
+
+  @override
+  String get quotaTopupCredits => 'Lượt mua thêm';
+
+  @override
+  String quotaBlockAt(int n) {
+    return 'Chặn quay mới từ $n video';
+  }
+
+  @override
+  String get quotaResetMonthly => 'Đếm lại từ đầu tháng sau, không cộng dồn';
+
+  @override
+  String get storageOwnTitle => 'Kho riêng của shop';
+
+  @override
+  String storageOwnPending(int count) {
+    return '$count video đang chờ đẩy sang kho của bạn';
+  }
+
+  @override
+  String storageOwnProblem(int count) {
+    return '$count video trong kho của bạn có vấn đề';
+  }
+
+  @override
+  String get quotaExhaustedWarn =>
+      'Đừng gỡ app hay xoá dữ liệu app cho tới khi tải lên xong.';
+
+  @override
+  String quotaStrandedTitle(int count) {
+    return '$count video đang chờ trên máy này';
+  }
+
+  @override
+  String get quotaStrandedNote =>
+      'Những video này chỉ tồn tại trên điện thoại. Mất máy, gỡ app hoặc xoá dữ liệu app là mất luôn.';
 }

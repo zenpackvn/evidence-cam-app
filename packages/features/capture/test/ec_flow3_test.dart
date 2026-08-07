@@ -199,21 +199,45 @@ void main() {
       expect(find.textContaining('video đang chờ'), findsNothing);
     });
 
-    testWidgets('retry and upgrade callbacks fire', (tester) async {
+    testWidgets('retry callback fires', (tester) async {
       EcUploadItem? retried;
-      var upgraded = false;
       await _pump(
         tester,
         EcUploadQueueScreen(
           items: ecDefaultUploadItems,
           onRetry: (item) => retried = item,
-          onUpgrade: () => upgraded = true,
         ),
       );
       await tester.tap(find.text('Thử lại'));
-      await tester.tap(find.text('Nâng gói'));
       expect(retried?.status, EcUploadStatus.error);
-      expect(upgraded, isTrue);
+    });
+
+    // Người cầm máy thường không phải người trả tiền, và quy tắc chống dẫn dắt
+    // của Apple (App Review 3.1) cấm mọi lối chỉ sang trang thanh toán trong
+    // app. Hàng rào: thêm lại link "Nâng gói" vào băng hạn mức là test đỏ.
+    testWidgets('băng hạn mức KHÔNG có lối dẫn sang thanh toán', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcUploadQueueScreen(items: ecDefaultUploadItems),
+      );
+      expect(find.text('Nâng gói'), findsNothing);
+      expect(find.text('Nâng cấp'), findsNothing);
+    });
+
+    // Hiểu nhầm nguy hiểm nhất ở màn này là tưởng máy chủ đang giữ hộ clip.
+    // Băng cảnh báo phải nói thẳng: chúng đang nằm trên chính cái máy này.
+    testWidgets('băng hạn mức nói rõ clip đang nằm trên máy', (tester) async {
+      await _pump(
+        tester,
+        const EcUploadQueueScreen(items: ecDefaultUploadItems),
+      );
+      expect(find.textContaining('TRÊN MÁY NÀY'), findsOneWidget);
+      expect(
+        find.textContaining('Đừng gỡ app hay xoá dữ liệu app'),
+        findsOneWidget,
+      );
     });
 
     // FR-02 — Nhân viên không được xóa bằng chứng. Vai trò được chuyển xuống

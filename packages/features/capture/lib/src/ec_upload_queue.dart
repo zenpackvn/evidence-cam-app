@@ -129,19 +129,71 @@ class EcUploadQueue extends ChangeNotifier {
   /// Newest-first view of the queue.
   List<UploadTask> get tasks => List.unmodifiable(_tasks);
 
+  /// Clip đã quay xong nhưng CHƯA nằm an toàn trên máy chủ — tức là những clip
+  /// hiện chỉ tồn tại trên chính cái điện thoại này.
+  ///
+  /// Gồm cả `error` chứ không chỉ `quotaWait`: với người mất máy thì "kẹt vì
+  /// hạn mức" và "kẹt vì lỗi mạng" mất mát y hệt nhau.
+  Iterable<UploadTask> get strandedTasks => _tasks.where(
+    (t) => t.state != EcUploadState.done && t.state != EcUploadState.uploading,
+  );
+
+  int get strandedCount => strandedTasks.length;
+
+  /// Tổng dung lượng đang chiếm trên máy, byte. Đọc kích thước thật từ đĩa —
+  /// đây là con số dùng để cảnh báo sắp đầy bộ nhớ, đoán thì vô nghĩa.
+  int get strandedBytes {
+    var total = 0;
+    for (final task in strandedTasks) {
+      try {
+        total += File(absolutePathOf(task.filePath)).lengthSync();
+      } on Object {
+        // Tệp đã biến mất — không cộng gì, và [load] sẽ dọn hàng ở lần sau.
+      }
+    }
+    return total;
+  }
+
+  /// Mốc quay của clip kẹt lâu nhất. Null khi không có clip nào kẹt.
+  DateTime? get strandedOldestAt {
+    DateTime? oldest;
+    for (final task in strandedTasks) {
+      if (oldest == null || task.createdAt.isBefore(oldest)) {
+        oldest = task.createdAt;
+      }
+    }
+    return oldest;
+  }
+
   /// Loads the persisted queue from the store and resumes processing. Call
   /// once. Any failure leaves an empty in-memory queue rather than crashing.
   Future<void> load() async {
     try {
       final loaded = await _store.loadAll();
+      // Đọc thư mục TRƯỚC khi lọc: [absolutePathOf] cần biết Documents nằm đâu,
+      // và nếu không biết thì mọi đường dẫn tương đối đều "không tồn tại" —
+      // tức là rụng sạch hàng đợi.
+      await _evidenceDir();
       _tasks
         ..clear()
         // Drop entries whose clip file is gone.
-        ..addAll(loaded.where((t) => File(t.filePath).existsSync()));
+        ..addAll(
+          loaded.where((t) => File(absolutePathOf(t.filePath)).existsSync()),
+        );
+      // Có row trong kho nhưng KHÔNG row nào tìm thấy tệp = lỗi giải đường dẫn,
+      // không phải hàng đợi rỗng. Ghi lại để [_sweepOrphans] không coi cả thư
+      // mục là rác và xoá sạch bằng chứng vừa được khôi phục.
+      final lostEveryPath = loaded.isNotEmpty && _tasks.isEmpty;
       await _importLegacyJson();
-      // An upload interrupted by a kill is retried, not left stuck.
+      // Upload đứt giữa chừng, và clip bị đỗ vì hết hạn mức, đều được thử lại.
+      //
+      // `quotaWait` phải nằm ở đây: hạn mức mở lại khi chủ shop mua thêm lượt
+      // hoặc sang tháng mới, và không có tín hiệu nào từ máy chủ báo cho máy
+      // này biết. Mở app là dịp tự nhiên nhất để thử lại — thiếu nó thì clip
+      // nằm chờ vĩnh viễn dù hạn mức đã thoáng từ lâu.
       for (final task in _tasks) {
-        if (task.state == EcUploadState.uploading) {
+        if (task.state == EcUploadState.uploading ||
+            task.state == EcUploadState.quotaWait) {
           task
             ..state = EcUploadState.waiting
             ..progress = 0;
@@ -151,7 +203,7 @@ class EcUploadQueue extends ChangeNotifier {
       _tasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       // Strictly after the legacy import: `queue.json` lives in the evidence
       // dir, so sweeping first would delete the very file being migrated.
-      await _sweepOrphans();
+      await _sweepOrphans(skipEvidenceDir: lostEveryPath);
     } on Object {
       // No storage / corrupt data — run with an empty queue.
     }
@@ -176,10 +228,12 @@ class EcUploadQueue extends ChangeNotifier {
   }) async {
     final dir = await _evidenceDir();
     final id = DateTime.now().microsecondsSinceEpoch.toString();
-    var stored = '${dir.path}/$id${_ext(filePath)}';
+    // Lưu TÊN TỆP TRẦN — xem [absolutePathOf]. Đường dẫn tuyệt đối chết hàng
+    // loạt khi iOS đổi UUID container lúc khôi phục máy.
+    var stored = '$id${_ext(filePath)}';
     var copied = false;
     try {
-      await File(filePath).copy(stored);
+      await File(filePath).copy('${dir.path}/$stored');
       copied = true;
     } on Object {
       stored = filePath; // Fall back to the original path if the copy fails.
@@ -256,7 +310,7 @@ class EcUploadQueue extends ChangeNotifier {
     _tasks.remove(task);
     await _store.remove(id);
     notifyListeners();
-    unawaited(_deleteLocalCopyQuietly(task.filePath));
+    unawaited(_deleteLocalCopyQuietly(absolutePathOf(task.filePath)));
   }
 
   Future<void> _deleteLocalCopyQuietly(String path) async {
@@ -289,13 +343,44 @@ class EcUploadQueue extends ChangeNotifier {
   /// anywhere else, so without this sweep they are never reclaimed. Runs at
   /// [load] — no recording is in flight then, so any remux left over is
   /// garbage by definition.
-  Future<void> _sweepOrphans() async {
-    final referenced = {for (final task in _tasks) task.filePath};
+  ///
+  /// HAI CÁI HÃM, và cả hai đều để tránh đúng một thảm hoạ: dọn rác biến thành
+  /// xoá sạch bằng chứng.
+  ///
+  /// - [skipEvidenceDir]: kho có row nhưng không row nào tìm thấy tệp. Đó là
+  ///   lỗi giải đường dẫn, không phải rác — và những tệp "vô chủ" kia chính là
+  ///   bằng chứng vừa được khôi phục.
+  /// - `referenced.isEmpty`: một lượt dọn rác sắp xoá 100% thư mục thì đó là
+  ///   tín hiệu có bug, không phải một lượt dọn dẹp. Chịu tốn vài MB rác còn
+  ///   hơn xoá nhầm bản duy nhất của một clip bằng chứng.
+  Future<void> _sweepOrphans({bool skipEvidenceDir = false}) async {
+    final referenced = {
+      for (final task in _tasks) absolutePathOf(task.filePath),
+    };
     try {
       final dir = await _evidenceDir();
-      for (final entity in dir.listSync()) {
-        if (entity is! File || referenced.contains(entity.path)) continue;
-        await _deleteLocalCopyQuietly(entity.path);
+      final contents = dir.listSync().whereType<File>().toList();
+      final wouldWipeAll =
+          contents.isNotEmpty &&
+          contents.every((f) => !referenced.contains(f.path));
+      if (skipEvidenceDir || (referenced.isEmpty && wouldWipeAll)) {
+        // Không xoá gì cả, nhưng phải kêu lên: im lặng bỏ qua thì lần regression
+        // sau không ai biết đường dẫn đã hỏng.
+        unawaited(
+          _crashReporter?.recordError(
+            StateError(
+              'evidence_sweep_skipped: ${contents.length} tệp không có chủ, '
+              'skipEvidenceDir=$skipEvidenceDir',
+            ),
+            StackTrace.current,
+            reason: 'evidence_sweep_skipped',
+          ),
+        );
+      } else {
+        for (final entity in contents) {
+          if (referenced.contains(entity.path)) continue;
+          await _deleteLocalCopyQuietly(entity.path);
+        }
       }
     } on Object {
       // Unreadable directory — nothing to reclaim.
@@ -333,8 +418,10 @@ class EcUploadQueue extends ChangeNotifier {
   Future<void> _process() async {
     if (_processing || _uploader == null) return;
     _processing = true;
+    var hitQuotaWall = false;
     try {
       while (true) {
+        if (hitQuotaWall) break;
         final task = _firstWaiting();
         if (task == null) break;
         task
@@ -351,7 +438,7 @@ class EcUploadQueue extends ChangeNotifier {
           // itself) from rebuilding many times a second during an upload.
           var lastPercent = -1;
           final url = await _uploader.upload(
-            File(task.filePath),
+            File(absolutePathOf(task.filePath)),
             tracking: task.tracking,
             type: task.type,
             shopId: task.shopId,
@@ -376,7 +463,7 @@ class EcUploadQueue extends ChangeNotifier {
           // Bytes đã nằm trên R2 và backend đã xác nhận, nên bản trên máy hết
           // giá trị. Một ca đóng hàng sinh hàng trăm clip; giữ lại là lấp đầy
           // bộ nhớ máy rồi chính việc quay bị chặn vì hết chỗ (FR-09).
-          unawaited(_deleteLocalFile(task.filePath));
+          unawaited(_deleteLocalFile(absolutePathOf(task.filePath)));
         } on Object catch (error, stack) {
           // Non-fatal: the task stays queued and retries, but the *reason*
           // must reach Crashlytics — this is the only path a real-world
@@ -390,6 +477,11 @@ class EcUploadQueue extends ChangeNotifier {
             ),
           );
           if (_isQuotaWait(error)) {
+            // Cả hàng đợi cùng chung một hạn mức: clip này bị từ chối thì clip
+            // kế tiếp cũng thế. Dừng lượt quét ở đây thay vì nã 300 request
+            // chắc chắn trả 403 — vừa đốt pin và data của người đóng gói, vừa
+            // làm log máy chủ ngập.
+            hitQuotaWall = true;
             task
               ..state = EcUploadState.quotaWait
               ..progress = 0
@@ -418,7 +510,12 @@ class EcUploadQueue extends ChangeNotifier {
           // of leaving a permanent "done" entry here.
           _tasks.remove(task);
           await _store.remove(task.id);
-          unawaited(_deleteLocalCopyQuietly(task.filePath));
+          unawaited(_deleteLocalCopyQuietly(absolutePathOf(task.filePath)));
+          // Một lượt upload lọt nghĩa là hạn mức VỪA chứng minh còn chỗ (chủ
+          // shop mua thêm lượt, hoặc sang tháng). Thả những bản đang đỗ vào
+          // lại vòng quay ngay — không thì chúng nằm chờ tới lần mở app sau,
+          // trong khi chính máy này vừa upload được.
+          await _releaseQuotaWaiting();
         } else {
           await _store.save(task);
         }
@@ -447,6 +544,35 @@ class EcUploadQueue extends ChangeNotifier {
     final current = _currentUid?.call();
     if (current == null) return true;
     return owner == current;
+  }
+
+  /// Thả mọi clip đang đỗ vì hạn mức trở lại hàng chờ.
+  ///
+  /// Không gọi [_process] ở đây: hàm này chạy TRONG vòng lặp của [_process],
+  /// và vòng lặp đó sẽ nhặt luôn những bản vừa được thả ở lượt kế tiếp.
+  Future<int> _releaseQuotaWaiting() async {
+    var released = 0;
+    for (final task in _tasks) {
+      if (task.state != EcUploadState.quotaWait) continue;
+      task
+        ..state = EcUploadState.waiting
+        ..progress = 0
+        ..errorMessage = null;
+      await _store.save(task);
+      released++;
+    }
+    if (released > 0) notifyListeners();
+    return released;
+  }
+
+  /// Thử lại toàn bộ clip đang đỗ vì hạn mức. Dành cho tầng ngoài gọi khi có
+  /// lý do tin rằng hạn mức đã mở lại — app quay lại foreground, hoặc màn Gói
+  /// cước vừa đọc được `blocked = false`.
+  ///
+  /// Rẻ và an toàn khi gọi thừa: không có bản nào đỗ thì đây là no-op.
+  Future<void> retryQuotaWaiting() async {
+    if (await _releaseQuotaWaiting() == 0) return;
+    unawaited(_process());
   }
 
   UploadTask? _firstWaiting() {
@@ -488,6 +614,34 @@ class EcUploadQueue extends ChangeNotifier {
     }
   }
 
+  /// Đường dẫn tuyệt đối thật sự của một clip.
+  ///
+  /// `task.filePath` lưu TÊN TỆP TRẦN, tương đối so với thư mục bằng chứng.
+  /// Lưu đường dẫn tuyệt đối là một lỗi mất dữ liệu trên iOS: mã UUID của
+  /// container đổi mỗi lần khôi phục từ sao lưu hoặc chuyển sang máy mới, nên
+  /// mọi đường dẫn đã lưu chết cùng một lúc — trong khi chính các tệp thì vẫn
+  /// được khôi phục nguyên vẹn. Trước đây hậu quả là `load()` rụng sạch hàng
+  /// đợi rồi `_sweepOrphans()` xoá luôn những tệp vừa khôi phục.
+  ///
+  /// Neo theo THƯ MỤC BẰNG CHỨNG chứ không theo Documents: thư mục đó có thể
+  /// được truyền vào (test, và bất kỳ ai gọi `EcUploadQueue(directory: …)`),
+  /// nên "documents + /evidence/" là một giả định sai.
+  ///
+  /// Vẫn nhận giá trị tuyệt đối cũ. Nếu tệp còn ở đúng chỗ thì dùng luôn; nếu
+  /// không thì dựng lại theo tên tệp trong thư mục bằng chứng hiện tại — đúng
+  /// trường hợp iOS khôi phục máy.
+  String absolutePathOf(String stored) {
+    if (stored.isEmpty) return stored;
+    final dir = _dir;
+    if (!stored.contains('/')) {
+      return dir == null ? stored : '${dir.path}/$stored';
+    }
+    if (File(stored).existsSync()) return stored;
+    if (dir == null) return stored;
+    final rebuilt = '${dir.path}/${stored.split('/').last}';
+    return File(rebuilt).existsSync() ? rebuilt : stored;
+  }
+
   Future<Directory> _evidenceDir() async {
     final dir = _dir;
     if (dir != null) return dir;
@@ -519,7 +673,13 @@ Future<void> _deleteLocalFile(String path) async {
   }
 }
 
+/// Máy chủ từ chối vì hết hạn mức, chứ không phải một lỗi upload thường.
+///
+/// Ưu tiên KIỂU dữ liệu ([EcQuotaExceededException]). Nhánh so chuỗi phía dưới
+/// chỉ còn để đỡ hai đường cũ: `StateError('quota_exceeded')` mà uploader ném
+/// khi backend trả `quota_hold`, và bản app cũ chưa có kiểu này.
 bool _isQuotaWait(Object error) {
+  if (error is EcQuotaExceededException) return true;
   final text = error.toString().toLowerCase();
   return text.contains('quota_exceeded') ||
       text.contains('quota exceeded') ||

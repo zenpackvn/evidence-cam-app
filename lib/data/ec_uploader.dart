@@ -53,6 +53,19 @@ class UploadFailureException implements Exception {
   String toString() => message;
 }
 
+/// Máy chủ từ chối cấp chỗ upload vì shop vượt hạn mức video (backend:
+/// `assertUploadAllowed` → 403 `video_quota_exceeded`).
+///
+/// Khớp theo MÃ LỖI trong body, không theo mã HTTP: 403 còn được dùng cho
+/// `forbidden`, `owner_only`, `byos_not_in_plan` — đỗ clip lại vì một trong số
+/// đó là giấu một lỗi phân quyền thật dưới nhãn "chờ hạn mức".
+bool _isQuotaRefusal(DioException error) {
+  if (error.response?.statusCode != 403) return false;
+  final body = error.response?.data;
+  final code = body is Map ? body['error'] : null;
+  return code == 'video_quota_exceeded';
+}
+
 String _friendlyMessage(DioException error) {
   switch (error.type) {
     case DioExceptionType.connectionTimeout:
@@ -283,6 +296,15 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
         onProgress: onProgress,
       );
     } on DioException catch (e, stack) {
+      // Hết hạn mức KHÔNG phải một lỗi upload bình thường: thử lại ngay không
+      // bao giờ ăn thua, và người dùng cần đọc đúng lý do chứ không phải "máy
+      // chủ báo lỗi (mã 403)". Nhận diện trước khi bọc thành lỗi chung.
+      if (_isQuotaRefusal(e)) {
+        Error.throwWithStackTrace(
+          const EcQuotaExceededException('video_quota_exceeded'),
+          stack,
+        );
+      }
       Error.throwWithStackTrace(
         UploadFailureException(_friendlyMessage(e)),
         stack,
