@@ -66,6 +66,30 @@ class AppLocalizationsVi extends AppLocalizations {
   String get commonDelete => 'Xóa';
 
   @override
+  String get settingDefaultSuffix => 'mặc định';
+
+  @override
+  String get shopDetailClipLength => 'Thời lượng video';
+
+  @override
+  String get shopDeleteTitle => 'Xóa cửa hàng';
+
+  @override
+  String get shopDeleteConfirm =>
+      'Xóa cửa hàng này? Toàn bộ đơn hàng, video và ảnh của nó sẽ mất và không lấy lại được.';
+
+  @override
+  String get shopDeleteBlockedTitle => 'Còn thành viên trong shop';
+
+  @override
+  String shopDeleteBlockedBody(int count) {
+    return 'Phải gỡ hết quản lý và nhân viên khỏi cửa hàng trước khi xóa. Hiện còn $count người.';
+  }
+
+  @override
+  String get shopDeleted => 'Đã xóa cửa hàng';
+
+  @override
   String bundleSelected(int count) {
     return 'Đã chọn $count bằng chứng';
   }

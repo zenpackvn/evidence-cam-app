@@ -1727,14 +1727,10 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onBack,
     this.onMemberMore,
     this.onInviteMember,
-    this.onTapResolution,
-    this.onTapClipDuration,
-    this.onTapUploadSize,
-    this.onTapImageSize,
-    this.onTapVideoSize,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
+    this.onDeleteShop,
     this.membersError = false,
     this.membersUnavailable = false,
     this.onRetryMembers,
@@ -1775,17 +1771,17 @@ class EcShopDetailScreen extends StatelessWidget {
   final VoidCallback? onBack;
   final ValueChanged<EcShopMember>? onMemberMore;
   final VoidCallback? onInviteMember;
-  final VoidCallback? onTapResolution;
-  final VoidCallback? onTapClipDuration;
-  final VoidCallback? onTapUploadSize;
 
   /// Trần riêng cho ảnh và cho video. Rỗng thì hàng vẫn hiện nhưng bấm không
   /// ra gì — bên gọi phải nối cả hai.
-  final VoidCallback? onTapImageSize;
-  final VoidCallback? onTapVideoSize;
   final ValueChanged<EcVideoType>? onEditType;
   final ValueChanged<EcVideoType>? onDeleteType;
   final VoidCallback? onAddType;
+
+  /// Xoá hẳn cửa hàng. `null` = không hiện nút (nhân viên, hoặc bên gọi chưa
+  /// nối). Rào chắn "phải gỡ hết người trước" nằm ở bên gọi, không ở đây: màn
+  /// này biết danh sách thành viên nhưng không biết ai đang đăng nhập.
+  final VoidCallback? onDeleteShop;
 
   @override
   Widget build(BuildContext context) {
@@ -1916,21 +1912,20 @@ class EcShopDetailScreen extends StatelessWidget {
               icon: LucideIcons.settings,
               label: l10n.sectionShopSettings,
               children: [
-                // Đã bỏ "Độ phân giải quay" và "Thời lượng video" khỏi màn
-                // này. Độ phân giải đổi được ngay trên thanh dưới màn quay,
-                // còn thời lượng thì gói quyết định và server kẹp lại — để ở
-                // đây chỉ tạo cảm giác đặt được mà thực tế không.
-                _UploadSizeRow(
-                  budget: clipBudget,
-                  platformLabel: platformLabel,
-                  kind: EcUploadKind.video,
-                  onTap: onTapVideoSize ?? onTapUploadSize,
+                // Hai mức CỐ ĐỊNH, không đặt được. Độ phân giải thì đổi ngay
+                // trên thanh dưới màn quay nên không nằm ở đây.
+                _FixedSettingRow(
+                  icon: LucideIcons.timer,
+                  label: l10n.shopDetailClipLength,
+                  value: l10n.clipDurationValue('${kFixedClipSeconds ~/ 60}'),
                 ),
-                _UploadSizeRow(
-                  budget: clipBudget,
-                  platformLabel: platformLabel,
-                  kind: EcUploadKind.image,
-                  onTap: onTapImageSize,
+                _FixedSettingRow(
+                  icon: LucideIcons.fileUp,
+                  label: l10n.shopDetailImageSize,
+                  // Chia thẳng chứ không qua `megabytesLabel`: hàm đó thêm
+                  // một chữ số thập phân cho mọi mức dưới 10MB, nên 5MB in ra
+                  // "5.0 MB" — một con số cố định thì không có gì để làm tròn.
+                  value: l10n.uploadSizeValue('${kFixedImageBytes ~/ 1000000}'),
                 ),
               ],
             ),
@@ -1979,6 +1974,12 @@ class EcShopDetailScreen extends StatelessWidget {
                   ),
               ],
             ),
+            // Xoá shop nằm CUỐI CÙNG, tách khỏi mọi thẻ khác, và chỉ chủ shop
+            // thấy. Đây là thao tác không hoàn tác được duy nhất trên màn này.
+            if (!readOnly && onDeleteShop != null) ...[
+              const SizedBox(height: _sectionCardGap),
+              _DeleteShopRow(onTap: onDeleteShop!),
+            ],
           ],
         ),
       ),
@@ -1986,90 +1987,103 @@ class EcShopDetailScreen extends StatelessWidget {
   }
 }
 
-class _UploadSizeRow extends StatelessWidget {
-  const _UploadSizeRow({
-    required this.budget,
-    required this.platformLabel,
-    required this.kind,
-    this.onTap,
-  });
+/// Nút xoá shop — đỏ, viền, không phải nút đặc.
+///
+/// Nút đặc màu đỏ ở cuối một danh sách cài đặt hút mắt hơn mọi thứ trên màn và
+/// mời người ta chạm thử. Đây là thao tác không lấy lại được, nên nó phải nhìn
+/// ra là nghiêm trọng mà không nhìn ra là hấp dẫn.
+class _DeleteShopRow extends StatelessWidget {
+  const _DeleteShopRow({required this.onTap});
 
-  final ClipBudget budget;
-  final String platformLabel;
-
-  /// Ảnh hay video — quyết định nhãn, con số hiện ra và mức đề xuất.
-  final EcUploadKind kind;
-  final VoidCallback? onTap;
-
-  int get _currentBytes => switch (kind) {
-    EcUploadKind.image => budget.maxImageBytes,
-    EcUploadKind.video => budget.maxVideoBytes,
-  };
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: PenBox(
+      width: double.infinity,
+      stroke: PenColors.danger,
+      radius: 12,
+      axis: PenAxis.row,
+      gap: 10,
+      main: MainAxisAlignment.center,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 13),
       children: [
-        EcTap(
-          onTap: onTap,
-          child: PenBox(
-            width: double.infinity,
-            fill: PenColors.card,
-            stroke: PenColors.line,
-            radius: 10,
-            axis: PenAxis.row,
-            gap: 14,
-            cross: CrossAxisAlignment.center,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            children: [
-              const PenBox(
-                width: 38,
-                height: 38,
-                fill: PenColors.bg,
-                radius: 10,
-                axis: PenAxis.row,
-                main: MainAxisAlignment.center,
-                cross: CrossAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.fileUp, size: 22, color: PenColors.ink),
-                ],
-              ),
-              Expanded(
-                child: PenText(
-                  switch (kind) {
-                    EcUploadKind.image => l10n.shopDetailImageSize,
-                    EcUploadKind.video => l10n.shopDetailVideoSize,
-                  },
-                  size: 16,
-                  color: PenColors.ink,
-                ),
-              ),
-              PenText(
-                _currentBytes <= 0
-                    ? l10n.uploadSizeValueUnlimited
-                    : l10n.uploadSizeValue(_megabytes(_currentBytes)),
-                size: 16,
-                color: PenColors.ink,
-                weight: FontWeight.w600,
-                softWrap: false,
-              ),
-              const Icon(
-                LucideIcons.chevronRight,
-                size: 18,
-                color: PenColors.mut,
-              ),
-            ],
-          ),
+        const Icon(LucideIcons.trash2, size: 20, color: PenColors.danger),
+        PenText(
+          context.l10n.shopDeleteTitle,
+          size: 16,
+          color: PenColors.danger,
+          weight: FontWeight.w700,
+          softWrap: false,
         ),
-        // Không còn dòng "đề xuất X MB" lẫn cảnh báo vượt mức ở đây: hàng
-        // này chỉ cần trả lời một câu — shop đang đặt trần bao nhiêu. Mức đề
-        // xuất đã nằm sẵn trong sheet, còn chuyện vượt mức sàn tính sau.
       ],
-    );
-  }
+    ),
+  );
+}
+
+/// Một hàng cài đặt CỐ ĐỊNH ở màn chi tiết cửa hàng.
+///
+/// Không bấm được, không mũi tên, không sheet. Trước đây hai hàng này mở ra
+/// một danh sách mốc để chọn, nhưng con số chọn xong đi qua ba tầng kẹp (shop
+/// đặt → trần gói → server kẹp lại) nên thứ hiện ra thường không phải thứ vừa
+/// bấm. Đặt được mà không giữ được thì khó chịu hơn hẳn không cho đặt.
+///
+/// Giá trị lấy từ [kFixedClipSeconds] / [kFixedImageBytes] — cùng hằng số máy
+/// quay và bộ đính ảnh dùng, nên dòng chữ ở đây không thể lệch với thứ app
+/// thật sự làm.
+class _FixedSettingRow extends StatelessWidget {
+  const _FixedSettingRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => PenBox(
+    width: double.infinity,
+    fill: PenColors.card,
+    stroke: PenColors.line,
+    radius: 10,
+    axis: PenAxis.row,
+    gap: 14,
+    cross: CrossAxisAlignment.center,
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+    children: [
+      PenBox(
+        width: 38,
+        height: 38,
+        fill: PenColors.bg,
+        radius: 10,
+        axis: PenAxis.row,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
+        children: [Icon(icon, size: 22, color: PenColors.ink)],
+      ),
+      Expanded(child: PenText(label, size: 16, color: PenColors.ink)),
+      PenText(
+        value,
+        size: 16,
+        color: PenColors.ink,
+        weight: FontWeight.w600,
+        softWrap: false,
+      ),
+      // Chữ "mặc định" thay chỗ mũi tên cũ. Bỏ trống chỗ đó thì hàng trông y
+      // như một hàng bấm được vừa hỏng; nói thẳng đây là mức mặc định thì
+      // người dùng thôi tìm chỗ bấm.
+      PenText(
+        context.l10n.settingDefaultSuffix,
+        size: 13,
+        color: PenColors.mut,
+        softWrap: false,
+      ),
+    ],
+  );
 }
 
 /// Amber of the design file's warn bar (F3-05) — the one warning colour the

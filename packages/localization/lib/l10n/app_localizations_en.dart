@@ -66,6 +66,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonDelete => 'Delete';
 
   @override
+  String get settingDefaultSuffix => 'default';
+
+  @override
+  String get shopDetailClipLength => 'Video length';
+
+  @override
+  String get shopDeleteTitle => 'Delete shop';
+
+  @override
+  String get shopDeleteConfirm =>
+      'Delete this shop? All of its orders, videos and photos go with it, and can\'t be recovered.';
+
+  @override
+  String get shopDeleteBlockedTitle => 'The shop still has members';
+
+  @override
+  String shopDeleteBlockedBody(int count) {
+    return 'Remove every manager and staff member from the shop before deleting it. $count still remain.';
+  }
+
+  @override
+  String get shopDeleted => 'Shop deleted';
+
+  @override
   String bundleSelected(int count) {
     return '$count selected';
   }

@@ -54,6 +54,10 @@ abstract interface class EcRepository {
     int? maxVideoBytes,
     int? maxUploadBytes,
   });
+
+  /// Xoá hẳn cửa hàng. Bên gọi phải chắc shop không còn thành viên nào khác.
+  Future<void> deleteShop(String shopId);
+
   Future<List<MemberDto>> members(String shopId);
   Future<ShopInviteDto> sendShopInvite(
     String shopId, {
@@ -184,6 +188,9 @@ class RemoteEcRepository implements EcRepository {
     maxVideoBytes: maxVideoBytes,
     maxUploadBytes: maxUploadBytes,
   );
+
+  @override
+  Future<void> deleteShop(String shopId) => _api.deleteShop(shopId);
 
   @override
   Future<List<MemberDto>> members(String shopId) => _api.listMembers(shopId);
@@ -355,6 +362,9 @@ class FakeEcRepository implements EcRepository {
     clipSeconds: maxClipSeconds ?? 120,
     uploadBytes: maxUploadBytes ?? 10000000,
   );
+
+  @override
+  Future<void> deleteShop(String shopId) async {}
 
   @override
   Future<List<MemberDto>> members(String shopId) async => const [

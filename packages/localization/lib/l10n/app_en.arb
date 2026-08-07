@@ -28,6 +28,21 @@
   "claimsPhotoAdded": "Photo added to the dossier and queued onto the order",
   "claimsAddedLater": "added later",
   "commonDelete": "Delete",
+  "settingDefaultSuffix": "default",
+  "shopDetailClipLength": "Video length",
+  "shopDeleteTitle": "Delete shop",
+  "shopDeleteConfirm": "Delete this shop? All of its orders, videos and photos go with it, and can't be recovered.",
+  "shopDeleteBlockedTitle": "The shop still has members",
+  "shopDeleteBlockedBody": "Remove every manager and staff member from the shop before deleting it. {count} still remain.",
+  "@shopDeleteBlockedBody": {
+    "description": "Shown when delete-shop is blocked by remaining members.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopDeleted": "Shop deleted",
   "bundleSelected": "{count} selected",
   "@bundleSelected": {
     "placeholders": {

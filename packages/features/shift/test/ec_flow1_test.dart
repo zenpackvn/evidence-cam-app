@@ -656,8 +656,10 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('upload size row opens the picker', (tester) async {
-      var tapped = false;
+    // Hai hàng cài đặt nay CỐ ĐỊNH: 5 phút và 5 MB, không bấm được, kèm chữ
+    // "mặc định" thay chỗ mũi tên. Ba test cũ canh việc chạm vào chúng mở ra
+    // sheet chọn mốc — cả sheet lẫn lối vào đều đã bỏ.
+    testWidgets('hai mức cố định hiện ra, không bấm được', (tester) async {
       await _pump(
         tester,
         EcShopDetailScreen(
@@ -665,33 +667,18 @@ void main() {
           platformLabel: 'Shopee',
           members: members,
           videoTypes: videoTypes,
-          onTapUploadSize: () => tapped = true,
         ),
       );
-      await tester.tap(find.text('Dung lượng/tệp'));
-      await tester.pump();
-      expect(tapped, isTrue);
+      expect(find.text('5 phút'), findsOneWidget);
+      expect(find.text('5 MB'), findsOneWidget);
+      expect(find.text('mặc định'), findsNWidgets(2));
+      // Không còn hàng nào mở sheet.
+      expect(find.text('Dung lượng/tệp'), findsNothing);
+      expect(find.text('Độ phân giải quay'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('clip duration row opens the picker', (tester) async {
-      var tapped = false;
-      await _pump(
-        tester,
-        EcShopDetailScreen(
-          shopName: 'Shop ABC',
-          platformLabel: 'Shopee',
-          members: members,
-          videoTypes: videoTypes,
-          onTapClipDuration: () => tapped = true,
-        ),
-      );
-      await tester.tap(find.text('Thời lượng/video'));
-      await tester.pump();
-      expect(tapped, isTrue);
-    });
-
-    testWidgets('resolution + edit type callbacks fire', (tester) async {
-      var resolutionTapped = false;
+    testWidgets('sửa loại video vẫn gọi callback', (tester) async {
       EcVideoType? edited;
       await _pump(
         tester,
@@ -700,14 +687,48 @@ void main() {
           platformLabel: 'Shopee',
           members: members,
           videoTypes: videoTypes,
-          onTapResolution: () => resolutionTapped = true,
           onEditType: (type) => edited = type,
         ),
       );
-      await tester.tap(find.text('Độ phân giải quay'));
       await tester.tap(find.byIcon(LucideIcons.pencil));
-      expect(resolutionTapped, isTrue);
       expect(edited?.name, 'Cân hàng');
+    });
+
+    testWidgets('xóa shop: chỉ hiện khi bên gọi nối, và ẩn với nhân viên', (
+      tester,
+    ) async {
+      var deleted = false;
+      await _pump(
+        tester,
+        EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          members: members,
+          videoTypes: videoTypes,
+          onDeleteShop: () => deleted = true,
+        ),
+      );
+      // Nút nằm cuối một màn cuộn dài — phải kéo tới nơi rồi mới chạm được.
+      await tester.ensureVisible(find.text('Xóa cửa hàng'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xóa cửa hàng'));
+      await tester.pump();
+      expect(deleted, isTrue);
+
+      // Nhân viên: thao tác không hoàn tác được thì không được phép hiện ra,
+      // kể cả dạng nút mờ.
+      await _pump(
+        tester,
+        EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          members: members,
+          videoTypes: videoTypes,
+          readOnly: true,
+          onDeleteShop: () => deleted = true,
+        ),
+      );
+      expect(find.text('Xóa cửa hàng'), findsNothing);
     });
   });
 

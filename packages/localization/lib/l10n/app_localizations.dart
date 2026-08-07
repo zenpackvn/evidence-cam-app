@@ -200,6 +200,48 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get commonDelete;
 
+  /// No description provided for @settingDefaultSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'default'**
+  String get settingDefaultSuffix;
+
+  /// No description provided for @shopDetailClipLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Video length'**
+  String get shopDetailClipLength;
+
+  /// No description provided for @shopDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete shop'**
+  String get shopDeleteTitle;
+
+  /// No description provided for @shopDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this shop? All of its orders, videos and photos go with it, and can\'t be recovered.'**
+  String get shopDeleteConfirm;
+
+  /// No description provided for @shopDeleteBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The shop still has members'**
+  String get shopDeleteBlockedTitle;
+
+  /// Shown when delete-shop is blocked by remaining members.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove every manager and staff member from the shop before deleting it. {count} still remain.'**
+  String shopDeleteBlockedBody(int count);
+
+  /// No description provided for @shopDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop deleted'**
+  String get shopDeleted;
+
   /// No description provided for @bundleSelected.
   ///
   /// In en, this message translates to:

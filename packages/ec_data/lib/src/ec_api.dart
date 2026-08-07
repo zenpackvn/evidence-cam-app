@@ -113,6 +113,14 @@ class EcApi {
     return ShopDto.fromJson(res.data!);
   }
 
+  /// Xoá hẳn cửa hàng.
+  ///
+  /// ponytail: endpoint này backend CHƯA mở — hiện trả 404. Đường REST chuẩn
+  /// cho tài nguyên đã có `GET/PATCH /api/shops/:id`, nên khi backend làm thì
+  /// gần như chắc chắn là đường này. App bắt lỗi và nói rõ thay vì nuốt.
+  Future<void> deleteShop(String shopId) =>
+      _dio.delete<void>('/api/shops/$shopId');
+
   Future<ShopDto> getShop(String shopId) async {
     final res = await _dio.get<Map<String, dynamic>>('/api/shops/$shopId');
     return ShopDto.fromJson(res.data!);

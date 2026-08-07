@@ -18,6 +18,21 @@ const _fallbackBytesPerSecond = 250000;
 /// tới mức vô dụng làm bằng chứng.
 const kMinClipSeconds = 60;
 
+/// Thời lượng tối đa một clip: **5 phút, cố định**.
+///
+/// Không còn đặt được nữa. Màn chi tiết cửa hàng từng có một sheet chọn mốc,
+/// nhưng con số ấy đi qua ba tầng (shop đặt → gói kẹp → server kẹp lại) nên
+/// thứ hiện ra thường không phải thứ vừa chọn — đặt được mà không giữ được là
+/// kiểu hỏng khó chịu hơn cả không cho đặt.
+///
+/// Đây là hằng số dùng ở MỌI nơi: dòng chữ trên màn cài đặt, và trần thật của
+/// máy quay. Hai chỗ đọc hai nguồn là màn hình nói dối.
+const kFixedClipSeconds = 300;
+
+/// Trần dung lượng một ẢNH đính kèm: **5 MB, cố định**. Cùng lý do với
+/// [kFixedClipSeconds].
+const kFixedImageBytes = 5000000;
+
 /// Khoảng hợp lệ của trần dung lượng mỗi tệp (FR-21). PHẢI khớp
 /// `MIN_UPLOAD_BYTES` / `MAX_UPLOAD_BYTES` của backend, nếu không sheet chào
 /// một mốc mà server trả về 400.

@@ -68,7 +68,13 @@ import 'package:network/network.dart' show Dio, DioException, DioExceptionType;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_contracts/shared_contracts.dart'
-    show ClipBudget, EcClaimDossier, EcClaimEvidence, EcClaimOrder;
+    show
+        ClipBudget,
+        EcClaimDossier,
+        EcClaimEvidence,
+        EcClaimOrder,
+        kFixedClipSeconds,
+        kFixedImageBytes;
 import 'package:storage/storage.dart';
 
 import 'app/di/injection.dart';
@@ -2108,9 +2114,6 @@ Future<bool> _confirmManualTracking(
 }
 
 /// Khoá lưu trần dung lượng người dùng tự đặt, theo từng shop.
-String _sizeKey(String shopId, EcUploadKind kind) =>
-    'shop.$shopId.max${kind == EcUploadKind.image ? 'Image' : 'Video'}Bytes';
-
 /// Khoá lưu đơn đang quay dở lúc bị cắt ngang.
 ///
 /// Ghi xuống ĐĨA chứ không giữ trong bộ nhớ: quay video + camera + cuộc gọi là
@@ -2129,7 +2132,7 @@ Future<void> ecRememberPendingRecord(String? code) =>
 
 /// Ảnh đại diện vừa chọn, giữ trong bộ nhớ tiến trình.
 ///
-/// Cùng lý do với [_sizeCapCache]: `KeyValueStore` lấy qua service locator có
+/// `KeyValueStore` lấy qua service locator có
 /// thể chưa đăng ký, lúc đó `setString` im lặng không làm gì và ảnh vừa chọn
 /// biến mất ngay khi trang Tài khoản dựng lại.
 final _avatarCache = <String, String>{};
@@ -2149,69 +2152,20 @@ String? _rememberedAvatar(String? uid) {
   return _resolveAvatarPath(saved);
 }
 
-/// Trần dung lượng người dùng vừa đặt, giữ trong bộ nhớ tiến trình.
+/// Thời lượng clip và trần ảnh nay CỐ ĐỊNH ở phía app
+/// ([kFixedClipSeconds] / [kFixedImageBytes]), không lấy theo shop nữa.
 ///
-/// Có bản nhớ này vì `KeyValueStore` lấy qua service locator có thể chưa đăng
-/// ký — lúc đó `setString` im lặng không làm gì và lựa chọn biến mất ngay khi
-/// màn cài đặt nạp lại, không một dấu hiệu nào. Map này luôn có mặt nên trong
-/// phiên hiện tại con số chắc chắn hiển thị đúng; đĩa chỉ là lớp bền hoá thêm.
-final _sizeCapCache = <String, int>{};
-
-/// Ghi nhớ trần vừa đặt.
-///
-/// `PATCH /api/shops/{id}` hiện chưa nhận `max_image_bytes`/`max_video_bytes`,
-/// nên con số gửi lên không quay về trong phản hồi và màn cài đặt lại hiện 0
-/// như chưa đặt gì. Nhớ tại chỗ để lựa chọn có hiệu lực ngay; lời gọi API vẫn
-/// giữ nguyên nên khi backend mở hai trường đó, server thành nguồn chuẩn.
-Future<void> _rememberSizeCap(String shopId, EcUploadKind kind, int bytes) {
-  final key = _sizeKey(shopId, kind);
-  _sizeCapCache[key] = bytes;
-  return _appMemory()?.setString(key, '$bytes') ?? Future<void>.value();
-}
-
-int _rememberedSizeCap(String shopId, EcUploadKind kind, int fromServer) {
-  // Lựa chọn của người dùng THẮNG giá trị server.
-  //
-  // Bản trước ưu tiên server, nhưng `max_video_bytes`/`max_image_bytes` mà
-  // server trả về là trần của SÀN (30MB, 5MB) chứ không phải mức shop đặt —
-  // nó luôn khác 0, nên con số vừa nhập không bao giờ được dùng và màn cài
-  // đặt cứ hiện 30 như chưa đổi gì. Khi backend nhận hai trường đó thật thì
-  // đảo lại thứ tự này.
-  final key = _sizeKey(shopId, kind);
-  final cached = _sizeCapCache[key];
-  if (cached != null) return cached;
-  final saved = _appMemory()?.getString(key);
-  final parsed = int.tryParse(saved ?? '');
-  if (parsed != null) {
-    _sizeCapCache[key] = parsed;
-    return parsed;
-  }
-  // Chưa đặt gì = KHÔNG GIỚI HẠN (0 byte).
-  //
-  // Mặc định cũ là 30MB cho video, 5MB cho ảnh — tức app tự chặn bằng chứng
-  // của shop khi chưa ai yêu cầu. Clip đóng hàng dài quá mức đó bị cắt mất
-  // đoạn cuối, đúng đoạn dán tem và niêm phong. Shop nào cần trần thì tự đặt.
-  //
-  // Con số server trả về vẫn không dùng ở đây: đó là trần của SÀN, không phải
-  // mức shop đặt.
-  return 0;
-}
-
+/// Con số của server vẫn đọc về cho những chỗ khác (mức đề xuất, trần gói),
+/// nhưng thứ máy quay và bộ đính ảnh thật sự dùng là hai hằng số đó — cùng hai
+/// hằng số màn cài đặt in ra. Một nguồn duy nhất, nên dòng chữ trên màn không
+/// thể lệch với thứ app làm.
 ClipBudget _budgetFromDto(ShopDto shop) => ClipBudget(
-  seconds: shop.clipSeconds,
+  seconds: kFixedClipSeconds,
   recommendedSeconds: shop.recommendedClipSeconds,
   planMaxSeconds: shop.planMaxClipSeconds,
-  maxImageBytes: _rememberedSizeCap(
-    shop.id,
-    EcUploadKind.image,
-    shop.maxImageBytes,
-  ),
-  maxVideoBytes: _rememberedSizeCap(
-    shop.id,
-    EcUploadKind.video,
-    shop.maxVideoBytes,
-  ),
-  uploadBytes: shop.uploadBytes,
+  maxImageBytes: kFixedImageBytes,
+  maxVideoBytes: shop.maxVideoBytes,
+  uploadBytes: kFixedImageBytes,
   platformLimitsVerified: shop.platformLimitsVerified,
 );
 
@@ -2628,13 +2582,10 @@ class _ShopDetailRoute extends StatefulWidget {
     this.onBack,
     this.onMemberMore,
     this.onInviteMember,
-    this.onTapResolution,
-    this.onTapClipDuration,
-    this.onTapImageSize,
-    this.onTapVideoSize,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
+    this.onDeleteShop,
     this.readOnly = false,
   });
 
@@ -2651,13 +2602,13 @@ class _ShopDetailRoute extends StatefulWidget {
   final VoidCallback? onBack;
   final Future<void> Function(EcShopMember member)? onMemberMore;
   final Future<void> Function()? onInviteMember;
-  final Future<void> Function()? onTapResolution;
-  final Future<void> Function()? onTapClipDuration;
-  final Future<void> Function()? onTapImageSize;
-  final Future<void> Function()? onTapVideoSize;
   final Future<void> Function(EcVideoType type)? onEditType;
   final Future<void> Function(EcVideoType type)? onDeleteType;
   final Future<void> Function()? onAddType;
+
+  /// Xoá hẳn cửa hàng. Rào chắn "phải gỡ hết người trước" nằm ở router, nơi
+  /// biết danh sách thành viên vừa đọc về.
+  final Future<void> Function()? onDeleteShop;
 
   /// Vai trò trên [shop] có bị khoá sửa không.
   ///
@@ -2792,26 +2743,6 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
               : () => widget.onInviteMember!().then((_) {
                   if (mounted) _retry();
                 }),
-          onTapResolution: locked || widget.onTapResolution == null
-              ? null
-              : () => widget.onTapResolution!().then((_) {
-                  if (mounted) _retry();
-                }),
-          onTapClipDuration: locked || widget.onTapClipDuration == null
-              ? null
-              : () => widget.onTapClipDuration!().then((_) {
-                  if (mounted) _retry();
-                }),
-          onTapImageSize: locked || widget.onTapImageSize == null
-              ? null
-              : () => widget.onTapImageSize!().then((_) {
-                  if (mounted) _retry();
-                }),
-          onTapVideoSize: locked || widget.onTapVideoSize == null
-              ? null
-              : () => widget.onTapVideoSize!().then((_) {
-                  if (mounted) _retry();
-                }),
           onEditType: locked || widget.onEditType == null
               ? null
               : (type) => widget.onEditType!(type).then((_) {
@@ -2822,6 +2753,9 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
               : (type) => widget.onDeleteType!(type).then((_) {
                   if (mounted) _retry();
                 }),
+          onDeleteShop: locked || widget.onDeleteShop == null
+              ? null
+              : () => unawaited(widget.onDeleteShop!()),
           onAddType: locked || widget.onAddType == null
               ? null
               : () => widget.onAddType!().then((_) {
@@ -3094,6 +3028,81 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
     onCancel: () => context.pop(),
     onInvite: _saving ? null : _invite,
   );
+}
+
+/// Xoá cửa hàng — sau khi kiểm tra shop đã sạch người và hỏi lại một lần.
+///
+/// Rào chắn đọc lại danh sách thành viên NGAY LÚC BẤM chứ không tin vào bản đã
+/// vẽ trên màn: người dùng có thể mở màn này, đi mời thêm một quản lý ở tab
+/// khác, rồi quay lại bấm xoá. Danh sách cũ sẽ nói "sạch rồi" trong khi shop
+/// vừa có thêm người.
+///
+/// Chủ shop luôn nằm trong danh sách và không tự gỡ mình được, nên phép đếm bỏ
+/// qua vai trò `owner` — đếm cả owner thì rào chắn không bao giờ mở ra.
+Future<void> _confirmDeleteShop(
+  BuildContext context,
+  EcRepository repo,
+  EcShopSummary shop,
+) async {
+  final l10n = context.l10n;
+  List<MemberDto> members;
+  try {
+    members = await repo.members(shop.id);
+  } on Object catch (error) {
+    // Không đọc được danh sách thì KHÔNG xoá. Đoán bừa là sạch rồi xoá nhầm
+    // một shop còn người là hỏng không lấy lại được.
+    if (context.mounted) _toast(context, _dataErrorText(l10n, error));
+    return;
+  }
+  if (!context.mounted) return;
+  final others = members.where((m) => m.role != 'owner').length;
+  if (others > 0) {
+    await showCupertinoDialog<void>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(l10n.shopDeleteBlockedTitle),
+        content: Text(l10n.shopDeleteBlockedBody(others)),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.commonClose),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+  final confirmed = await showCupertinoDialog<bool>(
+    context: context,
+    builder: (dialogContext) => CupertinoAlertDialog(
+      title: Text(l10n.shopDeleteTitle),
+      content: Text(l10n.shopDeleteConfirm),
+      actions: [
+        CupertinoDialogAction(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: Text(l10n.commonCancel),
+        ),
+        CupertinoDialogAction(
+          isDestructiveAction: true,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: Text(l10n.commonDelete),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+  try {
+    await repo.deleteShop(shop.id);
+  } on Object catch (error) {
+    // `DELETE /api/shops/:id` backend CHƯA mở — hiện trả 404, và
+    // `_dataErrorText` dịch nó thành một câu chung chung. Thà vậy còn hơn nuốt
+    // im lặng rồi đưa người dùng về màn danh sách như thể đã xoá xong.
+    if (context.mounted) _toast(context, _dataErrorText(l10n, error));
+    return;
+  }
+  if (!context.mounted) return;
+  _toast(context, l10n.shopDeleted);
+  context.go('/shop-mgmt');
 }
 
 /// Vì sao ảnh đại diện không lên được máy chủ.
@@ -5235,38 +5244,12 @@ GoRouter _buildRouter(
                                             ),
                                           )
                                           .then((_) {}),
-                                      // Đường vào thứ hai của màn chi tiết cửa
-                                      // hàng (từ sheet chọn loại). Thiếu hai
-                                      // callback này thì hai hàng dung lượng
-                                      // vẫn vẽ ra nhưng bấm không ra gì.
-                                      onTapImageSize: () => router
-                                          .push<void>(
-                                            '/upload-size',
-                                            extra: (
-                                              shop.id,
-                                              EcUploadKind.image,
-                                            ),
-                                          )
-                                          .then((_) {}),
-                                      onTapVideoSize: () => router
-                                          .push<void>(
-                                            '/upload-size',
-                                            extra: (
-                                              shop.id,
-                                              EcUploadKind.video,
-                                            ),
-                                          )
-                                          .then((_) {}),
                                       onInviteMember: () => router
                                           .push(
                                             '/invite-member',
                                             extra: shop.id,
                                           )
                                           .then((_) {}),
-                                      onTapResolution: () => router.push(
-                                        '/resolution',
-                                        extra: shop.id,
-                                      ),
                                       onEditType: (type) => router
                                           .push(
                                             '/create-type',
@@ -5773,31 +5756,9 @@ GoRouter _buildRouter(
             onInviteMember: readOnly
                 ? null
                 : () => c.push('/invite-member', extra: shop.id).then((_) {}),
-            onTapResolution: readOnly
+            onDeleteShop: readOnly
                 ? null
-                : () =>
-                      c.push<void>('/resolution', extra: shop.id).then((_) {}),
-            onTapClipDuration: readOnly
-                ? null
-                : () => c
-                      .push<void>('/clip-duration', extra: shop.id)
-                      .then((_) {}),
-            onTapImageSize: readOnly
-                ? null
-                : () => c
-                      .push<void>(
-                        '/upload-size',
-                        extra: (shop.id, EcUploadKind.image),
-                      )
-                      .then((_) {}),
-            onTapVideoSize: readOnly
-                ? null
-                : () => c
-                      .push<void>(
-                        '/upload-size',
-                        extra: (shop.id, EcUploadKind.video),
-                      )
-                      .then((_) {}),
+                : () => _confirmDeleteShop(c, repo, shop),
             onEditType: readOnly
                 ? null
                 : (type) => c
@@ -5997,123 +5958,6 @@ GoRouter _buildRouter(
         builder: (c, s) => _LoginMethodsRoute(auth: auth),
       ),
       // --- account sub-screens (pushed, back via pop) ---
-      GoRoute(
-        path: '/clip-duration',
-        pageBuilder: (c, s) {
-          final shop = _selected(selectedShop);
-          final shopId = s.extra is String
-              ? s.extra! as String
-              : shop?.id ?? '';
-          return _modalPage(
-            s,
-            EcClipDurationSheetScreen(
-              budget: shop?.clipBudget ?? ClipBudget.fallback,
-              platformLabel: _platformDisplayName(shop?.platform ?? 'other'),
-              // Không còn hộp thoại "máy chủ đã kẹp giá trị": sheet đã kẹp theo
-              // `plan_max_clip_seconds` trước khi gửi, nên con số tới đây luôn
-              // nằm trong trần và nhánh đó không bao giờ chạy được. Giữ lại chỉ
-              // là giữ một lời giải thích cho tình huống không tồn tại.
-              onSelect: (seconds) {
-                repo
-                    .updateShop(shopId, maxClipSeconds: seconds)
-                    .then((updated) {
-                      if (!c.mounted) return;
-                      final current = _selected(selectedShop);
-                      if (current?.id == updated.id) {
-                        selectedShop.value = _shopFromDto(updated);
-                      }
-                      c.pop();
-                      _toast(
-                        c,
-                        c.l10n.clipDurationChanged(
-                          '${(updated.clipSeconds / 60).round()}',
-                        ),
-                      );
-                    })
-                    .catchError((Object error) {
-                      if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
-                    });
-              },
-            ),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/upload-size',
-        pageBuilder: (c, s) {
-          final shop = _selected(selectedShop);
-          // `extra` mang theo CẢ id shop lẫn loại bằng chứng.
-          //
-          // Trước đây chỉ mang loại, còn id lấy từ `selectedShop` — mà màn chi
-          // tiết cửa hàng mở được cả khi `selectedShop` chưa đặt, lúc đó id là
-          // chuỗi rỗng. Ghi vào khoá `shop..maxVideoBytes` rồi đọc ở khoá
-          // `shop.<id thật>.maxVideoBytes`: hai khoá khác nhau nên con số vừa
-          // nhập không bao giờ đọc lại được.
-          final extra = s.extra;
-          final (shopId, kind) = extra is (String, EcUploadKind)
-              ? extra
-              : (shop?.id ?? '', EcUploadKind.video);
-          return _modalPage(
-            s,
-            EcUploadSizeSheetScreen(
-              budget: shop?.clipBudget ?? ClipBudget.fallback,
-              platformLabel: _platformDisplayName(shop?.platform ?? 'other'),
-              kind: kind,
-              // Đọc thẳng từ bản nhớ, không qua `selectedShop`: biến đó không
-              // được làm mới sau khi lưu nên sheet mở lại sẽ hiện mức mặc
-              // định thay vì con số vừa nhập.
-              currentMb: _rememberedSizeCap(shopId, kind, 0) ~/ 1000000,
-              onSelect: (bytes) async {
-                final id = shopId.isEmpty ? (shop?.id ?? '') : shopId;
-                assert(id.isNotEmpty, 'thiếu shopId khi lưu trần dung lượng');
-                // Ghi nhớ rồi ĐÓNG NGAY, không chờ server.
-                //
-                // Bản trước chỉ đóng sheet trong nhánh thành công của
-                // `updateShop`. Backend chưa nhận `max_image_bytes` /
-                // `max_video_bytes` nên lời gọi ném lỗi, nhánh đó không bao
-                // giờ chạy — bấm "Áp dụng" xong sheet đứng im, nhìn y như nút
-                // hỏng.
-                await _rememberSizeCap(id, kind, bytes);
-                if (!c.mounted) return;
-                c.pop();
-                _toast(
-                  c,
-                  bytes <= 0
-                      ? c.l10n.uploadSizeChanged(
-                          c.l10n.uploadSizeValueUnlimited,
-                        )
-                      : c.l10n.uploadSizeChanged(
-                          '${ClipBudget.megabytesLabel(bytes)} MB',
-                        ),
-                );
-                // Đồng bộ ngầm: thành công thì server thành nguồn chuẩn, hỏng
-                // thì bản nhớ tại chỗ vẫn giữ lựa chọn của người dùng.
-                unawaited(
-                  repo
-                      .updateShop(
-                        id,
-                        maxImageBytes: kind == EcUploadKind.image
-                            ? bytes
-                            : null,
-                        maxVideoBytes: kind == EcUploadKind.video
-                            ? bytes
-                            : null,
-                      )
-                      .then((updated) {
-                        final current = _selected(selectedShop);
-                        if (current?.id == updated.id) {
-                          selectedShop.value = _shopFromDto(updated);
-                        }
-                      })
-                      .catchError((Object _) {
-                        // Xem trên: lựa chọn đã nằm trong bản nhớ tại chỗ.
-                      }),
-                );
-              },
-            ),
-          );
-        },
-      ),
       GoRoute(
         path: '/quota',
         builder: (c, s) => _QuotaRoute(

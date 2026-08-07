@@ -28,6 +28,21 @@
   "claimsPhotoAdded": "Đã thêm ảnh vào hồ sơ và đưa lên đơn hàng",
   "claimsAddedLater": "đính thêm",
   "commonDelete": "Xóa",
+  "settingDefaultSuffix": "mặc định",
+  "shopDetailClipLength": "Thời lượng video",
+  "shopDeleteTitle": "Xóa cửa hàng",
+  "shopDeleteConfirm": "Xóa cửa hàng này? Toàn bộ đơn hàng, video và ảnh của nó sẽ mất và không lấy lại được.",
+  "shopDeleteBlockedTitle": "Còn thành viên trong shop",
+  "shopDeleteBlockedBody": "Phải gỡ hết quản lý và nhân viên khỏi cửa hàng trước khi xóa. Hiện còn {count} người.",
+  "@shopDeleteBlockedBody": {
+    "description": "Shown when delete-shop is blocked by remaining members.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopDeleted": "Đã xóa cửa hàng",
   "bundleSelected": "Đã chọn {count} bằng chứng",
   "@bundleSelected": {
     "placeholders": {
