@@ -1036,13 +1036,6 @@ class _QuotaSummaryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   PenText(
-                    l10n.quotaCurrentPlan,
-                    size: 13,
-                    color: PenColors.mut,
-                    softWrap: false,
-                  ),
-                  const SizedBox(height: 3),
-                  PenText(
                     planLabel,
                     size: 24,
                     color: PenColors.ink,

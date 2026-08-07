@@ -2009,9 +2009,23 @@ class _UploadStatusTrailing extends StatelessWidget {
           ),
         ),
       ),
-      EcUploadStatus.quotaWait => Text(
-        l10n.waitingQuota,
-        style: _t(12, FontWeight.w600, BrandColors.warning),
+      // Nhãn duy nhất có hai vế ("Chờ hạn mức · còn trên máy", bản EN còn dài
+      // hơn) nên là nhãn duy nhất phải chặn bề ngang: hàng này không co được,
+      // để nó lấy bề ngang tự nhiên là tràn Row và người dùng mất luôn phần
+      // đuôi. Xuống dòng thành 2 dòng thay vì cắt cụt — vế sau ("còn trên
+      // máy") mới là vế đáng đọc.
+      //
+      // ponytail: chặn cứng 116px vì chỉ một nhãn cần; nhãn thứ hai dài ra thì
+      // hãy bọc cả `_UploadStatusTrailing` vào `Flexible` một lần cho xong.
+      EcUploadStatus.quotaWait => ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 116),
+        child: Text(
+          l10n.waitingQuota,
+          textAlign: TextAlign.end,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: _t(12, FontWeight.w600, BrandColors.warning),
+        ),
       ),
       EcUploadStatus.waiting => Text(
         l10n.waitingUpload,

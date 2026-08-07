@@ -226,7 +226,6 @@
   "linkAction": "Liên kết",
   "linkUnlink": "Hủy liên kết",
   "quotaScreenTitle": "Báo cáo & Quota",
-  "quotaCurrentPlan": "Gói hiện tại",
   "quotaRemainingThisMonth": "Còn lại trong tháng",
   "quotaSubtitle": "Theo dõi dung lượng đang dùng",
   "quotaRemainingAmount": "{amount} còn lại",

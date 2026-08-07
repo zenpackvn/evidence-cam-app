@@ -581,9 +581,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaScreenTitle => 'Reports & Quota';
 
   @override
-  String get quotaCurrentPlan => 'Current plan';
-
-  @override
   String get quotaRemainingThisMonth => 'Remaining this month';
 
   @override

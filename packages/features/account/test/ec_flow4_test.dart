@@ -146,7 +146,8 @@ void main() {
         ),
       );
       expect(find.text('Báo cáo & Quota'), findsOneWidget);
-      expect(find.text('Gói hiện tại'), findsOneWidget);
+      // Nhãn "Gói hiện tại" đã bỏ — tên gói tự nói lên nó là gói nào.
+      expect(find.text('Gói hiện tại'), findsNothing);
       expect(find.text('Tiết kiệm'), findsOneWidget);
       // Còn lại, rồi tỉ số đã dùng / trần kèm phần trăm khớp với hai số đó.
       expect(find.text('800 còn lại'), findsOneWidget);

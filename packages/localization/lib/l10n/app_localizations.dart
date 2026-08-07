@@ -1136,12 +1136,6 @@ abstract class AppLocalizations {
   /// **'Reports & Quota'**
   String get quotaScreenTitle;
 
-  /// No description provided for @quotaCurrentPlan.
-  ///
-  /// In en, this message translates to:
-  /// **'Current plan'**
-  String get quotaCurrentPlan;
-
   /// No description provided for @quotaRemainingThisMonth.
   ///
   /// In en, this message translates to:

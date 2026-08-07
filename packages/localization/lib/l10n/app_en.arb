@@ -274,7 +274,6 @@
   "linkAction": "Link",
   "linkUnlink": "Unlink",
   "quotaScreenTitle": "Reports & Quota",
-  "quotaCurrentPlan": "Current plan",
   "quotaRemainingThisMonth": "Remaining this month",
   "quotaSubtitle": "Track the storage you are using",
   "quotaRemainingAmount": "{amount} remaining",

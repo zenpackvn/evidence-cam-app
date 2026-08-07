@@ -182,7 +182,9 @@ void main() {
       expect(find.text('72%'), findsOneWidget);
       expect(find.text('Chờ upload'), findsOneWidget);
       expect(find.text('Thử lại'), findsOneWidget);
-      expect(find.text('Chờ quota'), findsOneWidget);
+      // Nhãn đổi từ "Chờ quota": clip chờ hạn mức vẫn nằm TRÊN MÁY, và câu cũ
+      // đọc như máy chủ đang giữ hộ — đúng cái hiểu nhầm nguy hiểm nhất ở đây.
+      expect(find.text('Chờ hạn mức · còn trên máy'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

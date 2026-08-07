@@ -579,9 +579,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get quotaScreenTitle => 'Báo cáo & Quota';
 
   @override
-  String get quotaCurrentPlan => 'Gói hiện tại';
-
-  @override
   String get quotaRemainingThisMonth => 'Còn lại trong tháng';
 
   @override
