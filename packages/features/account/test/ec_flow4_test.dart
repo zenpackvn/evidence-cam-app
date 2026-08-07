@@ -33,12 +33,10 @@ Future<void> _pump(WidgetTester tester, Widget screen) {
 
 void main() {
   group('EcAccountTabScreen', () {
-    testWidgets('shows profile, both setting groups and bottom nav', (
-      tester,
-    ) async {
+    testWidgets('shows profile and both setting groups', (tester) async {
       await _pump(tester, const EcAccountTabScreen());
-      // Không có tên shop ở đây: màn này là tab gốc, header shop thuộc về tab
-      // Vận đơn (xem doc của EcAccountTabScreen).
+      // Không có tên shop ở đây: màn này đứng ngoài lớp shop, mở từ màn Chọn
+      // cửa hàng.
       expect(find.text('Shop ABC'), findsNothing);
       expect(find.text('Nguyễn Văn A'), findsOneWidget);
       expect(find.text('nguyenvana@gmail.com'), findsOneWidget);
@@ -52,9 +50,9 @@ void main() {
       expect(find.text('3 liên kết'), findsOneWidget);
       expect(find.text('Đăng xuất'), findsOneWidget);
       expect(find.text('Xóa tài khoản'), findsOneWidget);
-      expect(find.text('Vận đơn'), findsOneWidget);
-      expect(find.text('Ghi hình'), findsOneWidget);
-      expect(find.text('Tài khoản'), findsOneWidget);
+      // Không còn thanh tab: màn này rời khỏi shell để nhường ô thứ ba cho Hồ
+      // sơ khiếu nại, và nay được ĐẨY từ màn Chọn cửa hàng.
+      expect(find.text('Ghi hình'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

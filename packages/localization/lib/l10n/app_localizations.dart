@@ -194,6 +194,30 @@ abstract class AppLocalizations {
   /// **'added later'**
   String get claimsAddedLater;
 
+  /// No description provided for @claimsCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New claim dossier'**
+  String get claimsCreateTitle;
+
+  /// No description provided for @claimsCreateSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type or scan a tracking code'**
+  String get claimsCreateSearchHint;
+
+  /// No description provided for @claimsCreateStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a tracking code, or tap scan, to find the order you are claiming for.'**
+  String get claimsCreateStart;
+
+  /// No description provided for @claimsCreateNoOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'No order with that tracking code in the selected shop.'**
+  String get claimsCreateNoOrder;
+
   /// No description provided for @claimsRemoveItemTitle.
   ///
   /// In en, this message translates to:
@@ -1285,6 +1309,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account'**
   String get navAccount;
+
+  /// No description provided for @navClaims.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims'**
+  String get navClaims;
 
   /// No description provided for @changeAvatar.
   ///

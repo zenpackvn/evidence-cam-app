@@ -48,8 +48,7 @@ class EcAccountTabScreen extends StatelessWidget {
     this.onLoginMethodsTap,
     this.onLogout,
     this.onDeleteAccount,
-    this.onNavOrders,
-    this.onNavCapture,
+    this.onBack,
     this.onFacebook,
     this.onZalo,
     this.onCall,
@@ -82,8 +81,9 @@ class EcAccountTabScreen extends StatelessWidget {
   final VoidCallback? onLoginMethodsTap;
   final VoidCallback? onLogout;
   final VoidCallback? onDeleteAccount;
-  final VoidCallback? onNavOrders;
-  final VoidCallback? onNavCapture;
+
+  /// Quay về màn Chọn cửa hàng. Màn này được ĐẨY, không còn là tab.
+  final VoidCallback? onBack;
 
   /// Ba kênh hỗ trợ nổi ở góc trái dưới.
   final VoidCallback? onFacebook;
@@ -208,9 +208,8 @@ class EcAccountTabScreen extends StatelessWidget {
                     ],
                   ),
                   _AppFooter(version: appVersion),
-                  // Chừa chỗ cho thanh tab nổi bên dưới, nếu không mục cuối
-                  // nằm khuất sau nó. Cùng nguồn số với chỗ kê nút liên hệ.
-                  SizedBox(height: PenTabBar.heightOf(context) + 16),
+                  // Chừa chỗ cho cụm liên hệ nổi ở góc phải dưới.
+                  const SizedBox(height: 96),
                 ],
               ),
             ),
@@ -220,38 +219,47 @@ class EcAccountTabScreen extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: PenBrandBanner(height: _bannerHeight),
           ),
-          // Thẻ tài khoản khoá, nằm trên cùng.
+          // Thẻ tài khoản khoá, nằm trên cùng, có nút back đè lên dải xanh.
+          //
+          // Màn này không còn là một tab — nó được đẩy từ màn Chọn cửa hàng —
+          // nên phải có đường quay ra. Trước đây thanh tab ở đáy làm việc đó.
           SafeArea(
             bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, _cardTopGap, 18, 0),
-              child: _UserRow(
-                name: userName,
-                email: userEmail,
-                avatarPath: avatarPath,
-                onTap: onProfileTap,
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: _BottomNav(
-              active: _NavTab.account,
-              onOrders: onNavOrders,
-              onCapture: onNavCapture,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (onBack != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 2, 18, 0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: PenBackButton(
+                        onTap: onBack,
+                        color: PenColors.card,
+                      ),
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, _cardTopGap, 18, 0),
+                  child: _UserRow(
+                    name: userName,
+                    email: userEmail,
+                    avatarPath: avatarPath,
+                    onTap: onProfileTap,
+                  ),
+                ),
+              ],
             ),
           ),
           // Cụm liên hệ nổi ở góc phải dưới. Nằm trong Stack nên nó không cuộn
           // theo nội dung — người cần hỗ trợ thường đang bí, bắt họ cuộn tìm
           // là thêm một rào nữa.
           //
-          // Kê lên đúng chiều cao thật của thanh tab, để nút dưới cùng không
-          // đè lên mục "Tài khoản" — đè lên là bấm nhầm sang tab khác thay vì
-          // gọi hỗ trợ. Lấy từ `PenTabBar.heightOf` chứ không chép số: bản
-          // trước chép 82 trong khi thanh cao 92, lệch đúng 10pt.
+          // Màn này không còn thanh tab nên chỉ cần né vùng an toàn đáy.
           Positioned(
             right: 16,
-            bottom: PenTabBar.heightOf(context) + 12,
+            bottom: MediaQuery.paddingOf(context).bottom + 16,
             child: _SupportContactColumn(
               onFacebook: onFacebook,
               onZalo: onZalo,
@@ -2246,7 +2254,7 @@ class _SettingsGroup extends StatelessWidget {
   }
 }
 
-enum _NavTab { orders, capture, account }
+enum _NavTab { orders, capture, claims }
 
 class _BottomNav extends StatelessWidget {
   const _BottomNav({required this.active, this.onOrders, this.onCapture});
@@ -2262,12 +2270,12 @@ class _BottomNav extends StatelessWidget {
       activeIndex: switch (active) {
         _NavTab.orders => 0,
         _NavTab.capture => 1,
-        _NavTab.account => 2,
+        _NavTab.claims => 2,
       },
       tabs: [
         (LucideIcons.package, l10n.navOrders, onOrders),
         (LucideIcons.camera, l10n.navRecord, onCapture),
-        (LucideIcons.user, l10n.navAccount, null),
+        (LucideIcons.fileText, l10n.navClaims, null),
       ],
     );
   }

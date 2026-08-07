@@ -102,7 +102,11 @@ void main() {
       );
     });
 
-    testWidgets('thành viên thường vẫn đủ ba hành động', (tester) async {
+    // Shop chỉ còn HAI hạng: chủ và nhân viên. Hai dòng đổi vai trò đã bỏ —
+    // không còn vai trò nào để đổi sang.
+    testWidgets('thành viên thường chỉ còn một việc: gỡ khỏi shop', (
+      tester,
+    ) async {
       await _pump(
         tester,
         const EcMemberActionsScreen(
@@ -114,9 +118,15 @@ void main() {
         ),
       );
 
-      expect(find.text('Đặt làm Quản lý shop'), findsOneWidget);
-      expect(find.text('Đặt làm Nhân viên'), findsOneWidget);
+      expect(find.text('Đặt làm Quản lý shop'), findsNothing);
+      expect(find.text('Đặt làm Nhân viên'), findsNothing);
       expect(find.text('Gỡ khỏi shop'), findsOneWidget);
+    });
+
+    testWidgets('màn mời chỉ chào một vai trò: nhân viên', (tester) async {
+      await _pump(tester, const EcInviteMemberScreen());
+      expect(find.text('Nhân viên'), findsOneWidget);
+      expect(find.text('Quản lý shop'), findsNothing);
     });
 
     // Gõ sai định dạng thì backend vẫn tạo lời mời, nhưng mailer bỏ qua contact
@@ -756,7 +766,10 @@ void main() {
       // "Vận đơn" labels both the first stat card and the orders tab.
       expect(find.text('Vận đơn'), findsNWidgets(2));
       expect(find.text('Ghi hình'), findsOneWidget);
-      expect(find.text('Tài khoản'), findsOneWidget);
+      // Ô tab thứ ba nay là Hồ sơ khiếu nại; Tài khoản dời ra màn Chọn cửa
+      // hàng.
+      expect(find.text('Khiếu nại'), findsOneWidget);
+      expect(find.text('Tài khoản'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

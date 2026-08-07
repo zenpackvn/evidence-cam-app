@@ -63,6 +63,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsAddedLater => 'added later';
 
   @override
+  String get claimsCreateTitle => 'New claim dossier';
+
+  @override
+  String get claimsCreateSearchHint => 'Type or scan a tracking code';
+
+  @override
+  String get claimsCreateStart =>
+      'Type a tracking code, or tap scan, to find the order you are claiming for.';
+
+  @override
+  String get claimsCreateNoOrder =>
+      'No order with that tracking code in the selected shop.';
+
+  @override
   String get claimsRemoveItemTitle => 'Remove from dossier';
 
   @override
@@ -657,6 +671,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navAccount => 'Account';
+
+  @override
+  String get navClaims => 'Claims';
 
   @override
   String get changeAvatar => 'Change profile photo';

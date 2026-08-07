@@ -40,7 +40,7 @@ class EcWaitBill2Screen extends StatelessWidget {
     this.onManualEntry,
     this.onResolution,
     this.onNavOrders,
-    this.onNavAccount,
+    this.onNavClaims,
     super.key,
   });
 
@@ -59,7 +59,7 @@ class EcWaitBill2Screen extends StatelessWidget {
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
   final VoidCallback? onNavOrders;
-  final VoidCallback? onNavAccount;
+  final VoidCallback? onNavClaims;
 
   @override
   Widget build(BuildContext context) {
@@ -192,7 +192,7 @@ class EcRecording2Screen extends StatelessWidget {
     this.onManualEntry,
     this.onResolution,
     this.onNavOrders,
-    this.onNavAccount,
+    this.onNavClaims,
     this.onStop,
     super.key,
   });
@@ -216,7 +216,7 @@ class EcRecording2Screen extends StatelessWidget {
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
   final VoidCallback? onNavOrders;
-  final VoidCallback? onNavAccount;
+  final VoidCallback? onNavClaims;
   final VoidCallback? onStop;
 
   @override
@@ -511,7 +511,7 @@ class EcNearLimitScreen extends StatelessWidget {
     this.onManualEntry,
     this.onResolution,
     this.onNavOrders,
-    this.onNavAccount,
+    this.onNavClaims,
     this.onStop,
     super.key,
   });
@@ -535,7 +535,7 @@ class EcNearLimitScreen extends StatelessWidget {
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
   final VoidCallback? onNavOrders;
-  final VoidCallback? onNavAccount;
+  final VoidCallback? onNavClaims;
   final VoidCallback? onStop;
 
   @override

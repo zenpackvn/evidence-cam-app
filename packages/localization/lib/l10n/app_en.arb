@@ -27,6 +27,10 @@
   "claimsDeleted": "Dossier deleted",
   "claimsPhotoAdded": "Photo added to the dossier and queued onto the order",
   "claimsAddedLater": "added later",
+  "claimsCreateTitle": "New claim dossier",
+  "claimsCreateSearchHint": "Type or scan a tracking code",
+  "claimsCreateStart": "Type a tracking code, or tap scan, to find the order you are claiming for.",
+  "claimsCreateNoOrder": "No order with that tracking code in the selected shop.",
   "claimsRemoveItemTitle": "Remove from dossier",
   "claimsRemoveItemConfirm": "Remove this evidence from the claim dossier? The video/photo on the order itself is untouched.",
   "claimsItemRemoved": "Removed from the dossier",
@@ -295,6 +299,7 @@
   "navOrders": "Orders",
   "navRecord": "Record",
   "navAccount": "Account",
+  "navClaims": "Claims",
   "changeAvatar": "Change profile photo",
   "quotaVideosRatio": "{remaining} / {total} videos",
   "@quotaVideosRatio": {

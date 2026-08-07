@@ -63,6 +63,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get claimsAddedLater => 'đính thêm';
 
   @override
+  String get claimsCreateTitle => 'Tạo hồ sơ khiếu nại';
+
+  @override
+  String get claimsCreateSearchHint => 'Nhập hoặc quét mã vận đơn';
+
+  @override
+  String get claimsCreateStart =>
+      'Nhập mã vận đơn hoặc bấm quét để tìm đơn cần khiếu nại.';
+
+  @override
+  String get claimsCreateNoOrder =>
+      'Không tìm thấy mã vận đơn này trong cửa hàng đang chọn.';
+
+  @override
   String get claimsRemoveItemTitle => 'Gỡ khỏi hồ sơ';
 
   @override
@@ -654,6 +668,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get navAccount => 'Tài khoản';
+
+  @override
+  String get navClaims => 'Khiếu nại';
 
   @override
   String get changeAvatar => 'Đổi ảnh đại diện';

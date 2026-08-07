@@ -830,8 +830,7 @@ class _AccountRouteState extends State<_AccountRoute> {
             // dùng URL trên hồ sơ Firebase — đường này phục vụ máy mới hoặc
             // sau khi cài lại app.
             avatarPath: _rememberedAvatar(user?.uid) ?? user?.photoUrl,
-            onNavOrders: () => context.go('/home'),
-            onNavCapture: () => context.go('/record'),
+            onBack: () => _back(context, '/shops'),
             onFacebook: () => _openSupport(context, _kSupportFacebook),
             onZalo: () => _openSupport(context, _kSupportZalo),
             onCall: () => _openSupport(context, _kSupportPhone),
@@ -2149,39 +2148,11 @@ EcShopSummary _shopFromDto(ShopDto shop) => EcShopSummary(
   clipBudget: _budgetFromDto(shop),
 );
 
-EcShopMgmtEntry _shopMgmtFromDto(
-  AppLocalizations l10n,
-  ShopDto shop,
-) => EcShopMgmtEntry(
-  id: shop.id,
-  name: shop.name,
-  platform: shop.platform,
-  resolution: shop.resolution,
-  role: shop.role,
-  clipBudget: _budgetFromDto(shop),
-  meta:
-      '${_platformDisplayName(shop.platform)} · ${_roleDisplayName(l10n, shop.role)}',
-);
-
 /// Nhân viên chỉ được XEM cửa hàng.
 ///
 /// Họ vẫn quay video và tạo đơn bình thường ở luồng chính — đó là việc của họ.
 /// Cái bị khoá là sửa cấu hình shop, mời/gỡ người, và mọi thao tác xoá.
 bool _shopDetailIsReadOnly(EcShopSummary shop) => shop.role == 'staff';
-
-EcShopSummary? _shopFromMgmt(EcShopMgmtEntry shop) {
-  final id = shop.id;
-  if (id == null) return null;
-  return EcShopSummary(
-    id: id,
-    name: shop.name,
-    platform: shop.platform ?? 'other',
-    meta: shop.meta,
-    role: shop.role ?? 'staff',
-    resolution: shop.resolution ?? '720p',
-    clipBudget: shop.clipBudget,
-  );
-}
 
 String _platformDisplayName(String platform) => switch (platform) {
   'shopee' => 'Shopee',
@@ -2259,14 +2230,24 @@ Future<String?> _attachPhoto(
 class _ChooseShopRoute extends StatefulWidget {
   const _ChooseShopRoute({
     required this.repo,
+    this.auth,
     this.onSelect,
+    this.onAccount,
     this.onCreateShop,
     this.onLogout,
     this.autoEnter = true,
   });
 
   final EcRepository repo;
+
+  /// Chỉ để lấy tên/email hiện trên thẻ Tài khoản.
+  final EcAuth? auth;
+
   final ValueChanged<EcShopSummary>? onSelect;
+
+  /// Mở màn Tài khoản. Nó rời khỏi thanh tab để nhường ô thứ ba cho Hồ sơ
+  /// khiếu nại, và về đây — màn người dùng đi qua mỗi lần vào ca.
+  final VoidCallback? onAccount;
   final VoidCallback? onCreateShop;
   final VoidCallback? onLogout;
 
@@ -2378,77 +2359,16 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
           );
         }
         _autoSelectIfNeeded(shops);
+        final user = widget.auth?.currentUser;
         return EcChooseShopScreen(
           shops: shops,
+          userName: user?.displayName,
+          userEmail: user?.email,
+          onAccountTap: widget.onAccount,
           onSelect: widget.onSelect,
           // Cùng đích với nút "Tạo shop" ở màn chưa-có-shop.
           onAddShop: widget.onCreateShop,
           onLogout: widget.onLogout,
-        );
-      },
-    );
-  }
-}
-
-class _ShopMgmtRoute extends StatefulWidget {
-  const _ShopMgmtRoute({
-    required this.repo,
-    this.onBack,
-    this.onAddShop,
-    this.onShopTap,
-  });
-
-  final EcRepository repo;
-  final VoidCallback? onBack;
-  final VoidCallback? onAddShop;
-  final ValueChanged<EcShopMgmtEntry>? onShopTap;
-
-  @override
-  State<_ShopMgmtRoute> createState() => _ShopMgmtRouteState();
-}
-
-class _ShopMgmtRouteState extends State<_ShopMgmtRoute> {
-  late Future<List<EcShopMgmtEntry>> _shops = _load();
-
-  Future<List<EcShopMgmtEntry>> _load() async {
-    final l10n = context.l10n;
-    final shops = await widget.repo.shops();
-    // Hiện ĐỦ mọi shop, kể cả shop mình chỉ là nhân viên.
-    //
-    // Bản trước lọc bỏ chúng, nên danh sách ở đây ít hơn màn chọn cửa hàng —
-    // nhìn ra như app làm mất một shop. Không quản lý được thì hàng đó chỉ
-    // không bấm vào được (xem chỗ dựng màn), chứ không được giấu đi.
-    return shops.map((s) => _shopMgmtFromDto(l10n, s)).toList();
-  }
-
-  /// Kết quả tốt gần nhất — giữ màn hình đứng yên trong lúc làm mới ngầm.
-  List<EcShopMgmtEntry>? _last;
-
-  void _retry() => setState(() {
-    _shops = _load();
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _RefreshingFuture<List<EcShopMgmtEntry>>(
-      future: _shops,
-      last: _last,
-      loading: const CupertinoPageScaffold(
-        backgroundColor: BrandColors.bg,
-        child: Center(child: CupertinoActivityIndicator()),
-      ),
-      error: (error) => _RouteLoadError(
-        title: context.l10n.errorLoadShopMgmt,
-        detail: _dataErrorText(context.l10n, error),
-        onRetry: _retry,
-      ),
-      builder: (context, shops) {
-        _last = shops;
-        return EcShopMgmtScreen(
-          shops: shops,
-          onBack: widget.onBack,
-          onAddShop: widget.onAddShop,
-          onShopTap: widget.onShopTap,
         );
       },
     );
@@ -3033,7 +2953,8 @@ Future<void> _confirmDeleteShop(
   }
   if (!context.mounted) return;
   _toast(context, l10n.shopDeleted);
-  context.go('/shop-mgmt');
+  // Shop vừa bị xoá nên không quay về chi tiết của nó được nữa.
+  context.go('/shops');
 }
 
 /// Vì sao ảnh đại diện không lên được máy chủ.
@@ -3086,7 +3007,7 @@ class _OrdersRoute extends StatefulWidget {
     this.onShopTap,
     this.onSettings,
     this.onNavRecord,
-    this.onNavAccount,
+    this.onNavClaims,
     this.onQueueTap,
     this.onOrderTap,
     this.onScan,
@@ -3106,7 +3027,9 @@ class _OrdersRoute extends StatefulWidget {
   /// Bánh răng góc phải header — mở Quản lý cửa hàng.
   final VoidCallback? onSettings;
   final VoidCallback? onNavRecord;
-  final VoidCallback? onNavAccount;
+
+  /// Tab thứ ba: Hồ sơ khiếu nại.
+  final VoidCallback? onNavClaims;
   final VoidCallback? onQueueTap;
   final Future<void> Function(OrderSummaryDto order)? onOrderTap;
   final Future<String?> Function()? onScan;
@@ -3231,73 +3154,6 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   ///
   /// Danh sách vận đơn chỉ có số đếm, nên phải hỏi thêm chi tiết đơn. Hỏng thì
   /// trả rỗng: hàng bung ra báo "chưa có bằng chứng" chứ không làm vỡ màn.
-  /// Gom những gì vừa tick thành một hồ sơ khiếu nại và lưu lại.
-  ///
-  /// Chụp NGUYÊN nội dung bằng chứng chứ không giữ id rồi tra sau: clip có hạn
-  /// lưu trữ, và một hồ sơ khiếu nại phải nói được nó ĐÃ gồm những gì kể cả khi
-  /// bằng chứng gốc đã hết hạn. Không có gì gửi lên máy chủ ở bước này — backend
-  /// chưa có endpoint gộp; xem `EcClaimStore`.
-  Future<void> _createClaim(List<EcClaimOrderPick> picks) async {
-    final l10n = context.l10n;
-    if (picks.isEmpty) {
-      _toast(context, l10n.claimsPickNothing);
-      return;
-    }
-    final now = DateTime.now();
-    await _claimStore.add(
-      EcClaimDossier(
-        id: now.microsecondsSinceEpoch.toString(),
-        shopId: widget.shopId,
-        createdAt: now,
-        orders: [
-          for (final pick in picks)
-            EcClaimOrder(
-              tracking: pick.orderCode,
-              orderId: _orders
-                  .where((o) => o.tracking == pick.orderCode)
-                  .firstOrNull
-                  ?.id,
-              evidence: [
-                for (final e in pick.evidence)
-                  EcClaimEvidence(
-                    id: e.id,
-                    label: e.label,
-                    time: e.time,
-                    isPhoto: e.isPhoto,
-                    url: e.url,
-                    thumbUrl: e.thumbUrl,
-                  ),
-              ],
-            ),
-        ],
-      ),
-    );
-    if (mounted) _toast(context, l10n.claimsCreated);
-  }
-
-  Future<List<EcPickableEvidence>> _pickableEvidence(String code) async {
-    final match = _orders.where((o) => o.tracking == code);
-    if (match.isEmpty) return const [];
-    try {
-      final detail = await widget.repo.order(widget.shopId, match.first.id);
-      final l10n = context.l10n;
-      return [
-        for (final e in detail.evidence)
-          if (e.uploadStatus != 'deleted')
-            EcPickableEvidence(
-              id: e.id,
-              label: _kindLabel(l10n, e.kind),
-              time: _hhmm(DateTime.fromMillisecondsSinceEpoch(e.capturedAt)),
-              isPhoto: e.kind == 'photo',
-              thumbUrl: e.kind == 'photo' ? e.url : e.thumbUrl,
-              url: e.url,
-            ),
-      ];
-    } on Object {
-      return const [];
-    }
-  }
-
   /// Gửi CẢ khoảng ngày lên server, và phân trang bình thường.
   ///
   /// Bản trước cố ý giữ `from`/`to` lại rồi lọc tại máy theo ngày QUAY, vì
@@ -3531,7 +3387,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         onShopTap: widget.onShopTap,
         onSettings: widget.onSettings,
         onNavRecord: widget.onNavRecord,
-        onNavAccount: widget.onNavAccount,
+        onNavClaims: widget.onNavClaims,
         onOrderTap: widget.onOrderTap == null
             ? null
             : (row) {
@@ -3558,8 +3414,6 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         onSearchChanged: _search,
         videoTypes: _videoTypes,
         onFiltersChanged: _applyFilters,
-        onLoadEvidence: _pickableEvidence,
-        onCreateClaim: _createClaim,
         onRefresh: _refresh,
         pageInfo: _page,
         onPageChanged: _goToPage,
@@ -4460,10 +4314,17 @@ String _dayLabelOf(DateTime d) {
 /// đơn trong lúc màn này còn nằm trong stack, và người dùng quay lại phải thấy
 /// nó ngay chứ không phải sau khi khởi động lại app.
 class _ClaimListRoute extends StatelessWidget {
-  const _ClaimListRoute({required this.shopId, this.onBack});
+  const _ClaimListRoute({
+    required this.shopId,
+    this.onNavOrders,
+    this.onNavRecord,
+    this.onCreate,
+  });
 
   final String shopId;
-  final VoidCallback? onBack;
+  final VoidCallback? onNavOrders;
+  final VoidCallback? onNavRecord;
+  final VoidCallback? onCreate;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -4471,7 +4332,9 @@ class _ClaimListRoute extends StatelessWidget {
     builder: (context, _) {
       final dossiers = _claimStore.forShop(shopId);
       return EcClaimListScreen(
-        onBack: onBack,
+        onNavOrders: onNavOrders,
+        onNavRecord: onNavRecord,
+        onCreate: onCreate,
         entries: [
           for (final d in dossiers)
             EcClaimEntry(
@@ -4492,6 +4355,118 @@ class _ClaimListRoute extends StatelessWidget {
       );
     },
   );
+}
+
+/// Màn tạo hồ sơ khiếu nại: tra một mã đơn rồi tick bằng chứng của nó.
+///
+/// Tra bằng `searchOrders` chứ không lọc danh sách đã nạp: người bán vào đây
+/// với một mã cụ thể trong tay, mà mã đó thường là đơn cũ đã trôi khỏi trang
+/// đầu. Lọc tại chỗ thì gõ đúng mã vẫn ra rỗng.
+class _CreateClaimRoute extends StatelessWidget {
+  const _CreateClaimRoute({
+    required this.repo,
+    required this.shopId,
+    this.onScan,
+    this.onBack,
+  });
+
+  final EcRepository repo;
+  final String shopId;
+  final Future<String?> Function()? onScan;
+  final VoidCallback? onBack;
+
+  /// `null` = không có đơn nào mang mã đó; danh sách rỗng = đơn có thật nhưng
+  /// chưa có bằng chứng. Hai thứ khác nhau nên màn hình nói hai câu khác nhau.
+  Future<List<EcClaimPickable>?> _search(
+    BuildContext context,
+    String code,
+  ) async {
+    final l10n = context.l10n;
+    try {
+      final hits = await repo.searchOrders(shopId, code);
+      final match = hits.where(
+        (o) => o.tracking.toLowerCase() == code.toLowerCase(),
+      );
+      if (match.isEmpty) return null;
+      final detail = await repo.order(shopId, match.first.id);
+      return [
+        for (final e in detail.evidence)
+          if (e.uploadStatus != 'deleted')
+            EcClaimPickable(
+              id: e.id,
+              label: _kindLabel(l10n, e.kind),
+              time: _hhmm(DateTime.fromMillisecondsSinceEpoch(e.capturedAt)),
+              isPhoto: e.kind == 'photo',
+              capturedAt: e.capturedAt,
+            ),
+      ];
+    } on Object {
+      // Mạng hỏng đọc ra y như "không tìm thấy mã" — cùng một màn hình rỗng.
+      // Chấp nhận được vì bước sau của người dùng giống nhau: thử lại.
+      return null;
+    }
+  }
+
+  Future<void> _create(
+    BuildContext context,
+    List<EcClaimOrderPicks> batch,
+  ) async {
+    final l10n = context.l10n;
+    final now = DateTime.now();
+    // Chụp lại NGUYÊN nội dung chứ không giữ id rồi tra sau: clip có hạn lưu
+    // trữ, mà hồ sơ khiếu nại phải nói được nó ĐÃ gồm những gì.
+    await _claimStore.add(
+      EcClaimDossier(
+        id: now.microsecondsSinceEpoch.toString(),
+        shopId: shopId,
+        createdAt: now,
+        orders: [
+          for (final order in batch)
+            EcClaimOrder(
+              tracking: order.orderCode,
+              evidence: [
+                for (final e in order.picked)
+                  EcClaimEvidence(
+                    id: e.id,
+                    label: e.label,
+                    time: e.time,
+                    isPhoto: e.isPhoto,
+                    capturedAt: e.capturedAt,
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+    if (!context.mounted) return;
+    _toast(context, l10n.claimsCreated);
+    onBack?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) => EcCreateClaimScreen(
+    onBack: onBack,
+    onScan: onScan,
+    onSearch: (code) => _search(context, code),
+    onCreate: (batch) => unawaited(_create(context, batch)),
+  );
+}
+
+/// Ngày và giờ của bằng chứng MỚI NHẤT trong một mã đơn, cho dòng tiêu đề của
+/// lớp con.
+///
+/// Lấy cái mới nhất chứ không cái đầu: một đơn quay nhiều lần thì mốc đáng nhớ
+/// là lần cuối. `null` khi không bằng chứng nào có mốc thời gian — hồ sơ tạo
+/// trước khi trường đó được lưu — và lúc đó dòng chỉ hiện mã, không bịa ngày.
+(String, String)? _claimOrderStamp(EcClaimOrder order) {
+  int? newest;
+  for (final e in order.evidence) {
+    final at = e.capturedAt;
+    if (at != null && (newest == null || at > newest)) newest = at;
+  }
+  if (newest == null) return null;
+  final at = DateTime.fromMillisecondsSinceEpoch(newest);
+  return (_dayLabelOf(at), _hhmm(at));
 }
 
 /// Sao chép nội dung hồ sơ dưới dạng chữ.
@@ -4646,6 +4621,8 @@ class _ClaimDetailRoute extends StatelessWidget {
           for (final order in dossier.orders)
             EcClaimOrderGroup(
               tracking: order.tracking,
+              dateLabel: _claimOrderStamp(order)?.$1,
+              timeLabel: _claimOrderStamp(order)?.$2,
               items: [
                 for (final e in order.evidence)
                   EcClaimItem(
@@ -5026,6 +5003,8 @@ GoRouter _buildRouter(
             // ghi chú trên màn này). Đăng nhập là hành động có chủ đích nên
             // luôn dừng ở đây để người dùng chọn shop.
             autoEnter: s.extra == _resumedSession,
+            auth: auth,
+            onAccount: () => c.push('/account'),
             onSelect: (shop) {
               selectedShop.value = shop;
               _rememberShop(shop);
@@ -5044,22 +5023,10 @@ GoRouter _buildRouter(
         ),
       ),
       GoRoute(
-        path: '/shop-mgmt',
-        builder: (c, s) => _ShopMgmtRoute(
-          repo: repo,
-          onBack: () => _back(c, '/shops'),
-          onAddShop: () => c.push('/create-shop'),
-          onShopTap: (shop) {
-            final selected = _shopFromMgmt(shop);
-            if (selected != null) c.push('/shop-detail', extra: selected);
-          },
-        ),
-      ),
-      GoRoute(
         path: '/create-shop',
         builder: (c, s) => _CreateShopRoute(
           repo: repo,
-          onBack: () => _back(c, '/shop-mgmt'),
+          onBack: () => _back(c, '/shops'),
           onCreated: (shop) {
             selectedShop.value = shop;
             _rememberShop(shop);
@@ -5130,12 +5097,14 @@ GoRouter _buildRouter(
                     // không thì màn F1-09 chỉ tới được qua đường vòng
                     // Chọn cửa hàng → Quản lý cửa hàng.
                     onShopTap: () => c.push('/shop-detail', extra: shop),
-                    // Bánh răng góc phải header: Quản lý cửa hàng, lối vào
-                    // trước nằm ở màn Chọn cửa hàng — một màn người dùng chỉ đi
-                    // qua lúc vào ca rồi không quay lại nữa.
-                    onSettings: () => c.push('/shop-mgmt'),
+                    // Bánh răng vào THẲNG chi tiết cửa hàng của shop đang mở.
+                    //
+                    // Trước nó qua màn Quản lý cửa hàng — một danh sách shop,
+                    // mà người dùng đã ở trong đúng một shop rồi: bắt họ chọn
+                    // lại chính cái đang mở là một bước thừa. Màn đó đã bỏ.
+                    onSettings: () => c.push('/shop-detail', extra: shop),
                     onNavRecord: () => c.go('/record'),
-                    onNavAccount: () => c.go('/account'),
+                    onNavClaims: () => c.go('/claims'),
                     onQueueTap: () => c.push('/queue'),
                     onOrderTap: (order) {
                       _analytics()?.trackOrderOpened(
@@ -5271,7 +5240,7 @@ GoRouter _buildRouter(
                             }
                           },
                       onNavOrders: () => c.go('/home'),
-                      onNavAccount: () => c.go('/account'),
+                      onNavClaims: () => c.go('/claims'),
                       onSettings: () => c.push('/type-sheet'),
                       deviceConditions: const PlatformDeviceConditions(),
                       onSaved:
@@ -5314,21 +5283,33 @@ GoRouter _buildRouter(
               ),
             ],
           ),
+          // Tab thứ ba nay là Hồ sơ khiếu nại. Tài khoản rời khỏi shell và
+          // thành một route đẩy từ màn Chọn cửa hàng — nó là thứ mỗi ca chạm
+          // một lần, không đáng chiếm ô tab của việc làm hằng giờ.
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/account',
-                builder: (c, s) => _AccountRoute(
-                  auth: auth,
-                  repo: repo,
-                  language: language,
-                  selectedShop: selectedShop,
-                  queue: queue,
+                path: '/claims',
+                builder: (c, s) => _ClaimListRoute(
+                  shopId: _selected(selectedShop)?.id ?? '',
+                  onNavOrders: () => c.go('/home'),
+                  onNavRecord: () => c.go('/record'),
+                  onCreate: () => c.push('/create-claim'),
                 ),
               ),
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/account',
+        builder: (c, s) => _AccountRoute(
+          auth: auth,
+          repo: repo,
+          language: language,
+          selectedShop: selectedShop,
+          queue: queue,
+        ),
       ),
       // --- order detail + evidence (Flow 2) ---
       GoRoute(
@@ -5713,7 +5694,7 @@ GoRouter _buildRouter(
             return _RouteLoadError(
               title: c.l10n.accountNoShop,
               detail: c.l10n.noShopSelectedManageDetail,
-              onRetry: () => c.go('/shop-mgmt'),
+              onRetry: () => c.go('/shops'),
             );
           }
           // Nhân viên: bỏ trống mọi callback nên màn chi tiết dựng ra ở dạng
@@ -5725,7 +5706,7 @@ GoRouter _buildRouter(
             repo: repo,
             shop: shop,
             readOnly: readOnly,
-            onBack: () => _back(c, '/shop-mgmt'),
+            onBack: () => _back(c, '/home'),
             onMemberMore: readOnly
                 ? null
                 : (member) => c
@@ -5829,51 +5810,6 @@ GoRouter _buildRouter(
                     name: c.l10n.memberFallbackName,
                     role: c.l10n.roleUnknown,
                   ),
-            onSetManager: () async {
-              final extra = s.extra;
-              if (extra is _MemberActionExtra &&
-                  extra.member.accountUid != null) {
-                try {
-                  await repo.updateMemberRole(
-                    extra.shopId,
-                    accountUid: extra.member.accountUid!,
-                    role: 'manager',
-                  );
-                  if (!c.mounted) return;
-                  c.pop();
-                  _toast(c, c.l10n.toastRoleChangedManager);
-                } on Object catch (error) {
-                  if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
-                }
-                return;
-              }
-              c.pop();
-              _toast(c, c.l10n.toastNoMemberToUpdate);
-            },
-            onSetStaff: () async {
-              final extra = s.extra;
-              if (extra is _MemberActionExtra &&
-                  extra.member.accountUid != null) {
-                try {
-                  await repo.updateMemberRole(
-                    extra.shopId,
-                    accountUid: extra.member.accountUid!,
-                    role: 'staff',
-                  );
-                  if (!c.mounted) return;
-                  c.pop();
-                  _toast(c, c.l10n.toastRoleChangedStaff);
-                } on Object catch (error) {
-                  if (c.mounted) _toast(c, _dataErrorText(c.l10n, error));
-                }
-                return;
-              }
-              c.pop();
-              _toast(c, c.l10n.toastNoMemberToUpdate);
-            },
-            // Lời mời còn treo không có uid — gỡ nó là `DELETE /invites/:id`,
-            // thứ cũng làm link trong email chết ngay. Trước đây nhánh này đòi
-            // uid nên hàng "đã mời" không xóa nổi, chỉ báo "không có ai để sửa".
             onRemove: () async {
               final extra = s.extra;
               final inviteId = extra is _MemberActionExtra
@@ -5951,10 +5887,12 @@ GoRouter _buildRouter(
         ),
       ),
       GoRoute(
-        path: '/claims',
-        builder: (c, s) => _ClaimListRoute(
+        path: '/create-claim',
+        builder: (c, s) => _CreateClaimRoute(
+          repo: repo,
           shopId: _selected(selectedShop)?.id ?? '',
-          onBack: () => _back(c, '/account'),
+          onScan: () => c.push<String>('/scan'),
+          onBack: () => _back(c, '/claims'),
         ),
       ),
       GoRoute(
