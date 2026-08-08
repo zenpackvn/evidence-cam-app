@@ -26,7 +26,6 @@ class _FakePathProviderPlatform extends PathProviderPlatform {
 }
 
 void main() {
-
   // Người ta sao chép link mời từ email kiểu gì cũng có: link thật, link đã
   // qua redirect của site, hoặc chỉ mỗi cái token. Bắt họ dán cho "đúng" là
   // bắt sai người — cả ba dạng đều phải nhận.
@@ -866,6 +865,70 @@ void main() {
       expect(find.text('LOẠI VIDEO'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'evidence sheet picks up the play link when sealing finishes, '
+    'without leaving the order',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': null,
+        'ValueNotifier<EcUser?>': 1,
+        'ValueNotifier<bool>': null,
+        '_EvidenceCountOverrides': null,
+      },
+    ),
+    (tester) async {
+      final repo = _SealingRepository();
+      await pumpPhoneSizedApp(tester, EcApp(repo: repo));
+      await signInWithGoogle(tester);
+
+      await tester.tap(find.textContaining('SPXVN').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Đóng hàng').first);
+      await tester.pumpAndSettle();
+
+      // Máy chủ đang đóng dấu ⇒ chưa phát link ra (evidence_url.ts).
+      expect(find.text('Đang đóng dấu thời gian…'), findsWidgets);
+
+      // Niêm phong xong trong lúc sheet vẫn mở. Không đụng vào điều hướng.
+      repo.sealed = true;
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Đã khoá ·'), findsWidgets);
+      expect(find.text('Đang đóng dấu thời gian…'), findsNothing);
+    },
+  );
+}
+
+/// Một clip đi từ "đang đóng dấu" sang "đã niêm phong" giữa hai lần gọi API —
+/// đúng nhịp mà backend giấu rồi trả lại `url`.
+class _SealingRepository extends _DemoRepository {
+  _SealingRepository();
+
+  bool sealed = false;
+
+  @override
+  Future<OrderDetailDto> order(String shopId, String orderId) async =>
+      OrderDetailDto(
+        order: const OrderDto(
+          id: 'o1',
+          tracking: 'SPXVN024567890',
+          createdAt: 3,
+        ),
+        evidence: [
+          EvidenceDto(
+            id: 'e1',
+            kind: 'video',
+            capturedAt: 3,
+            uploadStatus: 'done',
+            videoTypeId: 'default-pack',
+            sealStatus: sealed ? 'sealed' : 'rendering',
+            sealedAt: sealed ? 4 : null,
+            url: sealed ? 'https://example.test/e1.mp4' : null,
+          ),
+        ],
+      );
 }
 
 class _MemoryStore implements KeyValueStore {

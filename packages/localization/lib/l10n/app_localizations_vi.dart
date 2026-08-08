@@ -1609,6 +1609,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get inviteMemberHint => '(chưa có tài khoản → gửi lời mời)';
 
   @override
+  String get inviteQrNoRoom =>
+      'Cửa hàng đã đủ người theo gói hiện tại. Nâng gói hoặc gỡ bớt thành viên rồi thử lại.';
+
+  @override
   String get videoTypeIcon => 'Biểu tượng';
 
   @override
@@ -2027,8 +2031,4 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get inviteScanDetail => 'Nhờ chủ shop mở mã QR mời rồi quét vào đây.';
-
-  @override
-  String get inviteQrNotSupported =>
-      'Máy chủ chưa bật mã QR dùng chung. Hãy mời qua email — mã QR để quét hiện ngay sau khi mời.';
 }

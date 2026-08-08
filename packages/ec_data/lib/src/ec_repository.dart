@@ -66,11 +66,10 @@ abstract interface class EcRepository {
   /// của lời mời, không phải của [removeMember].
   Future<void> revokeShopInvite(String shopId, String inviteId);
 
-  /// Mã vào cửa hàng dùng chung, để hiện thành QR cho người ĐÃ có tài khoản
-  /// quét. Nhận bằng [acceptInvite] như mọi token khác.
-  Future<String> shopJoinCode(String shopId);
+  /// Mã QR mời: dùng một lần, sống 10 phút, chưa gắn với ai.
+  Future<QrInviteDto> createQrInvite(String shopId);
 
-  /// Nhận một lời mời bằng token trong link email.
+  /// Nhận một lời mời bằng token trong link email hoặc trong mã QR.
   ///
   /// Đây là ĐƯỜNG DUY NHẤT để vào một shop mình được mời: máy chủ không tự
   /// ghép lời mời treo với tài khoản khi đăng nhập, kể cả khi email trùng
@@ -96,10 +95,13 @@ abstract interface class EcRepository {
   Future<QuotaDto> quota({String? shopId});
 
   /// Gộp nhiều đơn thành một hồ sơ khiếu nại; trả link công khai zenpack.vn.
+  /// [evidenceIds] giới hạn trang công khai xuống những clip đã tick. Bỏ
+  /// trống = hiện đủ mọi bằng chứng của các đơn.
   Future<ClaimDto> createClaim(
     String shopId,
     List<String> orderIds, {
     String? title,
+    List<String>? evidenceIds,
   });
   Future<List<ClaimDto>> listClaims(String shopId);
   Future<void> revokeClaim(String shopId, String claimId);
@@ -246,7 +248,8 @@ class RemoteEcRepository implements EcRepository {
       _api.revokeShopInvite(shopId, inviteId);
 
   @override
-  Future<String> shopJoinCode(String shopId) => _api.shopJoinCode(shopId);
+  Future<QrInviteDto> createQrInvite(String shopId) =>
+      _api.createQrInvite(shopId);
 
   @override
   Future<AcceptedInviteDto> acceptInvite(String token) =>
@@ -289,7 +292,13 @@ class RemoteEcRepository implements EcRepository {
     String shopId,
     List<String> orderIds, {
     String? title,
-  }) => _api.createClaim(shopId, orderIds, title: title);
+    List<String>? evidenceIds,
+  }) => _api.createClaim(
+    shopId,
+    orderIds,
+    title: title,
+    evidenceIds: evidenceIds,
+  );
 
   @override
   Future<List<ClaimDto>> listClaims(String shopId) => _api.listClaims(shopId);
@@ -498,7 +507,12 @@ class FakeEcRepository implements EcRepository {
   Future<void> revokeShopInvite(String shopId, String inviteId) async {}
 
   @override
-  Future<String> shopJoinCode(String shopId) async => 'fake-join-code';
+  Future<QrInviteDto> createQrInvite(String shopId) async => QrInviteDto(
+    inviteId: 'fake-invite',
+    token: 'fake-token',
+    url: 'https://zenpack.vn/invite/fake-token',
+    expiresAt: DateTime.now().millisecondsSinceEpoch + 600000,
+  );
 
   @override
   Future<AcceptedInviteDto> acceptInvite(String token) async =>
@@ -552,6 +566,7 @@ class FakeEcRepository implements EcRepository {
     String shopId,
     List<String> orderIds, {
     String? title,
+    List<String>? evidenceIds,
   }) async =>
       const ClaimDto(id: 'claim-demo', url: 'https://zenpack.vn/c/demo');
 

@@ -1089,6 +1089,7 @@
   "@inviteMemberHint": {
     "description": "Shop detail: inviteMemberHint."
   },
+  "inviteQrNoRoom": "This shop is full on its current plan. Upgrade, or remove a member, then try again.",
   "videoTypeIcon": "Icon",
   "@videoTypeIcon": {
     "description": "Video type dialogs: videoTypeIcon."
@@ -1342,6 +1343,5 @@
   "inviteLinkCopied": "Invite link copied",
   "inviteQrRow": "QR code",
   "inviteScanTitle": "Scan invite code",
-  "inviteScanDetail": "Ask the shop owner to show the invite QR code, then scan it here.",
-  "inviteQrNotSupported": "The server does not offer a shared QR code yet. Invite by email — the scannable QR appears right after inviting."
+  "inviteScanDetail": "Ask the shop owner to show the invite QR code, then scan it here."
 }

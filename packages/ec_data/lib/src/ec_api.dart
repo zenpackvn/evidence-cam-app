@@ -143,14 +143,22 @@ class EcApi {
   /// Mọi thành viên gọi được: người đứng máy là người phát hiện đơn có vấn đề,
   /// và bắt họ chờ chủ shop mở laptop là đúng lúc bằng chứng còn nóng nhất thì
   /// không ai gửi được cho sàn.
+  /// [evidenceIds] là những clip người bán ĐÃ TICK, gộp phẳng cho cả hồ sơ —
+  /// id bằng chứng là duy nhất nên máy chủ tự gom về từng đơn. Bỏ trống thì
+  /// trang công khai hiện ĐỦ mọi bằng chứng của các đơn, đúng hành vi cũ.
   Future<ClaimDto> createClaim(
     String shopId,
     List<String> orderIds, {
     String? title,
+    List<String>? evidenceIds,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/claims',
-      data: {'order_ids': orderIds, 'title': ?title},
+      data: {
+        'order_ids': orderIds,
+        'title': ?title,
+        'evidence_ids': ?evidenceIds,
+      },
     );
     return ClaimDto.fromJson(res.data!);
   }
@@ -265,28 +273,22 @@ class EcApi {
     return ShopInviteDto.fromJson(res.data!);
   }
 
-  /// Xin một MÃ VÀO CỬA HÀNG dùng chung, để hiện thành QR.
-  ///
-  /// Khác [sendShopInvite] ở chỗ không cần biết địa chỉ của ai: dành cho người
-  /// ĐÃ có tài khoản, chỉ cần vào shop. Token trả về nhận qua đúng
-  /// [acceptInvite], nên phía nhân viên không cần đường nào khác — và vì token
-  /// dùng một lần, cứ một người vào là mã tự đổi.
-  ///
-  /// HỢP ĐỒNG MONG ĐỢI (máy chủ chưa mở đường này tính đến 2026-08-08):
-  /// `POST /api/shops/:id/join-code` → `{"token": "..."}`, chỉ chủ shop gọi
-  /// được. Chưa có thì trả 404 và màn gọi nó nói thẳng là chưa bật.
-  Future<String> shopJoinCode(String shopId) async {
+  /// Tạo mã QR mời. Dùng một lần, sống 10 phút — xem `createQrInvite` ở backend.
+  Future<QrInviteDto> createQrInvite(String shopId) async {
     final res = await _dio.post<Map<String, dynamic>>(
-      '/api/shops/$shopId/join-code',
+      '/api/shops/$shopId/invites/qr',
     );
-    return res.data!['token'] as String;
+    return QrInviteDto.fromJson(res.data!);
   }
 
-  /// Nhận lời mời bằng token trong link email.
+  /// Nhận lời mời bằng token trong link email hoặc trong mã QR.
   ///
   /// Token CHÍNH LÀ bằng chứng sở hữu hộp thư, nên tài khoản đang đăng nhập
   /// vào được shop kể cả khi email của nó khác địa chỉ được mời. Gọi lại lần
   /// nữa vẫn trả 200 (`newly_joined: false`).
+  ///
+  /// KHÔNG nằm dưới `/api/shops/:id`: người quét chưa ở trong shop nào, nên
+  /// route theo shop sẽ 403 đúng người đang cố vào.
   Future<AcceptedInviteDto> acceptInvite(String token) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/invites/$token/accept',

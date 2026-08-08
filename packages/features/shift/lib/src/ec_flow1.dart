@@ -1299,11 +1299,16 @@ class EcNoShopScreen extends StatelessWidget {
   const EcNoShopScreen({
     this.onCreate,
     this.onInviteTap,
+    this.onJoinByInvite,
     this.onLogout,
     super.key,
   });
   final VoidCallback? onCreate;
   final VoidCallback? onInviteTap;
+
+  /// Quét mã QR lời mời. Đây là màn hình người vừa được mời đứng khi họ mở app
+  /// lần đầu, nên nó là chỗ đúng nhất để có nút này.
+  final VoidCallback? onJoinByInvite;
   final VoidCallback? onLogout;
 
   @override
@@ -1411,6 +1416,10 @@ class EcNoShopScreen extends StatelessWidget {
                   ),
               ],
             ),
+            if (onJoinByInvite != null) ...[
+              const SizedBox(height: 14),
+              _JoinByInviteRow(onTap: onJoinByInvite),
+            ],
             const SizedBox(height: 24),
             _LogoutRow(onTap: onLogout),
           ],

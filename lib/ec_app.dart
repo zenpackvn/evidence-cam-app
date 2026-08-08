@@ -61,7 +61,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform;
+    show TargetPlatform, ValueListenable, defaultTargetPlatform;
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -2438,16 +2438,16 @@ ClipBudget _budgetFromDto(ShopDto shop) => ClipBudget(
 /// Chọn cửa hàng hiện tiếng Anh giữa một app tiếng Việt.
 EcShopSummary _shopFromDto(AppLocalizations l10n, ShopDto shop) =>
     EcShopSummary(
-  id: shop.id,
-  name: shop.name,
-  platform: shop.platform,
-  meta:
-      '${_platformDisplayName(shop.platform)} · '
-      '${_roleDisplayName(l10n, shop.role)}',
-  role: shop.role,
-  resolution: shop.resolution,
-  clipBudget: _budgetFromDto(shop),
-);
+      id: shop.id,
+      name: shop.name,
+      platform: shop.platform,
+      meta:
+          '${_platformDisplayName(shop.platform)} · '
+          '${_roleDisplayName(l10n, shop.role)}',
+      role: shop.role,
+      resolution: shop.resolution,
+      clipBudget: _budgetFromDto(shop),
+    );
 
 /// Nhân viên chỉ được XEM cửa hàng.
 ///
@@ -2660,6 +2660,9 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
         if (shops.isEmpty) {
           return EcNoShopScreen(
             onCreate: widget.onCreateShop,
+            onJoinByInvite: () async {
+              if (await _joinByInvite(context, widget.repo)) _retry();
+            },
             // Nạp lại thật, không chỉ hiện thông báo: người vừa được mời bấm
             // vào đây là để hỏi "đã vào chưa", mà một câu toast thì không trả
             // lời được câu đó.
@@ -2858,10 +2861,9 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
       membersRestricted: false,
       storageKind:
           (results.last as StorageStateDto?)?.kind ?? StorageKind.system,
-      videoTypes:
-          ((results[2] as List<VideoTypeDto>?) ?? const [])
-              .map(_videoTypeFromDto)
-              .toList(),
+      videoTypes: ((results[2] as List<VideoTypeDto>?) ?? const [])
+          .map(_videoTypeFromDto)
+          .toList(),
     );
   }
 
@@ -3275,18 +3277,17 @@ Future<void> _showShopJoinQr(
 ) async {
   final l10n = context.l10n;
   try {
-    final token = await repo.shopJoinCode(shopId);
+    final invite = await repo.createQrInvite(shopId);
     if (!context.mounted) return;
-    await _showInviteQr(context, token);
+    await _showInviteQr(context, invite.token);
   } on DioException catch (error) {
     if (!context.mounted) return;
-    // 404 ở đây KHÔNG phải "không tìm thấy shop": đường này chưa được máy chủ
-    // mở. Nói thẳng thế, kèm đường đi thay thế, thay vì để người dùng đọc một
-    // câu lỗi chung rồi tưởng shop của mình hỏng.
+    // 400 ở đây là SHOP ĐÃ ĐỦ NGƯỜI theo gói của chủ shop, không phải "gọi
+    // sai": mã treo cũng chiếm một suất, nên bấm liên tiếp sẽ chạm trần.
     _toast(
       context,
-      error.response?.statusCode == 404
-          ? l10n.inviteQrNotSupported
+      error.response?.statusCode == 400
+          ? l10n.inviteQrNoRoom
           : _dataErrorText(l10n, error),
     );
   } on Object catch (error) {
@@ -4065,6 +4066,29 @@ class _OrderRouteState extends State<_OrderRoute> {
     if (mounted) _retry();
   }
 
+  /// Bản chi tiết của clip đang mở trong sheet, cập nhật sau mỗi lần nạp lại.
+  ///
+  /// Sheet là một route riêng, `extra` của nó đông cứng ở thời điểm bấm. Mà
+  /// link phát thì máy chủ CỐ TÌNH giấu trong lúc còn đóng dấu
+  /// (`services/evidence_url.ts`: `seal_status` pending/rendering ⇒ `url` null).
+  /// Mở sheet sớm một nhịp là ôm cái ảnh chụp thiếu link đó mãi mãi — đúng cái
+  /// cảnh phải thoát ra vào lại mới thấy link.
+  final ValueNotifier<EcVideoDetail?> _openDetail = ValueNotifier(null);
+  String? _openEvidenceId;
+
+  /// Nhịp hỏi lại trong lúc còn clip đang được đóng dấu.
+  ///
+  /// Màn này chỉ có đúng một mồi nạp lại — hàng đợi upload vơi đi — mà mồi đó
+  /// nổ TRƯỚC khi renderer chạy xong, nên không hỏi lại là đứng im.
+  ///
+  /// ponytail: hẹn giờ cố định, dừng khi hết clip dở dang hoặc hết
+  /// [_maxSealPolls] lượt. Có trần vì niêm phong hỏng thì `seal_status` nằm lại
+  /// ở `pending` vĩnh viễn — không chặn thì màn này gọi API tới hết pin.
+  static const _sealPollInterval = Duration(seconds: 5);
+  static const _maxSealPolls = 24;
+  Timer? _sealPoll;
+  int _sealPolls = 0;
+
   @override
   void initState() {
     super.initState();
@@ -4073,8 +4097,78 @@ class _OrderRouteState extends State<_OrderRoute> {
 
   @override
   void dispose() {
+    _sealPoll?.cancel();
+    _openDetail.dispose();
     widget.queue.removeListener(_onQueueChanged);
     super.dispose();
+  }
+
+  /// Mở sheet chi tiết cho một dòng bằng chứng.
+  ///
+  /// Sheet đọc [_openDetail] chứ không đọc bản chụp lúc bấm, nên lượt nạp lại
+  /// nào xong trong lúc nó đang mở cũng chảy thẳng vào màn hình.
+  void _openVideoDetail(EcTimelineVideo video) {
+    _openEvidenceId = video.id;
+    _openDetail.value = _videoDetail(
+      context.l10n,
+      video,
+      tracking: widget.order.tracking,
+    );
+    unawaited(
+      widget.onOpenVideo
+          ?.call(
+            _VideoRouteExtra(
+              shopId: widget.shop.id,
+              orderId: widget.order.id,
+              evidenceId: video.id,
+              // Vai trò THẬT, không phải `true` cho tất cả. Máy chủ cấm nhân
+              // viên xoá bằng chứng, nên mời họ bấm rồi trả lỗi là app tự mâu
+              // thuẫn với chính màn hàng chờ (đã chặn staff).
+              canDelete: widget.shop.role != 'staff',
+              tracking: widget.order.tracking,
+              video: _openDetail,
+            ),
+          )
+          // Chỉ nạp lại khi chi tiết báo có thay đổi. Kéo sheet xuống để đóng
+          // là thao tác xem xong, nạp lại chỉ làm danh sách nhấp nháy và cuộn
+          // về đầu vô cớ.
+          .then((changed) {
+            _openEvidenceId = null;
+            if (changed && mounted) _retry();
+          }),
+    );
+  }
+
+  /// Đẩy dữ liệu vừa nạp vào sheet đang mở, rồi hẹn lượt hỏi tiếp nếu cần.
+  void _afterLoad(_OrderDetailData data) {
+    if (!mounted) return;
+    final l10n = context.l10n;
+    final id = _openEvidenceId;
+    if (id != null) {
+      final fresh = _timelineDays(
+        l10n,
+        data.detail.evidence,
+        data.videoTypes,
+        data.memberNames,
+      ).expand((d) => d.videos).where((v) => v.id == id).firstOrNull;
+      if (fresh != null) {
+        _openDetail.value = _videoDetail(
+          l10n,
+          fresh,
+          tracking: widget.order.tracking,
+        );
+      }
+    }
+    _sealPoll?.cancel();
+    if (!data.detail.evidence.any((e) => e.isSealing)) {
+      _sealPolls = 0;
+      return;
+    }
+    if (_sealPolls >= _maxSealPolls) return;
+    _sealPolls++;
+    _sealPoll = Timer(_sealPollInterval, () {
+      if (mounted) _retry();
+    });
   }
 
   /// Kết quả tốt gần nhất — giữ màn hình đứng yên trong lúc làm mới ngầm.
@@ -4131,11 +4225,13 @@ class _OrderRouteState extends State<_OrderRoute> {
     } on Object {
       // Keep whatever we have — evidence still renders, just without names.
     }
-    return _OrderDetailData(
+    final data = _OrderDetailData(
       detail: detail,
       videoTypes: types,
       memberNames: memberNames,
     );
+    _afterLoad(data);
+    return data;
   }
 
   void _retry() => setState(() {
@@ -4209,58 +4305,8 @@ class _OrderRouteState extends State<_OrderRoute> {
             days: days,
             pendingUploadCount: _pendingCount + _failedCount(data.detail),
             onBack: widget.onBack,
-            onVideoTap: (video) => widget.onOpenVideo
-                ?.call(
-                  _VideoRouteExtra(
-                    shopId: widget.shop.id,
-                    orderId: widget.order.id,
-                    evidenceId: video.id,
-                    // Mọi vai trò đều xoá được, theo yêu cầu. Backend vẫn là chốt cuối:
-                    // không đủ quyền thì lời gọi xoá bị từ chối và màn báo lỗi.
-                    // Vai trò THẬT, không phải `true` cho tất cả. Máy chủ cấm
-                    // nhân viên xoá bằng chứng, nên mời họ bấm rồi trả lỗi là
-                    // app tự mâu thuẫn với chính màn hàng chờ (đã chặn staff).
-                    canDelete: widget.shop.role != 'staff',
-                    tracking: widget.order.tracking,
-                    video: _videoDetail(
-                      context.l10n,
-                      video,
-                      tracking: widget.order.tracking,
-                    ),
-                  ),
-                )
-                // Chỉ nạp lại khi chi tiết báo có thay đổi. Kéo sheet xuống
-                // để đóng là thao tác xem xong, nạp lại chỉ làm danh sách
-                // nhấp nháy và cuộn về đầu vô cớ.
-                .then((changed) {
-                  if (changed && mounted) _retry();
-                }),
-            onVideoMenu: (video) => widget.onOpenVideo
-                ?.call(
-                  _VideoRouteExtra(
-                    shopId: widget.shop.id,
-                    orderId: widget.order.id,
-                    evidenceId: video.id,
-                    // Mọi vai trò đều xoá được, theo yêu cầu. Backend vẫn là chốt cuối:
-                    // không đủ quyền thì lời gọi xoá bị từ chối và màn báo lỗi.
-                    // Vai trò THẬT, không phải `true` cho tất cả. Máy chủ cấm
-                    // nhân viên xoá bằng chứng, nên mời họ bấm rồi trả lỗi là
-                    // app tự mâu thuẫn với chính màn hàng chờ (đã chặn staff).
-                    canDelete: widget.shop.role != 'staff',
-                    tracking: widget.order.tracking,
-                    video: _videoDetail(
-                      context.l10n,
-                      video,
-                      tracking: widget.order.tracking,
-                    ),
-                  ),
-                )
-                // Chỉ nạp lại khi chi tiết báo có thay đổi. Kéo sheet xuống
-                // để đóng là thao tác xem xong, nạp lại chỉ làm danh sách
-                // nhấp nháy và cuộn về đầu vô cớ.
-                .then((changed) {
-                  if (changed && mounted) _retry();
-                }),
+            onVideoTap: _openVideoDetail,
+            onVideoMenu: _openVideoDetail,
             onCopyCode: () => _copyText(
               context,
               data.detail.order.tracking,
@@ -4333,131 +4379,18 @@ class _EvidenceCountOverrides extends ChangeNotifier {
 class _VideoPlayerRoute extends StatefulWidget {
   const _VideoPlayerRoute({
     required this.title,
-    required this.recordedAt,
     required this.url,
     required this.service,
-    this.capturedAtMs,
-    this.tracking,
     this.onBack,
   });
 
-  final int? capturedAtMs;
-  final String? tracking;
-
   final String title;
-
-  /// Recording date + time, e.g. `23/07/2026 · 10:23` — matches what's shown
-  /// on the Ghi hình screen while recording and in the evidence detail sheet.
-  final String recordedAt;
   final String url;
   final VideoPlayerService service;
   final VoidCallback? onBack;
 
   @override
   State<_VideoPlayerRoute> createState() => _VideoPlayerRouteState();
-}
-
-/// Ngày / giờ / mã vận đơn vẽ đè lên khung hình lúc phát lại.
-///
-/// Dựng lại đúng khối mà màn ghi hình hiện ở góc phải, trừ nút back và chip
-/// tải lên — hai thứ đó là điều khiển của app, không phải thông tin bằng
-/// chứng. Xem lại clip phải đọc được y như lúc quay.
-///
-/// Vẽ lúc phát chứ không nung vào file: nung chữ bắt buộc phải encode lại
-/// video, tức là file không còn là chuỗi byte gốc từ cảm biến — đúng thứ FR-07
-/// cấm. Bản tải về / gửi đi mới nung, và nung đúng ba dòng này.
-class _PlaybackStamp extends StatelessWidget {
-  const _PlaybackStamp({
-    required this.title,
-    required this.recordedAt,
-    required this.position,
-    this.capturedAtMs,
-    this.tracking,
-  });
-
-  final String title;
-  final String recordedAt;
-
-  /// Vị trí đang phát, cộng vào [capturedAtMs] để đồng hồ chạy theo clip thay
-  /// vì đứng im ở giây bấm quay.
-  final Duration position;
-  final int? capturedAtMs;
-  final String? tracking;
-
-  static TextStyle _style(double size, FontWeight weight) => TextStyle(
-    color: Colors.white,
-    fontSize: size,
-    height: 1.25,
-    fontWeight: weight,
-    shadows: const [
-      Shadow(color: Color(0xCC000000), blurRadius: 6),
-      Shadow(color: Color(0x99000000), offset: Offset(0, 1)),
-    ],
-  );
-
-  static String _two(int n) => n.toString().padLeft(2, '0');
-
-  @override
-  Widget build(BuildContext context) {
-    final startedAt = capturedAtMs;
-    // Bằng chứng cũ không lưu mốc epoch — giữ nguyên nhãn một dòng cũ thay vì
-    // dựng một đồng hồ bịa từ chuỗi đã định dạng sẵn.
-    if (startedAt == null) {
-      return Positioned(
-        top: 8,
-        left: 8,
-        right: 8,
-        child: IgnorePointer(
-          child: Row(
-            children: [
-              Flexible(
-                child: Text(
-                  title,
-                  overflow: TextOverflow.ellipsis,
-                  style: _style(12, FontWeight.w600),
-                ),
-              ),
-              const Spacer(),
-              Text(recordedAt, style: _style(12, FontWeight.w600)),
-            ],
-          ),
-        ),
-      );
-    }
-    final now = DateTime.fromMillisecondsSinceEpoch(
-      startedAt,
-    ).add(position);
-    final code = tracking ?? '';
-    return Positioned(
-      top: 8,
-      right: 8,
-      child: IgnorePointer(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '${_two(now.day)}/${_two(now.month)}/${now.year}',
-              style: _style(15, FontWeight.w500),
-              softWrap: false,
-            ),
-            Text(
-              '${_two(now.hour)}:${_two(now.minute)}:${_two(now.second)}',
-              style: _style(22, FontWeight.w700),
-              softWrap: false,
-            ),
-            if (code.isNotEmpty)
-              Text(
-                code,
-                style: _style(15, FontWeight.w600),
-                softWrap: false,
-                overflow: TextOverflow.visible,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
@@ -4527,29 +4460,18 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                   onPressed: widget.onBack,
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                 ),
+                // Chỉ tên loại clip, KHÔNG kèm dòng ngày/giờ: giờ thật đã nung
+                // vào khung hình lúc quay (`_prepareAndSave`), còn dòng ở đây
+                // dựng lại từ `captured_at` nên lệch vài phút với dấu nung.
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.title,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        widget.recordedAt,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    widget.title,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -4603,14 +4525,15 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                               child: Stack(
                                 alignment: Alignment.center,
                                 children: [
+                                  // Không vẽ lại lớp ngày/giờ/mã vận đơn ở đây:
+                                  // clip đã được nung đúng ba dòng đó vào
+                                  // khung hình ngay sau khi quay
+                                  // (`_prepareAndSave`), lấy mốc BẤM QUAY thật.
+                                  // Lớp vẽ thêm chỉ dựng lại từ `captured_at`,
+                                  // nên với clip cũ nó chạy lệch vài phút so
+                                  // với dấu nung — hai đồng hồ trên cùng một
+                                  // khung là thứ đối phương chỉ vào đầu tiên.
                                   VideoPlayer(raw),
-                                  _PlaybackStamp(
-                                    title: widget.title,
-                                    recordedAt: widget.recordedAt,
-                                    capturedAtMs: widget.capturedAtMs,
-                                    tracking: widget.tracking,
-                                    position: value.position,
-                                  ),
                                   AnimatedOpacity(
                                     opacity: value.isPlaying ? 0 : 1,
                                     duration: const Duration(
@@ -4705,6 +4628,24 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
   );
 }
 
+/// Chỗ dựa khi route chi tiết mở ra mà không có `extra` (deep link, khôi phục
+/// state) — sheet rơi về khối "không có dữ liệu" thay vì nổ.
+///
+/// Là `ValueListenable` rỗng chứ không phải `ValueNotifier`: hằng số này sống
+/// suốt đời tiến trình, không ai gọi `dispose` cho nó được.
+class _NoVideoDetail implements ValueListenable<EcVideoDetail?> {
+  const _NoVideoDetail();
+
+  @override
+  EcVideoDetail? get value => null;
+
+  @override
+  void addListener(VoidCallback listener) {}
+
+  @override
+  void removeListener(VoidCallback listener) {}
+}
+
 class _VideoRouteExtra {
   const _VideoRouteExtra({
     required this.video,
@@ -4715,7 +4656,10 @@ class _VideoRouteExtra {
     this.evidenceId,
   });
 
-  final EcVideoDetail video;
+  /// Nguồn SỐNG, không phải ảnh chụp lúc bấm: màn đơn hàng ghi đè giá trị này
+  /// sau mỗi lần nạp lại, nên sheet thấy link phát ngay khi máy chủ đóng dấu
+  /// xong thay vì phải đóng sheet, thoát đơn rồi vào lại.
+  final ValueListenable<EcVideoDetail?> video;
 
   /// Mã vận đơn, để đóng dấu lên clip lúc tải về — `EcVideoDetail` chỉ mang
   /// thông tin của riêng clip, không biết nó thuộc đơn nào.
@@ -4729,23 +4673,11 @@ class _VideoRouteExtra {
 class _VideoPlayerRouteExtra {
   const _VideoPlayerRouteExtra({
     required this.title,
-    required this.recordedAt,
     required this.url,
     required this.videoPlayerService,
-    this.capturedAtMs,
-    this.tracking,
   });
 
-  /// Mốc quay + mã vận đơn, để lớp chữ lúc phát dựng lại đúng cái màn ghi hình
-  /// đã hiện.
-  final int? capturedAtMs;
-  final String? tracking;
-
   final String title;
-
-  /// Recording date + time, e.g. `23/07/2026 · 10:23` — the same value shown
-  /// on the Ghi hình screen while recording and in the evidence detail sheet.
-  final String recordedAt;
   final String url;
   final VideoPlayerService videoPlayerService;
 }
@@ -4842,20 +4774,26 @@ List<EcTimelineDay> _timelineDays(
             thumbUrl: item.kind == 'photo' ? item.url : item.thumbUrl,
             seal: _sealLine(l10n, item),
             timeDrift: item.timeCheck == 'TIME_DRIFT',
+            // Tải lên xong KHÔNG phải là xong: máy chủ còn đóng dấu giờ lên
+            // hình rồi niêm phong. Bỏ trống ô trạng thái ở giai đoạn đó khiến
+            // người bán tưởng đã có bằng chứng hoàn chỉnh và đem link đi khiếu
+            // nại một bản chưa có dấu.
             statusText: item.uploadStatus == 'done'
-                ? null
+                ? (item.isSealing ? l10n.sealWorking : null)
                 : item.uploadStatus == 'expired'
                 ? _expiredLabel(l10n, item.retentionExpiresAt)
                 : _uploadStatusLabel(l10n, item.uploadStatus),
-            statusTone: switch (item.uploadStatus) {
-              'done' => EcStatusTone.done,
-              'error' => EcStatusTone.error,
-              'quota_hold' => EcStatusTone.quota,
-              // Hết hạn lưu trữ / đã xóa là kết thúc, không phải lỗi đang chờ
-              // xử lý — khung design không có viên riêng nên dùng xám trung
-              // tính thay vì đỏ.
-              _ => EcStatusTone.waiting,
-            },
+            statusTone: item.isSealing
+                ? EcStatusTone.waiting
+                : switch (item.uploadStatus) {
+                    'done' => EcStatusTone.done,
+                    'error' => EcStatusTone.error,
+                    'quota_hold' => EcStatusTone.quota,
+                    // Hết hạn lưu trữ / đã xóa là kết thúc, không phải lỗi đang
+                    // chờ xử lý — khung design không có viên riêng nên dùng xám
+                    // trung tính thay vì đỏ.
+                    _ => EcStatusTone.waiting,
+                  },
             statusIcon: switch (item.uploadStatus) {
               'error' => Icons.refresh,
               'expired' => Icons.history_toggle_off,
@@ -5070,11 +5008,24 @@ class _CreateClaimRoute extends StatelessWidget {
           return match.isEmpty ? null : match.first.id;
         }),
       );
-      final resolved = [
-        for (final id in ids) ?id,
-      ];
+      final resolved = <String>[];
+      // Những clip người bán ĐÃ TICK. Thiếu danh sách này thì trang công khai
+      // hiện đủ mọi bằng chứng của đơn — người bán chọn 2 trong 5 clip, gửi
+      // link cho sàn, sàn xem cả 5. Chỉ gom của những đơn tra ra được id: đơn
+      // hỏng thì id clip của nó cũng vô nghĩa.
+      final picked = <String>[];
+      for (var i = 0; i < batch.length; i++) {
+        final id = ids[i];
+        if (id == null) continue;
+        resolved.add(id);
+        picked.addAll(batch[i].picked.map((e) => e.id));
+      }
       if (resolved.isEmpty) return null;
-      return (await repo.createClaim(shopId, resolved)).url;
+      return (await repo.createClaim(
+        shopId,
+        resolved,
+        evidenceIds: picked.isEmpty ? null : picked,
+      )).url;
     } on Object catch (error, stack) {
       developer.log(
         'claims: không gửi được hồ sơ lên máy chủ (${error.runtimeType})',
@@ -5348,6 +5299,8 @@ EcVideoDetail _videoDetail(
 EcSealLine? _sealLine(AppLocalizations l10n, EvidenceDto item) {
   if (item.kind == 'photo') return null;
   return switch (item.sealStatus) {
+    // `sealed` ⇒ renderer đã ghi đè bản thô ở R2 bằng bản có dấu giờ + mã vận
+    // đơn nung vào khung hình (services/render.ts ký PUT lên đúng `r2_key`).
     'sealed' => EcSealLine(
       label: l10n.sealSealed(_sealedAtLabel(item.sealedAt)),
     ),
@@ -5886,6 +5839,8 @@ GoRouter _buildRouter(
                                             extra: shop.id,
                                           )
                                           .then((_) {}),
+                                      onShopQr: () =>
+                                          _showShopJoinQr(c, repo, shop.id),
                                       onEditType: (type) => router
                                           .push(
                                             '/create-type',
@@ -6022,7 +5977,7 @@ GoRouter _buildRouter(
             // thì trả null và danh sách khỏi nạp lại.
             onOpenVideo: (extra) async =>
                 await c.push<bool>(
-                  extra.video.type == EcEvidenceType.image
+                  extra.video.value?.type == EcEvidenceType.image
                       ? '/photo'
                       : '/video',
                   extra: extra,
@@ -6044,132 +5999,138 @@ GoRouter _buildRouter(
             // page this builds, so it has no Navigator ancestor yet — a
             // Builder gives onDelete a context from inside the built page.
             Builder(
-              builder: (pageContext) => EcVideoDetailScreen(
-                video:
-                    extra?.video ??
-                    EcVideoDetail(
-                      title: c.l10n.noVideoDataTitle,
-                      duration: '—',
-                      recordedAt: '—',
-                      recordedBy: '—',
-                      device: '—',
-                      uploadStatus: '—',
-                    ),
-                canDelete: extra?.canDelete ?? false,
-                onClose: () => c.pop(),
-                onCopyLink: () {
-                  final url = extra?.video.mediaUrl;
-                  if (url == null) {
-                    _toast(pageContext, c.l10n.toastVideoNoPlayLink);
-                    return;
-                  }
-                  _copyText(pageContext, url, c.l10n.assetLinkTitle);
-                },
-                onPlay: () {
-                  final url = extra?.video.mediaUrl;
-                  if (url == null || videoPlayer == null) {
-                    _toast(pageContext, c.l10n.toastVideoNoPlayLink);
-                    return;
-                  }
-                  c.push(
-                    '/video-player',
-                    extra: _VideoPlayerRouteExtra(
-                      title: extra!.video.title,
-                      recordedAt: extra.video.recordedAt,
-                      capturedAtMs: extra.video.capturedAtMs,
-                      tracking: extra.tracking,
-                      url: url,
-                      videoPlayerService: videoPlayer,
-                    ),
-                  );
-                },
-                onDownload: () {
-                  final video = extra?.video;
-                  if (video?.mediaUrl == null) {
-                    _toast(pageContext, c.l10n.toastVideoNoDownloadLink);
-                    return;
-                  }
-                  _downloadAndShareVideo(
-                    pageContext,
-                    downloader,
-                    share,
-                    gallery,
-                    video!,
-                  );
-                },
-                onDelete: () async {
-                  final evidenceId = extra?.evidenceId;
-                  if (extra == null || evidenceId == null) {
-                    _toast(pageContext, c.l10n.toastVideoDeleteUnavailable);
-                    return;
-                  }
-                  final confirmed = await showCupertinoDialog<bool>(
-                    context: pageContext,
-                    builder: (dialogContext) => CupertinoAlertDialog(
-                      title: Text(c.l10n.deleteVideoAction),
-                      content: Text(c.l10n.deleteVideoNote),
-                      actions: [
-                        CupertinoDialogAction(
-                          onPressed: () =>
-                              Navigator.of(dialogContext).pop(false),
-                          child: Text(c.l10n.commonCancel),
-                        ),
-                        CupertinoDialogAction(
-                          isDestructiveAction: true,
-                          onPressed: () =>
-                              Navigator.of(dialogContext).pop(true),
-                          child: Text(c.l10n.deleteVideoAction),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmed != true || !pageContext.mounted) return;
-                  // Step 2 of 2: a distinct final warning, spelling out that
-                  // this specific evidence item is gone for good — the first
-                  // dialog only confirmed *intent* to delete.
-                  final confirmedFinal = await showCupertinoDialog<bool>(
-                    context: pageContext,
-                    builder: (dialogContext) => CupertinoAlertDialog(
-                      title: Text(c.l10n.deleteVideoConfirmTitle),
-                      content: Text(c.l10n.deleteVideoConfirmBody),
-                      actions: [
-                        CupertinoDialogAction(
-                          onPressed: () =>
-                              Navigator.of(dialogContext).pop(false),
-                          child: Text(c.l10n.commonCancel),
-                        ),
-                        CupertinoDialogAction(
-                          isDestructiveAction: true,
-                          onPressed: () =>
-                              Navigator.of(dialogContext).pop(true),
-                          child: Text(c.l10n.deleteVideoConfirmAction),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmedFinal != true || !pageContext.mounted) return;
-                  unawaited(
-                    repo
-                        .deleteEvidence(extra.shopId, extra.orderId, evidenceId)
-                        .then((_) {
-                          // Toast first: it lands in the root Overlay, which
-                          // outlives this page, so it must be requested while
-                          // pageContext is still mounted — after c.pop() this
-                          // page (and pageContext) is already gone.
-                          if (pageContext.mounted) {
-                            _toast(pageContext, c.l10n.toastVideoDeleted);
-                          }
-                          if (c.mounted) {
-                            c.pop(true);
-                          }
-                        })
-                        .catchError((Object error) {
-                          if (pageContext.mounted) {
-                            _toast(pageContext, _dataErrorText(c.l10n, error));
-                          }
-                        }),
-                  );
-                },
+              builder: (pageContext) => ValueListenableBuilder<EcVideoDetail?>(
+                valueListenable: extra?.video ?? const _NoVideoDetail(),
+                builder: (context, live, _) => EcVideoDetailScreen(
+                  video:
+                      live ??
+                      EcVideoDetail(
+                        title: c.l10n.noVideoDataTitle,
+                        duration: '—',
+                        recordedAt: '—',
+                        recordedBy: '—',
+                        device: '—',
+                        uploadStatus: '—',
+                      ),
+                  canDelete: extra?.canDelete ?? false,
+                  onClose: () => c.pop(),
+                  onCopyLink: () {
+                    final url = live?.mediaUrl;
+                    if (url == null) {
+                      _toast(pageContext, c.l10n.toastVideoNoPlayLink);
+                      return;
+                    }
+                    _copyText(pageContext, url, c.l10n.assetLinkTitle);
+                  },
+                  onPlay: () {
+                    final url = live?.mediaUrl;
+                    if (url == null || videoPlayer == null) {
+                      _toast(pageContext, c.l10n.toastVideoNoPlayLink);
+                      return;
+                    }
+                    c.push(
+                      '/video-player',
+                      extra: _VideoPlayerRouteExtra(
+                        title: live!.title,
+                        url: url,
+                        videoPlayerService: videoPlayer,
+                      ),
+                    );
+                  },
+                  onDownload: () {
+                    if (live?.mediaUrl == null) {
+                      _toast(pageContext, c.l10n.toastVideoNoDownloadLink);
+                      return;
+                    }
+                    _downloadAndShareVideo(
+                      pageContext,
+                      downloader,
+                      share,
+                      gallery,
+                      live!,
+                    );
+                  },
+                  onDelete: () async {
+                    final evidenceId = extra?.evidenceId;
+                    if (extra == null || evidenceId == null) {
+                      _toast(pageContext, c.l10n.toastVideoDeleteUnavailable);
+                      return;
+                    }
+                    final confirmed = await showCupertinoDialog<bool>(
+                      context: pageContext,
+                      builder: (dialogContext) => CupertinoAlertDialog(
+                        title: Text(c.l10n.deleteVideoAction),
+                        content: Text(c.l10n.deleteVideoNote),
+                        actions: [
+                          CupertinoDialogAction(
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(false),
+                            child: Text(c.l10n.commonCancel),
+                          ),
+                          CupertinoDialogAction(
+                            isDestructiveAction: true,
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(true),
+                            child: Text(c.l10n.deleteVideoAction),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed != true || !pageContext.mounted) return;
+                    // Step 2 of 2: a distinct final warning, spelling out that
+                    // this specific evidence item is gone for good — the first
+                    // dialog only confirmed *intent* to delete.
+                    final confirmedFinal = await showCupertinoDialog<bool>(
+                      context: pageContext,
+                      builder: (dialogContext) => CupertinoAlertDialog(
+                        title: Text(c.l10n.deleteVideoConfirmTitle),
+                        content: Text(c.l10n.deleteVideoConfirmBody),
+                        actions: [
+                          CupertinoDialogAction(
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(false),
+                            child: Text(c.l10n.commonCancel),
+                          ),
+                          CupertinoDialogAction(
+                            isDestructiveAction: true,
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(true),
+                            child: Text(c.l10n.deleteVideoConfirmAction),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmedFinal != true || !pageContext.mounted) return;
+                    unawaited(
+                      repo
+                          .deleteEvidence(
+                            extra.shopId,
+                            extra.orderId,
+                            evidenceId,
+                          )
+                          .then((_) {
+                            // Toast first: it lands in the root Overlay, which
+                            // outlives this page, so it must be requested while
+                            // pageContext is still mounted — after c.pop() this
+                            // page (and pageContext) is already gone.
+                            if (pageContext.mounted) {
+                              _toast(pageContext, c.l10n.toastVideoDeleted);
+                            }
+                            if (c.mounted) {
+                              c.pop(true);
+                            }
+                          })
+                          .catchError((Object error) {
+                            if (pageContext.mounted) {
+                              _toast(
+                                pageContext,
+                                _dataErrorText(c.l10n, error),
+                              );
+                            }
+                          }),
+                    );
+                  },
+                ),
               ),
             ),
           );
@@ -6186,78 +6147,83 @@ GoRouter _buildRouter(
             // See the /video route above: onDownload's toasts need a context
             // inside the built page, not the pageBuilder's own `c`.
             Builder(
-              builder: (pageContext) => EcPhotoDetailScreen(
-                canDelete: extra?.canDelete ?? false,
-                onDelete: extra?.evidenceId == null
-                    ? null
-                    : () async {
-                        final ok = await showCupertinoDialog<bool>(
-                          context: pageContext,
-                          builder: (dialogContext) => CupertinoAlertDialog(
-                            title: Text(c.l10n.deleteVideoConfirmTitle),
-                            content: Text(c.l10n.deleteVideoConfirmBody),
-                            actions: [
-                              CupertinoDialogAction(
-                                onPressed: () =>
-                                    Navigator.of(dialogContext).pop(false),
-                                child: Text(c.l10n.commonCancel),
-                              ),
-                              CupertinoDialogAction(
-                                isDestructiveAction: true,
-                                onPressed: () =>
-                                    Navigator.of(dialogContext).pop(true),
-                                child: Text(c.l10n.deleteVideoConfirmAction),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (ok != true || !pageContext.mounted) return;
-                        try {
-                          await repo.deleteEvidence(
-                            extra!.shopId,
-                            extra.orderId,
-                            extra.evidenceId!,
+              builder: (pageContext) => ValueListenableBuilder<EcVideoDetail?>(
+                valueListenable: extra?.video ?? const _NoVideoDetail(),
+                builder: (context, live, _) => EcPhotoDetailScreen(
+                  canDelete: extra?.canDelete ?? false,
+                  onDelete: extra?.evidenceId == null
+                      ? null
+                      : () async {
+                          final ok = await showCupertinoDialog<bool>(
+                            context: pageContext,
+                            builder: (dialogContext) => CupertinoAlertDialog(
+                              title: Text(c.l10n.deleteVideoConfirmTitle),
+                              content: Text(c.l10n.deleteVideoConfirmBody),
+                              actions: [
+                                CupertinoDialogAction(
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(false),
+                                  child: Text(c.l10n.commonCancel),
+                                ),
+                                CupertinoDialogAction(
+                                  isDestructiveAction: true,
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(true),
+                                  child: Text(c.l10n.deleteVideoConfirmAction),
+                                ),
+                              ],
+                            ),
                           );
-                          if (pageContext.mounted) {
-                            _toast(pageContext, c.l10n.toastVideoDeleted);
+                          if (ok != true || !pageContext.mounted) return;
+                          try {
+                            await repo.deleteEvidence(
+                              extra!.shopId,
+                              extra.orderId,
+                              extra.evidenceId!,
+                            );
+                            if (pageContext.mounted) {
+                              _toast(pageContext, c.l10n.toastVideoDeleted);
+                            }
+                            if (c.mounted) c.pop(true);
+                          } on Object catch (error) {
+                            if (pageContext.mounted) {
+                              _toast(
+                                pageContext,
+                                _dataErrorText(c.l10n, error),
+                              );
+                            }
                           }
-                          if (c.mounted) c.pop(true);
-                        } on Object catch (error) {
-                          if (pageContext.mounted) {
-                            _toast(pageContext, _dataErrorText(c.l10n, error));
-                          }
-                        }
-                      },
-                photo:
-                    extra?.video ??
-                    EcVideoDetail(
-                      title: c.l10n.noVideoDataTitle,
-                      duration: '—',
-                      recordedAt: '—',
-                      recordedBy: '—',
-                      device: '—',
-                      uploadStatus: '—',
-                    ),
-                onClose: () => c.pop(),
-                onCopyLink: () {
-                  final url = extra?.video.mediaUrl;
-                  if (url == null) {
-                    _toast(pageContext, c.l10n.toastPhotoNoDownloadLink);
-                    return;
-                  }
-                  _copyText(pageContext, url, c.l10n.assetLinkTitle);
-                },
-                onDownload: () {
-                  final photo = extra?.video;
-                  if (photo == null) return;
-                  _downloadAndSavePhoto(
-                    pageContext,
-                    downloader,
-                    share,
-                    gallery,
-                    photo,
-                  );
-                },
+                        },
+                  photo:
+                      live ??
+                      EcVideoDetail(
+                        title: c.l10n.noVideoDataTitle,
+                        duration: '—',
+                        recordedAt: '—',
+                        recordedBy: '—',
+                        device: '—',
+                        uploadStatus: '—',
+                      ),
+                  onClose: () => c.pop(),
+                  onCopyLink: () {
+                    final url = live?.mediaUrl;
+                    if (url == null) {
+                      _toast(pageContext, c.l10n.toastPhotoNoDownloadLink);
+                      return;
+                    }
+                    _copyText(pageContext, url, c.l10n.assetLinkTitle);
+                  },
+                  onDownload: () {
+                    if (live == null) return;
+                    _downloadAndSavePhoto(
+                      pageContext,
+                      downloader,
+                      share,
+                      gallery,
+                      live,
+                    );
+                  },
+                ),
               ),
             ),
           );
@@ -6278,9 +6244,6 @@ GoRouter _buildRouter(
           }
           return _VideoPlayerRoute(
             title: extra.title,
-            recordedAt: extra.recordedAt,
-            capturedAtMs: extra.capturedAtMs,
-            tracking: extra.tracking,
             url: extra.url,
             service: extra.videoPlayerService,
             onBack: () => c.pop(),

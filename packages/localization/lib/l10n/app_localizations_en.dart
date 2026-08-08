@@ -1617,6 +1617,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inviteMemberHint => '(no account yet → send an invite)';
 
   @override
+  String get inviteQrNoRoom =>
+      'This shop is full on its current plan. Upgrade, or remove a member, then try again.';
+
+  @override
   String get videoTypeIcon => 'Icon';
 
   @override
@@ -2041,8 +2045,4 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get inviteScanDetail =>
       'Ask the shop owner to show the invite QR code, then scan it here.';
-
-  @override
-  String get inviteQrNotSupported =>
-      'The server does not offer a shared QR code yet. Invite by email — the scannable QR appears right after inviting.';
 }

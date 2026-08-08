@@ -843,6 +843,7 @@
   "@inviteMemberHint": {
     "description": "Shop detail: inviteMemberHint."
   },
+  "inviteQrNoRoom": "Cửa hàng đã đủ người theo gói hiện tại. Nâng gói hoặc gỡ bớt thành viên rồi thử lại.",
   "videoTypeIcon": "Biểu tượng",
   "@videoTypeIcon": {
     "description": "Video type dialogs: videoTypeIcon."
@@ -1097,6 +1098,5 @@
   "inviteLinkCopied": "Đã sao chép link mời",
   "inviteQrRow": "Mã QR",
   "inviteScanTitle": "Quét mã mời",
-  "inviteScanDetail": "Nhờ chủ shop mở mã QR mời rồi quét vào đây.",
-  "inviteQrNotSupported": "Máy chủ chưa bật mã QR dùng chung. Hãy mời qua email — mã QR để quét hiện ngay sau khi mời."
+  "inviteScanDetail": "Nhờ chủ shop mở mã QR mời rồi quét vào đây."
 }

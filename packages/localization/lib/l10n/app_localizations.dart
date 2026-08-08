@@ -2932,6 +2932,12 @@ abstract class AppLocalizations {
   /// **'(no account yet → send an invite)'**
   String get inviteMemberHint;
 
+  /// No description provided for @inviteQrNoRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'This shop is full on its current plan. Upgrade, or remove a member, then try again.'**
+  String get inviteQrNoRoom;
+
   /// Video type dialogs: videoTypeIcon.
   ///
   /// In en, this message translates to:
@@ -3681,12 +3687,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask the shop owner to show the invite QR code, then scan it here.'**
   String get inviteScanDetail;
-
-  /// No description provided for @inviteQrNotSupported.
-  ///
-  /// In en, this message translates to:
-  /// **'The server does not offer a shared QR code yet. Invite by email — the scannable QR appears right after inviting.'**
-  String get inviteQrNotSupported;
 }
 
 class _AppLocalizationsDelegate

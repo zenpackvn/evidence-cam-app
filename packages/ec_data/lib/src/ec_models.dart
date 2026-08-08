@@ -227,6 +227,35 @@ class ShopInviteDto {
   final String inviteToken;
 }
 
+/// Lời mời KHÔNG có người nhận, để vẽ thành mã QR.
+///
+/// Khác [ShopInviteDto] ở chỗ nó chưa mời ai: không có `contact`, và cũng
+/// không có email nào được gửi đi. Ai quét mã trước thì người đó vào shop —
+/// nên nó dùng một lần và sống 10 phút, không phải 14 ngày.
+class QrInviteDto {
+  const QrInviteDto({
+    required this.inviteId,
+    required this.token,
+    required this.url,
+    required this.expiresAt,
+  });
+
+  factory QrInviteDto.fromJson(Map<String, dynamic> j) => QrInviteDto(
+    inviteId: j['invite_id'] as String,
+    token: j['token'] as String,
+    url: j['url'] as String,
+    expiresAt: _int(j['expires_at']),
+  );
+
+  final String inviteId;
+  final String token;
+
+  /// Chuỗi đem đi vẽ mã. Cùng dạng link với email mời, nên camera hệ thống
+  /// quét cũng ra (mở web) — không bắt người kia phải mở app mới quét được.
+  final String url;
+  final int expiresAt;
+}
+
 class OrderDto {
   const OrderDto({
     required this.id,
