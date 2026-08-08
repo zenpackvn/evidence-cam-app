@@ -53,7 +53,7 @@ class EcVideoStampService {
   ///
   /// Bộ mã hoá phần cứng của hệ điều hành thì có sẵn ngay trong bản `base`,
   /// không ràng buộc GPL, không làm phình app, và nhanh hơn hẳn trên điện
-  /// thoại. Chúng không nhận `-crf` nên phải khai bitrate — [kbps], suy ra từ
+  /// thoại. Chúng không nhận `-crf` nên phải khai bitrate — `kbps`, suy ra từ
   /// độ phân giải qua [_bitrateFor].
   ///
   /// Trước 2026-08-08 chỗ này khai cứng 4 Mbps cho MỌI độ phân giải, nên clip
