@@ -3697,6 +3697,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The invite has expired. Ask the shop owner to resend it.'**
   String get inviteExpired;
+
+  /// No description provided for @inviteSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite sent'**
+  String get inviteSentTitle;
+
+  /// No description provided for @inviteSentDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The invite email is on its way. If it doesn\'t arrive, send this link instead — they open the app, tap \"I have an invite\" and paste it.'**
+  String get inviteSentDetail;
+
+  /// No description provided for @inviteCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get inviteCopyLink;
+
+  /// No description provided for @inviteLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite link copied'**
+  String get inviteLinkCopied;
 }
 
 class _AppLocalizationsDelegate

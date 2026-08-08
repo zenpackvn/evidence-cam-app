@@ -2044,4 +2044,17 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get inviteExpired => 'Lời mời đã quá hạn. Nhờ chủ shop gửi lại.';
+
+  @override
+  String get inviteSentTitle => 'Đã gửi lời mời';
+
+  @override
+  String get inviteSentDetail =>
+      'Email mời đã gửi. Nếu người kia không nhận được, gửi thẳng link này cho họ — mở app, bấm \"Tôi có lời mời\" rồi dán vào.';
+
+  @override
+  String get inviteCopyLink => 'Sao chép link';
+
+  @override
+  String get inviteLinkCopied => 'Đã sao chép link mời';
 }

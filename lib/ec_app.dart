@@ -3233,7 +3233,7 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
       // xác nhận mới vào shop. Nhánh "đã thêm thành viên" ở đây là di tích của
       // thời tự-vào-shop, không có đường nào chạy tới nữa.
       assert(result.status == 'pending', 'lời mời mới phải là pending');
-      _toast(context, context.l10n.toastInviteSent);
+      await _showInviteLink(context, result.inviteToken);
     } on Object catch (error) {
       if (mounted) _toast(context, _inviteErrorText(context.l10n, error));
     } finally {
@@ -3246,6 +3246,53 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
     contactController: _contact,
     onCancel: () => context.pop(),
     onInvite: _saving ? null : _invite,
+  );
+}
+
+/// Sau khi mời xong: đưa LINK MỜI cho chủ shop, chứ không chỉ báo "đã gửi".
+///
+/// Link trong email là thứ duy nhất đưa người được mời vào shop, mà email thì
+/// hay không tới — vào thư rác, gõ nhầm địa chỉ, hoặc mời bằng số điện thoại
+/// nên chẳng có email nào cả. Trước đây app cầm sẵn token trong tay rồi vứt
+/// đi và toast "đã gửi lời mời", nên khi email không tới thì không ai — kể cả
+/// chủ shop — còn cách nào lấy lại được nó.
+Future<void> _showInviteLink(BuildContext context, String token) async {
+  final l10n = context.l10n;
+  final link = 'https://zenpack.vn/invite/$token';
+  await showCupertinoDialog<void>(
+    context: context,
+    builder: (dialogContext) => CupertinoAlertDialog(
+      title: Text(l10n.inviteSentTitle),
+      content: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(l10n.inviteSentDetail, style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 12),
+            SelectableText(
+              link,
+              style: const TextStyle(fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        CupertinoDialogAction(
+          onPressed: () async {
+            await Clipboard.setData(ClipboardData(text: link));
+            if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+            if (context.mounted) _toast(context, l10n.inviteLinkCopied);
+          },
+          child: Text(l10n.inviteCopyLink),
+        ),
+        CupertinoDialogAction(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: Text(l10n.commonClose),
+        ),
+      ],
+    ),
   );
 }
 

@@ -2057,4 +2057,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get inviteExpired =>
       'The invite has expired. Ask the shop owner to resend it.';
+
+  @override
+  String get inviteSentTitle => 'Invite sent';
+
+  @override
+  String get inviteSentDetail =>
+      'The invite email is on its way. If it doesn\'t arrive, send this link instead — they open the app, tap \"I have an invite\" and paste it.';
+
+  @override
+  String get inviteCopyLink => 'Copy link';
+
+  @override
+  String get inviteLinkCopied => 'Invite link copied';
 }

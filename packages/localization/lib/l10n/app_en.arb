@@ -1384,5 +1384,9 @@
   "inviteBadLink": "That link is not valid. Paste the whole link from the email.",
   "inviteNotFound": "The invite does not exist or was revoked",
   "inviteTaken": "Someone else already accepted this invite",
-  "inviteExpired": "The invite has expired. Ask the shop owner to resend it."
+  "inviteExpired": "The invite has expired. Ask the shop owner to resend it.",
+  "inviteSentTitle": "Invite sent",
+  "inviteSentDetail": "The invite email is on its way. If it doesn't arrive, send this link instead — they open the app, tap \"I have an invite\" and paste it.",
+  "inviteCopyLink": "Copy link",
+  "inviteLinkCopied": "Invite link copied"
 }
