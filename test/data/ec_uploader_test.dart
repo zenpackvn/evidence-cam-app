@@ -26,9 +26,9 @@ class _StubAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-ResponseBody _json(String body) => ResponseBody.fromString(
+ResponseBody _json(String body, [int status = 200]) => ResponseBody.fromString(
   body,
-  200,
+  status,
   headers: {
     Headers.contentTypeHeader: [Headers.jsonContentType],
   },
@@ -60,6 +60,47 @@ class _FakeR2 {
 }
 
 void main() {
+  // Tệp vượt trần bị từ chối ở bước `complete`, tức là SAU khi byte đã lên
+  // kho. Người bán phải đọc được việc cần làm, không phải "máy chủ báo lỗi
+  // (mã 400) — thử lại sau": thử lại cùng một tệp thì mãi mãi cùng dung lượng.
+  test('tệp vượt trần: báo đúng việc cần làm, không xui thử lại', () async {
+    final apiDio = Dio()
+      ..httpClientAdapter = _StubAdapter((o) {
+        if (o.path.endsWith('/uploads/presign')) {
+          return _json(
+            '{"evidenceId":"ev1","key":"r2/ev1.mp4",'
+            '"uploadUrl":"https://r2.example/put?sig=1"}',
+          );
+        }
+        if (o.path.endsWith('/complete')) {
+          return _json('{"error":"file_too_large"}', 400);
+        }
+        return _json('{"id":"ord1","tracking_raw":"SPX1","created_at":0}');
+      });
+    final r2 = _FakeR2((_) => 'etag-whole');
+
+    final dir = Directory.systemTemp.createTempSync('ec_uploader_too_large');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final clip = File('${dir.path}/clip.mp4')..writeAsStringSync('video-bytes');
+
+    final uploader = ApiEvidenceUploader(EcApi(apiDio), put: r2.put);
+    await expectLater(
+      uploader.upload(clip, tracking: 'SPX1', type: 'Đóng hàng', shopId: 's1'),
+      throwsA(
+        isA<UploadFailureException>()
+            .having((e) => e.message, 'message', contains('quá nặng'))
+            .having((e) => e.message, 'message', contains('vẫn còn'))
+            .having(
+              (e) => e.message,
+              'message',
+              isNot(contains('thử lại sau')),
+            ),
+      ),
+    );
+    // Bản trên máy KHÔNG được đụng tới — hàng lỗi còn trỏ vào đúng tệp này.
+    expect(clip.existsSync(), isTrue);
+  });
+
   test(
     'ApiEvidenceUploader runs findOrCreate -> presign -> PUT -> complete',
     () async {

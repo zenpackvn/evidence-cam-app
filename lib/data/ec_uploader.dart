@@ -66,6 +66,18 @@ bool _isQuotaRefusal(DioException error) {
   return code == 'video_quota_exceeded';
 }
 
+/// Máy chủ nhận byte xong mới thấy tệp vượt trần dung lượng một clip (backend:
+/// `completeUpload` → 400 `file_too_large`, và nó đã dọn byte khỏi kho).
+///
+/// Cũng khớp theo MÃ LỖI chứ không theo 400: 400 còn là `object_missing`,
+/// `bad_sha256`… mà những cái đó thử lại thì ăn thua, còn cái này thì không —
+/// cùng một tệp thì mãi mãi cùng một dung lượng.
+bool _isTooLarge(DioException error) {
+  if (error.response?.statusCode != 400) return false;
+  final body = error.response?.data;
+  return (body is Map ? body['error'] : null) == 'file_too_large';
+}
+
 String _friendlyMessage(DioException error) {
   switch (error.type) {
     case DioExceptionType.connectionTimeout:
@@ -75,6 +87,13 @@ String _friendlyMessage(DioException error) {
     case DioExceptionType.connectionError:
       return 'Mất kết nối mạng khi tải lên — kiểm tra mạng rồi thử lại.';
     case DioExceptionType.badResponse:
+      // Nói thẳng việc phải làm, và nói rõ bản trên máy CÒN NGUYÊN — hàng lỗi
+      // giữ `filePath`, `retry` vẫn tải lại đúng tệp đó. Bảo "thử lại sau" ở
+      // đây là đẩy người bán vào vòng lặp không bao giờ thành công.
+      if (_isTooLarge(error)) {
+        return 'Video quá nặng nên máy chủ không nhận. Bản trên máy vẫn còn — '
+            'hạ độ phân giải hoặc quay ngắn hơn rồi quay lại đơn này.';
+      }
       final status = error.response?.statusCode;
       return 'Máy chủ báo lỗi${status != null ? ' (mã $status)' : ''} — thử lại sau.';
     case DioExceptionType.cancel:
