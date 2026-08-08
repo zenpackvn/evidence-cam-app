@@ -625,7 +625,10 @@ void main() {
       );
       expect(find.text('5 phút'), findsOneWidget);
       expect(find.text('5 MB'), findsOneWidget);
-      expect(find.text('mặc định'), findsNWidgets(2));
+      // Không đếm số chữ "mặc định": `_FixedSettingRow` nay còn dựng cả hàng
+      // Kho lưu trữ, nên đếm là mỗi lần thêm một hàng lại phải sửa test mà
+      // chẳng canh được gì thêm.
+      expect(find.text('mặc định'), findsWidgets);
       // Không còn hàng nào mở sheet.
       expect(find.text('Dung lượng/tệp'), findsNothing);
       expect(find.text('Độ phân giải quay'), findsNothing);
@@ -644,7 +647,12 @@ void main() {
           onEditType: (type) => edited = type,
         ),
       );
+      // Màn dài hơn từ khi có hàng Kho lưu trữ — phải kéo tới nơi rồi mới
+      // chạm được.
+      await tester.ensureVisible(find.byIcon(LucideIcons.pencil));
+      await tester.pumpAndSettle();
       await tester.tap(find.byIcon(LucideIcons.pencil));
+      await tester.pump();
       expect(edited?.name, 'Cân hàng');
     });
 
