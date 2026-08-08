@@ -27,6 +27,13 @@ void main() {
     return RecordingSessionBloc(
       camera: camera,
       scanner: _FakeScanner(),
+      // Bắt buộc, không phải cho gọn: bản thường dựng
+      // `AudioPlayer(playerId: 'capture_tone')` — một id CỐ ĐỊNH — và
+      // `beep()`/`dispose()` đều `await` xuống plugin. Trong test không có
+      // plugin nào trả lời, nên từ bloc THỨ HAI trở đi mỗi test treo đủ 30
+      // giây rồi bị giết. Đó là toàn bộ nhóm 11 test đỏ của B-11, và 5,5 phút
+      // mỗi lượt CI chỉ để ngồi chờ.
+      captureTone: CaptureToneService.silent(),
       onClipSaved: (path, tracking, type, durationSeconds, samples, _) {
         saved.add(path);
         savedSamples.add(samples);
@@ -62,6 +69,7 @@ void main() {
     build: () => RecordingSessionBloc(
       camera: _FakeCamera(cameras: const []),
       scanner: _FakeScanner(),
+      captureTone: CaptureToneService.silent(),
       onClipSaved: (_, _, _, _, _, _) {},
     ),
     act: (bloc) => bloc.add(const RecordingInitRequested()),
@@ -238,7 +246,6 @@ void main() {
         },
       );
     },
-    skip: 'recording never starts in widget/bloc tests — pre-existing bug',
   );
 
   blocTest<RecordingSessionBloc, RecordingSessionState>(
@@ -246,6 +253,7 @@ void main() {
     build: () => RecordingSessionBloc(
       camera: _FakeCamera()..failStartWithScan = true,
       scanner: _FakeScanner(),
+      captureTone: CaptureToneService.silent(),
       onClipSaved: (_, _, _, _, _, _) {},
     ),
     act: initThen((b) => b.add(const RecordingManualCodeSubmitted('A'))),
@@ -296,8 +304,12 @@ void main() {
       expect(camera.stopCount, 1);
       expect(saved, hasLength(1));
       expect(voice.spoken.where((s) => s == 'Đã dừng quay'), hasLength(1));
+      // Trần 3 GIÂY nên `_maxRecording.inMinutes` bằng 0, và bloc cố ý đọc câu
+      // ngắn thay vì "Sắp chạm trần 0 phút". Khẳng định cũ tìm chuỗi dài, nên
+      // nó sai với chính trần mà test này chọn — và chưa bao giờ chạy tới đây
+      // để lộ ra, vì test treo ở chỗ khác suốt (xem `captureTone` ở trên).
       expect(
-        voice.spoken.where((s) => s.contains('Sắp chạm trần')),
+        voice.spoken.where((s) => s == 'Video sắp tự chốt'),
         hasLength(1),
       );
     },

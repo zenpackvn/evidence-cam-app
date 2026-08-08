@@ -201,15 +201,24 @@ jobs:
       # Bốn package dưới `packages/features` CHƯA BAO GIỜ chạy ở CI: vòng lặp cũ
       # duyệt `packages/*` nên chỉ thấy một tầng, mà `packages/features` là thư
       # mục CHỨA package chứ tự nó không có `test/` — nó rơi vào nhánh bỏ qua và
-      # kéo theo cả bốn con. Đó là 145 test của chính lớp nghiệp vụ tính năng
+      # kéo theo cả bốn con. Đó là 164 test của chính lớp nghiệp vụ tính năng
       # (quay video, ca làm, thành viên, vận đơn), và 26 trong số đó đang đỏ mà
       # không ai biết.
       #
       # `continue-on-error` là TẠM THỜI, và cố ý: bật chặn ngay thì mọi PR đỏ vì
       # nợ có sẵn, còn đánh dấu `skip` thì lại giấu chúng đi lần nữa. Cách này
-      # cho toàn bộ 145 test chạy và hiện kết quả trong log, trong lúc 26 lỗi kia
-      # được xử lý dần. Bỏ dòng đó đi ngay khi con số về 0 — mỗi lần sửa xong
-      # một nhóm thì hạ con số trong chú thích này xuống.
+      # cho toàn bộ 164 test chạy và hiện kết quả trong log, trong lúc số lỗi
+      # kia được xử lý dần. Bỏ dòng đó đi ngay khi con số về 0.
+      #
+      # CÒN 15 (2026-08-08). Đã xong nhóm `recording_session_bloc`: 11 test đỏ
+      # cộng 2 test bị đánh `skip`, tất cả cùng MỘT gốc — `CaptureToneService`
+      # dựng `AudioPlayer` với id cố định và `await` xuống plugin, nên từ bloc
+      # thứ hai trở đi mỗi test treo đủ 30 giây. Nhóm đó nay 18/18 xanh trong 5
+      # giây, và bước này bớt được 5,5 phút mỗi lượt CI.
+      #
+      # Còn lại: ec_flow3 (5, assertion cũ) và ec_upload_queue (3, hàng đợi
+      # không chạy trong test) ở `capture`, cùng 7 ở `account` (tràn bố cục —
+      # cách đúng là nạp Inter như test golden, không phải nới khung).
       - name: Run feature-package tests (nợ đã biết, chưa chặn merge)
         continue-on-error: true
         run: |
