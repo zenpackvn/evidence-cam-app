@@ -403,7 +403,8 @@
     }
   },
   "sealWorking": "Stamping the timestamp…",
-  "sealWorkingHint": "The stored copy has no timestamp burned in yet, so playback and download wait for it. Usually a few seconds.",
+  "sealWorkingHint": "The stored copy has no timestamp burned in yet, so the share link and download wait for it. Usually a few seconds.",
+  "playLocalCopyNote": "Temporary copy on this device — no timestamp on the frames yet",
   "sealNone": "Recorded before sealing existed",
   "sealFailed": "Sealing failed — the video still plays",
   "sealMismatch": "Fingerprint mismatch — re-record this clip",

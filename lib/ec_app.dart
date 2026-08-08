@@ -4284,6 +4284,7 @@ class _OrderRouteState extends State<_OrderRoute> {
         data.detail.evidence,
         data.videoTypes,
         data.memberNames,
+        data.previews,
       ).expand((d) => d.videos).where((v) => v.id == id).firstOrNull;
       if (fresh != null) {
         _openDetail.value = _videoDetail(
@@ -4359,10 +4360,23 @@ class _OrderRouteState extends State<_OrderRoute> {
     } on Object {
       // Keep whatever we have — evidence still renders, just without names.
     }
+    // Bản tạm còn trên máy, dùng cho những clip máy chủ chưa đóng dấu xong.
+    //
+    // Clip nào máy chủ đã phát được thì bản tạm hết việc — xoá ngay tại đây
+    // thay vì đợi lượt quét theo tuổi, để một ca đóng hàng vài trăm clip không
+    // tích lại vài GB trên máy.
+    final previews = await ecPreviews();
+    for (final item in detail.evidence) {
+      if (previews.containsKey(item.id) && !item.isSealing) {
+        previews.remove(item.id);
+        unawaited(ecDropPreview(item.id));
+      }
+    }
     final data = _OrderDetailData(
       detail: detail,
       videoTypes: types,
       memberNames: memberNames,
+      previews: previews,
     );
     _afterLoad(data);
     return data;
@@ -4428,6 +4442,7 @@ class _OrderRouteState extends State<_OrderRoute> {
             data.detail.evidence,
             data.videoTypes,
             data.memberNames,
+            data.previews,
           ),
           data.detail.order.tracking,
           widget.queue,
@@ -4478,6 +4493,7 @@ class _OrderDetailData {
     required this.detail,
     required this.videoTypes,
     this.memberNames = const {},
+    this.previews = const {},
   });
 
   final OrderDetailDto detail;
@@ -4486,6 +4502,9 @@ class _OrderDetailData {
   /// Account uid -> display name (name, else email), for resolving
   /// [EvidenceDto.createdByUid] to something readable.
   final Map<String, String> memberNames;
+
+  /// `evidence_id` -> đường dẫn bản tạm còn trên máy. Xem `ec_preview_store`.
+  final Map<String, String> previews;
 }
 
 /// Corrects the orders list's video/error counts against reality.
@@ -4516,10 +4535,14 @@ class _VideoPlayerRoute extends StatefulWidget {
     required this.url,
     required this.service,
     this.onBack,
+    this.isLocalFile = false,
   });
 
   final String title;
   final String url;
+
+  /// Xem [_VideoPlayerRouteExtra.isLocalFile].
+  final bool isLocalFile;
   final VideoPlayerService service;
   final VoidCallback? onBack;
 
@@ -4528,9 +4551,9 @@ class _VideoPlayerRoute extends StatefulWidget {
 }
 
 class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
-  late final AppVideoPlayerController _controller = widget.service.network(
-    Uri.parse(widget.url),
-  );
+  late final AppVideoPlayerController _controller = widget.isLocalFile
+      ? widget.service.file(File(widget.url))
+      : widget.service.network(Uri.parse(widget.url));
   late final Future<void> _ready = _initialize();
 
   // While the user drags the scrubber, show the drag target instead of the
@@ -4808,10 +4831,17 @@ class _VideoPlayerRouteExtra {
     required this.title,
     required this.url,
     required this.videoPlayerService,
+    this.isLocalFile = false,
   });
 
   final String title;
+
+  /// URL của máy chủ, hoặc đường dẫn tệp trên máy khi [isLocalFile].
   final String url;
+
+  /// Phát bản tạm còn trên máy thay vì tải từ máy chủ. Xem
+  /// [EcVideoDetail.localPath] — bản này chưa có dấu giờ trên hình.
+  final bool isLocalFile;
   final VideoPlayerService videoPlayerService;
 }
 
@@ -4873,6 +4903,7 @@ List<EcTimelineDay> _timelineDays(
   List<EvidenceDto> evidence,
   List<VideoTypeDto> videoTypes,
   Map<String, String> memberNames,
+  Map<String, String> previews,
 ) {
   final typeNames = {for (final t in videoTypes) t.id: t.name};
   final groups = <String, List<EcTimelineVideo>>{};
@@ -4943,6 +4974,10 @@ List<EcTimelineDay> _timelineDays(
             uploadStatus: _uploadStatusLabel(l10n, item.uploadStatus),
             // The R2 object is gone once expired — nothing left to play/download.
             mediaUrl: item.uploadStatus == 'expired' ? null : item.url,
+            // Chỉ gắn khi máy chủ CHƯA phát được. Có link thật rồi mà vẫn trỏ
+            // về bản tạm là cố tình phát bản không dấu trong khi bản có dấu đã
+            // nằm sẵn ở kho.
+            localPath: item.url == null ? previews[item.id] : null,
             durationSeconds: item.durationSeconds,
           ),
         );
@@ -5417,6 +5452,7 @@ EcVideoDetail _videoDetail(
   device: video.device ?? l10n.deviceUnknown,
   uploadStatus: video.uploadStatus ?? l10n.uploadStatusDone,
   mediaUrl: video.mediaUrl,
+  localPath: video.localPath,
   type: video.type,
   seal: video.seal,
   timeDrift: video.timeDrift,
@@ -6164,7 +6200,10 @@ GoRouter _buildRouter(
                     _copyText(pageContext, url, c.l10n.assetLinkTitle);
                   },
                   onPlay: () {
-                    final url = live?.mediaUrl;
+                    // Bản của máy chủ trước; chưa có thì rơi về bản tạm còn
+                    // trên máy. Thứ tự này quan trọng: có bản đã đóng dấu rồi
+                    // thì phát nó, không phát bản thô.
+                    final url = live?.mediaUrl ?? live?.localPath;
                     if (url == null || videoPlayer == null) {
                       _toast(pageContext, c.l10n.toastVideoNoPlayLink);
                       return;
@@ -6174,6 +6213,7 @@ GoRouter _buildRouter(
                       extra: _VideoPlayerRouteExtra(
                         title: live!.title,
                         url: url,
+                        isLocalFile: live.mediaUrl == null,
                         videoPlayerService: videoPlayer,
                       ),
                     );
@@ -6386,6 +6426,7 @@ GoRouter _buildRouter(
           return _VideoPlayerRoute(
             title: extra.title,
             url: extra.url,
+            isLocalFile: extra.isLocalFile,
             service: extra.videoPlayerService,
             onBack: () => c.pop(),
           );

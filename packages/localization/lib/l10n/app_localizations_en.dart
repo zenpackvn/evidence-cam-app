@@ -753,7 +753,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sealWorkingHint =>
-      'The stored copy has no timestamp burned in yet, so playback and download wait for it. Usually a few seconds.';
+      'The stored copy has no timestamp burned in yet, so the share link and download wait for it. Usually a few seconds.';
+
+  @override
+  String get playLocalCopyNote =>
+      'Temporary copy on this device — no timestamp on the frames yet';
 
   @override
   String get sealNone => 'Recorded before sealing existed';

@@ -24,7 +24,14 @@ library;
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path_provider/path_provider.dart';
+
+/// Ghi đè thư mục kho, chỉ dùng trong test — `path_provider` không có nền tảng
+/// nào trả lời trong unit test, nên không có cái này thì mọi hàm ở đây im lặng
+/// rơi vào nhánh nuốt lỗi và bài test xanh mà chẳng kiểm được gì.
+@visibleForTesting
+Directory? debugPreviewDir;
 
 /// Trần tuổi của một bản xem tạm.
 ///
@@ -36,8 +43,11 @@ import 'package:path_provider/path_provider.dart';
 const ecPreviewMaxAge = Duration(hours: 6);
 
 Future<Directory> _previewDir() async {
-  final docs = await getApplicationDocumentsDirectory();
-  final dir = Directory('${docs.path}/ec_preview');
+  final dir =
+      debugPreviewDir ??
+      Directory(
+        '${(await getApplicationDocumentsDirectory()).path}/ec_preview',
+      );
   if (!dir.existsSync()) await dir.create(recursive: true);
   return dir;
 }

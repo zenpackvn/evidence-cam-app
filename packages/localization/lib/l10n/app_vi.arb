@@ -290,7 +290,8 @@
     }
   },
   "sealWorking": "Đang đóng dấu thời gian…",
-  "sealWorkingHint": "Bản đang lưu chưa có dấu thời gian, nên tạm khoá phát và tải để bạn không cầm nhầm file chưa xong. Thường mất vài giây.",
+  "sealWorkingHint": "Bản trên máy chủ chưa có dấu thời gian, nên link chia sẻ và tải về đợi thêm chút. Thường mất vài giây.",
+  "playLocalCopyNote": "Bản tạm trên máy — chưa có dấu giờ trên hình",
   "sealNone": "Quay trước khi có niêm phong",
   "sealFailed": "Niêm phong lỗi — video vẫn xem được",
   "sealMismatch": "Vân tay không khớp — hãy quay lại clip này",

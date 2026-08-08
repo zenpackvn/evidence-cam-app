@@ -51,6 +51,7 @@ class EcTimelineVideo {
     this.device,
     this.uploadStatus,
     this.mediaUrl,
+    this.localPath,
     this.thumbUrl,
     this.type = EcEvidenceType.video,
     this.statusText,
@@ -86,6 +87,9 @@ class EcTimelineVideo {
   final String? device;
   final String? uploadStatus;
   final String? mediaUrl;
+
+  /// Đường dẫn bản tạm còn trên máy. Xem [EcVideoDetail.localPath].
+  final String? localPath;
 
   /// Poster frame URL — a few dozen KB, shown in place of the leading icon so
   /// the row is recognisable without downloading any video. Null falls back to
@@ -563,15 +567,27 @@ class EcVideoDetailScreen extends StatelessWidget {
           children: [
             // Đang niêm phong thì API cố tình không trả link, vì bản đang nằm ở
             // kho là bản THÔ — chưa có dấu giờ, chưa có mã vận đơn trên hình.
-            // Bày nút phát/tải ra lúc này là mời người dùng cầm về đúng cái file
-            // đó. Nói thẳng còn hơn để họ bấm rồi ăn toast "không có link".
-            if (video.seal?.inProgress ?? false)
+            // Cầm về đúng cái file đó rồi gửi cho sàn là hỏng, nên Sao chép
+            // link và Tải về phải khoá.
+            //
+            // Nhưng XEM LẠI thì không cần bản đã đóng dấu. Máy này vẫn đang giữ
+            // nguyên những byte vừa quay, nên nếu còn bản tạm thì mở nút Phát
+            // ngay — người bán không phải đợi một giây nào cho việc họ thật sự
+            // muốn làm. Không còn bản tạm mới rơi về dòng giải thích.
+            if (video.seal?.inProgress ?? false) ...[
+              if (video.localPath != null)
+                _EcDetailActionRow(
+                  icon: LucideIcons.play,
+                  title: l10n.detailPlayVideo,
+                  subtitle: l10n.playLocalCopyNote,
+                  onTap: onPlay,
+                ),
               _EcDetailActionRow(
                 icon: LucideIcons.loader,
                 title: l10n.sealWorking,
                 subtitle: l10n.sealWorkingHint,
-              )
-            else ...[
+              ),
+            ] else ...[
               _EcDetailActionRow(
                 icon: LucideIcons.play,
                 title: l10n.detailPlayVideo,

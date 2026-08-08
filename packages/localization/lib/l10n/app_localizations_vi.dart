@@ -750,7 +750,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get sealWorkingHint =>
-      'Bản đang lưu chưa có dấu thời gian, nên tạm khoá phát và tải để bạn không cầm nhầm file chưa xong. Thường mất vài giây.';
+      'Bản trên máy chủ chưa có dấu thời gian, nên link chia sẻ và tải về đợi thêm chút. Thường mất vài giây.';
+
+  @override
+  String get playLocalCopyNote =>
+      'Bản tạm trên máy — chưa có dấu giờ trên hình';
 
   @override
   String get sealNone => 'Quay trước khi có niêm phong';

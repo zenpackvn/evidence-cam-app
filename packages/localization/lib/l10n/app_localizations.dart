@@ -1433,8 +1433,14 @@ abstract class AppLocalizations {
   /// No description provided for @sealWorkingHint.
   ///
   /// In en, this message translates to:
-  /// **'The stored copy has no timestamp burned in yet, so playback and download wait for it. Usually a few seconds.'**
+  /// **'The stored copy has no timestamp burned in yet, so the share link and download wait for it. Usually a few seconds.'**
   String get sealWorkingHint;
+
+  /// No description provided for @playLocalCopyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary copy on this device — no timestamp on the frames yet'**
+  String get playLocalCopyNote;
 
   /// No description provided for @sealNone.
   ///
