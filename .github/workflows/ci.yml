@@ -210,15 +210,23 @@ jobs:
       # cho toàn bộ 164 test chạy và hiện kết quả trong log, trong lúc số lỗi
       # kia được xử lý dần. Bỏ dòng đó đi ngay khi con số về 0.
       #
-      # CÒN 15 (2026-08-08). Đã xong nhóm `recording_session_bloc`: 11 test đỏ
+      # CÒN 13 (2026-08-08). Đã xong nhóm `recording_session_bloc`: 11 test đỏ
       # cộng 2 test bị đánh `skip`, tất cả cùng MỘT gốc — `CaptureToneService`
       # dựng `AudioPlayer` với id cố định và `await` xuống plugin, nên từ bloc
       # thứ hai trở đi mỗi test treo đủ 30 giây. Nhóm đó nay 18/18 xanh trong 5
       # giây, và bước này bớt được 5,5 phút mỗi lượt CI.
       #
-      # Còn lại: ec_flow3 (5, assertion cũ) và ec_upload_queue (3, hàng đợi
-      # không chạy trong test) ở `capture`, cùng 7 ở `account` (tràn bố cục —
-      # cách đúng là nạp Inter như test golden, không phải nới khung).
+      # ec_flow3: 5 → 3. Hai chỗ đúng là assertion cũ (chip zoom "1x" nay là cử
+      # chỉ chụm; vòng đếm ngược bỏ ở commit ac322915) — đã sửa. BA CHỖ CÒN LẠI
+      # BỊ XẾP NHẦM NHÓM: chúng không phải nhãn cũ mà là tràn bố cục, tức cùng
+      # nhóm với 7 test của `account`.
+      #
+      # Nhóm phông (3 + 7 = 10) đang KẸT ở một điều kiện chưa ai nêu: repo
+      # KHÔNG có tệp Inter nào và CI không đặt `EC_INTER_TTF`, nên "nạp Inter
+      # trong test" hiện là lệnh rỗng. Đo được: dưới phông thay thế của
+      # `flutter_test`, sheet nhập tay cần ~420px mới vừa, mà máy thật là 390px.
+      #
+      # Còn ec_upload_queue (3, hàng đợi không chạy trong test).
       - name: Run feature-package tests (nợ đã biết, chưa chặn merge)
         continue-on-error: true
         run: |

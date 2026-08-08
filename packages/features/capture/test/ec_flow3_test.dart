@@ -5,6 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
 
+/// Chữ của chrome lấy TỪ ĐIỂN, không ghim.
+///
+/// Ba khẳng định trong file này từng ghim chuỗi tiếng Việt và mục rữa khi nhãn
+/// đổi — `EcManualEntryScreen` là ví dụ: tiêu đề đổi từ "Nhập tay mã vận đơn"
+/// sang "Nhập mã vận đơn" và test đỏ, dù màn vẫn đúng. Đọc qua getter thì test
+/// bám nguồn sự thật, và vẫn đỏ thật nếu màn gọi nhầm khoá.
+late AppLocalizations vi;
+
 Future<void> _pump(WidgetTester tester, Widget screen) {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1.0;
@@ -29,6 +37,10 @@ void _expectCameraBottomTabsHidden() {
 }
 
 void main() {
+  setUpAll(() async {
+    vi = await AppLocalizations.delegate.load(const Locale('vi'));
+  });
+
   group('EcWaitBill2Screen', () {
     testWidgets('shows idle hint, upload chip and camera rail', (
       tester,
@@ -47,7 +59,10 @@ void main() {
       expect(find.text('Quét mã vận đơn'), findsOneWidget);
       expect(find.text('Đưa bill vào khung'), findsOneWidget);
       expect(find.text('Đóng hàng'), findsOneWidget);
-      expect(find.text('1x'), findsOneWidget);
+      // Không còn chip "1x": mức zoom nay đổi bằng cử chỉ CHỤM trên khung ngắm
+      // (`ec_record_route.dart`, onScaleUpdate), không phải một nhãn bấm được.
+      // Chức năng còn nguyên, chỉ nhãn của bản mock là mất.
+      expect(find.text('1x'), findsNothing);
       expect(find.text('720p'), findsOneWidget);
       expect(find.byIcon(LucideIcons.keyboard), findsOneWidget);
       // Idle — no stop button yet.
@@ -123,15 +138,18 @@ void main() {
     testWidgets('shows closed order A summary and new order B badge', (
       tester,
     ) async {
-      // queueCount lệch 3 có chủ ý: chip hàng đợi cũng hiện một con số, để mặc
-      // định thì `find.text('3')` không phân biệt được nó với vòng đếm ngược.
+      // queueCount lệch 3 có chủ ý — xưa là để phân biệt với vòng đếm ngược;
+      // nay vòng đó đã bỏ (commit ac322915, đợt QA 01/08), nên con số duy nhất
+      // trên màn là chip hàng đợi. Giữ 7 để khẳng định dưới nói được điều đó.
       await _pump(tester, const EcCutoverBScreen(queueCount: 7));
       // Khung F3-04: mã vừa chốt ở pill trên, xác nhận đã lưu, vòng đếm ngược,
       // rồi thẻ đơn kế tiếp. Cả bốn đều là thông tin, không phải trang trí —
       // thiếu cái nào là người quay mất một câu trả lời.
       expect(find.text('SPXVN024567890'), findsOneWidget);
       expect(find.text('Đã lưu video'), findsOneWidget);
-      expect(find.text('3'), findsOneWidget);
+      // Vòng đếm ngược đã bỏ khỏi màn này; chip hàng đợi là con số duy nhất.
+      expect(find.text('3'), findsNothing);
+      expect(find.text('7'), findsOneWidget);
       expect(find.text('Chuẩn bị ghi hình tiếp theo'), findsOneWidget);
       expect(find.text('Đơn tiếp theo'), findsOneWidget);
       expect(find.text('SPXVN098765432'), findsOneWidget);
@@ -268,13 +286,12 @@ void main() {
   group('EcManualEntryScreen', () {
     testWidgets('shows the manual entry sheet', (tester) async {
       await _pump(tester, const EcManualEntryScreen());
-      expect(find.text('Nhập tay mã vận đơn'), findsOneWidget);
-      expect(
-        find.text('Dùng khi bill mờ — không quá 10 giây'),
-        findsOneWidget,
-      );
-      expect(find.text('Hủy'), findsOneWidget);
-      expect(find.text('Bắt đầu quay'), findsOneWidget);
+      expect(find.text(vi.manualTrackingTitle), findsOneWidget);
+      expect(find.text(vi.commonCancel), findsOneWidget);
+      expect(find.text(vi.startRecording), findsOneWidget);
+      // Phụ đề "Dùng khi bill mờ — không quá 10 giây" đã bỏ khỏi cả màn lẫn từ
+      // điển; trước thay đổi này nó chỉ còn tồn tại trong chính dòng test cũ.
+      expect(find.textContaining('Dùng khi bill mờ'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
