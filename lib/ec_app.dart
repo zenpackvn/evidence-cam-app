@@ -3283,14 +3283,11 @@ Future<void> _showShopJoinQr(
     await _showInviteQr(context, invite.token);
   } on DioException catch (error) {
     if (!context.mounted) return;
-    // 400 ở đây là SHOP ĐÃ ĐỦ NGƯỜI theo gói của chủ shop, không phải "gọi
-    // sai": mã treo cũng chiếm một suất, nên bấm liên tiếp sẽ chạm trần.
-    _toast(
-      context,
-      error.response?.statusCode == 400
-          ? l10n.inviteQrNoRoom
-          : _dataErrorText(l10n, error),
-    );
+    // Đi qua `_inviteErrorText` thay vì đoán theo mã HTTP. 400 ở đây HÔM NAY
+    // chỉ có một nghĩa — shop đã đủ người theo gói của chủ shop, và mã QR đang
+    // treo cũng chiếm một suất — nhưng đoán theo status thì thêm một mã 400 mới
+    // ở máy chủ là câu chữ lặng lẽ sai. Đọc thẳng mã lỗi thì không.
+    _toast(context, _inviteErrorText(l10n, error));
   } on Object catch (error) {
     if (context.mounted) _toast(context, _dataErrorText(l10n, error));
   }
@@ -3697,6 +3694,10 @@ String _inviteErrorText(AppLocalizations l10n, Object error) =>
       'already_member' => l10n.errorInviteAlreadyMember,
       'already_owner' => l10n.errorInviteAlreadyOwner,
       'invalid_request' => l10n.errorInviteInvalidRequest,
+      // Trần người dùng của gói. Không có dòng này thì nó rơi xuống
+      // `_dataErrorText` và ra một câu chung — đúng lúc người dùng cần biết
+      // rằng shop hết chỗ chứ không phải mạng hỏng.
+      'member_limit_reached' => l10n.errorInviteMemberLimit,
       _ => _dataErrorText(l10n, error),
     };
 

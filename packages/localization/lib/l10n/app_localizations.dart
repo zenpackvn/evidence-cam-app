@@ -2354,6 +2354,12 @@ abstract class AppLocalizations {
   /// **'They are already a member of this shop.'**
   String get errorInviteAlreadyMember;
 
+  /// No description provided for @errorInviteMemberLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'This plan\'s member limit is full. Pending invites count toward it — revoke one to free a slot.'**
+  String get errorInviteMemberLimit;
+
   /// No description provided for @errorInviteAlreadyOwner.
   ///
   /// In en, this message translates to:
@@ -2931,12 +2937,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'(no account yet → send an invite)'**
   String get inviteMemberHint;
-
-  /// No description provided for @inviteQrNoRoom.
-  ///
-  /// In en, this message translates to:
-  /// **'This shop is full on its current plan. Upgrade, or remove a member, then try again.'**
-  String get inviteQrNoRoom;
 
   /// Video type dialogs: videoTypeIcon.
   ///

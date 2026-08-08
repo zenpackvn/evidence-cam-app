@@ -1265,6 +1265,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get errorInviteAlreadyMember => 'Người này đã là thành viên của shop.';
 
   @override
+  String get errorInviteMemberLimit =>
+      'Đã đủ số người của gói hiện tại. Lời mời đang chờ cũng tính — thu hồi một lời mời để có chỗ.';
+
+  @override
   String get errorInviteAlreadyOwner => 'Đây là chủ shop, không cần mời.';
 
   @override
@@ -1607,10 +1611,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get inviteMemberHint => '(chưa có tài khoản → gửi lời mời)';
-
-  @override
-  String get inviteQrNoRoom =>
-      'Cửa hàng đã đủ người theo gói hiện tại. Nâng gói hoặc gỡ bớt thành viên rồi thử lại.';
 
   @override
   String get videoTypeIcon => 'Biểu tượng';

@@ -468,6 +468,10 @@
   "emailInvalid": "Nhập đúng một địa chỉ email.",
   "errorInviteAccountNotFound": "Email này chưa có tài khoản ZenPack. Bảo họ đăng ký trước rồi mời lại.",
   "errorInviteAlreadyMember": "Người này đã là thành viên của shop.",
+  "errorInviteMemberLimit": "Đã đủ số người của gói hiện tại. Lời mời đang chờ cũng tính — thu hồi một lời mời để có chỗ.",
+  "@errorInviteMemberLimit": {
+    "description": "Trần người dùng mỗi shop lấy theo gói của CHỦ shop. Lời mời đang chờ CŨNG tính vào trần — không nói ra thì người dùng đếm đầu người thấy chưa đủ mà vẫn bị chặn. Không hứa nút nâng gói: đường mua đang ẩn ở cả hai client."
+  },
   "errorInviteAlreadyOwner": "Đây là chủ shop, không cần mời.",
   "errorInviteInvalidRequest": "Email không hợp lệ. Kiểm tra lại rồi gửi.",
   "addMemberSubmit": "Thêm",
@@ -843,7 +847,6 @@
   "@inviteMemberHint": {
     "description": "Shop detail: inviteMemberHint."
   },
-  "inviteQrNoRoom": "Cửa hàng đã đủ người theo gói hiện tại. Nâng gói hoặc gỡ bớt thành viên rồi thử lại.",
   "videoTypeIcon": "Biểu tượng",
   "@videoTypeIcon": {
     "description": "Video type dialogs: videoTypeIcon."

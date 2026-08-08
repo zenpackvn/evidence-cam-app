@@ -1271,6 +1271,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'They are already a member of this shop.';
 
   @override
+  String get errorInviteMemberLimit =>
+      'This plan\'s member limit is full. Pending invites count toward it — revoke one to free a slot.';
+
+  @override
   String get errorInviteAlreadyOwner =>
       'That is the shop owner — no invite needed.';
 
@@ -1615,10 +1619,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inviteMemberHint => '(no account yet → send an invite)';
-
-  @override
-  String get inviteQrNoRoom =>
-      'This shop is full on its current plan. Upgrade, or remove a member, then try again.';
 
   @override
   String get videoTypeIcon => 'Icon';

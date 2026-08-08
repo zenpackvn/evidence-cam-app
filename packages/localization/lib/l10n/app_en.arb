@@ -679,6 +679,7 @@
   "emailInvalid": "Enter one valid email address.",
   "errorInviteAccountNotFound": "This email has no ZenPack account yet. Ask them to sign up first, then invite again.",
   "errorInviteAlreadyMember": "They are already a member of this shop.",
+  "errorInviteMemberLimit": "This plan's member limit is full. Pending invites count toward it — revoke one to free a slot.",
   "errorInviteAlreadyOwner": "That is the shop owner — no invite needed.",
   "errorInviteInvalidRequest": "That email isn't valid. Check it and send again.",
   "addMemberSubmit": "Add",
@@ -1089,7 +1090,6 @@
   "@inviteMemberHint": {
     "description": "Shop detail: inviteMemberHint."
   },
-  "inviteQrNoRoom": "This shop is full on its current plan. Upgrade, or remove a member, then try again.",
   "videoTypeIcon": "Icon",
   "@videoTypeIcon": {
     "description": "Video type dialogs: videoTypeIcon."
