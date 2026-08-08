@@ -11,8 +11,8 @@ resolution: workspace
 dependencies:
   config: ^0.1.0
   crypto: ^3.0.6
-  dio: ^5.9.2
-  dio_cache_interceptor: ^4.0.6
+  dio: ^5.11.0
+  dio_cache_interceptor: ^4.0.7
   firebase_performance: ^0.11.4+1
   injectable: ^3.0.0
   retrofit: ^4.9.2
@@ -22,6 +22,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  build_runner: ^2.15.0
+  build_runner: ^2.15.1
   injectable_generator: ^3.0.2
   test_utils: ^0.1.0
