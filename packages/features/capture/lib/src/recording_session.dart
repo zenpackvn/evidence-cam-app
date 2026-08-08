@@ -13,7 +13,6 @@ library;
 // ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:app_platform/app_platform.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
@@ -24,7 +23,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'device_samples.dart';
 import 'ec_bill_scanner.dart';
 import 'ec_video_faststart.dart';
-import 'ec_video_stamp.dart';
 
 /// Content of the printed "kết thúc phiên" QR placed on the packing table.
 ///
@@ -338,7 +336,6 @@ class RecordingSessionBloc
     VoiceAnnouncerService? voiceAnnouncer,
     CaptureToneService? captureTone,
     EcVideoFaststartService? faststart,
-    EcVideoStampService? stamper,
     Future<bool> Function(String code)? verifyReturnCode,
     Future<double?> Function()? checkFreeDiskSpaceMb,
     String initialType = 'Đóng hàng',
@@ -353,7 +350,6 @@ class RecordingSessionBloc
        _tone = captureTone ?? CaptureToneService(),
        _ownsTone = captureTone == null,
        _faststart = faststart ?? EcVideoFaststartService(),
-       _stamper = stamper ?? EcVideoStampService(),
        _verifyReturnCode = verifyReturnCode,
        _checkFreeDiskSpaceMb = checkFreeDiskSpaceMb ?? getFreeDiskSpaceMb,
        _endQr = endQr,
@@ -417,14 +413,13 @@ class RecordingSessionBloc
   /// (app-lifetime, like the voice announcer) and is not ours to dispose.
   final bool _ownsTone;
   final EcVideoFaststartService _faststart;
-  final EcVideoStampService _stamper;
 
   /// Mốc bấm quay của clip đang mở.
   ///
-  /// Dùng làm gốc cho đồng hồ nung vào khung hình. Lấy `now - thời lượng` lúc
-  /// quay xong thì lệch một nhịp so với `capturedAt` backend ghi, và hai con
-  /// số chênh nhau trên cùng một bằng chứng là thứ không giải thích được với
-  /// người đi khiếu nại.
+  /// Đi cùng clip lên máy chủ và trở thành gốc của dấu giờ máy chủ nung lên
+  /// khung hình. Lấy `now - thời lượng` lúc quay xong thì lệch một nhịp so với
+  /// `capturedAt` backend ghi, và hai con số chênh nhau trên cùng một bằng
+  /// chứng là thứ không giải thích được với người đi khiếu nại.
   DateTime? _clipStartedAt;
   final Future<double?> Function() _checkFreeDiskSpaceMb;
   final Future<bool> Function(String code)? _verifyReturnCode;
@@ -997,17 +992,13 @@ class RecordingSessionBloc
   /// [_onClipSaved] — best-effort, since [EcVideoFaststartService.prepare]
   /// falls back to the original file on any failure.
   ///
-  /// Remux cho phát được ngay, rồi nung ngày / giờ / mã vận đơn vào khung hình.
-  ///
-  /// Nung ở đây nghĩa là BẢN ĐẨY LÊN CLOUD cũng mang dấu, không riêng bản tải
-  /// về qua app. Chủ đích, theo yêu cầu: người nhận link hồ sơ tải clip thẳng
-  /// từ cloud phải đọc được clip của đơn nào, quay lúc nào — đó đúng là người
-  /// cần thông tin đó nhất.
-  ///
-  /// Đánh đổi đã biết: nung là encode lại, nên clip lưu trữ không còn là chuỗi
-  /// byte gốc từ cảm biến như FR-07 mô tả, và mỗi clip tốn thêm một lượt encode
-  /// ngay sau khi quay. Fail-safe: nung hỏng thì `stamp` trả lại bản chưa nung,
-  /// clip vẫn lên cloud đủ.
+  /// Remux, KHÔNG nung chữ. Đóng dấu giờ + mã vận đơn lên khung hình là việc
+  /// của máy chủ, làm một lần lúc niêm phong (`render/server.mjs`): giờ ở đó đã
+  /// trừ lệch đồng hồ máy, còn giờ máy tự khai thì bên tranh chấp bác được.
+  /// App từng nung thêm một khối chữ ở góc trái — thành hai đồng hồ trên cùng
+  /// một khung hình, và mỗi clip tốn thêm một lượt encode lại ngay sau khi quay
+  /// (đúng thứ FR-07 không muốn). Người quay vẫn thấy giờ chạy lúc ghi hình,
+  /// nhưng đó là lớp preview trên màn, không đụng vào tệp.
   Future<void> _prepareAndSave(
     String path,
     String code,
@@ -1019,39 +1010,14 @@ class RecordingSessionBloc
         _clipStartedAt ??
         DateTime.now().subtract(Duration(seconds: durationSeconds));
     _clipStartedAt = null;
-    String two(int n) => n.toString().padLeft(2, '0');
-    final stamped = await _stamper.stamp(
-      streamable,
-      lines: [
-        '${two(startedAt.day)}/${two(startedAt.month)}/${startedAt.year}',
-        '${two(startedAt.hour)}:${two(startedAt.minute)}:'
-            '${two(startedAt.second)}',
-        if (code.isNotEmpty) code,
-      ],
-      clockStart: startedAt,
-      clockSeconds: durationSeconds,
-      // Bitrate encode lại đi theo đúng độ phân giải shop đã chọn. Thiếu tham
-      // số này thì hạ xuống 240p/480p không làm tệp nhẹ đi chút nào — đó đúng
-      // là cách nó hỏng trước 2026-08-08.
-      resolution: state.resolutionLabel,
-    );
-    if (stamped != streamable) await _deleteQuietly(streamable);
     _onClipSaved(
-      stamped,
+      streamable,
       code,
       typeLabel,
       durationSeconds,
       _samples,
       startedAt,
     );
-  }
-
-  Future<void> _deleteQuietly(String path) async {
-    try {
-      await File(path).delete();
-    } on Object {
-      // Đã biến mất, hoặc không phải của mình — không có gì để dọn.
-    }
   }
 
   void _onTicked(RecordingTicked event, Emitter<RecordingSessionState> emit) {

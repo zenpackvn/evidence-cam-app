@@ -4594,9 +4594,9 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                   onPressed: widget.onBack,
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                 ),
-                // Chỉ tên loại clip, KHÔNG kèm dòng ngày/giờ: giờ thật đã nung
-                // vào khung hình lúc quay (`_prepareAndSave`), còn dòng ở đây
-                // dựng lại từ `captured_at` nên lệch vài phút với dấu nung.
+                // Chỉ tên loại clip, KHÔNG kèm dòng ngày/giờ: giờ thật do máy
+                // chủ nung vào khung hình lúc niêm phong, còn dòng ở đây dựng
+                // lại từ `captured_at` nên lệch vài phút với dấu nung.
                 Expanded(
                   child: Text(
                     widget.title,
@@ -4659,14 +4659,13 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                               child: Stack(
                                 alignment: Alignment.center,
                                 children: [
-                                  // Không vẽ lại lớp ngày/giờ/mã vận đơn ở đây:
-                                  // clip đã được nung đúng ba dòng đó vào
-                                  // khung hình ngay sau khi quay
-                                  // (`_prepareAndSave`), lấy mốc BẤM QUAY thật.
-                                  // Lớp vẽ thêm chỉ dựng lại từ `captured_at`,
-                                  // nên với clip cũ nó chạy lệch vài phút so
-                                  // với dấu nung — hai đồng hồ trên cùng một
-                                  // khung là thứ đối phương chỉ vào đầu tiên.
+                                  // Không vẽ lớp ngày/giờ/mã vận đơn ở đây:
+                                  // đóng dấu là việc của máy chủ, làm một lần
+                                  // lúc niêm phong (`render/server.mjs`) với
+                                  // giờ đã trừ lệch đồng hồ máy. App vẽ thêm
+                                  // thì chỉ dựng lại từ `captured_at` — hai
+                                  // đồng hồ trên cùng một khung là thứ đối
+                                  // phương chỉ vào đầu tiên.
                                   VideoPlayer(raw),
                                   AnimatedOpacity(
                                     opacity: value.isPlaying ? 0 : 1,

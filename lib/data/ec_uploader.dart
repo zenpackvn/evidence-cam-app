@@ -415,7 +415,11 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     if (status == 'quota_hold' && !_ignoreQuotaHoldForTesting) {
       throw StateError('quota_exceeded');
     }
-    return presign.key;
+    // `evidenceId` chứ không phải khoá R2: đây là thứ duy nhất khớp được clip
+    // trên máy với dòng bằng chứng của máy chủ, và hàng đợi cần nó để đặt tên
+    // bản xem tạm (ec_preview_store.dart). Khoá R2 không xuất hiện ở bất kỳ
+    // API nào khác nên không ai đối chiếu được với nó.
+    return presign.evidenceId;
   }
 
   Future<String> _uploadMultipart(
@@ -529,7 +533,8 @@ class ApiEvidenceUploader implements EcEvidenceUploader {
     if (status == 'quota_hold' && !_ignoreQuotaHoldForTesting) {
       throw StateError('quota_exceeded');
     }
-    return created.key;
+    // Xem ghi chú ở nhánh upload một phần: trả `evidenceId`, không phải khoá R2.
+    return created.evidenceId;
   }
 
   /// Extracts a poster frame from [file] and PUTs it to [thumbUploadUrl].

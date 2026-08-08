@@ -34,8 +34,13 @@ class EcQuotaExceededException implements Exception {
 // ignore: one_member_abstracts
 abstract interface class EcEvidenceUploader {
   /// Uploads [file] for the order with tracking code [tracking] of the given
-  /// video [type]; returns a stored remote id/URL. Throws on any failure so the
-  /// queue can mark it errored.
+  /// video [type]; returns the server's **evidence id**. Throws on any failure
+  /// so the queue can mark it errored.
+  ///
+  /// Phải là `evidence_id` chứ không phải một khoá lưu trữ nào khác: hàng đợi
+  /// dùng nó để đặt tên bản xem tạm giữ lại trên máy (`ec_preview_store.dart`),
+  /// và đó là khoá duy nhất khớp được clip trên máy với dòng bằng chứng máy chủ
+  /// trả về.
   ///
   /// [shopId] and [capturedAt] are needed by the real backend flow (they scope
   /// the evidence to a shop/order); the legacy multipart uploader ignores them.

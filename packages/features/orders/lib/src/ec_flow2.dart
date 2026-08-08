@@ -137,6 +137,7 @@ class EcVideoDetail {
     required this.uploadStatus,
     this.fileSize,
     this.mediaUrl,
+    this.localPath,
     this.type = EcEvidenceType.video,
     this.capturedAtMs,
     this.tracking,
@@ -180,6 +181,14 @@ class EcVideoDetail {
   /// Public, authenticated-safe media URL exposed by the API for playback and
   /// sharing once upload is complete.
   final String? mediaUrl;
+
+  /// Bản clip còn nằm trên máy này, giữ lại trong đúng khoảng máy chủ còn đóng
+  /// dấu. Cho người bán xem lại NGAY thay vì ngồi nhìn "đang đóng dấu".
+  ///
+  /// Đây là bản THÔ — không có giờ nung lên hình. Chỉ được dùng cho nút Phát.
+  /// Sao chép link và Tải về phải đọc [mediaUrl]: một bản không dấu rò ra ngoài
+  /// là người bán gửi cho sàn thứ trông y hệt bằng chứng nhưng không phải.
+  final String? localPath;
 
   /// Evidence kind, driving the leading icon.
   final EcEvidenceType type;

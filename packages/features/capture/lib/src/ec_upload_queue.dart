@@ -22,6 +22,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'ec_evidence_store.dart';
 import 'ec_evidence_uploader.dart';
+import 'ec_preview_store.dart';
 import 'ec_video_faststart.dart' show evidenceFaststartPrefix;
 
 enum EcUploadState { waiting, uploading, done, error, quotaWait, paused }
@@ -217,6 +218,10 @@ class EcUploadQueue extends ChangeNotifier {
       // Strictly after the legacy import: `queue.json` lives in the evidence
       // dir, so sweeping first would delete the very file being migrated.
       await _sweepOrphans(skipEvidenceDir: lostEveryPath);
+      // Bản xem tạm quá hạn. Thư mục riêng nên không dính vào hai cái hãm của
+      // [_sweepOrphans] — ở đây không có bằng chứng nào để xoá nhầm, mọi tệp
+      // đều đã nằm an toàn trên máy chủ trước khi được đưa vào.
+      await ecSweepPreviews();
     } on Object {
       // No storage / corrupt data — run with an empty queue.
     }
@@ -262,11 +267,10 @@ class EcUploadQueue extends ChangeNotifier {
       filePath: stored,
       // Mốc BẤM QUAY, không phải giờ xếp hàng.
       //
-      // Xếp hàng xảy ra sau khi đã quay xong, remux xong và nung chữ xong —
-      // với clip 2 phút trên máy tầm trung là lệch 3–5 phút. Máy chủ lấy mốc
-      // này làm đồng hồ chạy trên trang hồ sơ, nên nó đá nhau với chính chữ
-      // app đã nung lên cùng khung hình đó. Hai đồng hồ lệch nhau trên một
-      // khung là thứ đối phương chỉ vào đầu tiên khi tranh chấp.
+      // Xếp hàng xảy ra sau khi đã quay xong và remux xong — với clip 2 phút
+      // trên máy tầm trung là lệch vài phút. Máy chủ lấy đúng mốc này làm gốc
+      // cho dấu giờ nó nung lên khung hình, nên lấy nhầm giờ xếp hàng là cả
+      // clip mang một mốc muộn hơn thực tế.
       createdAt: capturedAt ?? DateTime.now(),
       shopId: shopId,
       videoTypeId: videoTypeId,
@@ -478,10 +482,19 @@ class EcUploadQueue extends ChangeNotifier {
           // "quay rồi mà không trừ".
           uploadsCompleted.value++;
           unawaited(_analytics?.trackUploadCompleted());
-          // Bytes đã nằm trên R2 và backend đã xác nhận, nên bản trên máy hết
-          // giá trị. Một ca đóng hàng sinh hàng trăm clip; giữ lại là lấp đầy
-          // bộ nhớ máy rồi chính việc quay bị chặn vì hết chỗ (FR-09).
-          unawaited(_deleteLocalFile(absolutePathOf(task.filePath)));
+          // KHÔNG xoá ngay nữa: máy chủ giấu link phát suốt lúc còn đóng dấu,
+          // nên đúng khoảnh khắc này là lúc bản trên máy có giá trị NHẤT — nó
+          // là thứ duy nhất người bán xem lại được. Dời sang kho bản xem tạm,
+          // ở đó có trần tuổi và bị dọn ngay khi máy chủ phát được.
+          //
+          // Vẫn giữ nguyên tinh thần cũ (FR-09: hết chỗ là chặn cả việc quay) —
+          // chỉ đổi từ "xoá ngay" thành "xoá khi không cần nữa".
+          //
+          // PHẢI `await`: ngay dưới đây, nhánh `succeeded` gọi
+          // `_deleteLocalCopyQuietly` trên đúng đường dẫn này. Thả nổi lượt dời
+          // là mở ra cửa sổ mà lượt xoá chạy trước lượt dời — và thứ bị xoá là
+          // bản duy nhất người bán xem lại được.
+          await ecKeepPreview(url, absolutePathOf(task.filePath));
         } on Object catch (error, stack) {
           // Non-fatal: the task stays queued and retries, but the *reason*
           // must reach Crashlytics — this is the only path a real-world
@@ -528,6 +541,8 @@ class EcUploadQueue extends ChangeNotifier {
           // of leaving a permanent "done" entry here.
           _tasks.remove(task);
           await _store.remove(task.id);
+          // Lưới đỡ: tệp đã được dời sang kho bản xem tạm ở trên nên đây thường
+          // là no-op. Chỉ ăn thua khi lượt dời hỏng và tệp còn nằm lại.
           unawaited(_deleteLocalCopyQuietly(absolutePathOf(task.filePath)));
           // Một lượt upload lọt nghĩa là hạn mức VỪA chứng minh còn chỗ (chủ
           // shop mua thêm lượt, hoặc sang tháng). Thả những bản đang đỗ vào
@@ -673,21 +688,6 @@ class EcUploadQueue extends ChangeNotifier {
     final dot = path.lastIndexOf('.');
     final slash = path.lastIndexOf('/');
     return dot > slash ? path.substring(dot) : '.mp4';
-  }
-}
-
-/// Xoá bản clip trên máy sau khi backend đã xác nhận lưu xong.
-///
-/// Best-effort: file đã bị dọn sẵn, đường dẫn không còn hợp lệ, hay quyền ghi
-/// bị từ chối đều không phải chuyện đáng làm hỏng một upload vốn đã thành
-/// công — hệ điều hành sẽ dọn thư mục tạm sau. Chỉ chạy khi `state` đã là
-/// `done`, nên không có đường nào mất clip chưa đẩy lên.
-Future<void> _deleteLocalFile(String path) async {
-  try {
-    final file = File(path);
-    if (file.existsSync()) await file.delete();
-  } on Object {
-    // Xem chú thích trên.
   }
 }
 
