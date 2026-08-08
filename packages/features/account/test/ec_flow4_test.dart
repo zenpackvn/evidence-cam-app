@@ -31,7 +31,14 @@ Future<void> _pump(WidgetTester tester, Widget screen) {
   );
 }
 
+/// Chữ của chrome lấy TỪ ĐIỂN, không ghim — xem lý do ở `ec_flow3_test.dart`.
+late AppLocalizations vi;
+
 void main() {
+  setUpAll(() async {
+    vi = await AppLocalizations.delegate.load(const Locale('vi'));
+  });
+
   group('EcAccountTabScreen', () {
     testWidgets('shows profile and both setting groups', (tester) async {
       await _pump(tester, const EcAccountTabScreen());
@@ -110,11 +117,14 @@ void main() {
     ) async {
       await _pump(tester, const EcLanguageScreen());
       expect(find.text('Ngôn ngữ'), findsOneWidget);
-      // Each row is titled in its own language and subtitled in the current
-      // one, so under `vi` the Vietnamese row reads "Tiếng Việt" twice.
-      expect(find.text('Tiếng Việt'), findsNWidgets(2));
+      // Mỗi hàng có tên NGÔN NGỮ ĐÓ tự gọi mình, và phụ đề là tên nó trong
+      // ngôn ngữ KIA: "Tiếng Việt / Vietnamese" và "English / Tiếng Anh". Bản
+      // trước hiểu là phụ đề dịch sang ngôn ngữ ĐANG dùng, nên chờ "Tiếng Việt"
+      // hai lần — dưới `vi` thì nó chỉ xuất hiện một.
+      expect(find.text(vi.languageNameVietnamese), findsOneWidget);
+      expect(find.text('Vietnamese'), findsOneWidget);
       expect(find.text('English'), findsOneWidget);
-      expect(find.text('Tiếng Anh'), findsOneWidget);
+      expect(find.text(vi.languageNameEnglish), findsOneWidget);
       expect(find.byIcon(LucideIcons.check), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -282,10 +292,9 @@ void main() {
       expect(find.text('Mật khẩu mới'), findsOneWidget);
       expect(find.text('Nhập lại mật khẩu mới'), findsOneWidget);
       expect(find.text('Lưu mật khẩu'), findsOneWidget);
-      expect(
-        find.text('(Đổi xong sẽ đăng xuất khỏi các thiết bị khác)'),
-        findsOneWidget,
-      );
+      // Câu này đã bỏ CẶP NGOẶC ĐƠN. Lấy từ từ điển thì lần sau sửa chữ không
+      // làm đỏ test nữa, mà vẫn đỏ thật nếu màn gọi nhầm khoá.
+      expect(find.text(vi.passwordChangeLogoutNote), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

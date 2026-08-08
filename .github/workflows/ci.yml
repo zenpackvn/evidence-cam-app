@@ -201,39 +201,29 @@ jobs:
       # Bốn package dưới `packages/features` CHƯA BAO GIỜ chạy ở CI: vòng lặp cũ
       # duyệt `packages/*` nên chỉ thấy một tầng, mà `packages/features` là thư
       # mục CHỨA package chứ tự nó không có `test/` — nó rơi vào nhánh bỏ qua và
-      # kéo theo cả bốn con. Đó là 164 test của chính lớp nghiệp vụ tính năng
-      # (quay video, ca làm, thành viên, vận đơn), và 26 trong số đó đang đỏ mà
-      # không ai biết.
+      # kéo theo cả bốn con. Mở cổng ra thì lộ 26 test đỏ mà không ai biết.
       #
-      # `continue-on-error` là TẠM THỜI, và cố ý: bật chặn ngay thì mọi PR đỏ vì
-      # nợ có sẵn, còn đánh dấu `skip` thì lại giấu chúng đi lần nữa. Cách này
-      # cho toàn bộ 164 test chạy và hiện kết quả trong log, trong lúc số lỗi
-      # kia được xử lý dần. Bỏ dòng đó đi ngay khi con số về 0.
+      # NỢ ĐÃ TRẢ HẾT (2026-08-08): 165 test, 0 đỏ. `continue-on-error` bỏ đi —
+      # bước này CHẶN merge như mọi bước khác.
       #
-      # CÒN 10 (2026-08-08). Đã xong nhóm `recording_session_bloc`: 11 test đỏ
-      # cộng 2 test bị đánh `skip`, tất cả cùng MỘT gốc — `CaptureToneService`
-      # dựng `AudioPlayer` với id cố định và `await` xuống plugin, nên từ bloc
-      # thứ hai trở đi mỗi test treo đủ 30 giây. Nhóm đó nay 18/18 xanh trong 5
-      # giây, và bước này bớt được 5,5 phút mỗi lượt CI.
+      # Không một lỗi nào trong 26 lỗi đó là "test hỏng", dù cả ba chẩn đoán ban
+      # đầu đều đoán vậy:
       #
-      # ec_flow3: 5 → 3. Hai chỗ đúng là assertion cũ (chip zoom "1x" nay là cử
-      # chỉ chụm; vòng đếm ngược bỏ ở commit ac322915) — đã sửa. BA CHỖ CÒN LẠI
-      # BỊ XẾP NHẦM NHÓM: chúng không phải nhãn cũ mà là tràn bố cục, tức cùng
-      # nhóm với 7 test của `account`.
+      #   recording_session_bloc (11 + 2 skip) — `CaptureToneService` dựng
+      #     `AudioPlayer` với id CỐ ĐỊNH và `await` xuống plugin, nên từ bloc thứ
+      #     hai trở đi mỗi test treo đủ 30 giây. Một tài nguyên dùng chung bị rò,
+      #     không phải lỗi của test nào. Bước này bớt 5,5 phút mỗi lượt.
+      #   ec_upload_queue (3) — hợp đồng đổi có chủ đích: upload xong thì task
+      #     RỜI hàng đợi. Test vẫn chờ một mục `done` nằm lại.
+      #   ec_flow3 (5) + account (2) — nhãn UI đổi thật.
+      #   account (5) + ec_flow3 (3) — TRÀN BỐ CỤC THẬT, không phải sai số phông.
+      #     Dấu hiệu: tràn ĐÚNG BẰNG NHAU ở mọi bề rộng màn từ 390 tới 560. Tràn
+      #     do chữ thì phải co lại khi khung rộng ra. Hằng số nghĩa là hộp thoại
+      #     rộng cố định (`_DialogFrame`, 314px) và nhãn nút không co được.
       #
-      # Nhóm phông (3 + 7 = 10) đang KẸT ở một điều kiện chưa ai nêu: repo
-      # KHÔNG có tệp Inter nào và CI không đặt `EC_INTER_TTF`, nên "nạp Inter
-      # trong test" hiện là lệnh rỗng. Đo được: dưới phông thay thế của
-      # `flutter_test`, sheet nhập tay cần ~420px mới vừa, mà máy thật là 390px.
-      #
-      # ec_upload_queue: XONG. Cũng không phải harness — hợp đồng đã đổi có chủ
-      # đích: upload xong thì task RỜI hàng đợi (clip đã nằm trên dòng thời gian
-      # bằng chứng của vận đơn), còn ba test vẫn chờ một mục `done` nằm lại.
-      #
-      # Sau đợt này MỌI test đỏ còn lại đều thuộc đúng một nhóm: phông. Con số
-      # về 0 ngay khi nhóm đó được mở khoá.
-      - name: Run feature-package tests (nợ đã biết, chưa chặn merge)
-        continue-on-error: true
+      # Nên nếu bước này đỏ lại: hỏi MÃ đang làm gì trước, đừng sửa test cho vừa.
+
+      - name: Run feature-package tests
         run: |
           for package in $(tool/ci_packages_with_tests.sh | grep '^packages/features/'); do
             (

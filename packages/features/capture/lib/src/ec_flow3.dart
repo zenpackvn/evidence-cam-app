@@ -2223,12 +2223,20 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
                               main: MainAxisAlignment.center,
                               cross: CrossAxisAlignment.center,
                               children: [
-                                PenText(
-                                  l10n.commonCancel,
-                                  size: 16,
-                                  color: PenColors.ink,
-                                  weight: FontWeight.w600,
-                                  softWrap: false,
+                                // Cùng lý do như `_DialogButtons` ở feature
+                                // account: nhãn nút phải CO ĐƯỢC. Nút chia đôi
+                                // chiều ngang tấm sheet, nên một bản dịch dài
+                                // hơn hay cỡ chữ hệ thống phóng to là tràn.
+                                Flexible(
+                                  child: PenText(
+                                    l10n.commonCancel,
+                                    size: 16,
+                                    color: PenColors.ink,
+                                    weight: FontWeight.w600,
+                                    softWrap: false,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             ),
@@ -2246,12 +2254,16 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
                               main: MainAxisAlignment.center,
                               cross: CrossAxisAlignment.center,
                               children: [
-                                PenText(
-                                  l10n.startRecording,
-                                  size: 16,
-                                  color: PenColors.card,
-                                  weight: FontWeight.w700,
-                                  softWrap: false,
+                                Flexible(
+                                  child: PenText(
+                                    l10n.startRecording,
+                                    size: 16,
+                                    color: PenColors.card,
+                                    weight: FontWeight.w700,
+                                    softWrap: false,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             ),

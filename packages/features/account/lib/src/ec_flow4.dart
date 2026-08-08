@@ -1468,12 +1468,26 @@ class _DialogButtons extends StatelessWidget {
               main: MainAxisAlignment.center,
               cross: CrossAxisAlignment.center,
               children: [
-                PenText(
-                  cancelLabel,
-                  size: 16,
-                  color: PenColors.ink,
-                  weight: FontWeight.w600,
-                  softWrap: false,
+                // `Flexible` chứ không phải PenText trần. Hộp thoại rộng CỐ
+                // ĐỊNH 314 ([_DialogFrame]), trừ padding còn 274, hai nút chia
+                // đôi ⇒ đúng 134px mỗi nút, bất kể màn rộng bao nhiêu. Nhãn
+                // dài hơn 134 thì Row tràn — và tràn đúng bằng nhau ở mọi bề
+                // rộng máy, vì cái hộp không nở.
+                //
+                // Nhãn tiếng Việt hiện vừa với Inter, nhưng "Xóa vĩnh viễn"
+                // chỉ còn vài pixel dư. Một bản dịch dài hơn, hay người dùng
+                // phóng to cỡ chữ hệ thống, là tràn thật trên máy thật. Cho nó
+                // co được là sửa chỗ đó, không phải nới hộp.
+                Flexible(
+                  child: PenText(
+                    cancelLabel,
+                    size: 16,
+                    color: PenColors.ink,
+                    weight: FontWeight.w600,
+                    softWrap: false,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -1491,12 +1505,16 @@ class _DialogButtons extends StatelessWidget {
               main: MainAxisAlignment.center,
               cross: CrossAxisAlignment.center,
               children: [
-                PenText(
-                  confirmLabel,
-                  size: 16,
-                  color: PenColors.card,
-                  weight: FontWeight.w700,
-                  softWrap: false,
+                Flexible(
+                  child: PenText(
+                    confirmLabel,
+                    size: 16,
+                    color: PenColors.card,
+                    weight: FontWeight.w700,
+                    softWrap: false,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
