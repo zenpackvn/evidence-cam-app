@@ -210,7 +210,7 @@ jobs:
       # cho toàn bộ 164 test chạy và hiện kết quả trong log, trong lúc số lỗi
       # kia được xử lý dần. Bỏ dòng đó đi ngay khi con số về 0.
       #
-      # CÒN 13 (2026-08-08). Đã xong nhóm `recording_session_bloc`: 11 test đỏ
+      # CÒN 10 (2026-08-08). Đã xong nhóm `recording_session_bloc`: 11 test đỏ
       # cộng 2 test bị đánh `skip`, tất cả cùng MỘT gốc — `CaptureToneService`
       # dựng `AudioPlayer` với id cố định và `await` xuống plugin, nên từ bloc
       # thứ hai trở đi mỗi test treo đủ 30 giây. Nhóm đó nay 18/18 xanh trong 5
@@ -226,7 +226,12 @@ jobs:
       # trong test" hiện là lệnh rỗng. Đo được: dưới phông thay thế của
       # `flutter_test`, sheet nhập tay cần ~420px mới vừa, mà máy thật là 390px.
       #
-      # Còn ec_upload_queue (3, hàng đợi không chạy trong test).
+      # ec_upload_queue: XONG. Cũng không phải harness — hợp đồng đã đổi có chủ
+      # đích: upload xong thì task RỜI hàng đợi (clip đã nằm trên dòng thời gian
+      # bằng chứng của vận đơn), còn ba test vẫn chờ một mục `done` nằm lại.
+      #
+      # Sau đợt này MỌI test đỏ còn lại đều thuộc đúng một nhóm: phông. Con số
+      # về 0 ngay khi nhóm đó được mở khoá.
       - name: Run feature-package tests (nợ đã biết, chưa chặn merge)
         continue-on-error: true
         run: |

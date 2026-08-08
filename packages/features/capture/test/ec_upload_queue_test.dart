@@ -59,7 +59,15 @@ void main() {
 
   tearDown(() => dir.deleteSync(recursive: true));
 
-  test('enqueue uploads the clip and marks it done', () async {
+  // Hợp đồng của hàng đợi ĐÃ ĐỔI: upload xong thì task RỜI hàng đợi, không nằm
+  // lại dưới dạng `done`. Lý do ghi ngay trong `_process`: clip lúc đó đã nằm
+  // trên dòng thời gian bằng chứng của vận đơn, để lại một mục "xong" vĩnh viễn
+  // ở đây là kể cùng một việc hai lần.
+  //
+  // Ba test dưới đây từng khẳng định điều ngược lại và đỏ vì vậy — không phải
+  // vì hàng đợi "không chạy trong test" như chẩn đoán ban đầu. Nó chạy, chạy
+  // xong, rồi dọn chỗ.
+  test('upload xong thì clip RỜI hàng đợi', () async {
     final queue = EcUploadQueue(
       uploader: _FakeUploader(['https://cdn/x.mp4']),
       directory: dir,
@@ -73,11 +81,26 @@ void main() {
     // Let the async processor run to completion.
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(queue.tasks, hasLength(1));
+    expect(queue.tasks, isEmpty);
+  });
+
+  // Cách chép tệp phải kiểm trên một task CÒN Ở LẠI, nên dùng uploader hỏng.
+  // Kiểm nó ở đường thành công là không thể: task và bản sao đều bị dọn.
+  test('enqueue chép clip vào thư mục riêng, lưu TÊN TỆP TRẦN', () async {
+    final queue = EcUploadQueue(
+      uploader: _FakeUploader([Exception('offline')]),
+      directory: dir,
+    );
+
+    await queue.enqueue(
+      tracking: 'SPX1',
+      type: 'Đóng hàng',
+      filePath: clip.path,
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
     final task = queue.tasks.single;
     expect(task.tracking, 'SPX1');
-    expect(task.state, EcUploadState.done);
-    expect(task.remoteUrl, 'https://cdn/x.mp4');
     // The clip was copied into the queue's own directory (not the temp source).
     expect(task.filePath, isNot(clip.path));
     // `filePath` lưu tên tệp TRẦN, không phải đường dẫn tuyệt đối — xem
@@ -105,7 +128,7 @@ void main() {
     await queue.retry(queue.tasks.single.id);
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(queue.tasks.single.state, EcUploadState.done);
+    expect(queue.tasks, isEmpty);
   });
 
   test('quota failures wait for quota and retry can resume upload', () async {
@@ -130,7 +153,7 @@ void main() {
     await queue.retry(queue.tasks.single.id);
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(queue.tasks.single.state, EcUploadState.done);
+    expect(queue.tasks, isEmpty);
   });
 
   test('without an uploader clips persist and wait', () async {
