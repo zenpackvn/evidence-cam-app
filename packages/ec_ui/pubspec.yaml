@@ -26,6 +26,10 @@ dependencies:
   # `path` nodes in the design file are raw SVG geometry.
   flutter_svg: ^2.3.0
 
+  # Mã QR vẽ tại chỗ: link mời phải hiện thành mã quét được ngay trên màn của
+  # chủ shop, không đi qua máy chủ nào để sinh ảnh.
+  qr_flutter: ^4.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

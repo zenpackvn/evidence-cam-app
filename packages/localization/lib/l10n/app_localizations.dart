@@ -3707,7 +3707,7 @@ abstract class AppLocalizations {
   /// No description provided for @inviteSentDetail.
   ///
   /// In en, this message translates to:
-  /// **'The invite email is on its way. If it doesn\'t arrive, send this link instead — they open the app, tap \"I have an invite\" and paste it.'**
+  /// **'The invite email is on its way. They can open the app, tap \"I have an invite\" and scan this code to join right now — no need to wait for the email.'**
   String get inviteSentDetail;
 
   /// No description provided for @inviteCopyLink.
@@ -3721,6 +3721,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invite link copied'**
   String get inviteLinkCopied;
+
+  /// No description provided for @inviteQrRow.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code'**
+  String get inviteQrRow;
+
+  /// No description provided for @inviteScanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan invite code'**
+  String get inviteScanTitle;
+
+  /// No description provided for @inviteScanDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the shop owner to show the invite QR code, then scan it here.'**
+  String get inviteScanDetail;
+
+  /// No description provided for @inviteQrNotSupported.
+  ///
+  /// In en, this message translates to:
+  /// **'The server does not offer a shared QR code yet. Invite by email — the scannable QR appears right after inviting.'**
+  String get inviteQrNotSupported;
 }
 
 class _AppLocalizationsDelegate

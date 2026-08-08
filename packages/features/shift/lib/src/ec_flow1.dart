@@ -1896,6 +1896,7 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onBack,
     this.onMemberMore,
     this.onInviteMember,
+    this.onShopQr,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
@@ -1942,6 +1943,10 @@ class EcShopDetailScreen extends StatelessWidget {
   final ClipBudget clipBudget;
   final VoidCallback? onBack;
   final ValueChanged<EcShopMember>? onMemberMore;
+
+  /// Mở mã QR vào cửa hàng. `null` = không hiện nút (nhân viên, hoặc bên gọi
+  /// chưa nối).
+  final VoidCallback? onShopQr;
   final VoidCallback? onInviteMember;
 
   /// Trần riêng cho ảnh và cho video. Rỗng thì hàng vẫn hiện nhưng bấm không
@@ -2099,6 +2104,24 @@ class EcShopDetailScreen extends StatelessWidget {
                             ],
                           ),
                         ),
+                        // Mã QR là ĐƯỜNG MỜI THỨ HAI, không phải cách trình
+                        // bày khác của đường thứ nhất: mời qua email dành cho
+                        // người chưa có tài khoản, còn quét mã dành cho người
+                        // đã có — họ chỉ cần vào shop, không cần ai gõ đúng
+                        // địa chỉ hộp thư của họ. Nên nó đứng cùng hàng, ở
+                        // rìa phải, chứ không nằm sau bước nhập email.
+                        if (onShopQr != null)
+                          EcTap(
+                            onTap: onShopQr,
+                            child: const Padding(
+                              padding: EdgeInsets.only(left: 4),
+                              child: Icon(
+                                LucideIcons.qrCode,
+                                size: 24,
+                                color: PenColors.ink,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -2420,8 +2443,12 @@ class _MemberRow extends StatelessWidget {
     // lại tay không. Bỏ luôn cả vùng bấm lẫn mũi tên để hàng này trông đúng
     // bản chất: một dòng thông tin, không phải một mục bấm được.
     final isOwner = member.roleCode == 'owner';
+    // Cùng lý do khi [onTap] rỗng: nhân viên mở màn này chỉ thấy đúng dòng của
+    // chính mình, và không có thao tác nào trên nó. Mũi tên ở đó là lời hứa
+    // suông — bấm vào không đi đâu cả.
+    final tappable = !isOwner && onTap != null;
     return EcTap(
-      onTap: isOwner ? null : onTap,
+      onTap: tappable ? onTap : null,
       child: PenBox(
         width: double.infinity,
         axis: PenAxis.row,
@@ -2464,7 +2491,7 @@ class _MemberRow extends StatelessWidget {
               ),
             ],
           ),
-          if (!isOwner)
+          if (tappable)
             const Icon(
               LucideIcons.chevronRight,
               size: 18,

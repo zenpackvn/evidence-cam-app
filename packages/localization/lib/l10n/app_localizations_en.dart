@@ -2063,11 +2063,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inviteSentDetail =>
-      'The invite email is on its way. If it doesn\'t arrive, send this link instead — they open the app, tap \"I have an invite\" and paste it.';
+      'The invite email is on its way. They can open the app, tap \"I have an invite\" and scan this code to join right now — no need to wait for the email.';
 
   @override
   String get inviteCopyLink => 'Copy link';
 
   @override
   String get inviteLinkCopied => 'Invite link copied';
+
+  @override
+  String get inviteQrRow => 'QR code';
+
+  @override
+  String get inviteScanTitle => 'Scan invite code';
+
+  @override
+  String get inviteScanDetail =>
+      'Ask the shop owner to show the invite QR code, then scan it here.';
+
+  @override
+  String get inviteQrNotSupported =>
+      'The server does not offer a shared QR code yet. Invite by email — the scannable QR appears right after inviting.';
 }

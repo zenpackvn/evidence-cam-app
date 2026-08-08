@@ -265,6 +265,23 @@ class EcApi {
     return ShopInviteDto.fromJson(res.data!);
   }
 
+  /// Xin một MÃ VÀO CỬA HÀNG dùng chung, để hiện thành QR.
+  ///
+  /// Khác [sendShopInvite] ở chỗ không cần biết địa chỉ của ai: dành cho người
+  /// ĐÃ có tài khoản, chỉ cần vào shop. Token trả về nhận qua đúng
+  /// [acceptInvite], nên phía nhân viên không cần đường nào khác — và vì token
+  /// dùng một lần, cứ một người vào là mã tự đổi.
+  ///
+  /// HỢP ĐỒNG MONG ĐỢI (máy chủ chưa mở đường này tính đến 2026-08-08):
+  /// `POST /api/shops/:id/join-code` → `{"token": "..."}`, chỉ chủ shop gọi
+  /// được. Chưa có thì trả 404 và màn gọi nó nói thẳng là chưa bật.
+  Future<String> shopJoinCode(String shopId) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/shops/$shopId/join-code',
+    );
+    return res.data!['token'] as String;
+  }
+
   /// Nhận lời mời bằng token trong link email.
   ///
   /// Token CHÍNH LÀ bằng chứng sở hữu hộp thư, nên tài khoản đang đăng nhập

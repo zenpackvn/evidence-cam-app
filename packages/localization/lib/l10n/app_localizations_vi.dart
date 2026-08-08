@@ -2050,11 +2050,24 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get inviteSentDetail =>
-      'Email mời đã gửi. Nếu người kia không nhận được, gửi thẳng link này cho họ — mở app, bấm \"Tôi có lời mời\" rồi dán vào.';
+      'Email mời đã gửi. Người kia mở app, bấm \"Tôi có lời mời\" rồi quét mã này là vào shop ngay — không cần chờ email.';
 
   @override
   String get inviteCopyLink => 'Sao chép link';
 
   @override
   String get inviteLinkCopied => 'Đã sao chép link mời';
+
+  @override
+  String get inviteQrRow => 'Mã QR';
+
+  @override
+  String get inviteScanTitle => 'Quét mã mời';
+
+  @override
+  String get inviteScanDetail => 'Nhờ chủ shop mở mã QR mời rồi quét vào đây.';
+
+  @override
+  String get inviteQrNotSupported =>
+      'Máy chủ chưa bật mã QR dùng chung. Hãy mời qua email — mã QR để quét hiện ngay sau khi mời.';
 }

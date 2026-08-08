@@ -2744,6 +2744,7 @@ class _ShopDetailRoute extends StatefulWidget {
     this.onBack,
     this.onMemberMore,
     this.onInviteMember,
+    this.onShopQr,
     this.onEditType,
     this.onDeleteType,
     this.onAddType,
@@ -2766,6 +2767,9 @@ class _ShopDetailRoute extends StatefulWidget {
   final VoidCallback? onBack;
   final Future<void> Function(EcShopMember member)? onMemberMore;
   final Future<void> Function()? onInviteMember;
+
+  /// Mở mã QR vào cửa hàng. `null` với nhân viên.
+  final Future<void> Function()? onShopQr;
   final Future<void> Function(EcVideoType type)? onEditType;
   final Future<void> Function(EcVideoType type)? onDeleteType;
   final Future<void> Function()? onAddType;
@@ -2938,6 +2942,12 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
               : () => widget.onInviteMember!().then((_) {
                   if (mounted) _retry();
                 }),
+          // KHÔNG nạp lại sau khi đóng mã QR: người quét vào shop ở máy khác,
+          // và một lượt nạp ngay lúc đóng thì gần như luôn chạy trước khi họ
+          // kịp quét — nạp xong vẫn không thấy ai, chỉ tốn một lượt gọi.
+          onShopQr: locked || widget.onShopQr == null
+              ? null
+              : () => unawaited(widget.onShopQr!()),
           onEditType: locked || widget.onEditType == null
               ? null
               : (type) => widget.onEditType!(type).then((_) {
@@ -3233,7 +3243,7 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
       // xác nhận mới vào shop. Nhánh "đã thêm thành viên" ở đây là di tích của
       // thời tự-vào-shop, không có đường nào chạy tới nữa.
       assert(result.status == 'pending', 'lời mời mới phải là pending');
-      await _showInviteLink(context, result.inviteToken);
+      await _showInviteQr(context, result.inviteToken);
     } on Object catch (error) {
       if (mounted) _toast(context, _inviteErrorText(context.l10n, error));
     } finally {
@@ -3249,14 +3259,52 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
   );
 }
 
-/// Sau khi mời xong: đưa LINK MỜI cho chủ shop, chứ không chỉ báo "đã gửi".
+/// Mã QR vào cửa hàng — đường mời thứ hai, cho người ĐÃ có tài khoản.
+///
+/// Mời qua email tồn tại vì người được mời có thể chưa có tài khoản: cái duy
+/// nhất biết về họ là địa chỉ hộp thư. Nhưng khi họ đã có tài khoản rồi thì
+/// bắt chủ shop gõ đúng email của họ là một bước thừa — họ đứng ngay đó, quét
+/// một cái là xong.
+///
+/// Token dùng một lần, nên cứ một người vào là mã tự đổi; mở lại màn này là
+/// xin mã mới.
+Future<void> _showShopJoinQr(
+  BuildContext context,
+  EcRepository repo,
+  String shopId,
+) async {
+  final l10n = context.l10n;
+  try {
+    final token = await repo.shopJoinCode(shopId);
+    if (!context.mounted) return;
+    await _showInviteQr(context, token);
+  } on DioException catch (error) {
+    if (!context.mounted) return;
+    // 404 ở đây KHÔNG phải "không tìm thấy shop": đường này chưa được máy chủ
+    // mở. Nói thẳng thế, kèm đường đi thay thế, thay vì để người dùng đọc một
+    // câu lỗi chung rồi tưởng shop của mình hỏng.
+    _toast(
+      context,
+      error.response?.statusCode == 404
+          ? l10n.inviteQrNotSupported
+          : _dataErrorText(l10n, error),
+    );
+  } on Object catch (error) {
+    if (context.mounted) _toast(context, _dataErrorText(l10n, error));
+  }
+}
+
+/// Sau khi mời xong: chìa MÃ QR của lời mời ra, không chỉ báo "đã gửi".
 ///
 /// Link trong email là thứ duy nhất đưa người được mời vào shop, mà email thì
-/// hay không tới — vào thư rác, gõ nhầm địa chỉ, hoặc mời bằng số điện thoại
-/// nên chẳng có email nào cả. Trước đây app cầm sẵn token trong tay rồi vứt
-/// đi và toast "đã gửi lời mời", nên khi email không tới thì không ai — kể cả
-/// chủ shop — còn cách nào lấy lại được nó.
-Future<void> _showInviteLink(BuildContext context, String token) async {
+/// hay không tới — vào thư rác, gõ nhầm địa chỉ, hoặc đơn giản là chậm. Trước
+/// đây app cầm sẵn token trong tay rồi vứt đi và toast "đã gửi lời mời", nên
+/// khi email không tới thì không ai — kể cả chủ shop — còn cách nào lấy lại
+/// được nó.
+///
+/// Hiện thành QR chứ không chỉ chữ: hai người đang đứng cạnh nhau thì chìa
+/// màn hình ra cho quét là xong, không phải đọc từng ký tự token cho nhau.
+Future<void> _showInviteQr(BuildContext context, String token) async {
   final l10n = context.l10n;
   final link = 'https://zenpack.vn/invite/$token';
   await showCupertinoDialog<void>(
@@ -3264,17 +3312,17 @@ Future<void> _showInviteLink(BuildContext context, String token) async {
     builder: (dialogContext) => CupertinoAlertDialog(
       title: Text(l10n.inviteSentTitle),
       content: Padding(
-        padding: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.only(top: 10),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(l10n.inviteSentDetail, style: const TextStyle(fontSize: 13)),
-            const SizedBox(height: 12),
-            SelectableText(
-              link,
-              style: const TextStyle(fontSize: 12),
+            Text(
+              l10n.inviteSentDetail,
+              style: const TextStyle(fontSize: 13),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 14),
+            PenQrCard(data: link, size: 190),
           ],
         ),
       ),
@@ -3296,7 +3344,7 @@ Future<void> _showInviteLink(BuildContext context, String token) async {
   );
 }
 
-/// Nhận một lời mời bằng link trong email.
+/// Nhận một lời mời bằng cách QUÉT mã QR của nó.
 ///
 /// Máy chủ KHÔNG tự ghép lời mời treo với tài khoản lúc đăng nhập — token
 /// trong link mới là bằng chứng sở hữu hộp thư (`POST /api/invites/:token/
@@ -3304,46 +3352,13 @@ Future<void> _showInviteLink(BuildContext context, String token) async {
 /// sách rồi báo "chờ chút"; nạp bao nhiêu lần cũng vô ích vì chưa ai gọi
 /// accept cả, nên người được mời ngồi bấm mãi mà shop không bao giờ hiện.
 ///
+/// Quét thay vì dán: người được mời thường đứng ngay cạnh chủ shop, và cái
+/// họ có trong tay là màn hình của người kia chứ không phải một hộp thư.
+///
 /// Trả `true` khi danh sách shop cần nạp lại.
 Future<bool> _joinByInvite(BuildContext context, EcRepository repo) async {
   final l10n = context.l10n;
-  final controller = TextEditingController();
-  final raw = await showCupertinoDialog<String>(
-    context: context,
-    builder: (dialogContext) => CupertinoAlertDialog(
-      title: Text(l10n.inviteJoinTitle),
-      content: Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(l10n.inviteJoinDetail, style: const TextStyle(fontSize: 13)),
-            const SizedBox(height: 12),
-            CupertinoTextField(
-              controller: controller,
-              placeholder: l10n.inviteJoinHint,
-              autofocus: true,
-              autocorrect: false,
-              maxLines: 2,
-              keyboardType: TextInputType.url,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        CupertinoDialogAction(
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          child: Text(l10n.commonCancel),
-        ),
-        CupertinoDialogAction(
-          onPressed: () =>
-              Navigator.of(dialogContext).pop(controller.text.trim()),
-          child: Text(l10n.inviteJoinAction),
-        ),
-      ],
-    ),
-  );
-  controller.dispose();
+  final raw = await context.push<String>('/scan');
   if (raw == null || raw.isEmpty || !context.mounted) return false;
   final token = ecInviteTokenOf(raw);
   if (token == null) {
@@ -3378,11 +3393,11 @@ Future<bool> _joinByInvite(BuildContext context, EcRepository repo) async {
   }
 }
 
-/// Tách token khỏi thứ người dùng dán vào.
+/// Tách token khỏi thứ quét được (hoặc dán vào).
 ///
 /// Chấp cả link thật (`https://zenpack.vn/invite/<token>`), link đã qua
-/// redirect (`.../app#/invite/<token>`), lẫn token dán trần — người ta sao
-/// chép từ email kiểu gì cũng có, và bắt họ dán cho "đúng" là bắt sai người.
+/// redirect (`.../app#/invite/<token>`), lẫn token trần — mã QR mang link
+/// đầy đủ, còn người sao chép tay từ email thì kiểu gì cũng có.
 String? ecInviteTokenOf(String raw) {
   final match = RegExp(r'invite/([A-Za-z0-9._~-]+)').firstMatch(raw);
   if (match != null) return match.group(1);
@@ -6388,6 +6403,9 @@ GoRouter _buildRouter(
             onInviteMember: readOnly
                 ? null
                 : () => c.push('/invite-member', extra: shop.id).then((_) {}),
+            onShopQr: readOnly
+                ? null
+                : () async => _showShopJoinQr(c, repo, shop.id),
             // Kho lưu trữ KHÔNG khoá theo `readOnly`: nhân viên phải xem
             // được kho đang ra sao — máy chủ mở `GET` cho mọi vai trò.
             onTapStorage: () => c

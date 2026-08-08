@@ -1141,7 +1141,11 @@
   "inviteTaken": "Lời mời này đã có người khác nhận",
   "inviteExpired": "Lời mời đã quá hạn. Nhờ chủ shop gửi lại.",
   "inviteSentTitle": "Đã gửi lời mời",
-  "inviteSentDetail": "Email mời đã gửi. Nếu người kia không nhận được, gửi thẳng link này cho họ — mở app, bấm \"Tôi có lời mời\" rồi dán vào.",
+  "inviteSentDetail": "Email mời đã gửi. Người kia mở app, bấm \"Tôi có lời mời\" rồi quét mã này là vào shop ngay — không cần chờ email.",
   "inviteCopyLink": "Sao chép link",
-  "inviteLinkCopied": "Đã sao chép link mời"
+  "inviteLinkCopied": "Đã sao chép link mời",
+  "inviteQrRow": "Mã QR",
+  "inviteScanTitle": "Quét mã mời",
+  "inviteScanDetail": "Nhờ chủ shop mở mã QR mời rồi quét vào đây.",
+  "inviteQrNotSupported": "Máy chủ chưa bật mã QR dùng chung. Hãy mời qua email — mã QR để quét hiện ngay sau khi mời."
 }

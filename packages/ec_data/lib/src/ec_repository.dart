@@ -66,6 +66,10 @@ abstract interface class EcRepository {
   /// của lời mời, không phải của [removeMember].
   Future<void> revokeShopInvite(String shopId, String inviteId);
 
+  /// Mã vào cửa hàng dùng chung, để hiện thành QR cho người ĐÃ có tài khoản
+  /// quét. Nhận bằng [acceptInvite] như mọi token khác.
+  Future<String> shopJoinCode(String shopId);
+
   /// Nhận một lời mời bằng token trong link email.
   ///
   /// Đây là ĐƯỜNG DUY NHẤT để vào một shop mình được mời: máy chủ không tự
@@ -240,6 +244,9 @@ class RemoteEcRepository implements EcRepository {
   @override
   Future<void> revokeShopInvite(String shopId, String inviteId) =>
       _api.revokeShopInvite(shopId, inviteId);
+
+  @override
+  Future<String> shopJoinCode(String shopId) => _api.shopJoinCode(shopId);
 
   @override
   Future<AcceptedInviteDto> acceptInvite(String token) =>
@@ -489,6 +496,9 @@ class FakeEcRepository implements EcRepository {
 
   @override
   Future<void> revokeShopInvite(String shopId, String inviteId) async {}
+
+  @override
+  Future<String> shopJoinCode(String shopId) async => 'fake-join-code';
 
   @override
   Future<AcceptedInviteDto> acceptInvite(String token) async =>

@@ -1386,7 +1386,11 @@
   "inviteTaken": "Someone else already accepted this invite",
   "inviteExpired": "The invite has expired. Ask the shop owner to resend it.",
   "inviteSentTitle": "Invite sent",
-  "inviteSentDetail": "The invite email is on its way. If it doesn't arrive, send this link instead — they open the app, tap \"I have an invite\" and paste it.",
+  "inviteSentDetail": "The invite email is on its way. They can open the app, tap \"I have an invite\" and scan this code to join right now — no need to wait for the email.",
   "inviteCopyLink": "Copy link",
-  "inviteLinkCopied": "Invite link copied"
+  "inviteLinkCopied": "Invite link copied",
+  "inviteQrRow": "QR code",
+  "inviteScanTitle": "Scan invite code",
+  "inviteScanDetail": "Ask the shop owner to show the invite QR code, then scan it here.",
+  "inviteQrNotSupported": "The server does not offer a shared QR code yet. Invite by email — the scannable QR appears right after inviting."
 }
