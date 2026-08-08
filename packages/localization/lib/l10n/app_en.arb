@@ -41,7 +41,7 @@
   "shopDeleteTitle": "Delete shop",
   "shopDeleteConfirm": "Delete this shop? All of its orders, videos and photos go with it, and can't be recovered.",
   "shopDeleteBlockedTitle": "The shop still has members",
-  "shopDeleteBlockedBody": "Remove every manager and staff member from the shop before deleting it. {count} still remain.",
+  "shopDeleteBlockedBody": "Remove every member from the shop before deleting it. {count} still remain.",
   "@shopDeleteBlockedBody": {
     "description": "Shown when delete-shop is blocked by remaining members.",
     "placeholders": {
@@ -204,7 +204,7 @@
   "errorLoadShopMgmt": "Couldn't load shop management",
   "errorLoadShopDetail": "Couldn't load shop details",
   "errorLoadMembers": "Couldn't load the member list",
-  "membersRestricted": "Only the shop owner and managers can see the member list",
+  "membersRestricted": "Only the shop owner can see the member list",
   "errorLoadOrders": "Couldn't load orders",
   "errorLoadOrderDetail": "Couldn't load order details",
   "noShopSelectedOrdersDetail": "Please choose a shop before viewing orders.",

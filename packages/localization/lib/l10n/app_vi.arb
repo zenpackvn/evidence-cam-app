@@ -41,7 +41,7 @@
   "shopDeleteTitle": "Xóa cửa hàng",
   "shopDeleteConfirm": "Xóa cửa hàng này? Toàn bộ đơn hàng, video và ảnh của nó sẽ mất và không lấy lại được.",
   "shopDeleteBlockedTitle": "Còn thành viên trong shop",
-  "shopDeleteBlockedBody": "Phải gỡ hết quản lý và nhân viên khỏi cửa hàng trước khi xóa. Hiện còn {count} người.",
+  "shopDeleteBlockedBody": "Phải gỡ hết thành viên khỏi cửa hàng trước khi xóa. Hiện còn {count} người.",
   "@shopDeleteBlockedBody": {
     "description": "Shown when delete-shop is blocked by remaining members.",
     "placeholders": {
@@ -172,7 +172,7 @@
   "errorLoadShopMgmt": "Không tải được quản lý shop",
   "errorLoadShopDetail": "Không tải được chi tiết shop",
   "errorLoadMembers": "Không tải được danh sách thành viên",
-  "membersRestricted": "Chỉ chủ shop và quản lý xem được danh sách thành viên",
+  "membersRestricted": "Chỉ chủ shop xem được danh sách thành viên",
   "errorLoadOrders": "Không tải được đơn hàng",
   "errorLoadOrderDetail": "Không tải được chi tiết đơn",
   "noShopSelectedOrdersDetail": "Vui lòng chọn shop trước khi xem đơn hàng.",

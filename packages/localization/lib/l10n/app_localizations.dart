@@ -281,7 +281,7 @@ abstract class AppLocalizations {
   /// Shown when delete-shop is blocked by remaining members.
   ///
   /// In en, this message translates to:
-  /// **'Remove every manager and staff member from the shop before deleting it. {count} still remain.'**
+  /// **'Remove every member from the shop before deleting it. {count} still remain.'**
   String shopDeleteBlockedBody(int count);
 
   /// No description provided for @shopDeleted.
@@ -815,7 +815,7 @@ abstract class AppLocalizations {
   /// No description provided for @membersRestricted.
   ///
   /// In en, this message translates to:
-  /// **'Only the shop owner and managers can see the member list'**
+  /// **'Only the shop owner can see the member list'**
   String get membersRestricted;
 
   /// No description provided for @errorLoadOrders.

@@ -110,7 +110,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String shopDeleteBlockedBody(int count) {
-    return 'Remove every manager and staff member from the shop before deleting it. $count still remain.';
+    return 'Remove every member from the shop before deleting it. $count still remain.';
   }
 
   @override
@@ -405,8 +405,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorLoadMembers => 'Couldn\'t load the member list';
 
   @override
-  String get membersRestricted =>
-      'Only the shop owner and managers can see the member list';
+  String get membersRestricted => 'Only the shop owner can see the member list';
 
   @override
   String get errorLoadOrders => 'Couldn\'t load orders';

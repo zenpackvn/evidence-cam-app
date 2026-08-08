@@ -110,7 +110,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String shopDeleteBlockedBody(int count) {
-    return 'Phải gỡ hết quản lý và nhân viên khỏi cửa hàng trước khi xóa. Hiện còn $count người.';
+    return 'Phải gỡ hết thành viên khỏi cửa hàng trước khi xóa. Hiện còn $count người.';
   }
 
   @override
@@ -403,8 +403,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get errorLoadMembers => 'Không tải được danh sách thành viên';
 
   @override
-  String get membersRestricted =>
-      'Chỉ chủ shop và quản lý xem được danh sách thành viên';
+  String get membersRestricted => 'Chỉ chủ shop xem được danh sách thành viên';
 
   @override
   String get errorLoadOrders => 'Không tải được đơn hàng';

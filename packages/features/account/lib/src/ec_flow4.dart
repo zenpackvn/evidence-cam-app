@@ -97,7 +97,7 @@ class EcAccountTabScreen extends StatelessWidget {
   /// hai chỗ lệch nhau là sinh ra khe hở hoặc phần xanh bị đè.
   ///
   /// Thẻ tài khoản nằm gọn bên trong ô này, căn giữa theo chiều dọc.
-  static const _bannerHeight = 126.0;
+  static const _bannerHeight = 166.0;
 
   /// Vùng cuộn lấy đúng đáy ô xanh làm lề trên.
   ///
@@ -201,12 +201,14 @@ class EcAccountTabScreen extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: PenBrandBanner(height: _bannerHeight),
           ),
-          // Thẻ tài khoản căn GIỮA ô xanh theo chiều dọc.
+          // Thẻ tài khoản căn GIỮA ô xanh; nút back nổi ở góc trái trên, không
+          // chiếm chỗ của thẻ.
           //
-          // Nút back nằm trong `Stack` chứ không xếp trên thẻ: xếp trên thì nó
-          // đẩy thẻ tụt xuống và thẻ hết nằm giữa. Màn này được ĐẨY từ màn Chọn
-          // cửa hàng nên phải có đường quay ra — trước đây thanh tab ở đáy làm
-          // việc đó.
+          // Chiều cao ô xanh là con số suy ra, không phải chọn bừa: thẻ cao 94
+          // căn giữa trong H thì mép trên thẻ ở (H-94)/2, mà nút back (icon
+          // 26pt, đặt cách mép 2) kết thúc ở 28 — muốn chừa 8 khoảng thở thì
+          // (H-94)/2 >= 36, tức H >= 166. Hạ H xuống nữa là hai thứ đè lên
+          // nhau, đúng lỗi của hai bản trước.
           SafeArea(
             bottom: false,
             child: SizedBox(
@@ -215,7 +217,7 @@ class EcAccountTabScreen extends StatelessWidget {
                 children: [
                   if (onBack != null)
                     Positioned(
-                      left: 14,
+                      left: 16,
                       top: 2,
                       child: PenBackButton(
                         onTap: onBack,
