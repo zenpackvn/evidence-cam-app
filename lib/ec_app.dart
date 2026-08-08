@@ -58,6 +58,7 @@ import 'package:flutter/cupertino.dart'
         showCupertinoDialog,
         showCupertinoModalPopup;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart'
@@ -3306,41 +3307,164 @@ Future<void> _showShopJoinQr(
 /// Hiện thành QR chứ không chỉ chữ: hai người đang đứng cạnh nhau thì chìa
 /// màn hình ra cho quét là xong, không phải đọc từng ký tự token cho nhau.
 Future<void> _showInviteQr(BuildContext context, String token) async {
-  final l10n = context.l10n;
   final link = 'https://zenpack.vn/invite/$token';
+  // Bấm ra ngoài là đóng. Mã này được chìa ra giữa chừng một việc khác — hỏi
+  // email, xem danh sách thành viên — nên đường thoát phải là thứ tay đã biết
+  // sẵn, không phải một nút nữa phải tìm.
   await showCupertinoDialog<void>(
     context: context,
-    builder: (dialogContext) => CupertinoAlertDialog(
-      title: Text(l10n.inviteSentTitle),
-      content: Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+    barrierDismissible: true,
+    builder: (dialogContext) => _InviteQrDialog(link: link),
+  );
+}
+
+/// Mã QR mời, chiếm trọn sự chú ý: chỉ mã, và hai việc làm được với nó.
+///
+/// Không tiêu đề, không đoạn giải thích, không nút Đóng. Người mở nó ra đang
+/// chìa màn hình cho người khác quét — mọi chữ thêm vào đều là thứ che mất
+/// phần duy nhất có việc phải làm.
+class _InviteQrDialog extends StatefulWidget {
+  const _InviteQrDialog({required this.link});
+
+  final String link;
+
+  @override
+  State<_InviteQrDialog> createState() => _InviteQrDialogState();
+}
+
+class _InviteQrDialogState extends State<_InviteQrDialog> {
+  /// Neo để chụp đúng phần mã thành ảnh — lưu và chia sẻ đều cần một tấm PNG,
+  /// và chụp lại chính widget đang hiện thì thứ người ta nhận được giống hệt
+  /// thứ họ vừa nhìn.
+  final _qrKey = GlobalKey();
+  var _busy = false;
+
+  Future<Uint8List?> _pngBytes() async {
+    final object = _qrKey.currentContext?.findRenderObject();
+    if (object is! RenderRepaintBoundary) return null;
+    // 3x: mã in ra hay bị quét từ ảnh chụp màn hình rồi phóng to, và một mã
+    // vỡ nét thì máy quét chịu.
+    final image = await object.toImage(pixelRatio: 3);
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
+    return data?.buffer.asUint8List();
+  }
+
+  Future<void> _save() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final l10n = context.l10n;
+    final gallery = _maybeGetIt<GallerySaveService>();
+    try {
+      final bytes = await _pngBytes();
+      if (bytes == null || gallery == null) throw StateError('no-image');
+      if (!await gallery.requestAccess()) throw StateError('no-access');
+      await gallery.savePng(bytes);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      _toast(context, l10n.inviteQrSaved);
+    } on Object {
+      if (mounted) _toast(context, l10n.inviteQrSaveFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _share() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final l10n = context.l10n;
+    final share = _maybeGetIt<ShareService>();
+    try {
+      final bytes = await _pngBytes();
+      if (bytes == null || share == null) throw StateError('no-image');
+      // Gửi kèm CẢ ảnh lẫn link: người nhận qua Zalo quét ảnh không được thì
+      // vẫn bấm được link, và ngược lại.
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/zenpack-invite-qr.png');
+      await file.writeAsBytes(bytes);
+      await share.shareFiles(paths: [file.path], text: widget.link);
+      if (mounted) Navigator.of(context).pop();
+    } on Object {
+      if (mounted) _toast(context, l10n.errorGenericRetry);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          RepaintBoundary(
+            key: _qrKey,
+            child: PenQrCard(data: widget.link, size: 260),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _InviteQrAction(
+                icon: LucideIcons.download,
+                label: l10n.commonSave,
+                onTap: _busy ? null : _save,
+              ),
+              const SizedBox(width: 12),
+              _InviteQrAction(
+                icon: LucideIcons.share2,
+                label: l10n.commonShare,
+                onTap: _busy ? null : _share,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Một trong hai việc làm được với mã: viên thuốc trắng trên nền tối.
+class _InviteQrAction extends StatelessWidget {
+  const _InviteQrAction({
+    required this.icon,
+    required this.label,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => CupertinoButton(
+    onPressed: onTap,
+    padding: EdgeInsets.zero,
+    minimumSize: Size.zero,
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 20),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              l10n.inviteSentDetail,
-              style: const TextStyle(fontSize: 13),
-              textAlign: TextAlign.center,
+            Icon(icon, size: 18, color: PenColors.ink),
+            const SizedBox(width: 8),
+            PenText(
+              label,
+              size: 15,
+              color: PenColors.ink,
+              weight: FontWeight.w700,
+              softWrap: false,
             ),
-            const SizedBox(height: 14),
-            PenQrCard(data: link, size: 190),
           ],
         ),
       ),
-      actions: [
-        CupertinoDialogAction(
-          onPressed: () async {
-            await Clipboard.setData(ClipboardData(text: link));
-            if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-            if (context.mounted) _toast(context, l10n.inviteLinkCopied);
-          },
-          child: Text(l10n.inviteCopyLink),
-        ),
-        CupertinoDialogAction(
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          child: Text(l10n.commonClose),
-        ),
-      ],
     ),
   );
 }

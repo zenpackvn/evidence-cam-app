@@ -3586,30 +3586,6 @@ abstract class AppLocalizations {
   /// **'I have an invite'**
   String get inviteJoinRow;
 
-  /// No description provided for @inviteJoinTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Accept invite'**
-  String get inviteJoinTitle;
-
-  /// No description provided for @inviteJoinHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Paste the link from the invite email'**
-  String get inviteJoinHint;
-
-  /// No description provided for @inviteJoinDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Open the invite email, copy the link and paste it here.'**
-  String get inviteJoinDetail;
-
-  /// No description provided for @inviteJoinAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Accept'**
-  String get inviteJoinAction;
-
   /// No description provided for @inviteJoinedShop.
   ///
   /// In en, this message translates to:
@@ -3646,30 +3622,6 @@ abstract class AppLocalizations {
   /// **'The invite has expired. Ask the shop owner to resend it.'**
   String get inviteExpired;
 
-  /// No description provided for @inviteSentTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Invite sent'**
-  String get inviteSentTitle;
-
-  /// No description provided for @inviteSentDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'The invite email is on its way. They can open the app, tap \"I have an invite\" and scan this code to join right now — no need to wait for the email.'**
-  String get inviteSentDetail;
-
-  /// No description provided for @inviteCopyLink.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy link'**
-  String get inviteCopyLink;
-
-  /// No description provided for @inviteLinkCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'Invite link copied'**
-  String get inviteLinkCopied;
-
   /// No description provided for @inviteQrRow.
   ///
   /// In en, this message translates to:
@@ -3687,6 +3639,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask the shop owner to show the invite QR code, then scan it here.'**
   String get inviteScanDetail;
+
+  /// No description provided for @commonShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get commonShare;
+
+  /// No description provided for @inviteQrSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code saved to your gallery'**
+  String get inviteQrSaved;
+
+  /// No description provided for @inviteQrSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the QR code'**
+  String get inviteQrSaveFailed;
 }
 
 class _AppLocalizationsDelegate

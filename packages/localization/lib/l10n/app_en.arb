@@ -1313,10 +1313,6 @@
   "shopRenamed": "Shop renamed",
   "commonSave": "Save",
   "inviteJoinRow": "I have an invite",
-  "inviteJoinTitle": "Accept invite",
-  "inviteJoinHint": "Paste the link from the invite email",
-  "inviteJoinDetail": "Open the invite email, copy the link and paste it here.",
-  "inviteJoinAction": "Accept",
   "inviteJoinedShop": "Joined {shop}",
   "@inviteJoinedShop": {
     "placeholders": {
@@ -1337,11 +1333,10 @@
   "inviteNotFound": "The invite does not exist or was revoked",
   "inviteTaken": "Someone else already accepted this invite",
   "inviteExpired": "The invite has expired. Ask the shop owner to resend it.",
-  "inviteSentTitle": "Invite sent",
-  "inviteSentDetail": "The invite email is on its way. They can open the app, tap \"I have an invite\" and scan this code to join right now — no need to wait for the email.",
-  "inviteCopyLink": "Copy link",
-  "inviteLinkCopied": "Invite link copied",
   "inviteQrRow": "QR code",
   "inviteScanTitle": "Scan invite code",
-  "inviteScanDetail": "Ask the shop owner to show the invite QR code, then scan it here."
+  "inviteScanDetail": "Ask the shop owner to show the invite QR code, then scan it here.",
+  "commonShare": "Share",
+  "inviteQrSaved": "QR code saved to your gallery",
+  "inviteQrSaveFailed": "Could not save the QR code"
 }

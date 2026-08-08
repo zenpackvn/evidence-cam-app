@@ -1987,19 +1987,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inviteJoinRow => 'I have an invite';
 
   @override
-  String get inviteJoinTitle => 'Accept invite';
-
-  @override
-  String get inviteJoinHint => 'Paste the link from the invite email';
-
-  @override
-  String get inviteJoinDetail =>
-      'Open the invite email, copy the link and paste it here.';
-
-  @override
-  String get inviteJoinAction => 'Accept';
-
-  @override
   String inviteJoinedShop(String shop) {
     return 'Joined $shop';
   }
@@ -2024,19 +2011,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The invite has expired. Ask the shop owner to resend it.';
 
   @override
-  String get inviteSentTitle => 'Invite sent';
-
-  @override
-  String get inviteSentDetail =>
-      'The invite email is on its way. They can open the app, tap \"I have an invite\" and scan this code to join right now — no need to wait for the email.';
-
-  @override
-  String get inviteCopyLink => 'Copy link';
-
-  @override
-  String get inviteLinkCopied => 'Invite link copied';
-
-  @override
   String get inviteQrRow => 'QR code';
 
   @override
@@ -2045,4 +2019,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get inviteScanDetail =>
       'Ask the shop owner to show the invite QR code, then scan it here.';
+
+  @override
+  String get commonShare => 'Share';
+
+  @override
+  String get inviteQrSaved => 'QR code saved to your gallery';
+
+  @override
+  String get inviteQrSaveFailed => 'Could not save the QR code';
 }

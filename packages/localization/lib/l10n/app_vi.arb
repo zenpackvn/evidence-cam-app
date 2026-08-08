@@ -1068,10 +1068,6 @@
   "shopRenamed": "Đã đổi tên cửa hàng",
   "commonSave": "Lưu",
   "inviteJoinRow": "Tôi có lời mời",
-  "inviteJoinTitle": "Nhận lời mời",
-  "inviteJoinHint": "Dán link trong email mời",
-  "inviteJoinDetail": "Mở email mời, sao chép link rồi dán vào đây.",
-  "inviteJoinAction": "Nhận",
   "inviteJoinedShop": "Đã vào cửa hàng {shop}",
   "@inviteJoinedShop": {
     "placeholders": {
@@ -1092,11 +1088,10 @@
   "inviteNotFound": "Lời mời không tồn tại hoặc đã bị thu hồi",
   "inviteTaken": "Lời mời này đã có người khác nhận",
   "inviteExpired": "Lời mời đã quá hạn. Nhờ chủ shop gửi lại.",
-  "inviteSentTitle": "Đã gửi lời mời",
-  "inviteSentDetail": "Email mời đã gửi. Người kia mở app, bấm \"Tôi có lời mời\" rồi quét mã này là vào shop ngay — không cần chờ email.",
-  "inviteCopyLink": "Sao chép link",
-  "inviteLinkCopied": "Đã sao chép link mời",
   "inviteQrRow": "Mã QR",
   "inviteScanTitle": "Quét mã mời",
-  "inviteScanDetail": "Nhờ chủ shop mở mã QR mời rồi quét vào đây."
+  "inviteScanDetail": "Nhờ chủ shop mở mã QR mời rồi quét vào đây.",
+  "commonShare": "Chia sẻ",
+  "inviteQrSaved": "Đã lưu mã vào thư viện",
+  "inviteQrSaveFailed": "Không lưu được mã vào thư viện"
 }

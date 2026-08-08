@@ -1976,18 +1976,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get inviteJoinRow => 'Tôi có lời mời';
 
   @override
-  String get inviteJoinTitle => 'Nhận lời mời';
-
-  @override
-  String get inviteJoinHint => 'Dán link trong email mời';
-
-  @override
-  String get inviteJoinDetail => 'Mở email mời, sao chép link rồi dán vào đây.';
-
-  @override
-  String get inviteJoinAction => 'Nhận';
-
-  @override
   String inviteJoinedShop(String shop) {
     return 'Đã vào cửa hàng $shop';
   }
@@ -2011,19 +1999,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get inviteExpired => 'Lời mời đã quá hạn. Nhờ chủ shop gửi lại.';
 
   @override
-  String get inviteSentTitle => 'Đã gửi lời mời';
-
-  @override
-  String get inviteSentDetail =>
-      'Email mời đã gửi. Người kia mở app, bấm \"Tôi có lời mời\" rồi quét mã này là vào shop ngay — không cần chờ email.';
-
-  @override
-  String get inviteCopyLink => 'Sao chép link';
-
-  @override
-  String get inviteLinkCopied => 'Đã sao chép link mời';
-
-  @override
   String get inviteQrRow => 'Mã QR';
 
   @override
@@ -2031,4 +2006,13 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get inviteScanDetail => 'Nhờ chủ shop mở mã QR mời rồi quét vào đây.';
+
+  @override
+  String get commonShare => 'Chia sẻ';
+
+  @override
+  String get inviteQrSaved => 'Đã lưu mã vào thư viện';
+
+  @override
+  String get inviteQrSaveFailed => 'Không lưu được mã vào thư viện';
 }
