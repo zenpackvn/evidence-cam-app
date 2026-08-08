@@ -344,21 +344,30 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
           ),
         ),
         routerConfig: _router,
-        // Tapping anywhere outside the focused field (e.g. a text field)
-        // dismisses the keyboard app-wide.
-        builder: (context, child) => PopScope(
-          // A back gesture that reaches the root would otherwise close the
-          // app outright — which is what happens on the pre-shell screens
-          // (splash / login / shop picker), since only the tab shell has its
-          // own PopScope. go_router still pops pushed routes normally: this
-          // only fires once nothing is left to pop.
-          canPop: false,
-          child: GestureDetector(
-            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-            behavior: HitTestBehavior.opaque,
-            // Above the router so a forced update covers every screen, and
-            // inside the localization delegates so its labels are translated.
-            child: UpdateGate(child: child ?? const SizedBox.shrink()),
+        // Chạm ra ngoài ô đang nhập là ẩn bàn phím, ở mọi màn.
+        //
+        // Cỡ chữ CỐ ĐỊNH, không theo cài đặt phóng chữ của hệ điều hành.
+        //
+        // Mọi cỡ trong bộ giao diện là số tuyệt đối, và hàng nào cũng
+        // `softWrap: false` + ellipsis — phóng lên là chữ bị cắt chứ không
+        // xuống dòng, nên "to hơn" không đọc được nhiều hơn. Android cho
+        // phóng tới 1.8x còn iOS dừng sớm hơn, nên để mặc kệ thì cùng một màn
+        // hiện ra hai kiểu trên hai máy.
+        builder: (context, child) => MediaQuery.withNoTextScaling(
+          child: PopScope(
+            // A back gesture that reaches the root would otherwise close the
+            // app outright — which is what happens on the pre-shell screens
+            // (splash / login / shop picker), since only the tab shell has its
+            // own PopScope. go_router still pops pushed routes normally: this
+            // only fires once nothing is left to pop.
+            canPop: false,
+            child: GestureDetector(
+              onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+              behavior: HitTestBehavior.opaque,
+              // Above the router so a forced update covers every screen, and
+              // inside the localization delegates so its labels are translated.
+              child: UpdateGate(child: child ?? const SizedBox.shrink()),
+            ),
           ),
         ),
       ),
@@ -5944,7 +5953,15 @@ GoRouter _buildRouter(
                               }
                               if (selected == _manageVideoTypesResult) {
                                 await rootNavigator.push<void>(
-                                  MaterialPageRoute(
+                                  // Cupertino chứ không Material: app chạy
+                                  // trong `CupertinoApp`, nên mọi route khác
+                                  // trượt ngang kiểu iOS. `MaterialPageRoute`
+                                  // không có Material theme để tra, nên nó rơi
+                                  // về mặc định của TỪNG NỀN — trượt ngang
+                                  // trên iOS, phóng to trên Android. Đúng một
+                                  // đường vào màn này lại mở kiểu khác hẳn,
+                                  // và chỉ trên một nền.
+                                  CupertinoPageRoute(
                                     builder: (_) => _ShopDetailRoute(
                                       repo: repo,
                                       shop: shop,
