@@ -265,6 +265,18 @@ class EcApi {
     return ShopInviteDto.fromJson(res.data!);
   }
 
+  /// Nhận lời mời bằng token trong link email.
+  ///
+  /// Token CHÍNH LÀ bằng chứng sở hữu hộp thư, nên tài khoản đang đăng nhập
+  /// vào được shop kể cả khi email của nó khác địa chỉ được mời. Gọi lại lần
+  /// nữa vẫn trả 200 (`newly_joined: false`).
+  Future<AcceptedInviteDto> acceptInvite(String token) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/invites/$token/accept',
+    );
+    return AcceptedInviteDto.fromJson(res.data!);
+  }
+
   /// Thu hồi lời mời còn treo — link trong email chết ngay.
   Future<void> revokeShopInvite(String shopId, String inviteId) =>
       _dio.delete<void>('/api/shops/$shopId/invites/$inviteId');

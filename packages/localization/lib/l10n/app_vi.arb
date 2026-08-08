@@ -1114,5 +1114,30 @@
   "shopRenameTitle": "Đổi tên cửa hàng",
   "shopRenameHint": "Tên cửa hàng",
   "shopRenamed": "Đã đổi tên cửa hàng",
-  "commonSave": "Lưu"
+  "commonSave": "Lưu",
+  "inviteJoinRow": "Tôi có lời mời",
+  "inviteJoinTitle": "Nhận lời mời",
+  "inviteJoinHint": "Dán link trong email mời",
+  "inviteJoinDetail": "Mở email mời, sao chép link rồi dán vào đây.",
+  "inviteJoinAction": "Nhận",
+  "inviteJoinedShop": "Đã vào cửa hàng {shop}",
+  "@inviteJoinedShop": {
+    "placeholders": {
+      "shop": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteAlreadyJoined": "Bạn đã ở trong cửa hàng {shop} rồi",
+  "@inviteAlreadyJoined": {
+    "placeholders": {
+      "shop": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteBadLink": "Link không đúng. Hãy dán nguyên link trong email.",
+  "inviteNotFound": "Lời mời không tồn tại hoặc đã bị thu hồi",
+  "inviteTaken": "Lời mời này đã có người khác nhận",
+  "inviteExpired": "Lời mời đã quá hạn. Nhờ chủ shop gửi lại."
 }

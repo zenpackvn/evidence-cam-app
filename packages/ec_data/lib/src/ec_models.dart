@@ -174,6 +174,32 @@ class MemberDto {
   final String? inviteStatus;
 }
 
+/// Kết quả nhận một lời mời: shop vừa vào, cùng vai trò được cấp.
+class AcceptedInviteDto {
+  const AcceptedInviteDto({
+    required this.shopId,
+    required this.shopName,
+    required this.role,
+    required this.newlyJoined,
+  });
+
+  factory AcceptedInviteDto.fromJson(Map<String, dynamic> j) =>
+      AcceptedInviteDto(
+        shopId: j['shop_id'] as String,
+        shopName: j['shop_name'] as String,
+        role: j['role'] as String,
+        newlyJoined: j['newly_joined'] as bool? ?? false,
+      );
+
+  final String shopId;
+  final String shopName;
+  final String role;
+
+  /// `false` khi lời mời đã được nhận từ trước — bấm lại link cũ không phải
+  /// lỗi, chỉ là không có gì mới.
+  final bool newlyJoined;
+}
+
 class ShopInviteDto {
   const ShopInviteDto({
     required this.id,

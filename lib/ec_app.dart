@@ -2592,20 +2592,10 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
   ///
   /// Chỉ gọi khi danh sách rỗng: đó đúng là trường hợp hỏng, và người đã có shop
   /// không phải trả thêm một vòng mạng cho mỗi lần mở màn này.
+  /// Chỉ liệt kê. KHÔNG có bước nào ở đây nhận được lời mời treo: máy chủ
+  /// đòi token trong link email (xem [_joinByInvite]), nên nạp lại màn này
+  /// bao nhiêu lần cũng không làm shop được mời hiện ra.
   Future<List<EcShopSummary>> _loadShops() async {
-    // Nhận lời mời TRƯỚC khi liệt kê, và LUÔN LUÔN — không chỉ khi danh sách
-    // rỗng.
-    //
-    // `GET /api/me` là chỗ backend khớp lời mời treo với email của tài khoản
-    // (`claimPendingInvitesForAccount`). Bản trước chỉ gọi khi `shops.isEmpty`,
-    // nên người ĐÃ có sẵn một shop rồi được mời vào shop thứ hai thì lời mời
-    // không bao giờ được nhận: họ bấm link trong mail, đăng nhập, mở app, và
-    // shop mời họ không hiện ra — đúng triệu chứng đã báo.
-    try {
-      await widget.repo.account();
-    } on Object {
-      // Mất mạng thì vẫn liệt kê những shop đã biết, như cũ.
-    }
     final shops = await widget.repo.shops();
     final l10n = context.l10n;
     return [for (final shop in shops) _shopFromDto(l10n, shop)];
@@ -2673,9 +2663,8 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
             // Nạp lại thật, không chỉ hiện thông báo: người vừa được mời bấm
             // vào đây là để hỏi "đã vào chưa", mà một câu toast thì không trả
             // lời được câu đó.
-            onInviteTap: () {
-              _retry();
-              _toast(context, context.l10n.toastInvitePending);
+            onInviteTap: () async {
+              if (await _joinByInvite(context, widget.repo)) _retry();
             },
             onLogout: widget.onLogout,
           );
@@ -2687,6 +2676,9 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
           onSelect: widget.onSelect,
           // Cùng đích với nút "Tạo shop" ở màn chưa-có-shop.
           onAddShop: widget.onCreateShop,
+          onJoinByInvite: () async {
+            if (await _joinByInvite(context, widget.repo)) _retry();
+          },
           onLogout: widget.onLogout,
         );
       },
@@ -3255,6 +3247,101 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
     onCancel: () => context.pop(),
     onInvite: _saving ? null : _invite,
   );
+}
+
+/// Nhận một lời mời bằng link trong email.
+///
+/// Máy chủ KHÔNG tự ghép lời mời treo với tài khoản lúc đăng nhập — token
+/// trong link mới là bằng chứng sở hữu hộp thư (`POST /api/invites/:token/
+/// accept`). Trước đây app chỉ có một nút "đã được mời" chạy nạp lại danh
+/// sách rồi báo "chờ chút"; nạp bao nhiêu lần cũng vô ích vì chưa ai gọi
+/// accept cả, nên người được mời ngồi bấm mãi mà shop không bao giờ hiện.
+///
+/// Trả `true` khi danh sách shop cần nạp lại.
+Future<bool> _joinByInvite(BuildContext context, EcRepository repo) async {
+  final l10n = context.l10n;
+  final controller = TextEditingController();
+  final raw = await showCupertinoDialog<String>(
+    context: context,
+    builder: (dialogContext) => CupertinoAlertDialog(
+      title: Text(l10n.inviteJoinTitle),
+      content: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(l10n.inviteJoinDetail, style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 12),
+            CupertinoTextField(
+              controller: controller,
+              placeholder: l10n.inviteJoinHint,
+              autofocus: true,
+              autocorrect: false,
+              maxLines: 2,
+              keyboardType: TextInputType.url,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        CupertinoDialogAction(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: Text(l10n.commonCancel),
+        ),
+        CupertinoDialogAction(
+          onPressed: () =>
+              Navigator.of(dialogContext).pop(controller.text.trim()),
+          child: Text(l10n.inviteJoinAction),
+        ),
+      ],
+    ),
+  );
+  controller.dispose();
+  if (raw == null || raw.isEmpty || !context.mounted) return false;
+  final token = ecInviteTokenOf(raw);
+  if (token == null) {
+    _toast(context, l10n.inviteBadLink);
+    return false;
+  }
+  try {
+    final joined = await repo.acceptInvite(token);
+    if (!context.mounted) return true;
+    _toast(
+      context,
+      joined.newlyJoined
+          ? l10n.inviteJoinedShop(joined.shopName)
+          : l10n.inviteAlreadyJoined(joined.shopName),
+    );
+    return true;
+  } on DioException catch (error) {
+    if (!context.mounted) return false;
+    // Ba lý do hỏng khác nhau, ba việc phải làm khác nhau: xin link mới, thôi
+    // khỏi thử, hay nhờ gửi lại. Một câu "có lỗi" gộp cả ba thì không câu nào
+    // dùng được.
+    _toast(context, switch (error.response?.statusCode) {
+      404 => l10n.inviteNotFound,
+      409 => l10n.inviteTaken,
+      410 => l10n.inviteExpired,
+      _ => _dataErrorText(l10n, error),
+    });
+    return false;
+  } on Object catch (error) {
+    if (context.mounted) _toast(context, _dataErrorText(l10n, error));
+    return false;
+  }
+}
+
+/// Tách token khỏi thứ người dùng dán vào.
+///
+/// Chấp cả link thật (`https://zenpack.vn/invite/<token>`), link đã qua
+/// redirect (`.../app#/invite/<token>`), lẫn token dán trần — người ta sao
+/// chép từ email kiểu gì cũng có, và bắt họ dán cho "đúng" là bắt sai người.
+String? ecInviteTokenOf(String raw) {
+  final match = RegExp(r'invite/([A-Za-z0-9._~-]+)').firstMatch(raw);
+  if (match != null) return match.group(1);
+  // Token trần: không có khoảng trắng, không phải một URL nào khác.
+  if (!raw.contains(RegExp(r'[\s/]')) && raw.length >= 8) return raw;
+  return null;
 }
 
 /// Đổi tên cửa hàng.

@@ -2017,4 +2017,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonSave => 'Save';
+
+  @override
+  String get inviteJoinRow => 'I have an invite';
+
+  @override
+  String get inviteJoinTitle => 'Accept invite';
+
+  @override
+  String get inviteJoinHint => 'Paste the link from the invite email';
+
+  @override
+  String get inviteJoinDetail =>
+      'Open the invite email, copy the link and paste it here.';
+
+  @override
+  String get inviteJoinAction => 'Accept';
+
+  @override
+  String inviteJoinedShop(String shop) {
+    return 'Joined $shop';
+  }
+
+  @override
+  String inviteAlreadyJoined(String shop) {
+    return 'You are already in $shop';
+  }
+
+  @override
+  String get inviteBadLink =>
+      'That link is not valid. Paste the whole link from the email.';
+
+  @override
+  String get inviteNotFound => 'The invite does not exist or was revoked';
+
+  @override
+  String get inviteTaken => 'Someone else already accepted this invite';
+
+  @override
+  String get inviteExpired =>
+      'The invite has expired. Ask the shop owner to resend it.';
 }

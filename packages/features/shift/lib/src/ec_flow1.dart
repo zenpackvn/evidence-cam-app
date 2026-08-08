@@ -955,6 +955,7 @@ class EcChooseShopScreen extends StatelessWidget {
     this.onSelect,
     this.onAccountTap,
     this.onAddShop,
+    this.onJoinByInvite,
     this.onLogout,
     super.key,
   });
@@ -973,6 +974,14 @@ class EcChooseShopScreen extends StatelessWidget {
   /// Quản lý cửa hàng đã dời vào bánh răng ở header trang Vận đơn, nên nó không
   /// còn là chỗ chứa nút tạo shop được: muốn vào đó phải đang ở trong một shop.
   final VoidCallback? onAddShop;
+
+  /// "Tôi có lời mời" — dán link trong email mời để vào shop.
+  ///
+  /// Máy chủ KHÔNG tự ghép lời mời treo với tài khoản lúc đăng nhập, kể cả khi
+  /// email trùng: token trong link mới là bằng chứng sở hữu hộp thư. Không có
+  /// lối này thì người được mời đăng nhập vào app và thấy một màn trống, không
+  /// hiểu vì sao shop mời mình lại không có ở đây.
+  final VoidCallback? onJoinByInvite;
   final VoidCallback? onLogout;
 
   @override
@@ -1061,6 +1070,10 @@ class EcChooseShopScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _AddShopRow(onTap: onAddShop),
+                  if (onJoinByInvite != null) ...[
+                    const SizedBox(height: 4),
+                    _JoinByInviteRow(onTap: onJoinByInvite),
+                  ],
                   const SizedBox(height: 4),
                   _LogoutRow(onTap: onLogout),
                 ],
@@ -1204,6 +1217,44 @@ class _AddShopRow extends StatelessWidget {
           color: PenColors.link,
           weight: FontWeight.w700,
           softWrap: false,
+        ),
+      ],
+    ),
+  );
+}
+
+/// "Tôi có lời mời" — cùng khuôn với hàng thêm cửa hàng, ngay dưới nó.
+///
+/// Đứng cạnh "Thêm cửa hàng mới" vì hai hàng trả lời cùng một câu hỏi của
+/// người đang nhìn một màn trống: làm sao để có cửa hàng ở đây.
+class _JoinByInviteRow extends StatelessWidget {
+  const _JoinByInviteRow({this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: PenBox(
+      width: double.infinity,
+      stroke: PenColors.soft,
+      radius: 14,
+      axis: PenAxis.row,
+      gap: 10,
+      main: MainAxisAlignment.center,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 15),
+      children: [
+        const Icon(LucideIcons.mailOpen, size: 20, color: PenColors.ink),
+        Flexible(
+          child: PenText(
+            context.l10n.inviteJoinRow,
+            size: 16,
+            color: PenColors.link,
+            weight: FontWeight.w700,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     ),

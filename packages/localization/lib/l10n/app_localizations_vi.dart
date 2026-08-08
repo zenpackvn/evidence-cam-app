@@ -2006,4 +2006,42 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get commonSave => 'Lưu';
+
+  @override
+  String get inviteJoinRow => 'Tôi có lời mời';
+
+  @override
+  String get inviteJoinTitle => 'Nhận lời mời';
+
+  @override
+  String get inviteJoinHint => 'Dán link trong email mời';
+
+  @override
+  String get inviteJoinDetail => 'Mở email mời, sao chép link rồi dán vào đây.';
+
+  @override
+  String get inviteJoinAction => 'Nhận';
+
+  @override
+  String inviteJoinedShop(String shop) {
+    return 'Đã vào cửa hàng $shop';
+  }
+
+  @override
+  String inviteAlreadyJoined(String shop) {
+    return 'Bạn đã ở trong cửa hàng $shop rồi';
+  }
+
+  @override
+  String get inviteBadLink =>
+      'Link không đúng. Hãy dán nguyên link trong email.';
+
+  @override
+  String get inviteNotFound => 'Lời mời không tồn tại hoặc đã bị thu hồi';
+
+  @override
+  String get inviteTaken => 'Lời mời này đã có người khác nhận';
+
+  @override
+  String get inviteExpired => 'Lời mời đã quá hạn. Nhờ chủ shop gửi lại.';
 }

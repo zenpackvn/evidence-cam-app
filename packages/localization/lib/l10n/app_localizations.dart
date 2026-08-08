@@ -3631,6 +3631,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get commonSave;
+
+  /// No description provided for @inviteJoinRow.
+  ///
+  /// In en, this message translates to:
+  /// **'I have an invite'**
+  String get inviteJoinRow;
+
+  /// No description provided for @inviteJoinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept invite'**
+  String get inviteJoinTitle;
+
+  /// No description provided for @inviteJoinHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the link from the invite email'**
+  String get inviteJoinHint;
+
+  /// No description provided for @inviteJoinDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the invite email, copy the link and paste it here.'**
+  String get inviteJoinDetail;
+
+  /// No description provided for @inviteJoinAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get inviteJoinAction;
+
+  /// No description provided for @inviteJoinedShop.
+  ///
+  /// In en, this message translates to:
+  /// **'Joined {shop}'**
+  String inviteJoinedShop(String shop);
+
+  /// No description provided for @inviteAlreadyJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'You are already in {shop}'**
+  String inviteAlreadyJoined(String shop);
+
+  /// No description provided for @inviteBadLink.
+  ///
+  /// In en, this message translates to:
+  /// **'That link is not valid. Paste the whole link from the email.'**
+  String get inviteBadLink;
+
+  /// No description provided for @inviteNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'The invite does not exist or was revoked'**
+  String get inviteNotFound;
+
+  /// No description provided for @inviteTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone else already accepted this invite'**
+  String get inviteTaken;
+
+  /// No description provided for @inviteExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'The invite has expired. Ask the shop owner to resend it.'**
+  String get inviteExpired;
 }
 
 class _AppLocalizationsDelegate

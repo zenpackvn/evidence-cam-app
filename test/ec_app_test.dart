@@ -26,6 +26,29 @@ class _FakePathProviderPlatform extends PathProviderPlatform {
 }
 
 void main() {
+
+  // Người ta sao chép link mời từ email kiểu gì cũng có: link thật, link đã
+  // qua redirect của site, hoặc chỉ mỗi cái token. Bắt họ dán cho "đúng" là
+  // bắt sai người — cả ba dạng đều phải nhận.
+  group('ecInviteTokenOf', () {
+    test('nhận link thật, link redirect và token trần', () {
+      expect(
+        ecInviteTokenOf('https://zenpack.vn/invite/abc123DEF'),
+        'abc123DEF',
+      );
+      expect(
+        ecInviteTokenOf('https://zenpack.vn/app#/invite/abc123DEF'),
+        'abc123DEF',
+      );
+      expect(ecInviteTokenOf('abc123DEF'), 'abc123DEF');
+    });
+
+    test('từ chối thứ không phải lời mời', () {
+      expect(ecInviteTokenOf('https://zenpack.vn/shops'), isNull);
+      expect(ecInviteTokenOf('xin chào'), isNull);
+      expect(ecInviteTokenOf('abc'), isNull);
+    });
+  });
   PathProviderPlatform.instance = _FakePathProviderPlatform();
   Future<void> pumpPhoneSizedApp(WidgetTester tester, Widget app) async {
     tester.view.physicalSize = const Size(390, 844);

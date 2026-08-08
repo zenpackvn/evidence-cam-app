@@ -1359,5 +1359,30 @@
   "shopRenameTitle": "Rename shop",
   "shopRenameHint": "Shop name",
   "shopRenamed": "Shop renamed",
-  "commonSave": "Save"
+  "commonSave": "Save",
+  "inviteJoinRow": "I have an invite",
+  "inviteJoinTitle": "Accept invite",
+  "inviteJoinHint": "Paste the link from the invite email",
+  "inviteJoinDetail": "Open the invite email, copy the link and paste it here.",
+  "inviteJoinAction": "Accept",
+  "inviteJoinedShop": "Joined {shop}",
+  "@inviteJoinedShop": {
+    "placeholders": {
+      "shop": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteAlreadyJoined": "You are already in {shop}",
+  "@inviteAlreadyJoined": {
+    "placeholders": {
+      "shop": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteBadLink": "That link is not valid. Paste the whole link from the email.",
+  "inviteNotFound": "The invite does not exist or was revoked",
+  "inviteTaken": "Someone else already accepted this invite",
+  "inviteExpired": "The invite has expired. Ask the shop owner to resend it."
 }

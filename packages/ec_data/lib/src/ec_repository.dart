@@ -28,7 +28,10 @@ abstract interface class EcRepository {
 
   /// The signed-in account (`GET /api/me`). Name and the optional support phone
   /// live in D1, not Firebase Auth, so the profile screen reads them from here.
-  /// The call also claims any shop invite addressed to this account's email.
+  ///
+  /// Lời gọi này KHÔNG nhận lời mời nào cả — dù email tài khoản trùng đúng địa
+  /// chỉ được mời. Vào shop được mời phải qua [acceptInvite] với token trong
+  /// link email.
   Future<AccountDto> account();
 
   /// Tải ảnh đại diện lên và trả về URL đọc công khai.
@@ -62,6 +65,13 @@ abstract interface class EcRepository {
   /// Thu hồi lời mời còn treo. Hàng `pending` không có uid nên gỡ nó là việc
   /// của lời mời, không phải của [removeMember].
   Future<void> revokeShopInvite(String shopId, String inviteId);
+
+  /// Nhận một lời mời bằng token trong link email.
+  ///
+  /// Đây là ĐƯỜNG DUY NHẤT để vào một shop mình được mời: máy chủ không tự
+  /// ghép lời mời treo với tài khoản khi đăng nhập, kể cả khi email trùng
+  /// khớp. Không gọi cái này thì shop không bao giờ xuất hiện.
+  Future<AcceptedInviteDto> acceptInvite(String token);
 
   Future<void> removeMember(String shopId, String accountUid);
   Future<List<VideoTypeDto>> videoTypes(String shopId);
@@ -230,6 +240,10 @@ class RemoteEcRepository implements EcRepository {
   @override
   Future<void> revokeShopInvite(String shopId, String inviteId) =>
       _api.revokeShopInvite(shopId, inviteId);
+
+  @override
+  Future<AcceptedInviteDto> acceptInvite(String token) =>
+      _api.acceptInvite(token);
 
   @override
   Future<void> removeMember(String shopId, String accountUid) =>
@@ -475,6 +489,15 @@ class FakeEcRepository implements EcRepository {
 
   @override
   Future<void> revokeShopInvite(String shopId, String inviteId) async {}
+
+  @override
+  Future<AcceptedInviteDto> acceptInvite(String token) async =>
+      const AcceptedInviteDto(
+        shopId: 'fake-shop',
+        shopName: 'Shop ABC',
+        role: 'staff',
+        newlyJoined: true,
+      );
 
   @override
   Future<void> removeMember(String shopId, String accountUid) async {}
