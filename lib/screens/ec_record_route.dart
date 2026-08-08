@@ -31,8 +31,7 @@ import 'package:flutter/cupertino.dart'
         CupertinoAlertDialog,
         CupertinoDialogAction,
         showCupertinoDialog;
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, ValueListenable, defaultTargetPlatform;
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show EventChannel;
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
@@ -1026,20 +1025,29 @@ class _CoverPreview extends StatefulWidget {
 }
 
 class _CoverPreviewState extends State<_CoverPreview> {
-  // CameraX's own rebind keeps visibly settling for close to a second even
-  // after the native call has returned to Dart, so the freeze outlasts it by
-  // a comfortable margin rather than trimming it close. 1200ms still let the
-  // landscape rebind glitch peek through on a real mid-range device
-  // (Samsung SM-M146B) — mid-range camera HALs rebind slower than the
-  // emulator/flagship hardware this was first tuned against.
-  /// Thời gian giữ khung hình đông cứng sau khi camera rebind xong, để giấu
-  /// cú giật xoay hình mà plugin gây ra ở vài khung đầu.
+  /// Số phần tư vòng xoay áp cho texture camera. Cố định, không đổi theo
+  /// cảm biến — đó là toàn bộ điểm của cách làm này.
   ///
-  /// Từng để 2200ms — an toàn tuyệt đối nhưng người quay thấy màn hình đứng
-  /// hình gần hai giây rưỡi mỗi lần chuyển đơn, tưởng app treo. 700ms vẫn phủ
-  /// hết giai đoạn giật trong thử nghiệm mà không còn cảm giác khựng. Nếu thấy
-  /// preview loé lên bị xoay/xé hình lúc chuyển đơn thì nâng lại con số này.
-  static const _settleBuffer = Duration(milliseconds: 700);
+  /// `0` khi surface producer của Android tự nắn khung (Impeller, máy đời mới
+  /// — trường hợp thường gặp), `1` khi nó giao texture nguyên theo sensor và
+  /// preview nằm ngang. Sai giá trị thì hình lệch ĐỀU chứ không giật: nhìn một
+  /// lần là biết, đổi một số là xong, và không có trạng thái nào ở giữa để
+  /// người dùng gặp phải.
+  static const _previewQuarterTurns = 0;
+
+  /// Thời gian giữ khung hình đông cứng sau khi camera rebind xong.
+  ///
+  /// Từng phải để 2200ms để giấu cú xoay ngang lúc camerax rebind — đắt, vì
+  /// đổi lại là hơn hai giây đứng hình mỗi lần chuyển đơn. Nay preview không
+  /// còn xoay theo cảm biến nữa nên chẳng còn gì để giấu; khoảng này chỉ còn
+  /// phủ vài khung đen lúc pipeline nối lại, nên ngắn vừa đủ.
+  static const _settleBuffer = Duration(milliseconds: 1200);
+
+  /// Thời gian mờ chồng giữa khung đứng và preview sống.
+  ///
+  /// Cắt cứng hai chiều đọc ra như app khựng rồi giật lại. Mờ chồng thì mắt
+  /// đọc thành một dải liên tục — cùng quãng thời gian ấy, khác hẳn cảm giác.
+  static const _fade = Duration(milliseconds: 260);
   // How often a known-good frame is refreshed while live — frequent enough
   // that the frame on hand the instant a transition starts is always recent.
   static const _refreshInterval = Duration(milliseconds: 250);
@@ -1148,56 +1156,66 @@ class _CoverPreviewState extends State<_CoverPreview> {
           // frame lands on top of it. The periodic refresh below only
           // touches the live layer while unmasked anyway, so nothing is
           // lost by skipping it entirely here.
-          if (_masking) return _frozenFrame();
-          // Controller đã dispose (đổi độ phân giải, lật camera, app xuống nền,
-          // hoặc màn quay chờ người dùng chọn loại video) thì `buildPreview`
-          // ném CameraException ngay giữa lúc build. Khung đứng gần nhất là
-          // đủ — controller mới lên là widget rebuild và preview trở lại.
+          // KHÔNG `return _frozenFrame()` sớm nữa: cắt phăng lớp sống rồi
+          // cắm lại là hai cú giật, và giữa chúng là một quãng đứng hình đọc
+          // ra như treo máy. Cả hai lớp cùng dựng, khung đứng nằm TRÊN và mờ
+          // dần đi — lớp sống bên dưới có nhảy ngang lúc camerax dựng lại
+          // session thì cũng không ai thấy.
+          // Controller đã dispose (đổi độ phân giải, lật camera, app xuống
+          // nền, hoặc màn quay chờ người dùng chọn loại video) thì texture bên
+          // dưới đã bị huỷ. Khung đứng gần nhất là đủ — controller mới lên là
+          // widget rebuild và preview trở lại.
           if (!controller.value.isInitialized) return _frozenFrame();
-          final Widget livePreview;
-          try {
-            livePreview = defaultTargetPlatform == TargetPlatform.android
-                ? CameraPreview(controller)
-                : controller.buildPreview();
-          } on CameraException {
-            // `value.isInitialized` KHÔNG bắt được controller đã dispose:
-            // package:camera giữ `_isDisposed` riêng, không có getter công
-            // khai, và `buildPreview` ném vì cờ đó chứ không vì cờ kia. Một
-            // controller vừa dispose xong vẫn báo đã khởi tạo, lọt qua guard
-            // trên và làm hỏng nguyên khung hình đang dựng.
-            return _frozenFrame();
-          }
-          // Only the live preview's rotation is affected by the
-          // recording-start rebind, not the recorded file — so the correction
-          // is scoped to isRecordingVideo, and to Android: package:camera
-          // wraps the preview in a RotatedBox *only there*
-          // (camera_preview.dart, `_wrapInRotatedBox`), so counter-rotating on
-          // iOS just turns an upright preview on its side.
-          final recordingTurns =
-              controller.value.isRecordingVideo &&
-                  defaultTargetPlatform == TargetPlatform.android
-              ? 3
-              : 0;
-          return ClipRect(
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: constraints.maxWidth,
-                height: constraints.maxWidth * controller.value.aspectRatio,
-                child: RepaintBoundary(
-                  key: _boundaryKey,
-                  child: RotatedBox(
-                    quarterTurns: recordingTurns,
-                    // ponytail: iOS dùng thẳng texture thay cho CameraPreview —
-                    // CameraPreview lật AspectRatio sang ngang khi
-                    // recordingOrientation bị đọc là landscape (điện thoại nằm
-                    // gần phẳng trên bàn), làm preview méo/quay dù file quay ra
-                    // vẫn đúng. SizedBox trên đã dựng sẵn khung 9:16 đúng rồi.
-                    child: livePreview,
+          // Texture TRẦN, xoay bằng MỘT hằng số — không ai xoay động nữa.
+          //
+          // Đã đi hết ba đường. `CameraPreview` bọc thêm `RotatedBox` quanh
+          // cái texture vốn đã tự xoay, và góc lớp bọc đổi NGUỒN giữa chừng
+          // (`deviceOrientation` lúc nghỉ → `recordingOrientation` lúc quay):
+          // nhảy 90° ngay khoảnh khắc bấm. `buildPreview()` bỏ được lớp ngoài
+          // nhưng vẫn giữ `RotatedPreviewDelegate` bên trong, thứ nghe
+          // `onDeviceOrientationChanged` và xoay lại mỗi lần camerax rebind
+          // use case — vẫn nhảy, chỉ ít hơn. Che bằng khung đứng thì giấu được
+          // cú nhảy, nhưng đổi nó lấy hai giây đứng hình mỗi lần chuyển đơn.
+          //
+          // Cả ba đều sai ở cùng một chỗ: để hướng preview phụ thuộc cảm biến.
+          // Màn này không có lý do nào để làm thế — cửa sổ app khoá dọc
+          // (`main.dart`), khung quay khoá `portraitUp`
+          // (`lockCaptureOrientation`), và máy thì chống xuống bàn nhìn xuống,
+          // đúng tư thế làm cảm biến đọc nhầm thành landscape.
+          //
+          // Texture trần thì không widget nào xoay nó, nên nó KHÔNG THỂ nhảy:
+          // mượt suốt, kể cả giữa lúc rebind. Cái giá là phải tự chốt góc —
+          // [_previewQuarterTurns], một hằng số, đặt một lần cho mọi khung.
+          final livePreview = Texture(textureId: controller.cameraId);
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              ClipRect(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    height: constraints.maxWidth * controller.value.aspectRatio,
+                    child: RepaintBoundary(
+                      key: _boundaryKey,
+                      child: RotatedBox(
+                        quarterTurns: _previewQuarterTurns,
+                        child: livePreview,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+              // `IgnorePointer`: lớp phủ chỉ để nhìn, mọi thao tác chạm vẫn
+              // rơi xuống màn quay bên dưới như thường.
+              IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: _masking ? 1 : 0,
+                  duration: _fade,
+                  child: _frozenFrame(),
+                ),
+              ),
+            ],
           );
         },
       ),

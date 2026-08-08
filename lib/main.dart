@@ -29,6 +29,12 @@ Future<void> main() async {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
 
+      // Vá bản CameraX của Android ngay sau khi plugin tự đăng ký, trước khi
+      // màn quay dựng controller đầu tiên: bản gốc gỡ `VideoCapture` khỏi
+      // lifecycle mỗi lần dừng quay, và cú dựng lại capture session ấy làm
+      // preview ngoặt ngang một nhịp. Trên iOS không làm gì.
+      ecInstallPinnedCameraX();
+
       // Portrait-only by default (matches iOS's Info.plist restriction and
       // the rest of the app's portrait-only design); the record screen lifts
       // this itself so the camera can follow however the phone is held.
