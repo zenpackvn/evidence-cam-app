@@ -1522,11 +1522,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get clipDurationSubtitle => 'Chạm mốc này là tự chốt';
 
   @override
-  String clipDurationOptionRecommended(String minutes) {
-    return '$minutes phút (đề xuất)';
-  }
-
-  @override
   String clipDurationPlanCap(String minutes) {
     return 'Gói của bạn cho tối đa $minutes phút';
   }
@@ -1534,15 +1529,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String clipDurationChanged(String minutes) {
     return 'Thời lượng/video: $minutes phút';
-  }
-
-  @override
-  String imageOverPlatformLimit(
-    String megabytes,
-    String platform,
-    String limit,
-  ) {
-    return 'Ảnh $megabytes MB — vượt giới hạn $limit MB của $platform. Vẫn lưu nguyên vẹn; khi khiếu nại hãy gửi bằng link hồ sơ.';
   }
 
   @override
@@ -1574,20 +1560,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get uploadSizeTitleVideo => 'Dung lượng tối đa mỗi video';
-
-  @override
-  String get uploadSizeTitleImage => 'Dung lượng tối đa mỗi ảnh';
-
-  @override
-  String uploadSizeDefaultValue(String value) {
-    return '$value MB';
-  }
-
-  @override
-  String get uploadSizeUnlimited => 'Không giới hạn (mặc định)';
-
-  @override
   String get uploadSizeValueUnlimited => 'Không giới hạn';
 
   @override
@@ -1616,11 +1588,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String avatarUploadFailed(String reason) {
     return 'Đã lưu tên và SĐT. Ảnh đại diện chưa lên máy chủ: $reason';
-  }
-
-  @override
-  String fileOverUploadCap(String megabytes, String limit) {
-    return 'Tệp $megabytes MB — vượt trần $limit MB của shop nên chưa đính. Nâng trần trong Cài đặt shop rồi thử lại.';
   }
 
   @override
@@ -1702,13 +1669,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get unitMinutes => 'phút';
 
   @override
-  String get unitMegabytes => 'MB';
-
-  @override
   String get clipDurationCustomLabel => 'Hoặc nhập số phút bạn muốn';
-
-  @override
-  String get uploadSizeCustomLabel => 'Hoặc nhập dung lượng bạn muốn';
 
   @override
   String get supportOpenFailed =>

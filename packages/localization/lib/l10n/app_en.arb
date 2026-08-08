@@ -951,15 +951,6 @@
   "@clipDurationSubtitle": {
     "description": "Shop detail / clip budget (FR-17..FR-20)."
   },
-  "clipDurationOptionRecommended": "{minutes} min (recommended)",
-  "@clipDurationOptionRecommended": {
-    "description": "Shop detail / clip budget (FR-17..FR-20).",
-    "placeholders": {
-      "minutes": {
-        "type": "String"
-      }
-    }
-  },
   "clipDurationPlanCap": "Your plan allows up to {minutes} min",
   "@clipDurationPlanCap": {
     "description": "Shop detail / clip budget (FR-17..FR-20).",
@@ -974,21 +965,6 @@
     "description": "Shop detail / clip budget (FR-17..FR-20).",
     "placeholders": {
       "minutes": {
-        "type": "String"
-      }
-    }
-  },
-  "imageOverPlatformLimit": "Photo is {megabytes} MB — over {platform}'s {limit} MB limit. Kept in full; send it via the dossier link.",
-  "@imageOverPlatformLimit": {
-    "description": "Shop detail / clip budget (FR-17..FR-20).",
-    "placeholders": {
-      "megabytes": {
-        "type": "String"
-      },
-      "platform": {
-        "type": "String"
-      },
-      "limit": {
         "type": "String"
       }
     }
@@ -1035,18 +1011,7 @@
       }
     }
   },
-  "uploadSizeTitleVideo": "Max size per video",
-  "uploadSizeTitleImage": "Max size per photo",
-  "uploadSizeDefaultValue": "{value} MB",
-  "uploadSizeUnlimited": "No limit (default)",
   "uploadSizeValueUnlimited": "No limit",
-  "@uploadSizeDefaultValue": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "uploadSizeTitle": "Max size per file",
   "@uploadSizeTitle": {
     "description": "Shop detail / upload size cap (FR-21)."
@@ -1098,18 +1063,6 @@
     "description": "Avatar upload failed for another reason; profile still saved.",
     "placeholders": {
       "reason": {
-        "type": "String"
-      }
-    }
-  },
-  "fileOverUploadCap": "File is {megabytes} MB — over the shop's {limit} MB cap, not attached. Raise the cap in shop settings and try again.",
-  "@fileOverUploadCap": {
-    "description": "Shop detail / upload size cap (FR-21).",
-    "placeholders": {
-      "megabytes": {
-        "type": "String"
-      },
-      "limit": {
         "type": "String"
       }
     }
@@ -1187,9 +1140,7 @@
   "recordInterruptedFinish": "Finish",
   "commonApply": "Apply",
   "unitMinutes": "min",
-  "unitMegabytes": "MB",
   "clipDurationCustomLabel": "Or enter the number of minutes you want",
-  "uploadSizeCustomLabel": "Or enter the size you want",
   "supportOpenFailed": "Couldn’t open — check the app is installed",
   "feedbackThanksTitle": "Thank you!",
   "feedbackThanksBody": "Your feedback helps make ZenPack better.",

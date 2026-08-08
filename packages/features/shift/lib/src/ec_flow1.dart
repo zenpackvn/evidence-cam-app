@@ -2132,9 +2132,16 @@ class EcShopDetailScreen extends StatelessWidget {
               icon: LucideIcons.settings,
               label: l10n.sectionShopSettings,
               children: [
-                // Một mức CỐ ĐỊNH, không đặt được. Độ phân giải thì đổi ngay
-                // trên thanh dưới màn quay nên không nằm ở đây. Dòng "dung
-                // lượng tối đa mỗi ảnh" đã bỏ 2026-08-07 — không còn trần nào.
+                // Hai mức CỐ ĐỊNH, không đặt được. Độ phân giải thì đổi ngay
+                // trên thanh dưới màn quay nên không nằm ở đây.
+                //
+                // Trần ẢNH thì CÒN, và cố ý còn. Đợt 2026-08-07 bỏ trần theo
+                // byte của QUOTA — quota nay tính theo số video, một tấm ảnh
+                // nặng bao nhiêu cũng không tốn suất nào. Còn 5 MB ở đây là
+                // chặn một TỆP ĐƠN LẺ, để ảnh máy ảnh 40MB không đi qua đường
+                // đính kèm; xem [kFixedImageBytes]. Chú thích cũ ở chỗ này ghi
+                // là "đã bỏ, không còn trần nào" trong khi dòng ngay dưới vẫn
+                // hiện đúng con số đó.
                 _FixedSettingRow(
                   icon: LucideIcons.timer,
                   label: l10n.shopDetailClipLength,

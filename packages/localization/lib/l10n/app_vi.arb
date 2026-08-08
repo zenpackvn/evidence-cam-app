@@ -705,15 +705,6 @@
   "@clipDurationSubtitle": {
     "description": "Shop detail / clip budget (FR-17..FR-20)."
   },
-  "clipDurationOptionRecommended": "{minutes} phút (đề xuất)",
-  "@clipDurationOptionRecommended": {
-    "description": "Shop detail / clip budget (FR-17..FR-20).",
-    "placeholders": {
-      "minutes": {
-        "type": "String"
-      }
-    }
-  },
   "clipDurationPlanCap": "Gói của bạn cho tối đa {minutes} phút",
   "@clipDurationPlanCap": {
     "description": "Shop detail / clip budget (FR-17..FR-20).",
@@ -728,21 +719,6 @@
     "description": "Shop detail / clip budget (FR-17..FR-20).",
     "placeholders": {
       "minutes": {
-        "type": "String"
-      }
-    }
-  },
-  "imageOverPlatformLimit": "Ảnh {megabytes} MB — vượt giới hạn {limit} MB của {platform}. Vẫn lưu nguyên vẹn; khi khiếu nại hãy gửi bằng link hồ sơ.",
-  "@imageOverPlatformLimit": {
-    "description": "Shop detail / clip budget (FR-17..FR-20).",
-    "placeholders": {
-      "megabytes": {
-        "type": "String"
-      },
-      "platform": {
-        "type": "String"
-      },
-      "limit": {
         "type": "String"
       }
     }
@@ -789,18 +765,7 @@
       }
     }
   },
-  "uploadSizeTitleVideo": "Dung lượng tối đa mỗi video",
-  "uploadSizeTitleImage": "Dung lượng tối đa mỗi ảnh",
-  "uploadSizeDefaultValue": "{value} MB",
-  "uploadSizeUnlimited": "Không giới hạn (mặc định)",
   "uploadSizeValueUnlimited": "Không giới hạn",
-  "@uploadSizeDefaultValue": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "uploadSizeTitle": "Dung lượng tối đa mỗi tệp",
   "@uploadSizeTitle": {
     "description": "Shop detail / upload size cap (FR-21)."
@@ -852,18 +817,6 @@
     "description": "Avatar upload failed for another reason; profile still saved.",
     "placeholders": {
       "reason": {
-        "type": "String"
-      }
-    }
-  },
-  "fileOverUploadCap": "Tệp {megabytes} MB — vượt trần {limit} MB của shop nên chưa đính. Nâng trần trong Cài đặt shop rồi thử lại.",
-  "@fileOverUploadCap": {
-    "description": "Shop detail / upload size cap (FR-21).",
-    "placeholders": {
-      "megabytes": {
-        "type": "String"
-      },
-      "limit": {
         "type": "String"
       }
     }
@@ -941,9 +894,7 @@
   "recordInterruptedFinish": "Kết thúc",
   "commonApply": "Áp dụng",
   "unitMinutes": "phút",
-  "unitMegabytes": "MB",
   "clipDurationCustomLabel": "Hoặc nhập số phút bạn muốn",
-  "uploadSizeCustomLabel": "Hoặc nhập dung lượng bạn muốn",
   "supportOpenFailed": "Không mở được, kiểm tra xem máy đã cài ứng dụng chưa",
   "feedbackThanksTitle": "Cảm ơn bạn!",
   "feedbackThanksBody": "Phản hồi của bạn giúp ZenPack ngày càng tốt hơn.",

@@ -1530,11 +1530,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clipDurationSubtitle => 'Auto-closes at this length';
 
   @override
-  String clipDurationOptionRecommended(String minutes) {
-    return '$minutes min (recommended)';
-  }
-
-  @override
   String clipDurationPlanCap(String minutes) {
     return 'Your plan allows up to $minutes min';
   }
@@ -1542,15 +1537,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String clipDurationChanged(String minutes) {
     return 'Max length/video: $minutes min';
-  }
-
-  @override
-  String imageOverPlatformLimit(
-    String megabytes,
-    String platform,
-    String limit,
-  ) {
-    return 'Photo is $megabytes MB — over $platform\'s $limit MB limit. Kept in full; send it via the dossier link.';
   }
 
   @override
@@ -1582,20 +1568,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get uploadSizeTitleVideo => 'Max size per video';
-
-  @override
-  String get uploadSizeTitleImage => 'Max size per photo';
-
-  @override
-  String uploadSizeDefaultValue(String value) {
-    return '$value MB';
-  }
-
-  @override
-  String get uploadSizeUnlimited => 'No limit (default)';
-
-  @override
   String get uploadSizeValueUnlimited => 'No limit';
 
   @override
@@ -1624,11 +1596,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String avatarUploadFailed(String reason) {
     return 'Name and phone saved. The profile photo didn\'t reach the server: $reason';
-  }
-
-  @override
-  String fileOverUploadCap(String megabytes, String limit) {
-    return 'File is $megabytes MB — over the shop\'s $limit MB cap, not attached. Raise the cap in shop settings and try again.';
   }
 
   @override
@@ -1710,14 +1677,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unitMinutes => 'min';
 
   @override
-  String get unitMegabytes => 'MB';
-
-  @override
   String get clipDurationCustomLabel =>
       'Or enter the number of minutes you want';
-
-  @override
-  String get uploadSizeCustomLabel => 'Or enter the size you want';
 
   @override
   String get supportOpenFailed => 'Couldn’t open — check the app is installed';

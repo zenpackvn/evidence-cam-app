@@ -2811,12 +2811,6 @@ abstract class AppLocalizations {
   /// Shop detail / clip budget (FR-17..FR-20).
   ///
   /// In en, this message translates to:
-  /// **'{minutes} min (recommended)'**
-  String clipDurationOptionRecommended(String minutes);
-
-  /// Shop detail / clip budget (FR-17..FR-20).
-  ///
-  /// In en, this message translates to:
   /// **'Your plan allows up to {minutes} min'**
   String clipDurationPlanCap(String minutes);
 
@@ -2825,16 +2819,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Max length/video: {minutes} min'**
   String clipDurationChanged(String minutes);
-
-  /// Shop detail / clip budget (FR-17..FR-20).
-  ///
-  /// In en, this message translates to:
-  /// **'Photo is {megabytes} MB — over {platform}\'s {limit} MB limit. Kept in full; send it via the dossier link.'**
-  String imageOverPlatformLimit(
-    String megabytes,
-    String platform,
-    String limit,
-  );
 
   /// No description provided for @shopDetailImageSize.
   ///
@@ -2875,30 +2859,6 @@ abstract class AppLocalizations {
     String platform,
     String chosen,
   );
-
-  /// No description provided for @uploadSizeTitleVideo.
-  ///
-  /// In en, this message translates to:
-  /// **'Max size per video'**
-  String get uploadSizeTitleVideo;
-
-  /// No description provided for @uploadSizeTitleImage.
-  ///
-  /// In en, this message translates to:
-  /// **'Max size per photo'**
-  String get uploadSizeTitleImage;
-
-  /// No description provided for @uploadSizeDefaultValue.
-  ///
-  /// In en, this message translates to:
-  /// **'{value} MB'**
-  String uploadSizeDefaultValue(String value);
-
-  /// No description provided for @uploadSizeUnlimited.
-  ///
-  /// In en, this message translates to:
-  /// **'No limit (default)'**
-  String get uploadSizeUnlimited;
 
   /// No description provided for @uploadSizeValueUnlimited.
   ///
@@ -2941,12 +2901,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Name and phone saved. The profile photo didn\'t reach the server: {reason}'**
   String avatarUploadFailed(String reason);
-
-  /// Shop detail / upload size cap (FR-21).
-  ///
-  /// In en, this message translates to:
-  /// **'File is {megabytes} MB — over the shop\'s {limit} MB cap, not attached. Raise the cap in shop settings and try again.'**
-  String fileOverUploadCap(String megabytes, String limit);
 
   /// Recording: near-cap warning banner (FR-01).
   ///
@@ -3092,23 +3046,11 @@ abstract class AppLocalizations {
   /// **'min'**
   String get unitMinutes;
 
-  /// No description provided for @unitMegabytes.
-  ///
-  /// In en, this message translates to:
-  /// **'MB'**
-  String get unitMegabytes;
-
   /// No description provided for @clipDurationCustomLabel.
   ///
   /// In en, this message translates to:
   /// **'Or enter the number of minutes you want'**
   String get clipDurationCustomLabel;
-
-  /// No description provided for @uploadSizeCustomLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Or enter the size you want'**
-  String get uploadSizeCustomLabel;
 
   /// No description provided for @supportOpenFailed.
   ///
