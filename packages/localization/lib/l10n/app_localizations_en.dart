@@ -1333,7 +1333,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get filterStatusLabel => 'Upload status';
+  String get filterStatusLabel => 'Status';
 
   @override
   String get filterStatusAll => 'All';
@@ -2005,4 +2005,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get claimsLinkCopied =>
       'Dossier link copied. Paste it into the marketplace claim channel.';
+
+  @override
+  String get shopRenameTitle => 'Rename shop';
+
+  @override
+  String get shopRenameHint => 'Shop name';
+
+  @override
+  String get shopRenamed => 'Shop renamed';
+
+  @override
+  String get commonSave => 'Save';
 }

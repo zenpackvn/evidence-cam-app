@@ -116,6 +116,7 @@ class PenScreen extends StatelessWidget {
     this.decorations = const <Widget>[],
     this.bottomBar,
     this.scrollable = true,
+    this.resizeToAvoidBottomInset = true,
     super.key,
   });
 
@@ -126,6 +127,14 @@ class PenScreen extends StatelessWidget {
   final List<Widget> decorations;
   final Widget? bottomBar;
   final bool scrollable;
+
+  /// Đặt `false` để bàn phím TRƯỢT ĐÈ lên màn thay vì bóp màn lại.
+  ///
+  /// Mặc định của Flutter là bóp: chiều cao khả dụng trừ đi bàn phím, nên mọi
+  /// thứ neo ở đáy — hình trang trí, nút — bị đội lên và màn nhảy loạn ngay
+  /// khi người dùng chạm vào ô nhập. Với màn chỉ có một ô text, giữ nguyên bố
+  /// cục và để bàn phím phủ lên là đúng cảm giác hơn.
+  final bool resizeToAvoidBottomInset;
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +154,7 @@ class PenScreen extends StatelessWidget {
     }
     return CupertinoPageScaffold(
       backgroundColor: background,
+      resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       child: Stack(
         children: [
           ...decorations,

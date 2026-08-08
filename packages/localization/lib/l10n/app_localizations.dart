@@ -2459,7 +2459,7 @@ abstract class AppLocalizations {
   /// No description provided for @filterStatusLabel.
   ///
   /// In en, this message translates to:
-  /// **'Upload status'**
+  /// **'Status'**
   String get filterStatusLabel;
 
   /// No description provided for @filterStatusAll.
@@ -3607,6 +3607,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dossier link copied. Paste it into the marketplace claim channel.'**
   String get claimsLinkCopied;
+
+  /// No description provided for @shopRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename shop'**
+  String get shopRenameTitle;
+
+  /// No description provided for @shopRenameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop name'**
+  String get shopRenameHint;
+
+  /// No description provided for @shopRenamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop renamed'**
+  String get shopRenamed;
+
+  /// No description provided for @commonSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get commonSave;
 }
 
 class _AppLocalizationsDelegate

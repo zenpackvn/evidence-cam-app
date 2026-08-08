@@ -52,6 +52,7 @@ import 'package:flutter/cupertino.dart'
         CupertinoPageRoute,
         CupertinoPageScaffold,
         CupertinoSlider,
+        CupertinoTextField,
         CupertinoTextThemeData,
         CupertinoThemeData,
         showCupertinoDialog,
@@ -2431,11 +2432,18 @@ ClipBudget _budgetFromDto(ShopDto shop) => ClipBudget(
   planMaxSeconds: shop.planMaxClipSeconds,
 );
 
-EcShopSummary _shopFromDto(ShopDto shop) => EcShopSummary(
+/// [l10n] chỉ để dịch vai trò trong dòng meta.
+///
+/// Bản trước nhét thẳng `shop.role` vào — tức mã thô `owner`/`staff` — nên màn
+/// Chọn cửa hàng hiện tiếng Anh giữa một app tiếng Việt.
+EcShopSummary _shopFromDto(AppLocalizations l10n, ShopDto shop) =>
+    EcShopSummary(
   id: shop.id,
   name: shop.name,
   platform: shop.platform,
-  meta: '${_platformDisplayName(shop.platform)} · ${shop.role}',
+  meta:
+      '${_platformDisplayName(shop.platform)} · '
+      '${_roleDisplayName(l10n, shop.role)}',
   role: shop.role,
   resolution: shop.resolution,
   clipBudget: _budgetFromDto(shop),
@@ -2585,16 +2593,22 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
   /// Chỉ gọi khi danh sách rỗng: đó đúng là trường hợp hỏng, và người đã có shop
   /// không phải trả thêm một vòng mạng cho mỗi lần mở màn này.
   Future<List<EcShopSummary>> _loadShops() async {
-    var shops = await widget.repo.shops();
-    if (shops.isEmpty) {
-      try {
-        await widget.repo.account();
-        shops = await widget.repo.shops();
-      } on Object {
-        // Không nhận được thì vẫn hiện màn "chưa có shop" như cũ.
-      }
+    // Nhận lời mời TRƯỚC khi liệt kê, và LUÔN LUÔN — không chỉ khi danh sách
+    // rỗng.
+    //
+    // `GET /api/me` là chỗ backend khớp lời mời treo với email của tài khoản
+    // (`claimPendingInvitesForAccount`). Bản trước chỉ gọi khi `shops.isEmpty`,
+    // nên người ĐÃ có sẵn một shop rồi được mời vào shop thứ hai thì lời mời
+    // không bao giờ được nhận: họ bấm link trong mail, đăng nhập, mở app, và
+    // shop mời họ không hiện ra — đúng triệu chứng đã báo.
+    try {
+      await widget.repo.account();
+    } on Object {
+      // Mất mạng thì vẫn liệt kê những shop đã biết, như cũ.
     }
-    return shops.map(_shopFromDto).toList();
+    final shops = await widget.repo.shops();
+    final l10n = context.l10n;
+    return [for (final shop in shops) _shopFromDto(l10n, shop)];
   }
 
   void _retry() => setState(() {
@@ -2711,7 +2725,7 @@ class _CreateShopRouteState extends State<_CreateShopRoute> {
         platform: _platform,
       );
       if (!mounted) return;
-      widget.onCreated?.call(_shopFromDto(shop));
+      widget.onCreated?.call(_shopFromDto(context.l10n, shop));
     } on Object catch (error) {
       if (mounted) _toast(context, _dataErrorText(context.l10n, error));
     } finally {
@@ -2743,6 +2757,7 @@ class _ShopDetailRoute extends StatefulWidget {
     this.onAddType,
     this.onTapStorage,
     this.onDeleteShop,
+    this.onRenameShop,
     this.readOnly = false,
   });
 
@@ -2769,6 +2784,9 @@ class _ShopDetailRoute extends StatefulWidget {
   /// Xoá hẳn cửa hàng. Rào chắn "phải gỡ hết người trước" nằm ở router, nơi
   /// biết danh sách thành viên vừa đọc về.
   final Future<void> Function()? onDeleteShop;
+
+  /// Đổi tên cửa hàng. `null` với nhân viên.
+  final Future<void> Function()? onRenameShop;
 
   /// Vai trò trên [shop] có bị khoá sửa không.
   ///
@@ -2799,17 +2817,22 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
   /// - **loại video** hỏng → rỗng, đúng như spec, và người dùng nhận ra ngay
   ///   vì màn này có sẵn nút thêm loại.
   ///
-  /// Nhân viên thì KHÔNG hỏi thành viên: endpoint đó chỉ mở cho chủ/quản lý,
-  /// nên lượt gọi ấy chắc chắn 403. Gọi rồi báo hỏng là dựng ra một khối lỗi
-  /// kèm nút "Thử lại" không bao giờ thành công — hỏi là sai, không phải trả
-  /// lời sai.
+  /// Nhân viên KHÔNG hỏi danh sách thành viên: endpoint đó chỉ mở cho chủ shop
+  /// nên lượt gọi ấy chắc chắn 403. Nhưng thay vì bỏ trống phần đó, hỏi
+  /// `/api/me` rồi dựng đúng MỘT dòng — chính họ.
+  ///
+  /// Một khối trống hoặc một câu "bạn không có quyền xem" không trả lời được
+  /// câu người nhân viên thật sự hỏi khi mở màn này: mình đang ở shop nào, với
+  /// vai trò gì. Còn danh sách đồng nghiệp thì đúng là việc của chủ shop.
   Future<_ShopDetailData> _load() async {
     final l10n = context.l10n;
     final canReadMembers = !widget.isReadOnly;
     final results = await Future.wait([
       _orLog('shop', () => widget.repo.shop(widget.shop.id)),
       if (canReadMembers)
-        _orLog('members', () => widget.repo.members(widget.shop.id)),
+        _orLog('members', () => widget.repo.members(widget.shop.id))
+      else
+        _orLog('self', () => widget.repo.account()),
       _orLog('video-types', () => widget.repo.videoTypes(widget.shop.id)),
       // Kho chỉ để hiện một dòng tóm tắt, nên hỏng thì rơi về "kho hệ thống"
       // chứ không làm hỏng cả màn — người dùng vẫn mở được màn kho và thấy
@@ -2817,17 +2840,30 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
       _orLog('storage', () => widget.repo.storage(widget.shop.id)),
     ]);
     final members = canReadMembers ? results[1] as List<MemberDto>? : null;
+    final self = canReadMembers ? null : results[1] as AccountDto?;
     return _ShopDetailData(
       shop: (results[0] as ShopDto?) ?? _snapshotDto(),
-      members: (members ?? const [])
-          .map((m) => _memberFromDto(l10n, m))
-          .toList(),
-      membersFailed: canReadMembers && members == null,
-      membersRestricted: !canReadMembers,
+      members: canReadMembers
+          ? (members ?? const []).map((m) => _memberFromDto(l10n, m)).toList()
+          : [
+              if (self != null)
+                EcShopMember(
+                  accountUid: self.uid,
+                  roleCode: widget.shop.role,
+                  name: self.name?.isNotEmpty ?? false
+                      ? self.name!
+                      : self.email ?? l10n.memberFallbackName,
+                  role: _roleDisplayName(l10n, widget.shop.role),
+                ),
+            ],
+      // Đọc `/api/me` hỏng cũng là "không tải được", y như đọc danh sách hỏng —
+      // cả hai đều để lại phần thành viên trống mà không nói vì sao.
+      membersFailed: canReadMembers ? members == null : self == null,
+      membersRestricted: false,
       storageKind:
           (results.last as StorageStateDto?)?.kind ?? StorageKind.system,
       videoTypes:
-          ((results[canReadMembers ? 2 : 1] as List<VideoTypeDto>?) ?? const [])
+          ((results[2] as List<VideoTypeDto>?) ?? const [])
               .map(_videoTypeFromDto)
               .toList(),
     );
@@ -2931,6 +2967,11 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
           onDeleteShop: locked || widget.onDeleteShop == null
               ? null
               : () => unawaited(widget.onDeleteShop!()),
+          // Nạp lại sau khi đổi tên: tên trên màn này đến từ `_load()`, nên
+          // không nạp lại thì người vừa sửa xong vẫn đọc thấy tên cũ.
+          onRenameShop: locked || widget.onRenameShop == null
+              ? null
+              : () => unawaited(widget.onRenameShop!().then((_) => _retry())),
           onAddType: locked || widget.onAddType == null
               ? null
               : () => widget.onAddType!().then((_) {
@@ -3214,6 +3255,64 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
     onCancel: () => context.pop(),
     onInvite: _saving ? null : _invite,
   );
+}
+
+/// Đổi tên cửa hàng.
+///
+/// Tên mới áp vào MỌI nơi cùng lúc: header trang Vận đơn, màn Chọn cửa hàng,
+/// và màn này. Nó là một trường trên `shops`, không phải nhãn cục bộ — nhân
+/// viên mở app lên cũng thấy tên mới, không cần làm gì thêm.
+Future<void> _renameShop(
+  BuildContext context,
+  EcRepository repo,
+  EcShopSummary shop,
+  ValueNotifier<EcShopSummary?> selectedShop,
+) async {
+  final l10n = context.l10n;
+  final controller = TextEditingController(text: shop.name);
+  final name = await showCupertinoDialog<String>(
+    context: context,
+    builder: (dialogContext) => CupertinoAlertDialog(
+      title: Text(l10n.shopRenameTitle),
+      content: Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: CupertinoTextField(
+          controller: controller,
+          placeholder: l10n.shopRenameHint,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+        ),
+      ),
+      actions: [
+        CupertinoDialogAction(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: Text(l10n.commonCancel),
+        ),
+        CupertinoDialogAction(
+          onPressed: () =>
+              Navigator.of(dialogContext).pop(controller.text.trim()),
+          child: Text(l10n.commonSave),
+        ),
+      ],
+    ),
+  );
+  controller.dispose();
+  // Tên rỗng hoặc không đổi thì không gọi mạng: một shop không tên đọc ra như
+  // dữ liệu hỏng, và gọi API cho một thay đổi bằng không là tốn công vô ích.
+  if (name == null || name.isEmpty || name == shop.name) return;
+  if (!context.mounted) return;
+  try {
+    final updated = await repo.updateShop(shop.id, name: name);
+    if (!context.mounted) return;
+    // Cập nhật shop đang chọn để header trang Vận đơn đổi theo ngay, không
+    // phải thoát ca ra vào lại.
+    if (selectedShop.value?.id == updated.id) {
+      selectedShop.value = _shopFromDto(context.l10n, updated);
+    }
+    _toast(context, l10n.shopRenamed);
+  } on Object catch (error) {
+    if (context.mounted) _toast(context, _dataErrorText(l10n, error));
+  }
 }
 
 /// Xoá cửa hàng — sau khi kiểm tra shop đã sạch người và hỏi lại một lần.
@@ -4748,6 +4847,10 @@ class _CreateClaimRoute extends StatelessWidget {
               time: _hhmm(DateTime.fromMillisecondsSinceEpoch(e.capturedAt)),
               isPhoto: e.kind == 'photo',
               capturedAt: e.capturedAt,
+              day: _dayLabelOf(
+                DateTime.fromMillisecondsSinceEpoch(e.capturedAt),
+              ),
+              thumbUrl: e.thumbUrl,
             ),
       ];
     } on Object {
@@ -6159,6 +6262,9 @@ GoRouter _buildRouter(
             onDeleteShop: readOnly
                 ? null
                 : () => _confirmDeleteShop(c, repo, shop),
+            onRenameShop: readOnly
+                ? null
+                : () async => _renameShop(c, repo, shop, selectedShop),
             onEditType: readOnly
                 ? null
                 : (type) => c
@@ -6296,7 +6402,7 @@ GoRouter _buildRouter(
                     if (!c.mounted) return;
                     final current = _selected(selectedShop);
                     if (current?.id == shop.id) {
-                      selectedShop.value = _shopFromDto(shop);
+                      selectedShop.value = _shopFromDto(c.l10n, shop);
                     }
                     c.pop();
                     _toast(c, c.l10n.resolutionChanged(r));

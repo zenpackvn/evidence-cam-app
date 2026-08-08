@@ -50,7 +50,7 @@
       }
     }
   },
-  "shopDeleted": "Shop deleted",
+  "shopDeleted": "Shop deleted.",
   "bundleSelected": "{count} selected",
   "@bundleSelected": {
     "placeholders": {
@@ -725,7 +725,7 @@
       }
     }
   },
-  "filterStatusLabel": "Upload status",
+  "filterStatusLabel": "Status",
   "filterStatusAll": "All",
   "filterStatusPending": "Awaiting upload",
   "filterStatusError": "Upload errors",
@@ -1353,8 +1353,11 @@
     }
   },
   "shopDeleteForce": "Delete anyway",
-  "shopDeleted": "Shop deleted.",
   "shopDeleteFailed": "Couldn't delete the shop.",
   "claimsCreatedLocalOnly": "Dossier saved on this phone. It could not be uploaded, so there is no share link yet — reopen it when you are back online.",
-  "claimsLinkCopied": "Dossier link copied. Paste it into the marketplace claim channel."
+  "claimsLinkCopied": "Dossier link copied. Paste it into the marketplace claim channel.",
+  "shopRenameTitle": "Rename shop",
+  "shopRenameHint": "Shop name",
+  "shopRenamed": "Shop renamed",
+  "commonSave": "Save"
 }

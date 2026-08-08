@@ -1324,7 +1324,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get filterStatusLabel => 'Trạng thái upload';
+  String get filterStatusLabel => 'Trạng thái';
 
   @override
   String get filterStatusAll => 'Tất cả';
@@ -1994,4 +1994,16 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get claimsLinkCopied =>
       'Đã sao chép link hồ sơ. Dán vào kênh khiếu nại của sàn.';
+
+  @override
+  String get shopRenameTitle => 'Đổi tên cửa hàng';
+
+  @override
+  String get shopRenameHint => 'Tên cửa hàng';
+
+  @override
+  String get shopRenamed => 'Đã đổi tên cửa hàng';
+
+  @override
+  String get commonSave => 'Lưu';
 }

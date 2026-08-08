@@ -1400,6 +1400,9 @@ class EcCreateShopScreen extends StatelessWidget {
     final l10n = context.l10n;
     return Form(
       child: PenScreen(
+        // Hình minh hoạ neo ở đáy màn. Nếu để bàn phím bóp màn lại, chạm vào ô
+        // "Tên cửa hàng" là cả cụm hình + nút bị hất lên giữa màn.
+        resizeToAvoidBottomInset: false,
         decorations: const [
           Positioned(
             left: 38,
@@ -1848,6 +1851,7 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onTapStorage,
     this.storageLabel = '',
     this.onDeleteShop,
+    this.onRenameShop,
     this.membersError = false,
     this.membersUnavailable = false,
     this.onRetryMembers,
@@ -1907,6 +1911,9 @@ class EcShopDetailScreen extends StatelessWidget {
 
   final VoidCallback? onDeleteShop;
 
+  /// Đổi tên cửa hàng. `null` = không hiện bút sửa (nhân viên).
+  final VoidCallback? onRenameShop;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -1950,6 +1957,21 @@ class EcShopDetailScreen extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                // Bút sửa nằm ngay cạnh tên, không phải trong một màn cài đặt
+                // riêng: tên shop là thứ đầu tiên trên màn này, sửa nó là việc
+                // của đúng chỗ đó. Nhân viên không thấy nút.
+                if (!readOnly && onRenameShop != null)
+                  EcTap(
+                    onTap: onRenameShop,
+                    child: const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: Icon(
+                        LucideIcons.pencil,
+                        size: 20,
+                        color: PenColors.mut,
+                      ),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: _sectionCardGap),

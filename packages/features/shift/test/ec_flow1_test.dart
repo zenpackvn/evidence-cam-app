@@ -555,6 +555,59 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    // Sửa tên shop là đặc quyền của chủ shop: nhân viên nhìn thấy tên mới,
+    // nhưng không có lối để đổi nó.
+    testWidgets('chỉ chủ shop mới thấy bút sửa tên', (tester) async {
+      var renamed = 0;
+      await _pump(
+        tester,
+        EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          members: members,
+          videoTypes: videoTypes,
+          onRenameShop: () => renamed++,
+        ),
+      );
+
+      // Bút của TÊN SHOP, không phải bút sửa loại video — cùng icon, khác
+      // việc, nên phải neo vào đúng thẻ chứa tên.
+      final pencil = find.descendant(
+        of: find.ancestor(
+          of: find.text('Shop ABC'),
+          matching: find.byType(PenCard),
+        ),
+        matching: find.byIcon(LucideIcons.pencil),
+      );
+      expect(pencil, findsOneWidget);
+      await tester.tap(pencil);
+      await tester.pump();
+      expect(renamed, 1);
+
+      await _pump(
+        tester,
+        EcShopDetailScreen(
+          readOnly: true,
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          members: members,
+          videoTypes: videoTypes,
+          onRenameShop: () => renamed++,
+        ),
+      );
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Shop ABC'),
+            matching: find.byType(PenCard),
+          ),
+          matching: find.byIcon(LucideIcons.pencil),
+        ),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('renders members and settings without overflow', (
       tester,
     ) async {
@@ -868,7 +921,7 @@ void main() {
       // Khung F2-01 mới: cả ba chip đều là dropdown, và khi chưa lọc chip chỉ
       // hiện tên chiều lọc chứ không phải giá trị "tất cả" của nó.
       expect(find.byIcon(LucideIcons.chevronDown), findsNWidgets(3));
-      expect(find.text('Trạng thái upload'), findsOneWidget);
+      expect(find.text('Trạng thái'), findsOneWidget);
       expect(find.text('Thời gian'), findsOneWidget);
       expect(find.text('Loại video'), findsOneWidget);
     });
@@ -886,7 +939,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Trạng thái upload'));
+      await tester.tap(find.text('Trạng thái'));
       await tester.pumpAndSettle();
       expect(find.byType(CupertinoActionSheet), findsOneWidget);
       // A real option set, not just the chip's own label back at it.
@@ -901,8 +954,8 @@ void main() {
       // the dimension plus the selection.
       expect(picked.single.uploadState, 'error');
       expect(picked.single.videoTypeId, isNull);
-      expect(find.text('Trạng thái upload: Có lỗi tải'), findsOneWidget);
-      expect(find.text('Trạng thái upload'), findsNothing);
+      expect(find.text('Trạng thái: Có lỗi tải'), findsOneWidget);
+      expect(find.text('Trạng thái'), findsNothing);
     });
 
     testWidgets('time chip maps "Hôm nay" to local midnight', (tester) async {
@@ -916,7 +969,7 @@ void main() {
         ),
       );
 
-      // Chip 'Trạng thái upload' dài hơn nhãn cũ nên hàng chip tràn ngang —
+      // Chip 'Trạng thái' nằm trong hàng chip có thể tràn ngang —
       // cuộn chip vào tầm nhìn trước khi bấm.
       await tester.ensureVisible(find.text('Thời gian'));
       await tester.tap(find.text('Thời gian'));
@@ -942,7 +995,7 @@ void main() {
         ),
       );
 
-      // Chip 'Trạng thái upload' dài hơn nhãn cũ nên hàng chip tràn ngang —
+      // Chip 'Trạng thái' nằm trong hàng chip có thể tràn ngang —
       // cuộn chip vào tầm nhìn trước khi bấm.
       await tester.ensureVisible(find.text('Thời gian'));
       await tester.tap(find.text('Thời gian'));
@@ -972,7 +1025,7 @@ void main() {
         ),
       );
 
-      // Chip 'Trạng thái upload' dài hơn nhãn cũ nên hàng chip tràn ngang —
+      // Chip 'Trạng thái' nằm trong hàng chip có thể tràn ngang —
       // cuộn chip vào tầm nhìn trước khi bấm.
       await tester.ensureVisible(find.text('Thời gian'));
       await tester.tap(find.text('Thời gian'));
@@ -1032,7 +1085,7 @@ void main() {
         ),
       );
 
-      // Chip 'Trạng thái upload' dài hơn nhãn cũ nên hàng chip tràn ngang —
+      // Chip 'Trạng thái' nằm trong hàng chip có thể tràn ngang —
       // cuộn chip vào tầm nhìn trước khi bấm.
       await tester.ensureVisible(find.text('Thời gian'));
       await tester.tap(find.text('Thời gian'));
@@ -1121,7 +1174,7 @@ void main() {
       );
       expect(find.text('Shop chưa có đơn nào'), findsOneWidget);
 
-      await tester.tap(find.text('Trạng thái upload'));
+      await tester.tap(find.text('Trạng thái'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Chờ upload'));
       await tester.pumpAndSettle();

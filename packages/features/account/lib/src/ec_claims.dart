@@ -562,6 +562,8 @@ class EcClaimPickable {
     required this.time,
     this.isPhoto = false,
     this.capturedAt,
+    this.day,
+    this.thumbUrl,
   });
 
   final String id;
@@ -571,6 +573,15 @@ class EcClaimPickable {
 
   /// Lúc quay/chụp, epoch ms — để hồ sơ hiện được ngày ở dòng mã vận đơn.
   final int? capturedAt;
+
+  /// Nhãn ngày đã định dạng sẵn ("07/08/2026"), dùng làm tiêu đề nhóm.
+  ///
+  /// Định dạng ở tầng app chứ không ở đây, để màn này và dòng thời gian của
+  /// một đơn luôn ghi ngày giống hệt nhau.
+  final String? day;
+
+  /// Ảnh đại diện của clip. `null` → rơi về ô icon.
+  final String? thumbUrl;
 }
 
 /// Phần đã tick của MỘT mã vận đơn, khi bấm tạo hồ sơ.
@@ -872,14 +883,46 @@ class _OrderPickSection extends StatelessWidget {
             color: PenColors.mut,
           )
         else
-          for (final e in items)
-            _PickRow(
-              item: e,
-              picked: picked.contains(e.id),
-              onTap: () => onToggle(e.id),
-            ),
+          for (final group in _byDay) ...[
+            const SizedBox(height: 10),
+            if (group.$1.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 9),
+                child: PenText(
+                  group.$1,
+                  size: 16,
+                  color: PenColors.ink,
+                  weight: FontWeight.w700,
+                ),
+              ),
+            for (var i = 0; i < group.$2.length; i++) ...[
+              if (i > 0) const SizedBox(height: 9),
+              _PickRow(
+                item: group.$2[i],
+                picked: picked.contains(group.$2[i].id),
+                onTap: () => onToggle(group.$2[i].id),
+              ),
+            ],
+          ],
       ],
     );
+  }
+
+  /// Gom bằng chứng theo ngày, GIỮ NGUYÊN thứ tự máy chủ trả về.
+  ///
+  /// Không sắp lại: dòng thời gian của một đơn đã xếp sẵn, và xếp lại ở đây sẽ
+  /// cho hai màn cùng dữ liệu mà khác thứ tự.
+  List<(String, List<EcClaimPickable>)> get _byDay {
+    final groups = <(String, List<EcClaimPickable>)>[];
+    for (final item in items) {
+      final day = item.day ?? '';
+      if (groups.isEmpty || groups.last.$1 != day) {
+        groups.add((day, [item]));
+      } else {
+        groups.last.$2.add(item);
+      }
+    }
+    return groups;
   }
 }
 
@@ -943,6 +986,13 @@ class _SearchScanBar extends StatelessWidget {
   );
 }
 
+/// Một bằng chứng trong màn tạo hồ sơ, dựng theo đúng khuôn dòng thời gian của
+/// một mã vận đơn: giờ ở cột trái, chấm mốc, rồi thẻ có ảnh đại diện.
+///
+/// Cùng dữ liệu thì phải cùng hình dạng. Bản trước là một dòng chữ trơn có
+/// icon, nên người bán vừa xem đơn xong mở màn này ra không nhận ra đây vẫn là
+/// những clip ấy — và không có ảnh đại diện thì "Đóng hàng 14:02" với "Đóng
+/// hàng 14:06" trông y hệt nhau.
 class _PickRow extends StatelessWidget {
   const _PickRow({
     required this.item,
@@ -955,37 +1005,97 @@ class _PickRow extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => EcTap(
-    onTap: onTap,
-    child: PenBox(
-      width: double.infinity,
-      axis: PenAxis.row,
-      gap: 10,
-      cross: CrossAxisAlignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 9),
-      children: [
-        Icon(
-          item.isPhoto ? LucideIcons.image : LucideIcons.video,
-          size: 17,
-          color: PenColors.primary,
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      SizedBox(
+        width: 46,
+        child: PenText(item.time, size: 14, color: PenColors.mut),
+      ),
+      const SizedBox(
+        width: 22,
+        height: 58,
+        child: Center(
+          child: PenEllipse(width: 11, height: 11, color: PenColors.ink),
         ),
-        Expanded(
-          child: PenText(
-            item.label,
-            size: 14,
-            color: PenColors.ink,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-          ),
+      ),
+      Expanded(
+        // Cả thẻ là vùng bấm, không riêng ô tick: ở đây chạm vào một bằng
+        // chứng chỉ có đúng một nghĩa — chọn hoặc bỏ chọn nó.
+        child: PenCard(
+          lifted: false,
+          gap: 12,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 11),
+          onTap: onTap,
+          children: [
+            _PickThumb(item: item),
+            Expanded(
+              child: PenText(
+                item.label,
+                size: 14,
+                color: PenColors.ink,
+                weight: FontWeight.w600,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(
+              picked ? LucideIcons.squareCheckBig : LucideIcons.square,
+              size: 20,
+              color: picked ? PenColors.primary : PenColors.mut,
+            ),
+          ],
         ),
-        PenText(item.time, size: 12, color: PenColors.mut, softWrap: false),
-        Icon(
-          picked ? LucideIcons.squareCheckBig : LucideIcons.square,
-          size: 20,
-          color: picked ? PenColors.primary : PenColors.mut,
-        ),
-      ],
-    ),
+      ),
+    ],
+  );
+}
+
+/// Ô vuông đầu hàng: ảnh đại diện thật của clip, nếu không có thì icon.
+///
+/// Mọi đường rơi đều về cùng một ô icon, nên ảnh thiếu, đang tải hay hỏng đều
+/// trông như thiết kế chứ không như lỗi.
+class _PickThumb extends StatelessWidget {
+  const _PickThumb({required this.item});
+
+  static const _size = 42.0;
+  static const _radius = 10.0;
+
+  final EcClaimPickable item;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = item.thumbUrl;
+    if (url == null) return _icon();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(_radius),
+      child: Image.network(
+        url,
+        width: _size,
+        height: _size,
+        fit: BoxFit.cover,
+        cacheWidth: (_size * MediaQuery.devicePixelRatioOf(context)).round(),
+        errorBuilder: (context, error, stackTrace) => _icon(),
+        loadingBuilder: (context, child, progress) =>
+            progress == null ? child : _icon(),
+      ),
+    );
+  }
+
+  Widget _icon() => PenBox(
+    width: _size,
+    height: _size,
+    fill: PenColors.bg,
+    radius: _radius,
+    axis: PenAxis.row,
+    main: MainAxisAlignment.center,
+    cross: CrossAxisAlignment.center,
+    children: [
+      Icon(
+        item.isPhoto ? LucideIcons.image : LucideIcons.video,
+        size: 21,
+        color: PenColors.ink,
+      ),
+    ],
   );
 }
 
@@ -1009,8 +1119,21 @@ class _CreateClaimButton extends StatelessWidget {
       cross: CrossAxisAlignment.center,
       children: [
         const Icon(LucideIcons.fileText, size: 20, color: PenColors.card),
+        // Nhãn co được, SỐ ĐẾM thì không. Trên màn hẹp cả cụm tràn khỏi nút;
+        // để nguyên một chuỗi thì thứ bị cắt lại đúng là con số — thông tin
+        // duy nhất thay đổi theo thao tác của người dùng.
+        Flexible(
+          child: PenText(
+            context.l10n.bundleCreateClaim,
+            size: 16,
+            color: PenColors.card,
+            weight: FontWeight.w700,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
         PenText(
-          '${context.l10n.bundleCreateClaim} ($count)',
+          '($count)',
           size: 16,
           color: PenColors.card,
           weight: FontWeight.w700,

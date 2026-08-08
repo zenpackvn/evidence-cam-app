@@ -50,7 +50,7 @@
       }
     }
   },
-  "shopDeleted": "Đã xóa cửa hàng",
+  "shopDeleted": "Đã xoá cửa hàng.",
   "bundleSelected": "Đã chọn {count} bằng chứng",
   "@bundleSelected": {
     "placeholders": {
@@ -493,7 +493,7 @@
   "ordersPagePrevious": "Trang trước",
   "ordersPageNext": "Trang sau",
   "ordersPageNumber": "Trang {page}",
-  "filterStatusLabel": "Trạng thái upload",
+  "filterStatusLabel": "Trạng thái",
   "filterStatusAll": "Tất cả",
   "filterStatusPending": "Chờ upload",
   "filterStatusError": "Có lỗi tải",
@@ -1108,8 +1108,11 @@
     }
   },
   "shopDeleteForce": "Vẫn xoá",
-  "shopDeleted": "Đã xoá cửa hàng.",
   "shopDeleteFailed": "Không xoá được cửa hàng.",
   "claimsCreatedLocalOnly": "Đã tạo hồ sơ trên máy. Chưa gửi lên được nên chưa có link chia sẻ — mở lại khi có mạng.",
-  "claimsLinkCopied": "Đã sao chép link hồ sơ. Dán vào kênh khiếu nại của sàn."
+  "claimsLinkCopied": "Đã sao chép link hồ sơ. Dán vào kênh khiếu nại của sàn.",
+  "shopRenameTitle": "Đổi tên cửa hàng",
+  "shopRenameHint": "Tên cửa hàng",
+  "shopRenamed": "Đã đổi tên cửa hàng",
+  "commonSave": "Lưu"
 }
