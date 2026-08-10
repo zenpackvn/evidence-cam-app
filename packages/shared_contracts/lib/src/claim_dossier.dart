@@ -3,10 +3,11 @@
 /// Thuần Dart, JSON vào/ra — mô hình này đi qua hai feature (trang vận đơn tạo
 /// nó, tab Tài khoản hiển thị nó) nên nằm ở đây thay vì thuộc về một bên.
 ///
-/// **Chưa có gì ở phía máy chủ.** Backend chưa mở endpoint gộp bằng chứng, nên
-/// hồ sơ hiện chỉ sống trên máy này (xem `EcClaimStore` ở app shell). Khi
-/// endpoint có thật thì đây là hình dạng để ánh xạ sang, không phải thứ phải
-/// vứt đi.
+/// **Nội dung nằm trên máy, link nằm trên máy chủ.** Máy chủ đã có endpoint gộp
+/// (`POST /api/shops/:id/claims`) và giữ link công khai, nhưng chưa có đường
+/// đọc lại nội dung hồ sơ khi đã đăng nhập — nên danh sách và chi tiết vẫn đọc
+/// từ `EcClaimStore` ở app shell. Cặp `claimId` + `shareUrl` là sợi dây duy
+/// nhất nối bản trên máy với bản trên máy chủ.
 library;
 
 /// Một hồ sơ, gộp bằng chứng của một hoặc nhiều mã vận đơn.
@@ -16,6 +17,7 @@ class EcClaimDossier {
     required this.shopId,
     required this.createdAt,
     required this.orders,
+    this.claimId,
     this.shareUrl,
   });
 
@@ -25,6 +27,7 @@ class EcClaimDossier {
     createdAt: DateTime.fromMillisecondsSinceEpoch(
       (j['created_at'] as num?)?.toInt() ?? 0,
     ),
+    claimId: j['claim_id'] as String?,
     shareUrl: j['share_url'] as String?,
     orders: [
       for (final o in (j['orders'] as List<dynamic>? ?? const []))
@@ -40,6 +43,14 @@ class EcClaimDossier {
   final DateTime createdAt;
 
   final List<EcClaimOrder> orders;
+
+  /// Id hồ sơ TRÊN MÁY CHỦ — thứ duy nhất thu hồi link được.
+  ///
+  /// `null` cùng lúc với [shareUrl]: hồ sơ chưa bao giờ lên tới máy chủ. Xoá
+  /// một hồ sơ như thế là chuyện nội bộ của máy này; xoá một hồ sơ CÓ id thì
+  /// phải thu hồi trước, nếu không link vẫn phát cho sàn xem trong khi người
+  /// bán tưởng mình vừa gỡ nó xuống.
+  final String? claimId;
 
   /// Link công khai của hồ sơ trên zenpack.vn, do máy chủ cấp.
   ///
@@ -57,18 +68,23 @@ class EcClaimDossier {
     'id': id,
     'shop_id': shopId,
     'created_at': createdAt.millisecondsSinceEpoch,
+    if (claimId != null) 'claim_id': claimId,
     if (shareUrl != null) 'share_url': shareUrl,
     'orders': [for (final o in orders) o.toJson()],
   };
 
-  EcClaimDossier copyWith({List<EcClaimOrder>? orders, String? shareUrl}) =>
-      EcClaimDossier(
-        id: id,
-        shopId: shopId,
-        createdAt: createdAt,
-        orders: orders ?? this.orders,
-        shareUrl: shareUrl ?? this.shareUrl,
-      );
+  EcClaimDossier copyWith({
+    List<EcClaimOrder>? orders,
+    String? claimId,
+    String? shareUrl,
+  }) => EcClaimDossier(
+    id: id,
+    shopId: shopId,
+    createdAt: createdAt,
+    orders: orders ?? this.orders,
+    claimId: claimId ?? this.claimId,
+    shareUrl: shareUrl ?? this.shareUrl,
+  );
 }
 
 /// Phần của một mã vận đơn trong hồ sơ.

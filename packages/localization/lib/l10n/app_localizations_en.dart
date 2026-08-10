@@ -53,6 +53,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Delete this dossier? The evidence on the orders themselves is untouched.';
 
   @override
+  String get claimsDeleteConfirmLink =>
+      'Delete this dossier? Its public link dies immediately — anyone you already sent it to gets an empty page. The evidence on the orders themselves is untouched.';
+
+  @override
+  String get claimsRevokeFailed =>
+      'Could not revoke the link, so the dossier is left as is. The link is still open — try again on a better connection, or ask the shop owner to revoke it.';
+
+  @override
   String get claimsDeleted => 'Dossier deleted';
 
   @override
@@ -460,7 +468,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statPendingUpload => 'Pending upload';
 
   @override
-  String get accountPlanQuota => 'Storage';
+  String get accountPlanQuota => 'Plan & storage';
+
+  @override
+  String get accountChangePlan => 'Change plan';
 
   @override
   String get accountSectionApp => 'PLAN & APP';
@@ -1795,6 +1806,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get quotaSubtitleVideos =>
       'Track how many videos you recorded this month';
+
+  @override
+  String get quotaUpgrade => 'Upgrade plan';
 
   @override
   String get quotaBlockedTitle => 'Video allowance exhausted';

@@ -170,11 +170,23 @@ abstract class AppLocalizations {
   /// **'Delete dossier'**
   String get claimsDelete;
 
-  /// No description provided for @claimsDeleteConfirm.
+  /// Delete confirmation for a dossier that never reached the server, so there is no public link to kill.
   ///
   /// In en, this message translates to:
   /// **'Delete this dossier? The evidence on the orders themselves is untouched.'**
   String get claimsDeleteConfirm;
+
+  /// Delete confirmation for a dossier that has a live public link. Says the link dies, because that link may already be sitting in a marketplace claim form.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this dossier? Its public link dies immediately — anyone you already sent it to gets an empty page. The evidence on the orders themselves is untouched.'**
+  String get claimsDeleteConfirmLink;
+
+  /// Shown when revoking on the server fails: no network, or the member is not the owner/manager. The local dossier is deliberately kept so the link can still be revoked later.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not revoke the link, so the dossier is left as is. The link is still open — try again on a better connection, or ask the shop owner to revoke it.'**
+  String get claimsRevokeFailed;
 
   /// No description provided for @claimsDeleted.
   ///
@@ -917,8 +929,14 @@ abstract class AppLocalizations {
   /// No description provided for @accountPlanQuota.
   ///
   /// In en, this message translates to:
-  /// **'Storage'**
+  /// **'Plan & storage'**
   String get accountPlanQuota;
+
+  /// No description provided for @accountChangePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Change plan'**
+  String get accountChangePlan;
 
   /// No description provided for @accountSectionApp.
   ///
@@ -3255,6 +3273,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Track how many videos you recorded this month'**
   String get quotaSubtitleVideos;
+
+  /// No description provided for @quotaUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade plan'**
+  String get quotaUpgrade;
 
   /// No description provided for @quotaBlockedTitle.
   ///

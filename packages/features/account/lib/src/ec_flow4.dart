@@ -41,6 +41,7 @@ class EcAccountTabScreen extends StatelessWidget {
     this.appVersion = '1.0.0',
     this.onProfileTap,
     this.onQuotaTap,
+    this.onChangePlanTap,
     this.onLanguageTap,
     this.onEndQrTap,
     this.onChangePasswordTap,
@@ -68,6 +69,16 @@ class EcAccountTabScreen extends StatelessWidget {
   final String appVersion;
   final VoidCallback? onProfileTap;
   final VoidCallback? onQuotaTap;
+
+  /// Mở thẳng paywall IAP (RevenueCat) từ màn cài đặt.
+  ///
+  /// `null` = build không có khoá cửa hàng, hoặc người đang đăng nhập không
+  /// quản lý được gói → hàng này biến mất. Hàng "Gói cước & dung lượng" ở trên
+  /// vẫn còn, nên người chỉ được xem vẫn đọc được gói và hạn mức.
+  ///
+  /// Ranh giới Guideline 3.1 không đổi: hàng này chỉ được phép tồn tại vì nó mở
+  /// IAP của Apple/Google. Không một chữ nào dẫn sang zenpack.vn.
+  final VoidCallback? onChangePlanTap;
   final VoidCallback? onLanguageTap;
 
   /// Mở tờ QR "kết thúc phiên" để in. Mã dùng chung cho mọi máy, nên nó thuộc
@@ -131,8 +142,15 @@ class EcAccountTabScreen extends StatelessWidget {
                       _SettingsRow(
                         icon: LucideIcons.creditCard,
                         label: context.l10n.accountPlanQuota,
+                        value: planLabel,
                         onTap: onQuotaTap,
                       ),
+                      if (onChangePlanTap != null)
+                        _SettingsRow(
+                          icon: LucideIcons.circleArrowUp,
+                          label: context.l10n.accountChangePlan,
+                          onTap: onChangePlanTap,
+                        ),
                       _SettingsRow(
                         icon: LucideIcons.globe,
                         label: context.l10n.accountLanguage,
@@ -736,6 +754,7 @@ class EcQuotaScreen extends StatelessWidget {
     this.typeUsage = const [],
     this.onBack,
     this.canManagePlan = true,
+    this.onUpgrade,
     super.key,
   });
 
@@ -773,6 +792,15 @@ class EcQuotaScreen extends StatelessWidget {
   /// tắt nút nào. Giữ lại vì nó quyết định câu giải thích khi hết hạn mức —
   /// chủ shop tự xử lý được, nhân viên thì phải đi hỏi ai đó.
   final bool canManagePlan;
+
+  /// Mở paywall IAP (RevenueCat). `null` = build không có khoá cửa hàng, hoặc
+  /// người dùng không có quyền quản lý gói → màn hình không hiện nút mua.
+  ///
+  /// Màn này KHÔNG tự bật gói sau khi mua. Biên nhận trên máy có thể bị giả
+  /// hoặc phát lại; hạn dùng do backend chốt khi webhook RevenueCat tới. Chỗ
+  /// gọi chỉ việc hỏi lại backend sau khi paywall đóng.
+  final VoidCallback? onUpgrade;
+
 
   /// Backend đã đổi trục sang số lượng video chưa.
   bool get _videoAxis => capVideos > 0;
@@ -871,6 +899,7 @@ class EcQuotaScreen extends StatelessWidget {
                       retentionTotalDays: retentionTotalDays,
                       blocked: blocked,
                       canManagePlan: canManagePlan,
+                      onUpgrade: onUpgrade,
                     ),
                     if (_videoAxis) ...[
                       const SizedBox(height: 12),
@@ -1027,6 +1056,7 @@ class _QuotaSummaryCard extends StatelessWidget {
     required this.retentionTotalDays,
     required this.blocked,
     required this.canManagePlan,
+    required this.onUpgrade,
   });
 
   final String planLabel;
@@ -1039,6 +1069,11 @@ class _QuotaSummaryCard extends StatelessWidget {
   final int retentionTotalDays;
   final bool blocked;
   final bool canManagePlan;
+
+  /// Mở paywall IAP. `null` = build này không có cửa hàng, hoặc người dùng
+  /// không quản lý được gói → không hiện nút mua.
+  final VoidCallback? onUpgrade;
+
 
   @override
   Widget build(BuildContext context) {
@@ -1066,13 +1101,38 @@ class _QuotaSummaryCard extends StatelessWidget {
                 ],
               ),
             ),
-            // KHÔNG có nút mua ở đây, và cũng không có câu chữ chỉ đường sang
-            // trang thanh toán. App chỉ đăng nhập và sử dụng; mọi giao dịch
-            // diễn ra trên web. Đây là quy tắc chống dẫn dắt của Apple
-            // (App Review Guidelines 3.1) — thêm lại một cái nút "Nâng gói" ở
-            // chỗ này là đủ để bị từ chối phát hành.
+            // Nút mua này CHỈ được phép tồn tại vì nó mở IAP của Apple/Google
+            // (paywall RevenueCat), không phải vì đã đổi ý về Guideline 3.1.
+            // Ranh giới vẫn y nguyên: cấm mọi thứ dẫn người dùng ra ngoài để
+            // trả tiền. Một chữ "mua trên zenpack.vn" ở màn này vẫn đủ để bị
+            // trả hồ sơ — kể cả khi bên cạnh nó đã có nút IAP.
             //
-            // Việc nhắc gia hạn đi qua email/push/Zalo, nằm ngoài app store.
+            // `onUpgrade == null` khi build không có khoá RevenueCat: thà không
+            // có nút còn hơn một cái nút bấm vào không mở được gì.
+            if (onUpgrade != null && canManagePlan) ...[
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: onUpgrade,
+                child: PenBox(
+                  fill: PenColors.primary,
+                  radius: 999,
+                  hugMain: true,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 9,
+                    horizontal: 14,
+                  ),
+                  children: [
+                    PenText(
+                      l10n.quotaUpgrade,
+                      size: 13,
+                      color: PenColors.card,
+                      weight: FontWeight.w700,
+                      softWrap: false,
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (blocked) ...[
               const SizedBox(width: 12),
               PenBox(

@@ -84,6 +84,7 @@ import 'package:storage/storage.dart';
 import 'app/di/injection.dart';
 import 'core/data/ec_claim_store.dart';
 import 'app/update_gate.dart';
+import 'data/ec_purchases.dart';
 import 'data/ec_uploader.dart';
 import 'data/platform_device_conditions.dart';
 import 'screens/ec_record_route.dart';
@@ -238,9 +239,40 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     // trong [_reportQueueDepth]: mỗi phần trăm tiến độ upload cũng bắn một lượt
     // notify, và bắn một request theo từng phần trăm là điên rồ.
     _queue.addListener(_onQueueChangedForReporting);
+    // Phiên mua hàng bám theo người đang đăng nhập. Nghe ở MỘT chỗ thay vì vá
+    // từng lối đăng nhập/đăng xuất: thiếu sót một lối là người sau mua gói lại
+    // được cộng ngày cho tài khoản trước — RevenueCat vẫn giữ app_user_id cũ.
+    _auth.user.addListener(_syncPurchaseIdentity);
+    _syncPurchaseIdentity();
+    // Paywall của RevenueCat đọc ngôn ngữ MÁY chứ không đọc ngôn ngữ app. Nghe
+    // ở một chỗ vì cùng lý do với dòng trên: có hai lối đổi ngôn ngữ (nút gạt ở
+    // màn tài khoản và màn /language), vá từng lối là sớm muộn sót một lối.
+    _language.addListener(_syncPurchaseLocale);
+    _syncPurchaseLocale();
     // Máy dựng trên bàn đóng hàng, người quay không chạm vào suốt cả ca — để
     // màn tự tắt là camera preview ngủ theo và phiên quay đứt giữa chừng.
     unawaited(WakelockPlus.enable().catchError((_) {}));
+  }
+
+  /// Gắn/gỡ phiên RevenueCat theo tài khoản đang đăng nhập.
+  ///
+  /// `app_user_id` phải bằng Firebase uid — backend tra tài khoản bằng đúng giá
+  /// trị đó khi webhook tới, và uid lạ thì event bị bỏ qua, tức người dùng trả
+  /// tiền mà không ai được cộng ngày.
+  void _syncPurchaseIdentity() {
+    final uid = _auth.user.value?.uid;
+    unawaited(
+      (uid == null ? EcPurchases.logOut() : EcPurchases.logIn(uid))
+          .catchError((_) {}),
+    );
+  }
+
+  void _syncPurchaseLocale() {
+    unawaited(
+      EcPurchases.setUiLocale(
+        _language.value == EcAppLanguage.en ? 'en' : 'vi',
+      ).catchError((_) {}),
+    );
   }
 
   /// App quay lại foreground.
@@ -294,10 +326,12 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _queue.removeListener(_onQueueChangedForReporting);
+    _auth.user.removeListener(_syncPurchaseIdentity);
     unawaited(WakelockPlus.disable().catchError((_) {}));
     _router.dispose();
     _language
       ..removeListener(_persistLanguage)
+      ..removeListener(_syncPurchaseLocale)
       ..dispose();
     _queue.dispose();
     _selectedShop.dispose();
@@ -948,6 +982,21 @@ class _AccountRouteState extends State<_AccountRoute> {
     });
   }
 
+  /// Mở paywall IAP thẳng từ màn cài đặt — giống hệt nút ở màn Quota.
+  ///
+  /// Tách khỏi màn Quota vì đó là màn BÁO CÁO: người muốn đổi gói không nên
+  /// phải đi qua một bảng số liệu mới thấy chỗ mua.
+  ///
+  /// Mua xong KHÔNG tự bật gói: biên nhận trên máy có thể bị giả hoặc phát
+  /// lại, hạn dùng do webhook RevenueCat → backend chốt. Hàng đợi cũng được đá
+  /// một cái vì clip đang đỗ do hết hạn mức phải tự đi tiếp.
+  Future<void> _openPaywall() async {
+    final purchased = await EcPurchases.presentPaywall();
+    if (!purchased || !mounted) return;
+    unawaited(widget.queue.retryQuotaWaiting());
+    _refreshQuota();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1040,6 +1089,13 @@ class _AccountRouteState extends State<_AccountRoute> {
               // Future thì Flutter ném assertion và bỏ luôn lượt dựng lại.
               _refreshQuota();
             },
+            // Không có khoá RevenueCat, hoặc không phải chủ shop → `null` →
+            // hàng "Đổi gói" không hiện. Nút bấm vào không mở được gì còn tệ
+            // hơn là không có nút.
+            onChangePlanTap:
+                EcPurchases.isAvailable && (snap.data?.canManagePlan ?? false)
+                ? _openPaywall
+                : null,
             onLanguageTap: () => context.push('/language'),
             onEndQrTap: () => _showEndSessionQr(
               context,
@@ -1295,13 +1351,16 @@ class _LoginMethodsRoute extends StatelessWidget {
 /// actually sitting in [queue] so the numbers on screen can never disagree
 /// with what's really stored on the device.
 ///
-/// **Chỉ xem, không mua.** Gói cước bán ở web, không bán trong app. Màn này
-/// trả lời đúng một câu hỏi: tôi đang ở gói nào và còn bao nhiêu dung lượng.
+/// **Mua được, nhưng chỉ bằng IAP.** Nút "Nâng cấp gói" mở paywall dựng sẵn của
+/// RevenueCat, tức đi qua cửa hàng Apple/Google — đúng cách mà Guideline 3.1.1
+/// yêu cầu với nội dung số.
 ///
-/// App cũng KHÔNG nói mua ở đâu — không một dòng chữ, không một đường dẫn.
-/// Guideline 3.1.1 của App Store cấm hướng người dùng ra ngoài để mua nội dung
-/// số, và một câu "nâng gói tại zenpack.vn" là đủ để bị trả hồ sơ. Chủ shop
-/// vốn đã mua ở web nên họ không cần app chỉ đường.
+/// Ranh giới KHÔNG đổi: app vẫn tuyệt đối không nói mua ở đâu khác. Không một
+/// dòng chữ, không một đường dẫn sang zenpack.vn. Cấm dẫn ra ngoài vẫn nguyên
+/// giá trị kể cả khi bên cạnh đã có nút IAP hợp lệ.
+///
+/// Mua xong màn này KHÔNG tự bật gói — nó hỏi lại backend. Biên nhận trên máy
+/// có thể bị giả hoặc phát lại; hạn dùng do webhook RevenueCat → backend chốt.
 class _QuotaRoute extends StatefulWidget {
   const _QuotaRoute({required this.repo, required this.queue, this.shopId});
 
@@ -1331,6 +1390,19 @@ class _QuotaRouteState extends State<_QuotaRoute> {
   void dispose() {
     widget.queue.uploadsCompleted.removeListener(_refresh);
     super.dispose();
+  }
+
+  /// Mở paywall IAP, rồi hỏi lại backend.
+  ///
+  /// Chỉ `_refresh()` khi paywall báo đã mua — nhưng KHÔNG tin con số ngay lập
+  /// tức: webhook RevenueCat → backend chạy bất đồng bộ, nên lần hỏi đầu có thể
+  /// vẫn ra gói cũ. Hàng đợi cũng được đá một cái: clip đang đỗ vì hết hạn mức
+  /// phải tự đi tiếp khi vừa có thêm chỗ, đó là lý do người dùng vừa trả tiền.
+  Future<void> _openPaywall() async {
+    final purchased = await EcPurchases.presentPaywall();
+    if (!purchased || !mounted) return;
+    unawaited(widget.queue.retryQuotaWaiting());
+    _refresh();
   }
 
   void _refresh() {
@@ -1389,10 +1461,11 @@ class _QuotaRouteState extends State<_QuotaRoute> {
           blocked: quota.blocked,
           retentionTotalDays: quota.retentionDays,
           typeUsage: typeUsage,
-          // Mua gói KHÔNG diễn ra trong app nữa — xem chú thích ở đầu lớp.
-          // `canManagePlan` vẫn truyền vào vì màn hình dùng nó cho những nhãn
-          // khác, nhưng không còn nút nào để nó bật/tắt.
+          // `canManagePlan` gác nút mua (chỉ chủ shop) VÀ quyết định câu giải
+          // thích khi hết hạn mức — nhân viên được bảo đi hỏi chủ shop.
           canManagePlan: quota.canManagePlan,
+          // Không có khoá RevenueCat trong build này → `null` → không hiện nút.
+          onUpgrade: EcPurchases.isAvailable ? _openPaywall : null,
           onBack: () => _back(context, '/account'),
         );
       },
@@ -5326,7 +5399,7 @@ class _CreateClaimRoute extends StatelessWidget {
   ) async {
     final l10n = context.l10n;
     final now = DateTime.now();
-    final shareUrl = await _publish(batch);
+    final claim = await _publish(batch);
     // Chụp lại NGUYÊN nội dung chứ không giữ id rồi tra sau: clip có hạn lưu
     // trữ, mà hồ sơ khiếu nại phải nói được nó ĐÃ gồm những gì.
     await _claimStore.add(
@@ -5334,7 +5407,10 @@ class _CreateClaimRoute extends StatelessWidget {
         id: now.microsecondsSinceEpoch.toString(),
         shopId: shopId,
         createdAt: now,
-        shareUrl: shareUrl,
+        // Giữ id của máy chủ chứ không chỉ link: đây là thứ duy nhất thu hồi
+        // được về sau. Chỉ lưu link thì nút xoá chỉ xoá được bản trên máy.
+        claimId: claim?.id,
+        shareUrl: claim?.url,
         orders: [
           for (final order in batch)
             EcClaimOrder(
@@ -5356,7 +5432,7 @@ class _CreateClaimRoute extends StatelessWidget {
     if (!context.mounted) return;
     _toast(
       context,
-      shareUrl == null ? l10n.claimsCreatedLocalOnly : l10n.claimsCreated,
+      claim == null ? l10n.claimsCreatedLocalOnly : l10n.claimsCreated,
     );
     onBack?.call();
   }
@@ -5367,7 +5443,7 @@ class _CreateClaimRoute extends StatelessWidget {
   /// Người bán vừa tick xong một danh sách đơn; bắt họ làm lại vì mất mạng là
   /// trừng phạt họ vì lỗi của mạng. Đổi lại, màn hình phải nói thẳng là chưa
   /// có link, chứ không để họ tưởng bằng chứng đã chia sẻ được.
-  Future<String?> _publish(List<EcClaimOrderPicks> batch) async {
+  Future<ClaimDto?> _publish(List<EcClaimOrderPicks> batch) async {
     try {
       // Mã vận đơn → id đơn. `_search` đã tra ra id này lúc người dùng gõ mã,
       // nhưng màn là StatelessWidget nên không giữ lại được; tra lại một lượt
@@ -5394,11 +5470,11 @@ class _CreateClaimRoute extends StatelessWidget {
         picked.addAll(batch[i].picked.map((e) => e.id));
       }
       if (resolved.isEmpty) return null;
-      return (await repo.createClaim(
+      return repo.createClaim(
         shopId,
         resolved,
         evidenceIds: picked.isEmpty ? null : picked,
-      )).url;
+      );
     } on Object catch (error, stack) {
       developer.log(
         'claims: không gửi được hồ sơ lên máy chủ (${error.runtimeType})',
@@ -5437,11 +5513,10 @@ class _CreateClaimRoute extends StatelessWidget {
   return (_dayLabelOf(at), _hhmm(at));
 }
 
-/// Sao chép nội dung hồ sơ dưới dạng chữ.
+/// Sao chép link hồ sơ, hoặc nội dung hồ sơ khi chưa có link.
 ///
-/// Chưa có link gộp để sao chép — backend chưa mở endpoint — nên thứ đi vào
-/// clipboard là chính nội dung hồ sơ. Dán được thẳng vào khung chat CSKH của
-/// sàn, và người đọc không cần app nào để mở nó.
+/// Bản chữ là đường lùi cho hồ sơ tạo lúc mất mạng: dán thẳng vào khung chat
+/// CSKH của sàn, người đọc không cần app nào để mở.
 void _copyClaimSummary(BuildContext context, EcClaimDossier dossier) {
   final l10n = context.l10n;
   final url = dossier.shareUrl;
@@ -5463,6 +5538,7 @@ void _copyClaimSummary(BuildContext context, EcClaimDossier dossier) {
 /// một hàng đính kèm ảnh dưới mỗi mã đơn.
 class _ClaimDetailRoute extends StatelessWidget {
   const _ClaimDetailRoute({
+    required this.repo,
     required this.shopId,
     required this.dossierId,
     required this.queue,
@@ -5470,6 +5546,7 @@ class _ClaimDetailRoute extends StatelessWidget {
     this.onBack,
   });
 
+  final EcRepository repo;
   final String shopId;
   final String dossierId;
   final EcUploadQueue queue;
@@ -5545,13 +5622,27 @@ class _ClaimDetailRoute extends StatelessWidget {
     if (context.mounted) _toast(context, l10n.claimsItemRemoved);
   }
 
+  /// Xoá hồ sơ: thu hồi trên máy chủ TRƯỚC, xoá bản trên máy sau.
+  ///
+  /// Thứ tự đó là cả nội dung của việc này. Xoá trên máy trước rồi thu hồi hỏng
+  /// thì link công khai vẫn phát bằng chứng cho sàn xem, mà màn duy nhất bấm
+  /// thu hồi được vừa biến mất — người bán không còn cách nào gỡ nó xuống.
+  /// Nên hỏng thì GIỮ NGUYÊN hồ sơ và nói thẳng là link còn sống.
+  ///
+  /// Hồ sơ chưa từng lên máy chủ (`claimId == null`, tạo lúc mất mạng) không có
+  /// gì để thu hồi — xoá thẳng.
   Future<void> _confirmDelete(BuildContext context) async {
     final l10n = context.l10n;
+    final claimId = _claimStore.byId(shopId, dossierId)?.claimId;
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
         title: Text(l10n.claimsDelete),
-        content: Text(l10n.claimsDeleteConfirm),
+        content: Text(
+          claimId == null
+              ? l10n.claimsDeleteConfirm
+              : l10n.claimsDeleteConfirmLink,
+        ),
         actions: [
           CupertinoDialogAction(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -5566,6 +5657,21 @@ class _ClaimDetailRoute extends StatelessWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
+    if (claimId != null) {
+      try {
+        await repo.revokeClaim(shopId, claimId);
+      } on Object catch (error, stack) {
+        developer.log(
+          'claims: không thu hồi được link (${error.runtimeType})',
+          name: 'zenpack.claims',
+          level: 1000,
+          error: error,
+          stackTrace: stack,
+        );
+        if (context.mounted) _toast(context, l10n.claimsRevokeFailed);
+        return;
+      }
+    }
     await _claimStore.remove(shopId, dossierId);
     if (!context.mounted) return;
     _toast(context, l10n.claimsDeleted);
@@ -6980,6 +7086,7 @@ GoRouter _buildRouter(
               ? extra
               : (_selected(selectedShop)?.id ?? '', '');
           return _ClaimDetailRoute(
+            repo: repo,
             shopId: shopId,
             dossierId: dossierId,
             queue: queue,

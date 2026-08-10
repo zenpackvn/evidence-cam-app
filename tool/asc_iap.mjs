@@ -51,6 +51,22 @@ const req = (name) => {
   return v;
 };
 
+// Từ 2026-08-10 mua-trong-app là gói TỰ ĐỘNG GIA HẠN, nằm ở /v1/subscriptionGroups
+// + /v1/subscriptions — API khác hẳn /v2/inAppPurchases mà script này gọi. Chạy
+// --apply bây giờ sẽ tạo 6 mã của Bản 4 thành CONSUMABLE, và mã store thì không
+// xoá và không dùng lại được: một lệnh là mất vĩnh viễn cả 6 mã. Chặn ngay khi
+// nạp module, trước cả bước ký JWT; dry-run vẫn sống vì nó còn đối chiếu được 9
+// SKU consumable cũ.
+if (process.argv.includes('--apply')) {
+  throw new Error(
+    'asc_iap.mjs chỉ tạo được sản phẩm CONSUMABLE, nhưng danh mục đang bán là gói\n' +
+      'tự động gia hạn (Bản 4, 2026-08-10). Chạy --apply sẽ đốt vĩnh viễn 6 mã sản\n' +
+      'phẩm dưới dạng sai. Đăng ký tay theo specs/projects/evidencecam/technical-spec/\n' +
+      'monetization-setup/00-danh-muc-san-pham.md, hoặc viết script mới cho\n' +
+      '/v1/subscriptions. Dry-run (không cờ) vẫn chạy bình thường.',
+  );
+}
+
 const JWT = process.env.ASC_SKIP_AUTH ? 'test' : token();
 
 async function call(method, path, body) {
@@ -167,7 +183,7 @@ async function uploadReviewScreenshot(iapId, filePath) {
 // ---- Luồng chính -----------------------------------------------------------
 
 async function main() {
-  const apply = process.argv.includes('--apply');
+  const apply = process.argv.includes('--apply'); // luôn false — chặn ở đầu file
   const bundleId = req('ASC_BUNDLE_ID');
   // --screenshot <đường dẫn>: nạp cùng một ảnh cho cả 9 sản phẩm. Ảnh chỉ phục
   // vụ reviewer, không hiện cho khách, nên dùng chung là đủ.

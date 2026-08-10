@@ -40,6 +40,22 @@ class EnvConfig {
         .toList(growable: false);
   }
 
+  /// Khoá SDK CÔNG KHAI của RevenueCat, một khoá mỗi nền tảng
+  /// (Project Settings → API keys → App-specific, tiền tố `appl_` / `goog_`).
+  ///
+  /// Đây KHÔNG phải `RC_V2_KEY` mà `tool/rc_products.mjs` dùng — cái đó là khoá
+  /// quản trị và không bao giờ được nhúng vào app. Khoá công khai vốn để lộ ra
+  /// trong binary, nên nó nằm ở dart-define chứ không phải secret store.
+  ///
+  /// Vắng = KHÔNG khởi tạo RevenueCat và màn Quota không hiện nút mua. Đó là
+  /// mặc định an toàn: một nút mua bấm vào không làm gì tệ hơn nhiều so với
+  /// không có nút, và bản build nội bộ/offline không cần cửa hàng.
+  String get revenueCatIosKey =>
+      const String.fromEnvironment('REVENUECAT_IOS_KEY');
+
+  String get revenueCatAndroidKey =>
+      const String.fromEnvironment('REVENUECAT_ANDROID_KEY');
+
   bool get isDev => flavor == 'dev';
   bool get isStaging => flavor == 'staging';
   bool get isProd => flavor == 'prod';
