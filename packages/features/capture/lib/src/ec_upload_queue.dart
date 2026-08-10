@@ -494,7 +494,11 @@ class EcUploadQueue extends ChangeNotifier {
           // `_deleteLocalCopyQuietly` trên đúng đường dẫn này. Thả nổi lượt dời
           // là mở ra cửa sổ mà lượt xoá chạy trước lượt dời — và thứ bị xoá là
           // bản duy nhất người bán xem lại được.
-          await ecKeepPreview(url, absolutePathOf(task.filePath));
+          await ecKeepPreview(
+            url,
+            absolutePathOf(task.filePath),
+            tracking: task.tracking,
+          );
         } on Object catch (error, stack) {
           // Non-fatal: the task stays queued and retries, but the *reason*
           // must reach Crashlytics — this is the only path a real-world
