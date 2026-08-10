@@ -760,7 +760,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get sealNone => 'Quay trước khi có niêm phong';
 
   @override
-  String get sealFailed => 'Niêm phong lỗi — video vẫn xem được';
+  String get sealFailed =>
+      'Chưa đóng được dấu thời gian · video vẫn xem và tải được';
 
   @override
   String get sealMismatch => 'Vân tay không khớp — hãy quay lại clip này';

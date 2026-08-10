@@ -525,23 +525,28 @@ class EcVideoDetailScreen extends StatelessWidget {
         const _EcDetailDivider(),
         _EcDetailInfoRow(label: l10n.detailDevice, value: video.device),
         const _EcDetailDivider(),
-        _EcDetailInfoRow(
-          label: l10n.detailUploadStatus,
-          value: video.uploadStatus,
-          trailing: LucideIcons.check,
-        ),
+        // MỘT hàng cho cả hai giai đoạn, không phải hai hàng chồng nhau.
+        //
+        // Tải lên xong chưa phải là xong: máy chủ còn nung dấu giờ lên hình.
+        // Suốt quãng đó hàng này nói "đang niêm phong"; nung xong nó mới đổi
+        // thành "Đã tải lên" kèm dấu tích. Nói "Đã tải lên" từ sớm là mời
+        // người bán cầm một clip chưa có dấu đi khiếu nại.
+        if (video.seal?.inProgress ?? false)
+          _EcDetailInfoRow(
+            label: l10n.detailSeal,
+            value: video.seal!.label,
+          )
+        else
+          _EcDetailInfoRow(
+            label: l10n.detailUploadStatus,
+            value: video.uploadStatus,
+            trailing: LucideIcons.check,
+          ),
         if (video.fileSize != null) ...[
           const _EcDetailDivider(),
           _EcDetailInfoRow(
             label: l10n.detailSize,
             value: video.fileSize!,
-          ),
-        ],
-        if (video.seal != null) ...[
-          const _EcDetailDivider(),
-          _EcDetailInfoRow(
-            label: l10n.detailSeal,
-            value: video.seal!.label,
           ),
         ],
         if (video.seal?.anchor != null) ...[
@@ -1437,11 +1442,15 @@ class _EcDetailActionRow extends StatelessWidget {
               ],
             ),
           ),
-          Icon(
-            LucideIcons.chevronRight,
-            size: 19,
-            color: danger ? PenColors.danger : PenColors.mut,
-          ),
+          // Mũi tên chỉ dành cho hàng bấm được. "Đang đóng dấu thời gian…" là
+          // một dòng trạng thái, chạm vào không đi đâu cả — vẽ mũi tên ở đó là
+          // mời người dùng bấm vào một chỗ không phản hồi.
+          if (onTap != null)
+            Icon(
+              LucideIcons.chevronRight,
+              size: 19,
+              color: danger ? PenColors.danger : PenColors.mut,
+            ),
         ],
       ),
     );

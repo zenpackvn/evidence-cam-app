@@ -293,7 +293,7 @@
   "sealWorkingHint": "Bản trên máy chủ chưa có dấu thời gian, nên link chia sẻ và tải về đợi thêm chút. Thường mất vài giây.",
   "playLocalCopyNote": "Bản tạm trên máy — chưa có dấu giờ trên hình",
   "sealNone": "Quay trước khi có niêm phong",
-  "sealFailed": "Niêm phong lỗi — video vẫn xem được",
+  "sealFailed": "Chưa đóng được dấu thời gian · video vẫn xem và tải được",
   "sealMismatch": "Vân tay không khớp — hãy quay lại clip này",
   "sealTimeDrift": "Đồng hồ máy quay lệch so với máy chủ, nên dấu nung ghi thêm giờ máy chủ nhận clip.",
   "detailSealAnchor": "Chứng thực độc lập",

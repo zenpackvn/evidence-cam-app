@@ -469,7 +469,19 @@ class RecordingSessionBloc
   /// vào khung rồi phải đứng chờ, và cái chờ ấy nằm giữa hai kiện hàng nên gặp
   /// ở MỌI đơn. Hạ xuống mức người dùng không cảm nhận được vẫn còn cách xa
   /// "mỗi khung một lần": khung tới ~30 hình/giây, đây là ~5 lượt/giây.
-  static const _recScanCooldown = Duration(milliseconds: 200);
+  /// 450ms chứ không 200ms: mỗi lượt nhận dạng đẩy nguyên mặt sáng của khung
+  /// hình (~1.3MB ở 1280x720) qua kênh nền tảng sang ML Kit. Ở 200ms là ~6MB
+  /// mỗi giây, đúng lúc camera đang mã hoá video — hai thứ nặng nhất giành
+  /// nhau, và cái người quay thấy là màn hình gợn suốt clip. Cutover chậm thêm
+  /// một phần tư giây thì không ai nhận ra: người quay giơ bill đơn sau lên và
+  /// giữ ở đó cả giây.
+  static const _recScanCooldown = Duration(milliseconds: 450);
+
+  /// Không nhận dạng gì trong quãng đầu mỗi clip.
+  ///
+  /// Quãng này camera vừa mở ghi hình xong, còn khung hình thì vẫn đang là cái
+  /// bill vừa quét — không có gì mới để tìm, mà lại là đúng lúc máy bận nhất.
+  static const _recScanWarmup = Duration(milliseconds: 900);
 
   /// Khoảng nghỉ giữa hai lần nhận dạng lúc NGHỈ, tức lúc chờ bill vào khung.
   ///
@@ -728,21 +740,21 @@ class RecordingSessionBloc
   ///
   /// Best-effort như mọi thông báo khác: engine TTS hỏng hoặc thiếu asset thì
   /// bỏ qua chứ không chặn việc ghi hình.
-  Future<void> _announceStart() async {
+  /// Tiếng tút báo đã nhận mã. Chờ nó phát xong mới đi tiếp: đây là phản hồi
+  /// duy nhất cho cú quét, và nó phải ra trước mọi thứ khác.
+  Future<void> _beepStart() async {
     try {
       await _tone.beep().timeout(const Duration(seconds: 2));
     } on Object {
       // Kệ — quay quan trọng hơn thông báo.
     }
+  }
+
+  /// Câu "Đã bắt đầu quay". Nuốt mọi lỗi nên bên gọi thả nổi được an toàn.
+  ///
+  /// Trần 2.5 giây để một engine TTS treo không giữ luôn việc ghi hình.
+  Future<void> _speakStart() async {
     try {
-      // CHỜ câu nói dứt, không bắn rồi bỏ đó.
-      //
-      // Bắn kiểu `unawaited` thì camera lăn ngay sau đó, mà khởi động camera
-      // giành lại phiên âm thanh của hệ điều hành — câu nói đang phát dở bị
-      // cắt ngang, phần lớn trường hợp là chưa kịp ra tiếng nào. Người quay
-      // chỉ nghe tút rồi im, tưởng máy chưa nhận.
-      //
-      // Trần 2.5 giây để một engine TTS treo không giữ luôn việc ghi hình.
       await _voice
           .speak('Đã bắt đầu quay')
           .timeout(const Duration(milliseconds: 2500));
@@ -817,20 +829,39 @@ class RecordingSessionBloc
     try {
       await _serialized(() async {
         if (!_camera.isInitialized || _camera.isRecordingVideo) return;
-        // Thông báo phát XONG rồi mới lăn camera. Trước đây bắn kiểu
-        // `unawaited` cho nhanh, nhưng loa và mic cùng một máy: camera khởi
-        // động chồng lên lúc tiếng tút/câu nói còn đang phát, nên chúng bị thu
-        // thẳng vào clip và người xem lại nghe "đã bắt đầu quay" trong video.
-        // Chờ ở đây tốn hơn một giây trước khung hình đầu — chấp nhận được vì
-        // người quay vừa mới quét mã, chưa kịp thao tác gì.
-        await _announceStart();
+        // Tút trước, rồi câu nói và lượt mở ghi hình chạy CÙNG nhau.
+        //
+        // Trước đây phải chờ câu nói dứt hẳn mới lăn camera, vì hai lẽ: clip
+        // thu cả tiếng nên câu nói lọt vào video, và lượt khởi động camera
+        // giành phiên âm thanh nên cắt ngang câu đang phát. Lẽ thứ nhất đã hết
+        // từ khi clip quay với `enableAudio: false` — không còn luồng âm thanh
+        // nào để lọt vào. Lẽ thứ hai cũng theo đó nhẹ đi: không có đầu vào âm
+        // thanh thì AVCaptureSession không đụng tới phiên âm thanh.
+        //
+        // Cái giá của việc chờ thì rất thật: hơn một giây đứng hình giữa câu
+        // "Đã bắt đầu quay" và khung hình đầu tiên — người quay nghe máy nói
+        // đã quay trong khi máy chưa quay. Cho chạy song song thì lượt mở ghi
+        // hình tan trong lúc câu nói còn đang phát, và clip bắt đầu ngay.
+        // Tắt luồng quét NGAY, cho nó chạy song song với lời thông báo.
+        //
+        // Từ giây này clip chắc chắn được mở, nên luồng quét lúc rảnh hết
+        // việc. Để nó lại sau câu nói thì hai lời gọi nền tảng nặng — tắt
+        // luồng và mở ghi hình — dồn vào đúng khoảng giữa "Đã bắt đầu quay" và
+        // khung hình đầu tiên, và người quay thấy đúng một đoạn đứng hình ở
+        // đó. Chạy trước thì nó tan trong lúc câu nói đang phát.
+        final stoppingScan = _camera.isStreamingImages
+            ? _camera.stopImageStream().catchError((Object _) {})
+            : Future<void>.value();
+        await _beepStart();
+        final speaking = _speakStart();
         previewTransitioning.value = true;
         try {
-          if (_camera.isStreamingImages) await _camera.stopImageStream();
+          await stoppingScan;
           await _startVideoWithScan();
         } finally {
           previewTransitioning.value = false;
         }
+        unawaited(speaking);
         _nearLimitWarned = false;
         _capRequested = false;
         if (isClosed) return;
@@ -886,6 +917,7 @@ class RecordingSessionBloc
         _cameras.isEmpty) {
       return;
     }
+    if (_clipClock.elapsed < _recScanWarmup) return;
     final lastScan = _lastRecScanAt;
     if (lastScan != null &&
         DateTime.now().difference(lastScan) < _recScanCooldown) {

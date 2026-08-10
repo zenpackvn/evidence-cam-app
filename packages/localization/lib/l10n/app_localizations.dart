@@ -1451,7 +1451,7 @@ abstract class AppLocalizations {
   /// No description provided for @sealFailed.
   ///
   /// In en, this message translates to:
-  /// **'Sealing failed — the video still plays'**
+  /// **'No timestamp stamped yet · the video still plays and downloads'**
   String get sealFailed;
 
   /// No description provided for @sealMismatch.

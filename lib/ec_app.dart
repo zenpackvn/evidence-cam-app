@@ -3897,8 +3897,27 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   @override
   void initState() {
     super.initState();
-    _loadFirst();
+    _loadFirst().then((_) => _reconcilePreviews());
     _loadVideoTypes();
+  }
+
+  /// Xoá bản xem tạm của những clip máy chủ đã đóng dấu xong.
+  ///
+  /// Chỗ dọn kia (`_OrderDetailRoute._load`) chỉ chạy khi người bán MỞ đúng đơn
+  /// đó ra xem. Ai quay xong rồi đi tiếp, không mở lại, thì bản tạm nằm trên
+  /// máy tới khi hết hạn tuổi — trong khi máy chủ đã có bản thật từ lâu. Lượt
+  /// này chạy ngay ở danh sách nên không cần vào đơn nữa.
+  ///
+  /// Chạy nền, nuốt lỗi, và chỉ hỏi những đơn thật sự còn bản tạm (tối đa 5 đơn
+  /// mỗi lượt) — mở danh sách không được biến thành một tràng request.
+  Future<void> _reconcilePreviews() async {
+    if (!mounted) return;
+    final orders = [for (final o in _orders) (o.tracking, o.id)];
+    if (orders.isEmpty) return;
+    await ecReconcilePreviews(orders, (orderId) async {
+      final detail = await widget.repo.order(widget.shopId, orderId);
+      return [for (final e in detail.evidence) (e.id, e.isSealing)];
+    });
   }
 
   /// Options for the "Loại video" filter. Best-effort: the list still works
@@ -4046,6 +4065,9 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     } on Object catch (error) {
       if (mounted) _toast(context, _dataErrorText(context.l10n, error));
     }
+    // Kéo để làm mới là đúng lúc hỏi lại "clip nào đóng dấu xong rồi" — cùng
+    // một cử chỉ, cùng một câu hỏi.
+    await _reconcilePreviews();
   }
 
   /// Gõ tìm kiếm mới thì quay về trang 1: số trang cũ không còn nghĩa gì với

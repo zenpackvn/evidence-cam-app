@@ -1261,7 +1261,7 @@ class _JoinByInviteRow extends StatelessWidget {
       cross: CrossAxisAlignment.center,
       padding: const EdgeInsets.symmetric(vertical: 15),
       children: [
-        const Icon(LucideIcons.mailOpen, size: 20, color: PenColors.ink),
+        const Icon(LucideIcons.qrCode, size: 20, color: PenColors.ink),
         Flexible(
           child: PenText(
             context.l10n.inviteJoinRow,
