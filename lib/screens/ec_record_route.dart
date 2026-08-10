@@ -249,7 +249,30 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
     if (!await _ensureCameraAccess()) return;
-    await _ensureTypeChosen();
+    // Dựng camera TRONG LÚC sheet chọn loại còn trên màn, không đợi chọn xong.
+    //
+    // Dựng camera chặn luồng nền tảng vài trăm mili giây (AVCaptureSession lần
+    // đầu là nặng nhất). Làm việc đó ngay sau khi người quay bấm chọn loại thì
+    // cú bấm của họ đổi lấy một màn hình đứng hình — đó là cái lag họ thấy.
+    // Đẩy nó vào quãng người quay đang ĐỌC danh sách loại: lúc ấy không có
+    // hoạt ảnh nào chạy và không ai chờ ngón tay mình, nên vài trăm ms đó
+    // không ai nhìn thấy. Bấm xong là khung ngắm đã sẵn.
+    //
+    // Đợi hết lượt mờ hiện sheet (200ms, xem `_showTypeSheet`) rồi mới bắn:
+    // chồng vào giữa hoạt ảnh là đổi chỗ khựng chứ không bỏ được nó.
+    //
+    // An toàn vì máy quét vẫn câm suốt lúc sheet mở (`scanSuspended` bật trong
+    // `_pickType`) và chỉ mở lại khi đã chọn loại thật — camera sống sớm hơn
+    // KHÔNG kéo theo chuyện tự mở clip cho một bill lọt vào khung.
+    final sheetShown = !_typeAsked;
+    if (sheetShown) {
+      final chosen = _ensureTypeChosen();
+      await Future<void>.delayed(_typeSheetFade);
+      if (mounted) _bloc.add(const RecordingInitRequested());
+      await chosen;
+    } else {
+      await _ensureTypeChosen();
+    }
     // Chưa chọn thì KHÔNG dựng camera và cũng KHÔNG hỏi lại ngay: hỏi vòng
     // tròn thì người dùng bị nhốt trong sheet, không bấm back ra được. Màn
     // chờ vẫn hiện với nút back và ô chọn loại ở thanh dưới — muốn quay thì
@@ -258,7 +281,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     // Chốt thứ hai cho cùng một lỗi: mỗi lần dựng camera là một lượt quay mới,
     // không có lý do gì máy quét còn bị treo từ lượt trước.
     _bloc.scanSuspended = false;
-    _bloc.add(const RecordingInitRequested());
+    if (!sheetShown) _bloc.add(const RecordingInitRequested());
     await _offerPendingRecord();
   }
 
@@ -711,6 +734,10 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   /// ở thanh dưới trong lúc sheet tự động còn mở.
   bool _typeSheetOpen = false;
 
+  /// Khớp với `transitionDuration` của `_showTypeSheet` — đổi bên đó thì đổi ở
+  /// đây, nếu không lượt dựng camera lại rơi vào giữa hoạt ảnh.
+  static const _typeSheetFade = Duration(milliseconds: 200);
+
   /// True khi người quay đã CHỌN THẬT một loại trong lượt này.
   ///
   /// Khác [_typeAsked] (chỉ ghi nhận đã mở sheet): camera chỉ lên khi cờ này
@@ -731,11 +758,17 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       await _pickTypeInner(mandatory: mandatory);
     } finally {
       _typeSheetOpen = false;
-      // Trả cờ VÔ ĐIỀU KIỆN, không kèm `mounted`: chỉ cần một nhịp widget bị
+      // Trả cờ ngay tại đây, không kèm `mounted`: chỉ cần một nhịp widget bị
       // gỡ đúng lúc sheet đóng là cờ kẹt ở `true` vĩnh viễn, máy quét câm, và
       // triệu chứng là "chọn loại nào cũng không quay được" — không có gì trên
       // màn hình chỉ ra nguyên nhân. Gán vào bloc đã đóng thì vô hại.
-      _bloc.scanSuspended = false;
+      //
+      // Điều kiện duy nhất là ĐÃ chọn loại thật. Camera nay lên từ lúc sheet
+      // còn mở, nên đóng sheet mà chưa chọn rồi mở luôn máy quét là để nó tự
+      // mở clip cho một bill lọt vào khung với loại mặc định — đúng thứ lượt
+      // hỏi loại sinh ra để chặn. Người quay còn ô chọn loại ở thanh dưới:
+      // chọn xong là máy quét mở lại.
+      _bloc.scanSuspended = !_typePicked;
     }
   }
 
@@ -1046,7 +1079,21 @@ class _CoverPreviewState extends State<_CoverPreview> {
   // Khung đứng gần nhất được làm mới bao lâu một lần. Chỉ còn dùng cho lúc
   // controller biến mất (lật camera, đổi độ phân giải, app xuống nền), nên
   // không cần dày.
-  static const _refreshInterval = Duration(milliseconds: 250);
+  //
+  // 250ms là quá dày: mỗi lượt là một cú `toImage`, tức đọc ngược toàn bộ
+  // khung từ GPU về CPU, và ở đây nó chạy suốt thời gian màn quay mở. Bốn lượt
+  // mỗi giây ở tỉ lệ điểm ảnh thật (3x trên iPhone) là đủ để cả màn hình gợn —
+  // rõ nhất ở quãng từ tiếng tút tới câu "Đã bắt đầu quay", quãng duy nhất
+  // không nằm trong cờ `transitioning` nên không được miễn.
+  static const _refreshInterval = Duration(seconds: 1);
+
+  /// Tỉ lệ điểm ảnh của khung đứng, so với màn hình thật.
+  ///
+  /// Ảnh này chỉ để lấp chỗ trong lúc luồng camera sống không vẽ được, và nó
+  /// bị kéo giãn phủ khung ngắm — không ai soi từng điểm ảnh của nó. Chụp ở
+  /// một phần ba độ nét là bớt khoảng chín phần mười số điểm ảnh phải đọc về
+  /// mỗi lượt, đổi lại một chỗ lấp hơi mềm mà mắt không kịp nhận ra.
+  static const _frozenFrameScale = 1 / 3;
 
   final GlobalKey _boundaryKey = GlobalKey();
   ui.Image? _lastGoodFrame;
@@ -1060,7 +1107,13 @@ class _CoverPreviewState extends State<_CoverPreview> {
       // Không chụp lại đúng lúc đang bắt đầu/dừng quay: `toImage` là một cú
       // đồng bộ với GPU, và chèn nó vào đúng nhịp bận nhất của camera là tự
       // tạo ra cái khựng mà lớp che sinh ra để giấu.
-      if (!widget.transitioning.value) unawaited(_refreshLastGoodFrame());
+      if (widget.transitioning.value) return;
+      // Đang quay cũng không chụp. Khung đứng chỉ cần cho lúc controller biến
+      // mất — lật camera, đổi độ phân giải — mà giữa một clip thì không có
+      // thao tác nào làm được chuyện đó. Chụp tiếp chỉ là lấy GPU của đúng
+      // việc đang quan trọng nhất trong cả app.
+      if (widget.controller.value.isRecordingVideo) return;
+      unawaited(_refreshLastGoodFrame());
     });
     unawaited(_resolveQuarterTurns());
   }
@@ -1098,7 +1151,7 @@ class _CoverPreviewState extends State<_CoverPreview> {
               as RenderRepaintBoundary?;
       if (boundary == null) return;
       final image = await boundary.toImage(
-        pixelRatio: MediaQuery.devicePixelRatioOf(context),
+        pixelRatio: MediaQuery.devicePixelRatioOf(context) * _frozenFrameScale,
       );
       if (!mounted || widget.transitioning.value) {
         image.dispose();
