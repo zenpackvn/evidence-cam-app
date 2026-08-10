@@ -30,6 +30,21 @@ void main() {
           const MethodChannel('flutter_tts'),
           (call) async => 1,
         );
+    // Tiếng bíp qua `audioplayers`. Từ 10/08 bloc không CHỜ câu nói nữa
+    // (`unawaited(speaking)` — camera lăn sớm hơn, đúng về hiệu năng), nên lượt
+    // bíp chạy nền: không có bản cài trả lời thì nó chạy hết trần 2 giây, và
+    // test kết thúc trước đó để lại một Timer treo — `flutter_test` bắt ngay
+    // bằng "A Timer is still pending even after the widget tree was disposed".
+    //
+    // Trả lời ở đây thì lượt bíp xong tức thì và cái timeout bị huỷ theo. Sửa
+    // một chỗ, khỏi phải bơm thêm thời gian ở bảy test.
+    for (final name in const [
+      'xyz.luan/audioplayers',
+      'xyz.luan/audioplayers.global',
+    ]) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(MethodChannel(name), (call) async => 1);
+    }
   });
 
   tearDown(() {
@@ -40,6 +55,13 @@ void main() {
         );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(const MethodChannel('flutter_tts'), null);
+    for (final name in const [
+      'xyz.luan/audioplayers',
+      'xyz.luan/audioplayers.global',
+    ]) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(MethodChannel(name), null);
+    }
   });
 
   // NGUYÊN TẮC BẤT DI BẤT DỊCH: hệ thống không bao giờ từ chối ghi hình.
@@ -49,28 +71,37 @@ void main() {
   // Test này là hàng rào: cắm lại một cái gate quota vào màn quay là test đỏ.
   testWidgets('màn quay KHÔNG có hàng rào hạn mức nào', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        locale: Locale('vi'),
+      MaterialApp(
+        locale: const Locale('vi'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: EcRecordRoute(onRequestType: _picksType),
+        home: EcRecordRoute(
+          voiceAnnouncer: _SilentVoice(),
+          captureTone: CaptureToneService.silent(),
+          onRequestType: _picksType,
+        ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Đã hết hạn mức video'), findsNothing);
+    await _settleRecordingStart(tester);
   });
 
   testWidgets(
     'degrades to the idle screen when no camera is available',
     (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          locale: Locale('vi'),
+        MaterialApp(
+          locale: const Locale('vi'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: EcRecordRoute(onRequestType: _picksType),
+          home: EcRecordRoute(
+            voiceAnnouncer: _SilentVoice(),
+            captureTone: CaptureToneService.silent(),
+            onRequestType: _picksType,
+          ),
         ),
       );
       // The test environment has no camera plugin, so setup fails; let the
@@ -82,6 +113,7 @@ void main() {
       // (recording never started).
       expect(tester.takeException(), isNull);
       expect(find.text('Đưa bill vào khung'), findsOneWidget);
+      await _settleRecordingStart(tester);
     },
   );
 
@@ -101,6 +133,8 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: EcRecordRoute(
+            voiceAnnouncer: _SilentVoice(),
+            captureTone: CaptureToneService.silent(),
             camera: camera,
             // BẮT BUỘC phải có: vào màn quay nay là xin quyền → hỏi LOẠI VIDEO
             // → mới dựng camera. Thiếu hook này thì luồng đứng ở bước hỏi loại,
@@ -144,6 +178,7 @@ void main() {
       expect(camera.stopped, isTrue);
       expect(camera.disposed, isTrue);
       expect(tester.takeException(), isNull);
+      await _settleRecordingStart(tester);
     },
   );
 
@@ -160,6 +195,8 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: EcRecordRoute(
+            voiceAnnouncer: _SilentVoice(),
+            captureTone: CaptureToneService.silent(),
             camera: camera,
             onRequestCode: () async => 'SPXVN999',
             onRequestType: _picksType,
@@ -200,6 +237,8 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: EcRecordRoute(
+          voiceAnnouncer: _SilentVoice(),
+          captureTone: CaptureToneService.silent(),
           camera: camera,
           onRequestCode: () async => 'SPXVN001',
           onRequestType: _picksType,
@@ -245,6 +284,8 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: EcRecordRoute(
+          voiceAnnouncer: _SilentVoice(),
+          captureTone: CaptureToneService.silent(),
           camera: camera,
           isActive: active,
           onRequestType: (_, {mandatory = false}) async {
@@ -279,6 +320,8 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: EcRecordRoute(
+          voiceAnnouncer: _SilentVoice(),
+          captureTone: CaptureToneService.silent(),
           camera: camera,
           onRequestCode: () async => 'SPXVN001',
           onRequestType: (_, {mandatory = false}) async {
@@ -302,6 +345,9 @@ void main() {
     expect(typeRequests, afterEntry);
     expect(find.text('Đóng hàng'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await _settleRecordingStart(tester);
+    await _settleRecordingStart(tester);
+    await _settleRecordingStart(tester);
   });
 
   // Apple rejected the old flow for shoving the user into Settings the moment
@@ -322,6 +368,8 @@ void main() {
     await tester.pumpWidget(
       _hostingRecordRoute(
         EcRecordRoute(
+          voiceAnnouncer: _SilentVoice(),
+          captureTone: CaptureToneService.silent(),
           permissions: permissions,
           camera: _FakeRecordingCamera(initiallyRecording: false),
           onRequestType: (_, {mandatory = false}) async {
@@ -360,7 +408,13 @@ void main() {
     );
 
     await tester.pumpWidget(
-      _hostingRecordRoute(EcRecordRoute(permissions: permissions)),
+      _hostingRecordRoute(
+        EcRecordRoute(
+          voiceAnnouncer: _SilentVoice(),
+          captureTone: CaptureToneService.silent(),
+          permissions: permissions,
+        ),
+      ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
@@ -386,7 +440,13 @@ void main() {
     );
 
     await tester.pumpWidget(
-      _hostingRecordRoute(EcRecordRoute(permissions: permissions)),
+      _hostingRecordRoute(
+        EcRecordRoute(
+          voiceAnnouncer: _SilentVoice(),
+          captureTone: CaptureToneService.silent(),
+          permissions: permissions,
+        ),
+      ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
@@ -399,6 +459,7 @@ void main() {
     await tester.pump();
     expect(settingsOpened, 1);
     expect(tester.takeException(), isNull);
+    await _settleRecordingStart(tester);
   });
 }
 
@@ -416,7 +477,7 @@ void main() {
 /// vì một lý do không liên quan gì tới thứ nó đang đo.
 Future<void> _settleRecordingStart(WidgetTester tester) async {
   await tester.pump();
-  for (var i = 0; i < 12; i++) {
+  for (var i = 0; i < 40; i++) {
     await tester.pump(const Duration(milliseconds: 250));
   }
 }
@@ -526,4 +587,25 @@ class _FakeRecordingCamera extends CameraService {
   Future<void> dispose() async {
     disposed = true;
   }
+}
+
+/// Bản đọc CÂM cho test.
+///
+/// `VoiceAnnouncerService` thật bật `awaitSpeakCompletion(true)` — cố ý, để câu
+/// nói dứt hẳn rồi camera mới lăn, không thì tiếng loa lọt vào chính clip bằng
+/// chứng. Nhưng nghĩa là `speak` chỉ xong khi NỀN TẢNG gọi callback báo đã đọc
+/// hết, mà kênh giả trong test chỉ trả lời lời gọi chứ không bao giờ gửi
+/// callback đó. Future treo, và cái `.timeout(2500ms)` bọc ngoài nằm lại thành
+/// một Timer chưa xong.
+///
+/// Trước 10/08 chuyện đó vô hại vì bloc `await` câu nói, nên test cứ chờ cùng.
+/// Commit perf bỏ `await` đi (`unawaited(speaking)` — camera lăn sớm hơn), nên
+/// nay test kết thúc TRƯỚC lượt nói và `flutter_test` bắt ngay: "A Timer is
+/// still pending even after the widget tree was disposed".
+class _SilentVoice extends VoiceAnnouncerService {
+  @override
+  Future<void> speak(String text) async {}
+
+  @override
+  Future<void> prepare() async {}
 }

@@ -58,6 +58,7 @@ class EcRecordRoute extends StatefulWidget {
     this.deviceConditions,
     this.verifyReturnCode,
     this.voiceAnnouncer,
+    this.captureTone,
     this.permissions,
     this.initialType = kEcDefaultVideoType,
     this.queueCount = 0,
@@ -138,6 +139,16 @@ class EcRecordRoute extends StatefulWidget {
   /// announcement each time.
   final VoiceAnnouncerService? voiceAnnouncer;
 
+  /// Tiếng bíp lúc bắt đầu/kết thúc một lượt quay. Để `null` là dùng bản thật.
+  ///
+  /// Có mặt vì lý do y hệt [voiceAnnouncer]: bản thật dựng một `AudioPlayer`,
+  /// mà trong test không có plugin nào trả lời nên `beep()` không bao giờ xong
+  /// và cái `.timeout(2s)` bọc ngoài nằm lại thành một Timer chưa xong. Từ
+  /// 10/08 bloc không CHỜ lượt bíp nữa, nên test kết thúc trước nó và
+  /// `flutter_test` báo "A Timer is still pending". Truyền
+  /// `CaptureToneService.silent()` là hết.
+  final CaptureToneService? captureTone;
+
   /// Video type shown before the user picks one.
   final String initialType;
 
@@ -196,6 +207,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     deviceConditions: widget.deviceConditions,
     verifyReturnCode: widget.verifyReturnCode,
     voiceAnnouncer: widget.voiceAnnouncer,
+    captureTone: widget.captureTone,
     initialType: widget.initialType,
     initialResolution: widget.initialResolution,
     maxRecording: widget.maxRecording,
