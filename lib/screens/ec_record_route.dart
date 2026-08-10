@@ -1014,10 +1014,11 @@ class _CoverPreview extends StatefulWidget {
 
   final CameraController controller;
 
-  /// True for the entire native start/stop-recording call, set by the bloc
-  /// *before* it awaits that call — unlike reacting to [CameraController]'s
-  /// own state, this covers the camera-pipeline rebind from its first frame,
-  /// not just whatever's left once the Dart await already returned.
+  /// True suốt lời gọi native bắt đầu/dừng quay, bloc bật TRƯỚC khi await.
+  ///
+  /// Không còn dùng để che preview — nay pipeline không đổi giữa hai nhịp ấy
+  /// nên chẳng có gì để che. Chỉ còn dùng để hoãn cú `toImage` định kỳ, thứ
+  /// đồng bộ với GPU và không nên chen vào đúng nhịp camera bận nhất.
   final ValueListenable<bool> transitioning;
 
   @override
@@ -1025,71 +1026,67 @@ class _CoverPreview extends StatefulWidget {
 }
 
 class _CoverPreviewState extends State<_CoverPreview> {
-  /// Số phần tư vòng xoay áp cho texture camera. Cố định, không đổi theo
-  /// cảm biến — đó là toàn bộ điểm của cách làm này.
+  /// Số phần tư vòng xoay áp cho texture camera. Hỏi nền tảng MỘT LẦN cho mỗi
+  /// controller rồi chốt — không đổi theo cảm biến, đó vẫn là điểm chính.
   ///
-  /// `0` khi surface producer của Android tự nắn khung (Impeller, máy đời mới
-  /// — trường hợp thường gặp), `1` khi nó giao texture nguyên theo sensor và
-  /// preview nằm ngang. Sai giá trị thì hình lệch ĐỀU chứ không giật: nhìn một
-  /// lần là biết, đổi một số là xong, và không có trạng thái nào ở giữa để
-  /// người dùng gặp phải.
-  static const _previewQuarterTurns = 0;
+  /// Từng là hằng số `0`, và hằng số ấy chỉ đúng với một nửa số máy: máy nào có
+  /// surface producer tự nắn khung thì texture giao ra đã đứng, máy nào không
+  /// thì giao nguyên khung theo cảm biến và preview nằm ngang ĐỀU — Galaxy M14
+  /// nằm ở nửa sau. Không có con số nào đúng cho cả hai, nên đây là câu hỏi
+  /// phải hỏi máy chứ không phải hằng số phải đoán; xem [ecPreviewQuarterTurns].
+  ///
+  /// `null` = chưa có câu trả lời. Lúc ấy vẽ khung đứng thay vì đoán bừa một
+  /// góc: đoán sai thì người quay thấy preview loé lên nằm ngang rồi mới bật
+  /// đúng, và đó đúng là lỗi đang sửa.
+  int? _previewQuarterTurns;
 
-  /// Thời gian giữ khung hình đông cứng sau khi camera rebind xong.
-  ///
-  /// Từng phải để 2200ms để giấu cú xoay ngang lúc camerax rebind — đắt, vì
-  /// đổi lại là hơn hai giây đứng hình mỗi lần chuyển đơn. Nay preview không
-  /// còn xoay theo cảm biến nữa nên chẳng còn gì để giấu; khoảng này chỉ còn
-  /// phủ vài khung đen lúc pipeline nối lại, nên ngắn vừa đủ.
-  static const _settleBuffer = Duration(milliseconds: 1200);
+  /// Trạng thái quay của lần hỏi góc gần nhất, để biết khi nào phải hỏi lại.
+  bool _askedWhileRecording = false;
 
-  /// Thời gian mờ chồng giữa khung đứng và preview sống.
-  ///
-  /// Cắt cứng hai chiều đọc ra như app khựng rồi giật lại. Mờ chồng thì mắt
-  /// đọc thành một dải liên tục — cùng quãng thời gian ấy, khác hẳn cảm giác.
-  static const _fade = Duration(milliseconds: 260);
-  // How often a known-good frame is refreshed while live — frequent enough
-  // that the frame on hand the instant a transition starts is always recent.
+  // Khung đứng gần nhất được làm mới bao lâu một lần. Chỉ còn dùng cho lúc
+  // controller biến mất (lật camera, đổi độ phân giải, app xuống nền), nên
+  // không cần dày.
   static const _refreshInterval = Duration(milliseconds: 250);
 
   final GlobalKey _boundaryKey = GlobalKey();
-  bool _masking = false;
   ui.Image? _lastGoodFrame;
-  Timer? _unmaskTimer;
   Timer? _refreshTimer;
   bool _capturing = false;
 
   @override
   void initState() {
     super.initState();
-    _masking = widget.transitioning.value;
-    widget.transitioning.addListener(_onTransitioningChanged);
     _refreshTimer = Timer.periodic(_refreshInterval, (_) {
-      if (!_masking) unawaited(_refreshLastGoodFrame());
+      // Không chụp lại đúng lúc đang bắt đầu/dừng quay: `toImage` là một cú
+      // đồng bộ với GPU, và chèn nó vào đúng nhịp bận nhất của camera là tự
+      // tạo ra cái khựng mà lớp che sinh ra để giấu.
+      if (!widget.transitioning.value) unawaited(_refreshLastGoodFrame());
     });
+    unawaited(_resolveQuarterTurns());
   }
 
   @override
   void didUpdateWidget(covariant _CoverPreview oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.transitioning, widget.transitioning)) {
-      oldWidget.transitioning.removeListener(_onTransitioningChanged);
-      widget.transitioning.addListener(_onTransitioningChanged);
+    // Controller mới = camera khác (lật mặt trước/sau) hoặc độ phân giải khác,
+    // và góc cần xoay đi theo góc cảm biến của camera ĐANG bật. Hỏi lại thay vì
+    // giữ số cũ: camera trước và camera sau lệch nhau đúng nửa vòng.
+    if (!identical(oldWidget.controller, widget.controller)) {
+      unawaited(_resolveQuarterTurns());
     }
   }
 
-  void _onTransitioningChanged() {
-    _unmaskTimer?.cancel();
-    if (widget.transitioning.value) {
-      // Switch to the frame already captured moments ago — grabbing a fresh
-      // one *now* would race the rebind-triggered rotation glitch, which can
-      // start rendering before this listener even runs.
-      setState(() => _masking = true);
-    } else {
-      _unmaskTimer = Timer(_settleBuffer, () {
-        if (mounted) setState(() => _masking = false);
-      });
-    }
+  /// Hỏi lại góc xoay, đọc từ trạng thái THẬT của pipeline camera.
+  ///
+  /// Gọi lúc dựng, lúc đổi controller, và mỗi lần trạng thái quay đổi. Nhịp
+  /// cuối chỉ còn cần cho máy không cho gắn sẵn `VideoCapture` (xem
+  /// [ecPreviewQuarterTurns]); máy gắn được thì câu trả lời giống nhau ở mọi
+  /// nhịp và `setState` dưới đây không bao giờ chạy.
+  Future<void> _resolveQuarterTurns() async {
+    _askedWhileRecording = widget.controller.value.isRecordingVideo;
+    final turns = await ecPreviewQuarterTurns(widget.controller.description);
+    if (!mounted || turns == _previewQuarterTurns) return;
+    setState(() => _previewQuarterTurns = turns);
   }
 
   Future<void> _refreshLastGoodFrame() async {
@@ -1103,7 +1100,7 @@ class _CoverPreviewState extends State<_CoverPreview> {
       final image = await boundary.toImage(
         pixelRatio: MediaQuery.devicePixelRatioOf(context),
       );
-      if (!mounted || _masking) {
+      if (!mounted || widget.transitioning.value) {
         image.dispose();
         return;
       }
@@ -1136,9 +1133,7 @@ class _CoverPreviewState extends State<_CoverPreview> {
 
   @override
   void dispose() {
-    _unmaskTimer?.cancel();
     _refreshTimer?.cancel();
-    widget.transitioning.removeListener(_onTransitioningChanged);
     _lastGoodFrame?.dispose();
     super.dispose();
   }
@@ -1148,76 +1143,73 @@ class _CoverPreviewState extends State<_CoverPreview> {
     final controller = widget.controller;
     return ColoredBox(
       color: Colors.black,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // While masking, the live layer isn't built at all — not even
-          // underneath an overlay — so there's no frame in which the
-          // rebind-triggered rotation glitch could paint before a cover
-          // frame lands on top of it. The periodic refresh below only
-          // touches the live layer while unmasked anyway, so nothing is
-          // lost by skipping it entirely here.
-          // KHÔNG `return _frozenFrame()` sớm nữa: cắt phăng lớp sống rồi
-          // cắm lại là hai cú giật, và giữa chúng là một quãng đứng hình đọc
-          // ra như treo máy. Cả hai lớp cùng dựng, khung đứng nằm TRÊN và mờ
-          // dần đi — lớp sống bên dưới có nhảy ngang lúc camerax dựng lại
-          // session thì cũng không ai thấy.
-          // Controller đã dispose (đổi độ phân giải, lật camera, app xuống
-          // nền, hoặc màn quay chờ người dùng chọn loại video) thì texture bên
-          // dưới đã bị huỷ. Khung đứng gần nhất là đủ — controller mới lên là
-          // widget rebuild và preview trở lại.
-          if (!controller.value.isInitialized) return _frozenFrame();
-          // Texture TRẦN, xoay bằng MỘT hằng số — không ai xoay động nữa.
-          //
-          // Đã đi hết ba đường. `CameraPreview` bọc thêm `RotatedBox` quanh
-          // cái texture vốn đã tự xoay, và góc lớp bọc đổi NGUỒN giữa chừng
-          // (`deviceOrientation` lúc nghỉ → `recordingOrientation` lúc quay):
-          // nhảy 90° ngay khoảnh khắc bấm. `buildPreview()` bỏ được lớp ngoài
-          // nhưng vẫn giữ `RotatedPreviewDelegate` bên trong, thứ nghe
-          // `onDeviceOrientationChanged` và xoay lại mỗi lần camerax rebind
-          // use case — vẫn nhảy, chỉ ít hơn. Che bằng khung đứng thì giấu được
-          // cú nhảy, nhưng đổi nó lấy hai giây đứng hình mỗi lần chuyển đơn.
-          //
-          // Cả ba đều sai ở cùng một chỗ: để hướng preview phụ thuộc cảm biến.
-          // Màn này không có lý do nào để làm thế — cửa sổ app khoá dọc
-          // (`main.dart`), khung quay khoá `portraitUp`
-          // (`lockCaptureOrientation`), và máy thì chống xuống bàn nhìn xuống,
-          // đúng tư thế làm cảm biến đọc nhầm thành landscape.
-          //
-          // Texture trần thì không widget nào xoay nó, nên nó KHÔNG THỂ nhảy:
-          // mượt suốt, kể cả giữa lúc rebind. Cái giá là phải tự chốt góc —
-          // [_previewQuarterTurns], một hằng số, đặt một lần cho mọi khung.
-          final livePreview = Texture(textureId: controller.cameraId);
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              ClipRect(
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    width: constraints.maxWidth,
-                    height: constraints.maxWidth * controller.value.aspectRatio,
-                    child: RepaintBoundary(
-                      key: _boundaryKey,
-                      child: RotatedBox(
-                        quarterTurns: _previewQuarterTurns,
-                        child: livePreview,
-                      ),
+      // Nghe thẳng controller chứ không chờ bloc phát trạng thái: góc xoay đổi
+      // đúng lúc `isRecordingVideo` đổi, và một nhịp rebuild trễ ở đây là một
+      // nhịp preview nằm ngang trên màn.
+      child: ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) => LayoutBuilder(
+          builder: (context, constraints) {
+            // KHÔNG còn lớp khung đứng che lúc bắt đầu/dừng quay. Lớp ấy sinh
+            // ra để giấu cú ngoặt ngang khi camerax dựng lại capture session —
+            // nay `VideoCapture` gắn sẵn từ lúc dựng camera nên chẳng có cú
+            // dựng lại nào nữa, và preview chạy liên tục xuyên qua cả hai nhịp.
+            // Giữ lớp che lại thì nó không còn giấu gì, chỉ còn đông cứng hình
+            // hơn một giây mỗi lần bấm: đúng cái khựng người quay thấy.
+            //
+            // Controller đã dispose (đổi độ phân giải, lật camera, app xuống
+            // nền, hoặc màn quay chờ người dùng chọn loại video) thì texture bên
+            // dưới đã bị huỷ. Khung đứng gần nhất là đủ — controller mới lên là
+            // widget rebuild và preview trở lại.
+            if (!controller.value.isInitialized) return _frozenFrame();
+            // Trạng thái quay vừa đổi = pipeline có thể vừa đổi hình dạng. Hỏi
+            // lại góc ngay trong nhịp này thay vì tin con số cũ.
+            if (controller.value.isRecordingVideo != _askedWhileRecording) {
+              unawaited(_resolveQuarterTurns());
+            }
+            final quarterTurns = _previewQuarterTurns;
+            if (quarterTurns == null) return _frozenFrame();
+            // Texture TRẦN, xoay bằng MỘT hằng số — không ai xoay động nữa.
+            //
+            // Đã đi hết ba đường. `CameraPreview` bọc thêm `RotatedBox` quanh
+            // cái texture vốn đã tự xoay, và góc lớp bọc đổi NGUỒN giữa chừng
+            // (`deviceOrientation` lúc nghỉ → `recordingOrientation` lúc quay):
+            // nhảy 90° ngay khoảnh khắc bấm. `buildPreview()` bỏ được lớp ngoài
+            // nhưng vẫn giữ `RotatedPreviewDelegate` bên trong, thứ nghe
+            // `onDeviceOrientationChanged` và xoay lại mỗi lần camerax rebind
+            // use case — vẫn nhảy, chỉ ít hơn. Che bằng khung đứng thì giấu được
+            // cú nhảy, nhưng đổi nó lấy hai giây đứng hình mỗi lần chuyển đơn.
+            //
+            // Cả ba đều sai ở cùng một chỗ: để hướng preview phụ thuộc cảm biến.
+            // Màn này không có lý do nào để làm thế — cửa sổ app khoá dọc
+            // (`main.dart`), khung quay khoá `portraitUp`
+            // (`lockCaptureOrientation`), và máy thì chống xuống bàn nhìn xuống,
+            // đúng tư thế làm cảm biến đọc nhầm thành landscape.
+            //
+            // Texture trần thì không widget nào xoay nó theo cảm biến, nên nó
+            // KHÔNG THỂ nhảy giữa chừng. Cái giá là phải tự chốt góc —
+            // [_previewQuarterTurns], đọc từ trạng thái thật của pipeline. Với
+            // `VideoCapture` gắn sẵn từ lúc dựng camera, pipeline chỉ có một
+            // hình dạng duy nhất nên con số ấy cũng chỉ có một.
+            final livePreview = Texture(textureId: controller.cameraId);
+            return ClipRect(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: constraints.maxWidth,
+                  height: constraints.maxWidth * controller.value.aspectRatio,
+                  child: RepaintBoundary(
+                    key: _boundaryKey,
+                    child: RotatedBox(
+                      quarterTurns: quarterTurns,
+                      child: livePreview,
                     ),
                   ),
                 ),
               ),
-              // `IgnorePointer`: lớp phủ chỉ để nhìn, mọi thao tác chạm vẫn
-              // rơi xuống màn quay bên dưới như thường.
-              IgnorePointer(
-                child: AnimatedOpacity(
-                  opacity: _masking ? 1 : 0,
-                  duration: _fade,
-                  child: _frozenFrame(),
-                ),
-              ),
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

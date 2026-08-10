@@ -54,6 +54,14 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
   /// stream callback) has no `BuildContext` of its own.
   double _screenWidth = 1;
 
+  /// Góc phải xoay texture camera để khung ngắm đứng đúng.
+  ///
+  /// Cùng lý do và cùng nguồn số với màn quay: trên Android, khung hình tới
+  /// Flutter theo hướng nào là tuỳ đường đi trong CameraX của máy đó, nên phải
+  /// HỎI chứ không chốt cứng (xem [ecPreviewQuarterTurns]). `null` = chưa có
+  /// câu trả lời, lúc đó chưa vẽ lớp camera.
+  int? _previewQuarterTurns;
+
   @override
   void initState() {
     super.initState();
@@ -87,9 +95,15 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
         unawaited(_camera.dispose());
         return;
       }
+      final turns = await ecPreviewQuarterTurns(cameras[index]);
+      if (!mounted) {
+        unawaited(_camera.dispose());
+        return;
+      }
       setState(() {
         _cameras = cameras;
         _index = index;
+        _previewQuarterTurns = turns;
         _initializing = false;
       });
       await _camera.controller?.startImageStream(_onFrame);
@@ -131,7 +145,12 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
   @override
   Widget build(BuildContext context) {
     final controller = _camera.controller;
-    final ready = !_initializing && controller != null && _error == null;
+    final quarterTurns = _previewQuarterTurns;
+    final ready =
+        !_initializing &&
+        controller != null &&
+        quarterTurns != null &&
+        _error == null;
     _screenWidth = MediaQuery.sizeOf(context).width;
     return Scaffold(
       backgroundColor: Colors.black,
@@ -144,7 +163,17 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
                 child: SizedBox(
                   width: controller.value.previewSize?.height ?? 1,
                   height: controller.value.previewSize?.width ?? 1,
-                  child: CameraPreview(controller),
+                  // Texture TRẦN + một góc chốt sẵn, KHÔNG dùng `CameraPreview`.
+                  //
+                  // `CameraPreview` tự xoay khung theo cảm biến, và phép xoay
+                  // ấy chốt từ lúc dựng camera nên không biết đường đi khung
+                  // hình đã đổi — kết quả là nó xoay thêm một lần nữa lên khung
+                  // vốn đã đứng, và khung ngắm nằm ngang. Xoay bằng con số hỏi
+                  // được từ chính pipeline thì đúng ở mọi đường đi.
+                  child: RotatedBox(
+                    quarterTurns: quarterTurns,
+                    child: Texture(textureId: controller.cameraId),
+                  ),
                 ),
               ),
             ),
