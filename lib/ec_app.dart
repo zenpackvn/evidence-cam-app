@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:analytics/analytics.dart';
@@ -341,6 +342,43 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
               color: BrandColors.ink,
               fontSize: 14,
             ),
+            // Chỉ ĐẶT kiểu chữ NỀN thôi là chưa đủ trên Android.
+            //
+            // Mọi `Text` không khai kiểu riêng đều thừa hưởng dòng trên nên ra
+            // Inter ở cả hai nền. Nhưng các ô còn lại của bộ chữ Cupertino —
+            // tiêu đề thanh điều hướng, nút trong hộp thoại — giữ mặc định của
+            // Flutter, và mặc định ấy là mặt chữ hệ thống của Apple: iOS ra SF
+            // Pro, Android không có nên rơi về Roboto. Roboto rộng hơn và thấp
+            // hơn Inter, nên nguyên hàng nút "Huỷ / Đồng ý" trong ~14 hộp thoại
+            // của app nhìn lệch hẳn so với phần còn lại của màn.
+            //
+            // Ép Inter cho những ô ấy, CHỈ trên Android: trên iOS mặc định
+            // đang đúng và không có lý do đụng vào. Cỡ và độ đậm chép nguyên
+            // của Cupertino để chỉ mặt chữ đổi, không đổi gì khác.
+            navTitleTextStyle: _androidOnly(
+              GoogleFonts.inter(
+                color: BrandColors.ink,
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            navLargeTitleTextStyle: _androidOnly(
+              GoogleFonts.inter(
+                color: BrandColors.ink,
+                fontSize: 34,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.41,
+              ),
+            ),
+            navActionTextStyle: _androidOnly(
+              GoogleFonts.inter(color: BrandColors.dark, fontSize: 17),
+            ),
+            actionTextStyle: _androidOnly(
+              GoogleFonts.inter(color: BrandColors.dark, fontSize: 17),
+            ),
+            tabLabelTextStyle: _androidOnly(
+              GoogleFonts.inter(fontSize: 10, letterSpacing: -0.24),
+            ),
           ),
         ),
         routerConfig: _router,
@@ -354,23 +392,81 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
         // phóng tới 1.8x còn iOS dừng sớm hơn, nên để mặc kệ thì cùng một màn
         // hiện ra hai kiểu trên hai máy.
         builder: (context, child) => MediaQuery.withNoTextScaling(
-          child: PopScope(
-            // A back gesture that reaches the root would otherwise close the
-            // app outright — which is what happens on the pre-shell screens
-            // (splash / login / shop picker), since only the tab shell has its
-            // own PopScope. go_router still pops pushed routes normally: this
-            // only fires once nothing is left to pop.
-            canPop: false,
-            child: GestureDetector(
-              onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-              behavior: HitTestBehavior.opaque,
-              // Above the router so a forced update covers every screen, and
-              // inside the localization delegates so its labels are translated.
-              child: UpdateGate(child: child ?? const SizedBox.shrink()),
+          child: _AndroidSafeAreaFloor(
+            child: PopScope(
+              // A back gesture that reaches the root would otherwise close the
+              // app outright — which is what happens on the pre-shell screens
+              // (splash / login / shop picker), since only the tab shell has its
+              // own PopScope. go_router still pops pushed routes normally: this
+              // only fires once nothing is left to pop.
+              canPop: false,
+              child: GestureDetector(
+                onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                behavior: HitTestBehavior.opaque,
+                // Above the router so a forced update covers every screen, and
+                // inside the localization delegates so its labels are
+                // translated.
+                child: UpdateGate(child: child ?? const SizedBox.shrink()),
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// [style] trên Android, `null` ở nơi khác — `null` nghĩa là "giữ mặc định".
+///
+/// Dùng để vá riêng Android trong bộ chữ Cupertino mà không đổi một pixel nào
+/// trên iOS.
+TextStyle? _androidOnly(TextStyle style) => Platform.isAndroid ? style : null;
+
+/// Sàn lề an toàn cho Android, để bố cục thở giống iOS.
+///
+/// App ẩn hẳn thanh trạng thái lẫn thanh điều hướng trên Android
+/// (`immersiveSticky`, xem `main.dart`), nên `MediaQuery.padding` tụt về gần 0.
+/// iPhone thì luôn còn lề của tai thỏ và thanh home dù có ẩn gì đi nữa — mà bộ
+/// giao diện lấy đúng hai con số ấy để dựng chiều cao header (`PenBox`) và đáy
+/// sheet. Cùng một màn vì thế ra hai kiểu: iOS thoáng, Android dính sát mép.
+///
+/// Đặt SÀN chứ không cộng thêm: máy Android nào có lề thật lớn hơn (tai thỏ
+/// rộng, thanh điều hướng luôn hiện) thì giữ nguyên lề thật của nó. Trên iOS
+/// widget này trả thẳng `child`, không đụng gì.
+class _AndroidSafeAreaFloor extends StatelessWidget {
+  const _AndroidSafeAreaFloor({required this.child});
+
+  /// Lề an toàn của iPhone có tai thỏ — mốc mà bộ giao diện được vẽ theo.
+  static const _top = 47.0;
+
+  /// Đáy lấy ÍT hơn iPhone, cố ý.
+  ///
+  /// 34 điểm của iPhone là chỗ dành cho thanh home indicator — một vạch có
+  /// thật, luôn nằm đó. Android ở đây ẩn hết thanh hệ thống nên khoảng ấy trống
+  /// trơn, và thanh tab bị đẩy lên cao đọc ra như lửng lơ giữa màn. 16 đủ để
+  /// nhãn không dính mép dưới mà không chừa ra một dải trống vô nghĩa.
+  static const _bottom = 16.0;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Platform.isAndroid) return child;
+    final data = MediaQuery.of(context);
+    return MediaQuery(
+      data: data.copyWith(
+        padding: data.padding.copyWith(
+          top: math.max(data.padding.top, _top),
+          bottom: math.max(data.padding.bottom, _bottom),
+        ),
+        // `viewPadding` phải đi cùng: đáy sheet đo bằng nó, không bằng
+        // `padding` (xem `_bottomInset` trong pen_kit).
+        viewPadding: data.viewPadding.copyWith(
+          top: math.max(data.viewPadding.top, _top),
+          bottom: math.max(data.viewPadding.bottom, _bottom),
+        ),
+      ),
+      child: child,
     );
   }
 }
