@@ -30,8 +30,15 @@ build/
 # Test coverage output
 coverage/
 
-# Golden test failure output
-test/**/golden/failures/
+# Ảnh chẩn đoán khi một golden TRƯỢT (testImage/maskedDiff/isolatedDiff).
+#
+# Mẫu cũ là `test/**/golden/failures/` — đòi một thư mục `golden/` mà đường dẫn
+# thật không hề có (`test/capture/failures/`, `test/design/failures/`). Nó khớp
+# KHÔNG tệp nào, nên trông như đã vá mà chẳng bỏ qua gì: 360 ảnh vẫn nằm trong
+# git và mỗi lượt chạy test lại làm bẩn cây làm việc.
+#
+# Ảnh chuẩn trong `goldens/` thì GIỮ — đó mới là thứ test so vào.
+test/**/failures/
 
 # -------------------------------------------------------------------------
 # Android (in addition to android/.gitignore)

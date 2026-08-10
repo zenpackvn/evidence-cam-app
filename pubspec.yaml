@@ -256,6 +256,21 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    # Inter, ba trọng lượng app thật sự dùng (400/600/700).
+    #
+    # `google_fonts` mặc định TẢI phông qua mạng ở lần chạy đầu. Với app dùng
+    # trong kho hàng, sóng yếu, thì lần mở đầu tiên hoặc là chờ, hoặc là rơi về
+    # phông hệ thống — và trong test thì mọi request trả 400 nên nó ném lỗi,
+    # làm đỏ những test chẳng liên quan gì tới phông.
+    #
+    # Có thư mục này thì `google_fonts` đọc thẳng từ assets, không chạm mạng.
+    # Tên tệp phải đúng `Inter-<Variant>.ttf` — đó là thứ nó tra trong asset
+    # manifest.
+    #
+    # Chú thích trong `screens_capture_test.dart` nói "fall back to the bundled
+    # font" từ trước, nhưng chưa ai thêm bản đóng gói nào cả, nên câu đó mô tả
+    # một thứ không tồn tại suốt thời gian dài (C-03).
+    - assets/google_fonts/
     - assets/sounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see

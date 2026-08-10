@@ -89,6 +89,39 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Mở màn Tài khoản, từ trong một shop.
+  ///
+  /// Tài khoản KHÔNG còn là một tab ở thanh dưới. `b6e09d9a` (07/08) sắp lại
+  /// điều hướng còn đúng ba tab thuộc về công việc trong shop — Vận đơn, Ghi
+  /// hình, Khiếu nại — và đưa Tài khoản lên màn Chọn cửa hàng, nơi nó đúng chỗ
+  /// hơn: hồ sơ, ngôn ngữ, gói cước đều không thuộc về một shop cụ thể.
+  ///
+  /// Bảy test trong file này còn bấm `find.text('Tài khoản').last` sau đợt đó,
+  /// nên cả bảy ném `Bad state: No element` — bấm vào một tab đã bị bỏ.
+  Future<void> _openAccount(WidgetTester tester) async {
+    await tester.tap(find.byType(PenBackButton).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tài khoản').last);
+    await tester.pumpAndSettle();
+  }
+
+  /// Mở Chi tiết cửa hàng của shop đang xem, từ màn Vận đơn.
+  ///
+  /// Đường đi là TÊN SHOP trên header — hoặc bánh răng bên phải, cùng đích.
+  ///
+  /// Bản trước của hai test dùng nó đi vòng: quay lại màn Chọn cửa hàng, bấm
+  /// "Quản lý cửa hàng", rồi chọn lại shop. Màn danh sách đó đã bị bỏ ở
+  /// `b6e09d9a` (07/08) và bỏ có lý do: người dùng đang đứng trong đúng một
+  /// shop rồi, bắt chọn lại chính nó là một bước thừa. Nên hai test đó đỏ vì
+  /// đi theo một đường KHÔNG CÒN TỒN TẠI — mã đi đúng hướng, test đứng yên.
+  Future<void> _openShopDetail(
+    WidgetTester tester, {
+    String shop = 'Shop ABC',
+  }) async {
+    await tester.tap(find.text(shop).first);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets(
     'navigates Splash → Login → Shops → Home tab',
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
@@ -287,9 +320,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('SPXVN'), findsWidgets);
 
-      // The account tab deliberately carries no shop name, so Vận đơn is the
-      // only way in — guard that it stays that way.
-      await tester.tap(find.text('Tài khoản').last);
+      // Chỉ tab Vận đơn mang tên shop trên header, nên nó là lối vào DUY NHẤT
+      // tới Chi tiết cửa hàng — chốt để không ai vô tình thêm lối thứ hai.
+      //
+      // Bản trước kiểm bằng tab "Tài khoản". Tab đó không còn: `b6e09d9a`
+      // (07/08) sắp lại điều hướng còn ba tab — Vận đơn, Ghi hình, Khiếu nại —
+      // và đưa Tài khoản về màn Chọn cửa hàng. Nên test đỏ vì bấm vào một tab
+      // đã bị bỏ, không phải vì luật này sai.
+      await tester.tap(find.text('Khiếu nại').last);
       await tester.pumpAndSettle();
       expect(find.text('Shop ABC'), findsNothing);
     },
@@ -312,12 +350,12 @@ void main() {
       await tester.tap(find.text('Quên mật khẩu?'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(EditableText).first, 'reset@b.com');
-      await tester.tap(find.text('Gửi link đặt lại'));
+      await tester.tap(find.text('Gửi liên kết đặt lại'));
       await tester.pumpAndSettle();
 
       expect(auth.resetEmail, 'reset@b.com');
       expect(
-        find.text('Đã gửi — kiểm tra hộp thư (kể cả mục spam)'),
+        find.text('Đã gửi — kiểm tra hộp thư, kể cả mục spam'),
         findsOneWidget,
       );
     },
@@ -503,8 +541,7 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
       await signInWithGoogle(tester);
-      await tester.tap(find.text('Tài khoản').last);
-      await tester.pumpAndSettle();
+      await _openAccount(tester);
       await tester.tap(find.text('Người dùng Demo'));
       await tester.pumpAndSettle();
 
@@ -540,11 +577,12 @@ void main() {
       );
 
       await signInWithGoogle(tester);
-      await tester.tap(find.text('Tài khoản').last);
-      await tester.pumpAndSettle();
+      await _openAccount(tester);
       await tester.tap(find.text('Người dùng Demo'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.camera_alt).last);
+      // Nút đổi ảnh nay là CHỮ "Đổi ảnh đại diện", không còn icon máy ảnh —
+      // xem `DUMP` màn Thông tin tài khoản.
+      await tester.tap(find.text('Đổi ảnh đại diện'));
       await tester.pumpAndSettle();
       // Saving now copies the picked avatar into the documents dir before
       // persisting its path — real dart:io File I/O, which (unlike Timers)
@@ -574,13 +612,15 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: _QuotaRepository()));
 
       await signInWithGoogle(tester);
-      await tester.tap(find.text('Tài khoản').last);
-      await tester.pumpAndSettle();
+      await _openAccount(tester);
       await tester.tap(find.text('Dung lượng'));
       await tester.pumpAndSettle();
 
-      expect(find.text('12 GB / 60 GB'), findsOneWidget);
-      expect(find.text('Đã dùng 80%'), findsOneWidget);
+      // Hạn mức nay đếm SỐ VIDEO trong tháng, không còn tính bằng GB — đổi có
+      // chủ đích để cùng trục với hạn mức thật của gói. Hai khẳng định cũ
+      // ('12 GB / 60 GB', 'Đã dùng 80%') mô tả một màn không còn tồn tại.
+      expect(find.text('Đã dùng 480 / 600 · 80%'), findsOneWidget);
+      expect(find.text('120 còn lại'), findsOneWidget);
     },
   );
 
@@ -597,16 +637,24 @@ void main() {
     (tester) async {
       // Gói đổi giữa chừng — đúng thứ xảy ra khi vừa thanh toán xong ở trang
       // quota; tab Tài khoản phải hỏi lại chứ không giữ nhãn gói đã cache.
-      await pumpPhoneSizedApp(tester, EcApp(repo: _UpgradingQuotaRepository()));
+      final repo = _UpgradingQuotaRepository();
+      await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
       await signInWithGoogle(tester);
-      await tester.tap(find.text('Tài khoản').last);
+      // Nhãn gói nay hiện ở màn Quota chứ không ở màn Tài khoản, nên phép thử
+      // "không giữ nhãn đã cache" phải làm ở đúng màn có nhãn: vào Quota, ra,
+      // vào lại — lần hai phải thấy gói MỚI.
+      await _openAccount(tester);
+      await tester.tap(find.text('Dung lượng'));
       await tester.pumpAndSettle();
       expect(find.text('Cơ bản'), findsWidgets);
 
-      await tester.tap(find.text('Dung lượng'));
-      await tester.pumpAndSettle();
+      // Thanh toán xong ở ngoài: gói đổi mà màn đang mở chưa biết.
+      repo.upgraded = true;
+
       await tester.tap(find.byType(PenBackButton).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Dung lượng'));
       await tester.pumpAndSettle();
 
       expect(find.text('Cao cấp'), findsWidgets);
@@ -626,8 +674,7 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
       await signInWithGoogle(tester);
-      await tester.tap(find.text('Tài khoản').last);
-      await tester.pumpAndSettle();
+      await _openAccount(tester);
       await tester.tap(find.text('Xóa tài khoản'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Xóa vĩnh viễn'));
@@ -669,8 +716,7 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
       await signInWithGoogle(tester);
-      await tester.tap(find.text('Tài khoản').last);
-      await tester.pumpAndSettle();
+      await _openAccount(tester);
       await tester.tap(find.text('Xóa tài khoản'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Xóa vĩnh viễn'));
@@ -711,8 +757,7 @@ void main() {
 
       await signInWithGoogle(tester);
       expect(auth.currentUser!.hasPassword, isFalse);
-      await tester.tap(find.text('Tài khoản').last);
-      await tester.pumpAndSettle();
+      await _openAccount(tester);
 
       expect(find.text('Tạo mật khẩu'), findsOneWidget);
       await tester.tap(find.text('Tạo mật khẩu'));
@@ -758,37 +803,15 @@ void main() {
     },
   );
 
-  testWidgets(
-    'shop detail resolution changes are saved through the repository',
-    // Reaching Shop Detail keeps app-lifetime singletons and the pushed
-    // route's own notifiers alive past the check.
-    experimentalLeakTesting: LeakTesting.settings.withIgnored(
-      notDisposed: {
-        'ImageStreamCompleterHandle': null,
-        'ValueNotifier<EcUser?>': 1,
-        'ValueNotifier<bool>': null,
-        '_EvidenceCountOverrides': null,
-      },
-    ),
-    (tester) async {
-      final repo = _ManageableShopRepository();
-      await pumpPhoneSizedApp(tester, EcApp(repo: repo));
-
-      await signInWithGoogle(tester);
-      await tester.tap(find.byType(PenBackButton).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Quản lý cửa hàng'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Shop ABC'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Độ phân giải quay'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('480p'));
-      await tester.pumpAndSettle();
-
-      expect(repo.updatedResolution, '480p');
-    },
-  );
+  // ĐÃ XOÁ: 'shop detail resolution changes are saved through the repository'.
+  //
+  // Không phải test hỏng — nó kiểm một tính năng KHÔNG CÒN. `0da2b002` bỏ bộ
+  // chọn "Độ phân giải quay" khỏi Chi tiết cửa hàng, thay bằng hai mức cố
+  // định, và `updateResolution` nay không tồn tại ở bất kỳ đâu trong app lẫn
+  // repository — chỉ còn cái field giả trong `_ManageableShopRepository`.
+  //
+  // Sửa nó cho xanh sẽ phải dựng lại một màn đã bị gỡ có chủ đích, nên xoá mới
+  // là việc đúng.
 
   testWidgets(
     'shop detail sends a pending member invite by contact',
@@ -807,12 +830,7 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
       await signInWithGoogle(tester);
-      await tester.tap(find.byType(PenBackButton).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Quản lý cửa hàng'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Shop ABC'));
-      await tester.pumpAndSettle();
+      await _openShopDetail(tester);
       await tester.tap(find.text('Mời thành viên'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(EditableText).first, 'new@b.com');
@@ -1119,14 +1137,23 @@ class _QuotaRepository extends _DemoRepository {
 
 /// Trả `basic` cho lần hỏi đầu, `premium` cho mọi lần sau — giả lập gói vừa
 /// được kích hoạt trong lúc người dùng đang ở trang quota.
+/// Gói nâng cấp giữa chừng — đúng thứ xảy ra khi vừa thanh toán xong.
+///
+/// Bản trước lật gói theo SỐ LƯỢT gọi (`_calls == 1 ? basic : premium`), với
+/// giả định "lượt đầu tiên là của màn Quota". Giả định đó gãy khi điều hướng
+/// đổi: nay phải đi qua màn Tài khoản, và chính màn đó đã tiêu mất lượt gọi
+/// đầu — nên màn Quota không bao giờ còn thấy `basic`, và test đỏ mà không phải
+/// vì tính năng hỏng.
+///
+/// Nay test tự nói KHI NÀO nâng gói, nên nó không còn phụ thuộc vào việc màn
+/// nào hỏi trước.
 class _UpgradingQuotaRepository extends _DemoRepository {
-  var _calls = 0;
+  var upgraded = false;
 
   @override
   Future<QuotaDto> quota({String? shopId}) async {
-    _calls += 1;
     return QuotaDto(
-      planCode: _calls == 1 ? 'basic' : 'premium',
+      planCode: upgraded ? 'premium' : 'basic',
       usedVideos: 480,
       capVideos: 600,
       remainingVideos: 120,

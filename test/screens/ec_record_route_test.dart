@@ -64,7 +64,7 @@ void main() {
       // No exception escaped, and the idle "wait for bill" screen is shown
       // (recording never started).
       expect(tester.takeException(), isNull);
-      expect(find.text('Đưa bill vào khung để bắt đầu'), findsOneWidget);
+      expect(find.text('Đưa bill vào khung'), findsOneWidget);
     },
   );
 
@@ -137,7 +137,7 @@ void main() {
       expect(requested, isTrue);
       expect(camera.started, isFalse);
       expect(saved, isFalse);
-      expect(find.text('Đưa bill vào khung để bắt đầu'), findsOneWidget);
+      expect(find.text('Đưa bill vào khung'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

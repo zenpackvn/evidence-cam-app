@@ -137,14 +137,23 @@ void main() {
         ..writeAsStringSync('video-bytes');
 
       final uploader = ApiEvidenceUploader(EcApi(apiDio), put: r2.put);
-      final key = await uploader.upload(
+      final evidenceId = await uploader.upload(
         clip,
         tracking: 'SPX1',
         type: 'Đóng hàng',
         shopId: 's1',
       );
 
-      expect(key, 'r2/ev1.mp4');
+      // `upload` trả về EVIDENCE ID, không phải khoá R2 — đổi có chủ đích ngày
+      // 08/08 (41d3bde3). Lý do nằm ở `ec_uploader.dart`: evidenceId là thứ duy
+      // nhất khớp được clip trên máy với dòng bằng chứng của máy chủ, và hàng
+      // đợi cần nó để đặt tên bản xem tạm. Khoá R2 không xuất hiện ở API nào
+      // khác nên không đối chiếu được với gì cả.
+      //
+      // Bảy khẳng định trong file này còn chờ `'r2/….mp4'` cho tới 10/08, tức
+      // là chúng đỏ suốt hai ngày mà không ai thấy — bộ test gốc lúc đó đã có
+      // 43 đỏ thường trực nên một lỗi thật lẫn vào là mất tăm (C-03).
+      expect(evidenceId, 'ev1');
       expect(calls, [
         'POST /api/shops/s1/orders',
         'GET /api/shops/s1/video-types',
@@ -196,14 +205,14 @@ void main() {
         ..writeAsStringSync('jpeg-bytes');
 
       final uploader = ApiEvidenceUploader(EcApi(apiDio), put: r2.put);
-      final key = await uploader.upload(
+      final evidenceId = await uploader.upload(
         photo,
         tracking: 'SPX1',
         type: 'Ảnh đính kèm',
         shopId: 's1',
       );
 
-      expect(key, 'r2/ev-photo.jpg');
+      expect(evidenceId, 'ev-photo');
       expect(calls, [
         'POST /api/shops/s1/orders',
         'POST /api/shops/s1/orders/ord1/uploads/presign',
@@ -268,7 +277,7 @@ void main() {
       multipartPartSizeBytes: 4,
     );
 
-    final key = await uploader.upload(
+    final evidenceId = await uploader.upload(
       clip,
       tracking: 'SPX1',
       type: 'Đóng hàng',
@@ -276,7 +285,7 @@ void main() {
       capturedAt: 123,
     );
 
-    expect(key, 'r2/evm.mp4');
+    expect(evidenceId, 'evm');
     expect(calls, [
       'POST /api/shops/s1/orders',
       'GET /api/shops/s1/video-types',
@@ -409,14 +418,14 @@ void main() {
         ..writeAsStringSync('video-bytes');
 
       final uploader = ApiEvidenceUploader(EcApi(apiDio), put: r2.put);
-      final key = await uploader.upload(
+      final evidenceId = await uploader.upload(
         clip,
         tracking: 'SPX1',
         type: 'Đóng hàng',
         shopId: 's1',
       );
 
-      expect(key, 'r2/ev1.mp4');
+      expect(evidenceId, 'ev1');
       expect(putAttempts, 2);
     },
   );
@@ -519,7 +528,7 @@ void main() {
         multipartPartSizeBytes: 4,
       );
 
-      final key = await uploader.upload(
+      final evidenceId = await uploader.upload(
         clip,
         tracking: 'SPX1',
         type: 'Đóng hàng',
@@ -527,7 +536,7 @@ void main() {
         capturedAt: 123,
       );
 
-      expect(key, 'r2/evm.mp4');
+      expect(evidenceId, 'evm');
       expect(partAttempts, {'p1': 1, 'p2': 2});
     },
   );
@@ -596,7 +605,7 @@ void main() {
       );
 
       // Act
-      final key = await uploader.upload(
+      final evidenceId = await uploader.upload(
         clip,
         tracking: 'SPX1',
         type: 'Đóng hàng',
@@ -604,7 +613,7 @@ void main() {
       );
 
       // Assert
-      expect(key, 'r2/ev1.mp4');
+      expect(evidenceId, 'ev1');
       expect(r2.calls.map((c) => c.url).toList(), [
         'https://r2.example/clip?sig=1',
       ]);
@@ -627,7 +636,7 @@ void main() {
       );
 
       // Act
-      final key = await uploader.upload(
+      final evidenceId = await uploader.upload(
         clip,
         tracking: 'SPX1',
         type: 'Đóng hàng',
@@ -635,7 +644,7 @@ void main() {
       );
 
       // Assert
-      expect(key, 'r2/ev1.mp4');
+      expect(evidenceId, 'ev1');
       expect(r2.calls.length, 2);
     });
 
