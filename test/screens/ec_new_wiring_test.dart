@@ -133,7 +133,10 @@ void main() {
         ),
       );
       expect(find.text('SPXVN1'), findsOneWidget);
-      await tester.tap(find.byIcon(LucideIcons.scan));
+      // `scanBarcode`, không phải `scan` — nút quét ở màn Vận đơn đổi icon.
+      // `find.byIcon` so theo ĐÚNG `IconData`, nên đổi icon là finder câm lặng
+      // không khớp gì; lỗi báo ra chỉ là một mã codepoint, không nói được gì.
+      await tester.tap(find.byIcon(LucideIcons.scanBarcode));
       await tester.pumpAndSettle();
       // Scanned code lands in the search box and filters out non-matches
       // (SPXVN2 now shows in both the field and the matching row).

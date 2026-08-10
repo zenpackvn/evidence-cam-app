@@ -935,7 +935,16 @@ class _AccountRouteState extends State<_AccountRoute> {
 
   void _refreshQuota() {
     if (!mounted) return;
-    setState(() => _quota = _fetchQuota());
+    // Thân KHỐI, không phải mũi tên: `() => _quota = _fetchQuota()` trả về
+    // chính giá trị vừa gán — một `Future` — và `setState` có assertion chặn
+    // đúng trường hợp đó ("callback argument returned a Future"), vì một
+    // callback async thì thân nó chạy SAU khi khung đã dựng xong.
+    //
+    // Ở đây việc gán là đồng bộ, chỉ có kiểu trả về là sai. Nhưng assertion vẫn
+    // bật và làm hỏng màn Tài khoản mỗi lần quota được làm mới.
+    setState(() {
+      _quota = _fetchQuota();
+    });
   }
 
   @override

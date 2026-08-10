@@ -12,6 +12,7 @@ import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 import 'package:localization/localization.dart';
 
 // Renders each screen at iPhone size and writes a PNG so the design can be
@@ -21,13 +22,42 @@ Future<void> _cap(WidgetTester t, String name, Widget screen) async {
   // design canvas (the responsiveness the user flagged).
   t.view.physicalSize = const Size(414, 896);
   t.view.devicePixelRatio = 1;
-  addTearDown(t.view.reset);
+  // THÁO cây widget khi test xong, đừng chỉ reset view.
+  //
+  // Không tháo thì mỗi màn chụp xong để lại nguyên cây của nó, và
+  // `leak_tracker` (bật toàn cục ở `flutter_test_config.dart`) đếm sạch:
+  // 795 đối tượng cho riêng màn chờ bill — 151 element render, 81
+  // StatefulElement, 47 TextPainter… chứ không phải một rò rỉ cụ thể nào.
+  //
+  // Đây là con số từng làm tôi tưởng có rò rỉ thứ hai trong mã sản phẩm. Không
+  // có: `AnimationController` và `CurvedAnimation` của khung ngắm nằm trong đó
+  // chỉ vì chúng thuộc cái cây chưa ai tháo. `ec_app_test.dart` đã dùng đúng
+  // khuôn này từ trước.
+  addTearDown(() async {
+    await t.pumpWidget(const SizedBox.shrink());
+    await t.pump();
+    t.view.reset();
+  });
   await t.pumpWidget(
     MaterialApp(
       theme: AppTheme.light(),
       locale: const Locale('vi'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      // `disableAnimations` — dùng đúng cái hook màn quay đã có sẵn.
+      //
+      // Khung ngắm chạy một vệt quét LẶP VÔ HẠN, nên `pumpAndSettle` không bao
+      // giờ tới được lúc hết khung để bơm và ném timeout. `_FramingCornersState
+      // .didChangeDependencies` vốn đã đọc cờ này để đỗ vệt quét ở giữa thay vì
+      // quét mãi — đó là đường Reduce Motion của hệ điều hành, không phải một
+      // lối tắt bịa ra cho test.
+      //
+      // Được thêm: mọi ảnh chụp thành tất định, không còn phụ thuộc vào việc
+      // khung nào rơi đúng lúc bấm máy.
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: true),
+        child: child!,
+      ),
       home: screen,
     ),
   );
@@ -102,9 +132,30 @@ const _types = [
 ];
 
 void main() {
-  // Offline: fall back to the bundled font instead of fetching Inter (which
-  // throws in tests). Layout/proportion is what we're eyeballing here.
+  // Phông Inter nay nằm trong `assets/google_fonts/`, nên tắt tải qua mạng là
+  // đọc thẳng từ assets chứ không còn ném lỗi. (Đặt cả ở
+  // `flutter_test_config.dart` cho mọi file; giữ ở đây cho file này tự đứng.)
   GoogleFonts.config.allowRuntimeFetching = false;
+
+  // Bộ nhớ đệm ảnh SỐNG LÂU HƠN cây widget — đó là việc của nó. Logo shop để
+  // lại ba đối tượng trong đệm sau mỗi màn, và `leak_tracker` đếm chúng là rò.
+  //
+  // Đã thử dọn đệm trong teardown: hỏng ngay ba golden (login/register/forgot,
+  // lệch 0.43% — đúng chỗ cái logo), vì màn sau không kịp nạp lại ảnh. Đệm là
+  // thứ dùng chung giữa các test, dọn nó là phá bối cảnh của test kế tiếp.
+  //
+  // Nên khai báo bỏ qua đúng ba loại này, và CHỈ ba loại. Phần còn lại của cây
+  // vẫn bị soi — chính nhờ vậy mà lượt này bắt được cả cây không được tháo (795
+  // đối tượng) lẫn một rò rỉ thật ở `_FramingCornersState`.
+  LeakTesting.settings = LeakTesting.settings.withIgnored(
+    notDisposed: {
+      'ImageStreamCompleterHandle': null,
+      'ImageInfo': null,
+      'Image': null,
+      // Nội bộ của chính `imageCache` (`_CachedImage`) — cùng lý do.
+      '_CachedImage': null,
+    },
+  );
 
   testWidgets('splash', (t) => _cap(t, 'splash', const EcSplashScreen()));
   testWidgets('login', (t) => _cap(t, 'login', const EcLoginScreen()));
