@@ -16,4 +16,5 @@ export 'src/ec_preview_store.dart';
 export 'src/ec_stop_code_screen.dart';
 export 'src/ec_upload_queue.dart';
 export 'src/ec_video_faststart.dart';
+export 'src/ec_video_trim.dart';
 export 'src/recording_session.dart';

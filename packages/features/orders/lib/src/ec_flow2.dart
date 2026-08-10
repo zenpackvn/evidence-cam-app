@@ -435,6 +435,7 @@ class EcVideoDetailScreen extends StatelessWidget {
     this.onPlay,
     this.onCopyLink,
     this.onDownload,
+    this.onTrim,
     this.onDelete,
     this.onVerify,
     this.canDelete = true,
@@ -455,6 +456,10 @@ class EcVideoDetailScreen extends StatelessWidget {
 
   /// Called when "Tải video về máy" is tapped.
   final VoidCallback? onDownload;
+
+  /// Called when "Cắt đoạn ngắn để gửi" is tapped — tải bản đã nung về máy rồi
+  /// mở màn cắt. Null thì hàng đó không hiện.
+  final VoidCallback? onTrim;
 
   /// Called when "Xóa video" is tapped.
   final VoidCallback? onDelete;
@@ -604,6 +609,19 @@ class EcVideoDetailScreen extends StatelessWidget {
                   icon: LucideIcons.copy,
                   title: l10n.detailCopyAssetLink,
                   onTap: onCopyLink,
+                ),
+              ],
+              if (video.mediaUrl != null && onTrim != null) ...[
+                const _EcDetailDivider(),
+                // Cắt chỉ mở khi máy chủ đã có bản phát được: thứ được cắt là
+                // bản ĐÃ NUNG, nên đoạn gửi đi vẫn mang dấu giờ và mã vận đơn
+                // trên hình. Cắt bản thô thì gửi cho sàn một đoạn không có gì
+                // chứng minh nó quay lúc nào.
+                _EcDetailActionRow(
+                  icon: LucideIcons.scissors,
+                  title: l10n.detailTrimVideo,
+                  subtitle: l10n.detailTrimNote,
+                  onTap: onTrim,
                 ),
               ],
               const _EcDetailDivider(),

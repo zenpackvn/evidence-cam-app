@@ -818,6 +818,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'Owner/manager only · for when the marketplace asks for the original file';
 
   @override
+  String get detailTrimVideo => 'Trim a short clip to send';
+
+  @override
+  String get detailTrimNote =>
+      'The full clip stays untouched · the trimmed one keeps its timestamp';
+
+  @override
+  String get trimSave => 'Save';
+
+  @override
+  String get trimEstimatedSize => 'About';
+
+  @override
+  String get trimFailed =>
+      'Could not trim the video. The full clip is still there.';
+
+  @override
+  String get trimPreparing => 'Downloading the full clip…';
+
+  @override
   String get detailDownloadPhoto => 'Download photo';
 
   @override

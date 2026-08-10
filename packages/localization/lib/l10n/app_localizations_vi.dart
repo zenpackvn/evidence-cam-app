@@ -814,6 +814,25 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chỉ Chủ/QL shop · dùng khi sàn yêu cầu file gốc';
 
   @override
+  String get detailTrimVideo => 'Cắt đoạn ngắn để gửi';
+
+  @override
+  String get detailTrimNote =>
+      'Bản đầy đủ vẫn giữ nguyên · đoạn cắt vẫn có dấu giờ';
+
+  @override
+  String get trimSave => 'Lưu';
+
+  @override
+  String get trimEstimatedSize => 'Ước tính';
+
+  @override
+  String get trimFailed => 'Không cắt được video. Bản đầy đủ vẫn còn nguyên.';
+
+  @override
+  String get trimPreparing => 'Đang tải bản đầy đủ về máy…';
+
+  @override
   String get detailDownloadPhoto => 'Tải ảnh về máy';
 
   @override

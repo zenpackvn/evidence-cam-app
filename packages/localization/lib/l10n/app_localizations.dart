@@ -1544,6 +1544,42 @@ abstract class AppLocalizations {
   /// **'Owner/manager only · for when the marketplace asks for the original file'**
   String get detailDownloadNote;
 
+  /// No description provided for @detailTrimVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim a short clip to send'**
+  String get detailTrimVideo;
+
+  /// No description provided for @detailTrimNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The full clip stays untouched · the trimmed one keeps its timestamp'**
+  String get detailTrimNote;
+
+  /// No description provided for @trimSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get trimSave;
+
+  /// No description provided for @trimEstimatedSize.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get trimEstimatedSize;
+
+  /// No description provided for @trimFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not trim the video. The full clip is still there.'**
+  String get trimFailed;
+
+  /// No description provided for @trimPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading the full clip…'**
+  String get trimPreparing;
+
   /// No description provided for @detailDownloadPhoto.
   ///
   /// In en, this message translates to:
