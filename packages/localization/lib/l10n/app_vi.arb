@@ -511,7 +511,7 @@
   "filterTime30d": "30 ngày qua",
   "filterTimePickDate": "Chọn ngày…",
   "filterTypeLabel": "Loại video",
-  "filterTypeAll": "Loại video",
+  "filterTypeAll": "Tất cả",
   "deleteVideoTypeTitle": "Xóa loại \"{typeName}\"?",
   "memberCurrentRole": "Vai trò hiện tại: {role}",
   "stopCodeTitle": "Mã QR dừng quay",

@@ -740,7 +740,7 @@
   "filterTime30d": "Last 30 days",
   "filterTimePickDate": "Pick a date…",
   "filterTypeLabel": "Video type",
-  "filterTypeAll": "Video type",
+  "filterTypeAll": "All",
   "deleteVideoTypeTitle": "Delete type \"{typeName}\"?",
   "@deleteVideoTypeTitle": {
     "placeholders": {

@@ -1371,7 +1371,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get filterTypeLabel => 'Loại video';
 
   @override
-  String get filterTypeAll => 'Loại video';
+  String get filterTypeAll => 'Tất cả';
 
   @override
   String deleteVideoTypeTitle(String typeName) {

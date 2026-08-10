@@ -1380,7 +1380,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filterTypeLabel => 'Video type';
 
   @override
-  String get filterTypeAll => 'Video type';
+  String get filterTypeAll => 'All';
 
   @override
   String deleteVideoTypeTitle(String typeName) {

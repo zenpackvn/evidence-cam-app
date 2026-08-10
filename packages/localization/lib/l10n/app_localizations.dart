@@ -2549,7 +2549,7 @@ abstract class AppLocalizations {
   /// No description provided for @filterTypeAll.
   ///
   /// In en, this message translates to:
-  /// **'Video type'**
+  /// **'All'**
   String get filterTypeAll;
 
   /// No description provided for @deleteVideoTypeTitle.
