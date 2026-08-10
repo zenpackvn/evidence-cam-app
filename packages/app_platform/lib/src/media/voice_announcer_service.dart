@@ -116,6 +116,18 @@ class VoiceAnnouncerService {
     }
   }
 
+  /// Làm nóng engine TTS trước khi có câu nào cần đọc thật.
+  ///
+  /// Câu đầu tiên của mỗi lượt chạy phải trả giá cho [_ensureVietnamese]: tới ba
+  /// lượt hỏi `isLanguageAvailable` rồi một lượt `setLanguage`, tất cả đều là
+  /// round-trip sang engine TTS của hệ điều hành. Người quay nghe ra đúng cái
+  /// khoảng lặng giữa tiếng tút và câu "Đã bắt đầu quay" — mà lúc ấy thì không
+  /// còn gì che được nữa.
+  ///
+  /// Gọi lúc dựng camera: màn quay vừa mở, chưa ai bấm gì, engine có cả quãng
+  /// đó để bind xong. Best-effort như mọi thứ khác trong lớp này.
+  Future<void> prepare() => _ensureVietnamese();
+
   Future<void> speak(String text) async {
     try {
       await _ensureVietnamese();

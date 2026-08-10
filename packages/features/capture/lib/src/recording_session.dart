@@ -461,13 +461,29 @@ class RecordingSessionBloc
   String? _suppressedCode;
   DateTime? _suppressedUntil;
 
-  // ML Kit's per-frame scan is expensive enough to visibly stutter the video
-  // encoder if run on every delivered frame, and instant recognition isn't
-  // how scanner apps normally behave anyway — recognition settles over a
-  // few seconds rather than firing on the very first frame a code appears
-  // in. One shared cooldown covers both idle (waiting for a bill) and
-  // in-recording (watching for the end-QR) scanning.
-  static const _scanCooldown = Duration(seconds: 2);
+  /// Khoảng nghỉ giữa hai lần nhận dạng lúc ĐANG QUAY — canh mã kết thúc và
+  /// canh bill của đơn khác để chuyển đơn.
+  ///
+  /// Từng để 2 giây vì sợ ML Kit chạy mỗi khung làm khựng bộ mã hoá video. Hai
+  /// giây là quá đắt cho luồng đóng hàng liên tục: người quay đưa bill đơn sau
+  /// vào khung rồi phải đứng chờ, và cái chờ ấy nằm giữa hai kiện hàng nên gặp
+  /// ở MỌI đơn. Hạ xuống mức người dùng không cảm nhận được vẫn còn cách xa
+  /// "mỗi khung một lần": khung tới ~30 hình/giây, đây là ~5 lượt/giây.
+  static const _recScanCooldown = Duration(milliseconds: 200);
+
+  /// Khoảng nghỉ giữa hai lần nhận dạng lúc NGHỈ, tức lúc chờ bill vào khung.
+  ///
+  /// Từng dùng chung 2 giây với lúc đang quay, và đó là lý do đưa bill vào
+  /// khung phải chờ: khung hình có mã ngay từ đầu vẫn nằm đó tới hai giây mới
+  /// được nhìn tới. Lý do của con số ấy — đừng làm khựng bộ mã hoá video — chỉ
+  /// đúng khi đang quay; lúc nghỉ thì không có bộ mã hoá nào để làm khựng.
+  ///
+  /// Không để `zero`: [_idleScanBusy] đã chặn hai lượt chồng nhau, nhưng bỏ hẳn
+  /// khoảng nghỉ thì máy giải mã gần như mọi khung hình suốt thời gian màn quay
+  /// mở — mà màn này là chỗ người ta để máy đứng chờ hàng, có khi hàng giờ.
+  /// 150ms là dưới ngưỡng người dùng cảm nhận được (đọc ra là "vào khung là
+  /// nhận") mà vẫn cắt phần lớn số lượt giải mã thừa.
+  static const _idleScanCooldown = Duration(milliseconds: 150);
 
   // Async mutex chaining all camera-mutating ops. ponytail: a single global
   // lock — fine here because there's exactly one camera; nothing to parallelize.
@@ -499,12 +515,16 @@ class RecordingSessionBloc
     return 'Sắp chạm trần $minutes phút, video sẽ tự chốt';
   }
 
-  /// How long the just-closed order's code stays blocked from auto-starting a
-  /// new clip, measured from the last frame it was seen in. The bill normally
-  /// stays on the packing table for a while after its clip closes, so without
-  /// this the idle scan that resumes right after [_finalize] re-detects the
-  /// same code within one cooldown and records it all over again — which is
-  /// what made the 15' cap announce "đã dừng quay" and then keep recording.
+  /// Trần thời gian cho cửa sổ chặn mã vừa quay xong, tính từ lúc clip đóng.
+  ///
+  /// Chặn này CHỈ để lo một việc: bill vừa quay xong còn nằm nguyên trong khung,
+  /// máy quét nghỉ chạy lại là thấy đúng mã ấy và mở clip mới cho cùng một đơn —
+  /// đúng lỗi làm trần 15 phút đọc "đã dừng quay" rồi quay tiếp.
+  ///
+  /// Nên cửa sổ này gỡ NGAY khi khung hình không còn cho thấy mã đó nữa (xem
+  /// [_onIdleFrame]): nhấc kiện ra là quay lại được luôn, đưa bill đơn khác vào
+  /// cũng vậy. Con số dưới đây chỉ còn là trần chót cho trường hợp không nhịp
+  /// quét nào nói được gì — không phải quãng bắt người quay phải chờ.
   static const _reArmDelay = Duration(seconds: 5);
 
   /// The live controller for the preview widget. The bloc can't hide it — a
@@ -601,6 +621,10 @@ class RecordingSessionBloc
   }
 
   Future<(double, double)> _initCamera() async {
+    // Làm nóng engine TTS song song với việc mở camera: câu "Đã bắt đầu quay"
+    // đầu tiên phải chờ engine bind và chốt giọng tiếng Việt, và chờ ở đó thì
+    // nó rơi đúng vào khoảng lặng ngay sau tiếng tút. Ở đây thì không ai chờ.
+    unawaited(_voice.prepare());
     await _camera.initialize(
       description: _cameras[_cameraIndex],
       resolutionPreset: _presetFor(state.resolutionLabel),
@@ -654,7 +678,7 @@ class RecordingSessionBloc
     }
     final lastScan = _lastIdleScanAt;
     if (lastScan != null &&
-        DateTime.now().difference(lastScan) < _scanCooldown) {
+        DateTime.now().difference(lastScan) < _idleScanCooldown) {
       return;
     }
     _idleScanBusy = true;
@@ -667,6 +691,12 @@ class RecordingSessionBloc
             _camera.controller?.value.deviceOrientation ??
             DeviceOrientation.portraitUp,
       );
+      // Khung hình không còn cho thấy mã đang bị chặn thì gỡ chặn NGAY, không
+      // chờ hết [_reArmDelay]. Chặn ấy sinh ra chỉ vì "bill vừa quay xong còn
+      // nằm trong khung"; nhấc kiện ra, hay đưa bill đơn khác vào, là điều kiện
+      // ấy hết đúng — và giữ chặn thêm giây nào nữa thì thành ra người quay đưa
+      // đúng mã đó vào mà máy làm ngơ.
+      if (code == null || code.isEmpty) _clearSuppression();
       // An end-QR left on the table means nothing while idle — don't record it.
       if (code != null &&
           code.isNotEmpty &&
@@ -683,14 +713,12 @@ class RecordingSessionBloc
 
   /// Applies [idleScanMayStart] to [code].
   ///
-  /// Cửa sổ chặn chạy **cố định** từ lúc clip đóng, không gia hạn theo từng
-  /// khung hình còn thấy bill. Bản trước gia hạn liên tục, nên kiện hàng nằm
-  /// yên trên bàn bị chặn vĩnh viễn — quay lỗi muốn quay lại chính đơn đó thì
-  /// không cách nào bắt đầu được, phải nhấc kiện ra khỏi khung rồi đưa lại.
-  /// Nay hết [_reArmDelay] là mã cũ được nhận lại như mọi mã khác, đúng nhu cầu
-  /// quay lại khi lỡ quay hỏng; đổi lại, kiện bị bỏ quên trên bàn có thể tự
-  /// quay tiếp sau ngần ấy giây. Manual entry vẫn bỏ qua chặn hoàn toàn — gõ
-  /// tay là yêu cầu quay rõ ràng.
+  /// Mã KHÁC luôn được nhận, ngay lập tức — kể cả mã đã quay ở clip trước đó.
+  /// Thứ duy nhất bị chặn là chính mã vừa quay xong, và chỉ chừng nào nó còn
+  /// nằm trong khung: nhịp quét đầu tiên không thấy nó nữa là chặn được gỡ
+  /// ([_onIdleFrame]), nên nhấc kiện ra rồi đưa lại là quay được ngay.
+  /// [_reArmDelay] chỉ còn là trần chót. Manual entry bỏ qua chặn hoàn toàn —
+  /// gõ tay là yêu cầu quay rõ ràng.
   /// Tút báo "bắt đầu từ đây", rồi trả quyền điều khiển ngay để camera lăn.
   ///
   /// Chỉ chờ tiếng tút (120ms) — nó là mốc bắt đầu quay nên phải dứt trước
@@ -730,11 +758,17 @@ class RecordingSessionBloc
       blockedUntil: _suppressedUntil,
       now: DateTime.now(),
     );
-    if (mayStart) {
-      _suppressedCode = null;
-      _suppressedUntil = null;
-    }
+    if (mayStart) _clearSuppression();
     return mayStart;
+  }
+
+  /// Gỡ chặn mã vừa quay xong.
+  ///
+  /// Gọi khi điều kiện sinh ra chặn ấy hết đúng: khung hình sạch, thấy mã khác,
+  /// hoặc một clip mới đã bắt đầu.
+  void _clearSuppression() {
+    _suppressedCode = null;
+    _suppressedUntil = null;
   }
 
   Future<void> _onManualCodeSubmitted(
@@ -779,8 +813,7 @@ class RecordingSessionBloc
     Emitter<RecordingSessionState> emit,
   ) async {
     if (state.isRecording) return;
-    _suppressedCode = null;
-    _suppressedUntil = null;
+    _clearSuppression();
     try {
       await _serialized(() async {
         if (!_camera.isInitialized || _camera.isRecordingVideo) return;
@@ -855,7 +888,7 @@ class RecordingSessionBloc
     }
     final lastScan = _lastRecScanAt;
     if (lastScan != null &&
-        DateTime.now().difference(lastScan) < _scanCooldown) {
+        DateTime.now().difference(lastScan) < _recScanCooldown) {
       return;
     }
     _recScanBusy = true;
