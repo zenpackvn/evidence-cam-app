@@ -29,13 +29,31 @@ class EcApi {
     String path,
     T Function(Map<String, dynamic>) parse, {
     Map<String, dynamic>? query,
+    bool live = false,
   }) async {
     final res = await _dio.get<Map<String, dynamic>>(
       path,
       queryParameters: query,
+      options: live ? _liveOptions : null,
     );
     return parse(res.data!);
   }
+
+  /// Buộc đi hỏi máy chủ thay vì lấy bản đã lưu trong bộ đệm.
+  ///
+  /// Bộ đệm HTTP của app nằm trong RAM và giữ tới bảy ngày (xem
+  /// `cacheInterceptor`), nên một lời hỏi lặp lại trong cùng phiên được trả
+  /// bằng bản cũ. Với dữ liệu tĩnh thì đó là điều tốt; với thứ ĐANG đổi ngay
+  /// lúc người dùng nhìn — trạng thái đóng dấu của clip — thì nó biến vòng hỏi
+  /// lại 5 giây một lần thành vòng đọc đi đọc lại đúng một câu trả lời cũ, và
+  /// người bán chỉ thấy "đã đóng dấu" sau khi khởi động lại app (lúc đó bộ đệm
+  /// trong RAM mất theo tiến trình).
+  ///
+  /// `no-cache` là hỏi lại có điều kiện, không phải tải lại toàn bộ: còn ETag
+  /// thì máy chủ trả 304 và thân phản hồi cũ được dùng lại.
+  static final _liveOptions = Options(
+    headers: const {'cache-control': 'no-cache'},
+  );
 
   Future<List<T>> _getList<T>(
     String path,
@@ -361,6 +379,9 @@ class EcApi {
     int? toTs,
     String? videoTypeId,
   }) async {
+    // Cũng hỏi thẳng máy chủ như chi tiết đơn: danh sách này là chỗ người bán
+    // kéo xuống để xem clip vừa quay đã lên chưa. Trả bản trong bộ đệm là biến
+    // cử chỉ làm mới thành một cái không làm gì.
     final res = await _dio.get<List<dynamic>>(
       '/api/shops/$shopId/orders',
       queryParameters: {
@@ -370,6 +391,7 @@ class EcApi {
         'to': ?toTs,
         'video_type_id': ?videoTypeId,
       },
+      options: _liveOptions,
     );
     final items = res.data!
         .map((e) => OrderSummaryDto.fromJson(e as Map<String, dynamic>))
@@ -434,8 +456,17 @@ class EcApi {
   String verifyUrl(String evidenceId) =>
       '${_dio.options.baseUrl.replaceAll(RegExp(r'/+$'), '')}/seal/verify/$evidenceId';
 
-  Future<OrderDetailDto> getOrder(String shopId, String orderId) =>
-      _get('/api/shops/$shopId/orders/$orderId', OrderDetailDto.fromJson);
+  /// Chi tiết đơn — luôn hỏi thẳng máy chủ.
+  ///
+  /// Đây là màn duy nhất theo dõi một thứ đang đổi trong lúc người dùng nhìn:
+  /// clip vừa quay đi từ "đang tải lên" sang "đang đóng dấu" rồi "đã tải lên",
+  /// và màn hỏi lại 5 giây một lần để bắt lúc đổi. Lấy bản trong bộ đệm là hỏi
+  /// lại cho có.
+  Future<OrderDetailDto> getOrder(String shopId, String orderId) => _get(
+    '/api/shops/$shopId/orders/$orderId',
+    OrderDetailDto.fromJson,
+    live: true,
+  );
 
   // --- uploads (FR-03) ---
 

@@ -88,6 +88,7 @@ import 'data/ec_uploader.dart';
 import 'data/platform_device_conditions.dart';
 import 'screens/ec_record_route.dart';
 import 'screens/ec_scan_route.dart';
+import 'screens/ec_trim_route.dart';
 
 const _lastShopIdKey = 'shop.last_id';
 
@@ -2112,6 +2113,73 @@ Future<void> _downloadAndShareVideo(
     }
     await share.shareFiles(paths: [path], subject: video.title);
   } on Object {
+    if (context.mounted) _toast(context, context.l10n.toastVideoDownloadFailed);
+  }
+}
+
+/// Tải bản ĐÃ NUNG về máy, mở màn cắt, rồi giao đoạn cắt ra cho người dùng.
+///
+/// Bằng chứng trên máy chủ không bị đụng tới — cắt chỉ xảy ra trên bản tải về.
+/// Và vì bản tải về là bản đã nung, đoạn cắt ra vẫn mang dấu giờ + mã vận đơn
+/// trên hình, tức vẫn dùng gửi cho sàn được.
+///
+/// Bản đầy đủ vừa tải bị xoá sau khi rời màn cắt: nó chỉ là nguyên liệu, giữ
+/// lại là chiếm chỗ máy cho một thứ tải lại được bất cứ lúc nào.
+Future<void> _trimAndShareVideo(
+  BuildContext context,
+  Dio dio,
+  ShareService? share,
+  GallerySaveService? gallery,
+  VideoPlayerService player,
+  EcVideoDetail? video,
+  String tracking,
+) async {
+  final url = video?.mediaUrl;
+  if (url == null) {
+    _toast(context, context.l10n.toastVideoNoDownloadLink);
+    return;
+  }
+  var sourcePath = '';
+  try {
+    _toast(context, context.l10n.trimPreparing);
+    final dir = await getTemporaryDirectory();
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    sourcePath = '${dir.path}/${evidenceTrimPrefix}src_$stamp.mp4';
+    await _downloadWithRetry(dio, url, sourcePath);
+    if (!context.mounted) return;
+    final trimmed = await Navigator.of(context, rootNavigator: true)
+        .push<String>(
+          CupertinoPageRoute(
+            builder: (_) => EcTrimRoute(
+              sourcePath: sourcePath,
+              tracking: tracking.isEmpty ? video!.title : tracking,
+              player: player,
+            ),
+          ),
+        );
+    unawaited(_deleteQuietly(sourcePath));
+    if (trimmed == null || !context.mounted) return;
+    // Cùng lối ra với nút Tải về: vào thư viện máy nếu được phép, không thì
+    // đẩy sang bảng chia sẻ. Người bán gửi cho sàn qua chat của sàn, nên tệp
+    // phải tới được bảng chia sẻ của hệ điều hành.
+    if (gallery != null && await gallery.requestAccess()) {
+      await gallery.saveVideo(trimmed);
+      unawaited(_deleteQuietly(trimmed));
+      if (context.mounted) {
+        _toast(context, context.l10n.toastVideoSavedToGallery);
+      }
+      return;
+    }
+    if (share == null) {
+      await Clipboard.setData(ClipboardData(text: trimmed));
+      if (context.mounted) {
+        _toast(context, context.l10n.toastVideoDownloadedCopied);
+      }
+      return;
+    }
+    await share.shareFiles(paths: [trimmed], subject: tracking);
+  } on Object {
+    unawaited(_deleteQuietly(sourcePath));
     if (context.mounted) _toast(context, context.l10n.toastVideoDownloadFailed);
   }
 }
@@ -4345,8 +4413,18 @@ class _OrderRouteState extends State<_OrderRoute> {
   /// ponytail: hẹn giờ cố định, dừng khi hết clip dở dang hoặc hết
   /// [_maxSealPolls] lượt. Có trần vì niêm phong hỏng thì `seal_status` nằm lại
   /// ở `pending` vĩnh viễn — không chặn thì màn này gọi API tới hết pin.
-  static const _sealPollInterval = Duration(seconds: 5);
-  static const _maxSealPolls = 24;
+  /// Nhanh ở đầu rồi thưa dần: phần lớn lượt đóng dấu xong trong vài chục
+  /// giây, nên mười hai lượt đầu cách nhau 5 giây để bắt đúng khoảnh khắc đổi.
+  /// Lượt chậm thì đo được tới 51 phút trên prod, mà giữ nhịp 5 giây suốt ngần
+  /// ấy là gọi API tới hết pin — nên sau đó giãn ra 20 giây.
+  Duration get _sealPollInterval => _sealPolls < 12
+      ? const Duration(seconds: 5)
+      : const Duration(seconds: 20);
+
+  /// 12 lượt 5 giây + 48 lượt 20 giây ≈ 17 phút bám theo. Vẫn có trần vì
+  /// niêm phong hỏng thì `seal_status` nằm lại ở `pending` vĩnh viễn — không
+  /// chặn thì màn này hỏi mãi. Hết trần thì mở lại đơn là hỏi tiếp.
+  static const _maxSealPolls = 60;
   Timer? _sealPoll;
   int _sealPolls = 0;
 
@@ -6358,6 +6436,17 @@ GoRouter _buildRouter(
                       live!,
                     );
                   },
+                  onTrim: videoPlayer == null
+                      ? null
+                      : () => _trimAndShareVideo(
+                          pageContext,
+                          downloader,
+                          share,
+                          gallery,
+                          videoPlayer,
+                          live,
+                          extra?.tracking ?? live?.tracking ?? '',
+                        ),
                   onDelete: () async {
                     final evidenceId = extra?.evidenceId;
                     if (extra == null || evidenceId == null) {
