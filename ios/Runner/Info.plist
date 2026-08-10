@@ -75,8 +75,6 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>ZenPack sử dụng camera để quét mã vận đơn và quay video quá trình đóng gói làm bằng chứng cho đơn hàng. / ZenPack uses the camera to scan tracking codes and record packing-evidence videos for your orders.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>ZenPack ghi âm kèm video đóng gói để đoạn bằng chứng có đủ hình và tiếng. / ZenPack records audio together with the packing video so the evidence clip has both picture and sound.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>ZenPack cần quyền này để bạn chọn ảnh có sẵn làm bằng chứng cho đơn hàng. / ZenPack needs this so you can attach existing photos as evidence for an order.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

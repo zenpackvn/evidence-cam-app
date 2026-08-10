@@ -2,7 +2,13 @@
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- App KHÔNG thu tiếng: mọi clip bằng chứng quay với `enableAudio: false`
+         (xem CameraService.initialize), nên mic không bao giờ được mở. Quyền
+         này là của `camera_android_camerax` khai trong manifest riêng và bị gộp
+         vào đây; gỡ nó ra để hệ điều hành không có cớ hỏi mic, và để trang cài
+         đặt lẫn cửa hàng ứng dụng không khai một quyền app không dùng. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"
+        tools:node="remove" />
     <!-- gal: saving evidence to the gallery on API <= 29 (scoped storage on
          30+ needs neither permission). camera_android_camerax also declares
          WRITE_EXTERNAL_STORAGE with a lower maxSdkVersion (28); override it

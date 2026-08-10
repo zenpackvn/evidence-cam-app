@@ -34,7 +34,7 @@ class CameraService {
         ({
           required description,
           required resolutionPreset,
-          enableAudio = true,
+          enableAudio = false,
           imageFormatGroup,
         }) => CameraController(
           description,
@@ -97,10 +97,16 @@ class CameraService {
   /// Initializes a camera with the specified [description] and [resolutionPreset].
   ///
   /// If a controller was previously active, it will be automatically disposed.
+  ///
+  /// [enableAudio] mặc định **tắt**, và đó là mặc định đúng cho app này: bằng
+  /// chứng đóng gói nằm ở hình, không ở tiếng. Mở tiếng thì `package:camera`
+  /// xin quyền micro ngay lúc dựng camera — người quay bị hỏi một quyền app
+  /// không dùng, ở đúng lúc họ chỉ muốn quét mã hay bấm quay. Mặc định cũ là
+  /// `true` nên mọi chỗ quên truyền tham số đều kéo theo lời hỏi ấy.
   Future<void> initialize({
     required CameraDescription description,
     ResolutionPreset resolutionPreset = ResolutionPreset.medium,
-    bool enableAudio = true,
+    bool enableAudio = false,
     ImageFormatGroup? imageFormatGroup,
   }) async {
     await dispose();
