@@ -406,7 +406,7 @@
   "sealWorkingHint": "The stored copy has no timestamp burned in yet, so the share link and download wait for it. Usually a few seconds.",
   "playLocalCopyNote": "Temporary copy on this device — no timestamp on the frames yet",
   "sealNone": "Recorded before sealing existed",
-  "sealFailed": "Sealing failed — the video still plays",
+  "sealFailed": "No timestamp stamped yet · the video still plays and downloads",
   "sealMismatch": "Fingerprint mismatch — re-record this clip",
   "sealTimeDrift": "The camera clock drifted from the server, so the burned-in stamp also carries the time the server received the clip.",
   "detailSealAnchor": "Independent proof",

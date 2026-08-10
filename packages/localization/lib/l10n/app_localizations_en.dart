@@ -763,7 +763,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sealNone => 'Recorded before sealing existed';
 
   @override
-  String get sealFailed => 'Sealing failed — the video still plays';
+  String get sealFailed =>
+      'No timestamp stamped yet · the video still plays and downloads';
 
   @override
   String get sealMismatch => 'Fingerprint mismatch — re-record this clip';
