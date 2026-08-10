@@ -6,11 +6,30 @@
 library;
 
 import 'dart:io';
-import 'dart:ui' show Rect, Size;
+import 'dart:math' as math;
+import 'dart:ui' show Offset, Rect, Size;
 
 import 'package:app_platform/app_platform.dart';
 import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
+
+/// Ô ngắm trên màn hình, quy về đúng những gì cần để dựng lại nó trong toạ độ
+/// khung hình camera.
+///
+/// [viewport] là vùng đang vẽ preview (điểm ảnh logic), [frame] là ô người
+/// dùng nhìn thấy và phải đưa mã vào, cùng hệ toạ độ với [viewport].
+///
+/// Phải có cả hai chứ không phải mỗi tỉ lệ: preview vẽ bằng `BoxFit.cover` nên
+/// khung hình bị cắt bớt trước khi lên màn, và bị cắt lệch nhau ở hai trục.
+/// Lấy một tỉ lệ của bề rộng màn rồi áp thẳng vào bề rộng LẪN bề cao của khung
+/// hình — cách cũ — cho ra một vùng nhận cao gấp đôi ô thật, và đó là lý do mã
+/// nằm trên hoặc dưới ô vẫn được nhận.
+class EcScanWindow {
+  const EcScanWindow({required this.viewport, required this.frame});
+
+  final Size viewport;
+  final Rect frame;
+}
 
 class BillScanner {
   BillScanner() : _scanner = BarcodeScanner();
@@ -31,18 +50,14 @@ class BillScanner {
   /// so the sensor orientation alone is no longer enough to compute the
   /// correct frame rotation for MLKit.
   ///
-  /// [centerRegionFraction], when set, rejects a detected code whose bounding
-  /// box center falls outside the middle fraction of the frame (e.g. `0.55`
-  /// keeps only the center 55% along each axis) — for a screen showing a
-  /// centered on-screen scan frame over a `BoxFit.cover` preview, checking
-  /// this in raw *image* coordinates still lines up with that frame: a
-  /// centered cover-crop always maps the image's center to the screen's
-  /// center on both axes, regardless of the rotation applied for display.
+  /// [window], khi có, loại bỏ mã mà tâm của nó rơi ra ngoài ô ngắm trên màn.
+  /// Màn nào vẽ ô ngắm thì phải truyền — người dùng đã được bảo "đưa mã vào
+  /// khung", nhận một mã nằm ngoài khung là làm sai lời mình vừa dặn.
   Future<String?> scan(
     CameraImage image,
     CameraDescription camera, {
     DeviceOrientation deviceOrientation = DeviceOrientation.portraitUp,
-    double? centerRegionFraction,
+    EcScanWindow? window,
   }) async {
     if (_busy) return null;
     _busy = true;
@@ -50,16 +65,13 @@ class BillScanner {
       final input = _toInputImage(image, camera, deviceOrientation);
       if (input == null) return null;
       final barcodes = await _scanner.processImage(input);
+      final metadata = input.metadata;
+      final gate = window != null && metadata != null;
       for (final barcode in barcodes) {
         final raw = barcode.rawValue?.trim();
         if (raw == null || raw.isEmpty) continue;
-        if (centerRegionFraction != null &&
-            !_isInCenterRegion(
-              barcode.boundingBox,
-              image.width,
-              image.height,
-              centerRegionFraction,
-            )) {
+        if (gate &&
+            !_isInFrame(barcode.boundingBox, image, metadata, window)) {
           continue;
         }
         return raw;
@@ -72,20 +84,59 @@ class BillScanner {
     }
   }
 
-  static bool _isInCenterRegion(
+  /// Mã có nằm trong ô ngắm không.
+  ///
+  /// Đo bằng KHOẢNG CÁCH TỚI TÂM chứ không dựng lại ô ngắm thành một hình chữ
+  /// nhật trong toạ độ khung hình, vì hai nền tảng trả toạ độ mã theo hai hệ
+  /// khác nhau:
+  ///
+  /// * Android đưa `rotationDegrees` xuống MLKit nên hộp bao về theo đúng
+  ///   hướng người dùng đang nhìn.
+  /// * iOS thì KHÔNG: `MLKVisionImage+FlutterPlugin.m` dựng `UIImage` thẳng từ
+  ///   bộ đệm và bỏ qua rotation trong metadata, nên hộp bao về theo hệ của bộ
+  ///   đệm gốc — hai trục đảo so với màn hình khi máy xoay 90°/270°. Dựng ô
+  ///   ngắm theo hướng nhìn rồi so với hộp bao theo hệ bộ đệm là gần như không
+  ///   mã nào lọt, và triệu chứng đúng là "đưa vào khung mà không nhận".
+  ///
+  /// Ô ngắm ở cả hai màn đều căn giữa, nên khoảng cách tới tâm là đủ để tả nó,
+  /// mà đại lượng ấy chỉ đổi chỗ hai trục khi xoay — xử lý được bằng một phép
+  /// hoán vị thay vì cả một chuỗi phép biến đổi dễ sai.
+  static bool _isInFrame(
     Rect box,
-    int imageWidth,
-    int imageHeight,
-    double fraction,
+    CameraImage image,
+    InputImageMetadata meta,
+    EcScanWindow window,
   ) {
-    final centerX = box.left + box.width / 2;
-    final centerY = box.top + box.height / 2;
-    final marginX = imageWidth * (1 - fraction) / 2;
-    final marginY = imageHeight * (1 - fraction) / 2;
-    return centerX >= marginX &&
-        centerX <= imageWidth - marginX &&
-        centerY >= marginY &&
-        centerY <= imageHeight - marginY;
+    final swap =
+        meta.rotation == InputImageRotation.rotation90deg ||
+        meta.rotation == InputImageRotation.rotation270deg;
+    // Cỡ khung hình theo hướng NGƯỜI DÙNG NHÌN THẤY.
+    final viewW = (swap ? image.height : image.width).toDouble();
+    final viewH = (swap ? image.width : image.height).toDouble();
+    // `BoxFit.cover` phóng bằng hệ số lớn hơn trong hai trục rồi cắt đều hai
+    // bên trục còn lại; đảo lại phép đó là ra ô ngắm rộng bao nhiêu phần khung
+    // hình.
+    final scale = math.max(
+      window.viewport.width / viewW,
+      window.viewport.height / viewH,
+    );
+    if (!scale.isFinite || scale <= 0) return true;
+    // Nới 10%: người quay được bảo "đưa mã vào khung", nên mã chạm mép khung
+    // phải tính là trong khung. Chặt đúng từng điểm ảnh chỉ tạo ra những lượt
+    // giơ đi giơ lại mà không hiểu vì sao máy không nhận.
+    const slack = 1.1;
+    final halfX = window.frame.width / scale / 2 / viewW * slack;
+    final halfY = window.frame.height / scale / 2 / viewH * slack;
+    final boxW = (Platform.isAndroid ? viewW : image.width.toDouble());
+    final boxH = (Platform.isAndroid ? viewH : image.height.toDouble());
+    if (boxW <= 0 || boxH <= 0) return true;
+    final offX = (box.center.dx - boxW / 2).abs() / boxW;
+    final offY = (box.center.dy - boxH / 2).abs() / boxH;
+    // iOS + xoay 90°/270°: hai trục của bộ đệm đảo so với hướng nhìn.
+    final transposed = !Platform.isAndroid && swap;
+    return transposed
+        ? offX <= halfY && offY <= halfX
+        : offX <= halfX && offY <= halfY;
   }
 
   Future<void> dispose() => _scanner.close();

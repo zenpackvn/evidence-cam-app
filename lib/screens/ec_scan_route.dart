@@ -48,11 +48,10 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
   /// Side length of the square scan frame, in logical pixels.
   static const _frameSize = 260.0;
 
-  /// Screen width as of the last build — used to translate [_frameSize] into
-  /// the fraction of the camera frame [BillScanner] should require a code's
-  /// center to fall within. Set from `build()`, since `_onFrame` (the image
-  /// stream callback) has no `BuildContext` of its own.
-  double _screenWidth = 1;
+  /// Cỡ màn của lần dựng gần nhất — dùng để dựng lại ô ngắm trong toạ độ khung
+  /// hình camera. Đặt từ `build()`, vì `_onFrame` (callback của luồng ảnh)
+  /// không có `BuildContext` nào của riêng nó.
+  Size _screenSize = Size.zero;
 
   /// Góc phải xoay texture camera để khung ngắm đứng đúng.
   ///
@@ -112,6 +111,19 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
     }
   }
 
+  /// Ô vuông ở giữa màn, đúng cái người dùng nhìn thấy — `null` khi chưa dựng
+  /// lần nào, lúc đó chưa có khung hình nào để quét.
+  EcScanWindow? get _scanWindow => _screenSize.isEmpty
+      ? null
+      : EcScanWindow(
+          viewport: _screenSize,
+          frame: Rect.fromCenter(
+            center: _screenSize.center(Offset.zero),
+            width: _frameSize,
+            height: _frameSize,
+          ),
+        );
+
   Future<void> _onFrame(CameraImage image) async {
     if (_done || _cameras.isEmpty) return;
     // ponytail: skip every other frame to throttle ML detection (30fps → 15fps)
@@ -126,7 +138,7 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
       deviceOrientation:
           _camera.controller?.value.deviceOrientation ??
           DeviceOrientation.portraitUp,
-      centerRegionFraction: _frameSize / _screenWidth,
+      window: _scanWindow,
     );
     if (code == null || _done || !mounted) return;
     _done = true;
@@ -151,7 +163,7 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
         controller != null &&
         quarterTurns != null &&
         _error == null;
-    _screenWidth = MediaQuery.sizeOf(context).width;
+    _screenSize = MediaQuery.sizeOf(context);
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(

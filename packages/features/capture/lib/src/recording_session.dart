@@ -408,6 +408,14 @@ class RecordingSessionBloc
   /// sheet chứ không canh bill, mà máy lại lẳng lặng mở clip cho mã đó.
   bool scanSuspended = false;
 
+  /// Ô ngắm đang vẽ trên màn quay, để chỉ nhận mã nằm TRONG khung.
+  ///
+  /// Màn đã bảo người quay "đưa bill vào khung" thì phải giữ đúng lời: nhận
+  /// một mã nằm ngoài khung là mở clip cho tờ bill nằm hớ hênh trên bàn, và
+  /// người quay không có cách nào biết vì sao. Màn hình đặt giá trị này (chỉ
+  /// nó biết hình học thật), `null` = chưa dựng xong, lúc đó nhận cả khung.
+  EcScanWindow? scanWindow;
+
   /// True when this bloc built its own [CaptureToneService] and must therefore
   /// release the underlying player on close. A caller-supplied one is shared
   /// (app-lifetime, like the voice announcer) and is not ours to dispose.
@@ -702,6 +710,7 @@ class RecordingSessionBloc
         deviceOrientation:
             _camera.controller?.value.deviceOrientation ??
             DeviceOrientation.portraitUp,
+        window: scanWindow,
       );
       // Khung hình không còn cho thấy mã đang bị chặn thì gỡ chặn NGAY, không
       // chờ hết [_reArmDelay]. Chặn ấy sinh ra chỉ vì "bill vừa quay xong còn
@@ -932,6 +941,7 @@ class RecordingSessionBloc
         deviceOrientation:
             _camera.controller?.value.deviceOrientation ??
             DeviceOrientation.portraitUp,
+        window: scanWindow,
       );
       if (code != null && code.isNotEmpty && !isClosed) {
         add(RecordingFrameScanned(code));

@@ -901,6 +901,21 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
   @override
   Widget build(BuildContext context) {
+    // Ô ngắm vẽ trên màn quay, quy về toạ độ màn để máy quét chỉ nhận mã nằm
+    // TRONG khung. Số ở đây phải khớp với `_FramingCorners` trong `ec_flow3`:
+    // khung rộng 222 điểm căn giữa, mép trên ở 25.3% và mép dưới cách đáy
+    // 31.3% chiều cao. Preview và khung cùng là `Positioned.fill` trong một
+    // Stack phủ kín màn, nên cỡ màn cũng chính là vùng vẽ preview.
+    final screen = MediaQuery.sizeOf(context);
+    _bloc.scanWindow = EcScanWindow(
+      viewport: screen,
+      frame: Rect.fromLTRB(
+        (screen.width - 222) / 2,
+        screen.height * 0.253,
+        (screen.width + 222) / 2,
+        screen.height * (1 - 0.313),
+      ),
+    );
     // The system back gesture (left-edge swipe on Android) would otherwise
     // pop this route out from under an in-progress recording — the header's
     // back chevron is the only way out, since it finalizes the clip first
