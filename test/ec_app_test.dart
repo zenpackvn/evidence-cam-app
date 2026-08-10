@@ -4,6 +4,7 @@ import 'package:ec_data/ec_data.dart';
 import 'package:ec_ui/ec_ui.dart' show LucideIcons, PenBackButton;
 import 'package:evidence_cam/app/di/injection.dart';
 import 'package:evidence_cam/ec_app.dart';
+import 'package:feature_capture/feature_capture.dart' show debugPreviewDir;
 import 'package:flutter/cupertino.dart' show CupertinoAlertDialog;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -48,7 +49,44 @@ void main() {
       expect(ecInviteTokenOf('abc'), isNull);
     });
   });
+  // Những thứ SỐNG BẰNG VÒNG ĐỜI ỨNG DỤNG, không phải của một màn: kho ảnh dùng
+  // chung, notifier người dùng của `FakeEcAuth` (cố ý không bao giờ dispose —
+  // xem `ec_auth.dart`), và bộ đếm bằng chứng của vỏ app.
+  //
+  // Trước đó mỗi test tự khai lại nhóm này, mỗi nơi một kiểu — 19 chỗ khai
+  // `ValueNotifier<EcUser?>`, 14 chỗ khai `ImageStreamCompleterHandle`. Đặt một
+  // lần ở đây thì mọi `withIgnored` của từng test dựng chồng lên nó, và một
+  // singleton mới chỉ phải khai một chỗ.
+  //
+  // CHỈ nhóm này. Phần còn lại vẫn bị soi — chính nhờ vậy mà lượt rà 10/08 bắt
+  // được một `CurvedAnimation` rò thật ở màn quay.
+  LeakTesting.settings = LeakTesting.settings.withIgnored(
+    notDisposed: {
+      'ImageStreamCompleterHandle': null,
+      'ImageInfo': null,
+      'Image': null,
+      '_CachedImage': null,
+      'ValueNotifier<EcUser?>': null,
+      'ValueNotifier<bool>': null,
+      '_EvidenceCountOverrides': null,
+      // `_claimStore` là biến top-level, một thể duy nhất cho cả app — hồ sơ
+      // tạo ở tab Vận đơn phải hiện ngay ở tab Tài khoản. Không có ai để dispose.
+      'EcClaimStore': null,
+    },
+  );
   PathProviderPlatform.instance = _FakePathProviderPlatform();
+  // Kho bản xem tạm phải trỏ vào một thư mục CÓ SẴN.
+  //
+  // `_previewDir()` mặc định hỏi `getApplicationDocumentsDirectory()` rồi
+  // `Directory.create()` nếu thư mục chưa có — I/O THẬT. Trong widget test,
+  // `pump()` chạy trên đồng hồ giả và không đẩy được một lời gọi I/O thật tới
+  // nơi, nên `ecPreviews()` treo vĩnh viễn. Nó nằm giữa `_load()` của màn chi
+  // tiết đơn, không có `timeout`, nên cả màn đứng ở khung xương: 895 widget mà
+  // KHÔNG một chữ nào, và không ngoại lệ nào để lần theo.
+  //
+  // `debugPreviewDir` là khe cắm chính `ec_preview_store.dart` mở ra cho test.
+  // Tạo thư mục bằng `createTempSync` — đồng bộ, xong trước khi test chạy.
+  debugPreviewDir = Directory.systemTemp.createTempSync('ec_app_test_preview');
   Future<void> pumpPhoneSizedApp(WidgetTester tester, Widget app) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
@@ -98,7 +136,7 @@ void main() {
   ///
   /// Bảy test trong file này còn bấm `find.text('Tài khoản').last` sau đợt đó,
   /// nên cả bảy ném `Bad state: No element` — bấm vào một tab đã bị bỏ.
-  Future<void> _openAccount(WidgetTester tester) async {
+  Future<void> openAccount(WidgetTester tester) async {
     await tester.tap(find.byType(PenBackButton).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tài khoản').last);
@@ -114,7 +152,7 @@ void main() {
   /// `b6e09d9a` (07/08) và bỏ có lý do: người dùng đang đứng trong đúng một
   /// shop rồi, bắt chọn lại chính nó là một bước thừa. Nên hai test đó đỏ vì
   /// đi theo một đường KHÔNG CÒN TỒN TẠI — mã đi đúng hướng, test đứng yên.
-  Future<void> _openShopDetail(
+  Future<void> openShopDetail(
     WidgetTester tester, {
     String shop = 'Shop ABC',
   }) async {
@@ -543,7 +581,7 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
       await signInWithGoogle(tester);
-      await _openAccount(tester);
+      await openAccount(tester);
       await tester.tap(find.text('Người dùng Demo'));
       await tester.pumpAndSettle();
 
@@ -566,6 +604,10 @@ void main() {
       notDisposed: {
         'ImageStreamCompleterHandle': 1,
         'ValueNotifier<EcUser?>': 1,
+        // Ảnh đại diện vừa chọn nằm trong bộ nhớ đệm ảnh, và đệm SỐNG LÂU HƠN
+        // cây widget — đó là việc của nó. Cùng lý do đã ghi ở
+        // `screens_capture_test.dart`: dọn đệm là phá bối cảnh của test kế tiếp.
+        'Image': null,
       },
     ),
     (tester) async {
@@ -579,7 +621,7 @@ void main() {
       );
 
       await signInWithGoogle(tester);
-      await _openAccount(tester);
+      await openAccount(tester);
       await tester.tap(find.text('Người dùng Demo'));
       await tester.pumpAndSettle();
       // Nút đổi ảnh nay là CHỮ "Đổi ảnh đại diện", không còn icon máy ảnh —
@@ -614,7 +656,7 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: _QuotaRepository()));
 
       await signInWithGoogle(tester);
-      await _openAccount(tester);
+      await openAccount(tester);
       await tester.tap(find.text('Dung lượng'));
       await tester.pumpAndSettle();
 
@@ -646,7 +688,7 @@ void main() {
       // Nhãn gói nay hiện ở màn Quota chứ không ở màn Tài khoản, nên phép thử
       // "không giữ nhãn đã cache" phải làm ở đúng màn có nhãn: vào Quota, ra,
       // vào lại — lần hai phải thấy gói MỚI.
-      await _openAccount(tester);
+      await openAccount(tester);
       await tester.tap(find.text('Dung lượng'));
       await tester.pumpAndSettle();
       expect(find.text('Cơ bản'), findsWidgets);
@@ -676,7 +718,7 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
       await signInWithGoogle(tester);
-      await _openAccount(tester);
+      await openAccount(tester);
       await tester.tap(find.text('Xóa tài khoản'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Xóa vĩnh viễn'));
@@ -718,7 +760,7 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
       await signInWithGoogle(tester);
-      await _openAccount(tester);
+      await openAccount(tester);
       await tester.tap(find.text('Xóa tài khoản'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Xóa vĩnh viễn'));
@@ -759,7 +801,7 @@ void main() {
 
       await signInWithGoogle(tester);
       expect(auth.currentUser!.hasPassword, isFalse);
-      await _openAccount(tester);
+      await openAccount(tester);
 
       expect(find.text('Tạo mật khẩu'), findsOneWidget);
       await tester.tap(find.text('Tạo mật khẩu'));
@@ -832,7 +874,7 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
 
       await signInWithGoogle(tester);
-      await _openShopDetail(tester);
+      await openShopDetail(tester);
       await tester.tap(find.text('Mời thành viên'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(EditableText).first, 'new@b.com');
@@ -1169,7 +1211,7 @@ class _QuotaRepository extends _DemoRepository {
 /// Nay test tự nói KHI NÀO nâng gói, nên nó không còn phụ thuộc vào việc màn
 /// nào hỏi trước.
 class _UpgradingQuotaRepository extends _DemoRepository {
-  var upgraded = false;
+  bool upgraded = false;
 
   @override
   Future<QuotaDto> quota({String? shopId}) async {
