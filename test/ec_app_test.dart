@@ -423,10 +423,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Sign in with Google'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(EditableText).first, '0912345678');
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
+      // Bản tiếng Anh của hai thay đổi đã gặp ở luồng tiếng Việt:
+      //   - không còn bước nhập số điện thoại (số là liên hệ hỗ trợ tùy chọn),
+      //   - "Account" không còn là tab dưới, nó nằm ở màn chọn shop.
       await tester.tap(find.text('Shop ABC'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(PenBackButton).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Account').last);
       await tester.pumpAndSettle();
@@ -835,13 +837,21 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(EditableText).first, 'new@b.com');
       await tester.tap(find.text('Thêm'));
+      // Bơm CÓ GIỚI HẠN chứ không `pumpAndSettle`: toast tự tắt sau ~2 giây, mà
+      // `pumpAndSettle` chạy tới khi không còn khung nào được lên lịch — tức là
+      // vượt qua luôn cả lúc toast còn sống. Khẳng định bên dưới rơi vào khoảng
+      // sau khi nó đã biến mất.
       await tester.pumpAndSettle();
 
       expect(repo.invitedContact, 'new@b.com');
       expect(repo.invitedRole, 'staff');
-      expect(find.text('Đã gửi lời mời'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 2));
-      await tester.pumpAndSettle();
+      // Hộp thoại ĐÓNG là dấu hiệu quan sát được của một lời mời đã gửi.
+      //
+      // Bản trước chờ toast "Đã gửi lời mời". Chuỗi đó vẫn nằm trong từ điển
+      // (`toastInviteSent`) nhưng KHÔNG mã nào còn gọi tới — toast đã bị bỏ, và
+      // một khoá i18n mồ côi thì không có gì bắt được. Chờ nó là chờ mãi.
+      expect(find.text('Thêm thành viên'), findsNothing);
+      expect(find.text('Chi tiết cửa hàng'), findsOneWidget);
     },
   );
 
@@ -900,10 +910,21 @@ void main() {
       await pumpPhoneSizedApp(tester, EcApp(repo: repo));
       await signInWithGoogle(tester);
 
+      // Bơm CÓ GIỚI HẠN, không `pumpAndSettle`: chỉ báo "đang đóng dấu" là một
+      // hoạt ảnh LẶP VÔ HẠN, nên không bao giờ có khoảnh khắc không còn khung
+      // nào được lên lịch — `pumpAndSettle` chạy tới hết trần rồi ném timeout.
+      // Đó là lý do test này đỏ, không phải vì việc niêm phong hỏng.
+      Future<void> settle() async {
+        await tester.pump();
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 200));
+        }
+      }
+
       await tester.tap(find.textContaining('SPXVN').first);
-      await tester.pumpAndSettle();
+      await settle();
       await tester.tap(find.text('Đóng hàng').first);
-      await tester.pumpAndSettle();
+      await settle();
 
       // Máy chủ đang đóng dấu ⇒ chưa phát link ra (evidence_url.ts).
       expect(find.text('Đang đóng dấu thời gian…'), findsWidgets);
@@ -911,7 +932,7 @@ void main() {
       // Niêm phong xong trong lúc sheet vẫn mở. Không đụng vào điều hướng.
       repo.sealed = true;
       await tester.pump(const Duration(seconds: 6));
-      await tester.pumpAndSettle();
+      await settle();
 
       expect(find.textContaining('Đã khoá ·'), findsWidgets);
       expect(find.text('Đang đóng dấu thời gian…'), findsNothing);

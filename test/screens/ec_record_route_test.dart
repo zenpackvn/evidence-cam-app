@@ -15,6 +15,21 @@ void main() {
           const MethodChannel('disk_space_plus'),
           (call) async => 4096.0,
         );
+    // Trước khi camera lăn, bloc CHỜ tiếng bíp rồi CHỜ câu "Đã bắt đầu quay"
+    // nói dứt — cố ý, vì khởi động camera giành mất phiên âm thanh và cắt ngang
+    // câu đang phát. Hai lời gọi đó có trần 2s và 2.5s.
+    //
+    // Không có bản cài trong test thì cả hai chạy hết trần, tức là phải bơm hơn
+    // 4.5 giây thời gian giả mới thấy trạng thái ĐANG QUAY. Các test ở đây bơm
+    // ~1.1 giây, nên chúng chụp đúng lúc màn còn ở bước quét — và đỏ với lý do
+    // hoàn toàn không liên quan tới thứ chúng đang đo.
+    //
+    // Trả lời ngay ở đây thì bỏ được cả hai lần chờ.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('flutter_tts'),
+          (call) async => 1,
+        );
   });
 
   tearDown(() {
@@ -23,6 +38,8 @@ void main() {
           const MethodChannel('disk_space_plus'),
           null,
         );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(const MethodChannel('flutter_tts'), null);
   });
 
   // NGUYÊN TẮC BẤT DI BẤT DỊCH: hệ thống không bao giờ từ chối ghi hình.
@@ -71,7 +88,11 @@ void main() {
   testWidgets(
     'saves the in-progress clip when the app is backgrounded (FR-08/FR-09)',
     (tester) async {
-      final camera = _FakeRecordingCamera();
+      // `initiallyRecording: false` + quay thật, thay vì để bản giả tự nhận là
+      // đang quay: `_beginRecording` có cửa `if (_camera.isRecordingVideo)
+      // return`, nên một camera tự nhận đang quay lại NGĂN lượt quay khởi động,
+      // và bloc đứng ở idle — không có clip nào để mà lưu khi xuống nền.
+      final camera = _FakeRecordingCamera(initiallyRecording: false);
       String? savedPath;
 
       await tester.pumpWidget(
@@ -81,6 +102,12 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: EcRecordRoute(
             camera: camera,
+            // BẮT BUỘC phải có: vào màn quay nay là xin quyền → hỏi LOẠI VIDEO
+            // → mới dựng camera. Thiếu hook này thì luồng đứng ở bước hỏi loại,
+            // không bao giờ vào trạng thái đang quay — và test "lưu clip khi bị
+            // đưa xuống nền" hoá ra chẳng có clip nào đang quay để mà lưu.
+            onRequestType: _picksType,
+            onRequestCode: () async => 'SPXVN042',
             onSaved: (path, tracking, type, durationSeconds, _, _) =>
                 savedPath = path,
           ),
@@ -89,8 +116,25 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // App goes to the background while a recording is in progress.
+      await tester.tap(find.byTooltip('Nhập mã vận đơn'));
+      await _settleRecordingStart(tester);
+      // Đối chứng: có đang quay thật thì phần dưới mới đo được cái gì.
+      expect(find.text('REC'), findsOneWidget);
+
+      // `inactive` = có thứ che lên app nhưng app CHƯA bị treo: chuông cuộc
+      // gọi, banner tin nhắn, trung tâm điều khiển. Phiên ghi vẫn sống nên chỉ
+      // TẠM DỪNG — chốt clip ở đây là cắt vụn bằng chứng vì một cái banner.
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(savedPath, isNull);
+      expect(camera.disposed, isFalse);
+
+      // `paused` = xuống nền thật. iOS thu hồi phiên ghi, nên phải chốt VÀ lưu
+      // ngay tại đây — giữ file mở qua mốc này là mất trắng cả clip, không phải
+      // mất phần đuôi. Đây mới là ranh giới mà FR-08/FR-09 nói tới.
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -171,10 +215,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     await tester.tap(find.byTooltip('Nhập mã vận đơn'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump(const Duration(milliseconds: 500));
+    await _settleRecordingStart(tester);
     expect(find.text('REC'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Quay lại'));
@@ -254,8 +295,7 @@ void main() {
     final afterEntry = typeRequests;
 
     await tester.tap(find.byTooltip('Nhập mã vận đơn'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await _settleRecordingStart(tester);
 
     expect(find.byTooltip('Cài đặt loại video'), findsNothing);
     expect(find.byTooltip('Nhập mã vận đơn'), findsNothing);
@@ -366,6 +406,21 @@ void main() {
 ///
 /// Camera chỉ dựng sau khi loại đã được chọn thật, nên test nào cần tới khung
 /// ngắm đều phải trả về một loại — bỏ qua sheet là ở lại màn chờ.
+/// Bơm qua hai lần CHỜ trước khi camera lăn: tiếng bíp (trần 2 giây) và câu
+/// "Đã bắt đầu quay" (trần 2.5 giây). Bloc `await` cả hai một cách CỐ Ý — khởi
+/// động camera giành mất phiên âm thanh của hệ điều hành nên câu nói phải dứt
+/// trước, nếu không người quay chỉ nghe tút rồi im.
+///
+/// Trong test không có bản cài cho `audioplayers`, nên lời gọi bíp chạy hết
+/// trần. Bơm 1.1 giây như bản cũ là chụp đúng lúc màn CÒN Ở BƯỚC QUÉT — test đỏ
+/// vì một lý do không liên quan gì tới thứ nó đang đo.
+Future<void> _settleRecordingStart(WidgetTester tester) async {
+  await tester.pump();
+  for (var i = 0; i < 12; i++) {
+    await tester.pump(const Duration(milliseconds: 250));
+  }
+}
+
 Future<String?> _picksType(BuildContext _, {bool mandatory = false}) async =>
     'Đóng hàng';
 

@@ -848,10 +848,24 @@ class _FramingCornersState extends State<_FramingCorners>
     vsync: this,
     duration: const Duration(milliseconds: 1600),
   );
-  late final Animation<Alignment> _sweepAlignment =
-      CurvedAnimation(parent: _sweep, curve: Curves.easeInOut).drive(
-        AlignmentTween(begin: Alignment.topCenter, end: Alignment.bottomCenter),
-      );
+
+  /// Giữ riêng để còn `dispose` được.
+  ///
+  /// `CurvedAnimation` gắn listener lên parent của nó, nên nó là một tài nguyên
+  /// phải trả chứ không phải một giá trị thuần. Bản trước dựng nó ẩn danh ngay
+  /// trong biểu thức `.drive(...)` và chỉ `dispose` mỗi `_sweep` — rò đúng một
+  /// đối tượng cho mỗi lần màn quay được dựng.
+  ///
+  /// Nằm im lâu vì không test nào tới được trạng thái ĐANG QUAY: chúng dừng ở
+  /// bước quét do bơm thiếu thời gian cho hai lần chờ âm thanh. Sửa chỗ bơm là
+  /// leak_tracker bắt ra ngay.
+  late final CurvedAnimation _sweepCurve = CurvedAnimation(
+    parent: _sweep,
+    curve: Curves.easeInOut,
+  );
+  late final Animation<Alignment> _sweepAlignment = _sweepCurve.drive(
+    AlignmentTween(begin: Alignment.topCenter, end: Alignment.bottomCenter),
+  );
 
   @override
   void didChangeDependencies() {
@@ -868,6 +882,7 @@ class _FramingCornersState extends State<_FramingCorners>
 
   @override
   void dispose() {
+    _sweepCurve.dispose();
     _sweep.dispose();
     super.dispose();
   }
