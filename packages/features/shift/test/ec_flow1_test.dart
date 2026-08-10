@@ -354,14 +354,22 @@ void main() {
     testWidgets('renders shop list and management row without overflow', (
       tester,
     ) async {
-      await _pump(tester, const EcChooseShopScreen(shops: shops));
+      await _pump(
+        tester,
+        EcChooseShopScreen(shops: shops, onAddShop: () {}),
+      );
       expect(find.text('Chọn cửa hàng'), findsOneWidget);
       expect(find.text('Shop ABC'), findsOneWidget);
       expect(find.text('Shop XYZ'), findsOneWidget);
       // "Quản lý cửa hàng" đã dời vào bánh răng ở header trang Vận đơn; chỗ
-      // này giờ là lối tạo shop duy nhất.
+      // này giờ là lối tạo shop duy nhất — nay là dấu cộng cạnh tiêu đề, nhãn
+      // chữ chỉ còn trong Semantics.
       expect(find.text('Quản lý cửa hàng'), findsNothing);
-      expect(find.text('Thêm cửa hàng mới'), findsOneWidget);
+      expect(find.text('Thêm cửa hàng mới'), findsNothing);
+      expect(
+        find.bySemanticsLabel('Thêm cửa hàng mới'),
+        findsOneWidget,
+      );
       expect(find.text('Đăng xuất'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -378,7 +386,7 @@ void main() {
         ),
       );
       await tester.tap(find.text('Shop ABC'));
-      await tester.tap(find.text('Thêm cửa hàng mới'));
+      await tester.tap(find.bySemanticsLabel('Thêm cửa hàng mới'));
       expect(selected?.name, 'Shop ABC');
       expect(added, isTrue);
     });

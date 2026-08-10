@@ -969,7 +969,7 @@ class EcChooseShopScreen extends StatelessWidget {
   /// về đúng chỗ đi qua một lần: màn chọn cửa hàng.
   final VoidCallback? onAccountTap;
 
-  /// "Thêm cửa hàng mới" — lối tạo shop DUY NHẤT, cố định ở màn này.
+  /// Dấu cộng xanh cạnh tiêu đề — lối tạo shop DUY NHẤT, cố định ở màn này.
   ///
   /// Quản lý cửa hàng đã dời vào bánh răng ở header trang Vận đơn, nên nó không
   /// còn là chỗ chứa nút tạo shop được: muốn vào đó phải đang ở trong một shop.
@@ -1018,16 +1018,39 @@ class EcChooseShopScreen extends StatelessWidget {
           // đang hỏi gì, mà một câu hỏi trôi mất khi kéo danh sách thì người
           // dùng phải cuộn ngược lên mới nhớ mình đang ở đâu.
           Padding(
-            padding: const EdgeInsets.fromLTRB(22, 96, 22, 0),
+            padding: const EdgeInsets.fromLTRB(22, 88, 22, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                PenText(
-                  l10n.shopChooseTitle,
-                  size: 30,
-                  color: PenColors.ink,
-                  weight: FontWeight.w800,
-                  align: TextAlign.center,
+                // Dấu cộng đứng sát tiêu đề nhưng KHÔNG được xô nó lệch trục
+                // giữa màn: ô trống bên trái rộng đúng bằng nút + khoảng hở,
+                // nên "Chọn cửa hàng" vẫn căn giữa như khi chưa có nút. Nút
+                // nhô cao hơn dòng chữ bằng đệm dưới — nhô bằng toạ độ âm thì
+                // phần trồi ra ngoài khung mất luôn vùng chạm.
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (onAddShop != null) const SizedBox(width: 46),
+                    Flexible(
+                      child: PenText(
+                        l10n.shopChooseTitle,
+                        size: 30,
+                        color: PenColors.ink,
+                        weight: FontWeight.w800,
+                        align: TextAlign.center,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (onAddShop != null) ...[
+                      const SizedBox(width: 10),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 18),
+                        child: _AddShopButton(onTap: onAddShop!),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 6),
                 PenText(
@@ -1069,12 +1092,10 @@ class EcChooseShopScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _AddShopRow(onTap: onAddShop),
                   if (onJoinByInvite != null) ...[
-                    const SizedBox(height: 4),
                     _JoinByInviteRow(onTap: onJoinByInvite),
+                    const SizedBox(height: 4),
                   ],
-                  const SizedBox(height: 4),
                   _LogoutRow(onTap: onLogout),
                 ],
               ),
@@ -1186,39 +1207,34 @@ class _ShopRow extends StatelessWidget {
   }
 }
 
-/// The centred `log-out` + "Đăng xuất" row both shop-picking screens end on —
-/// the only way out of an account that has no shop to enter.
-/// "Thêm cửa hàng mới" — hàng viền đứt ngay dưới danh sách shop.
+/// Dấu cộng xanh cạnh tiêu đề "Chọn cửa hàng" — lối vào màn tạo cửa hàng.
 ///
-/// Viền chứ không nền đặc: nó là lối phụ, không phải việc chính của màn này.
-/// Việc chính là chọn một shop đã có mà vào ca.
-class _AddShopRow extends StatelessWidget {
-  const _AddShopRow({this.onTap});
+/// Nhãn chữ đi vào [Semantics] chứ không hiện ra: một viên tròn 36 điểm là đủ
+/// to để chạm, còn trình đọc màn hình vẫn phải nghe được đây là "Thêm cửa hàng
+/// mới" thay vì một dấu cộng không rõ làm gì.
+class _AddShopButton extends StatelessWidget {
+  const _AddShopButton({required this.onTap});
 
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => EcTap(
-    onTap: onTap,
-    child: PenBox(
-      width: double.infinity,
-      stroke: PenColors.soft,
-      radius: 14,
-      axis: PenAxis.row,
-      gap: 10,
-      main: MainAxisAlignment.center,
-      cross: CrossAxisAlignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 15),
-      children: [
-        const Icon(LucideIcons.plus, size: 20, color: PenColors.ink),
-        PenText(
-          context.l10n.shopAddNew,
-          size: 16,
-          color: PenColors.link,
-          weight: FontWeight.w700,
-          softWrap: false,
-        ),
-      ],
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: context.l10n.shopAddNew,
+    child: EcTap(
+      onTap: onTap,
+      child: const PenBox(
+        width: 36,
+        height: 36,
+        fill: PenColors.primary,
+        radius: 999,
+        axis: PenAxis.row,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
+        children: const [
+          Icon(LucideIcons.plus, size: 21, color: PenColors.card),
+        ],
+      ),
     ),
   );
 }
@@ -1261,6 +1277,8 @@ class _JoinByInviteRow extends StatelessWidget {
   );
 }
 
+/// The centred `log-out` + "Đăng xuất" row both shop-picking screens end on —
+/// the only way out of an account that has no shop to enter.
 class _LogoutRow extends StatelessWidget {
   const _LogoutRow({this.onTap});
 
