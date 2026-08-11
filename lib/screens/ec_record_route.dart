@@ -280,7 +280,18 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     if (sheetShown) {
       final chosen = _ensureTypeChosen();
       await Future<void>.delayed(_typeSheetFade);
-      if (mounted) _bloc.add(const RecordingInitRequested());
+      // KHÔNG khởi tạo lại camera nếu lúc này đã đang quay.
+      //
+      // Lời gọi này thả nổi qua một quãng chờ 200ms, nên nó rơi xuống ở một
+      // thời điểm không ai kiểm soát. Chọn loại nhanh hơn quãng đó — sheet đóng
+      // ngay, người quay quét luôn bill — thì lượt khởi tạo hạ cánh SAU khi clip
+      // đã mở, và `_onInit` kéo phiên về `idle`: đang quay dở thì mất clip.
+      //
+      // Đo được: `initializing → recording → initializing → idle`, cái `idle`
+      // cuối cùng đến thẳng từ `_onInit`.
+      if (mounted && !_bloc.state.isRecording) {
+        _bloc.add(const RecordingInitRequested());
+      }
       await chosen;
     } else {
       await _ensureTypeChosen();

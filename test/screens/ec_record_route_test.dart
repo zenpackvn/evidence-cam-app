@@ -308,6 +308,7 @@ void main() {
 
     expect(typeRequests, 2);
     expect(tester.takeException(), isNull);
+    await _settleRecordingStart(tester);
   });
 
   testWidgets('does not open the type picker while recording', (tester) async {
@@ -395,6 +396,7 @@ void main() {
     expect(requests, 1);
     expect(find.text('Cần quyền camera'), findsNothing);
     expect(tester.takeException(), isNull);
+    await _settleRecordingStart(tester);
   });
 
   testWidgets('a fresh denial keeps the user in the app, no Settings', (
@@ -477,7 +479,7 @@ void main() {
 /// vì một lý do không liên quan gì tới thứ nó đang đo.
 Future<void> _settleRecordingStart(WidgetTester tester) async {
   await tester.pump();
-  for (var i = 0; i < 40; i++) {
+  for (var i = 0; i < 12; i++) {
     await tester.pump(const Duration(milliseconds: 250));
   }
 }

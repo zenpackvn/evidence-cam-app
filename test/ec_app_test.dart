@@ -973,6 +973,11 @@ void main() {
 
       // Niêm phong xong trong lúc sheet vẫn mở. Không đụng vào điều hướng.
       repo.sealed = true;
+      // Nhịp hỏi lại là 5 giây cho 12 lượt đầu (`_sealPollInterval`), nên bơm
+      // 6 giây là sát mép: một lượt hỏi rơi đúng ở 5 giây rồi mới còn 1 giây để
+      // dữ liệu về và màn dựng lại. Bơm rộng ra cho hai lượt.
+      await tester.pump(const Duration(seconds: 6));
+      await settle();
       await tester.pump(const Duration(seconds: 6));
       await settle();
 
