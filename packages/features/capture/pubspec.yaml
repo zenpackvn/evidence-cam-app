@@ -27,18 +27,18 @@ dependencies:
   # Third-party.
   flutter_bloc: ^9.1.1
   bloc_concurrency: ^0.3.0
-  google_mlkit_barcode_scanning: ^0.14.0
+  google_mlkit_barcode_scanning: ^0.15.0
   path_provider: ^2.1.0
   qr_flutter: ^4.1.0
   # Container remux only (moov -> front). Never re-encodes evidence.
-  ffmpeg_kit_extended_flutter: ^0.5.12
+  ffmpeg_kit_extended_flutter: ^0.5.13
 
   # Ba gói này vốn là phụ thuộc gián tiếp của `camera`, khai TƯỜNG MINH vì
   # `camera_video_capture_pin.dart` kế thừa thẳng bản CameraX của Android để
   # vá một hành vi của nó. Không khai thì import ấy hỏng ngay khi ai đó dọn
   # phụ thuộc.
   camera_android_camerax: ^0.7.4
-  camera_platform_interface: ^2.10.0
+  camera_platform_interface: ^2.13.1
   cross_file: ^0.3.4
 
 dev_dependencies:
