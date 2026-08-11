@@ -158,9 +158,6 @@ abstract interface class EcRepository {
   /// được tạo/thu hồi ở web admin.
   Future<DossierDto?> dossier(String shopId, String orderId);
 
-  /// URL công khai của [shareToken].
-  String dossierShareUrl(String shareToken);
-
   /// Trang kiểm chứng công khai của một bằng chứng — không cần đăng nhập, và
   /// chính chỗ đó dẫn tiếp sang công cụ kiểm chứng của bên thứ ba.
   String verifyUrl(String evidenceId);
@@ -399,9 +396,6 @@ class RemoteEcRepository implements EcRepository {
   @override
   Future<DossierDto?> dossier(String shopId, String orderId) =>
       _api.getDossier(shopId, orderId);
-
-  @override
-  String dossierShareUrl(String shareToken) => _api.dossierShareUrl(shareToken);
 
   @override
   String verifyUrl(String evidenceId) => _api.verifyUrl(evidenceId);
@@ -665,9 +659,6 @@ class FakeEcRepository implements EcRepository {
 
   @override
   Future<DossierDto?> dossier(String shopId, String orderId) async => null;
-
-  @override
-  String dossierShareUrl(String shareToken) => '';
 
   @override
   String verifyUrl(String evidenceId) => '';

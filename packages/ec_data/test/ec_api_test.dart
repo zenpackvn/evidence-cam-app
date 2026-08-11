@@ -560,4 +560,75 @@ void main() {
     );
     await api.abortMultipartUpload('s1', 'o1', 'ev1', uploadId: 'up1');
   });
+
+  test('getShopStats parses the owner report', () async {
+    when(
+      () => dio.get<Map<String, dynamic>>(
+        any(that: startsWith('/api/shops/s1/stats')),
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => _res('/api/shops/s1/stats', {
+        'range_days': 30,
+        'from': 1,
+        'to': 2,
+        'member_uid': null,
+        'orders': {'current': 12, 'previous': 9},
+        'videos': {'current': 20, 'previous': 15},
+        'pending_uploads': {'current': 2, 'previous': 0},
+        'orders_without_evidence': 3,
+        'videos_stored': 18,
+        'coverage': {'orders': 12, 'with_evidence': 9},
+        'by_member': [
+          {
+            'uid': 'u1',
+            'role': 'owner',
+            'name': 'A',
+            'videos': 20,
+            'pending': 2,
+            'errors': 0,
+            'last_video_at': 1700,
+          },
+        ],
+        'evidence_health': {'sealed': 18, 'mismatch': 1},
+      }),
+    );
+
+    final s = await api.getShopStats('s1');
+    // Thẻ số liệu về dạng {current, previous}; DTO chỉ giữ kỳ đang xem.
+    expect(s.orders, 12);
+    expect(s.videos, 20);
+    expect(s.coverageWithEvidence, 9);
+    expect(s.byMember!.single.lastVideoAt, 1700);
+    expect(s.health!.mismatch, 1);
+    // Trường vắng mặt là 0, không phải null — thẻ đếm không có ô trống.
+    expect(s.health!.legacy, 0);
+  });
+
+  test('getShopStats chấp nhận báo cáo bị thu hẹp của nhân viên', () async {
+    when(
+      () => dio.get<Map<String, dynamic>>(
+        any(that: startsWith('/api/shops/s1/stats')),
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => _res('/api/shops/s1/stats', {
+        'range_days': 30,
+        'from': 1,
+        'to': 2,
+        'member_uid': 'staff-1',
+        'videos': {'current': 4, 'previous': 1},
+        'by_member': null,
+        'evidence_health': null,
+      }),
+    );
+
+    final s = await api.getShopStats('s1');
+    // null ở đây nghĩa là KHÔNG CÓ QUYỀN, không phải "chưa có dữ liệu" — màn
+    // hình phải ẩn khối đi chứ không vẽ bảng rỗng.
+    expect(s.memberUid, 'staff-1');
+    expect(s.byMember, isNull);
+    expect(s.health, isNull);
+    expect(s.videos, 4);
+  });
 }

@@ -113,6 +113,36 @@ class EcApi {
     QuotaDto.fromJson,
   );
 
+  /// Báo cáo của một cửa hàng — cùng endpoint web admin dùng.
+  ///
+  /// `tz_offset` đi kèm vì mốc ngày phải theo đồng hồ NGƯỜI XEM: một clip quay
+  /// 8h sáng ở VN là của hôm đó, dù UTC vẫn đang là hôm trước. Dart trả offset
+  /// ngược dấu với JS nên phải đổi dấu, không thì cả kỳ lệch đúng một ngày.
+  ///
+  /// [member] là uid cần soi riêng, hoặc `'me'`. Chỉ chủ shop dùng được — máy
+  /// chủ ép nhân viên về chính họ, nên đây là bộ lọc hiển thị chứ KHÔNG phải
+  /// cổng quyền.
+  Future<ShopStatsDto> getShopStats(
+    String shopId, {
+    int? days,
+    String? from,
+    String? to,
+    String? member,
+  }) {
+    final tzOffset = -DateTime.now().timeZoneOffset.inMinutes;
+    final query = <String, String>{
+      'tz_offset': '$tzOffset',
+      'days': ?days?.toString(),
+      'from': ?from,
+      'to': ?to,
+      'member': ?member,
+    };
+    final qs = query.entries
+        .map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    return _get('/api/shops/$shopId/stats?$qs', ShopStatsDto.fromJson);
+  }
+
   // --- shops / members (FR-05) ---
   Future<List<ShopDto>> listShops() => _getList('/api/shops', ShopDto.fromJson);
 
@@ -444,11 +474,6 @@ class EcApi {
     if (body is! Map<String, dynamic>) return null;
     return DossierDto.fromJson(body);
   }
-
-  /// Trang công khai backend phục vụ ở `/d/<token>` — cùng công thức web admin
-  /// dùng, nên hai bên không thể sinh ra hai link khác nhau.
-  String dossierShareUrl(String shareToken) =>
-      '${_dio.options.baseUrl.replaceAll(RegExp(r'/+$'), '')}/d/$shareToken';
 
   /// Trang kiểm chứng công khai của một clip. Không cần đăng nhập — cả điểm của
   /// nó là người ngoài (nhân viên sàn) mở được, và họ đi tiếp sang công cụ của
