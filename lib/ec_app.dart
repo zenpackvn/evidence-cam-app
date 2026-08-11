@@ -163,8 +163,9 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     return saved == null ? null : EcAppLanguage.byCode(saved);
   }
 
-  void _persistLanguage() =>
-      unawaited(_appMemory()?.setString(_languagePrefKey, _language.value.code));
+  void _persistLanguage() => unawaited(
+    _appMemory()?.setString(_languagePrefKey, _language.value.code),
+  );
 
   void _applyVoiceLanguage() =>
       unawaited(_voiceAnnouncer.useLanguage(_language.value.voiceTag));
@@ -3487,20 +3488,20 @@ capture.EcVideoType _captureTypeFromDto(
   VideoTypeDto type,
   AppLocalizations l10n,
 ) => capture.EcVideoType(
-      // Nhãn gốc đi tiếp vào clip và vào phép so trong luồng quay; bản đã dịch
-      // chỉ để vẽ ra màn.
-      label: type.name,
-      displayLabel: _videoTypeLabel(l10n, type.name),
-      id: type.id,
-      locked: type.isDefault,
-      icon: switch (type.name) {
-        'Đóng hàng' => Icons.inventory_2_outlined,
-        'Đơn vị vận chuyển' => Icons.local_shipping_outlined,
-        'ĐV vận chuyển' => Icons.local_shipping_outlined,
-        'Trả hàng' => Icons.replay,
-        _ => Icons.videocam_outlined,
-      },
-    );
+  // Nhãn gốc đi tiếp vào clip và vào phép so trong luồng quay; bản đã dịch
+  // chỉ để vẽ ra màn.
+  label: type.name,
+  displayLabel: _videoTypeLabel(l10n, type.name),
+  id: type.id,
+  locked: type.isDefault,
+  icon: switch (type.name) {
+    'Đóng hàng' => Icons.inventory_2_outlined,
+    'Đơn vị vận chuyển' => Icons.local_shipping_outlined,
+    'ĐV vận chuyển' => Icons.local_shipping_outlined,
+    'Trả hàng' => Icons.replay,
+    _ => Icons.videocam_outlined,
+  },
+);
 
 class _InviteMemberRoute extends StatefulWidget {
   const _InviteMemberRoute({required this.repo, required this.shopId});
