@@ -149,30 +149,36 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
   /// Ngôn ngữ đang dùng. Khởi tạo từ lựa chọn đã lưu, rơi về ngôn ngữ máy khi
   /// người dùng chưa chọn bao giờ — trước đây chỉ sống trong phiên nên thoát
   /// app là mất, người dùng phải chọn lại mỗi lần mở.
-  late final ValueNotifier<EcAppLanguage> _language = ValueNotifier(
-    _savedLanguage() ?? _systemLanguage(),
-  )..addListener(_persistLanguage);
+  late final ValueNotifier<EcAppLanguage> _language =
+      ValueNotifier(_savedLanguage() ?? _systemLanguage())
+        ..addListener(_persistLanguage)
+        // Đổi ngôn ngữ giao diện là đổi luôn giọng đọc. Để lệch nhau thì màn
+        // hình một thứ tiếng còn cái loa nói thứ tiếng khác.
+        ..addListener(_applyVoiceLanguage);
 
   static const _languagePrefKey = 'app.language';
 
   static EcAppLanguage? _savedLanguage() {
     final saved = _appMemory()?.getString(_languagePrefKey);
-    return switch (saved) {
-      'en' => EcAppLanguage.en,
-      'vi' => EcAppLanguage.vi,
-      _ => null,
-    };
+    return saved == null ? null : EcAppLanguage.byCode(saved);
   }
 
-  void _persistLanguage() {
-    final code = _language.value == EcAppLanguage.en ? 'en' : 'vi';
-    unawaited(_appMemory()?.setString(_languagePrefKey, code));
-  }
+  void _persistLanguage() =>
+      unawaited(_appMemory()?.setString(_languagePrefKey, _language.value.code));
 
+  void _applyVoiceLanguage() =>
+      unawaited(_voiceAnnouncer.useLanguage(_language.value.voiceTag));
+
+  /// Ngôn ngữ máy, nếu app có bản dịch cho nó — không thì tiếng Việt.
+  ///
+  /// Rơi về tiếng Việt chứ không phải tiếng Anh: thị trường đầu tiên là Việt
+  /// Nam, và người bán ở đây mở app lần đầu mà thấy tiếng Anh là một rào cản
+  /// không cần thiết.
   static EcAppLanguage _systemLanguage() =>
-      WidgetsBinding.instance.platformDispatcher.locale.languageCode == 'en'
-      ? EcAppLanguage.en
-      : EcAppLanguage.vi;
+      EcAppLanguage.byCode(
+        WidgetsBinding.instance.platformDispatcher.locale.languageCode,
+      ) ??
+      EcAppLanguage.vi;
 
   // Offline upload queue for recorded clips. The uploader follows the live
   // presign/R2/complete flow when an API URL is set; otherwise clips persist
@@ -252,6 +258,9 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     // Máy dựng trên bàn đóng hàng, người quay không chạm vào suốt cả ca — để
     // màn tự tắt là camera preview ngủ theo và phiên quay đứt giữa chừng.
     unawaited(WakelockPlus.enable().catchError((_) {}));
+    // Giọng đọc theo ngôn ngữ đã lưu, ngay từ lần mở app đầu tiên chứ không
+    // phải chỉ khi người dùng đổi ngôn ngữ.
+    _applyVoiceLanguage();
   }
 
   /// Gắn/gỡ phiên RevenueCat theo tài khoản đang đăng nhập.
@@ -359,8 +368,10 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
       builder: (context, language, _) => CupertinoApp.router(
         debugShowCheckedModeBanner: false,
         title: 'ZenPack',
-        locale: Locale(language == EcAppLanguage.vi ? 'vi' : 'en'),
-        supportedLocales: const [Locale('vi'), Locale('en')],
+        locale: Locale(language.code),
+        supportedLocales: [
+          for (final language in EcAppLanguage.values) Locale(language.code),
+        ],
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -3119,7 +3130,7 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
       storageKind:
           (results.last as StorageStateDto?)?.kind ?? StorageKind.system,
       videoTypes: ((results[2] as List<VideoTypeDto>?) ?? const [])
-          .map(_videoTypeFromDto)
+          .map((type) => _videoTypeFromDto(type, l10n))
           .toList(),
     );
   }
@@ -3302,15 +3313,32 @@ EcShopMember _memberFromDto(AppLocalizations l10n, MemberDto member) {
   );
 }
 
+/// Nhãn hiển thị của một loại video.
+///
+/// Ba loại mặc định do MÁY CHỦ tạo và tên chúng nằm trong cơ sở dữ liệu bằng
+/// tiếng Việt, nên đổi ngôn ngữ giao diện không đụng tới chúng — người bán
+/// Thái vẫn thấy "Đóng hàng" giữa một màn hình tiếng Thái. Dịch ở đây, ngay
+/// lúc vẽ, và CHỈ để hiển thị: giá trị gửi lên máy chủ lẫn giá trị đem so
+/// trong luồng quay (`state.typeLabel == 'Trả hàng'`) vẫn là chuỗi gốc.
+///
+/// Loại do shop tự đặt thì giữ nguyên: đó là chữ của người dùng, không phải
+/// của app.
+String _videoTypeLabel(AppLocalizations l10n, String name) => switch (name) {
+  'Đóng hàng' => l10n.videoTypePacking,
+  'Đơn vị vận chuyển' => l10n.videoTypeCarrier,
+  'Trả hàng' => l10n.videoTypeReturn,
+  _ => name,
+};
+
 /// Loại tự đặt mang icon người tạo đã chọn; ba loại mặc định (và loại tạo
 /// trước khi màn chọn icon được nối dây) rơi về icon suy từ tên.
-EcVideoType _videoTypeFromDto(VideoTypeDto type) {
+EcVideoType _videoTypeFromDto(VideoTypeDto type, AppLocalizations l10n) {
   final pickedIcon = type.icon == null
       ? null
       : EcCreateTypeScreen.iconFor(type.icon!);
   return EcVideoType(
     id: type.id,
-    name: type.name,
+    name: _videoTypeLabel(l10n, type.name),
     locked: type.isDefault,
     iconKey: type.icon,
     colorHex: type.color,
@@ -3437,7 +3465,9 @@ class _TypeSheetRouteState extends State<_TypeSheetRoute> {
       future: _types,
       builder: (context, snap) {
         final liveTypes = snap.hasData
-            ? snap.data!.map(_captureTypeFromDto).toList()
+            ? snap.data!
+                  .map((type) => _captureTypeFromDto(type, context.l10n))
+                  .toList()
             : const <capture.EcVideoType>[];
         final types = liveTypes.isEmpty ? ecDefaultVideoTypes : liveTypes;
         return EcTypeSheetScreen(
@@ -3453,9 +3483,14 @@ class _TypeSheetRouteState extends State<_TypeSheetRoute> {
   }
 }
 
-capture.EcVideoType _captureTypeFromDto(VideoTypeDto type) =>
-    capture.EcVideoType(
+capture.EcVideoType _captureTypeFromDto(
+  VideoTypeDto type,
+  AppLocalizations l10n,
+) => capture.EcVideoType(
+      // Nhãn gốc đi tiếp vào clip và vào phép so trong luồng quay; bản đã dịch
+      // chỉ để vẽ ra màn.
       label: type.name,
+      displayLabel: _videoTypeLabel(l10n, type.name),
       id: type.id,
       locked: type.isDefault,
       icon: switch (type.name) {
@@ -4071,7 +4106,10 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       setState(() {
         _videoTypes = [
           for (final type in types)
-            EcVideoTypeOption(id: type.id, name: type.name),
+            EcVideoTypeOption(
+              id: type.id,
+              name: _videoTypeLabel(context.l10n, type.name),
+            ),
         ];
       });
     } on Object {
@@ -4835,10 +4873,39 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
       : widget.service.network(Uri.parse(widget.url));
   late final Future<void> _ready = _initialize();
 
-  // While the user drags the scrubber, show the drag target instead of the
-  // controller's real position — seeking is throttled to onChangeEnd, so the
-  // real position wouldn't move smoothly with the thumb otherwise.
+  // Trong lúc kéo, hiện mốc ngón tay đang chỉ chứ không hiện vị trí thật của
+  // trình phát: lệnh tua đi qua nền tảng nên vị trí thật luôn về sau ngón tay
+  // một nhịp, và thanh kéo sẽ giật ngược.
   Duration? _scrubPosition;
+
+  /// Lượt tua gần nhất còn đang chạy, để không bắn chồng lệnh.
+  bool _seeking = false;
+
+  /// Mốc mới nhất ngón tay chỉ tới trong lúc lượt tua trước chưa xong.
+  Duration? _pendingSeek;
+
+  /// Tua theo ngón tay, nhưng mỗi lúc chỉ một lệnh.
+  ///
+  /// `CupertinoSlider` bắn `onChanged` mỗi khung hình; gửi thẳng ngần ấy lệnh
+  /// tua xuống nền tảng là xếp hàng cả trăm lệnh, hình đứng hình và thả tay
+  /// rồi video vẫn còn chạy đuổi. Giữ đúng MỘT lệnh đang bay, mốc tới sau đè
+  /// lên mốc chờ — thứ người dùng cần là vị trí CUỐI CÙNG của ngón tay.
+  Future<void> _seekWhileScrubbing(Duration target) async {
+    if (_seeking) {
+      _pendingSeek = target;
+      return;
+    }
+    _seeking = true;
+    var next = target;
+    while (true) {
+      await _controller.seekTo(next);
+      final queued = _pendingSeek;
+      if (queued == null) break;
+      _pendingSeek = null;
+      next = queued;
+    }
+    _seeking = false;
+  }
 
   void _togglePlayPause() {
     if (_controller.value.isPlaying) {
@@ -5024,12 +5091,23 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                                   max: sliderMax,
                                   activeColor: Colors.white,
                                   thumbColor: Colors.white,
+                                  // Nhảy NGAY theo ngón tay, không đợi thả.
+                                  //
+                                  // Trước đây chỉ tua lúc thả tay, nên kéo tới
+                                  // đâu cũng chỉ thấy một con số đổi còn hình
+                                  // thì đứng im — không dò được cảnh mình cần.
+                                  // Nay hình chạy theo ngón, đúng như thanh
+                                  // kéo ở màn cắt.
                                   onChanged: duration.inMilliseconds > 0
-                                      ? (v) => setState(() {
-                                          _scrubPosition = Duration(
+                                      ? (v) {
+                                          final target = Duration(
                                             milliseconds: v.round(),
                                           );
-                                        })
+                                          setState(
+                                            () => _scrubPosition = target,
+                                          );
+                                          _seekWhileScrubbing(target);
+                                        }
                                       : null,
                                   onChangeEnd: (v) {
                                     final target = Duration(
@@ -5209,7 +5287,10 @@ List<EcTimelineDay> _timelineDays(
           EcTimelineVideo(
             id: item.id,
             time: _hhmm(captured),
-            label: typeNames[item.videoTypeId] ?? _kindLabel(l10n, item.kind),
+            label: switch (typeNames[item.videoTypeId]) {
+              final name? => _videoTypeLabel(l10n, name),
+              _ => _kindLabel(l10n, item.kind),
+            },
             type: item.kind == 'photo'
                 ? EcEvidenceType.image
                 : EcEvidenceType.video,
