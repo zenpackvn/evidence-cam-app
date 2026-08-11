@@ -18,7 +18,7 @@ These configuration files are injected into the Flutter application at compile/r
 | `API_BASE_URL` | string | Base URL for the HTTP client. Defaults to the production API (`https://api.zenpack.vn`) when no env file is passed — see `kApiBaseUrl` in `packages/ec_data/lib/src/ec_env.dart`. |
 | `API_TIMEOUT_SECONDS` | int | Connect/receive timeout for Dio, in seconds. Defaults to 10 if omitted. |
 | `REVENUECAT_IOS_KEY` | string | RevenueCat **public** SDK key (`appl_…`). **`prod.json` only** — see below. |
-| `REVENUECAT_ANDROID_KEY` | string | Same for Android (`goog_…`). Set 2026-08-11. ⚠️ Key hợp lệ nhưng Offering `default` hiện trả **0 package** cho Android (iOS trả 6) — RC chưa nối Play Store, nên paywall mở ra không có gì để mua. |
+| `REVENUECAT_ANDROID_KEY` | string | Same for Android (`goog_…`). Set 2026-08-11. Offering `default` trả đủ **6 package** cho cả hai nền tảng (kiểm 2026-08-11: `GET api.revenuecat.com/v1/subscribers/<id>/offerings` với `X-Platform: android`). |
 
 ### Why the RevenueCat keys are only in `prod.json`
 
