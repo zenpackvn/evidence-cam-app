@@ -432,6 +432,31 @@ class EcUploadQueue extends ChangeNotifier {
     return path.startsWith(base);
   }
 
+  /// Chạy lại hàng đợi từ bên ngoài — dùng khi mạng trở lại.
+  ///
+  /// Hàng đợi không tự biết lúc nào có mạng: nó chỉ chạy khi mở app, khi có
+  /// clip mới, hoặc khi người dùng bấm thử lại. Mất mạng một quãng dài rồi có
+  /// lại mà người bán đã ngừng quay thì clip nằm im tới lần mở app sau. Bên
+  /// nghe được sự kiện mạng gọi hàm này.
+  ///
+  /// Những task đang đỗ vì lỗi mạng nằm ở `error`, nên đưa chúng về `waiting`
+  /// trước — nếu không thì lượt chạy này không thấy gì để làm.
+  Future<void> kick() async {
+    var revived = false;
+    for (final task in _tasks) {
+      if (task.state == EcUploadState.error) {
+        task
+          ..state = EcUploadState.waiting
+          ..progress = 0
+          ..errorMessage = null;
+        await _store.save(task);
+        revived = true;
+      }
+    }
+    if (revived) notifyListeners();
+    await _process();
+  }
+
   Future<void> _process() async {
     if (_processing || _uploader == null) return;
     _processing = true;

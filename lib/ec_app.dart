@@ -71,6 +71,7 @@ import 'package:localization/localization.dart';
 import 'package:network/network.dart' show Dio, DioException, DioExceptionType;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:sync_connectivity_plus/sync_connectivity_plus.dart';
 import 'package:shared_contracts/shared_contracts.dart'
     show
         ClipBudget,
@@ -262,6 +263,31 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     // Giọng đọc theo ngôn ngữ đã lưu, ngay từ lần mở app đầu tiên chứ không
     // phải chỉ khi người dùng đổi ngôn ngữ.
     _applyVoiceLanguage();
+    _listenForNetwork();
+  }
+
+  StreamSubscription<List<ConnectivityResult>>? _networkWatch;
+
+  /// Có mạng trở lại thì chạy lại hàng đợi upload.
+  ///
+  /// Hàng đợi không tự biết lúc nào có mạng: nó chỉ chạy khi mở app, khi có
+  /// clip mới, hoặc khi người dùng bấm thử lại. Mất sóng giữa ca rồi có lại mà
+  /// người bán đã ngừng quay thì clip nằm im tới lần mở app sau — trong khi
+  /// chúng chỉ tồn tại trên đúng cái điện thoại đó.
+  ///
+  /// Nuốt lỗi: máy không trả lời sự kiện mạng thì rơi về hành vi cũ, không
+  /// được làm hỏng lúc khởi động.
+  void _listenForNetwork() {
+    try {
+      _networkWatch = Connectivity().onConnectivityChanged.listen((results) {
+        final online =
+            results.isNotEmpty &&
+            results.any((r) => r != ConnectivityResult.none);
+        if (online) unawaited(_queue.kick());
+      });
+    } on Object {
+      // Không nghe được thì thôi.
+    }
   }
 
   /// Gắn/gỡ phiên RevenueCat theo tài khoản đang đăng nhập.
@@ -335,6 +361,7 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    unawaited(_networkWatch?.cancel());
     WidgetsBinding.instance.removeObserver(this);
     _queue.removeListener(_onQueueChangedForReporting);
     _auth.user.removeListener(_syncPurchaseIdentity);
@@ -2469,11 +2496,14 @@ const _recordBranchIndex = 1;
 /// retrying/deleting them in the Upload Queue screen, so counting them
 /// alongside genuinely-waiting clips in these ambient badges would be
 /// misleading — that's the only place they still show up.
-int _pendingUploads(EcUploadQueue queue) => queue.tasks
-    .where(
-      (t) => t.state != EcUploadState.done && t.state != EcUploadState.error,
-    )
-    .length;
+/// Số clip trên thẻ "Chờ tải" ở header shop.
+///
+/// Đếm ĐÚNG những dòng trang Hàng đợi đang hiện — trang đó vẽ mọi task còn
+/// trong hàng đợi, kể cả task lỗi. Trước đây thẻ này bỏ qua task lỗi, nên
+/// người bán thấy "Chờ tải 0" trong khi mở hàng đợi ra vẫn còn clip nằm đó:
+/// con số ngoài cửa nói một đằng, thứ bên trong một nẻo, và thứ nằm lại là
+/// clip chưa hề được máy chủ giữ.
+int _pendingUploads(EcUploadQueue queue) => queue.tasks.length;
 
 /// The shop clocked into at Flow 1. Direct deep links must handle null
 /// explicitly instead of silently using a fake shop.
@@ -4753,17 +4783,20 @@ class _OrderRouteState extends State<_OrderRoute> {
       ),
       builder: (context, data) {
         _last = data;
-        final days = _withPendingUploads(
+        // Danh sách trong đơn CHỈ gồm clip máy chủ đã thật sự giữ.
+        //
+        // Trước đây các clip còn nằm trong hàng đợi cũng được ghép vào đây,
+        // kèm nhãn "Đang chờ tải". Nhìn thì tiện, nhưng nó đặt cạnh nhau hai
+        // thứ khác hẳn nhau về giá trị: một bên là bằng chứng đã có vân tay
+        // và dấu giờ trên máy chủ, một bên là tệp mới chỉ nằm trên đúng cái
+        // điện thoại này — mất máy là mất. Clip chưa lên ở nguyên trang Hàng
+        // đợi cho tới khi lên thật.
+        final days = _timelineDays(
           context.l10n,
-          _timelineDays(
-            context.l10n,
-            data.detail.evidence,
-            data.videoTypes,
-            data.memberNames,
-            data.previews,
-          ),
-          data.detail.order.tracking,
-          widget.queue,
+          data.detail.evidence,
+          data.videoTypes,
+          data.memberNames,
+          data.previews,
         );
         return ListenableBuilder(
           listenable: widget.queue,
@@ -5212,50 +5245,6 @@ class _MemberActionExtra {
 
 /// Ghép các bằng chứng CHƯA tải xong của đơn vào danh sách.
 ///
-/// Danh sách dựng từ dữ liệu server, mà ảnh vừa đính mới chỉ nằm trong hàng
-/// đợi trên máy — nạp lại bao nhiêu lần server cũng chưa có gì để trả. Không
-/// ghép vào thì người dùng đính ảnh xong nhìn thấy y như chưa đính, phải thoát
-/// ra vào lại (lúc đó tải đã xong) mới thấy.
-///
-/// So mã đơn sau khi chuẩn hoá: mã lưu trong hàng đợi đã bỏ dấu cách và viết
-/// hoa, không phải lúc nào cũng bằng chuỗi hiển thị.
-List<EcTimelineDay> _withPendingUploads(
-  AppLocalizations l10n,
-  List<EcTimelineDay> days,
-  String tracking,
-  EcUploadQueue queue,
-) {
-  final wanted = normalizeTrackingCode(tracking);
-  final pending = [
-    for (final task in queue.tasks)
-      if (normalizeTrackingCode(task.tracking) == wanted)
-        EcTimelineVideo(
-          time: _hhmm(task.createdAt),
-          capturedAtMs: task.createdAt.millisecondsSinceEpoch,
-          label: task.type,
-          type: task.type.toLowerCase().contains('ảnh')
-              ? EcEvidenceType.image
-              : EcEvidenceType.video,
-          statusText: l10n.uploadStatusPending,
-          durationSeconds: task.durationSeconds,
-        ),
-  ];
-  if (pending.isEmpty) return days;
-  final today = _dateLabel(DateTime.now());
-  final rest = [
-    for (final d in days)
-      if (d.date != today) d,
-  ];
-  final todayVideos = [
-    for (final d in days)
-      if (d.date == today) ...d.videos,
-  ];
-  return [
-    EcTimelineDay(date: today, videos: [...pending, ...todayVideos]),
-    ...rest,
-  ];
-}
-
 List<EcTimelineDay> _timelineDays(
   AppLocalizations l10n,
   List<EvidenceDto> evidence,
