@@ -24,6 +24,8 @@
   "claimsPickNothing": "Chưa chọn bằng chứng nào",
   "claimsDelete": "Xóa hồ sơ",
   "claimsDeleteConfirm": "Xóa hồ sơ này? Bằng chứng trong đơn hàng vẫn còn nguyên.",
+  "claimsDeleteConfirmLink": "Xóa hồ sơ này? Link công khai chết ngay — ai đã nhận link sẽ mở ra trang trống. Bằng chứng trong đơn hàng vẫn còn nguyên.",
+  "claimsRevokeFailed": "Chưa thu hồi được link nên hồ sơ vẫn giữ nguyên. Link đang còn mở — thử lại khi mạng tốt hơn, hoặc nhờ chủ cửa hàng thu hồi.",
   "claimsDeleted": "Đã xóa hồ sơ",
   "claimsPhotoAdded": "Đã thêm ảnh vào hồ sơ và đưa lên đơn hàng",
   "claimsAddedLater": "đính thêm",
@@ -189,7 +191,8 @@
   "statOrdersToday": "Vận đơn",
   "statVideosRecorded": "Video đã quay",
   "statPendingUpload": "Chờ tải",
-  "accountPlanQuota": "Dung lượng",
+  "accountPlanQuota": "Gói cước & dung lượng",
+  "accountChangePlan": "Đổi gói",
   "accountSectionApp": "GÓI & ỨNG DỤNG",
   "accountLanguage": "Ngôn ngữ",
   "accountSectionSecurity": "BẢO MẬT & ĐĂNG NHẬP",
@@ -961,6 +964,7 @@
   "appUpdateLater": "Để sau",
   "quotaVideosThisMonth": "Video tháng này",
   "quotaSubtitleVideos": "Theo dõi số video đã quay trong tháng",
+  "quotaUpgrade": "Nâng cấp gói",
   "quotaBlockedTitle": "Đã hết hạn mức video",
   "quotaBlockedNote": "Video vẫn quay bình thường, nhưng chưa tải lên được — chúng đang nằm trên máy và chưa được bảo vệ. Hạn mức được nâng thì chúng tự tải lên.",
   "quotaBlockedOwnerNote": "Liên hệ chủ tài khoản để được nâng hạn mức.",
@@ -1103,5 +1107,21 @@
   "inviteScanDetail": "Nhờ chủ shop mở mã QR mời rồi quét vào đây.",
   "commonShare": "Chia sẻ",
   "inviteQrSaved": "Đã lưu mã vào thư viện",
-  "inviteQrSaveFailed": "Không lưu được mã vào thư viện"
+  "inviteQrSaveFailed": "Không lưu được mã vào thư viện",
+  "voiceRecordingStarted": "Đã bắt đầu quay",
+  "voiceRecordingStopped": "Đã dừng quay",
+  "voiceWrongCode": "Sai mã",
+  "voiceCapSoon": "Video sắp tự chốt",
+  "voiceCapNear": "Sắp chạm trần {minutes} phút, video sẽ tự chốt",
+  "@voiceCapNear": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "voiceInterrupted": "Quá trình quay bị gián đoạn",
+  "videoTypePacking": "Đóng hàng",
+  "videoTypeCarrier": "Đơn vị vận chuyển",
+  "videoTypeReturn": "Trả hàng"
 }

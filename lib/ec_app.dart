@@ -84,6 +84,7 @@ import 'package:storage/storage.dart';
 import 'app/di/injection.dart';
 import 'core/data/ec_claim_store.dart';
 import 'app/update_gate.dart';
+import 'data/ec_purchases.dart';
 import 'data/ec_uploader.dart';
 import 'data/platform_device_conditions.dart';
 import 'screens/ec_record_route.dart';
@@ -148,30 +149,37 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
   /// Ngôn ngữ đang dùng. Khởi tạo từ lựa chọn đã lưu, rơi về ngôn ngữ máy khi
   /// người dùng chưa chọn bao giờ — trước đây chỉ sống trong phiên nên thoát
   /// app là mất, người dùng phải chọn lại mỗi lần mở.
-  late final ValueNotifier<EcAppLanguage> _language = ValueNotifier(
-    _savedLanguage() ?? _systemLanguage(),
-  )..addListener(_persistLanguage);
+  late final ValueNotifier<EcAppLanguage> _language =
+      ValueNotifier(_savedLanguage() ?? _systemLanguage())
+        ..addListener(_persistLanguage)
+        // Đổi ngôn ngữ giao diện là đổi luôn giọng đọc. Để lệch nhau thì màn
+        // hình một thứ tiếng còn cái loa nói thứ tiếng khác.
+        ..addListener(_applyVoiceLanguage);
 
   static const _languagePrefKey = 'app.language';
 
   static EcAppLanguage? _savedLanguage() {
     final saved = _appMemory()?.getString(_languagePrefKey);
-    return switch (saved) {
-      'en' => EcAppLanguage.en,
-      'vi' => EcAppLanguage.vi,
-      _ => null,
-    };
+    return saved == null ? null : EcAppLanguage.byCode(saved);
   }
 
-  void _persistLanguage() {
-    final code = _language.value == EcAppLanguage.en ? 'en' : 'vi';
-    unawaited(_appMemory()?.setString(_languagePrefKey, code));
-  }
+  void _persistLanguage() => unawaited(
+    _appMemory()?.setString(_languagePrefKey, _language.value.code),
+  );
 
+  void _applyVoiceLanguage() =>
+      unawaited(_voiceAnnouncer.useLanguage(_language.value.voiceTag));
+
+  /// Ngôn ngữ máy, nếu app có bản dịch cho nó — không thì tiếng Việt.
+  ///
+  /// Rơi về tiếng Việt chứ không phải tiếng Anh: thị trường đầu tiên là Việt
+  /// Nam, và người bán ở đây mở app lần đầu mà thấy tiếng Anh là một rào cản
+  /// không cần thiết.
   static EcAppLanguage _systemLanguage() =>
-      WidgetsBinding.instance.platformDispatcher.locale.languageCode == 'en'
-      ? EcAppLanguage.en
-      : EcAppLanguage.vi;
+      EcAppLanguage.byCode(
+        WidgetsBinding.instance.platformDispatcher.locale.languageCode,
+      ) ??
+      EcAppLanguage.vi;
 
   // Offline upload queue for recorded clips. The uploader follows the live
   // presign/R2/complete flow when an API URL is set; otherwise clips persist
@@ -238,9 +246,44 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     // trong [_reportQueueDepth]: mỗi phần trăm tiến độ upload cũng bắn một lượt
     // notify, và bắn một request theo từng phần trăm là điên rồ.
     _queue.addListener(_onQueueChangedForReporting);
+    // Phiên mua hàng bám theo người đang đăng nhập. Nghe ở MỘT chỗ thay vì vá
+    // từng lối đăng nhập/đăng xuất: thiếu sót một lối là người sau mua gói lại
+    // được cộng ngày cho tài khoản trước — RevenueCat vẫn giữ app_user_id cũ.
+    _auth.user.addListener(_syncPurchaseIdentity);
+    _syncPurchaseIdentity();
+    // Paywall của RevenueCat đọc ngôn ngữ MÁY chứ không đọc ngôn ngữ app. Nghe
+    // ở một chỗ vì cùng lý do với dòng trên: có hai lối đổi ngôn ngữ (nút gạt ở
+    // màn tài khoản và màn /language), vá từng lối là sớm muộn sót một lối.
+    _language.addListener(_syncPurchaseLocale);
+    _syncPurchaseLocale();
     // Máy dựng trên bàn đóng hàng, người quay không chạm vào suốt cả ca — để
     // màn tự tắt là camera preview ngủ theo và phiên quay đứt giữa chừng.
     unawaited(WakelockPlus.enable().catchError((_) {}));
+    // Giọng đọc theo ngôn ngữ đã lưu, ngay từ lần mở app đầu tiên chứ không
+    // phải chỉ khi người dùng đổi ngôn ngữ.
+    _applyVoiceLanguage();
+  }
+
+  /// Gắn/gỡ phiên RevenueCat theo tài khoản đang đăng nhập.
+  ///
+  /// `app_user_id` phải bằng Firebase uid — backend tra tài khoản bằng đúng giá
+  /// trị đó khi webhook tới, và uid lạ thì event bị bỏ qua, tức người dùng trả
+  /// tiền mà không ai được cộng ngày.
+  void _syncPurchaseIdentity() {
+    final uid = _auth.user.value?.uid;
+    unawaited(
+      (uid == null ? EcPurchases.logOut() : EcPurchases.logIn(uid)).catchError(
+        (_) {},
+      ),
+    );
+  }
+
+  void _syncPurchaseLocale() {
+    unawaited(
+      EcPurchases.setUiLocale(
+        _language.value == EcAppLanguage.en ? 'en' : 'vi',
+      ).catchError((_) {}),
+    );
   }
 
   /// App quay lại foreground.
@@ -294,10 +337,12 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _queue.removeListener(_onQueueChangedForReporting);
+    _auth.user.removeListener(_syncPurchaseIdentity);
     unawaited(WakelockPlus.disable().catchError((_) {}));
     _router.dispose();
     _language
       ..removeListener(_persistLanguage)
+      ..removeListener(_syncPurchaseLocale)
       ..dispose();
     _queue.dispose();
     _selectedShop.dispose();
@@ -324,8 +369,10 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
       builder: (context, language, _) => CupertinoApp.router(
         debugShowCheckedModeBanner: false,
         title: 'ZenPack',
-        locale: Locale(language == EcAppLanguage.vi ? 'vi' : 'en'),
-        supportedLocales: const [Locale('vi'), Locale('en')],
+        locale: Locale(language.code),
+        supportedLocales: [
+          for (final language in EcAppLanguage.values) Locale(language.code),
+        ],
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -948,6 +995,21 @@ class _AccountRouteState extends State<_AccountRoute> {
     });
   }
 
+  /// Mở paywall IAP thẳng từ màn cài đặt — giống hệt nút ở màn Quota.
+  ///
+  /// Tách khỏi màn Quota vì đó là màn BÁO CÁO: người muốn đổi gói không nên
+  /// phải đi qua một bảng số liệu mới thấy chỗ mua.
+  ///
+  /// Mua xong KHÔNG tự bật gói: biên nhận trên máy có thể bị giả hoặc phát
+  /// lại, hạn dùng do webhook RevenueCat → backend chốt. Hàng đợi cũng được đá
+  /// một cái vì clip đang đỗ do hết hạn mức phải tự đi tiếp.
+  Future<void> _openPaywall() async {
+    final purchased = await EcPurchases.presentPaywall();
+    if (!purchased || !mounted) return;
+    unawaited(widget.queue.retryQuotaWaiting());
+    _refreshQuota();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1040,6 +1102,13 @@ class _AccountRouteState extends State<_AccountRoute> {
               // Future thì Flutter ném assertion và bỏ luôn lượt dựng lại.
               _refreshQuota();
             },
+            // Không có khoá RevenueCat, hoặc không phải chủ shop → `null` →
+            // hàng "Đổi gói" không hiện. Nút bấm vào không mở được gì còn tệ
+            // hơn là không có nút.
+            onChangePlanTap:
+                EcPurchases.isAvailable && (snap.data?.canManagePlan ?? false)
+                ? _openPaywall
+                : null,
             onLanguageTap: () => context.push('/language'),
             onEndQrTap: () => _showEndSessionQr(
               context,
@@ -1295,13 +1364,16 @@ class _LoginMethodsRoute extends StatelessWidget {
 /// actually sitting in [queue] so the numbers on screen can never disagree
 /// with what's really stored on the device.
 ///
-/// **Chỉ xem, không mua.** Gói cước bán ở web, không bán trong app. Màn này
-/// trả lời đúng một câu hỏi: tôi đang ở gói nào và còn bao nhiêu dung lượng.
+/// **Mua được, nhưng chỉ bằng IAP.** Nút "Nâng cấp gói" mở paywall dựng sẵn của
+/// RevenueCat, tức đi qua cửa hàng Apple/Google — đúng cách mà Guideline 3.1.1
+/// yêu cầu với nội dung số.
 ///
-/// App cũng KHÔNG nói mua ở đâu — không một dòng chữ, không một đường dẫn.
-/// Guideline 3.1.1 của App Store cấm hướng người dùng ra ngoài để mua nội dung
-/// số, và một câu "nâng gói tại zenpack.vn" là đủ để bị trả hồ sơ. Chủ shop
-/// vốn đã mua ở web nên họ không cần app chỉ đường.
+/// Ranh giới KHÔNG đổi: app vẫn tuyệt đối không nói mua ở đâu khác. Không một
+/// dòng chữ, không một đường dẫn sang zenpack.vn. Cấm dẫn ra ngoài vẫn nguyên
+/// giá trị kể cả khi bên cạnh đã có nút IAP hợp lệ.
+///
+/// Mua xong màn này KHÔNG tự bật gói — nó hỏi lại backend. Biên nhận trên máy
+/// có thể bị giả hoặc phát lại; hạn dùng do webhook RevenueCat → backend chốt.
 class _QuotaRoute extends StatefulWidget {
   const _QuotaRoute({required this.repo, required this.queue, this.shopId});
 
@@ -1331,6 +1403,19 @@ class _QuotaRouteState extends State<_QuotaRoute> {
   void dispose() {
     widget.queue.uploadsCompleted.removeListener(_refresh);
     super.dispose();
+  }
+
+  /// Mở paywall IAP, rồi hỏi lại backend.
+  ///
+  /// Chỉ `_refresh()` khi paywall báo đã mua — nhưng KHÔNG tin con số ngay lập
+  /// tức: webhook RevenueCat → backend chạy bất đồng bộ, nên lần hỏi đầu có thể
+  /// vẫn ra gói cũ. Hàng đợi cũng được đá một cái: clip đang đỗ vì hết hạn mức
+  /// phải tự đi tiếp khi vừa có thêm chỗ, đó là lý do người dùng vừa trả tiền.
+  Future<void> _openPaywall() async {
+    final purchased = await EcPurchases.presentPaywall();
+    if (!purchased || !mounted) return;
+    unawaited(widget.queue.retryQuotaWaiting());
+    _refresh();
   }
 
   void _refresh() {
@@ -1389,10 +1474,11 @@ class _QuotaRouteState extends State<_QuotaRoute> {
           blocked: quota.blocked,
           retentionTotalDays: quota.retentionDays,
           typeUsage: typeUsage,
-          // Mua gói KHÔNG diễn ra trong app nữa — xem chú thích ở đầu lớp.
-          // `canManagePlan` vẫn truyền vào vì màn hình dùng nó cho những nhãn
-          // khác, nhưng không còn nút nào để nó bật/tắt.
+          // `canManagePlan` gác nút mua (chỉ chủ shop) VÀ quyết định câu giải
+          // thích khi hết hạn mức — nhân viên được bảo đi hỏi chủ shop.
           canManagePlan: quota.canManagePlan,
+          // Không có khoá RevenueCat trong build này → `null` → không hiện nút.
+          onUpgrade: EcPurchases.isAvailable ? _openPaywall : null,
           onBack: () => _back(context, '/account'),
         );
       },
@@ -3045,7 +3131,7 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
       storageKind:
           (results.last as StorageStateDto?)?.kind ?? StorageKind.system,
       videoTypes: ((results[2] as List<VideoTypeDto>?) ?? const [])
-          .map(_videoTypeFromDto)
+          .map((type) => _videoTypeFromDto(type, l10n))
           .toList(),
     );
   }
@@ -3228,15 +3314,32 @@ EcShopMember _memberFromDto(AppLocalizations l10n, MemberDto member) {
   );
 }
 
+/// Nhãn hiển thị của một loại video.
+///
+/// Ba loại mặc định do MÁY CHỦ tạo và tên chúng nằm trong cơ sở dữ liệu bằng
+/// tiếng Việt, nên đổi ngôn ngữ giao diện không đụng tới chúng — người bán
+/// Thái vẫn thấy "Đóng hàng" giữa một màn hình tiếng Thái. Dịch ở đây, ngay
+/// lúc vẽ, và CHỈ để hiển thị: giá trị gửi lên máy chủ lẫn giá trị đem so
+/// trong luồng quay (`state.typeLabel == 'Trả hàng'`) vẫn là chuỗi gốc.
+///
+/// Loại do shop tự đặt thì giữ nguyên: đó là chữ của người dùng, không phải
+/// của app.
+String _videoTypeLabel(AppLocalizations l10n, String name) => switch (name) {
+  'Đóng hàng' => l10n.videoTypePacking,
+  'Đơn vị vận chuyển' => l10n.videoTypeCarrier,
+  'Trả hàng' => l10n.videoTypeReturn,
+  _ => name,
+};
+
 /// Loại tự đặt mang icon người tạo đã chọn; ba loại mặc định (và loại tạo
 /// trước khi màn chọn icon được nối dây) rơi về icon suy từ tên.
-EcVideoType _videoTypeFromDto(VideoTypeDto type) {
+EcVideoType _videoTypeFromDto(VideoTypeDto type, AppLocalizations l10n) {
   final pickedIcon = type.icon == null
       ? null
       : EcCreateTypeScreen.iconFor(type.icon!);
   return EcVideoType(
     id: type.id,
-    name: type.name,
+    name: _videoTypeLabel(l10n, type.name),
     locked: type.isDefault,
     iconKey: type.icon,
     colorHex: type.color,
@@ -3363,7 +3466,9 @@ class _TypeSheetRouteState extends State<_TypeSheetRoute> {
       future: _types,
       builder: (context, snap) {
         final liveTypes = snap.hasData
-            ? snap.data!.map(_captureTypeFromDto).toList()
+            ? snap.data!
+                  .map((type) => _captureTypeFromDto(type, context.l10n))
+                  .toList()
             : const <capture.EcVideoType>[];
         final types = liveTypes.isEmpty ? ecDefaultVideoTypes : liveTypes;
         return EcTypeSheetScreen(
@@ -3379,19 +3484,24 @@ class _TypeSheetRouteState extends State<_TypeSheetRoute> {
   }
 }
 
-capture.EcVideoType _captureTypeFromDto(VideoTypeDto type) =>
-    capture.EcVideoType(
-      label: type.name,
-      id: type.id,
-      locked: type.isDefault,
-      icon: switch (type.name) {
-        'Đóng hàng' => Icons.inventory_2_outlined,
-        'Đơn vị vận chuyển' => Icons.local_shipping_outlined,
-        'ĐV vận chuyển' => Icons.local_shipping_outlined,
-        'Trả hàng' => Icons.replay,
-        _ => Icons.videocam_outlined,
-      },
-    );
+capture.EcVideoType _captureTypeFromDto(
+  VideoTypeDto type,
+  AppLocalizations l10n,
+) => capture.EcVideoType(
+  // Nhãn gốc đi tiếp vào clip và vào phép so trong luồng quay; bản đã dịch
+  // chỉ để vẽ ra màn.
+  label: type.name,
+  displayLabel: _videoTypeLabel(l10n, type.name),
+  id: type.id,
+  locked: type.isDefault,
+  icon: switch (type.name) {
+    'Đóng hàng' => Icons.inventory_2_outlined,
+    'Đơn vị vận chuyển' => Icons.local_shipping_outlined,
+    'ĐV vận chuyển' => Icons.local_shipping_outlined,
+    'Trả hàng' => Icons.replay,
+    _ => Icons.videocam_outlined,
+  },
+);
 
 class _InviteMemberRoute extends StatefulWidget {
   const _InviteMemberRoute({required this.repo, required this.shopId});
@@ -3997,7 +4107,10 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       setState(() {
         _videoTypes = [
           for (final type in types)
-            EcVideoTypeOption(id: type.id, name: type.name),
+            EcVideoTypeOption(
+              id: type.id,
+              name: _videoTypeLabel(context.l10n, type.name),
+            ),
         ];
       });
     } on Object {
@@ -4761,10 +4874,39 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
       : widget.service.network(Uri.parse(widget.url));
   late final Future<void> _ready = _initialize();
 
-  // While the user drags the scrubber, show the drag target instead of the
-  // controller's real position — seeking is throttled to onChangeEnd, so the
-  // real position wouldn't move smoothly with the thumb otherwise.
+  // Trong lúc kéo, hiện mốc ngón tay đang chỉ chứ không hiện vị trí thật của
+  // trình phát: lệnh tua đi qua nền tảng nên vị trí thật luôn về sau ngón tay
+  // một nhịp, và thanh kéo sẽ giật ngược.
   Duration? _scrubPosition;
+
+  /// Lượt tua gần nhất còn đang chạy, để không bắn chồng lệnh.
+  bool _seeking = false;
+
+  /// Mốc mới nhất ngón tay chỉ tới trong lúc lượt tua trước chưa xong.
+  Duration? _pendingSeek;
+
+  /// Tua theo ngón tay, nhưng mỗi lúc chỉ một lệnh.
+  ///
+  /// `CupertinoSlider` bắn `onChanged` mỗi khung hình; gửi thẳng ngần ấy lệnh
+  /// tua xuống nền tảng là xếp hàng cả trăm lệnh, hình đứng hình và thả tay
+  /// rồi video vẫn còn chạy đuổi. Giữ đúng MỘT lệnh đang bay, mốc tới sau đè
+  /// lên mốc chờ — thứ người dùng cần là vị trí CUỐI CÙNG của ngón tay.
+  Future<void> _seekWhileScrubbing(Duration target) async {
+    if (_seeking) {
+      _pendingSeek = target;
+      return;
+    }
+    _seeking = true;
+    var next = target;
+    while (true) {
+      await _controller.seekTo(next);
+      final queued = _pendingSeek;
+      if (queued == null) break;
+      _pendingSeek = null;
+      next = queued;
+    }
+    _seeking = false;
+  }
 
   void _togglePlayPause() {
     if (_controller.value.isPlaying) {
@@ -4950,12 +5092,23 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                                   max: sliderMax,
                                   activeColor: Colors.white,
                                   thumbColor: Colors.white,
+                                  // Nhảy NGAY theo ngón tay, không đợi thả.
+                                  //
+                                  // Trước đây chỉ tua lúc thả tay, nên kéo tới
+                                  // đâu cũng chỉ thấy một con số đổi còn hình
+                                  // thì đứng im — không dò được cảnh mình cần.
+                                  // Nay hình chạy theo ngón, đúng như thanh
+                                  // kéo ở màn cắt.
                                   onChanged: duration.inMilliseconds > 0
-                                      ? (v) => setState(() {
-                                          _scrubPosition = Duration(
+                                      ? (v) {
+                                          final target = Duration(
                                             milliseconds: v.round(),
                                           );
-                                        })
+                                          setState(
+                                            () => _scrubPosition = target,
+                                          );
+                                          _seekWhileScrubbing(target);
+                                        }
                                       : null,
                                   onChangeEnd: (v) {
                                     final target = Duration(
@@ -5135,7 +5288,10 @@ List<EcTimelineDay> _timelineDays(
           EcTimelineVideo(
             id: item.id,
             time: _hhmm(captured),
-            label: typeNames[item.videoTypeId] ?? _kindLabel(l10n, item.kind),
+            label: switch (typeNames[item.videoTypeId]) {
+              final name? => _videoTypeLabel(l10n, name),
+              _ => _kindLabel(l10n, item.kind),
+            },
             type: item.kind == 'photo'
                 ? EcEvidenceType.image
                 : EcEvidenceType.video,
@@ -5326,7 +5482,7 @@ class _CreateClaimRoute extends StatelessWidget {
   ) async {
     final l10n = context.l10n;
     final now = DateTime.now();
-    final shareUrl = await _publish(batch);
+    final claim = await _publish(batch);
     // Chụp lại NGUYÊN nội dung chứ không giữ id rồi tra sau: clip có hạn lưu
     // trữ, mà hồ sơ khiếu nại phải nói được nó ĐÃ gồm những gì.
     await _claimStore.add(
@@ -5334,7 +5490,10 @@ class _CreateClaimRoute extends StatelessWidget {
         id: now.microsecondsSinceEpoch.toString(),
         shopId: shopId,
         createdAt: now,
-        shareUrl: shareUrl,
+        // Giữ id của máy chủ chứ không chỉ link: đây là thứ duy nhất thu hồi
+        // được về sau. Chỉ lưu link thì nút xoá chỉ xoá được bản trên máy.
+        claimId: claim?.id,
+        shareUrl: claim?.url,
         orders: [
           for (final order in batch)
             EcClaimOrder(
@@ -5356,7 +5515,7 @@ class _CreateClaimRoute extends StatelessWidget {
     if (!context.mounted) return;
     _toast(
       context,
-      shareUrl == null ? l10n.claimsCreatedLocalOnly : l10n.claimsCreated,
+      claim == null ? l10n.claimsCreatedLocalOnly : l10n.claimsCreated,
     );
     onBack?.call();
   }
@@ -5367,7 +5526,7 @@ class _CreateClaimRoute extends StatelessWidget {
   /// Người bán vừa tick xong một danh sách đơn; bắt họ làm lại vì mất mạng là
   /// trừng phạt họ vì lỗi của mạng. Đổi lại, màn hình phải nói thẳng là chưa
   /// có link, chứ không để họ tưởng bằng chứng đã chia sẻ được.
-  Future<String?> _publish(List<EcClaimOrderPicks> batch) async {
+  Future<ClaimDto?> _publish(List<EcClaimOrderPicks> batch) async {
     try {
       // Mã vận đơn → id đơn. `_search` đã tra ra id này lúc người dùng gõ mã,
       // nhưng màn là StatelessWidget nên không giữ lại được; tra lại một lượt
@@ -5394,11 +5553,11 @@ class _CreateClaimRoute extends StatelessWidget {
         picked.addAll(batch[i].picked.map((e) => e.id));
       }
       if (resolved.isEmpty) return null;
-      return (await repo.createClaim(
+      return repo.createClaim(
         shopId,
         resolved,
         evidenceIds: picked.isEmpty ? null : picked,
-      )).url;
+      );
     } on Object catch (error, stack) {
       developer.log(
         'claims: không gửi được hồ sơ lên máy chủ (${error.runtimeType})',
@@ -5437,11 +5596,10 @@ class _CreateClaimRoute extends StatelessWidget {
   return (_dayLabelOf(at), _hhmm(at));
 }
 
-/// Sao chép nội dung hồ sơ dưới dạng chữ.
+/// Sao chép link hồ sơ, hoặc nội dung hồ sơ khi chưa có link.
 ///
-/// Chưa có link gộp để sao chép — backend chưa mở endpoint — nên thứ đi vào
-/// clipboard là chính nội dung hồ sơ. Dán được thẳng vào khung chat CSKH của
-/// sàn, và người đọc không cần app nào để mở nó.
+/// Bản chữ là đường lùi cho hồ sơ tạo lúc mất mạng: dán thẳng vào khung chat
+/// CSKH của sàn, người đọc không cần app nào để mở.
 void _copyClaimSummary(BuildContext context, EcClaimDossier dossier) {
   final l10n = context.l10n;
   final url = dossier.shareUrl;
@@ -5463,6 +5621,7 @@ void _copyClaimSummary(BuildContext context, EcClaimDossier dossier) {
 /// một hàng đính kèm ảnh dưới mỗi mã đơn.
 class _ClaimDetailRoute extends StatelessWidget {
   const _ClaimDetailRoute({
+    required this.repo,
     required this.shopId,
     required this.dossierId,
     required this.queue,
@@ -5470,6 +5629,7 @@ class _ClaimDetailRoute extends StatelessWidget {
     this.onBack,
   });
 
+  final EcRepository repo;
   final String shopId;
   final String dossierId;
   final EcUploadQueue queue;
@@ -5545,13 +5705,27 @@ class _ClaimDetailRoute extends StatelessWidget {
     if (context.mounted) _toast(context, l10n.claimsItemRemoved);
   }
 
+  /// Xoá hồ sơ: thu hồi trên máy chủ TRƯỚC, xoá bản trên máy sau.
+  ///
+  /// Thứ tự đó là cả nội dung của việc này. Xoá trên máy trước rồi thu hồi hỏng
+  /// thì link công khai vẫn phát bằng chứng cho sàn xem, mà màn duy nhất bấm
+  /// thu hồi được vừa biến mất — người bán không còn cách nào gỡ nó xuống.
+  /// Nên hỏng thì GIỮ NGUYÊN hồ sơ và nói thẳng là link còn sống.
+  ///
+  /// Hồ sơ chưa từng lên máy chủ (`claimId == null`, tạo lúc mất mạng) không có
+  /// gì để thu hồi — xoá thẳng.
   Future<void> _confirmDelete(BuildContext context) async {
     final l10n = context.l10n;
+    final claimId = _claimStore.byId(shopId, dossierId)?.claimId;
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
         title: Text(l10n.claimsDelete),
-        content: Text(l10n.claimsDeleteConfirm),
+        content: Text(
+          claimId == null
+              ? l10n.claimsDeleteConfirm
+              : l10n.claimsDeleteConfirmLink,
+        ),
         actions: [
           CupertinoDialogAction(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -5566,6 +5740,21 @@ class _ClaimDetailRoute extends StatelessWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
+    if (claimId != null) {
+      try {
+        await repo.revokeClaim(shopId, claimId);
+      } on Object catch (error, stack) {
+        developer.log(
+          'claims: không thu hồi được link (${error.runtimeType})',
+          name: 'zenpack.claims',
+          level: 1000,
+          error: error,
+          stackTrace: stack,
+        );
+        if (context.mounted) _toast(context, l10n.claimsRevokeFailed);
+        return;
+      }
+    }
     await _claimStore.remove(shopId, dossierId);
     if (!context.mounted) return;
     _toast(context, l10n.claimsDeleted);
@@ -6980,6 +7169,7 @@ GoRouter _buildRouter(
               ? extra
               : (_selected(selectedShop)?.id ?? '', '');
           return _ClaimDetailRoute(
+            repo: repo,
             shopId: shopId,
             dossierId: dossierId,
             queue: queue,

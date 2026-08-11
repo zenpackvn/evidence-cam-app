@@ -41,6 +41,7 @@ class EcAccountTabScreen extends StatelessWidget {
     this.appVersion = '1.0.0',
     this.onProfileTap,
     this.onQuotaTap,
+    this.onChangePlanTap,
     this.onLanguageTap,
     this.onEndQrTap,
     this.onChangePasswordTap,
@@ -68,6 +69,16 @@ class EcAccountTabScreen extends StatelessWidget {
   final String appVersion;
   final VoidCallback? onProfileTap;
   final VoidCallback? onQuotaTap;
+
+  /// Mở thẳng paywall IAP (RevenueCat) từ màn cài đặt.
+  ///
+  /// `null` = build không có khoá cửa hàng, hoặc người đang đăng nhập không
+  /// quản lý được gói → hàng này biến mất. Hàng "Gói cước & dung lượng" ở trên
+  /// vẫn còn, nên người chỉ được xem vẫn đọc được gói và hạn mức.
+  ///
+  /// Ranh giới Guideline 3.1 không đổi: hàng này chỉ được phép tồn tại vì nó mở
+  /// IAP của Apple/Google. Không một chữ nào dẫn sang zenpack.vn.
+  final VoidCallback? onChangePlanTap;
   final VoidCallback? onLanguageTap;
 
   /// Mở tờ QR "kết thúc phiên" để in. Mã dùng chung cho mọi máy, nên nó thuộc
@@ -131,8 +142,15 @@ class EcAccountTabScreen extends StatelessWidget {
                       _SettingsRow(
                         icon: LucideIcons.creditCard,
                         label: context.l10n.accountPlanQuota,
+                        value: planLabel,
                         onTap: onQuotaTap,
                       ),
+                      if (onChangePlanTap != null)
+                        _SettingsRow(
+                          icon: LucideIcons.circleArrowUp,
+                          label: context.l10n.accountChangePlan,
+                          onTap: onChangePlanTap,
+                        ),
                       _SettingsRow(
                         icon: LucideIcons.globe,
                         label: context.l10n.accountLanguage,
@@ -399,13 +417,50 @@ class EcEditProfileScreen extends StatelessWidget {
   }
 }
 
-/// Selectable interface language.
+/// Ngôn ngữ giao diện chọn được.
+///
+/// Danh sách bám theo các thị trường app nhắm tới, không phải theo "càng nhiều
+/// càng tốt": Việt Nam, Indonesia, Philippines, Thái Lan, Malaysia, Singapore,
+/// Mỹ, Anh, Đức, Pháp, Ý, Tây Ban Nha. Singapore/Mỹ/Anh dùng chung tiếng Anh
+/// nên mười hai nước gói lại thành mười thứ tiếng.
+///
+/// [code] là mã ngôn ngữ cho `Locale`, [voiceTag] là mã BCP-47 cho giọng đọc —
+/// hai thứ này KHÁC nhau: `Locale('vi')` là đủ để chọn bản dịch, còn engine đọc
+/// cần biết cả vùng (`vi-VN`) mới chọn đúng giọng.
 enum EcAppLanguage {
-  /// Tiếng Việt (default).
-  vi,
+  vi('vi', 'vi-VN', 'Tiếng Việt', 'Vietnamese'),
+  en('en', 'en-US', 'English', 'English'),
+  id('id', 'id-ID', 'Bahasa Indonesia', 'Indonesian'),
+  fil('fil', 'fil-PH', 'Filipino', 'Filipino'),
+  th('th', 'th-TH', 'ไทย', 'Thai'),
+  ms('ms', 'ms-MY', 'Bahasa Melayu', 'Malay'),
+  de('de', 'de-DE', 'Deutsch', 'German'),
+  fr('fr', 'fr-FR', 'Français', 'French'),
+  it('it', 'it-IT', 'Italiano', 'Italian'),
+  es('es', 'es-ES', 'Español', 'Spanish');
 
-  /// English.
-  en,
+  const EcAppLanguage(this.code, this.voiceTag, this.nativeName, this.enName);
+
+  /// Mã cho `Locale` — thứ quyết định lấy bản dịch nào.
+  final String code;
+
+  /// Mã BCP-47 cho engine đọc.
+  final String voiceTag;
+
+  /// Tên gọi trong chính thứ tiếng đó — người tìm ngôn ngữ của mình luôn tìm
+  /// theo tên bản xứ, không phải tên tiếng Anh.
+  final String nativeName;
+
+  /// Tên tiếng Anh, làm dòng phụ.
+  final String enName;
+
+  /// Ngôn ngữ ứng với [code], `null` nếu không có.
+  static EcAppLanguage? byCode(String code) {
+    for (final language in values) {
+      if (language.code == code) return language;
+    }
+    return null;
+  }
 }
 
 /// Language — VI/English picker with radio-style selected rows.
@@ -426,37 +481,10 @@ class EcLanguageScreen extends StatelessWidget {
     final l10n = context.l10n;
     return PenScreen(
       scrollable: false,
-      // The globe and its caption are absolutely placed in the design
-      // (`layoutPosition: absolute`), sitting behind the options rather than
-      // flowing after them.
-      decorations: [
-        const Positioned(left: 45, top: 392, child: PenGlobeIllustration()),
-        // The sprig hangs to the left of the globe's own box, so it is placed
-        // on the screen rather than inside the illustration (which would clip
-        // it).
-        const Positioned(left: 32, top: 486, child: PenLeafSprig()),
-        Positioned(
-          left: 45,
-          top: 542,
-          child: SizedBox(
-            width: 300,
-            child: Column(
-              children: [
-                for (final line in l10n.languageChangeScopeNote.split('\n'))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: PenText(
-                      line,
-                      size: 14,
-                      color: PenColors.mut,
-                      align: TextAlign.center,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      // Không còn quả địa cầu, nhành lá và dòng chú thích vẽ đè phía sau.
+      // Thiết kế cũ đặt chúng ở toạ độ tuyệt đối cho một danh sách hai dòng;
+      // nay danh sách có mười thứ tiếng và cuộn được, nên chúng nằm ngay dưới
+      // chữ — vừa che vừa thừa.
       // Fills the viewport so the absolutely-placed decorations above stay
       // inside the screen's stack instead of being clipped away.
       child: SizedBox.expand(
@@ -469,28 +497,37 @@ class EcLanguageScreen extends StatelessWidget {
             children: [
               _SimpleHeader(title: l10n.accountLanguage, onBack: onBack),
               const SizedBox(height: 22),
-              _LanguageOption(
-                title: 'Tiếng Việt',
-                // The pair reads as native-name over other-language-name, so
-                // these two labels are fixed rather than locale-dependent.
-                subtitle: 'Vietnamese',
-                selected: selected == EcAppLanguage.vi,
-                onTap: () => onSelect?.call(EcAppLanguage.vi),
-              ),
-              const SizedBox(height: 14),
-              _LanguageOption(
-                title: 'English',
-                subtitle: l10n.languageNameEnglish,
-                selected: selected == EcAppLanguage.en,
-                onTap: () => onSelect?.call(EcAppLanguage.en),
-              ),
-              const SizedBox(height: 14),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: PenText(
-                  l10n.languageChangeAppliesNote,
-                  size: 14,
-                  color: PenColors.mut,
+              // Danh sách mười thứ tiếng thì phải cuộn được, và cuộn thì
+              // không còn chỗ cho quả địa cầu vẽ đè phía sau — nó vẫn nằm đó
+              // cho những màn khác, ở đây danh sách chiếm chỗ.
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final language in EcAppLanguage.values) ...[
+                        _LanguageOption(
+                          // Tên bản xứ đứng trên, tên tiếng Anh đứng dưới:
+                          // người đi tìm thứ tiếng của mình tìm theo tên bản
+                          // xứ, không phải theo tên tiếng Anh của nó.
+                          title: language.nativeName,
+                          subtitle: language.enName,
+                          selected: selected == language,
+                          onTap: () => onSelect?.call(language),
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: PenText(
+                          l10n.languageChangeAppliesNote,
+                          size: 14,
+                          color: PenColors.mut,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -736,6 +773,7 @@ class EcQuotaScreen extends StatelessWidget {
     this.typeUsage = const [],
     this.onBack,
     this.canManagePlan = true,
+    this.onUpgrade,
     super.key,
   });
 
@@ -773,6 +811,14 @@ class EcQuotaScreen extends StatelessWidget {
   /// tắt nút nào. Giữ lại vì nó quyết định câu giải thích khi hết hạn mức —
   /// chủ shop tự xử lý được, nhân viên thì phải đi hỏi ai đó.
   final bool canManagePlan;
+
+  /// Mở paywall IAP (RevenueCat). `null` = build không có khoá cửa hàng, hoặc
+  /// người dùng không có quyền quản lý gói → màn hình không hiện nút mua.
+  ///
+  /// Màn này KHÔNG tự bật gói sau khi mua. Biên nhận trên máy có thể bị giả
+  /// hoặc phát lại; hạn dùng do backend chốt khi webhook RevenueCat tới. Chỗ
+  /// gọi chỉ việc hỏi lại backend sau khi paywall đóng.
+  final VoidCallback? onUpgrade;
 
   /// Backend đã đổi trục sang số lượng video chưa.
   bool get _videoAxis => capVideos > 0;
@@ -871,6 +917,7 @@ class EcQuotaScreen extends StatelessWidget {
                       retentionTotalDays: retentionTotalDays,
                       blocked: blocked,
                       canManagePlan: canManagePlan,
+                      onUpgrade: onUpgrade,
                     ),
                     if (_videoAxis) ...[
                       const SizedBox(height: 12),
@@ -1027,6 +1074,7 @@ class _QuotaSummaryCard extends StatelessWidget {
     required this.retentionTotalDays,
     required this.blocked,
     required this.canManagePlan,
+    required this.onUpgrade,
   });
 
   final String planLabel;
@@ -1039,6 +1087,10 @@ class _QuotaSummaryCard extends StatelessWidget {
   final int retentionTotalDays;
   final bool blocked;
   final bool canManagePlan;
+
+  /// Mở paywall IAP. `null` = build này không có cửa hàng, hoặc người dùng
+  /// không quản lý được gói → không hiện nút mua.
+  final VoidCallback? onUpgrade;
 
   @override
   Widget build(BuildContext context) {
@@ -1066,13 +1118,38 @@ class _QuotaSummaryCard extends StatelessWidget {
                 ],
               ),
             ),
-            // KHÔNG có nút mua ở đây, và cũng không có câu chữ chỉ đường sang
-            // trang thanh toán. App chỉ đăng nhập và sử dụng; mọi giao dịch
-            // diễn ra trên web. Đây là quy tắc chống dẫn dắt của Apple
-            // (App Review Guidelines 3.1) — thêm lại một cái nút "Nâng gói" ở
-            // chỗ này là đủ để bị từ chối phát hành.
+            // Nút mua này CHỈ được phép tồn tại vì nó mở IAP của Apple/Google
+            // (paywall RevenueCat), không phải vì đã đổi ý về Guideline 3.1.
+            // Ranh giới vẫn y nguyên: cấm mọi thứ dẫn người dùng ra ngoài để
+            // trả tiền. Một chữ "mua trên zenpack.vn" ở màn này vẫn đủ để bị
+            // trả hồ sơ — kể cả khi bên cạnh nó đã có nút IAP.
             //
-            // Việc nhắc gia hạn đi qua email/push/Zalo, nằm ngoài app store.
+            // `onUpgrade == null` khi build không có khoá RevenueCat: thà không
+            // có nút còn hơn một cái nút bấm vào không mở được gì.
+            if (onUpgrade != null && canManagePlan) ...[
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: onUpgrade,
+                child: PenBox(
+                  fill: PenColors.primary,
+                  radius: 999,
+                  hugMain: true,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 9,
+                    horizontal: 14,
+                  ),
+                  children: [
+                    PenText(
+                      l10n.quotaUpgrade,
+                      size: 13,
+                      color: PenColors.card,
+                      weight: FontWeight.w700,
+                      softWrap: false,
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (blocked) ...[
               const SizedBox(width: 12),
               PenBox(

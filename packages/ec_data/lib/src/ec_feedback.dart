@@ -2,7 +2,7 @@
 ///
 /// Đây là hệ thống **riêng**, không phải backend EvidenceCam: host khác, không
 /// dùng Firebase token, và người đọc góp ý ngồi ở admin panel của CMS. Vì vậy
-/// nó có client riêng thay vì thêm một hàm vào [EcApi] — nhét chung một Dio đã
+/// nó có client riêng thay vì thêm một hàm vào `EcApi` — nhét chung một Dio đã
 /// gắn `Authorization: Bearer <firebase-id-token>` là gửi token của người dùng
 /// sang một bên thứ ba không cần tới nó.
 library;
@@ -104,7 +104,7 @@ class EcFeedback {
   /// mình cho một hệ thống không biết gì về mình. App đã có cổng cập nhật riêng
   /// (`lib/app/update_gate.dart`).
   ///
-  /// Bối cảnh phiên bản vẫn tới tay người đọc góp ý — nó nằm trong [source].
+  /// Bối cảnh phiên bản vẫn tới tay người đọc góp ý — nó nằm trong `source`.
   static Options get _headers => Options(headers: {'X-Platform': platformCode});
 
   /// `android` / `ios`, khớp giá trị tài liệu tích hợp dùng.

@@ -981,3 +981,151 @@ class ClaimDto {
   final bool revoked;
   final int createdAt;
 }
+
+/// Báo cáo của một cửa hàng trong một kỳ — CÙNG một endpoint mà web admin
+/// dùng (`GET /api/shops/:id/stats`), không phải bản rút gọn riêng cho máy.
+///
+/// Phạm vi do máy chủ quyết, không phải máy này: nhân viên luôn nhận số của
+/// chính họ, và [byMember]/[health] về null. Đừng tự lọc thêm ở client — hai
+/// nơi cùng quyết một luật quyền là hai nơi sẽ lệch nhau.
+class ShopStatsDto {
+  const ShopStatsDto({
+    required this.rangeDays,
+    required this.from,
+    required this.to,
+    this.memberUid,
+    this.orders = 0,
+    this.videos = 0,
+    this.pendingUploads = 0,
+    this.ordersWithoutEvidence = 0,
+    this.videosStored = 0,
+    this.coverageOrders = 0,
+    this.coverageWithEvidence = 0,
+    this.byMember,
+    this.health,
+  });
+
+  factory ShopStatsDto.fromJson(Map<String, dynamic> j) {
+    final coverage = j['coverage'] as Map<String, dynamic>? ?? const {};
+    final members = j['by_member'] as List<dynamic>?;
+    final health = j['evidence_health'] as Map<String, dynamic>?;
+    return ShopStatsDto(
+      rangeDays: _int(j['range_days']),
+      from: _int(j['from']),
+      to: _int(j['to']),
+      memberUid: j['member_uid'] as String?,
+      orders: _current(j['orders']),
+      videos: _current(j['videos']),
+      pendingUploads: _current(j['pending_uploads']),
+      ordersWithoutEvidence: _int(j['orders_without_evidence']),
+      videosStored: _int(j['videos_stored']),
+      coverageOrders: _int(coverage['orders']),
+      coverageWithEvidence: _int(coverage['with_evidence']),
+      byMember: members == null
+          ? null
+          : [
+              for (final e in members)
+                MemberStatDto.fromJson(e as Map<String, dynamic>),
+            ],
+      health: health == null ? null : EvidenceHealthDto.fromJson(health),
+    );
+  }
+
+  /// Các thẻ số liệu về dưới dạng `{current, previous}`; màn hình chỉ vẽ kỳ
+  /// đang xem, nên lấy thẳng `current` thay vì giữ cả hai rồi quên dùng.
+  static int _current(Object? v) =>
+      _int((v as Map<String, dynamic>?)?['current']);
+
+  final int rangeDays;
+  final int from;
+  final int to;
+
+  /// uid mà mọi con số đang bị giới hạn theo; null = cả cửa hàng.
+  final String? memberUid;
+
+  final int orders;
+  final int videos;
+  final int pendingUploads;
+  final int ordersWithoutEvidence;
+  final int videosStored;
+
+  /// Bao nhiêu đơn của kỳ có ít nhất một video — tử số và mẫu số đi cùng nhau
+  /// để không ai ghép nhầm với một tổng khác.
+  final int coverageOrders;
+  final int coverageWithEvidence;
+
+  /// null = người xem không phải chủ shop, hoặc đang soi riêng một người.
+  final List<MemberStatDto>? byMember;
+  final EvidenceHealthDto? health;
+}
+
+/// Một người trong bảng "theo nhân viên". [videos] là của kỳ đang xem;
+/// [pending] và [errors] là việc đang tồn của mọi thời điểm — clip kẹt từ
+/// tháng trước vẫn đang nằm trong máy người này.
+class MemberStatDto {
+  const MemberStatDto({
+    required this.uid,
+    required this.role,
+    this.name,
+    this.email,
+    this.videos = 0,
+    this.pending = 0,
+    this.errors = 0,
+    this.lastVideoAt,
+  });
+
+  factory MemberStatDto.fromJson(Map<String, dynamic> j) => MemberStatDto(
+    uid: (j['uid'] as String?) ?? '',
+    role: (j['role'] as String?) ?? 'staff',
+    name: j['name'] as String?,
+    email: j['email'] as String?,
+    videos: _int(j['videos']),
+    pending: _int(j['pending']),
+    errors: _int(j['errors']),
+    lastVideoAt: _intN(j['last_video_at']),
+  );
+
+  final String uid;
+  final String role;
+  final String? name;
+  final String? email;
+  final int videos;
+  final int pending;
+  final int errors;
+
+  /// null = chưa quay lần nào — người này chưa thực sự dùng app.
+  final int? lastVideoAt;
+}
+
+/// Sức khỏe niêm phong của toàn bộ clip đã lên cloud, không theo kỳ.
+class EvidenceHealthDto {
+  const EvidenceHealthDto({
+    this.sealed = 0,
+    this.mismatch = 0,
+    this.renderFailed = 0,
+    this.inProgress = 0,
+    this.legacy = 0,
+    this.auditBroken = 0,
+  });
+
+  factory EvidenceHealthDto.fromJson(Map<String, dynamic> j) =>
+      EvidenceHealthDto(
+        sealed: _int(j['sealed']),
+        mismatch: _int(j['mismatch']),
+        renderFailed: _int(j['render_failed']),
+        inProgress: _int(j['in_progress']),
+        legacy: _int(j['legacy']),
+        auditBroken: _int(j['audit_broken']),
+      );
+
+  final int sealed;
+
+  /// Dấu không khớp — clip còn đó nhưng không tự chứng minh được.
+  final int mismatch;
+  final int renderFailed;
+  final int inProgress;
+
+  /// Clip quay trước khi có niêm phong: vĩnh viễn không có dấu.
+  final int legacy;
+  final int auditBroken;
+}

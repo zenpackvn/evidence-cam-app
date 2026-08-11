@@ -2427,9 +2427,20 @@ class EcVideoType {
     required this.icon,
     this.locked = false,
     this.id,
+    this.displayLabel,
   });
 
+  /// Tên GỐC của loại — thứ đi cùng clip lên máy chủ và thứ luồng quay đem so
+  /// (`state.typeLabel == 'Trả hàng'`). Không bao giờ dịch: dịch nó là đổi dữ
+  /// liệu, không phải đổi giao diện.
   final String label;
+
+  /// Tên để HIỆN LÊN MÀN, đã dịch theo ngôn ngữ đang chọn. `null` thì hiện
+  /// [label] — đúng cho loại do shop tự đặt, vì đó là chữ của người dùng.
+  final String? displayLabel;
+
+  /// Chữ thật sự vẽ ra.
+  String get shownLabel => displayLabel ?? label;
 
   /// Id trên máy chủ. `null` cho các loại dựng sẵn ở client
   /// ([ecDefaultVideoTypes]), thứ chỉ hiện khi chưa đọc được danh sách thật.
@@ -2629,7 +2640,7 @@ class _TypeSheetRow extends StatelessWidget {
                     const SizedBox(width: 10),
                     Flexible(
                       child: Text(
-                        type.label,
+                        type.shownLabel,
                         overflow: TextOverflow.ellipsis,
                         style: _t(14, FontWeight.w400, BrandColors.ink),
                       ),

@@ -95,6 +95,26 @@ dependencies:
   # builds are unaffected.
   google_mlkit_barcode_scanning: ^0.14.0
 
+  # Mua gói TRONG APP qua IAP Apple/Google, môi giới bởi RevenueCat.
+  #
+  # Vì sao cần: App Store Guideline 3.1.1 cấm app hướng người dùng ra ngoài để
+  # mua nội dung số. Trước đây app giải bài đó bằng cách bỏ hẳn nút mua ("chỉ
+  # xem, không mua"); bán bằng IAP là cách còn lại, và là cách duy nhất cho phép
+  # có nút mua thật trong app.
+  #
+  # `purchases_ui_flutter` là paywall DỰNG SẴN, giao diện cấu hình từ dashboard
+  # RevenueCat — đổi bố cục/lời văn không phải phát hành bản mới. Đánh đổi: nó
+  # không đi theo thiết kế .pen như phần còn lại của app.
+  #
+  # Sản phẩm là CONSUMABLE (mua đứt cộng ngày), nên KHÔNG có entitlement nào —
+  # dùng `presentPaywall()`, tuyệt đối không dùng `presentPaywallIfNeeded()`
+  # vì biến thể đó gác theo entitlement và sẽ không bao giờ mở ra.
+  # ≥10.8.0, không phải ^10.1.0: `Purchases.overridePreferredUILocale` là thứ
+  # duy nhất bắt paywall theo ngôn ngữ app thay vì ngôn ngữ máy, và nó không có
+  # ở các bản đầu dòng 10. Nới xuống là paywall lặng lẽ quay về tiếng của máy.
+  purchases_flutter: ^10.8.0
+  purchases_ui_flutter: ^10.8.0
+
   # State management: BLoC pattern (BlocProvider, BlocBuilder, BlocListener).
   flutter_bloc: ^9.1.1
   # Event transformers for Bloc handlers.

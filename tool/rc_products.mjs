@@ -12,48 +12,13 @@
 // hạn dùng là backend; RC chỉ là biên nhận đã thanh toán.
 
 import { products } from './ec_plans.mjs';
+import { rcClient } from './rc_api.mjs';
 
-const API = 'https://api.revenuecat.com/v2';
 const OFFERING = 'default'; // lookup_key của offering app sẽ đọc
-
-const req = (n) => {
-  const v = process.env[n];
-  if (!v) throw new Error(`Thiếu biến môi trường ${n}`);
-  return v;
-};
-const KEY = req('RC_V2_KEY');
-const PROJECT = req('RC_PROJECT_ID');
-
-async function call(method, path, body) {
-  const res = await fetch(`${API}/projects/${PROJECT}${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${KEY}`,
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
-  const json = res.status === 204 ? null : await res.json();
-  if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${JSON.stringify(json)}`);
-  return json;
-}
-const get = (p) => call('GET', p);
-const post = (p, b) => call('POST', p, b);
-
-/// RC phân trang bằng `next_page` (đường dẫn tương đối), không phải link tuyệt đối.
-async function getAll(path) {
-  const out = [];
-  let next = path;
-  while (next) {
-    const page = await get(next);
-    out.push(...(page.items ?? []));
-    next = page.next_page ? page.next_page.replace(`/v2/projects/${PROJECT}`, '') : null;
-  }
-  return out;
-}
 
 async function main() {
   const apply = process.argv.includes('--apply');
+  const { post, getAll } = rcClient();
 
   const apps = await getAll('/apps');
   const store = apps.find((a) => a.type === 'app_store');

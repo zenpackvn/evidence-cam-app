@@ -46,8 +46,8 @@ test/**/failures/
 android/app/local.properties
 android/key.properties
 android/app/src/main/res/values/strings.xml
-# android/app/src/main/res/values/google-services.json
-# android/app/google-services.json
+android/app/src/main/res/values/google-services.json
+android/app/google-services.json
 android/flutter_sdk_path_relative.properties
 android/app/crashlytics-build.properties
 *.keystore
@@ -132,6 +132,35 @@ ios/fastlane/build/
 # key và Subscription key đều là .p8 với tiền tố khác nhau — rule hẹp theo tên
 # từng loại đã để lọt SubscriptionKey_*.p8 vào git status một lần rồi.
 **/*.p8
+
+# Service account JSON của Google Play (fastlane supply + tool/play_subs.mjs).
+# Đây là khoá RIÊNG, ngang .p8 của Apple: ai cầm được nó thì đọc/ghi được sản
+# phẩm, giá và doanh thu của app trên Play.
+#
+# Rule đặt theo THƯ MỤC chứ không theo tên file, vì tên do Google sinh
+# (`<project>-<hash>.json`) nên không đoán trước được — và .gitignore của repo
+# này không có luật `*.json` nào chặn giúp. Cần thêm một file JSON KHÔNG bí mật
+# vào fastlane thì phải `!` nó ra một cách tường minh.
+**/fastlane/*.json
+
+# -------------------------------------------------------------------------
+# NGOẠI LỆ: android/fastlane/ được theo dõi ĐẦY ĐỦ (chủ repo chốt 2026-08-11).
+#
+# ⚠️ Thư mục này chứa BÍ MẬT THẬT, và từ đây chúng nằm trong lịch sử git:
+#   · play-service-account.json  — khoá riêng, đọc/ghi sản phẩm + giá + doanh
+#     thu trên Google Play của com.aktechvn.zenpack
+#   · client_secret_*.json       — OAuth client secret (Google Drive BYOS của
+#     backend; client_id đã ở wrangler.toml, secret đã ở Worker secret)
+#
+# Hệ quả cần biết trước, không phải sau: ai clone được repo là cầm được cả hai.
+# Gỡ ra sau này KHÔNG đủ — phải rewrite history VÀ xoay lại cả hai khoá, vì bản
+# cũ vẫn nằm trong mọi clone đã phát ra.
+#
+# Ngoại lệ này CHỈ cho android/. `ios/fastlane/` giữ nguyên luật chặn: nó chứa
+# .env của App Store Connect và khoá .p8, chưa ai quyết định mở.
+# -------------------------------------------------------------------------
+!android/fastlane/.env
+!android/fastlane/*.json
 
 # -------------------------------------------------------------------------
 # Firebase

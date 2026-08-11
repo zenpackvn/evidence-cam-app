@@ -82,12 +82,16 @@ class EcVideoTrimService {
   /// Một lần gọi ffmpeg duy nhất cho cả dải: gọi từng khung một là [count] lần
   /// khởi động tiến trình, và trên máy yếu thì màn cắt đứng hình chờ nó.
   ///
+  /// 24 khung chứ không 10: dải này không chỉ để nhìn cho đẹp, nó còn là thứ
+  /// hiện lên ô xem trước trong lúc người dùng kéo — lệnh tua của trình phát
+  /// quá chậm để bám theo ngón tay. Càng nhiều khung thì lúc kéo càng sát.
+  ///
   /// Hỏng thì trả danh sách rỗng và thanh thời gian rơi về nền trơn — mất một
   /// thứ để nhìn cho dễ, không mất chức năng nào.
   Future<List<File>> filmstrip({
     required String inputPath,
     required Duration duration,
-    int count = 10,
+    int count = 24,
     int height = 96,
   }) async {
     if (!File(inputPath).existsSync() || duration <= Duration.zero) return [];

@@ -5,7 +5,15 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
+import 'app_localizations_es.dart';
+import 'app_localizations_fil.dart';
+import 'app_localizations_fr.dart';
+import 'app_localizations_id.dart';
+import 'app_localizations_it.dart';
+import 'app_localizations_ms.dart';
+import 'app_localizations_th.dart';
 import 'app_localizations_vi.dart';
 
 // ignore_for_file: type=lint
@@ -94,7 +102,15 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('de'),
     Locale('en'),
+    Locale('es'),
+    Locale('fil'),
+    Locale('fr'),
+    Locale('id'),
+    Locale('it'),
+    Locale('ms'),
+    Locale('th'),
     Locale('vi'),
   ];
 
@@ -170,11 +186,23 @@ abstract class AppLocalizations {
   /// **'Delete dossier'**
   String get claimsDelete;
 
-  /// No description provided for @claimsDeleteConfirm.
+  /// Delete confirmation for a dossier that never reached the server, so there is no public link to kill.
   ///
   /// In en, this message translates to:
   /// **'Delete this dossier? The evidence on the orders themselves is untouched.'**
   String get claimsDeleteConfirm;
+
+  /// Delete confirmation for a dossier that has a live public link. Says the link dies, because that link may already be sitting in a marketplace claim form.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this dossier? Its public link dies immediately — anyone you already sent it to gets an empty page. The evidence on the orders themselves is untouched.'**
+  String get claimsDeleteConfirmLink;
+
+  /// Shown when revoking on the server fails: no network, or the member is not the owner/manager. The local dossier is deliberately kept so the link can still be revoked later.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not revoke the link, so the dossier is left as is. The link is still open — try again on a better connection, or ask the shop owner to revoke it.'**
+  String get claimsRevokeFailed;
 
   /// No description provided for @claimsDeleted.
   ///
@@ -917,8 +945,14 @@ abstract class AppLocalizations {
   /// No description provided for @accountPlanQuota.
   ///
   /// In en, this message translates to:
-  /// **'Storage'**
+  /// **'Plan & storage'**
   String get accountPlanQuota;
+
+  /// No description provided for @accountChangePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Change plan'**
+  String get accountChangePlan;
 
   /// No description provided for @accountSectionApp.
   ///
@@ -3256,6 +3290,12 @@ abstract class AppLocalizations {
   /// **'Track how many videos you recorded this month'**
   String get quotaSubtitleVideos;
 
+  /// No description provided for @quotaUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade plan'**
+  String get quotaUpgrade;
+
   /// No description provided for @quotaBlockedTitle.
   ///
   /// In en, this message translates to:
@@ -3699,6 +3739,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save the QR code'**
   String get inviteQrSaveFailed;
+
+  /// No description provided for @voiceRecordingStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording started'**
+  String get voiceRecordingStarted;
+
+  /// No description provided for @voiceRecordingStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording stopped'**
+  String get voiceRecordingStopped;
+
+  /// No description provided for @voiceWrongCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong code'**
+  String get voiceWrongCode;
+
+  /// No description provided for @voiceCapSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'The clip will close soon'**
+  String get voiceCapSoon;
+
+  /// No description provided for @voiceCapNear.
+  ///
+  /// In en, this message translates to:
+  /// **'Approaching the {minutes}-minute limit, the clip will close itself'**
+  String voiceCapNear(int minutes);
+
+  /// No description provided for @voiceInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording was interrupted'**
+  String get voiceInterrupted;
+
+  /// No description provided for @videoTypePacking.
+  ///
+  /// In en, this message translates to:
+  /// **'Packing'**
+  String get videoTypePacking;
+
+  /// No description provided for @videoTypeCarrier.
+  ///
+  /// In en, this message translates to:
+  /// **'Carrier handover'**
+  String get videoTypeCarrier;
+
+  /// No description provided for @videoTypeReturn.
+  ///
+  /// In en, this message translates to:
+  /// **'Return'**
+  String get videoTypeReturn;
 }
 
 class _AppLocalizationsDelegate
@@ -3711,8 +3805,18 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['en', 'vi'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>[
+    'de',
+    'en',
+    'es',
+    'fil',
+    'fr',
+    'id',
+    'it',
+    'ms',
+    'th',
+    'vi',
+  ].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -3721,8 +3825,24 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'de':
+      return AppLocalizationsDe();
     case 'en':
       return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+    case 'fil':
+      return AppLocalizationsFil();
+    case 'fr':
+      return AppLocalizationsFr();
+    case 'id':
+      return AppLocalizationsId();
+    case 'it':
+      return AppLocalizationsIt();
+    case 'ms':
+      return AppLocalizationsMs();
+    case 'th':
+      return AppLocalizationsTh();
     case 'vi':
       return AppLocalizationsVi();
   }

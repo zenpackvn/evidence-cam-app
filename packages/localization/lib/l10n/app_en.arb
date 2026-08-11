@@ -24,6 +24,17 @@
   "claimsPickNothing": "No evidence selected",
   "claimsDelete": "Delete dossier",
   "claimsDeleteConfirm": "Delete this dossier? The evidence on the orders themselves is untouched.",
+  "@claimsDeleteConfirm": {
+    "description": "Delete confirmation for a dossier that never reached the server, so there is no public link to kill."
+  },
+  "claimsDeleteConfirmLink": "Delete this dossier? Its public link dies immediately — anyone you already sent it to gets an empty page. The evidence on the orders themselves is untouched.",
+  "@claimsDeleteConfirmLink": {
+    "description": "Delete confirmation for a dossier that has a live public link. Says the link dies, because that link may already be sitting in a marketplace claim form."
+  },
+  "claimsRevokeFailed": "Could not revoke the link, so the dossier is left as is. The link is still open — try again on a better connection, or ask the shop owner to revoke it.",
+  "@claimsRevokeFailed": {
+    "description": "Shown when revoking on the server fails: no network, or the member is not the owner/manager. The local dossier is deliberately kept so the link can still be revoked later."
+  },
   "claimsDeleted": "Dossier deleted",
   "claimsPhotoAdded": "Photo added to the dossier and queued onto the order",
   "claimsAddedLater": "added later",
@@ -229,7 +240,8 @@
   "statOrdersToday": "Orders",
   "statVideosRecorded": "Videos recorded",
   "statPendingUpload": "Pending upload",
-  "accountPlanQuota": "Storage",
+  "accountPlanQuota": "Plan & storage",
+  "accountChangePlan": "Change plan",
   "accountSectionApp": "PLAN & APP",
   "accountLanguage": "Language",
   "accountSectionSecurity": "SECURITY & SIGN-IN",
@@ -1210,6 +1222,7 @@
   "appUpdateLater": "Later",
   "quotaVideosThisMonth": "Videos this month",
   "quotaSubtitleVideos": "Track how many videos you recorded this month",
+  "quotaUpgrade": "Upgrade plan",
   "quotaBlockedTitle": "Video allowance exhausted",
   "quotaBlockedNote": "Recording still works, but clips cannot upload yet — they are sitting on this phone, unprotected. They upload by themselves once the allowance is raised.",
   "quotaBlockedOwnerNote": "Ask the account owner to raise the allowance.",
@@ -1345,5 +1358,21 @@
   "inviteScanDetail": "Ask the shop owner to show the invite QR code, then scan it here.",
   "commonShare": "Share",
   "inviteQrSaved": "QR code saved to your gallery",
-  "inviteQrSaveFailed": "Could not save the QR code"
+  "inviteQrSaveFailed": "Could not save the QR code",
+  "voiceRecordingStarted": "Recording started",
+  "voiceRecordingStopped": "Recording stopped",
+  "voiceWrongCode": "Wrong code",
+  "voiceCapSoon": "The clip will close soon",
+  "voiceCapNear": "Approaching the {minutes}-minute limit, the clip will close itself",
+  "@voiceCapNear": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "voiceInterrupted": "Recording was interrupted",
+  "videoTypePacking": "Packing",
+  "videoTypeCarrier": "Carrier handover",
+  "videoTypeReturn": "Return"
 }

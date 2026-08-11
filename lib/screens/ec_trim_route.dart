@@ -79,6 +79,7 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
     try {
       await _controller.initialize();
       await _controller.setLooping(looping: false);
+      _controller.valueListenable.addListener(_watchPlayhead);
       final total = _controller.value.duration;
       if (!mounted) return;
       setState(() {
@@ -99,6 +100,7 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
 
   @override
   void dispose() {
+    _controller.valueListenable.removeListener(_watchPlayhead);
     _controller.dispose();
     super.dispose();
   }
@@ -116,9 +118,88 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
     return EcVideoTrimService.formatSize((bytes * ratio).round());
   }
 
-  Future<void> _playSelection() async {
-    await _controller.seekTo(_start);
+  /// Dừng ngay khi chạm tay kéo cuối.
+  ///
+  /// Trình phát không biết gì về đoạn đã chọn — thả nó ra là nó chạy tới hết
+  /// clip, tức phát cả phần người dùng vừa cắt bỏ. Canh vị trí ở đây là cách
+  /// duy nhất để "xem thử" đúng nghĩa xem thử đoạn sẽ lưu.
+  void _watchPlayhead() {
+    final position = _controller.value.position;
+    if (_controller.value.isPlaying && position >= _end) {
+      unawaited(_controller.pause());
+      unawaited(_controller.seekTo(_start));
+    }
+    if (mounted) setState(() {});
+  }
+
+  /// Đang có ngón tay trên thanh thời gian.
+  bool _scrubbing = false;
+  Duration _scrubTarget = Duration.zero;
+  bool _seeking = false;
+  Duration? _pendingSeek;
+
+  /// Ảnh gần nhất trong dải phim ứng với mốc [at].
+  File? _frameAt(Duration at) {
+    if (_frames.isEmpty || _total.inMilliseconds == 0) return null;
+    final index =
+        (at.inMilliseconds / _total.inMilliseconds * (_frames.length - 1))
+            .round()
+            .clamp(0, _frames.length - 1);
+    return _frames[index];
+  }
+
+  void _onScrub(Duration position) {
+    setState(() {
+      _scrubbing = true;
+      _scrubTarget = position;
+    });
+    // Tua trong nền để lúc thả tay trình phát đã ở sẵn chỗ đúng. Đang phát mà
+    // vừa phát vừa tua thì mỗi lệnh tua đắt hơn nhiều, nên dừng lại đã.
+    if (_controller.value.isPlaying) unawaited(_controller.pause());
+    unawaited(_seekQueued(position));
+  }
+
+  void _onScrubEnd() {
+    if (!mounted) return;
+    setState(() => _scrubbing = false);
+    unawaited(_seekQueued(_scrubTarget));
+  }
+
+  /// Mỗi lúc chỉ một lệnh tua đang bay, mốc mới đè lên mốc đang chờ.
+  ///
+  /// Thanh kéo bắn sự kiện mỗi khung hình; gửi thẳng ngần ấy lệnh xuống nền
+  /// tảng là xếp hàng cả trăm lệnh, thả tay rồi video vẫn còn chạy đuổi theo
+  /// những mốc đã cũ.
+  Future<void> _seekQueued(Duration target) async {
+    if (_seeking) {
+      _pendingSeek = target;
+      return;
+    }
+    _seeking = true;
+    var next = target;
+    while (true) {
+      await _controller.seekTo(next);
+      final queued = _pendingSeek;
+      if (queued == null) break;
+      _pendingSeek = null;
+      next = queued;
+    }
+    _seeking = false;
+  }
+
+  /// Bấm phát/tạm dừng như trình phát thường: đang chạy thì dừng tại chỗ, đang
+  /// dừng thì chạy tiếp. Chỉ nhảy về đầu đoạn khi kim đang nằm ngoài đoạn —
+  /// dừng giữa chừng rồi bấm tiếp mà bị kéo về đầu là mất chỗ đang xem.
+  Future<void> _togglePlay() async {
+    if (_controller.value.isPlaying) {
+      await _controller.pause();
+      if (mounted) setState(() {});
+      return;
+    }
+    final position = _controller.value.position;
+    if (position < _start || position >= _end) await _controller.seekTo(_start);
     await _controller.play();
+    if (mounted) setState(() {});
   }
 
   Future<void> _save() async {
@@ -171,8 +252,20 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
             Expanded(
               child: Center(
                 child: _ready
-                    ? _Preview(controller: _controller)
-                    : const CupertinoActivityIndicator(color: Color(0xFFBFD0FF)),
+                    ? _Preview(
+                        controller: _controller,
+                        // Trong lúc kéo thì hiện ẢNH của dải phim thay cho
+                        // khung hình của trình phát. Lệnh tua phải giải mã
+                        // thật nên luôn về sau ngón tay vài trăm mili giây,
+                        // và người kéo thấy hình nhảy từng nấc. Ảnh dải phim
+                        // đã nằm sẵn trong bộ nhớ nên đổi tức thì — kéo tới
+                        // đâu thấy tới đó. Thả tay ra thì trình phát đã tua
+                        // xong và tiếp quản.
+                        scrubFrame: _scrubbing ? _frameAt(_scrubTarget) : null,
+                      )
+                    : const CupertinoActivityIndicator(
+                        color: Color(0xFFBFD0FF),
+                      ),
               ),
             ),
             if (_ready && _total > Duration.zero) ...[
@@ -181,6 +274,8 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
                 total: _total,
                 start: _start,
                 end: _end,
+                playhead: _controller.value.position,
+                playing: _controller.value.isPlaying,
                 onChanged: (start, end) {
                   setState(() {
                     _start = start;
@@ -188,14 +283,18 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
                   });
                   unawaited(_controller.seekTo(start));
                 },
+                onScrub: _onScrub,
+                onScrubEnd: _onScrubEnd,
                 minSpan: _minSpan,
               ),
               _TrimFooter(
                 start: _start,
                 end: _end,
+                playhead: _controller.value.position,
                 sizeLabel: _estimatedSize,
                 saving: _saving,
-                onPlay: _playSelection,
+                playing: _controller.value.isPlaying,
+                onPlay: _togglePlay,
                 onSave: _save,
                 saveLabel: l10n.trimSave,
                 sizeCaption: l10n.trimEstimatedSize,
@@ -244,9 +343,12 @@ class _TrimHeader extends StatelessWidget {
 }
 
 class _Preview extends StatelessWidget {
-  const _Preview({required this.controller});
+  const _Preview({required this.controller, this.scrubFrame});
 
   final AppVideoPlayerController controller;
+
+  /// Ảnh dải phim hiện thay cho khung hình trình phát trong lúc kéo.
+  final File? scrubFrame;
 
   @override
   Widget build(BuildContext context) {
@@ -258,7 +360,13 @@ class _Preview extends StatelessWidget {
         aspectRatio: controller.value.aspectRatio,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: VideoPlayer(raw),
+          child: scrubFrame == null
+              ? VideoPlayer(raw)
+              : Image.file(
+                  scrubFrame!,
+                  fit: BoxFit.contain,
+                  gaplessPlayback: true,
+                ),
         ),
       ),
     );
@@ -272,7 +380,11 @@ class _Filmstrip extends StatelessWidget {
     required this.total,
     required this.start,
     required this.end,
+    required this.playhead,
+    required this.playing,
     required this.onChanged,
+    required this.onScrub,
+    required this.onScrubEnd,
     required this.minSpan,
   });
 
@@ -280,11 +392,27 @@ class _Filmstrip extends StatelessWidget {
   final Duration total;
   final Duration start;
   final Duration end;
+
+  /// Kim chỉ chỗ video đang phát tới — và cũng là chỗ KÉO ĐƯỢC: kéo kim tới
+  /// đâu thì video nhảy tới đó. Luôn vẽ, kể cả lúc dừng, vì lúc dừng mới là
+  /// lúc người ta cần dò tìm đúng khung hình để đặt điểm cắt.
+  final Duration playhead;
+  final bool playing;
   final void Function(Duration start, Duration end) onChanged;
+
+  /// Nhảy tới một mốc trong đoạn đang chọn.
+  final void Function(Duration position) onScrub;
+
+  /// Ngón tay rời thanh thời gian.
+  final VoidCallback onScrubEnd;
   final Duration minSpan;
 
   static const _height = 64.0;
   static const _handle = 14.0;
+
+  /// Bề rộng vùng chạm của kim. Vạch vẽ ra chỉ 2 điểm ảnh, mà ngón tay thì
+  /// không bấm trúng 2 điểm ảnh bao giờ.
+  static const _playhead = 28.0;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -296,7 +424,11 @@ class _Filmstrip extends StatelessWidget {
           milliseconds: (x.clamp(0, width) / width * total.inMilliseconds)
               .round(),
         );
-        double xOf(Duration d) => d.inMilliseconds / total.inMilliseconds * width;
+        double xOf(Duration d) =>
+            d.inMilliseconds / total.inMilliseconds * width;
+        // Tua chỉ trong đoạn đang giữ lại: kéo ra ngoài là xem thứ sắp bị cắt
+        // bỏ, mà cả màn này sinh ra để xem trước thứ sẽ lưu.
+        Duration clamp(Duration d) => d < start ? start : (d > end ? end : d);
         final left = xOf(start);
         final right = xOf(end);
         return SizedBox(
@@ -337,6 +469,41 @@ class _Filmstrip extends StatelessWidget {
                 top: 0,
                 bottom: 0,
                 child: const ColoredBox(color: Color(0xB30E1730)),
+              ),
+              // Chạm hoặc kéo bất kỳ đâu trên dải ảnh là nhảy tới đó. Nằm
+              // DƯỚI hai tay kéo trong Stack nên vùng chạm của chúng vẫn được
+              // ưu tiên — kéo mép đoạn không bị hiểu nhầm thành tua.
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapDown: (d) => onScrub(clamp(atX(d.localPosition.dx))),
+                  onHorizontalDragStart: (d) =>
+                      onScrub(clamp(atX(d.localPosition.dx))),
+                  onHorizontalDragUpdate: (d) =>
+                      onScrub(clamp(atX(d.localPosition.dx))),
+                  onHorizontalDragEnd: (_) => onScrubEnd(),
+                  onHorizontalDragCancel: onScrubEnd,
+                  onTapUp: (_) => onScrubEnd(),
+                ),
+              ),
+              Positioned(
+                left: (xOf(playhead) - _playhead / 2).clamp(
+                  0.0,
+                  width - _playhead,
+                ),
+                top: 0,
+                bottom: 0,
+                width: _playhead,
+                // `height` phải khai rõ: trong `Center` thì ràng buộc là lỏng,
+                // mà một `SizedBox` chỉ đặt bề rộng sẽ lấy chiều cao của con —
+                // `ColoredBox` rỗng nên chiều cao bằng 0, và vạch biến mất.
+                child: const Center(
+                  child: SizedBox(
+                    width: 2,
+                    height: double.infinity,
+                    child: ColoredBox(color: Color(0xFFFFFFFF)),
+                  ),
+                ),
               ),
               _Handle(
                 x: left,
@@ -397,8 +564,10 @@ class _TrimFooter extends StatelessWidget {
   const _TrimFooter({
     required this.start,
     required this.end,
+    required this.playhead,
     required this.sizeLabel,
     required this.saving,
+    required this.playing,
     required this.onPlay,
     required this.onSave,
     required this.saveLabel,
@@ -407,8 +576,13 @@ class _TrimFooter extends StatelessWidget {
 
   final Duration start;
   final Duration end;
+
+  /// Chỗ video đang phát tới — chạy theo video, để người xem biết mình đang ở
+  /// đâu trong đoạn chứ không phải chỉ biết đoạn dài bao nhiêu.
+  final Duration playhead;
   final String sizeLabel;
   final bool saving;
+  final bool playing;
   final VoidCallback onPlay;
   final VoidCallback onSave;
   final String saveLabel;
@@ -431,10 +605,10 @@ class _TrimFooter extends StatelessWidget {
           color: const Color(0xFF1B2748),
           borderRadius: BorderRadius.circular(999),
           onPressed: onPlay,
-          child: const Icon(
-            LucideIcons.play,
+          child: Icon(
+            playing ? LucideIcons.pause : LucideIcons.play,
             size: 18,
-            color: Color(0xFFE7EDFF),
+            color: const Color(0xFFE7EDFF),
           ),
         ),
         const SizedBox(width: 12),
@@ -443,8 +617,10 @@ class _TrimFooter extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Dòng trên chạy theo video (đang ở đâu / hết đoạn), dòng dưới
+              // nói đoạn sẽ lưu là từ đâu tới đâu và nặng bao nhiêu.
               Text(
-                '${_clock(start)}  →  ${_clock(end)}',
+                '${_clock(playhead)} / ${_clock(end)}',
                 style: const TextStyle(
                   color: Color(0xFFE7EDFF),
                   fontSize: 15,
@@ -453,7 +629,7 @@ class _TrimFooter extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '$sizeCaption $sizeLabel',
+                '${_clock(start)} → ${_clock(end)} · $sizeCaption $sizeLabel',
                 style: const TextStyle(
                   color: Color(0xFF9FB0D9),
                   fontSize: 12,

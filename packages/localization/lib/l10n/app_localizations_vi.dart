@@ -54,6 +54,14 @@ class AppLocalizationsVi extends AppLocalizations {
       'Xóa hồ sơ này? Bằng chứng trong đơn hàng vẫn còn nguyên.';
 
   @override
+  String get claimsDeleteConfirmLink =>
+      'Xóa hồ sơ này? Link công khai chết ngay — ai đã nhận link sẽ mở ra trang trống. Bằng chứng trong đơn hàng vẫn còn nguyên.';
+
+  @override
+  String get claimsRevokeFailed =>
+      'Chưa thu hồi được link nên hồ sơ vẫn giữ nguyên. Link đang còn mở — thử lại khi mạng tốt hơn, hoặc nhờ chủ cửa hàng thu hồi.';
+
+  @override
   String get claimsDeleted => 'Đã xóa hồ sơ';
 
   @override
@@ -458,7 +466,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get statPendingUpload => 'Chờ tải';
 
   @override
-  String get accountPlanQuota => 'Dung lượng';
+  String get accountPlanQuota => 'Gói cước & dung lượng';
+
+  @override
+  String get accountChangePlan => 'Đổi gói';
 
   @override
   String get accountSectionApp => 'GÓI & ỨNG DỤNG';
@@ -1786,6 +1797,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get quotaSubtitleVideos => 'Theo dõi số video đã quay trong tháng';
 
   @override
+  String get quotaUpgrade => 'Nâng cấp gói';
+
+  @override
   String get quotaBlockedTitle => 'Đã hết hạn mức video';
 
   @override
@@ -2039,4 +2053,33 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get inviteQrSaveFailed => 'Không lưu được mã vào thư viện';
+
+  @override
+  String get voiceRecordingStarted => 'Đã bắt đầu quay';
+
+  @override
+  String get voiceRecordingStopped => 'Đã dừng quay';
+
+  @override
+  String get voiceWrongCode => 'Sai mã';
+
+  @override
+  String get voiceCapSoon => 'Video sắp tự chốt';
+
+  @override
+  String voiceCapNear(int minutes) {
+    return 'Sắp chạm trần $minutes phút, video sẽ tự chốt';
+  }
+
+  @override
+  String get voiceInterrupted => 'Quá trình quay bị gián đoạn';
+
+  @override
+  String get videoTypePacking => 'Đóng hàng';
+
+  @override
+  String get videoTypeCarrier => 'Đơn vị vận chuyển';
+
+  @override
+  String get videoTypeReturn => 'Trả hàng';
 }

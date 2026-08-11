@@ -48,10 +48,13 @@ void main() {
       expect(find.text('Nguyễn Văn A'), findsOneWidget);
       expect(find.text('nguyenvana@gmail.com'), findsOneWidget);
       expect(find.text('GÓI & ỨNG DỤNG'), findsOneWidget);
-      // "Gói cước & Quota" -> "Dung lượng", và không còn nhắc tên gói: app
-      // không bán gói nên tên gói ở đây không giúp người dùng làm được gì.
-      expect(find.text('Dung lượng'), findsOneWidget);
-      expect(find.text('Cơ bản'), findsNothing);
+      // Tên gói hiện NGAY ở hàng này. App bán gói trở lại (IAP), nên "đang
+      // dùng gói nào" là thứ phải đọc được mà không cần mở màn nào khác.
+      expect(find.text(vi.accountPlanQuota), findsOneWidget);
+      expect(find.text('Cơ bản'), findsOneWidget);
+      // Không có callback → không có hàng "Đổi gói": build thiếu khoá cửa hàng
+      // thì thà không có nút còn hơn nút bấm vào không mở được gì.
+      expect(find.text(vi.accountChangePlan), findsNothing);
       expect(find.text('Ngôn ngữ'), findsOneWidget);
       expect(find.text('BẢO MẬT & ĐĂNG NHẬP'), findsOneWidget);
       expect(find.text('Đổi mật khẩu'), findsOneWidget);
@@ -80,8 +83,20 @@ void main() {
         tester,
         EcAccountTabScreen(onQuotaTap: () => tapped = true),
       );
-      await tester.tap(find.text('Dung lượng'));
+      await tester.tap(find.text(vi.accountPlanQuota));
       expect(tapped, isTrue);
+    });
+
+    testWidgets('change-plan row opens the paywall when it is available', (
+      tester,
+    ) async {
+      var opened = false;
+      await _pump(
+        tester,
+        EcAccountTabScreen(onChangePlanTap: () => opened = true),
+      );
+      await tester.tap(find.text(vi.accountChangePlan));
+      expect(opened, isTrue);
     });
   });
 
@@ -170,14 +185,45 @@ void main() {
     // App KHÔNG bán gói nữa — mua ở web. Màn này chỉ trả lời "tôi đang ở gói
     // nào, còn bao nhiêu". Ba test cũ canh nút "Nâng cấp gói", pill "Nâng cấp"
     // và dòng "chỉ chủ tài khoản mới đổi được gói" đã bỏ cùng chúng.
-    testWidgets('không còn đường mua gói nào trên màn này', (tester) async {
+    // Mặc định (build không có khoá RevenueCat → `onUpgrade` null) thì màn này
+    // KHÔNG được có lối mua nào. Đây vẫn là hàng rào Guideline 3.1: khi không
+    // bán được bằng IAP thì cũng không được chỉ đường đi mua chỗ khác.
+    testWidgets('không có khoá cửa hàng thì không có đường mua nào', (
+      tester,
+    ) async {
       await _pump(tester, const EcQuotaScreen());
       expect(find.text('Nâng cấp gói'), findsNothing);
       expect(find.text('Nâng cấp'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('hết hạn mức: báo trạng thái, vẫn không có lối mua', (
+    // Có khoá cửa hàng → nút mua hiện, và bấm vào phải gọi đúng callback mở
+    // paywall IAP. Không có test này thì `onUpgrade` có thể bị rơi ở một trong
+    // ba chặng truyền tham số mà không ai biết — nút vẫn hiện, bấm không làm gì.
+    testWidgets('có cửa hàng: chủ shop thấy nút và bấm được', (tester) async {
+      var opened = 0;
+      await _pump(
+        tester,
+        EcQuotaScreen(onUpgrade: () => opened++),
+      );
+      await tester.tap(find.text('Nâng cấp gói'));
+      await tester.pump();
+      expect(opened, 1);
+    });
+
+    // Gói gắn với tài khoản CHỦ shop. Nhân viên bấm mua thì tiền vào đúng ví
+    // Apple của họ mà gói lại cộng cho chủ shop — nên nút không được hiện.
+    testWidgets('có cửa hàng nhưng nhân viên thì vẫn không thấy nút', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        EcQuotaScreen(canManagePlan: false, onUpgrade: () {}),
+      );
+      expect(find.text('Nâng cấp gói'), findsNothing);
+    });
+
+    testWidgets('hết hạn mức, không cửa hàng: báo trạng thái, không lối mua', (
       tester,
     ) async {
       await _pump(

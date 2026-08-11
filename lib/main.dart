@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:io' show Platform;
 
 import 'package:app_platform/app_platform.dart';
 import 'package:background_downloader/background_downloader.dart';
@@ -18,6 +19,7 @@ import 'app/bootstrap_error_app.dart';
 import 'app/di/injection.dart';
 import 'app/firebase.dart';
 import 'core/platform/firebase/firebase_service.dart';
+import 'data/ec_purchases.dart';
 import 'ec_app.dart';
 
 Future<void> main() async {
@@ -114,6 +116,15 @@ Future<void> main() async {
         // EcAccountScreen để ẩn hẳn mục đó.
         final feedback = buildFeedback();
         if (feedback != null) getIt.registerSingleton<EcFeedback>(feedback);
+
+        // Cửa hàng trong app (IAP qua RevenueCat). Phải xong TRƯỚC runApp: màn
+        // Quota hỏi `EcPurchases.isAvailable` ngay ở lần dựng đầu để quyết định
+        // có hiện nút mua, và cấu hình muộn hơn thì nút chớp hiện chớp tắt.
+        //
+        // Không có khoá cho nền tảng này → thoát êm, app chạy không cửa hàng.
+        await EcPurchases.configure(
+          Platform.isIOS ? env.revenueCatIosKey : env.revenueCatAndroidKey,
+        );
         // Evidence clips persist in ObjectBox (opened by the @preResolve store
         // module during configureDependencies), so the upload queue survives
         // restarts — the single source of truth (FR-08/FR-09).
