@@ -417,13 +417,50 @@ class EcEditProfileScreen extends StatelessWidget {
   }
 }
 
-/// Selectable interface language.
+/// Ngôn ngữ giao diện chọn được.
+///
+/// Danh sách bám theo các thị trường app nhắm tới, không phải theo "càng nhiều
+/// càng tốt": Việt Nam, Indonesia, Philippines, Thái Lan, Malaysia, Singapore,
+/// Mỹ, Anh, Đức, Pháp, Ý, Tây Ban Nha. Singapore/Mỹ/Anh dùng chung tiếng Anh
+/// nên mười hai nước gói lại thành mười thứ tiếng.
+///
+/// [code] là mã ngôn ngữ cho `Locale`, [voiceTag] là mã BCP-47 cho giọng đọc —
+/// hai thứ này KHÁC nhau: `Locale('vi')` là đủ để chọn bản dịch, còn engine đọc
+/// cần biết cả vùng (`vi-VN`) mới chọn đúng giọng.
 enum EcAppLanguage {
-  /// Tiếng Việt (default).
-  vi,
+  vi('vi', 'vi-VN', 'Tiếng Việt', 'Vietnamese'),
+  en('en', 'en-US', 'English', 'English'),
+  id('id', 'id-ID', 'Bahasa Indonesia', 'Indonesian'),
+  fil('fil', 'fil-PH', 'Filipino', 'Filipino'),
+  th('th', 'th-TH', 'ไทย', 'Thai'),
+  ms('ms', 'ms-MY', 'Bahasa Melayu', 'Malay'),
+  de('de', 'de-DE', 'Deutsch', 'German'),
+  fr('fr', 'fr-FR', 'Français', 'French'),
+  it('it', 'it-IT', 'Italiano', 'Italian'),
+  es('es', 'es-ES', 'Español', 'Spanish');
 
-  /// English.
-  en,
+  const EcAppLanguage(this.code, this.voiceTag, this.nativeName, this.enName);
+
+  /// Mã cho `Locale` — thứ quyết định lấy bản dịch nào.
+  final String code;
+
+  /// Mã BCP-47 cho engine đọc.
+  final String voiceTag;
+
+  /// Tên gọi trong chính thứ tiếng đó — người tìm ngôn ngữ của mình luôn tìm
+  /// theo tên bản xứ, không phải tên tiếng Anh.
+  final String nativeName;
+
+  /// Tên tiếng Anh, làm dòng phụ.
+  final String enName;
+
+  /// Ngôn ngữ ứng với [code], `null` nếu không có.
+  static EcAppLanguage? byCode(String code) {
+    for (final language in values) {
+      if (language.code == code) return language;
+    }
+    return null;
+  }
 }
 
 /// Language — VI/English picker with radio-style selected rows.
@@ -444,37 +481,10 @@ class EcLanguageScreen extends StatelessWidget {
     final l10n = context.l10n;
     return PenScreen(
       scrollable: false,
-      // The globe and its caption are absolutely placed in the design
-      // (`layoutPosition: absolute`), sitting behind the options rather than
-      // flowing after them.
-      decorations: [
-        const Positioned(left: 45, top: 392, child: PenGlobeIllustration()),
-        // The sprig hangs to the left of the globe's own box, so it is placed
-        // on the screen rather than inside the illustration (which would clip
-        // it).
-        const Positioned(left: 32, top: 486, child: PenLeafSprig()),
-        Positioned(
-          left: 45,
-          top: 542,
-          child: SizedBox(
-            width: 300,
-            child: Column(
-              children: [
-                for (final line in l10n.languageChangeScopeNote.split('\n'))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: PenText(
-                      line,
-                      size: 14,
-                      color: PenColors.mut,
-                      align: TextAlign.center,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      // Không còn quả địa cầu, nhành lá và dòng chú thích vẽ đè phía sau.
+      // Thiết kế cũ đặt chúng ở toạ độ tuyệt đối cho một danh sách hai dòng;
+      // nay danh sách có mười thứ tiếng và cuộn được, nên chúng nằm ngay dưới
+      // chữ — vừa che vừa thừa.
       // Fills the viewport so the absolutely-placed decorations above stay
       // inside the screen's stack instead of being clipped away.
       child: SizedBox.expand(
@@ -487,28 +497,37 @@ class EcLanguageScreen extends StatelessWidget {
             children: [
               _SimpleHeader(title: l10n.accountLanguage, onBack: onBack),
               const SizedBox(height: 22),
-              _LanguageOption(
-                title: 'Tiếng Việt',
-                // The pair reads as native-name over other-language-name, so
-                // these two labels are fixed rather than locale-dependent.
-                subtitle: 'Vietnamese',
-                selected: selected == EcAppLanguage.vi,
-                onTap: () => onSelect?.call(EcAppLanguage.vi),
-              ),
-              const SizedBox(height: 14),
-              _LanguageOption(
-                title: 'English',
-                subtitle: l10n.languageNameEnglish,
-                selected: selected == EcAppLanguage.en,
-                onTap: () => onSelect?.call(EcAppLanguage.en),
-              ),
-              const SizedBox(height: 14),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: PenText(
-                  l10n.languageChangeAppliesNote,
-                  size: 14,
-                  color: PenColors.mut,
+              // Danh sách mười thứ tiếng thì phải cuộn được, và cuộn thì
+              // không còn chỗ cho quả địa cầu vẽ đè phía sau — nó vẫn nằm đó
+              // cho những màn khác, ở đây danh sách chiếm chỗ.
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final language in EcAppLanguage.values) ...[
+                        _LanguageOption(
+                          // Tên bản xứ đứng trên, tên tiếng Anh đứng dưới:
+                          // người đi tìm thứ tiếng của mình tìm theo tên bản
+                          // xứ, không phải theo tên tiếng Anh của nó.
+                          title: language.nativeName,
+                          subtitle: language.enName,
+                          selected: selected == language,
+                          onTap: () => onSelect?.call(language),
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: PenText(
+                          l10n.languageChangeAppliesNote,
+                          size: 14,
+                          color: PenColors.mut,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
             ],

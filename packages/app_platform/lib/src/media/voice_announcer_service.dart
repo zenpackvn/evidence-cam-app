@@ -11,7 +11,7 @@ import 'package:injectable/injectable.dart';
 @lazySingleton
 class VoiceAnnouncerService {
   VoiceAnnouncerService({FlutterTts? tts}) : _tts = tts ?? FlutterTts() {
-    _tts.setLanguage('vi-VN').catchError((_) => false);
+    _tts.setLanguage(_tag).catchError((_) => false);
     _tts.setSpeechRate(0.5).catchError((_) => false);
     // Makes `speak` complete when the utterance actually finishes, not when it
     // is merely queued. The capture flow needs that: it waits for the
@@ -66,31 +66,45 @@ class VoiceAnnouncerService {
   /// engine (or no platform implementation, as in tests) silently skips the
   /// announcement rather than surfacing an error — recording must keep
   /// working either way.
-  /// Đã chốt được giọng tiếng Việt trên Android chưa.
-  bool _languageReady = false;
+  /// Mã BCP-47 của giọng đang dùng. Đổi ngôn ngữ giao diện là đổi luôn giọng
+  /// đọc: người bán Thái không cần một câu tiếng Việt phát ra giữa kho hàng.
+  String _tag = 'vi-VN';
 
-  /// Chọn giọng tiếng Việt ngay trước khi đọc, CHỈ trên Android.
+  /// Mã engine đã chốt được cho [_tag], rỗng nghĩa là chưa chốt.
+  String _resolved = '';
+
+  /// Đổi giọng đọc sang [tag] (ví dụ `th-TH`).
+  ///
+  /// Chỉ đặt cờ rồi để [_ensureLanguage] làm việc thật ở lần đọc kế tiếp —
+  /// người dùng đổi ngôn ngữ trong Cài đặt chứ không phải giữa lúc đóng hàng,
+  /// nên không có gì gấp ở đây.
+  Future<void> useLanguage(String tag) async {
+    if (tag == _tag) return;
+    _tag = tag;
+    _resolved = '';
+    await _ensureLanguage();
+  }
+
+  /// Chốt mã ngôn ngữ engine TTS thật sự hiểu, ngay trước khi đọc.
   ///
   /// `setLanguage` trong constructor bắn đi mà không chờ, trong khi engine TTS
   /// của Android còn chưa bind xong — lệnh rơi vào hư không, rồi máy đọc bằng
-  /// ngôn ngữ hệ thống (tiếng Anh). Hỏi engine xem nó có mã nào cho tiếng Việt
-  /// rồi đặt đúng mã đó, vì mỗi engine trả về một dạng khác nhau: `vi-VN`,
-  /// `vi_VN`, hoặc chỉ `vi`.
+  /// ngôn ngữ hệ thống. Hỏi engine xem nó có mã nào cho thứ tiếng này rồi đặt
+  /// đúng mã đó, vì mỗi engine trả về một dạng khác nhau: `th-TH`, `th_TH`,
+  /// hoặc chỉ `th`.
   ///
-  /// Khoanh riêng Android: trên iOS `setLanguage` đang chạy đúng, không có lý
-  /// do đụng vào.
-  Future<void> _ensureVietnamese() async {
-    if (_languageReady || !Platform.isAndroid) return;
+  /// Máy KHÔNG có giọng cho thứ tiếng đó (Android hay thiếu Thái, Mã Lai,
+  /// Filipino) thì rơi về tiếng Anh: người quay vẫn nghe được máy đã nhận hay
+  /// chưa, và đó là việc câu nói sinh ra để làm. Im lặng mới là mất chức năng.
+  Future<void> _ensureLanguage() async {
+    if (_resolved == _tag) return;
+    final wanted = _tag;
+    final prefix = wanted.split('-').first.toLowerCase();
     try {
-      // Hỏi thẳng engine từng mã một. `isLanguageAvailable` là câu trả lời
-      // đáng tin nhất: `getLanguages` ở vài engine trả về danh sách rỗng hoặc
-      // thiếu, và lúc đó bản trước lặng lẽ bỏ cuộc rồi đọc bằng giọng mặc
-      // định — đúng thứ nghe ra tiếng Anh.
-      for (final code in const ['vi-VN', 'vi_VN', 'vi']) {
-        final available = await _tts.isLanguageAvailable(code);
-        if (available == true) {
+      for (final code in [wanted, wanted.replaceAll('-', '_'), prefix]) {
+        if (await _tts.isLanguageAvailable(code) == true) {
           await _tts.setLanguage(code);
-          _languageReady = true;
+          _resolved = wanted;
           debugPrint('[zenpack.tts] dung giong $code');
           return;
         }
@@ -99,18 +113,23 @@ class VoiceAnnouncerService {
       final languages = (await _tts.getLanguages as List<dynamic>)
           .map((e) => e.toString())
           .toList();
-      debugPrint('[zenpack.tts] languages=$languages');
       final match = languages.firstWhere(
-        (code) => code.toLowerCase().replaceAll('_', '-').startsWith('vi'),
+        (code) => code.toLowerCase().replaceAll('_', '-').startsWith(prefix),
         orElse: () => '',
       );
-      if (match.isEmpty) {
-        debugPrint('[zenpack.tts] MAY KHONG CO GIONG TIENG VIET');
+      if (match.isNotEmpty) {
+        await _tts.setLanguage(match);
+        _resolved = wanted;
+        debugPrint('[zenpack.tts] dung giong $match');
         return;
       }
-      await _tts.setLanguage(match);
-      _languageReady = true;
-      debugPrint('[zenpack.tts] dung giong $match');
+      debugPrint('[zenpack.tts] MAY KHONG CO GIONG $wanted, doc tieng Anh');
+      final english = languages.firstWhere(
+        (code) => code.toLowerCase().startsWith('en'),
+        orElse: () => 'en-US',
+      );
+      await _tts.setLanguage(english);
+      _resolved = wanted;
     } on Object catch (error) {
       debugPrint('[zenpack.tts] loi: $error');
     }
@@ -118,7 +137,7 @@ class VoiceAnnouncerService {
 
   /// Làm nóng engine TTS trước khi có câu nào cần đọc thật.
   ///
-  /// Câu đầu tiên của mỗi lượt chạy phải trả giá cho [_ensureVietnamese]: tới ba
+  /// Câu đầu tiên của mỗi lượt chạy phải trả giá cho [_ensureLanguage]: tới ba
   /// lượt hỏi `isLanguageAvailable` rồi một lượt `setLanguage`, tất cả đều là
   /// round-trip sang engine TTS của hệ điều hành. Người quay nghe ra đúng cái
   /// khoảng lặng giữa tiếng tút và câu "Đã bắt đầu quay" — mà lúc ấy thì không
@@ -126,11 +145,11 @@ class VoiceAnnouncerService {
   ///
   /// Gọi lúc dựng camera: màn quay vừa mở, chưa ai bấm gì, engine có cả quãng
   /// đó để bind xong. Best-effort như mọi thứ khác trong lớp này.
-  Future<void> prepare() => _ensureVietnamese();
+  Future<void> prepare() => _ensureLanguage();
 
   Future<void> speak(String text) async {
     try {
-      await _ensureVietnamese();
+      await _ensureLanguage();
       await _tts.speak(text);
     } on Object {
       // See above: announcements are best-effort.

@@ -1358,5 +1358,21 @@
   "inviteScanDetail": "Ask the shop owner to show the invite QR code, then scan it here.",
   "commonShare": "Share",
   "inviteQrSaved": "QR code saved to your gallery",
-  "inviteQrSaveFailed": "Could not save the QR code"
+  "inviteQrSaveFailed": "Could not save the QR code",
+  "voiceRecordingStarted": "Recording started",
+  "voiceRecordingStopped": "Recording stopped",
+  "voiceWrongCode": "Wrong code",
+  "voiceCapSoon": "The clip will close soon",
+  "voiceCapNear": "Approaching the {minutes}-minute limit, the clip will close itself",
+  "@voiceCapNear": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "voiceInterrupted": "Recording was interrupted",
+  "videoTypePacking": "Packing",
+  "videoTypeCarrier": "Carrier handover",
+  "videoTypeReturn": "Return"
 }

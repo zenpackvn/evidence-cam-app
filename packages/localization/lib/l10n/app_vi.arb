@@ -1107,5 +1107,21 @@
   "inviteScanDetail": "Nhờ chủ shop mở mã QR mời rồi quét vào đây.",
   "commonShare": "Chia sẻ",
   "inviteQrSaved": "Đã lưu mã vào thư viện",
-  "inviteQrSaveFailed": "Không lưu được mã vào thư viện"
+  "inviteQrSaveFailed": "Không lưu được mã vào thư viện",
+  "voiceRecordingStarted": "Đã bắt đầu quay",
+  "voiceRecordingStopped": "Đã dừng quay",
+  "voiceWrongCode": "Sai mã",
+  "voiceCapSoon": "Video sắp tự chốt",
+  "voiceCapNear": "Sắp chạm trần {minutes} phút, video sẽ tự chốt",
+  "@voiceCapNear": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "voiceInterrupted": "Quá trình quay bị gián đoạn",
+  "videoTypePacking": "Đóng hàng",
+  "videoTypeCarrier": "Đơn vị vận chuyển",
+  "videoTypeReturn": "Trả hàng"
 }

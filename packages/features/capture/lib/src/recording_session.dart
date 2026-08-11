@@ -24,6 +24,40 @@ import 'device_samples.dart';
 import 'ec_bill_scanner.dart';
 import 'ec_video_faststart.dart';
 
+/// Sáu câu app đọc thành tiếng trong lúc quay.
+///
+/// Gom thành một vật thay vì sáu tham số rời: chúng luôn đi cùng nhau, và
+/// thiếu một câu thì người quay nghe lẫn hai thứ tiếng trong cùng một lượt
+/// đóng hàng.
+///
+/// Mặc định là tiếng Việt — thị trường đầu tiên, và cũng là thứ mọi bài test
+/// hiện có đang trông đợi.
+class RecordingVoiceLines {
+  const RecordingVoiceLines({
+    this.recordingStarted = 'Đã bắt đầu quay',
+    this.recordingStopped = 'Đã dừng quay',
+    this.wrongCode = 'Sai mã',
+    this.capSoon = 'Video sắp tự chốt',
+    this.interrupted = 'Quá trình quay bị gián đoạn',
+    this.capNearBuilder = _viCapNear,
+  });
+
+  final String recordingStarted;
+  final String recordingStopped;
+  final String wrongCode;
+  final String capSoon;
+  final String interrupted;
+
+  /// Câu cảnh báo gần trần cần chèn số phút, nên nó là một hàm chứ không phải
+  /// một chuỗi.
+  final String Function(int minutes) capNearBuilder;
+
+  String capNear(int minutes) => capNearBuilder(minutes);
+
+  static String _viCapNear(int minutes) =>
+      'Sắp chạm trần $minutes phút, video sẽ tự chốt';
+}
+
 /// Content of the printed "kết thúc phiên" QR placed on the packing table.
 ///
 /// ponytail: single fixed sentinel — promote to a per-shop setting if shops
@@ -400,6 +434,13 @@ class RecordingSessionBloc
   final VoiceAnnouncerService _voice;
   final CaptureToneService _tone;
 
+  /// Sáu câu app đọc thành tiếng, đã dịch sẵn theo ngôn ngữ đang chọn.
+  ///
+  /// Bloc không có `BuildContext` nên không tự lấy bản dịch được; màn hình
+  /// truyền vào. Mặc định là tiếng Việt để test và mọi lối gọi cũ chạy y như
+  /// trước.
+  RecordingVoiceLines voiceLines = const RecordingVoiceLines();
+
   /// Bỏ qua mọi mã quét được, kể cả mã bắt đầu quay lẫn mã cutover.
   ///
   /// Bật khi có tấm che phủ lên khung ngắm mà người quay đang thao tác —
@@ -531,8 +572,8 @@ class RecordingSessionBloc
   /// đọc "hai phút ba mươi giây" giữa lúc đang đóng hàng.
   String get _nearLimitSpeech {
     final minutes = _maxRecording.inMinutes;
-    if (minutes < 1) return 'Video sắp tự chốt';
-    return 'Sắp chạm trần $minutes phút, video sẽ tự chốt';
+    if (minutes < 1) return voiceLines.capSoon;
+    return voiceLines.capNear(minutes);
   }
 
   /// Trần thời gian cho cửa sổ chặn mã vừa quay xong, tính từ lúc clip đóng.
@@ -765,7 +806,7 @@ class RecordingSessionBloc
   Future<void> _speakStart() async {
     try {
       await _voice
-          .speak('Đã bắt đầu quay')
+          .speak(voiceLines.recordingStarted)
           .timeout(const Duration(milliseconds: 2500));
     } on Object {
       // Kệ — quay quan trọng hơn thông báo.
@@ -820,7 +861,7 @@ class RecordingSessionBloc
         final known = await _verifyReturnCode(code);
         if (!known) {
           _lastRejectedReturnCode = code;
-          unawaited(_voice.speak('Sai mã'));
+          unawaited(_voice.speak(voiceLines.wrongCode));
         } else {
           _lastRejectedReturnCode = null;
         }
@@ -1026,7 +1067,7 @@ class RecordingSessionBloc
             await _startVideoWithScan();
           } else {
             // Về nghỉ thì không còn gì đang ghi, nên khỏi chờ câu nói.
-            unawaited(_voice.speak('Đã dừng quay'));
+            unawaited(_voice.speak(voiceLines.recordingStopped));
           }
         } finally {
           previewTransitioning.value = false;
@@ -1192,7 +1233,7 @@ class RecordingSessionBloc
   Future<void> announceInterrupted() => _voice.speak(_interruptedSpeech);
 
   /// Câu nói khi việc quay bị cắt ngang.
-  static const _interruptedSpeech = 'Quá trình quay bị gián đoạn';
+  String get _interruptedSpeech => voiceLines.interrupted;
 
   /// Quay tiếp vào đúng clip đang mở.
   ///

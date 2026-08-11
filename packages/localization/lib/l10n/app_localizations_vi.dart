@@ -2053,4 +2053,33 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get inviteQrSaveFailed => 'Không lưu được mã vào thư viện';
+
+  @override
+  String get voiceRecordingStarted => 'Đã bắt đầu quay';
+
+  @override
+  String get voiceRecordingStopped => 'Đã dừng quay';
+
+  @override
+  String get voiceWrongCode => 'Sai mã';
+
+  @override
+  String get voiceCapSoon => 'Video sắp tự chốt';
+
+  @override
+  String voiceCapNear(int minutes) {
+    return 'Sắp chạm trần $minutes phút, video sẽ tự chốt';
+  }
+
+  @override
+  String get voiceInterrupted => 'Quá trình quay bị gián đoạn';
+
+  @override
+  String get videoTypePacking => 'Đóng hàng';
+
+  @override
+  String get videoTypeCarrier => 'Đơn vị vận chuyển';
+
+  @override
+  String get videoTypeReturn => 'Trả hàng';
 }

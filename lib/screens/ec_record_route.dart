@@ -899,6 +899,19 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     if (mounted) _bloc.add(const RecordingLowStorageDismissed());
   }
 
+  /// Nhãn loại video để HIỆN LÊN MÀN.
+  ///
+  /// `state.typeLabel` giữ tên gốc — nó đi cùng clip lên máy chủ và là thứ
+  /// luồng quay đem so ("Trả hàng" mở lối kiểm mã hoàn). Dịch ở đây, đúng lúc
+  /// vẽ, nên đổi ngôn ngữ không đụng tới dữ liệu. Loại do shop tự đặt giữ
+  /// nguyên chữ của người dùng.
+  String _typeLabelFor(String name) => switch (name) {
+    'Đóng hàng' => context.l10n.videoTypePacking,
+    'Đơn vị vận chuyển' => context.l10n.videoTypeCarrier,
+    'Trả hàng' => context.l10n.videoTypeReturn,
+    _ => name,
+  };
+
   @override
   Widget build(BuildContext context) {
     // Ô ngắm vẽ trên màn quay, quy về toạ độ màn để máy quét chỉ nhận mã nằm
@@ -906,6 +919,17 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     // khung rộng 222 điểm căn giữa, mép trên ở 25.3% và mép dưới cách đáy
     // 31.3% chiều cao. Preview và khung cùng là `Positioned.fill` trong một
     // Stack phủ kín màn, nên cỡ màn cũng chính là vùng vẽ preview.
+    // Câu đọc thành tiếng lấy theo ngôn ngữ đang chọn. Bloc không có
+    // `BuildContext` nên nó không tự lấy được; chỗ này thì có.
+    final l10n = context.l10n;
+    _bloc.voiceLines = RecordingVoiceLines(
+      recordingStarted: l10n.voiceRecordingStarted,
+      recordingStopped: l10n.voiceRecordingStopped,
+      wrongCode: l10n.voiceWrongCode,
+      capSoon: l10n.voiceCapSoon,
+      interrupted: l10n.voiceInterrupted,
+      capNearBuilder: l10n.voiceCapNear,
+    );
     final screen = MediaQuery.sizeOf(context);
     _bloc.scanWindow = EcScanWindow(
       viewport: screen,
@@ -980,8 +1004,9 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         queueCount: widget.queueCount,
         closedCode: closedCode,
         newCode: state.code,
-        newMeta: '${state.typeLabel} • ${_formatClock(DateTime.now())}',
-        typeLabel: state.typeLabel,
+        newMeta:
+            '${_typeLabelFor(state.typeLabel)} • ${_formatClock(DateTime.now())}',
+        typeLabel: _typeLabelFor(state.typeLabel),
         resolutionLabel: state.resolutionLabel,
         preview: preview,
         onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
@@ -1003,7 +1028,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           countdownText: context.l10n.recordAutoStopIn(
             _formatElapsed(remaining.isNegative ? Duration.zero : remaining),
           ),
-          typeLabel: state.typeLabel,
+          typeLabel: _typeLabelFor(state.typeLabel),
           resolutionLabel: state.resolutionLabel,
           preview: preview,
           onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
@@ -1022,7 +1047,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           queueCount: widget.queueCount,
           code: state.code,
           duration: _formatElapsed(state.elapsed),
-          typeLabel: state.typeLabel,
+          typeLabel: _typeLabelFor(state.typeLabel),
           resolutionLabel: state.resolutionLabel,
           preview: preview,
           onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
@@ -1034,7 +1059,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         queueCount: widget.queueCount,
         code: state.code,
         elapsed: _formatElapsed(state.elapsed),
-        typeLabel: state.typeLabel,
+        typeLabel: _typeLabelFor(state.typeLabel),
         resolutionLabel: state.resolutionLabel,
         preview: preview,
         onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
@@ -1049,7 +1074,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
     return EcWaitBill2Screen(
       queueCount: widget.queueCount,
-      typeLabel: state.typeLabel,
+      typeLabel: _typeLabelFor(state.typeLabel),
       resolutionLabel: state.resolutionLabel,
       preview: preview,
       onBack: widget.onBack,
