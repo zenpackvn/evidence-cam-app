@@ -253,8 +253,8 @@ void main() {
         data: <dynamic>[
           for (var i = 0; i < 10; i++)
             {
-              'id': 'o\$i',
-              'tracking_raw': 'SPXVN\$i',
+              'id': r'o$i',
+              'tracking_raw': r'SPXVN$i',
               'created_at': i,
               'evidence_count': 1,
             },

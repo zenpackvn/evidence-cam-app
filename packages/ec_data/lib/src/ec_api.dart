@@ -510,7 +510,7 @@ class EcApi {
   }
 
   /// Trần dung lượng ảnh đại diện backend nhận, khớp giới hạn web công bố.
-  static const avatarMaxBytes = 2 * 1000 * 1000;
+  static const int avatarMaxBytes = 2 * 1000 * 1000;
 
   /// Tải ảnh đại diện lên và trả về tài khoản đã cập nhật.
   ///

@@ -434,9 +434,9 @@ class FakeEcRepository implements EcRepository {
       const AccountDto(uid: 'fake-uid', email: 'demo@evidencecam.app');
 
   @override
-  @override
   Future<String> uploadAvatar(String filePath) async => filePath;
 
+  @override
   Future<AccountDto> updateProfile({
     String? name,
     String? phone,
