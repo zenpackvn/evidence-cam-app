@@ -70,8 +70,7 @@ class BillScanner {
       for (final barcode in barcodes) {
         final raw = barcode.rawValue?.trim();
         if (raw == null || raw.isEmpty) continue;
-        if (gate &&
-            !_isInFrame(barcode.boundingBox, image, metadata, window)) {
+        if (gate && !_isInFrame(barcode.boundingBox, image, metadata, window)) {
           continue;
         }
         return raw;

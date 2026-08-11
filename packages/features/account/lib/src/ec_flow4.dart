@@ -801,7 +801,6 @@ class EcQuotaScreen extends StatelessWidget {
   /// gọi chỉ việc hỏi lại backend sau khi paywall đóng.
   final VoidCallback? onUpgrade;
 
-
   /// Backend đã đổi trục sang số lượng video chưa.
   bool get _videoAxis => capVideos > 0;
 
@@ -1073,7 +1072,6 @@ class _QuotaSummaryCard extends StatelessWidget {
   /// Mở paywall IAP. `null` = build này không có cửa hàng, hoặc người dùng
   /// không quản lý được gói → không hiện nút mua.
   final VoidCallback? onUpgrade;
-
 
   @override
   Widget build(BuildContext context) {

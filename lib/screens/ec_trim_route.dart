@@ -172,7 +172,9 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
               child: Center(
                 child: _ready
                     ? _Preview(controller: _controller)
-                    : const CupertinoActivityIndicator(color: Color(0xFFBFD0FF)),
+                    : const CupertinoActivityIndicator(
+                        color: Color(0xFFBFD0FF),
+                      ),
               ),
             ),
             if (_ready && _total > Duration.zero) ...[
@@ -296,7 +298,8 @@ class _Filmstrip extends StatelessWidget {
           milliseconds: (x.clamp(0, width) / width * total.inMilliseconds)
               .round(),
         );
-        double xOf(Duration d) => d.inMilliseconds / total.inMilliseconds * width;
+        double xOf(Duration d) =>
+            d.inMilliseconds / total.inMilliseconds * width;
         final left = xOf(start);
         final right = xOf(end);
         return SizedBox(

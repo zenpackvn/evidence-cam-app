@@ -262,8 +262,9 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
   void _syncPurchaseIdentity() {
     final uid = _auth.user.value?.uid;
     unawaited(
-      (uid == null ? EcPurchases.logOut() : EcPurchases.logIn(uid))
-          .catchError((_) {}),
+      (uid == null ? EcPurchases.logOut() : EcPurchases.logIn(uid)).catchError(
+        (_) {},
+      ),
     );
   }
 
