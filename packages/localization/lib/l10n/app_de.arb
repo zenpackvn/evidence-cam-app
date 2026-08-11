@@ -610,5 +610,11 @@
   "accountChangePlan": "Tarif wechseln",
   "quotaUpgrade": "Tarif upgraden",
   "claimsDeleteConfirmLink": "Diese Akte löschen? Ihr öffentlicher Link stirbt sofort — wer ihn schon bekommen hat, sieht eine leere Seite. Die Nachweise in den Bestellungen bleiben unberührt.",
-  "claimsRevokeFailed": "Der Link ließ sich nicht widerrufen, deshalb bleibt die Akte unverändert. Der Link ist weiterhin offen — versuche es bei besserer Verbindung erneut, oder bitte den Shop-Inhaber, ihn zu widerrufen."
+  "claimsRevokeFailed": "Der Link ließ sich nicht widerrufen, deshalb bleibt die Akte unverändert. Der Link ist weiterhin offen — versuche es bei besserer Verbindung erneut, oder bitte den Shop-Inhaber, ihn zu widerrufen.",
+  "storageIntro": "Wo die Videos des Shops liegen. Wo auch immer sie liegen, der Siegel-Nachweis bleibt beim System — ein Speicherwechsel schwächt die Beweise nie.",
+  "storageS3Title": "Eigener Cloud-Speicher (S3-kompatibel)",
+  "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… Die Videos liegen in deinem Bucket, ihre Haltbarkeit liegt bei dir.",
+  "storageDriveTitle": "Google Drive",
+  "storageDriveDesc": "Mit einer einzigen Freigabe verbinden, keine Schlüssel einzufügen. Ein kostenloses Konto hat nur 15 GB, geteilt mit Gmail.",
+  "storageNeedProPlan": "Eigenen Speicher zu verbinden erfordert mindestens den Professional-Tarif."
 }

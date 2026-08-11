@@ -2119,4 +2119,26 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get videoTypeReturn => 'Reso';
+
+  @override
+  String get storageIntro =>
+      'Dove vivono i video del negozio. Ovunque siano, il registro del sigillo resta nel sistema — cambiare archivio non indebolisce mai la prova.';
+
+  @override
+  String get storageS3Title => 'Il tuo cloud (compatibile S3)';
+
+  @override
+  String get storageS3Desc =>
+      'AWS S3, Cloudflare R2, MinIO, Wasabi… I video stanno nel tuo bucket e la loro durata è responsabilità tua.';
+
+  @override
+  String get storageDriveTitle => 'Google Drive';
+
+  @override
+  String get storageDriveDesc =>
+      'Colleghi con una sola autorizzazione, nessuna chiave da incollare. Un account gratuito ha solo 15 GB condivisi con Gmail.';
+
+  @override
+  String get storageNeedProPlan =>
+      'Collegare il proprio archivio richiede il piano Professional o superiore.';
 }

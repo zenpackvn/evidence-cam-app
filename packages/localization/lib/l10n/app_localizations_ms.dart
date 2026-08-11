@@ -2106,4 +2106,26 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoTypeReturn => 'Pemulangan';
+
+  @override
+  String get storageIntro =>
+      'Di mana video kedai disimpan. Di mana pun ia berada, rekod meterai kekal di sistem — menukar storan tidak melemahkan bukti.';
+
+  @override
+  String get storageS3Title => 'Storan awan sendiri (serasi S3)';
+
+  @override
+  String get storageS3Desc =>
+      'AWS S3, Cloudflare R2, MinIO, Wasabi… Video berada dalam bucket anda, dan ketahanannya tanggungjawab anda.';
+
+  @override
+  String get storageDriveTitle => 'Google Drive';
+
+  @override
+  String get storageDriveDesc =>
+      'Sambung dengan satu kali pemberian kebenaran, tanpa perlu tampal kunci. Akaun percuma hanya ada 15 GB dikongsi dengan Gmail.';
+
+  @override
+  String get storageNeedProPlan =>
+      'Menyambung storan sendiri memerlukan pelan Professional atau lebih tinggi.';
 }

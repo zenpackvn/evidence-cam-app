@@ -2114,4 +2114,27 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoTypeReturn => 'Devolución';
+
+  @override
+  String get storageIntro =>
+      'Dónde se guardan los vídeos de la tienda. Estén donde estén, el registro del sellado se queda en el sistema — cambiar de almacenamiento nunca debilita la prueba.';
+
+  @override
+  String get storageS3Title =>
+      'Tu propio almacenamiento en la nube (compatible con S3)';
+
+  @override
+  String get storageS3Desc =>
+      'AWS S3, Cloudflare R2, MinIO, Wasabi… Los vídeos están en tu bucket y su durabilidad corre por tu cuenta.';
+
+  @override
+  String get storageDriveTitle => 'Google Drive';
+
+  @override
+  String get storageDriveDesc =>
+      'Se conecta con un solo permiso, sin pegar claves. Una cuenta gratuita solo tiene 15 GB compartidos con Gmail.';
+
+  @override
+  String get storageNeedProPlan =>
+      'Conectar tu propio almacenamiento requiere el plan Profesional o superior.';
 }

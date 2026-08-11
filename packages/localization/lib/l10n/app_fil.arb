@@ -610,5 +610,11 @@
   "accountChangePlan": "Palitan ang plan",
   "quotaUpgrade": "Mag-upgrade ng plan",
   "claimsDeleteConfirmLink": "Burahin ang dossier na ito? Mamamatay agad ang pampublikong link nito — sinumang napadalhan mo na ay makakakita ng blangkong pahina. Hindi maaapektuhan ang ebidensiya sa mga order mismo.",
-  "claimsRevokeFailed": "Hindi mabawi ang link, kaya iniwan ang dossier sa dati. Bukas pa rin ang link — subukan ulit sa mas maayos na koneksyon, o pakiusapan ang may-ari ng shop na bawiin ito."
+  "claimsRevokeFailed": "Hindi mabawi ang link, kaya iniwan ang dossier sa dati. Bukas pa rin ang link — subukan ulit sa mas maayos na koneksyon, o pakiusapan ang may-ari ng shop na bawiin ito.",
+  "storageIntro": "Kung saan nakatira ang mga video ng shop. Saan man ito, nasa sistema pa rin ang rekord ng selyo — hindi pinahihina ng paglipat ng imbakan ang ebidensiya.",
+  "storageS3Title": "Sarili mong cloud storage (S3-compatible)",
+  "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… Nasa bucket mo ang mga video, at ikaw ang may pananagutan sa tibay nito.",
+  "storageDriveTitle": "Google Drive",
+  "storageDriveDesc": "Ikonekta sa isang pagbibigay ng pahintulot, walang key na idi-paste. Ang libreng account ay may 15 GB lang na kabahagi ng Gmail.",
+  "storageNeedProPlan": "Kailangan ng plan na Professional pataas para ikonekta ang sariling imbakan."
 }

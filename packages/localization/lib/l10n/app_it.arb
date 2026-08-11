@@ -610,5 +610,11 @@
   "accountChangePlan": "Cambia piano",
   "quotaUpgrade": "Passa a un piano superiore",
   "claimsDeleteConfirmLink": "Eliminare questo fascicolo? Il suo link pubblico muore subito — chi lo ha già ricevuto vedrà una pagina vuota. Le prove sugli ordini restano intatte.",
-  "claimsRevokeFailed": "Non è stato possibile revocare il link, quindi il fascicolo resta com’è. Il link è ancora aperto — riprova con una connessione migliore, o chiedi al titolare del negozio di revocarlo."
+  "claimsRevokeFailed": "Non è stato possibile revocare il link, quindi il fascicolo resta com’è. Il link è ancora aperto — riprova con una connessione migliore, o chiedi al titolare del negozio di revocarlo.",
+  "storageIntro": "Dove vivono i video del negozio. Ovunque siano, il registro del sigillo resta nel sistema — cambiare archivio non indebolisce mai la prova.",
+  "storageS3Title": "Il tuo cloud (compatibile S3)",
+  "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… I video stanno nel tuo bucket e la loro durata è responsabilità tua.",
+  "storageDriveTitle": "Google Drive",
+  "storageDriveDesc": "Colleghi con una sola autorizzazione, nessuna chiave da incollare. Un account gratuito ha solo 15 GB condivisi con Gmail.",
+  "storageNeedProPlan": "Collegare il proprio archivio richiede il piano Professional o superiore."
 }

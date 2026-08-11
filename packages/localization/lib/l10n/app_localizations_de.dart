@@ -2130,4 +2130,26 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoTypeReturn => 'Rücksendung';
+
+  @override
+  String get storageIntro =>
+      'Wo die Videos des Shops liegen. Wo auch immer sie liegen, der Siegel-Nachweis bleibt beim System — ein Speicherwechsel schwächt die Beweise nie.';
+
+  @override
+  String get storageS3Title => 'Eigener Cloud-Speicher (S3-kompatibel)';
+
+  @override
+  String get storageS3Desc =>
+      'AWS S3, Cloudflare R2, MinIO, Wasabi… Die Videos liegen in deinem Bucket, ihre Haltbarkeit liegt bei dir.';
+
+  @override
+  String get storageDriveTitle => 'Google Drive';
+
+  @override
+  String get storageDriveDesc =>
+      'Mit einer einzigen Freigabe verbinden, keine Schlüssel einzufügen. Ein kostenloses Konto hat nur 15 GB, geteilt mit Gmail.';
+
+  @override
+  String get storageNeedProPlan =>
+      'Eigenen Speicher zu verbinden erfordert mindestens den Professional-Tarif.';
 }

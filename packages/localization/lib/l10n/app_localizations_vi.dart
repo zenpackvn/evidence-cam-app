@@ -2082,4 +2082,26 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoTypeReturn => 'Trả hàng';
+
+  @override
+  String get storageIntro =>
+      'Video của shop cất ở đâu. Dù cất ở đâu, hồ sơ niêm phong luôn nằm tại hệ thống — đổi kho không làm yếu bằng chứng.';
+
+  @override
+  String get storageS3Title => 'Kho đám mây riêng (chuẩn S3)';
+
+  @override
+  String get storageS3Desc =>
+      'AWS S3, Cloudflare R2, MinIO, Wasabi… Video nằm trong bucket của bạn, bạn tự chịu trách nhiệm về độ bền.';
+
+  @override
+  String get storageDriveTitle => 'Google Drive';
+
+  @override
+  String get storageDriveDesc =>
+      'Cắm bằng một lượt cấp quyền, không cần dán khoá. Tài khoản miễn phí chỉ có 15 GB dùng chung với Gmail.';
+
+  @override
+  String get storageNeedProPlan =>
+      'Cắm kho riêng cần gói Chuyên nghiệp trở lên.';
 }

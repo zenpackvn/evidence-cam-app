@@ -3793,6 +3793,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Return'**
   String get videoTypeReturn;
+
+  /// No description provided for @storageIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Where the shop’s videos live. Wherever they sit, the seal record stays with the system — changing storage never weakens the evidence.'**
+  String get storageIntro;
+
+  /// No description provided for @storageS3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own cloud storage (S3-compatible)'**
+  String get storageS3Title;
+
+  /// No description provided for @storageS3Desc.
+  ///
+  /// In en, this message translates to:
+  /// **'AWS S3, Cloudflare R2, MinIO, Wasabi… The videos sit in your bucket, and their durability is on you.'**
+  String get storageS3Desc;
+
+  /// No description provided for @storageDriveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Drive'**
+  String get storageDriveTitle;
+
+  /// No description provided for @storageDriveDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect with one permission grant, no keys to paste. A free account only has 15 GB shared with Gmail.'**
+  String get storageDriveDesc;
+
+  /// No description provided for @storageNeedProPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting your own storage needs the Professional plan or higher.'**
+  String get storageNeedProPlan;
 }
 
 class _AppLocalizationsDelegate

@@ -79,8 +79,8 @@ class EcStorageState {
   final bool objectLock;
 }
 
-/// Màn "Kho lưu trữ": kho đang dùng, tình trạng, và các thao tác đổi kho.
-class EcStorageScreen extends StatelessWidget {
+/// Màn "Kho lưu trữ": chọn một trong ba nơi cất video của shop.
+class EcStorageScreen extends StatefulWidget {
   const EcStorageScreen({
     required this.state,
     this.onBack,
@@ -102,11 +102,61 @@ class EcStorageScreen extends StatelessWidget {
   /// Đang chạy một thao tác mạng — khoá nút để không bấm hai lần.
   final bool busy;
 
-  bool get _own => state.kind != EcStorageKind.system;
+  @override
+  State<EcStorageScreen> createState() => _EcStorageScreenState();
+}
+
+class _EcStorageScreenState extends State<EcStorageScreen> {
+  /// Kho người dùng vừa bấm. Dấu tích nhảy sang ngay lúc chạm, không đợi máy
+  /// chủ trả lời — luồng cắm kho riêng còn phải qua màn nhập khoá hoặc màn cấp
+  /// quyền, mà một cú chạm không thấy phản hồi thì người dùng bấm lại lần nữa.
+  late EcStorageKind _picked = widget.state.kind;
+
+  @override
+  void didUpdateWidget(covariant EcStorageScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Máy chủ chốt xong thì bám theo nó. Và khi một lượt thao tác kết thúc mà
+    // kho vẫn như cũ (người dùng bấm huỷ giữa chừng), trả dấu tích về đúng chỗ
+    // — để nó nằm lại chỗ vừa bấm là nói dối về nơi video đang được cất.
+    if (oldWidget.state.kind != widget.state.kind ||
+        (oldWidget.busy && !widget.busy)) {
+      _picked = widget.state.kind;
+    }
+  }
+
+  bool get _own => widget.state.kind != EcStorageKind.system;
+
+  /// Chạm vào một thẻ: nhích dấu tích sang đó, rồi chạy luồng của kho đó nếu
+  /// thật sự chạy được.
+  ///
+  /// Dấu tích nhảy TRƯỚC, không đợi máy chủ: luồng cắm kho riêng còn phải qua
+  /// màn nhập khoá hoặc màn cấp quyền của Google, mà một cú chạm không thấy
+  /// phản hồi thì người dùng bấm lại lần nữa.
+  ///
+  /// Cả ba thẻ đều bấm được, kể cả khi gói chưa mở hoặc người bấm không phải
+  /// chủ shop — lúc đó chỉ có dấu tích di chuyển, không có gì chạy. Dòng nhắc
+  /// về gói nằm ngay trong thẻ để không ai tưởng đã cắm xong.
+  void _pick(EcStorageKind kind, VoidCallback? action) {
+    setState(() => _picked = kind);
+    action?.call();
+  }
+
+  /// Luồng ứng với một kho, hoặc `null` khi chạm vào không chạy được gì.
+  VoidCallback? _flowFor(EcStorageKind kind) {
+    final state = widget.state;
+    if (!state.canManage || widget.busy) return null;
+    return switch (kind) {
+      // Đang ở kho hệ thống rồi thì chạm vào đây không có việc gì để làm.
+      EcStorageKind.system => _own ? widget.onDisconnect : null,
+      EcStorageKind.s3 => state.byosAllowed ? widget.onConnectS3 : null,
+      EcStorageKind.gdrive => state.byosAllowed ? widget.onConnectDrive : null,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final state = widget.state;
     return PenScreen(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -114,41 +164,47 @@ class EcStorageScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              PenHeader(title: l10n.storageTitle, onBack: onBack),
+              PenHeader(title: l10n.storageTitle, onBack: widget.onBack),
+              const SizedBox(height: 10),
+              // Câu này đứng ngay dưới tiêu đề vì nó trả lời nỗi lo đầu tiên
+              // của người sắp đổi kho: đổi rồi bằng chứng có yếu đi không.
+              PenText(l10n.storageIntro, size: 14, color: PenColors.mut),
               const SizedBox(height: 16),
-              _CurrentStorageCard(state: state),
-              const SizedBox(height: 12),
-              _HealthCard(health: state.health),
-              const SizedBox(height: 16),
-              // Nhân viên và quản lý dừng ở đây: họ cần BIẾT kho đang ra sao,
-              // không cần đổi nó.
-              if (state.canManage) ...[
-                if (_own) ...[
-                  PenOutlineButton(
-                    label: l10n.storageTest,
-                    onPressed: busy ? null : onTest,
-                  ),
-                  const SizedBox(height: 10),
-                  PenPrimaryButton(
-                    label: l10n.storageDisconnect,
-                    color: PenColors.danger,
-                    onPressed: busy ? null : onDisconnect,
-                  ),
-                ] else if (state.byosAllowed) ...[
-                  PenPrimaryButton(
-                    label: l10n.storageConnectS3,
-                    onPressed: busy ? null : onConnectS3,
-                  ),
-                  const SizedBox(height: 10),
-                  PenOutlineButton(
-                    label: l10n.storageConnectDrive,
-                    onPressed: busy ? null : onConnectDrive,
-                  ),
-                ] else
-                  // Gói chưa mở kho riêng. Nói thẳng ra thay vì ẩn im lặng —
-                  // ẩn thì người dùng đọc tài liệu thấy có tính năng rồi đi
-                  // tìm mãi không ra.
-                  _NoteBox(text: l10n.storageNotInPlan),
+              _StorageOption(
+                icon: LucideIcons.cloud,
+                title: l10n.storageSystemName,
+                description: l10n.storageSystemDesc,
+                selected: _picked == EcStorageKind.system,
+                onTap: () =>
+                    _pick(EcStorageKind.system, _flowFor(EcStorageKind.system)),
+              ),
+              const SizedBox(height: 10),
+              _StorageOption(
+                icon: LucideIcons.hardDrive,
+                title: l10n.storageS3Title,
+                description: l10n.storageS3Desc,
+                selected: _picked == EcStorageKind.s3,
+                lockNote: state.byosAllowed ? null : l10n.storageNeedProPlan,
+                onTap: () =>
+                    _pick(EcStorageKind.s3, _flowFor(EcStorageKind.s3)),
+              ),
+              const SizedBox(height: 10),
+              _StorageOption(
+                icon: LucideIcons.hardDrive,
+                title: l10n.storageDriveTitle,
+                description: l10n.storageDriveDesc,
+                selected: _picked == EcStorageKind.gdrive,
+                lockNote: state.byosAllowed ? null : l10n.storageNeedProPlan,
+                onTap: () =>
+                    _pick(EcStorageKind.gdrive, _flowFor(EcStorageKind.gdrive)),
+              ),
+              // Câu lỗi nguyên văn của nhà cung cấp là thứ DUY NHẤT giúp chủ
+              // shop tự sửa quyền bên phía họ, nên nó ở lại kể cả khi màn này
+              // đã gọn còn ba thẻ.
+              if (_own && !state.ok && (state.lastError?.isNotEmpty ?? false))
+                ...[
+                  const SizedBox(height: 12),
+                  _NoteBox(text: state.lastError!, danger: true),
               ],
             ],
           ),
@@ -158,164 +214,96 @@ class EcStorageScreen extends StatelessWidget {
   }
 }
 
-class _CurrentStorageCard extends StatelessWidget {
-  const _CurrentStorageCard({required this.state});
-
-  final EcStorageState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final system = state.kind == EcStorageKind.system;
-    return PenCard(
-      axis: PenAxis.column,
-      stroke: null,
-      gap: 10,
-      padding: const EdgeInsets.all(16),
-      children: [
-        Row(
-          children: [
-            Icon(
-              system ? LucideIcons.cloud : LucideIcons.hardDrive,
-              size: 22,
-              color: PenColors.ink,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: PenText(
-                switch (state.kind) {
-                  EcStorageKind.system => l10n.storageSystemName,
-                  EcStorageKind.s3 => l10n.storageS3Name,
-                  EcStorageKind.gdrive => l10n.storageDriveName,
-                },
-                size: 16,
-                color: PenColors.ink,
-                weight: FontWeight.w700,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (!system) _StatusDot(ok: state.ok),
-          ],
-        ),
-        if (state.label.isNotEmpty)
-          PenText(state.label, size: 13, color: PenColors.mut),
-        PenText(
-          system ? l10n.storageSystemDesc : l10n.storageOwnDesc,
-          size: 13,
-          color: PenColors.mut,
-        ),
-        // Câu lỗi của nhà cung cấp, nguyên văn. Đây là thứ duy nhất giúp khách
-        // tự sửa được quyền IAM bên phía họ — diễn giải lại là mất manh mối.
-        if (!state.ok && (state.lastError?.isNotEmpty ?? false))
-          _NoteBox(text: state.lastError!, danger: true),
-        // Hai cam kết KHÔNG giữ được ở mọi kho. Nói trước, chứ không để người
-        // bán phát hiện lúc đang tranh chấp với sàn.
-        if (!system && !state.presignedDownload)
-          _NoteBox(text: l10n.storageNoPresign),
-        if (!system && !state.objectLock)
-          _NoteBox(text: l10n.storageNoObjectLock),
-      ],
-    );
-  }
-}
-
-class _HealthCard extends StatelessWidget {
-  const _HealthCard({required this.health});
-
-  final EcStorageHealth health;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return PenCard(
-      axis: PenAxis.column,
-      stroke: null,
-      gap: 8,
-      padding: const EdgeInsets.all(16),
-      children: [
-        PenText(
-          l10n.storageHealthTitle.toUpperCase(),
-          size: 13,
-          color: PenColors.mut,
-          weight: FontWeight.w700,
-          letterSpacing: 0.6,
-        ),
-        _HealthRow(label: l10n.storageHealthTotal, value: health.total),
-        _HealthRow(label: l10n.storageHealthIntact, value: health.intact),
-        // Ba con số dưới là VẤN ĐỀ, nên chỉ hiện khi khác 0 và hiện màu cảnh
-        // báo. Một bảng lúc nào cũng có "0 lỗi" thì mắt bỏ qua nó rất nhanh.
-        if (health.unreachable > 0)
-          _HealthRow(
-            label: l10n.storageHealthUnreachable,
-            value: health.unreachable,
-            danger: true,
-          ),
-        if (health.mismatched > 0)
-          _HealthRow(
-            label: l10n.storageHealthMismatched,
-            value: health.mismatched,
-            danger: true,
-          ),
-        if (health.pendingRelay > 0)
-          _HealthRow(
-            label: l10n.storageHealthPendingRelay,
-            value: health.pendingRelay,
-            danger: true,
-          ),
-        if (health.hasProblems)
-          _NoteBox(text: l10n.storageProblemsNote, danger: true),
-      ],
-    );
-  }
-}
-
-class _HealthRow extends StatelessWidget {
-  const _HealthRow({
-    required this.label,
-    required this.value,
-    this.danger = false,
+/// Một dòng chọn kho: biểu tượng, tên, mô tả, và dấu tích khi đang dùng.
+///
+/// Kho đang dùng viền xanh + dấu tích; kho gói chưa mở thì chữ mờ đi và có
+/// thêm một dòng nói RÕ vì sao không bấm được — ẩn đi thì người dùng đọc tài
+/// liệu thấy có tính năng rồi đi tìm mãi không ra.
+class _StorageOption extends StatelessWidget {
+  const _StorageOption({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.selected,
+    this.lockNote,
+    this.onTap,
   });
 
-  final String label;
-  final int value;
-  final bool danger;
+  final IconData icon;
+  final String title;
+  final String description;
+  final bool selected;
+  final String? lockNote;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: PenText(
-            label,
-            size: 14,
-            color: danger ? BrandColors.warning : PenColors.mut,
+    final locked = lockNote != null;
+    final ink = locked && !selected ? PenColors.mut : PenColors.ink;
+    return EcTap(
+      onTap: onTap,
+      child: PenBox(
+        width: double.infinity,
+        fill: PenColors.card,
+        stroke: selected ? PenColors.success : PenColors.line,
+        strokeWidth: selected ? 2 : 1,
+        radius: 14,
+        axis: PenAxis.row,
+        gap: 12,
+        cross: CrossAxisAlignment.start,
+        padding: const EdgeInsets.all(16),
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(icon, size: 20, color: ink),
           ),
-        ),
-        PenText(
-          '$value',
-          size: 14,
-          color: danger ? BrandColors.warning : PenColors.ink,
-          weight: FontWeight.w700,
-          softWrap: false,
-        ),
-      ],
-    );
-  }
-}
-
-class _StatusDot extends StatelessWidget {
-  const _StatusDot({required this.ok});
-
-  final bool ok;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: ok ? PenColors.success : BrandColors.warning,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: PenText(
+                        title,
+                        size: 16,
+                        color: ink,
+                        weight: FontWeight.w700,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (selected) ...[
+                      const SizedBox(width: 8),
+                      const Icon(
+                        LucideIcons.check,
+                        size: 18,
+                        color: PenColors.success,
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 4),
+                PenText(
+                  description,
+                  size: 13,
+                  color: PenColors.mut,
+                  lineHeight: 1.4,
+                ),
+                if (locked) ...[
+                  const SizedBox(height: 4),
+                  PenText(
+                    lockNote!,
+                    size: 13,
+                    color: PenColors.mut,
+                    lineHeight: 1.4,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

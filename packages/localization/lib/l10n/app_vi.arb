@@ -1123,5 +1123,11 @@
   "voiceInterrupted": "Quá trình quay bị gián đoạn",
   "videoTypePacking": "Đóng hàng",
   "videoTypeCarrier": "Đơn vị vận chuyển",
-  "videoTypeReturn": "Trả hàng"
+  "videoTypeReturn": "Trả hàng",
+  "storageIntro": "Video của shop cất ở đâu. Dù cất ở đâu, hồ sơ niêm phong luôn nằm tại hệ thống — đổi kho không làm yếu bằng chứng.",
+  "storageS3Title": "Kho đám mây riêng (chuẩn S3)",
+  "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… Video nằm trong bucket của bạn, bạn tự chịu trách nhiệm về độ bền.",
+  "storageDriveTitle": "Google Drive",
+  "storageDriveDesc": "Cắm bằng một lượt cấp quyền, không cần dán khoá. Tài khoản miễn phí chỉ có 15 GB dùng chung với Gmail.",
+  "storageNeedProPlan": "Cắm kho riêng cần gói Chuyên nghiệp trở lên."
 }

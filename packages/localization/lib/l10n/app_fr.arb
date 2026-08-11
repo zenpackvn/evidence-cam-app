@@ -610,5 +610,11 @@
   "accountChangePlan": "Changer de forfait",
   "quotaUpgrade": "Passer à un forfait supérieur",
   "claimsDeleteConfirmLink": "Supprimer ce dossier ? Son lien public meurt immédiatement — toute personne à qui vous l’avez déjà envoyé verra une page vide. Les preuves dans les commandes ne sont pas touchées.",
-  "claimsRevokeFailed": "Le lien n’a pas pu être révoqué, le dossier reste donc tel quel. Le lien est toujours actif — réessayez avec une meilleure connexion, ou demandez au propriétaire de la boutique de le révoquer."
+  "claimsRevokeFailed": "Le lien n’a pas pu être révoqué, le dossier reste donc tel quel. Le lien est toujours actif — réessayez avec une meilleure connexion, ou demandez au propriétaire de la boutique de le révoquer.",
+  "storageIntro": "Où sont stockées les vidéos de la boutique. Où qu’elles soient, le registre du scellé reste chez le système — changer de stockage n’affaiblit jamais la preuve.",
+  "storageS3Title": "Votre propre stockage cloud (compatible S3)",
+  "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… Les vidéos sont dans votre bucket, leur durabilité vous incombe.",
+  "storageDriveTitle": "Google Drive",
+  "storageDriveDesc": "Connexion en une seule autorisation, aucune clé à coller. Un compte gratuit n’a que 15 Go partagés avec Gmail.",
+  "storageNeedProPlan": "Connecter votre propre stockage nécessite le forfait Professionnel ou supérieur."
 }

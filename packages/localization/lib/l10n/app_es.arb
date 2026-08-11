@@ -610,5 +610,11 @@
   "accountChangePlan": "Cambiar de plan",
   "quotaUpgrade": "Mejorar el plan",
   "claimsDeleteConfirmLink": "¿Eliminar este expediente? Su enlace público muere de inmediato — quien ya lo recibió verá una página vacía. Las pruebas en los pedidos no se tocan.",
-  "claimsRevokeFailed": "No se pudo revocar el enlace, así que el expediente queda igual. El enlace sigue abierto — inténtalo con mejor conexión, o pide al propietario de la tienda que lo revoque."
+  "claimsRevokeFailed": "No se pudo revocar el enlace, así que el expediente queda igual. El enlace sigue abierto — inténtalo con mejor conexión, o pide al propietario de la tienda que lo revoque.",
+  "storageIntro": "Dónde se guardan los vídeos de la tienda. Estén donde estén, el registro del sellado se queda en el sistema — cambiar de almacenamiento nunca debilita la prueba.",
+  "storageS3Title": "Tu propio almacenamiento en la nube (compatible con S3)",
+  "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… Los vídeos están en tu bucket y su durabilidad corre por tu cuenta.",
+  "storageDriveTitle": "Google Drive",
+  "storageDriveDesc": "Se conecta con un solo permiso, sin pegar claves. Una cuenta gratuita solo tiene 15 GB compartidos con Gmail.",
+  "storageNeedProPlan": "Conectar tu propio almacenamiento requiere el plan Profesional o superior."
 }

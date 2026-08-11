@@ -2070,4 +2070,26 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get videoTypeReturn => 'คืนสินค้า';
+
+  @override
+  String get storageIntro =>
+      'วิดีโอของร้านเก็บไว้ที่ไหน ไม่ว่าเก็บที่ใด บันทึกการผนึกยังอยู่ที่ระบบเสมอ — เปลี่ยนที่เก็บไม่ทำให้หลักฐานอ่อนลง';
+
+  @override
+  String get storageS3Title => 'คลาวด์ของคุณเอง (มาตรฐาน S3)';
+
+  @override
+  String get storageS3Desc =>
+      'AWS S3, Cloudflare R2, MinIO, Wasabi… วิดีโออยู่ในบัคเก็ตของคุณ และความคงทนเป็นความรับผิดชอบของคุณเอง';
+
+  @override
+  String get storageDriveTitle => 'Google Drive';
+
+  @override
+  String get storageDriveDesc =>
+      'เชื่อมด้วยการให้สิทธิ์ครั้งเดียว ไม่ต้องวางคีย์ บัญชีฟรีมีเพียง 15 GB ที่ใช้ร่วมกับ Gmail';
+
+  @override
+  String get storageNeedProPlan =>
+      'การเชื่อมที่เก็บของคุณเองต้องใช้แพ็กเกจ Professional ขึ้นไป';
 }

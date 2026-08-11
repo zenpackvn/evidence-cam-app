@@ -610,5 +610,11 @@
   "accountChangePlan": "Ganti paket",
   "quotaUpgrade": "Tingkatkan paket",
   "claimsDeleteConfirmLink": "Hapus berkas ini? Tautan publiknya mati seketika — siapa pun yang sudah menerimanya akan melihat halaman kosong. Bukti pada pesanan itu sendiri tidak terpengaruh.",
-  "claimsRevokeFailed": "Tautan tidak bisa dicabut, jadi berkas dibiarkan apa adanya. Tautan masih terbuka — coba lagi dengan koneksi yang lebih baik, atau minta pemilik toko mencabutnya."
+  "claimsRevokeFailed": "Tautan tidak bisa dicabut, jadi berkas dibiarkan apa adanya. Tautan masih terbuka — coba lagi dengan koneksi yang lebih baik, atau minta pemilik toko mencabutnya.",
+  "storageIntro": "Di mana video toko disimpan. Di mana pun letaknya, catatan segel tetap di sistem — mengganti penyimpanan tidak melemahkan bukti.",
+  "storageS3Title": "Penyimpanan awan sendiri (kompatibel S3)",
+  "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… Video berada di bucket Anda, dan ketahanannya jadi tanggung jawab Anda.",
+  "storageDriveTitle": "Google Drive",
+  "storageDriveDesc": "Hubungkan dengan sekali pemberian izin, tanpa menempel kunci. Akun gratis hanya punya 15 GB yang dibagi dengan Gmail.",
+  "storageNeedProPlan": "Menghubungkan penyimpanan sendiri butuh paket Profesional atau lebih tinggi."
 }

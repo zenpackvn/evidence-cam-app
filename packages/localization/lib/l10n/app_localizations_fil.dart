@@ -2112,4 +2112,26 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoTypeReturn => 'Return';
+
+  @override
+  String get storageIntro =>
+      'Kung saan nakatira ang mga video ng shop. Saan man ito, nasa sistema pa rin ang rekord ng selyo — hindi pinahihina ng paglipat ng imbakan ang ebidensiya.';
+
+  @override
+  String get storageS3Title => 'Sarili mong cloud storage (S3-compatible)';
+
+  @override
+  String get storageS3Desc =>
+      'AWS S3, Cloudflare R2, MinIO, Wasabi… Nasa bucket mo ang mga video, at ikaw ang may pananagutan sa tibay nito.';
+
+  @override
+  String get storageDriveTitle => 'Google Drive';
+
+  @override
+  String get storageDriveDesc =>
+      'Ikonekta sa isang pagbibigay ng pahintulot, walang key na idi-paste. Ang libreng account ay may 15 GB lang na kabahagi ng Gmail.';
+
+  @override
+  String get storageNeedProPlan =>
+      'Kailangan ng plan na Professional pataas para ikonekta ang sariling imbakan.';
 }

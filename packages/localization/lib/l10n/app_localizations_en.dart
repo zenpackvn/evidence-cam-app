@@ -2096,4 +2096,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoTypeReturn => 'Return';
+
+  @override
+  String get storageIntro =>
+      'Where the shop’s videos live. Wherever they sit, the seal record stays with the system — changing storage never weakens the evidence.';
+
+  @override
+  String get storageS3Title => 'Your own cloud storage (S3-compatible)';
+
+  @override
+  String get storageS3Desc =>
+      'AWS S3, Cloudflare R2, MinIO, Wasabi… The videos sit in your bucket, and their durability is on you.';
+
+  @override
+  String get storageDriveTitle => 'Google Drive';
+
+  @override
+  String get storageDriveDesc =>
+      'Connect with one permission grant, no keys to paste. A free account only has 15 GB shared with Gmail.';
+
+  @override
+  String get storageNeedProPlan =>
+      'Connecting your own storage needs the Professional plan or higher.';
 }
