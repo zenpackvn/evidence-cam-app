@@ -5,19 +5,6 @@ import 'package:test_utils/test_utils.dart';
 class _MockApi extends Mock implements EcApi {}
 
 void main() {
-  group('FakeEcRepository', () {
-    const repo = FakeEcRepository();
-
-    test(
-      'returns empty offline data instead of demo business records',
-      () async {
-        expect(await repo.shops(), isEmpty);
-        expect((await repo.orders('s1')).items, isEmpty);
-        expect(await repo.videoTypes('s1'), isEmpty);
-      },
-    );
-  });
-
   group('RemoteEcRepository', () {
     late _MockApi api;
     late RemoteEcRepository repo;

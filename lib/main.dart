@@ -101,10 +101,11 @@ Future<void> main() async {
 
         // Launch EvidenceCam through the production bootstrap above (DI, crash
         // reporting, notifications, Firebase). Firebase is initialised via
-        // FirebaseService when kFirebaseEnabled, so bind the real Firebase auth
-        // then; otherwise fall back to the fake so the journey still runs. The
-        // repository comes from EC_API_URL/API_BASE_URL (empty offline seam when unset).
-        final ecAuth = kFirebaseEnabled ? FirebaseEcAuth() : FakeEcAuth();
+        // FirebaseService above, and this is the only auth the app binds —
+        // there is no in-app fallback, so a build without Firebase config fails
+        // here instead of signing a demo user in. The repository comes from
+        // EC_API_URL/API_BASE_URL, which must name a real origin.
+        final ecAuth = FirebaseEcAuth();
 
         // Góp ý đi thẳng sang CMS dùng chung (tenant zenpack), không qua backend
         // EvidenceCam.

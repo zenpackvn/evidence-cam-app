@@ -5,6 +5,44 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
 
+/// Sample queue rendered by these tests. It used to ship inside
+/// `ec_flow3.dart` as `ecDefaultUploadItems`; no production caller ever
+/// read it, so the made-up orders live here now.
+const List<EcUploadItem> _sampleUploadItems = [
+  EcUploadItem(
+    code: 'SPXVN024567890',
+    typeLabel: 'Đóng hàng đi',
+    timeRange: '02:45 - 10:23',
+    status: EcUploadStatus.uploading,
+    progressPercent: 72,
+  ),
+  EcUploadItem(
+    code: 'SPXVN098765432',
+    typeLabel: 'Đóng hàng đi',
+    timeRange: '03:12 - 10:28',
+    status: EcUploadStatus.waiting,
+  ),
+  EcUploadItem(
+    code: 'SPXVN011122233',
+    typeLabel: 'Đơn vị vận chuyển',
+    timeRange: '01:05 - 10:40',
+    status: EcUploadStatus.done,
+  ),
+  EcUploadItem(
+    code: 'SPXVN044556677',
+    typeLabel: 'Trả hàng',
+    timeRange: '04:20 - 10:55',
+    status: EcUploadStatus.error,
+    retryCount: 2,
+  ),
+  EcUploadItem(
+    code: 'SPXVN055667788',
+    typeLabel: 'Đóng hàng đi',
+    timeRange: '02:10 - 11:02',
+    status: EcUploadStatus.quotaWait,
+  ),
+];
+
 /// Chữ của chrome lấy TỪ ĐIỂN, không ghim.
 ///
 /// Ba khẳng định trong file này từng ghim chuỗi tiếng Việt và mục rữa khi nhãn
@@ -84,16 +122,25 @@ void main() {
       await _pump(tester, const EcWaitBill2Screen());
       _expectCameraBottomTabsHidden();
 
-      await _pump(tester, const EcRecording2Screen());
+      await _pump(tester, const EcRecording2Screen(code: 'SPXVN024567890'));
       _expectCameraBottomTabsHidden();
 
-      await _pump(tester, const EcNearLimitScreen());
+      await _pump(tester, const EcNearLimitScreen(code: 'SPXVN024567890'));
       _expectCameraBottomTabsHidden();
 
-      await _pump(tester, const EcReturnRecScreen());
+      await _pump(
+        tester,
+        const EcReturnRecScreen(code: 'SPXVN088877766 (hoàn)'),
+      );
       _expectCameraBottomTabsHidden();
 
-      await _pump(tester, const EcCutoverBScreen());
+      await _pump(
+        tester,
+        const EcCutoverBScreen(
+          closedCode: 'SPXVN024567890',
+          newCode: 'SPXVN098765432',
+        ),
+      );
       _expectCameraBottomTabsHidden();
       expect(tester.takeException(), isNull);
     });
@@ -117,7 +164,7 @@ void main() {
 
   group('EcRecording2Screen', () {
     testWidgets('shows mã vận đơn and REC dot', (tester) async {
-      await _pump(tester, const EcRecording2Screen());
+      await _pump(tester, const EcRecording2Screen(code: 'SPXVN024567890'));
       expect(find.text('SPXVN024567890'), findsOneWidget);
       expect(find.text('REC'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -127,7 +174,10 @@ void main() {
       var stopped = false;
       await _pump(
         tester,
-        EcRecording2Screen(onStop: () => stopped = true),
+        EcRecording2Screen(
+          code: 'SPXVN024567890',
+          onStop: () => stopped = true,
+        ),
       );
       await tester.tap(find.byTooltip('Dừng quay'));
       expect(stopped, isTrue);
@@ -141,7 +191,14 @@ void main() {
       // queueCount lệch 3 có chủ ý — xưa là để phân biệt với vòng đếm ngược;
       // nay vòng đó đã bỏ (commit ac322915, đợt QA 01/08), nên con số duy nhất
       // trên màn là chip hàng đợi. Giữ 7 để khẳng định dưới nói được điều đó.
-      await _pump(tester, const EcCutoverBScreen(queueCount: 7));
+      await _pump(
+        tester,
+        const EcCutoverBScreen(
+          closedCode: 'SPXVN024567890',
+          newCode: 'SPXVN098765432',
+          queueCount: 7,
+        ),
+      );
       // Khung F3-04: mã vừa chốt ở pill trên, xác nhận đã lưu, vòng đếm ngược,
       // rồi thẻ đơn kế tiếp. Cả bốn đều là thông tin, không phải trang trí —
       // thiếu cái nào là người quay mất một câu trả lời.
@@ -159,7 +216,14 @@ void main() {
 
     testWidgets('onStop fires from the stop button', (tester) async {
       var stopped = false;
-      await _pump(tester, EcCutoverBScreen(onStop: () => stopped = true));
+      await _pump(
+        tester,
+        EcCutoverBScreen(
+          closedCode: 'SPXVN024567890',
+          newCode: 'SPXVN098765432',
+          onStop: () => stopped = true,
+        ),
+      );
       await tester.tap(find.byTooltip('Dừng quay'));
       expect(stopped, isTrue);
     });
@@ -167,7 +231,7 @@ void main() {
 
   group('EcNearLimitScreen', () {
     testWidgets('shows the 15-minute warning banner', (tester) async {
-      await _pump(tester, const EcNearLimitScreen());
+      await _pump(tester, const EcNearLimitScreen(code: 'SPXVN024567890'));
       expect(
         find.text('Sắp chạm trần 2 phút — video sẽ tự chốt'),
         findsOneWidget,
@@ -180,7 +244,10 @@ void main() {
 
   group('EcReturnRecScreen', () {
     testWidgets('shows return code, duration and link note', (tester) async {
-      await _pump(tester, const EcReturnRecScreen());
+      await _pump(
+        tester,
+        const EcReturnRecScreen(code: 'SPXVN088877766 (hoàn)'),
+      );
       expect(find.text('SPXVN088877766 (hoàn)'), findsOneWidget);
       expect(find.text('00:32'), findsOneWidget);
       expect(find.text('Tự liên kết về hồ sơ mã vận đơn gốc'), findsOneWidget);
@@ -194,7 +261,7 @@ void main() {
     ) async {
       await _pump(
         tester,
-        const EcUploadQueueScreen(items: ecDefaultUploadItems),
+        const EcUploadQueueScreen(items: _sampleUploadItems),
       );
       expect(find.text('Hàng đợi upload'), findsOneWidget);
       expect(find.text('72%'), findsOneWidget);
@@ -211,7 +278,7 @@ void main() {
     testWidgets('states are not spelled out twice per row', (tester) async {
       await _pump(
         tester,
-        const EcUploadQueueScreen(items: ecDefaultUploadItems),
+        const EcUploadQueueScreen(items: _sampleUploadItems),
       );
       expect(find.text('Đang tải 72%'), findsNothing);
       expect(find.text('Đã upload'), findsNothing);
@@ -224,7 +291,7 @@ void main() {
       await _pump(
         tester,
         EcUploadQueueScreen(
-          items: ecDefaultUploadItems,
+          items: _sampleUploadItems,
           onRetry: (item) => retried = item,
         ),
       );
@@ -240,7 +307,7 @@ void main() {
     ) async {
       await _pump(
         tester,
-        const EcUploadQueueScreen(items: ecDefaultUploadItems),
+        const EcUploadQueueScreen(items: _sampleUploadItems),
       );
       expect(find.text('Nâng gói'), findsNothing);
       expect(find.text('Nâng cấp'), findsNothing);
@@ -251,7 +318,7 @@ void main() {
     testWidgets('băng hạn mức nói rõ clip đang nằm trên máy', (tester) async {
       await _pump(
         tester,
-        const EcUploadQueueScreen(items: ecDefaultUploadItems),
+        const EcUploadQueueScreen(items: _sampleUploadItems),
       );
       expect(find.textContaining('TRÊN MÁY NÀY'), findsOneWidget);
       expect(
@@ -268,14 +335,14 @@ void main() {
     ) async {
       await _pump(
         tester,
-        const EcUploadQueueScreen(items: ecDefaultUploadItems),
+        const EcUploadQueueScreen(items: _sampleUploadItems),
       );
       expect(find.bySemanticsLabel('Xóa'), findsNothing);
 
       await _pump(
         tester,
         EcUploadQueueScreen(
-          items: ecDefaultUploadItems,
+          items: _sampleUploadItems,
           onDelete: (_) {},
         ),
       );
@@ -321,7 +388,13 @@ void main() {
 
   group('EcNoMatchScreen', () {
     testWidgets('shows the no-match dialog copy', (tester) async {
-      await _pump(tester, const EcNoMatchScreen());
+      await _pump(
+        tester,
+        const EcNoMatchScreen(
+          returnCode: 'SPXVN099988877',
+          shopName: 'Shop ABC',
+        ),
+      );
       expect(find.text('Mã hoàn không khớp'), findsOneWidget);
       expect(find.textContaining('SPXVN099988877'), findsOneWidget);
       expect(find.text('Nhập tay mã'), findsOneWidget);
@@ -333,7 +406,11 @@ void main() {
       var created = false;
       await _pump(
         tester,
-        EcNoMatchScreen(onCreateNew: () => created = true),
+        EcNoMatchScreen(
+          returnCode: 'SPXVN099988877',
+          shopName: 'Shop ABC',
+          onCreateNew: () => created = true,
+        ),
       );
       await tester.tap(find.text('Tạo vận đơn mới'));
       expect(created, isTrue);

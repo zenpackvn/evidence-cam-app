@@ -31,8 +31,8 @@ TextStyle _t(double size, FontWeight weight, Color color) =>
 /// tiết cửa hàng (F1-09) is reached from the Vận đơn tab instead.
 class EcAccountTabScreen extends StatelessWidget {
   const EcAccountTabScreen({
-    this.userName = 'Nguyễn Văn A',
-    this.userEmail = 'nguyenvana@gmail.com',
+    required this.userName,
+    required this.userEmail,
     this.planLabel = 'Cơ bản',
     this.languageLabel = 'Tiếng Việt',
     this.loginMethodsLabel = '3 liên kết',
@@ -323,7 +323,7 @@ class EcEditProfileScreen extends StatelessWidget {
   const EcEditProfileScreen({
     this.nameController,
     this.phoneController,
-    this.email = 'nguyenvana@gmail.com',
+    required this.email,
     this.avatarPath,
     this.onBack,
     this.onChangeAvatar,
@@ -542,7 +542,7 @@ class EcLanguageScreen extends StatelessWidget {
 /// with link/unlink actions. Fills the "Phương thức đăng nhập ›" control.
 class EcLoginMethodsScreen extends StatelessWidget {
   const EcLoginMethodsScreen({
-    this.email = 'nguyenvana@gmail.com',
+    required this.email,
     this.googleLinked = true,
     this.appleLinked = false,
     this.showApple = true,

@@ -179,7 +179,7 @@ class EcWaitBill2Screen extends StatelessWidget {
 class EcRecording2Screen extends StatelessWidget {
   const EcRecording2Screen({
     this.queueCount = 3,
-    this.code = 'SPXVN024567890',
+    required this.code,
     this.elapsed = '00:00',
     this.typeLabel = 'Đóng hàng',
     this.resolutionLabel = '720p',
@@ -257,8 +257,8 @@ class EcRecording2Screen extends StatelessWidget {
 class EcCutoverBScreen extends StatelessWidget {
   const EcCutoverBScreen({
     this.queueCount = 3,
-    this.closedCode = 'SPXVN024567890',
-    this.newCode = 'SPXVN098765432',
+    required this.closedCode,
+    required this.newCode,
     this.newMeta = 'Đóng hàng • 10:28',
     this.typeLabel = 'Đóng hàng',
     this.resolutionLabel = '720p',
@@ -497,7 +497,7 @@ class EcNearLimitScreen extends StatelessWidget {
   const EcNearLimitScreen({
     this.queueCount = 3,
     this.warningText = 'Sắp chạm trần 2 phút — video sẽ tự chốt',
-    this.code = 'SPXVN024567890',
+    required this.code,
     this.duration = '14:12',
     this.countdownText = 'Tự chốt sau 00:48',
     this.typeLabel = 'Đóng hàng',
@@ -647,7 +647,7 @@ class _WarnBanner extends StatelessWidget {
 class EcReturnRecScreen extends StatelessWidget {
   const EcReturnRecScreen({
     this.queueCount = 3,
-    this.code = 'SPXVN088877766 (hoàn)',
+    required this.code,
     this.duration = '00:32',
     this.linkNote = 'Tự liên kết về hồ sơ mã vận đơn gốc',
     this.typeLabel = 'Trả hàng',
@@ -1565,42 +1565,6 @@ class EcUploadItem {
   final String? errorMessage;
 }
 
-/// Sample queue for previews/tests; production callers pass live queue data.
-const List<EcUploadItem> ecDefaultUploadItems = [
-  EcUploadItem(
-    code: 'SPXVN024567890',
-    typeLabel: 'Đóng hàng đi',
-    timeRange: '02:45 - 10:23',
-    status: EcUploadStatus.uploading,
-    progressPercent: 72,
-  ),
-  EcUploadItem(
-    code: 'SPXVN098765432',
-    typeLabel: 'Đóng hàng đi',
-    timeRange: '03:12 - 10:28',
-    status: EcUploadStatus.waiting,
-  ),
-  EcUploadItem(
-    code: 'SPXVN011122233',
-    typeLabel: 'Đơn vị vận chuyển',
-    timeRange: '01:05 - 10:40',
-    status: EcUploadStatus.done,
-  ),
-  EcUploadItem(
-    code: 'SPXVN044556677',
-    typeLabel: 'Trả hàng',
-    timeRange: '04:20 - 10:55',
-    status: EcUploadStatus.error,
-    retryCount: 2,
-  ),
-  EcUploadItem(
-    code: 'SPXVN055667788',
-    typeLabel: 'Đóng hàng đi',
-    timeRange: '02:10 - 11:02',
-    status: EcUploadStatus.quotaWait,
-  ),
-];
-
 /// The upload queue list — quota banner and one status per video.
 class EcUploadQueueScreen extends StatelessWidget {
   const EcUploadQueueScreen({
@@ -2304,8 +2268,8 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
 /// shop.
 class EcNoMatchScreen extends StatelessWidget {
   const EcNoMatchScreen({
-    this.returnCode = 'SPXVN099988877',
-    this.shopName = 'Shop ABC',
+    required this.returnCode,
+    required this.shopName,
     this.onEnterManually,
     this.onCreateNew,
     super.key,

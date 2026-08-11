@@ -300,6 +300,7 @@ void main() {
       preview: _viewfinder('ec-viewfinder-idle'),
     ),
     'ported_f3_03_rec': EcRecording2Screen(
+      code: 'SPXVN024567890',
       elapsed: '00:12',
       preview: _viewfinder('ec-viewfinder-rec'),
     ),
@@ -315,9 +316,12 @@ void main() {
       const EcManualEntryScreen(),
     ),
     'ported_f3_04_saved': EcCutoverBScreen(
+      closedCode: 'SPXVN024567890',
+      newCode: 'SPXVN098765432',
       preview: _viewfinder('ec-viewfinder-saved-next'),
     ),
     'ported_f3_05_ceiling': EcNearLimitScreen(
+      code: 'SPXVN024567890',
       preview: _viewfinder('ec-viewfinder-long-recording'),
     ),
     // Same four rows F3-06 draws, so the pair can be diffed state for state.
@@ -352,16 +356,26 @@ void main() {
       ],
     ),
     'ported_f3_07_return': EcReturnRecScreen(
+      code: 'SPXVN088877766 (hoàn)',
       preview: _viewfinder('ec-viewfinder-return'),
     ),
     'ported_f3_08_mismatch': _over(
-      EcReturnRecScreen(preview: _viewfinder('ec-viewfinder-return-mismatch')),
+      EcReturnRecScreen(
+        code: 'SPXVN088877766 (hoàn)',
+        preview: _viewfinder('ec-viewfinder-return-mismatch'),
+      ),
       // Nút phải có callback, nếu không nó vẽ ở trạng thái disabled và khung
       // design lại vẽ nút xanh đậm đang bật.
-      EcNoMatchScreen(onEnterManually: () {}, onCreateNew: () {}),
+      EcNoMatchScreen(
+        returnCode: 'SPXVN099988877',
+        shopName: 'Shop ABC',
+        onEnterManually: () {},
+        onCreateNew: () {},
+      ),
     ),
     'ported_f3_10_new_type': _over(
       EcRecording2Screen(
+        code: 'SPXVN024567890',
         elapsed: '00:18',
         preview: _viewfinder('ec-viewfinder-new-video-type'),
       ),
@@ -369,12 +383,14 @@ void main() {
     ),
     'ported_f3_09_pick_type': _over(
       EcRecording2Screen(
+        code: 'SPXVN024567890',
         elapsed: '00:14',
         preview: _viewfinder('ec-viewfinder-new-video-type'),
       ),
       const EcTypeSheetScreen(),
     ),
     'ported_f4_02_profile': EcEditProfileScreen(
+      email: 'nguyenvana@gmail.com',
       nameController: TextEditingController(text: 'Nguyễn Văn A'),
       phoneController: TextEditingController(text: '090 123 4567'),
       onSave: () {},

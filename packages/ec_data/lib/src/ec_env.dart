@@ -21,10 +21,9 @@ const kDefaultApiBaseUrl = 'https://api.zenpack.vn';
 /// `EC_API_URL` override → `API_BASE_URL` from the dart-define env file →
 /// [kDefaultApiBaseUrl].
 ///
-/// The default is a real origin, not the empty string: an empty URL selects the
-/// offline [FakeEcRepository] below, so a plain `flutter build` used to ship an
-/// app that showed empty lists forever. Pass `--dart-define=EC_API_URL=` (empty)
-/// to ask for that offline build deliberately.
+/// The default is a real origin, not the empty string: an empty URL has no
+/// repository to build (see [buildRepository]) and now throws at startup rather
+/// than quietly running the app against nothing.
 const kApiBaseUrl = String.fromEnvironment(
   'EC_API_URL',
   defaultValue: String.fromEnvironment(
@@ -50,14 +49,19 @@ const kFeedbackBaseUrl = String.fromEnvironment(
 EcFeedback? buildFeedback({String url = kFeedbackBaseUrl}) =>
     url.isEmpty ? null : EcFeedback(baseUrl: url);
 
-/// Builds the data source.
+/// Builds the data source: the live [RemoteEcRepository], whose Dio attaches
+/// [auth]'s Firebase ID token to every request.
 ///
-/// With a backend URL (see [kApiBaseUrl]) it returns the live
-/// [RemoteEcRepository] whose Dio attaches [auth]'s Firebase ID token to every
-/// request. With an empty URL it falls back to the empty [FakeEcRepository]
-/// (tests / offline).
+/// An empty URL is a build misconfiguration, not an offline mode — there is no
+/// stand-in data source to fall back to, so it throws here instead of letting
+/// the app start against nothing.
 EcRepository buildRepository({EcAuth? auth, String url = kApiBaseUrl}) {
-  if (url.isEmpty) return const FakeEcRepository();
+  if (url.isEmpty) {
+    throw StateError(
+      'EC_API_URL is empty — no backend origin to talk to. '
+      'Build with --dart-define=EC_API_URL=https://…',
+    );
+  }
   return RemoteEcRepository(buildApi(auth: auth, url: url));
 }
 

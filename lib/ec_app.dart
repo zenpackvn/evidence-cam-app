@@ -105,8 +105,8 @@ typedef PickAvatarPath = Future<String?> Function();
 /// journey (Vào ca → 3 tab → tài khoản) with go_router and the Workers API.
 class EcApp extends StatefulWidget {
   const EcApp({
-    this.repo = const FakeEcRepository(),
-    this.auth,
+    required this.repo,
+    required this.auth,
     this.evidenceStore,
     this.pickAvatarPath,
     this.shareService,
@@ -115,13 +115,12 @@ class EcApp extends StatefulWidget {
     super.key,
   });
 
-  /// Data source — [FakeEcRepository] by default; pass [RemoteEcRepository]
-  /// (wrapping the typed API) once the Worker base URL is configured to go live.
+  /// Data source — [RemoteEcRepository] in the app (see `buildRepository`);
+  /// tests pass their own double. No default: the shell must never invent one.
   final EcRepository repo;
 
-  /// Auth — [FakeEcAuth] by default; pass `FirebaseEcAuth` once the Firebase
-  /// config files are present (FR-15).
-  final EcAuth? auth;
+  /// Auth — `FirebaseEcAuth` in the app (FR-15); tests pass their own double.
+  final EcAuth auth;
 
   /// Upload-queue persistence. The app binds the ObjectBox store (single source
   /// of truth, FR-08/FR-09); tests leave it null and get an in-memory store.
@@ -140,7 +139,7 @@ class EcApp extends StatefulWidget {
 }
 
 class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
-  late final EcAuth _auth = widget.auth ?? FakeEcAuth();
+  late final EcAuth _auth = widget.auth;
   // Single source of truth for the selected interface language. The account tab
   // and language screen read/write this; `CupertinoApp.locale` follows it and
   // `AppLocalizations` renders `context.l10n.*` in the chosen language.
@@ -556,7 +555,7 @@ final bool _appleSignInAvailable = Platform.isIOS || Platform.isMacOS;
 
 /// Login route — owns the email/password controllers and drives the auth seam
 /// (FR-15). Email/Google/Apple all sign in through [EcAuth] then go to the shop
-/// layer; today [FakeEcAuth] succeeds instantly, `FirebaseEcAuth` does it for real.
+/// layer; `FirebaseEcAuth` is what the app binds, tests bind their own double.
 class _LoginRoute extends StatefulWidget {
   const _LoginRoute({
     required this.auth,
@@ -1008,6 +1007,21 @@ class _AccountRouteState extends State<_AccountRoute> {
   Future<QuotaDto> _fetchQuota() =>
       widget.repo.quota(shopId: widget.selectedShop.value?.id);
 
+  /// Tên + ảnh đại diện đọc từ D1 (`GET /api/me`), KHÔNG từ hồ sơ Firebase:
+  /// bảng điều khiển web chỉ ghi vào D1, nên đọc Firebase là màn này đứng yên
+  /// trong khi người dùng đã đổi tên trên web từ đời nào.
+  AccountDto? _account;
+
+  Future<void> _loadAccount() async {
+    try {
+      final account = await widget.repo.account();
+      if (mounted) setState(() => _account = account);
+    } on Object {
+      // Mất mạng thì giữ nguyên giá trị Firebase đang hiện — màn Tài khoản
+      // không được trắng chỉ vì một lời gọi hỏng.
+    }
+  }
+
   void _refreshQuota() {
     if (!mounted) return;
     // Thân KHỐI, không phải mũi tên: `() => _quota = _fetchQuota()` trả về
@@ -1041,6 +1055,7 @@ class _AccountRouteState extends State<_AccountRoute> {
   void initState() {
     super.initState();
     widget.queue.uploadsCompleted.addListener(_refreshQuota);
+    unawaited(_loadAccount());
   }
 
   @override
@@ -1096,7 +1111,10 @@ class _AccountRouteState extends State<_AccountRoute> {
         return FutureBuilder<QuotaDto>(
           future: _quota,
           builder: (context, snap) => EcAccountTabScreen(
-            userName: user?.displayName ?? context.l10n.accountNoName,
+            userName:
+                _account?.name ??
+                user?.displayName ??
+                context.l10n.accountNoName,
             userEmail: user?.email ?? '—',
             planLabel: snap.hasData
                 ? _planDisplayName(context.l10n, snap.data!.planCode)
@@ -1108,10 +1126,13 @@ class _AccountRouteState extends State<_AccountRoute> {
             passwordActionLabel: user?.hasPassword == false
                 ? context.l10n.accountCreatePassword
                 : context.l10n.accountChangePassword,
-            // Ưu tiên bản trên máy (hiện ngay, không chờ mạng); chưa có thì
-            // dùng URL trên hồ sơ Firebase — đường này phục vụ máy mới hoặc
-            // sau khi cài lại app.
-            avatarPath: _rememberedAvatar(user?.uid) ?? user?.photoUrl,
+            // Bản trên máy CHỈ còn khi ảnh chưa tải lên được (xem
+            // `_forgetAvatar`), nên nó không thể che mất ảnh mới đổi từ web.
+            // Tải lên xong thì URL trong D1 là nguồn duy nhất cho cả hai bên.
+            avatarPath:
+                _rememberedAvatar(user?.uid) ??
+                _account?.avatarUrl ??
+                user?.photoUrl,
             onBack: () => _back(context, '/shops'),
             onFacebook: () => _openSupport(context, _kSupportFacebook),
             onZalo: () => _openSupport(context, _kSupportZalo),
@@ -1120,7 +1141,7 @@ class _AccountRouteState extends State<_AccountRoute> {
             onRateApp: () => _openSupport(context, _kStoreListing),
             onProfileTap: () async {
               await context.push('/edit-profile');
-              if (mounted) setState(() {});
+              if (mounted) await _loadAccount();
             },
             onQuotaTap: () async {
               await context.push('/quota');
@@ -1179,23 +1200,40 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
   );
   String? _avatarPath;
 
+  /// Ảnh đại diện đang nằm trên máy chủ (`accounts.avatar_url`) — chung với
+  /// web. Chỉ dùng để hiện khi chưa có ảnh mới chọn.
+  String? _avatarUrl;
+
   @override
   void initState() {
     super.initState();
     _avatarPath = _rememberedAvatar(widget.auth.currentUser?.uid);
-    _loadSavedPhone();
+    unawaited(_loadProfile());
   }
 
-  // The business phone lives in D1, not Firebase Auth (see
-  // `_accountNeedsPhone` above), so the field seeded from `auth.currentUser`
-  // is only a placeholder until this resolves.
-  Future<void> _loadSavedPhone() async {
-    final seed = _phone.text;
+  // Hồ sơ thật nằm ở D1 — web sửa tên/ảnh chỉ ghi vào đó, còn SĐT thì Firebase
+  // Auth không giữ (xem `_accountNeedsPhone` ở trên). Giá trị seed từ
+  // `auth.currentUser` chỉ là chỗ đứng tạm cho tới khi lời gọi này về.
+  Future<void> _loadProfile() async {
+    final nameSeed = _name.text;
+    final phoneSeed = _phone.text;
     try {
       final account = await widget.repo.account();
+      if (!mounted) return;
+      final name = account.name;
+      // Người dùng gõ trong lúc chờ thì bản họ gõ thắng — đừng giật chữ khỏi
+      // tay họ.
+      if (name != null && name.isNotEmpty && _name.text == nameSeed) {
+        _name.text = name;
+      }
       final phone = account.phone;
-      if (!mounted || _phone.text != seed) return;
-      if (phone != null && phone.isNotEmpty) _phone.text = phone;
+      if (phone != null && phone.isNotEmpty && _phone.text == phoneSeed) {
+        _phone.text = phone;
+      }
+      // Giữ RIÊNG khỏi `_avatarPath`: đường dẫn tệp là thứ phải tải lên, còn
+      // URL này là thứ đã ở trên máy chủ rồi. Trộn hai thứ vào một biến là lại
+      // đi tải lên chính cái ảnh vừa tải về.
+      setState(() => _avatarUrl = account.avatarUrl);
     } on Object {
       // Keep the Firebase-seeded value; the field stays editable either way.
     }
@@ -1230,9 +1268,9 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
         await _rememberAvatar(widget.auth.currentUser?.uid, avatarPath);
       }
 
-      // Tải ảnh lên rồi ghi URL công khai vào hồ sơ Firebase — nhờ vậy ảnh
-      // theo tài khoản, đăng nhập máy nào cũng có. Tải hỏng (mất mạng, ảnh quá
-      // nặng) thì tên và SĐT vẫn lưu được và ảnh vẫn hiện từ bản trên máy —
+      // Tải ảnh lên rồi ghi URL công khai vào hồ sơ — nhờ vậy ảnh theo tài
+      // khoản, đăng nhập máy nào (kể cả web) cũng có. Tải hỏng (mất mạng, ảnh
+      // quá nặng) thì tên và SĐT vẫn lưu được và ảnh vẫn hiện từ bản trên máy —
       // nhưng PHẢI báo. Bản trước nuốt im lặng, nên suốt thời gian endpoint
       // không tồn tại không ai biết ảnh chưa bao giờ tới máy chủ.
       String? avatarUrl;
@@ -1240,6 +1278,9 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
       if (avatarPath != null) {
         try {
           avatarUrl = await widget.repo.uploadAvatar(avatarPath);
+          // Máy chủ đã có ảnh → quên bản trên máy, nếu không nó sẽ che mất ảnh
+          // mà người dùng đổi ở bên web (bản trên máy được ưu tiên khi hiện).
+          await _forgetAvatar(widget.auth.currentUser?.uid);
         } on Object catch (error) {
           avatarUrl = null;
           avatarError = _avatarErrorText(context.l10n, error);
@@ -1250,10 +1291,13 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
         phone: phone,
         photoUrl: avatarUrl,
       );
+      // CHỈ ghi URL công khai. Bản trước rơi về `avatarPath` khi tải hỏng, tức
+      // ghi một đường dẫn tệp trên máy vào hồ sơ dùng chung — web đọc phải nó
+      // thì hiện ảnh vỡ.
       await widget.repo.updateProfile(
         name: name,
         phone: phone,
-        avatarUrl: avatarUrl ?? avatarPath,
+        avatarUrl: avatarUrl,
       );
       if (!mounted) return;
       context.pop();
@@ -1268,7 +1312,7 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
     nameController: _name,
     phoneController: _phone,
     email: widget.auth.currentUser?.email ?? '—',
-    avatarPath: _avatarPath,
+    avatarPath: _avatarPath ?? _avatarUrl,
     onBack: () => _back(context, '/account'),
     onChangeAvatar: _pickAvatar,
     onSave: _save,
@@ -1615,11 +1659,48 @@ class _StorageRoute extends StatefulWidget {
   State<_StorageRoute> createState() => _StorageRouteState();
 }
 
-class _StorageRouteState extends State<_StorageRoute> {
+class _StorageRouteState extends State<_StorageRoute>
+    with WidgetsBindingObserver {
   late Future<StorageStateDto> _state = widget.repo.storage(widget.shopId);
   bool _busy = false;
 
-  void _reload() => setState(() => _state = widget.repo.storage(widget.shopId));
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Cấp quyền Google Drive xảy ra Ở TRÌNH DUYỆT, ngoài app — và `launchUrl`
+  /// trả về ngay khi trình duyệt mở, KHÔNG đợi người dùng bấm xong. Nên "app
+  /// sáng lại" là tín hiệu duy nhất có thật để đọc lại trạng thái.
+  ///
+  /// Thiếu nó thì cắm kho thành công mà màn hình vẫn ghi "kho hệ thống" cho tới
+  /// khi người dùng tự thoát ra vào lại — trông y hệt một lần cắm thất bại, và
+  /// người ta sẽ bấm cắm lại.
+  ///
+  /// Đọc lại ở MỌI lần sáng chứ không chỉ sau khi bấm cắm: kho còn đổi được từ
+  /// web, và một lượt đọc thừa rẻ hơn nhiều so với một bảng tình trạng nói dối.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed && mounted) _reload();
+  }
+
+  /// Thân hàm có NGOẶC, không phải mũi tên: `setState(() => _state = future)`
+  /// trả về chính cái Future đó, và Flutter chặn cứng "setState() callback
+  /// argument returned a Future". Lỗi này nằm sẵn ở đây từ trước, chỉ chưa ai
+  /// gọi `_reload()` trong test nên nó chưa bao giờ nổ.
+  void _reload() {
+    setState(() {
+      _state = widget.repo.storage(widget.shopId);
+    });
+  }
 
   /// Chạy một thao tác mạng, khoá nút trong lúc chạy, rồi đọc lại trạng thái.
   ///
@@ -1669,8 +1750,11 @@ class _StorageRouteState extends State<_StorageRoute> {
     );
   }
 
-  /// Google Drive cắm qua OAuth nên phải rời app sang trình duyệt. Quay lại thì
-  /// đọc lại trạng thái — không có tín hiệu nào khác báo cấp quyền xong chưa.
+  /// Google Drive cắm qua OAuth nên phải rời app sang trình duyệt.
+  ///
+  /// KHÔNG đọc lại trạng thái ở đây: `launchUrl` trả về ngay lúc trình duyệt
+  /// mở, tức lúc người dùng còn chưa kịp chọn tài khoản Google. Việc đọc lại
+  /// thuộc về [didChangeAppLifecycleState].
   Future<void> _connectDrive() async {
     try {
       final url = await widget.repo.gdriveAuthUrl(widget.shopId);
@@ -1680,7 +1764,6 @@ class _StorageRouteState extends State<_StorageRoute> {
         return;
       }
       await _openSupport(context, url);
-      if (mounted) _reload();
     } on Object catch (error) {
       if (mounted) _toast(context, _dataErrorText(context.l10n, error));
     }
@@ -2709,6 +2792,14 @@ Future<void> _rememberAvatar(String? uid, String path) {
   final key = _avatarPathKey(uid);
   _avatarCache[key] = path;
   return _appMemory()?.setString(key, path) ?? Future<void>.value();
+}
+
+/// Xoá bản trên máy sau khi ảnh đã lên máy chủ: từ lúc đó `accounts.avatar_url`
+/// là nguồn duy nhất, chung cho app và web.
+Future<void> _forgetAvatar(String? uid) {
+  final key = _avatarPathKey(uid);
+  _avatarCache.remove(key);
+  return _appMemory()?.remove(key) ?? Future<void>.value();
 }
 
 String? _rememberedAvatar(String? uid) {

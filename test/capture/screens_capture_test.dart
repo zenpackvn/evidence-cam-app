@@ -15,6 +15,44 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 import 'package:localization/localization.dart';
 
+/// Sample queue rendered by these tests. It used to ship inside
+/// `ec_flow3.dart` as `ecDefaultUploadItems`; no production caller ever
+/// read it, so the made-up orders live here now.
+const List<EcUploadItem> _sampleUploadItems = [
+  EcUploadItem(
+    code: 'SPXVN024567890',
+    typeLabel: 'Đóng hàng đi',
+    timeRange: '02:45 - 10:23',
+    status: EcUploadStatus.uploading,
+    progressPercent: 72,
+  ),
+  EcUploadItem(
+    code: 'SPXVN098765432',
+    typeLabel: 'Đóng hàng đi',
+    timeRange: '03:12 - 10:28',
+    status: EcUploadStatus.waiting,
+  ),
+  EcUploadItem(
+    code: 'SPXVN011122233',
+    typeLabel: 'Đơn vị vận chuyển',
+    timeRange: '01:05 - 10:40',
+    status: EcUploadStatus.done,
+  ),
+  EcUploadItem(
+    code: 'SPXVN044556677',
+    typeLabel: 'Trả hàng',
+    timeRange: '04:20 - 10:55',
+    status: EcUploadStatus.error,
+    retryCount: 2,
+  ),
+  EcUploadItem(
+    code: 'SPXVN055667788',
+    typeLabel: 'Đóng hàng đi',
+    timeRange: '02:10 - 11:02',
+    status: EcUploadStatus.quotaWait,
+  ),
+];
+
 // Renders each screen at iPhone size and writes a PNG so the design can be
 // eyeballed (run with --update-goldens). Not a pass/fail assertion of pixels.
 Future<void> _cap(WidgetTester t, String name, Widget screen) async {
@@ -194,7 +232,8 @@ void main() {
   );
   testWidgets(
     'recording',
-    (t) => _cap(t, 'recording', const EcRecording2Screen()),
+    (t) =>
+        _cap(t, 'recording', const EcRecording2Screen(code: 'SPXVN024567890')),
   );
   testWidgets(
     'typesheet',
@@ -205,10 +244,20 @@ void main() {
     (t) => _cap(
       t,
       'uploadqueue',
-      const EcUploadQueueScreen(items: ecDefaultUploadItems),
+      const EcUploadQueueScreen(items: _sampleUploadItems),
     ),
   );
-  testWidgets('account', (t) => _cap(t, 'account', const EcAccountTabScreen()));
+  testWidgets(
+    'account',
+    (t) => _cap(
+      t,
+      'account',
+      const EcAccountTabScreen(
+        userName: 'Nguyễn Văn A',
+        userEmail: 'nguyenvana@gmail.com',
+      ),
+    ),
+  );
   testWidgets('quota', (t) => _cap(t, 'quota', const EcQuotaScreen()));
   testWidgets(
     'shopdetail',
@@ -259,23 +308,49 @@ void main() {
     'confirmdelete',
     (t) => _cap(t, 'confirmdelete', const EcConfirmDeleteScreen()),
   );
-  testWidgets('cutover', (t) => _cap(t, 'cutover', const EcCutoverBScreen()));
+  testWidgets(
+    'cutover',
+    (t) => _cap(
+      t,
+      'cutover',
+      const EcCutoverBScreen(
+        closedCode: 'SPXVN024567890',
+        newCode: 'SPXVN098765432',
+      ),
+    ),
+  );
   testWidgets(
     'nearlimit',
-    (t) => _cap(t, 'nearlimit', const EcNearLimitScreen()),
+    (t) =>
+        _cap(t, 'nearlimit', const EcNearLimitScreen(code: 'SPXVN024567890')),
   );
   testWidgets(
     'returnrec',
-    (t) => _cap(t, 'returnrec', const EcReturnRecScreen()),
+    (t) => _cap(
+      t,
+      'returnrec',
+      const EcReturnRecScreen(code: 'SPXVN088877766 (hoàn)'),
+    ),
   );
   testWidgets(
     'manualentry',
     (t) => _cap(t, 'manualentry', const EcManualEntryScreen()),
   );
-  testWidgets('nomatch', (t) => _cap(t, 'nomatch', const EcNoMatchScreen()));
+  testWidgets(
+    'nomatch',
+    (t) => _cap(
+      t,
+      'nomatch',
+      const EcNoMatchScreen(returnCode: 'SPXVN099988877', shopName: 'Shop ABC'),
+    ),
+  );
   testWidgets(
     'editprofile',
-    (t) => _cap(t, 'editprofile', const EcEditProfileScreen()),
+    (t) => _cap(
+      t,
+      'editprofile',
+      const EcEditProfileScreen(email: 'nguyenvana@gmail.com'),
+    ),
   );
   testWidgets('language', (t) => _cap(t, 'language', const EcLanguageScreen()));
   testWidgets(

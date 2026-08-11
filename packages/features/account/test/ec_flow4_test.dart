@@ -41,7 +41,13 @@ void main() {
 
   group('EcAccountTabScreen', () {
     testWidgets('shows profile and both setting groups', (tester) async {
-      await _pump(tester, const EcAccountTabScreen());
+      await _pump(
+        tester,
+        const EcAccountTabScreen(
+          userName: 'Nguyễn Văn A',
+          userEmail: 'nguyenvana@gmail.com',
+        ),
+      );
       // Không có tên shop ở đây: màn này đứng ngoài lớp shop, mở từ màn Chọn
       // cửa hàng.
       expect(find.text('Shop ABC'), findsNothing);
@@ -71,7 +77,14 @@ void main() {
     testWidgets('opens on the brand banner and closes with the footer', (
       tester,
     ) async {
-      await _pump(tester, const EcAccountTabScreen(appVersion: '2.3.4'));
+      await _pump(
+        tester,
+        const EcAccountTabScreen(
+          userName: 'Nguyễn Văn A',
+          userEmail: 'nguyenvana@gmail.com',
+          appVersion: '2.3.4',
+        ),
+      );
       expect(find.byType(PenBrandBanner), findsOneWidget);
       await tester.scrollUntilVisible(find.text('ZenPack'), 200);
       expect(find.text('Phiên bản 2.3.4'), findsOneWidget);
@@ -81,7 +94,11 @@ void main() {
       var tapped = false;
       await _pump(
         tester,
-        EcAccountTabScreen(onQuotaTap: () => tapped = true),
+        EcAccountTabScreen(
+          userName: 'Nguyễn Văn A',
+          userEmail: 'nguyenvana@gmail.com',
+          onQuotaTap: () => tapped = true,
+        ),
       );
       await tester.tap(find.text(vi.accountPlanQuota));
       expect(tapped, isTrue);
@@ -93,7 +110,11 @@ void main() {
       var opened = false;
       await _pump(
         tester,
-        EcAccountTabScreen(onChangePlanTap: () => opened = true),
+        EcAccountTabScreen(
+          userName: 'Nguyễn Văn A',
+          userEmail: 'nguyenvana@gmail.com',
+          onChangePlanTap: () => opened = true,
+        ),
       );
       await tester.tap(find.text(vi.accountChangePlan));
       expect(opened, isTrue);
@@ -102,7 +123,10 @@ void main() {
 
   group('EcEditProfileScreen', () {
     testWidgets('shows header, fields and locked email', (tester) async {
-      await _pump(tester, const EcEditProfileScreen());
+      await _pump(
+        tester,
+        const EcEditProfileScreen(email: 'nguyenvana@gmail.com'),
+      );
       expect(find.text('Thông tin tài khoản'), findsOneWidget);
       expect(find.text('Đổi ảnh đại diện'), findsOneWidget);
       expect(find.text('Họ tên'), findsOneWidget);
@@ -115,7 +139,13 @@ void main() {
 
     testWidgets('save button fires callback', (tester) async {
       var saved = false;
-      await _pump(tester, EcEditProfileScreen(onSave: () => saved = true));
+      await _pump(
+        tester,
+        EcEditProfileScreen(
+          email: 'nguyenvana@gmail.com',
+          onSave: () => saved = true,
+        ),
+      );
       await tester.enterText(
         find.byType(CupertinoTextField).first,
         'Nguyễn Văn A',

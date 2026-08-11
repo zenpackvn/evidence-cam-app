@@ -14,6 +14,8 @@ import 'package:network/network.dart'
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:storage/storage.dart';
 
+import 'ec_fakes.dart';
+
 /// Real `path_provider` has no platform to answer its method channel in a
 /// widget test, leaving `getApplicationDocumentsDirectory()` pending forever
 /// instead of throwing — silently stalling anything that awaits it (the
@@ -172,7 +174,10 @@ void main() {
       },
     ),
     (tester) async {
-      await pumpPhoneSizedApp(tester, const EcApp(repo: _DemoRepository()));
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: const _DemoRepository()),
+      );
 
       // Splash
       expect(find.text('ZenPack'), findsOneWidget);
@@ -194,7 +199,7 @@ void main() {
     ),
     (tester) async {
       final repo = _OrderLoadFailingRepository();
-      await pumpPhoneSizedApp(tester, EcApp(repo: repo));
+      await pumpPhoneSizedApp(tester, EcApp(auth: FakeEcAuth(), repo: repo));
 
       await signInWithGoogle(tester, shop: 'Live Shop');
 
@@ -314,7 +319,10 @@ void main() {
       // The demo account has no phone — the case that used to be bounced to a
       // phone-capture step. Email is the identity; the phone is an optional
       // support contact and must never sit between sign-in and the app.
-      await pumpPhoneSizedApp(tester, const EcApp(repo: _DemoRepository()));
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: const _DemoRepository()),
+      );
 
       await tester.tap(find.text('Bắt đầu'));
       await tester.pumpAndSettle();
@@ -343,7 +351,10 @@ void main() {
       },
     ),
     (tester) async {
-      await pumpPhoneSizedApp(tester, const EcApp(repo: _DemoRepository()));
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: const _DemoRepository()),
+      );
 
       await signInWithGoogle(tester);
 
@@ -381,7 +392,10 @@ void main() {
     ),
     (tester) async {
       final auth = _RecordingAuth();
-      await pumpPhoneSizedApp(tester, EcApp(auth: auth));
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: auth, repo: const FakeEcRepository()),
+      );
 
       await tester.tap(find.text('Bắt đầu'));
       await tester.pumpAndSettle();
@@ -412,7 +426,10 @@ void main() {
       final memory = _MemoryStore();
       getIt.registerSingleton<KeyValueStore>(memory);
       addTearDown(getIt.reset);
-      await pumpPhoneSizedApp(tester, const EcApp(repo: _TwoShopRepository()));
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: const _TwoShopRepository()),
+      );
 
       await signInWithGoogle(tester, shop: null);
       await tester.tap(find.text('Shop XYZ').first);
@@ -453,7 +470,9 @@ void main() {
           ..clearLiveImages();
       });
 
-      await tester.pumpWidget(const EcApp(repo: _DemoRepository()));
+      await tester.pumpWidget(
+        EcApp(auth: FakeEcAuth(), repo: const _DemoRepository()),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Get started'), findsOneWidget);
 
@@ -480,7 +499,9 @@ void main() {
       // A fresh app (restart) reads the stored pick, not the device locale.
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
-      await tester.pumpWidget(const EcApp(repo: _DemoRepository()));
+      await tester.pumpWidget(
+        EcApp(auth: FakeEcAuth(), repo: const _DemoRepository()),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Bắt đầu'), findsOneWidget);
     },
@@ -499,7 +520,10 @@ void main() {
       },
     ),
     (tester) async {
-      await pumpPhoneSizedApp(tester, const EcApp(repo: _DemoRepository()));
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: const _DemoRepository()),
+      );
 
       await signInWithGoogle(tester, shop: null);
 
@@ -556,7 +580,10 @@ void main() {
       },
     ),
     (tester) async {
-      await pumpPhoneSizedApp(tester, const EcApp(repo: _TwoShopRepository()));
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: const _TwoShopRepository()),
+      );
 
       await signInWithGoogle(tester, shop: null);
       await tester.tap(find.text('Shop XYZ').first);
@@ -565,6 +592,30 @@ void main() {
       // The picked shop drives the shell, not the screen's design default.
       expect(find.text('Shop XYZ'), findsOneWidget);
       expect(find.text('Shop ABC'), findsNothing);
+    },
+  );
+
+  // Sửa tên/ảnh trên web chỉ ghi vào D1 — Firebase Auth không hay biết. App
+  // đọc `GET /api/me` nên thấy ngay; đọc `displayName` là đứng yên mãi.
+  testWidgets(
+    'account tab shows the name from the API, not the Firebase profile',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': 1,
+        'ValueNotifier<EcUser?>': 1,
+      },
+    ),
+    (tester) async {
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: const _WebNamedRepository()),
+      );
+
+      await signInWithGoogle(tester);
+      await openAccount(tester);
+
+      expect(find.text('Tên Đổi Trên Web'), findsOneWidget);
+      expect(find.text('Người dùng Demo'), findsNothing);
     },
   );
 
@@ -578,7 +629,7 @@ void main() {
     ),
     (tester) async {
       final repo = _ProfileRepository();
-      await pumpPhoneSizedApp(tester, EcApp(repo: repo));
+      await pumpPhoneSizedApp(tester, EcApp(auth: FakeEcAuth(), repo: repo));
 
       await signInWithGoogle(tester);
       await openAccount(tester);
@@ -615,6 +666,7 @@ void main() {
       await pumpPhoneSizedApp(
         tester,
         EcApp(
+          auth: FakeEcAuth(),
           repo: repo,
           pickAvatarPath: () async => 'https://cdn.evidencecam.test/avatar.png',
         ),
@@ -644,6 +696,58 @@ void main() {
     },
   );
 
+  // Cấp quyền Google Drive xảy ra Ở NGOÀI app, trong trình duyệt. `launchUrl`
+  // trả về ngay lúc trình duyệt mở, nên không có callback nào báo "xong rồi" —
+  // chỉ có lúc app sáng lại. Thiếu hook đó thì cắm kho thành công mà màn hình
+  // vẫn ghi "kho hệ thống", trông y hệt một lần cắm hỏng.
+  testWidgets(
+    'màn kho đọc lại trạng thái khi app sáng lại sau khi cấp quyền Drive',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': null,
+        'ValueNotifier<EcUser?>': 1,
+        'ValueNotifier<bool>': null,
+        '_EvidenceCountOverrides': null,
+      },
+    ),
+    (tester) async {
+      final repo = _DriveConnectingRepository();
+      await pumpPhoneSizedApp(tester, EcApp(auth: FakeEcAuth(), repo: repo));
+
+      await signInWithGoogle(tester);
+      await openShopDetail(tester);
+      await tester.tap(find.text('Kho lưu trữ').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Kho của hệ thống'), findsOneWidget);
+      final readsBefore = repo.reads;
+
+      // Người dùng sang trình duyệt cấp quyền — app xuống nền — rồi quay lại.
+      // Đi đủ chuỗi trạng thái chứ không bắn thẳng `resumed`: đó mới là thứ hệ
+      // điều hành thật sự gửi, và nó cũng chạy qua đúng những nhánh vòng đời
+      // khác đang nghe cùng sự kiện.
+      // `hidden` là bắt buộc ở cả hai chiều — Flutter assert thẳng nếu nhảy cóc
+      // từ `inactive` sang `paused`.
+      repo.connected = true;
+      for (final state in const [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(state);
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+
+      expect(repo.reads, greaterThan(readsBefore));
+      expect(find.text('Google Drive của bạn'), findsOneWidget);
+      expect(find.text('Kho của hệ thống'), findsNothing);
+    },
+  );
+
   testWidgets(
     'quota screen shows remaining storage from the repository',
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
@@ -653,7 +757,10 @@ void main() {
       },
     ),
     (tester) async {
-      await pumpPhoneSizedApp(tester, EcApp(repo: _QuotaRepository()));
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: _QuotaRepository()),
+      );
 
       await signInWithGoogle(tester);
       await openAccount(tester);
@@ -682,7 +789,7 @@ void main() {
       // Gói đổi giữa chừng — đúng thứ xảy ra khi vừa thanh toán xong ở trang
       // quota; tab Tài khoản phải hỏi lại chứ không giữ nhãn gói đã cache.
       final repo = _UpgradingQuotaRepository();
-      await pumpPhoneSizedApp(tester, EcApp(repo: repo));
+      await pumpPhoneSizedApp(tester, EcApp(auth: FakeEcAuth(), repo: repo));
 
       await signInWithGoogle(tester);
       // Nhãn gói nay hiện ở màn Quota chứ không ở màn Tài khoản, nên phép thử
@@ -715,7 +822,7 @@ void main() {
     ),
     (tester) async {
       final repo = _DeleteConflictRepository();
-      await pumpPhoneSizedApp(tester, EcApp(repo: repo));
+      await pumpPhoneSizedApp(tester, EcApp(auth: FakeEcAuth(), repo: repo));
 
       await signInWithGoogle(tester);
       await openAccount(tester);
@@ -757,7 +864,7 @@ void main() {
     ),
     (tester) async {
       final repo = _DioConflictRepository();
-      await pumpPhoneSizedApp(tester, EcApp(repo: repo));
+      await pumpPhoneSizedApp(tester, EcApp(auth: FakeEcAuth(), repo: repo));
 
       await signInWithGoogle(tester);
       await openAccount(tester);
@@ -829,7 +936,7 @@ void main() {
     ),
     (tester) async {
       final repo = _CreateShopRepository();
-      await pumpPhoneSizedApp(tester, EcApp(repo: repo));
+      await pumpPhoneSizedApp(tester, EcApp(auth: FakeEcAuth(), repo: repo));
 
       await signInWithGoogle(tester, shop: null);
       await tester.tap(find.text('Tạo shop mới (tên + sàn)'));
@@ -871,7 +978,7 @@ void main() {
     ),
     (tester) async {
       final repo = _ManageableShopRepository();
-      await pumpPhoneSizedApp(tester, EcApp(repo: repo));
+      await pumpPhoneSizedApp(tester, EcApp(auth: FakeEcAuth(), repo: repo));
 
       await signInWithGoogle(tester);
       await openShopDetail(tester);
@@ -911,7 +1018,10 @@ void main() {
       },
     ),
     (tester) async {
-      await pumpPhoneSizedApp(tester, const EcApp(repo: _DemoRepository()));
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: const _DemoRepository()),
+      );
 
       await signInWithGoogle(tester);
       await tester.tap(find.text('Ghi hình').last);
@@ -949,7 +1059,7 @@ void main() {
     ),
     (tester) async {
       final repo = _SealingRepository();
-      await pumpPhoneSizedApp(tester, EcApp(repo: repo));
+      await pumpPhoneSizedApp(tester, EcApp(auth: FakeEcAuth(), repo: repo));
       await signInWithGoogle(tester);
 
       // Bơm CÓ GIỚI HẠN, không `pumpAndSettle`: chỉ báo "đang đóng dấu" là một
@@ -1168,6 +1278,19 @@ class _CreateShopRepository extends FakeEcRepository {
   }
 }
 
+/// Hồ sơ D1 mang tên khác với `displayName` của Firebase — đúng tình huống
+/// người dùng vừa đổi tên bên bảng điều khiển web.
+class _WebNamedRepository extends _DemoRepository {
+  const _WebNamedRepository();
+
+  @override
+  Future<AccountDto> account() async => const AccountDto(
+    uid: 'fake-uid',
+    email: 'demo@evidencecam.app',
+    name: 'Tên Đổi Trên Web',
+  );
+}
+
 class _ProfileRepository extends _DemoRepository {
   String? updatedName;
   String? updatedPhone;
@@ -1336,6 +1459,30 @@ class _ManageableShopRepository extends _DemoRepository {
       role: role,
       status: 'pending',
       inviteToken: 'tok',
+    );
+  }
+}
+
+/// Kho đổi từ "hệ thống" sang Drive giữa hai lần đọc — đúng thứ xảy ra khi
+/// người dùng rời app sang trình duyệt cấp quyền Google rồi quay lại.
+class _DriveConnectingRepository extends _DemoRepository {
+  _DriveConnectingRepository();
+
+  bool connected = false;
+  int reads = 0;
+
+  @override
+  Future<StorageStateDto> storage(String shopId) async {
+    reads++;
+    return StorageStateDto(
+      byosAllowed: true,
+      storage: connected
+          ? const StorageViewDto(
+              kind: StorageKind.gdrive,
+              ok: true,
+              label: 'truongpham0233@gmail.com',
+            )
+          : null,
     );
   }
 }

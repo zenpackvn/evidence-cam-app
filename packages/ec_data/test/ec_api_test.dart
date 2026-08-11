@@ -5,6 +5,16 @@ import 'package:test_utils/test_utils.dart';
 
 class _MockDio extends Mock implements Dio {}
 
+/// Mọi stub dưới đây đều khai `options: any(named: 'options')`, kể cả khi lời
+/// gọi không truyền gì.
+///
+/// Bỏ trống thì mocktail hiểu là "options phải bằng null" — đúng cho hầu hết
+/// endpoint, nhưng `_get(..., live: true)` (getOrder, listOrders) truyền
+/// `_liveOptions` để đi thẳng máy chủ thay vì lấy bản trong bộ đệm. Ba test đó
+/// thành ra không khớp stub nào, mock trả `null`, và lỗi hiện ra ở tận chỗ ép
+/// kiểu: "type 'Null' is not a subtype of type 'Future<Response<…>>'" — không
+/// nhắc gì tới `options`, nên rất tốn thời gian để lần ra.
+
 Response<T> _res<T>(String path, T data) => Response<T>(
   data: data,
   requestOptions: RequestOptions(path: path),
@@ -24,6 +34,7 @@ void main() {
       () => dio.get<Map<String, dynamic>>(
         '/api/me',
         queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
       ),
     ).thenAnswer(
       (_) async =>
@@ -40,6 +51,7 @@ void main() {
       () => dio.get<Map<String, dynamic>>(
         '/api/quota',
         queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
       ),
     ).thenAnswer(
       (_) async => _res('/api/quota', {
@@ -66,6 +78,7 @@ void main() {
       () => dio.get<Map<String, dynamic>>(
         '/api/quota',
         queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
       ),
     ).thenAnswer(
       (_) async => _res('/api/quota', {
@@ -98,6 +111,7 @@ void main() {
       () => dio.get<Map<String, dynamic>>(
         '/api/quota',
         queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
       ),
     ).thenAnswer(
       (_) async => _res('/api/quota', {
@@ -119,6 +133,7 @@ void main() {
       () => dio.get<List<dynamic>>(
         '/api/shops',
         queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
       ),
     ).thenAnswer(
       (_) async => _res('/api/shops', <dynamic>[
@@ -208,6 +223,7 @@ void main() {
       () => dio.get<List<dynamic>>(
         '/api/shops/s1/orders',
         queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
       ),
     ).thenAnswer(
       (_) async => _res('/api/shops/s1/orders', <dynamic>[
@@ -247,6 +263,7 @@ void main() {
       () => dio.get<List<dynamic>>(
         '/api/shops/s1/orders',
         queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
       ),
     ).thenAnswer(
       (_) async => Response<List<dynamic>>(
@@ -283,6 +300,7 @@ void main() {
       () => dio.get<Map<String, dynamic>>(
         '/api/shops/s1/orders/o1',
         queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
       ),
     ).thenAnswer(
       (_) async => _res('/api/shops/s1/orders/o1', {
@@ -460,6 +478,7 @@ void main() {
       () => dio.get<String>(
         '/api/shops/s1/export',
         queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
       ),
     ).thenAnswer((_) async => _res('/api/shops/s1/export', 'tracking\n'));
     when(
@@ -566,6 +585,7 @@ void main() {
       () => dio.get<Map<String, dynamic>>(
         any(that: startsWith('/api/shops/s1/stats')),
         queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
       ),
     ).thenAnswer(
       (_) async => _res('/api/shops/s1/stats', {
@@ -610,6 +630,7 @@ void main() {
       () => dio.get<Map<String, dynamic>>(
         any(that: startsWith('/api/shops/s1/stats')),
         queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
       ),
     ).thenAnswer(
       (_) async => _res('/api/shops/s1/stats', {
