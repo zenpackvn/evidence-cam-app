@@ -25,9 +25,14 @@ export const PLANS = [
   { code: 'enterprise', videos: 8_000, vi: 'Doanh nghiệp', en: 'Enterprise', seatsVi: 'không giới hạn người dùng', seatsEn: 'unlimited users' },
 ];
 
+// `google` = base plan ID bên Play. Hai cửa hàng mô hình hoá khác nhau nên mã
+// sản phẩm khác nhau, và ánh xạ đó phải nằm ở BẢNG NÀY chứ không nằm trong
+// script: backend `services/subscriptions.ts` (CURRENT_TERMS) giữ đúng cặp
+// apple/google này, hai bên lệch nhau nghĩa là khách trả tiền mà webhook về
+// không tra được gói — im lặng, không báo lỗi.
 export const TERMS = [
-  { key: '1m', days: 30, viUnit: '1 tháng', enUnit: '1 month' },
-  { key: '12m', days: 365, viUnit: '12 tháng', enUnit: '12 months' },
+  { key: '1m', google: 'p1m', days: 30, viUnit: '1 tháng', enUnit: '1 month' },
+  { key: '12m', google: 'p1y', days: 365, viUnit: '12 tháng', enUnit: '12 months' },
 ];
 
 // Giá trong app = ĐÚNG BẰNG giá web (chốt 2026-08-10) — chép từ backend
@@ -69,6 +74,17 @@ export const products = PLANS.flatMap((p) =>
         description: `${p.videos.toLocaleString('en')} videos/month, ${p.seatsEn}`,
       },
     ],
+  })),
+);
+
+/// Mã Play của cùng 6 sản phẩm đó. Google gộp `3 subscription × 2 base plan`
+/// nên mã có dấu hai chấm; `packageLookup` là khoá package trong RevenueCat,
+/// dùng CHUNG với bản iOS — một package phục vụ cả hai nền tảng.
+export const playProducts = PLANS.flatMap((p) =>
+  TERMS.map((t) => ({
+    storeId: `zenpack_sub_${p.code}:${t.google}`,
+    packageLookup: `${p.code}_${t.key}`,
+    displayName: `ZenPack ${p.en} ${t.enUnit}`,
   })),
 );
 
