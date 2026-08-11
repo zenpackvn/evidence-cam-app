@@ -94,7 +94,21 @@ String _friendlyMessage(DioException error) {
         return 'Video quá nặng nên máy chủ không nhận. Bản trên máy vẫn còn — '
             'hạ độ phân giải hoặc quay ngắn hơn rồi quay lại đơn này.';
       }
+      // 404 ở đây gần như luôn là một đích đã biến mất: shop bị xoá, hoặc
+      // tài khoản đang đăng nhập không còn là thành viên của shop đó. Hàng đợi
+      // sống qua cả lần đăng xuất, nên clip quay bằng tài khoản/shop cũ vẫn
+      // nằm lại và mang theo `shopId` cũ.
+      //
+      // Bảo "thử lại sau" cho trường hợp này là sai hẳn: thử lại một nghìn
+      // lần vẫn 404, mà người bán thì cứ bấm vì tin rằng có lúc sẽ được. Nói
+      // thẳng rằng đích không còn, và nói rõ tệp trên máy vẫn nguyên vẹn để
+      // họ tự quyết định giữ hay xoá khỏi hàng đợi.
       final status = error.response?.statusCode;
+      if (status == 404) {
+        return 'Cửa hàng của clip này không còn trên máy chủ (hoặc tài khoản '
+            'đang đăng nhập không còn thuộc cửa hàng đó), nên không tải lên '
+            'được. Bản trên máy vẫn còn — xoá khỏi hàng đợi khi không cần nữa.';
+      }
       return 'Máy chủ báo lỗi${status != null ? ' (mã $status)' : ''} — thử lại sau.';
     case DioExceptionType.cancel:
       return 'Đã huỷ tải lên.';
