@@ -1,5 +1,7 @@
 {
   "FLAVOR": "dev",
   "API_BASE_URL": "https://api.zenpack.vn",
-  "API_TIMEOUT_SECONDS": 10
+  "API_TIMEOUT_SECONDS": 10,
+  "REVENUECAT_IOS_KEY": "appl_jZPlACvnjGPKioYVCbFwWVJYpTw",
+  "REVENUECAT_ANDROID_KEY": "goog_gYeQdywenohuqVXZWouEyHIiaTz"
 }
