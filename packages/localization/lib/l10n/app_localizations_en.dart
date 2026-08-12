@@ -312,6 +312,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planPremium => 'Premium';
 
   @override
+  String get planPro => 'Pro';
+
+  @override
+  String get planEnterprise => 'Enterprise';
+
+  @override
   String get roleOther => 'Other';
 
   @override

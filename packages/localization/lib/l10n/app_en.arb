@@ -176,6 +176,8 @@
   "planBasic": "Basic",
   "planSaver": "Saver",
   "planPremium": "Premium",
+  "planPro": "Pro",
+  "planEnterprise": "Enterprise",
   "roleOther": "Other",
   "roleUnknown": "Unknown",
   "memberFallbackName": "Member",

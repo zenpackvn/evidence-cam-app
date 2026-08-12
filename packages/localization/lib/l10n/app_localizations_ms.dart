@@ -317,6 +317,12 @@ class AppLocalizationsMs extends AppLocalizations {
   String get planPremium => 'Premium';
 
   @override
+  String get planPro => 'Pro';
+
+  @override
+  String get planEnterprise => 'Perusahaan';
+
+  @override
   String get roleOther => 'Lain-lain';
 
   @override

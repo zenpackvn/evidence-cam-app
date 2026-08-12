@@ -311,6 +311,12 @@ class AppLocalizationsTh extends AppLocalizations {
   String get planPremium => 'Premium';
 
   @override
+  String get planPro => 'โปร';
+
+  @override
+  String get planEnterprise => 'องค์กร';
+
+  @override
   String get roleOther => 'อื่น ๆ';
 
   @override

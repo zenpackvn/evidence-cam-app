@@ -94,6 +94,8 @@
   "planBasic": "Basic",
   "planSaver": "Saver",
   "planPremium": "Premium",
+  "planPro": "โปร",
+  "planEnterprise": "องค์กร",
   "roleOther": "อื่น ๆ",
   "roleUnknown": "ไม่ทราบ",
   "memberFallbackName": "สมาชิก",

@@ -143,6 +143,8 @@
   "planBasic": "Cơ bản",
   "planSaver": "Tiết kiệm",
   "planPremium": "Cao cấp",
+  "planPro": "Chuyên nghiệp",
+  "planEnterprise": "Doanh nghiệp",
   "roleOther": "Khác",
   "roleUnknown": "Không rõ",
   "memberFallbackName": "Thành viên",

@@ -94,6 +94,8 @@
   "planBasic": "Basic",
   "planSaver": "Saver",
   "planPremium": "Premium",
+  "planPro": "Pro",
+  "planEnterprise": "Perusahaan",
   "roleOther": "Lain-lain",
   "roleUnknown": "Tidak diketahui",
   "memberFallbackName": "Ahli",

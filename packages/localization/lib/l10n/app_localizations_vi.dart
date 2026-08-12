@@ -310,6 +310,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get planPremium => 'Cao cấp';
 
   @override
+  String get planPro => 'Chuyên nghiệp';
+
+  @override
+  String get planEnterprise => 'Doanh nghiệp';
+
+  @override
   String get roleOther => 'Khác';
 
   @override

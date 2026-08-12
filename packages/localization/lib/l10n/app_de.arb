@@ -94,6 +94,8 @@
   "planBasic": "Basic",
   "planSaver": "Saver",
   "planPremium": "Premium",
+  "planPro": "Pro",
+  "planEnterprise": "Unternehmen",
   "roleOther": "Sonstige",
   "roleUnknown": "Unbekannt",
   "memberFallbackName": "Mitglied",

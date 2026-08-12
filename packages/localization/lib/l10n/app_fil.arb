@@ -94,6 +94,8 @@
   "planBasic": "Basic",
   "planSaver": "Saver",
   "planPremium": "Premium",
+  "planPro": "Pro",
+  "planEnterprise": "Enterprise",
   "roleOther": "Iba pa",
   "roleUnknown": "Hindi alam",
   "memberFallbackName": "Miyembro",
