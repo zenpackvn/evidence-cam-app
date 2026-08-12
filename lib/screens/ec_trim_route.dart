@@ -60,6 +60,10 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
   Duration _start = Duration.zero;
   Duration _end = Duration.zero;
   List<File> _frames = const [];
+
+  /// Dải ảnh dựng MỘT lần cho mỗi bộ ảnh, rồi truyền nguyên thực thể đó xuống
+  /// mỗi lượt dựng. Xem [_Filmstrip.strip].
+  Widget _strip = const ColoredBox(color: Color(0xFF1B2748));
   bool _ready = false;
   bool _saving = false;
   int? _sourceBytes;
@@ -92,7 +96,12 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
         inputPath: widget.sourcePath,
         duration: total,
       );
-      if (mounted) setState(() => _frames = frames);
+      if (mounted) {
+        setState(() {
+          _frames = frames;
+          _strip = _buildStrip(frames);
+        });
+      }
     } on Object {
       if (mounted) setState(() => _ready = true);
     }
@@ -103,6 +112,31 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
     _controller.valueListenable.removeListener(_watchPlayhead);
     _controller.dispose();
     super.dispose();
+  }
+
+  /// Dải ảnh nền của thanh thời gian. Gọi một lần cho mỗi bộ ảnh.
+  static Widget _buildStrip(List<File> frames) {
+    if (frames.isEmpty) return const ColoredBox(color: Color(0xFF1B2748));
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Row(
+        children: [
+          for (final frame in frames)
+            Expanded(
+              child: Image.file(
+                frame,
+                fit: BoxFit.cover,
+                height: _Filmstrip._height,
+                // Ảnh gốc cao 360 vì ô xem trước cần nét; giải mã nguyên cỡ
+                // cho 24 ô cao 64 là ném vài chục MB vào bộ nhớ ảnh cho thứ
+                // không ai nhìn rõ. Cỡ này đủ cho màn 3x.
+                cacheHeight: (_Filmstrip._height * 3).round(),
+                gaplessPlayback: true,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Duration get _span => _end - _start;
@@ -138,6 +172,11 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
   bool _seeking = false;
   Duration? _pendingSeek;
 
+  /// Video đang chạy lúc ngón tay vừa chạm thanh. Kéo kim của một clip đang
+  /// phát thì nó phải phát tiếp từ chỗ mới ngay trong lúc kéo — dừng lại chờ
+  /// thả tay là bắt người dùng kéo mù, không nghe không thấy đoạn mình chọn.
+  bool _playingWhenScrubStarted = false;
+
   /// Ảnh gần nhất trong dải phim ứng với mốc [at].
   File? _frameAt(Duration at) {
     if (_frames.isEmpty || _total.inMilliseconds == 0) return null;
@@ -149,20 +188,32 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
   }
 
   void _onScrub(Duration position) {
+    // Chỉ đọc ở lần chạm ĐẦU của một lượt kéo: các lần gọi sau đó là ngón tay
+    // đang di chuyển, lúc ấy trạng thái phát đã là hệ quả của chính lượt kéo
+    // này chứ không còn là ý định ban đầu của người dùng.
+    if (!_scrubbing) _playingWhenScrubStarted = _controller.value.isPlaying;
     setState(() {
       _scrubbing = true;
       _scrubTarget = position;
     });
-    // Tua trong nền để lúc thả tay trình phát đã ở sẵn chỗ đúng. Đang phát mà
-    // vừa phát vừa tua thì mỗi lệnh tua đắt hơn nhiều, nên dừng lại đã.
-    if (_controller.value.isPlaying) unawaited(_controller.pause());
+    // KHÔNG dừng khi đang phát: kéo tới đâu video chạy tiếp từ đó. Mỗi lệnh
+    // tua lúc đang phát tốn hơn lúc dừng, nhưng `_seekQueued` đã gộp chúng lại
+    // còn một lệnh đang bay nên chi phí đó có trần.
     unawaited(_seekQueued(position));
   }
 
   void _onScrubEnd() {
     if (!mounted) return;
     setState(() => _scrubbing = false);
-    unawaited(_seekQueued(_scrubTarget));
+    unawaited(
+      _seekQueued(_scrubTarget).then((_) {
+        // Một số nền tảng tự dừng khi nhận lệnh tua. Đang phát trước lúc kéo
+        // thì phải còn phát sau khi thả tay — thả tay xong video đứng im là
+        // người dùng phải bấm phát lại cho mỗi lần chỉnh.
+        if (!mounted || !_playingWhenScrubStarted) return;
+        if (!_controller.value.isPlaying) unawaited(_controller.play());
+      }),
+    );
   }
 
   /// Mỗi lúc chỉ một lệnh tua đang bay, mốc mới đè lên mốc đang chờ.
@@ -185,6 +236,9 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
       next = queued;
     }
     _seeking = false;
+    // Hàng tua đã cạn nghĩa là trình phát đã đứng đúng khung hình người dùng
+    // chỉ tới. Dựng lại để ô xem trước bỏ ảnh dải phim và trả về hình nét.
+    if (mounted) setState(() {});
   }
 
   /// Bấm phát/tạm dừng như trình phát thường: đang chạy thì dừng tại chỗ, đang
@@ -254,14 +308,16 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
                 child: _ready
                     ? _Preview(
                         controller: _controller,
-                        // Trong lúc kéo thì hiện ẢNH của dải phim thay cho
-                        // khung hình của trình phát. Lệnh tua phải giải mã
-                        // thật nên luôn về sau ngón tay vài trăm mili giây,
-                        // và người kéo thấy hình nhảy từng nấc. Ảnh dải phim
-                        // đã nằm sẵn trong bộ nhớ nên đổi tức thì — kéo tới
-                        // đâu thấy tới đó. Thả tay ra thì trình phát đã tua
-                        // xong và tiếp quản.
-                        scrubFrame: _scrubbing ? _frameAt(_scrubTarget) : null,
+                        // Ảnh dải phim chỉ đắp vào lúc trình phát CHƯA theo
+                        // kịp: nó nằm sẵn trong bộ nhớ nên đổi tức thì, còn
+                        // lệnh tua phải giải mã thật nên chậm sau ngón tay
+                        // vài trăm mili giây. Nhưng nó là ảnh nhỏ, phóng lên
+                        // cỡ này thì nhoè — nên hàng tua vừa cạn là bỏ ngay
+                        // để trả về hình nét, và lúc đang phát thì không đắp
+                        // nữa vì trình phát đã tự ra khung hình liên tục.
+                        scrubFrame: _scrubbing && _seeking
+                            ? _frameAt(_scrubTarget)
+                            : null,
                       )
                     : const CupertinoActivityIndicator(
                         color: Color(0xFFBFD0FF),
@@ -270,7 +326,7 @@ class _EcTrimRouteState extends State<EcTrimRoute> {
             ),
             if (_ready && _total > Duration.zero) ...[
               _Filmstrip(
-                frames: _frames,
+                strip: _strip,
                 total: _total,
                 start: _start,
                 end: _end,
@@ -376,7 +432,7 @@ class _Preview extends StatelessWidget {
 /// Dải ảnh nhỏ kèm hai tay kéo — chọn đoạn giữ lại.
 class _Filmstrip extends StatelessWidget {
   const _Filmstrip({
-    required this.frames,
+    required this.strip,
     required this.total,
     required this.start,
     required this.end,
@@ -388,7 +444,13 @@ class _Filmstrip extends StatelessWidget {
     required this.minSpan,
   });
 
-  final List<File> frames;
+  /// Dải ảnh dựng sẵn ở màn cha và giữ nguyên một thực thể giữa các lượt dựng.
+  ///
+  /// Kim chạy thì cả màn này dựng lại theo nhịp trình phát; dựng lại luôn 24
+  /// `Image.file` ngần ấy lần một giây là chỗ giật rõ nhất khi kéo. Nhận vào
+  /// một widget đã dựng sẵn thì Flutter thấy đúng thực thể cũ và bỏ qua cả
+  /// nhánh đó.
+  final Widget strip;
   final Duration total;
   final Duration start;
   final Duration end;
@@ -435,26 +497,7 @@ class _Filmstrip extends StatelessWidget {
           height: _height,
           child: Stack(
             children: [
-              Positioned.fill(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: frames.isEmpty
-                      ? const ColoredBox(color: Color(0xFF1B2748))
-                      : Row(
-                          children: [
-                            for (final frame in frames)
-                              Expanded(
-                                child: Image.file(
-                                  frame,
-                                  fit: BoxFit.cover,
-                                  height: _height,
-                                  gaplessPlayback: true,
-                                ),
-                              ),
-                          ],
-                        ),
-                ),
-              ),
+              Positioned.fill(child: strip),
               // Hai đầu bị bỏ đi phủ mờ: người dùng thấy ngay phần nào mất.
               Positioned(
                 left: 0,

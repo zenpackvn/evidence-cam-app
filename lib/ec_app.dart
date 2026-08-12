@@ -5001,13 +5001,67 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
   // Trong lúc kéo, hiện mốc ngón tay đang chỉ chứ không hiện vị trí thật của
   // trình phát: lệnh tua đi qua nền tảng nên vị trí thật luôn về sau ngón tay
   // một nhịp, và thanh kéo sẽ giật ngược.
-  Duration? _scrubPosition;
+  //
+  // Là `ValueNotifier` chứ KHÔNG phải trường + `setState`: thanh kéo bắn mỗi
+  // khung hình, mà `setState` ở đây dựng lại cả màn — `FutureBuilder`,
+  // `AspectRatio`, `VideoPlayer`, tất cả — sáu chục lần mỗi giây. Đó là chỗ
+  // sinh ra cảm giác đơ khi kéo. Nay chỉ hàng chứa thanh kéo dựng lại.
+  final ValueNotifier<Duration?> _scrubPosition = ValueNotifier(null);
 
   /// Lượt tua gần nhất còn đang chạy, để không bắn chồng lệnh.
   bool _seeking = false;
 
   /// Mốc mới nhất ngón tay chỉ tới trong lúc lượt tua trước chưa xong.
   Duration? _pendingSeek;
+
+  /// Ngón tay đã rời thanh kéo, còn chờ lệnh tua cuối đáp xuống.
+  bool _scrubEnded = false;
+
+  /// Ảnh xem trước rải đều clip, trích ngầm sau khi màn đã mở.
+  ///
+  /// Vì sao cần: mỗi lệnh tua của trình phát phải giải mã thật, với clip phát
+  /// thẳng từ máy chủ còn phải chờ mạng — vài trăm mili giây một lần, tức kéo
+  /// cả một đoạn mới thấy hình nhảy một nấc. Bộ ảnh này nằm sẵn trên máy nên
+  /// đổi tức thì: kéo đi kéo lại vẫn bám theo ngón tay.
+  final ValueNotifier<List<EcFilmstripFrame>> _frames = ValueNotifier(const []);
+  EcVideoTrimService? _thumbnailer;
+  bool _disposed = false;
+
+  /// Ảnh gần [at] nhất, hoặc `null` khi chưa trích được ảnh nào.
+  EcFilmstripFrame? _frameAt(Duration at) {
+    final frames = _frames.value;
+    if (frames.isEmpty) return null;
+    var best = frames.first;
+    for (final frame in frames) {
+      final closer = (frame.at - at).abs() < (best.at - at).abs();
+      if (closer) best = frame;
+    }
+    return best;
+  }
+
+  /// Trích ảnh xem trước ở nền, sau khi clip đã mở được.
+  ///
+  /// Chạy sau `_ready` chứ không song song: trước đó chưa biết clip dài bao
+  /// nhiêu, mà cũng không nên giành băng thông với chính lượt phát đầu tiên.
+  Future<void> _loadThumbnails() async {
+    try {
+      await _ready;
+      final total = _controller.value.duration;
+      if (_disposed || total <= Duration.zero) return;
+      final service = _thumbnailer ??= EcVideoTrimService();
+      await service.sparseFilmstrip(
+        input: widget.url,
+        duration: total,
+        cancelled: () => _disposed,
+        onFrame: (frames) {
+          if (!_disposed) _frames.value = frames;
+        },
+      );
+    } on Object {
+      // Không có ảnh thì thanh kéo chạy y như trước — mất một thứ cho mượt
+      // tay, không mất chức năng nào.
+    }
+  }
 
   /// Tua theo ngón tay, nhưng mỗi lúc chỉ một lệnh.
   ///
@@ -5030,6 +5084,13 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
       next = queued;
     }
     _seeking = false;
+    // Chỉ khi hàng tua đã cạn mới trả thanh kéo về bám vị trí thật. Trả sớm
+    // hơn thì trình phát còn đang chạy tới mốc cuối, và thanh kéo nhảy ngược
+    // về chỗ cũ ngay trước mắt người vừa thả tay.
+    if (_scrubEnded) {
+      _scrubEnded = false;
+      _scrubPosition.value = null;
+    }
   }
 
   void _togglePlayPause() {
@@ -5069,7 +5130,16 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    unawaited(_loadThumbnails());
+  }
+
+  @override
   void dispose() {
+    _disposed = true;
+    _frames.dispose();
+    _scrubPosition.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -5144,7 +5214,11 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                       child: Center(
                         child: ValueListenableBuilder<VideoPlayerValue>(
                           valueListenable: _controller.valueListenable,
-                          builder: (context, value, _) => GestureDetector(
+                          // Dựng MỘT lần rồi truyền xuống: trình phát bắn giá
+                          // trị mới mỗi khung hình, mà dựng lại `VideoPlayer`
+                          // ngần ấy lần là bắt Flutter dựng lại cả kết cấu ảnh.
+                          child: VideoPlayer(raw),
+                          builder: (context, value, videoChild) => GestureDetector(
                             onTap: _togglePlayPause,
                             child: AspectRatio(
                               aspectRatio: value.aspectRatio == 0
@@ -5160,7 +5234,39 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                                   // thì chỉ dựng lại từ `captured_at` — hai
                                   // đồng hồ trên cùng một khung là thứ đối
                                   // phương chỉ vào đầu tiên.
-                                  VideoPlayer(raw),
+                                  videoChild!,
+                                  // Trong lúc kéo thì đắp ảnh xem trước lên
+                                  // trên: nó nằm sẵn trên máy nên đổi ngay
+                                  // theo ngón tay, còn khung hình thật của
+                                  // trình phát phải chờ lệnh tua giải mã xong
+                                  // — kéo đi kéo lại thì nó chỉ kịp hiện ở
+                                  // chỗ dừng cuối cùng.
+                                  ValueListenableBuilder<Duration?>(
+                                    valueListenable: _scrubPosition,
+                                    builder: (context, scrub, _) {
+                                      if (scrub == null) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return ValueListenableBuilder<
+                                        List<EcFilmstripFrame>
+                                      >(
+                                        valueListenable: _frames,
+                                        builder: (context, _, __) {
+                                          final frame = _frameAt(scrub);
+                                          if (frame == null) {
+                                            return const SizedBox.shrink();
+                                          }
+                                          return Positioned.fill(
+                                            child: Image.file(
+                                              frame.file,
+                                              fit: BoxFit.contain,
+                                              gaplessPlayback: true,
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
                                   AnimatedOpacity(
                                     opacity: value.isPlaying ? 0 : 1,
                                     duration: const Duration(
@@ -5190,70 +5296,78 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                     ),
                     ValueListenableBuilder<VideoPlayerValue>(
                       valueListenable: _controller.valueListenable,
-                      builder: (context, value, _) {
-                        final duration = value.duration;
-                        final position = _scrubPosition ?? value.position;
-                        final sliderMax = duration.inMilliseconds > 0
-                            ? duration.inMilliseconds.toDouble()
-                            : 1.0;
-                        final sliderValue = position.inMilliseconds
-                            .toDouble()
-                            .clamp(0.0, sliderMax);
-                        return Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                          child: Row(
-                            children: [
-                              Text(
-                                _formatDuration(position),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
+                      builder: (context, value, _) => ValueListenableBuilder<Duration?>(
+                        valueListenable: _scrubPosition,
+                        builder: (context, scrub, _) {
+                          final duration = value.duration;
+                          final position = scrub ?? value.position;
+                          final sliderMax = duration.inMilliseconds > 0
+                              ? duration.inMilliseconds.toDouble()
+                              : 1.0;
+                          final sliderValue = position.inMilliseconds
+                              .toDouble()
+                              .clamp(0.0, sliderMax);
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                            child: Row(
+                              children: [
+                                Text(
+                                  _formatDuration(position),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
                                 ),
-                              ),
-                              Expanded(
-                                child: CupertinoSlider(
-                                  value: sliderValue,
-                                  max: sliderMax,
-                                  activeColor: Colors.white,
-                                  thumbColor: Colors.white,
-                                  // Nhảy NGAY theo ngón tay, không đợi thả.
-                                  //
-                                  // Trước đây chỉ tua lúc thả tay, nên kéo tới
-                                  // đâu cũng chỉ thấy một con số đổi còn hình
-                                  // thì đứng im — không dò được cảnh mình cần.
-                                  // Nay hình chạy theo ngón, đúng như thanh
-                                  // kéo ở màn cắt.
-                                  onChanged: duration.inMilliseconds > 0
-                                      ? (v) {
-                                          final target = Duration(
-                                            milliseconds: v.round(),
-                                          );
-                                          setState(
-                                            () => _scrubPosition = target,
-                                          );
-                                          _seekWhileScrubbing(target);
-                                        }
-                                      : null,
-                                  onChangeEnd: (v) {
-                                    final target = Duration(
-                                      milliseconds: v.round(),
-                                    );
-                                    _controller.seekTo(target);
-                                    setState(() => _scrubPosition = null);
-                                  },
+                                Expanded(
+                                  child: CupertinoSlider(
+                                    value: sliderValue,
+                                    max: sliderMax,
+                                    activeColor: Colors.white,
+                                    thumbColor: Colors.white,
+                                    // Nhảy NGAY theo ngón tay, không đợi thả.
+                                    //
+                                    // Trước đây chỉ tua lúc thả tay, nên kéo tới
+                                    // đâu cũng chỉ thấy một con số đổi còn hình
+                                    // thì đứng im — không dò được cảnh mình cần.
+                                    // Nay hình chạy theo ngón, đúng như thanh
+                                    // kéo ở màn cắt.
+                                    onChanged: duration.inMilliseconds > 0
+                                        ? (v) {
+                                            final target = Duration(
+                                              milliseconds: v.round(),
+                                            );
+                                            _scrubPosition.value = target;
+                                            unawaited(
+                                              _seekWhileScrubbing(target),
+                                            );
+                                          }
+                                        : null,
+                                    // Đi qua đúng hàng đợi như lúc đang kéo.
+                                    // Gọi thẳng `seekTo` ở đây là chen ngang một
+                                    // lệnh chưa đáp, và hai lệnh về không đúng
+                                    // thứ tự làm hình nhảy ngược một nhịp.
+                                    onChangeEnd: (v) {
+                                      final target = Duration(
+                                        milliseconds: v.round(),
+                                      );
+                                      _scrubPosition.value = target;
+                                      _scrubEnded = true;
+                                      unawaited(_seekWhileScrubbing(target));
+                                    },
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                _formatDuration(duration),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
+                                Text(
+                                  _formatDuration(duration),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 );

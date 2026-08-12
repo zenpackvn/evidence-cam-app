@@ -33,6 +33,14 @@ import 'ec_video_faststart.dart' show FfmpegRunner;
 /// tiền tố chung cho phép dọn chủ động khi cần.
 const String evidenceTrimPrefix = 'evidence_trim_';
 
+/// Một ảnh xem trước kèm mốc thời gian nó được trích ra.
+class EcFilmstripFrame {
+  const EcFilmstripFrame({required this.at, required this.file});
+
+  final Duration at;
+  final File file;
+}
+
 class EcVideoTrimService {
   EcVideoTrimService({
     @visibleForTesting FfmpegRunner? runner,
@@ -88,11 +96,15 @@ class EcVideoTrimService {
   ///
   /// Hỏng thì trả danh sách rỗng và thanh thời gian rơi về nền trơn — mất một
   /// thứ để nhìn cho dễ, không mất chức năng nào.
+  /// [height] là 360 chứ không phải cỡ của dải: cùng bộ ảnh này còn được phóng
+  /// lên ô xem trước cỡ gần nửa màn hình trong lúc kéo, và ảnh cao 96 phóng lên
+  /// đó thì nhoè tới mức không đọc được dấu giờ nung trên hình. Dải thời gian
+  /// tự thu nhỏ khi vẽ nên nó không thiệt gì.
   Future<List<File>> filmstrip({
     required String inputPath,
     required Duration duration,
     int count = 24,
-    int height = 96,
+    int height = 360,
   }) async {
     if (!File(inputPath).existsSync() || duration <= Duration.zero) return [];
     try {
@@ -111,6 +123,56 @@ class EcVideoTrimService {
       return frames;
     } on Object {
       return [];
+    }
+  }
+
+  /// Trích [count] ảnh rải đều clip, mỗi ảnh một lượt ffmpeg riêng.
+  ///
+  /// Khác [filmstrip] ở chỗ đọc được cả **URL** chứ không chỉ tệp trên máy:
+  /// `-ss` đứng trước `-i` nên ffmpeg nhảy thẳng tới mốc cần bằng một yêu cầu
+  /// dải byte, tải vài chục KB quanh mốc đó thay vì kéo cả clip về. Đó là lý do
+  /// phải chạy nhiều lượt: một lượt duy nhất với bộ lọc `fps` buộc ffmpeg đọc
+  /// tuần tự từ đầu đến cuối, tức tải nguyên tệp.
+  ///
+  /// Đổi lại là chậm — mỗi mốc một vòng mạng. Dành cho việc chạy ngầm sau khi
+  /// màn đã mở, không phải thứ chặn người dùng chờ.
+  ///
+  /// [onFrame] được gọi sau MỖI ảnh, để màn hình dùng được ảnh đầu tiên ngay
+  /// thay vì ngồi đợi đủ bộ. Hỏng một mốc thì bỏ mốc đó và đi tiếp: thiếu vài
+  /// ảnh thì dải thưa hơn, còn dừng cả loạt thì mất sạch.
+  /// Mỗi ảnh đi kèm MỐC của chính nó chứ không suy ra từ vị trí trong danh
+  /// sách: một mốc hỏng là bị bỏ qua, và lúc đó chỉ số thứ i không còn ứng với
+  /// khoảng thứ i nữa — dò theo chỉ số sẽ hiện sai khung hình.
+  Future<List<EcFilmstripFrame>> sparseFilmstrip({
+    required String input,
+    required Duration duration,
+    int count = 16,
+    int height = 360,
+    void Function(List<EcFilmstripFrame> frames)? onFrame,
+    bool Function()? cancelled,
+  }) async {
+    if (duration <= Duration.zero || count <= 0) return [];
+    final frames = <EcFilmstripFrame>[];
+    try {
+      await _ensureReady();
+      final dir = Directory(await _outputPathFor(''))..createSync();
+      for (var i = 0; i < count; i++) {
+        if (cancelled?.call() ?? false) break;
+        // Lấy mốc GIỮA mỗi khoảng, không lấy mốc đầu: mốc 0 của nhiều clip là
+        // một khung đen trước khi cảm biến ổn định.
+        final at = duration * ((i + 0.5) / count);
+        final path = '${dir.path}/${i.toString().padLeft(3, '0')}.jpg';
+        final ok = await _run(
+          '-y -ss ${at.inMilliseconds / 1000} -i "$input" '
+          '-frames:v 1 -vf "scale=-2:$height" "$path"',
+        );
+        if (!ok || !File(path).existsSync()) continue;
+        frames.add(EcFilmstripFrame(at: at, file: File(path)));
+        onFrame?.call(List.unmodifiable(frames));
+      }
+      return frames;
+    } on Object {
+      return frames;
     }
   }
 
