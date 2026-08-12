@@ -20,6 +20,7 @@ import 'package:app_platform/app_platform.dart'
         VideoPlayerValue,
         VoiceAnnouncerService;
 import 'package:app_ui/app_ui.dart';
+import 'package:config/config.dart' show EnvConfig;
 import 'package:ec_data/ec_data.dart';
 import 'package:ec_ui/ec_ui.dart';
 import 'package:feature_account/feature_account.dart';
@@ -1789,11 +1790,25 @@ class _StorageRouteState extends State<_StorageRoute>
         }
         final dto = snap.data!;
         final view = dto.storage;
+        // Máy chủ vừa nói kho thật là gì; nếu nó đổi so với lần đọc trước thì
+        // lựa chọn đã nhớ bám theo. Chạy ở nền, không chặn lượt dựng này.
+        unawaited(_syncStoragePick(widget.shopId, dto.kind));
+        final displayed = _displayedStorageKind(widget.shopId, dto.kind);
         return EcStorageScreen(
           busy: _busy,
           onBack: widget.onBack,
+          onPick: (kind) => unawaited(
+            _rememberStoragePick(widget.shopId, switch (kind) {
+              EcStorageKind.system => StorageKind.system,
+              EcStorageKind.s3 => StorageKind.s3,
+              EcStorageKind.gdrive => StorageKind.gdrive,
+            }),
+          ),
           state: EcStorageState(
-            kind: switch (dto.kind) {
+            // Dấu tích đặt theo lựa chọn đã nhớ, không theo kho thật: người
+            // dùng bấm chọn xong, thoát ra vào lại thì phải thấy đúng thứ
+            // mình đã chọn.
+            kind: switch (displayed) {
               StorageKind.system => EcStorageKind.system,
               StorageKind.s3 => EcStorageKind.s3,
               StorageKind.gdrive => EcStorageKind.gdrive,
@@ -1801,7 +1816,9 @@ class _StorageRouteState extends State<_StorageRoute>
             label: view?.label ?? '',
             ok: view?.ok ?? true,
             lastError: view?.lastError,
-            byosAllowed: dto.byosAllowed,
+            // Cờ thử nghiệm mở hai thẻ kho riêng để đi được vào luồng cắm kho.
+            // Máy chủ vẫn chặn lượt LƯU nếu gói thật chưa mở — xem [_kForcedPlan].
+            byosAllowed: dto.byosAllowed || _planOverrideOn,
             // `byos_allowed` nói về GÓI, không nói về vai trò. Chủ shop là
             // người duy nhất đổi được kho, và máy chủ trả `owner_only` cho mọi
             // ai khác — nên nút chỉ hiện khi cả hai điều kiện đều đúng.
@@ -2865,14 +2882,33 @@ String _roleDisplayName(AppLocalizations l10n, String role) => switch (role) {
   _ => role,
 };
 
+/// Ép gói, CHỈ để thử giao diện. Truyền lúc build:
+/// `--dart-define=FORCE_PLAN=enterprise`.
+///
+/// Chỉ đổi được thứ APP tự quyết: tên gói hiển thị, và cờ mở hai thẻ kho riêng.
+/// Mọi cánh cửa THẬT — lưu kho S3, hạn mức video, số người dùng — do máy chủ
+/// giữ, nên máy chủ vẫn từ chối nếu tài khoản chưa thật sự lên gói. Đây là cờ
+/// để đi thử luồng màn hình, không phải cách cấp gói.
+const _kForcedPlan = String.fromEnvironment('FORCE_PLAN');
+
+/// Chặn hai lớp: bản phát hành không truyền cờ này (fastlane chỉ truyền
+/// `env/<flavor>.json`), và kể cả lỡ tay truyền thì flavor `prod` vẫn bỏ qua.
+bool get _planOverrideOn =>
+    _kForcedPlan.isNotEmpty && const EnvConfig().flavor != 'prod';
+
 String _planDisplayName(AppLocalizations l10n, String planCode) =>
-    switch (planCode) {
+    switch (_planOverrideOn ? _kForcedPlan : planCode) {
       'free' => l10n.planFree,
       'basic' => l10n.planBasic,
+      'pro' => l10n.planPro,
+      'enterprise' => l10n.planEnterprise,
+      // `saver`/`premium` là hai mã của thế hệ gói trước. Khách mua từ hồi đó
+      // vẫn đang dùng chúng, nên xoá là họ đọc thấy mã thô trên màn Tài khoản.
       'saver' => l10n.planSaver,
       'premium' => l10n.planPremium,
       // Mã lạ thì hiện nguyên mã: sai còn hơn im lặng gọi nhầm tên gói người
-      // dùng đang trả tiền. Nhưng 4 mã trên phải khớp PLANS ở backend.
+      // dùng đang trả tiền. Nhưng các mã trên phải khớp PLANS ở backend
+      // (`tool/ec_plans.mjs`).
       _ => planCode,
     };
 
@@ -3357,7 +3393,12 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
               : () => widget.onTapStorage!().then((_) {
                   if (mounted) _retry();
                 }),
-          storageLabel: _storageLabel(context, detail.storageKind),
+          // Hiện thứ chủ shop đã CHỌN trong màn Kho lưu trữ. Xem
+          // [_storagePickKey] về chỗ lệch giữa lựa chọn và kho thật.
+          storageLabel: _storageLabel(
+            context,
+            _displayedStorageKind(widget.shop.id, detail.storageKind),
+          ),
           onDeleteShop: locked || widget.onDeleteShop == null
               ? null
               : () => unawaited(widget.onDeleteShop!()),
@@ -3405,10 +3446,69 @@ class _ShopDetailData {
   final StorageKind storageKind;
 }
 
+/// Kho người dùng vừa BẤM CHỌN trong màn Kho lưu trữ, nhớ ngay trên máy theo
+/// từng shop.
+///
+/// Máy chủ chỉ ghi nhận kho khi luồng cắm chạy xong — nhập đủ khoá S3, hoặc
+/// cấp quyền Google ở trình duyệt. Không có việc nào tên là "đặt kiểu kho".
+/// Chủ shop muốn lựa chọn của mình được giữ ngay lúc bấm, nên nhớ thêm ở đây
+/// và ưu tiên nó khi hiển thị.
+///
+/// Đây là LỰA CHỌN, không phải nơi video đang nằm. Hai thứ lệch nhau khi kho
+/// chưa cắm được thật, và [_syncStoragePick] là chỗ kéo chúng về lại với nhau
+/// mỗi khi máy chủ báo kho đã đổi thật.
+String _storagePickKey(String shopId) => 'storage_pick_$shopId';
+
+/// Kho máy chủ báo ở lần đọc gần nhất — để nhận ra lúc kho đổi THẬT.
+String _storageServerKey(String shopId) => 'storage_server_$shopId';
+
+StorageKind? _parseStorageKind(String? raw) => switch (raw) {
+  'system' => StorageKind.system,
+  's3' => StorageKind.s3,
+  'gdrive' => StorageKind.gdrive,
+  _ => null,
+};
+
+String _storageKindName(StorageKind kind) => switch (kind) {
+  StorageKind.system => 'system',
+  StorageKind.s3 => 's3',
+  StorageKind.gdrive => 'gdrive',
+};
+
+/// Kho để HIỂN THỊ: lựa chọn đã nhớ, hoặc kho thật khi chưa nhớ gì.
+StorageKind _displayedStorageKind(String shopId, StorageKind server) =>
+    _parseStorageKind(_appMemory()?.getString(_storagePickKey(shopId))) ??
+    server;
+
+Future<void> _rememberStoragePick(String shopId, StorageKind kind) async =>
+    _appMemory()?.setString(_storagePickKey(shopId), _storageKindName(kind));
+
+/// Kéo lựa chọn đã nhớ về khớp với máy chủ khi kho đổi THẬT.
+///
+/// So với kho lần đọc trước chứ không so với chính lựa chọn: nếu so với lựa
+/// chọn thì mỗi lượt đọc lại sẽ xoá ngay thứ người dùng vừa bấm mà chưa cắm
+/// xong. Kho chỉ đổi thật khi máy chủ trả về một giá trị khác lần trước — kể
+/// cả khi đổi từ web, và lúc ấy lựa chọn cũ đã hết nghĩa.
+Future<void> _syncStoragePick(String shopId, StorageKind server) async {
+  final memory = _appMemory();
+  if (memory == null) return;
+  final seen = _parseStorageKind(memory.getString(_storageServerKey(shopId)));
+  await memory.setString(_storageServerKey(shopId), _storageKindName(server));
+  if (seen == server) return;
+  await memory.setString(_storagePickKey(shopId), _storageKindName(server));
+}
+
+/// Tên kho hiện ở hàng ngoài, lấy ĐÚNG chuỗi của thẻ trong màn Kho lưu trữ.
+///
+/// Trước đây hàng ngoài dùng một bộ tên riêng ("Kho riêng của bạn (S3)",
+/// "Google Drive của bạn") khác tên trên thẻ người dùng vừa bấm ("Kho đám mây
+/// riêng (chuẩn S3)", "Google Drive"). Cùng một kho mà hai màn gọi hai tên thì
+/// người dùng phải tự đoán xem có phải một thứ không — với màn nói về NƠI CẤT
+/// BẰNG CHỨNG thì đó là chỗ không được phép để họ đoán.
 String _storageLabel(BuildContext context, StorageKind kind) => switch (kind) {
   StorageKind.system => context.l10n.storageSystemName,
-  StorageKind.s3 => context.l10n.storageS3Name,
-  StorageKind.gdrive => context.l10n.storageDriveName,
+  StorageKind.s3 => context.l10n.storageS3Title,
+  StorageKind.gdrive => context.l10n.storageDriveTitle,
 };
 
 /// Hàng `pending` chưa có tài khoản: không uid, không tên, không email — chỉ

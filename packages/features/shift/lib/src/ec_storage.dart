@@ -88,6 +88,7 @@ class EcStorageScreen extends StatefulWidget {
     this.onConnectDrive,
     this.onTest,
     this.onDisconnect,
+    this.onPick,
     this.busy = false,
     super.key,
   });
@@ -98,6 +99,14 @@ class EcStorageScreen extends StatefulWidget {
   final VoidCallback? onConnectDrive;
   final VoidCallback? onTest;
   final VoidCallback? onDisconnect;
+
+  /// Người dùng vừa bấm chọn một kho — bắn ở MỌI lượt bấm, kể cả khi luồng
+  /// cắm kho phía sau không chạy được.
+  ///
+  /// Bên gọi dùng nó để nhớ lựa chọn ngay trên máy. Tách khỏi
+  /// `onConnectS3`/`onConnectDrive` vì hai thứ khác nhau: kia là "hãy cắm kho
+  /// này", còn đây chỉ là "người dùng đã chỉ vào kho này".
+  final void Function(EcStorageKind kind)? onPick;
 
   /// Đang chạy một thao tác mạng — khoá nút để không bấm hai lần.
   final bool busy;
@@ -138,6 +147,7 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// về gói nằm ngay trong thẻ để không ai tưởng đã cắm xong.
   void _pick(EcStorageKind kind, VoidCallback? action) {
     setState(() => _picked = kind);
+    widget.onPick?.call(kind);
     action?.call();
   }
 
@@ -201,10 +211,11 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
               // Câu lỗi nguyên văn của nhà cung cấp là thứ DUY NHẤT giúp chủ
               // shop tự sửa quyền bên phía họ, nên nó ở lại kể cả khi màn này
               // đã gọn còn ba thẻ.
-              if (_own && !state.ok && (state.lastError?.isNotEmpty ?? false))
-                ...[
-                  const SizedBox(height: 12),
-                  _NoteBox(text: state.lastError!, danger: true),
+              if (_own &&
+                  !state.ok &&
+                  (state.lastError?.isNotEmpty ?? false)) ...[
+                const SizedBox(height: 12),
+                _NoteBox(text: state.lastError!, danger: true),
               ],
             ],
           ),
