@@ -2337,13 +2337,31 @@ class _FixedSettingRow extends StatelessWidget {
         cross: CrossAxisAlignment.center,
         children: [Icon(icon, size: 22, color: PenColors.ink)],
       ),
-      Expanded(child: PenText(label, size: 16, color: PenColors.ink)),
-      PenText(
-        value,
-        size: 16,
-        color: PenColors.ink,
-        weight: FontWeight.w600,
-        softWrap: false,
+      // Nhãn co lại trước, giá trị giữ chỗ theo nội dung nhưng CÓ TRẦN.
+      //
+      // Trước đây giá trị là một `PenText` trần với `softWrap: false`: gặp một
+      // giá trị dài — "Kho đám mây riêng (chuẩn S3)" chẳng hạn — là hàng tràn
+      // ra ngoài khung thẻ, và phần tràn nằm ngoài vùng chạm nên hàng trông
+      // như bấm không ăn.
+      Flexible(
+        child: PenText(
+          label,
+          size: 16,
+          color: PenColors.ink,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+      Flexible(
+        child: PenText(
+          value,
+          size: 16,
+          color: PenColors.ink,
+          weight: FontWeight.w600,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          align: TextAlign.end,
+        ),
       ),
       // Chữ "mặc định" thay chỗ mũi tên cũ. Bỏ trống chỗ đó thì hàng trông y
       // như một hàng bấm được vừa hỏng; nói thẳng đây là mức mặc định thì

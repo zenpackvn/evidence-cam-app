@@ -995,6 +995,16 @@ class AppLocalizationsFil extends AppLocalizations {
   String get queueDeleteAction => 'Alisin';
 
   @override
+  String get queueClearAction => 'I-clear';
+
+  @override
+  String get queueClearConfirmTitle => 'I-clear ang buong pila?';
+
+  @override
+  String get queueClearConfirmBody =>
+      'Ang mga clip na hindi pa na-upload ay nasa telepono lang na ito. Mawawala sila nang tuluyan.';
+
+  @override
   String get queueDeleteConfirmTitle => 'Alisin sa pila?';
 
   @override

@@ -983,6 +983,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get queueDeleteAction => 'Xóa';
 
   @override
+  String get queueClearAction => 'Xoá hết';
+
+  @override
+  String get queueClearConfirmTitle => 'Xoá toàn bộ hàng chờ?';
+
+  @override
+  String get queueClearConfirmBody =>
+      'Những clip chưa tải lên chỉ nằm trên máy này. Xoá là mất hẳn, không lấy lại được.';
+
+  @override
   String get queueDeleteConfirmTitle => 'Xóa khỏi hàng đợi?';
 
   @override

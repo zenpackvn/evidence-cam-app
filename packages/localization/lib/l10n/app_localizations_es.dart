@@ -1000,6 +1000,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queueDeleteAction => 'Quitar';
 
   @override
+  String get queueClearAction => 'Vaciar';
+
+  @override
+  String get queueClearConfirmTitle => '¿Vaciar toda la cola?';
+
+  @override
+  String get queueClearConfirmBody =>
+      'Los clips sin subir solo existen en este teléfono. Vaciar los borra definitivamente.';
+
+  @override
   String get queueDeleteConfirmTitle => '¿Quitar de la cola?';
 
   @override

@@ -988,6 +988,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queueDeleteAction => 'Remove';
 
   @override
+  String get queueClearAction => 'Clear';
+
+  @override
+  String get queueClearConfirmTitle => 'Clear the whole queue?';
+
+  @override
+  String get queueClearConfirmBody =>
+      'Clips that have not uploaded live only on this phone. Clearing removes them for good.';
+
+  @override
   String get queueDeleteConfirmTitle => 'Remove from queue?';
 
   @override

@@ -439,6 +439,7 @@ class EcVideoDetailScreen extends StatelessWidget {
     this.onDelete,
     this.onVerify,
     this.canDelete = true,
+    this.showRecordedBy = true,
     super.key,
   });
 
@@ -471,6 +472,12 @@ class EcVideoDetailScreen extends StatelessWidget {
   /// Whether the current user may delete this clip. False for Nhân viên
   /// (staff) — hides the delete row.
   final bool canDelete;
+
+  /// Hiện hàng "Người quay". Tắt ở hồ sơ khiếu nại: hồ sơ đó là thứ chủ shop
+  /// đem đi làm việc với sàn, và ai trong shop bấm nút quay không phải chuyện
+  /// của bên nhận — nói ra chỉ mời thêm một câu hỏi không liên quan tới việc
+  /// gói hàng có đúng hay không.
+  final bool showRecordedBy;
 
   @override
   Widget build(BuildContext context) {
@@ -522,11 +529,13 @@ class EcVideoDetailScreen extends StatelessWidget {
           label: l10n.detailRecordedTime,
           value: video.recordedAt,
         ),
-        const _EcDetailDivider(),
-        _EcDetailInfoRow(
-          label: l10n.detailRecordedBy,
-          value: video.recordedBy,
-        ),
+        if (showRecordedBy) ...[
+          const _EcDetailDivider(),
+          _EcDetailInfoRow(
+            label: l10n.detailRecordedBy,
+            value: video.recordedBy,
+          ),
+        ],
         const _EcDetailDivider(),
         _EcDetailInfoRow(label: l10n.detailDevice, value: video.device),
         const _EcDetailDivider(),

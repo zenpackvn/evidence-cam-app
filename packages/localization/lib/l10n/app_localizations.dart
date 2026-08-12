@@ -1866,6 +1866,24 @@ abstract class AppLocalizations {
   /// **'Remove'**
   String get queueDeleteAction;
 
+  /// No description provided for @queueClearAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get queueClearAction;
+
+  /// No description provided for @queueClearConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the whole queue?'**
+  String get queueClearConfirmTitle;
+
+  /// No description provided for @queueClearConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Clips that have not uploaded live only on this phone. Clearing removes them for good.'**
+  String get queueClearConfirmBody;
+
   /// No description provided for @queueDeleteConfirmTitle.
   ///
   /// In en, this message translates to:

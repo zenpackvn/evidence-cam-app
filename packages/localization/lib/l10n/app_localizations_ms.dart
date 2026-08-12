@@ -993,6 +993,16 @@ class AppLocalizationsMs extends AppLocalizations {
   String get queueDeleteAction => 'Keluarkan';
 
   @override
+  String get queueClearAction => 'Kosongkan';
+
+  @override
+  String get queueClearConfirmTitle => 'Kosongkan seluruh baris gilir?';
+
+  @override
+  String get queueClearConfirmBody =>
+      'Klip yang belum dimuat naik hanya ada pada telefon ini. Mengosongkan akan menghilangkannya terus.';
+
+  @override
   String get queueDeleteConfirmTitle => 'Keluarkan dari baris gilir?';
 
   @override

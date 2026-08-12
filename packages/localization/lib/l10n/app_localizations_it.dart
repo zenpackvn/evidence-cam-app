@@ -1003,6 +1003,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get queueDeleteAction => 'Rimuovi';
 
   @override
+  String get queueClearAction => 'Svuota';
+
+  @override
+  String get queueClearConfirmTitle => 'Svuotare l\'intera coda?';
+
+  @override
+  String get queueClearConfirmBody =>
+      'I clip non caricati esistono solo su questo telefono. Svuotare li elimina per sempre.';
+
+  @override
   String get queueDeleteConfirmTitle => 'Rimuovere dalla coda?';
 
   @override

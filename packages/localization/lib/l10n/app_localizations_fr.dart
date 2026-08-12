@@ -1015,6 +1015,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get queueDeleteAction => 'Retirer';
 
   @override
+  String get queueClearAction => 'Vider';
+
+  @override
+  String get queueClearConfirmTitle => 'Vider toute la file ?';
+
+  @override
+  String get queueClearConfirmBody =>
+      'Les clips non envoyés n\'existent que sur ce téléphone. Les vider les supprime définitivement.';
+
+  @override
   String get queueDeleteConfirmTitle => 'Retirer de la file ?';
 
   @override

@@ -190,14 +190,32 @@ class EcUploadQueue extends ChangeNotifier {
       await _evidenceDir();
       _tasks
         ..clear()
-        // Drop entries whose clip file is gone.
+        // Drop entries whose clip file is gone — TRỪ hàng đã xong.
+        //
+        // Hàng đã xong là một cái biên nhận, không phải việc còn phải làm: clip
+        // của nó nằm an toàn trên máy chủ và bản trên máy đã được xoá ngay sau
+        // lượt tải lên. Lọc nó theo sự tồn tại của tệp thì mọi hàng đã xong đều
+        // rụng ở lần mở app kế tiếp — đúng thứ danh sách này phải giữ lại.
         ..addAll(
-          loaded.where((t) => File(absolutePathOf(t.filePath)).existsSync()),
+          loaded.where(
+            (t) =>
+                t.state == EcUploadState.done ||
+                File(absolutePathOf(t.filePath)).existsSync(),
+          ),
         );
       // Có row trong kho nhưng KHÔNG row nào tìm thấy tệp = lỗi giải đường dẫn,
       // không phải hàng đợi rỗng. Ghi lại để [_sweepOrphans] không coi cả thư
       // mục là rác và xoá sạch bằng chứng vừa được khôi phục.
-      final lostEveryPath = loaded.isNotEmpty && _tasks.isEmpty;
+      // Chỉ đếm những hàng CẦN tệp. Hàng đã xong luôn được giữ lại dù tệp đã
+      // xoá, nên tính cả chúng vào đây là cờ này không bao giờ bật nữa — và
+      // [_sweepOrphans] sẽ coi cả thư mục bằng chứng là rác đúng lúc đường dẫn
+      // hỏng, tức xoá sạch những clip chưa kịp lên.
+      final needFile = loaded
+          .where((t) => t.state != EcUploadState.done)
+          .toList(growable: false);
+      final lostEveryPath =
+          needFile.isNotEmpty &&
+          !_tasks.any((t) => t.state != EcUploadState.done);
       await _importLegacyJson();
       // Upload đứt giữa chừng, và clip bị đỗ vì hết hạn mức, đều được thử lại.
       //
@@ -279,6 +297,8 @@ class EcUploadQueue extends ChangeNotifier {
       ownerUid: ownerUid,
     );
     _tasks.insert(0, task);
+    // Đầy trần thì hàng mới vào, hàng đã xong cũ nhất ra.
+    await _trimDoneHistory();
     await _store.save(task);
     notifyListeners();
     unawaited(_process());
@@ -565,11 +585,18 @@ class EcUploadQueue extends ChangeNotifier {
         // Deleted mid-upload — don't resurrect it in the store/list.
         if (!_tasks.contains(task)) continue;
         if (succeeded) {
-          // Done means it's fully uploaded — it now lives on the order's
-          // evidence timeline (Vận đơn), so drop it from this queue instead
-          // of leaving a permanent "done" entry here.
-          _tasks.remove(task);
-          await _store.remove(task.id);
+          // Hàng "đã xong" Ở LẠI danh sách cho tới khi NGƯỜI DÙNG xoá nó.
+          //
+          // Clip đã lên tới hồ sơ của đơn (Vận đơn) rồi, nên xét về việc thì
+          // nó xong. Nhưng người đang đóng gói cần thấy mình đã quay được bao
+          // nhiêu clip — mà danh sách tự rỗng đi sau mỗi lượt lọt thì trông y
+          // như vừa bị xoá sạch, và họ quay lại lần nữa cho chắc.
+          //
+          // Ghi xuống kho lưu chứ không xoá khỏi đó: danh sách phải còn nguyên
+          // sau khi tắt app. Chỉ dấu × của từng hàng, nút Xoá hết, hoặc trần
+          // [queueDisplayLimit] mới lấy nó đi.
+          await _store.save(task);
+          await _trimDoneHistory();
           // Lưới đỡ: tệp đã được dời sang kho bản xem tạm ở trên nên đây thường
           // là no-op. Chỉ ăn thua khi lượt dời hỏng và tệp còn nằm lại.
           unawaited(_deleteLocalCopyQuietly(absolutePathOf(task.filePath)));
@@ -606,6 +633,66 @@ class EcUploadQueue extends ChangeNotifier {
     final current = _currentUid?.call();
     if (current == null) return true;
     return owner == current;
+  }
+
+  /// Số hàng còn VIỆC PHẢI LÀM — không tính những hàng đã xong.
+  ///
+  /// Con số trên chip ☁ ở màn quay là "còn bao nhiêu clip chưa lên", nên phải
+  /// đọc cái này chứ không đọc `tasks.length`: lịch sử đã xong nằm chung danh
+  /// sách sẽ làm chip đếm cả những thứ không còn phải chờ.
+  int get pendingCount =>
+      _tasks.where((t) => t.state != EcUploadState.done).length;
+
+  /// Trần số hàng giữ trong danh sách. Đầy thì hàng mới vào, hàng CŨ NHẤT ra.
+  ///
+  /// Một ca đóng hàng dài có thể qua vài trăm clip; giữ hết thì danh sách dài
+  /// vô ích và mỗi lượt dựng lại nặng dần.
+  static const queueDisplayLimit = 50;
+
+  /// Cắt bớt danh sách về [queueDisplayLimit], bỏ những hàng ĐÃ XONG cũ nhất.
+  ///
+  /// Chỉ đụng tới hàng đã xong: hàng còn chờ, đang lên, lỗi hay đỗ vì hạn mức
+  /// đều là việc chưa làm xong, và clip của chúng mới chỉ nằm trên máy này —
+  /// đẩy chúng ra khỏi danh sách là người dùng mất dấu bằng chứng chưa được
+  /// bảo vệ. Nếu 50 hàng đều là việc dở dang thì danh sách cứ dài hơn 50, và
+  /// đó là điều đúng.
+  Future<void> _trimDoneHistory() async {
+    if (_tasks.length <= queueDisplayLimit) return;
+    final done = _tasks
+        .where((t) => t.state == EcUploadState.done)
+        .toList(growable: false);
+    var over = _tasks.length - queueDisplayLimit;
+    // Duyệt NGƯỢC: `enqueue` chèn vào đầu danh sách nên đầu là hàng mới nhất,
+    // và hàng cũ nhất nằm ở cuối. Duyệt xuôi là bỏ đúng những hàng vừa xong.
+    for (final task in done.reversed) {
+      if (over <= 0) break;
+      _tasks.remove(task);
+      // Xoá cả ở kho lưu, nếu không thì lần mở app sau nó sống lại và trần 50
+      // chẳng còn nghĩa gì.
+      await _store.remove(task.id);
+      over -= 1;
+    }
+  }
+
+  /// Xoá SẠCH hàng đợi — cả việc dở dang lẫn lịch sử đã xong.
+  ///
+  /// Kéo theo cả tệp trên máy của những clip chưa lên: để lại là rác chiếm chỗ
+  /// mà không còn hàng nào trỏ tới. Bên gọi phải hỏi lại người dùng trước —
+  /// clip chưa lên chỉ tồn tại trên chính máy này.
+  Future<void> clearAll() async {
+    final ids = [for (final task in _tasks) task.id];
+    final paths = [
+      for (final task in _tasks)
+        if (task.state != EcUploadState.done) absolutePathOf(task.filePath),
+    ];
+    _tasks.clear();
+    notifyListeners();
+    for (final id in ids) {
+      await _store.remove(id);
+    }
+    for (final path in paths) {
+      await _deleteLocalCopyQuietly(path);
+    }
   }
 
   /// Thả mọi clip đang đỗ vì hạn mức trở lại hàng chờ.

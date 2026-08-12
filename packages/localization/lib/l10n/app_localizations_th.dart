@@ -975,6 +975,16 @@ class AppLocalizationsTh extends AppLocalizations {
   String get queueDeleteAction => 'นำออก';
 
   @override
+  String get queueClearAction => 'ล้างทั้งหมด';
+
+  @override
+  String get queueClearConfirmTitle => 'ล้างคิวทั้งหมดหรือไม่';
+
+  @override
+  String get queueClearConfirmBody =>
+      'คลิปที่ยังไม่อัปโหลดอยู่ในเครื่องนี้เท่านั้น ล้างแล้วจะหายถาวร';
+
+  @override
   String get queueDeleteConfirmTitle => 'นำออกจากคิวไหม';
 
   @override

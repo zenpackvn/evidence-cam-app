@@ -1011,6 +1011,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get queueDeleteAction => 'Entfernen';
 
   @override
+  String get queueClearAction => 'Leeren';
+
+  @override
+  String get queueClearConfirmTitle => 'Gesamte Warteschlange leeren?';
+
+  @override
+  String get queueClearConfirmBody =>
+      'Noch nicht hochgeladene Clips liegen nur auf diesem Telefon. Leeren löscht sie endgültig.';
+
+  @override
   String get queueDeleteConfirmTitle => 'Aus der Warteschlange entfernen?';
 
   @override

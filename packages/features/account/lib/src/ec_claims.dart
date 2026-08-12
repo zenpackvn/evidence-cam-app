@@ -312,6 +312,7 @@ class EcClaimDetailScreen extends StatelessWidget {
     this.onDelete,
     this.onAttachPhoto,
     this.onRemoveItem,
+    this.onItemTap,
     super.key,
   });
 
@@ -330,6 +331,10 @@ class EcClaimDetailScreen extends StatelessWidget {
   /// [onAttachPhoto] — id bằng chứng là duy nhất, nhưng mã đơn nói cho bên gọi
   /// biết phải sửa nhánh nào của hồ sơ.
   final void Function(String tracking, String evidenceId)? onRemoveItem;
+
+  /// Mở chi tiết một bằng chứng: `(mã đơn, id bằng chứng)`. `null` = hàng không
+  /// bấm được, dùng khi bên gọi chưa có đường đọc chi tiết.
+  final void Function(String tracking, String evidenceId)? onItemTap;
 
   @override
   Widget build(BuildContext context) {
@@ -389,6 +394,7 @@ class EcClaimDetailScreen extends StatelessWidget {
                     group: group,
                     onAttachPhoto: onAttachPhoto,
                     onRemoveItem: onRemoveItem,
+                    onItemTap: onItemTap,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -413,11 +419,13 @@ class _OrderGroupCard extends StatelessWidget {
     required this.group,
     this.onAttachPhoto,
     this.onRemoveItem,
+    this.onItemTap,
   });
 
   final EcClaimOrderGroup group;
   final ValueChanged<String>? onAttachPhoto;
   final void Function(String tracking, String evidenceId)? onRemoveItem;
+  final void Function(String tracking, String evidenceId)? onItemTap;
 
   @override
   Widget build(BuildContext context) {
@@ -456,6 +464,9 @@ class _OrderGroupCard extends StatelessWidget {
             onRemove: onRemoveItem == null
                 ? null
                 : () => onRemoveItem!(group.tracking, item.id),
+            onTap: onItemTap == null
+                ? null
+                : () => onItemTap!(group.tracking, item.id),
           ),
         // Đính kèm ảnh ở ĐÁY mỗi mã đơn, không phải đáy màn: hồ sơ gồm nhiều
         // đơn thì một nút chung không nói được ảnh sắp thuộc về đơn nào.
@@ -466,59 +477,135 @@ class _OrderGroupCard extends StatelessWidget {
   }
 }
 
+/// Một bằng chứng trong hồ sơ, vẽ theo ĐÚNG hình dạng hàng ở dòng thời gian
+/// của mã vận đơn: giờ bên trái, chấm tròn, rồi một thẻ có ảnh thu nhỏ và nhãn.
+///
+/// Cố ý dựng lại ở đây thay vì dùng chung widget của package `orders`: hai bên
+/// bám vào hai kiểu dữ liệu khác nhau (`EcTimelineVideo` có trạng thái niêm
+/// phong, thời lượng, link phát; `EcClaimItem` chỉ có id/nhãn/giờ/ảnh). Ghép
+/// chúng vào một widget chung sẽ đẻ ra một kiểu thứ ba mà chẳng bên nào dùng
+/// trọn vẹn. Thứ phải giống nhau là HÌNH DẠNG, và nó nằm trọn trong hàm này.
 class _ClaimItemRow extends StatelessWidget {
-  const _ClaimItemRow({required this.item, this.onRemove});
+  const _ClaimItemRow({required this.item, this.onRemove, this.onTap});
 
   final EcClaimItem item;
 
   /// Gỡ khỏi hồ sơ. `null` = không hiện icon.
   final VoidCallback? onRemove;
 
+  /// Mở chi tiết bằng chứng. `null` = thẻ không bấm được.
+  final VoidCallback? onTap;
+
   @override
-  Widget build(BuildContext context) => PenBox(
-    width: double.infinity,
-    axis: PenAxis.row,
-    gap: 10,
-    cross: CrossAxisAlignment.center,
-    padding: const EdgeInsets.symmetric(vertical: 7),
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.center,
     children: [
-      Icon(
-        item.isPhoto ? LucideIcons.image : LucideIcons.video,
-        size: 17,
-        color: PenColors.primary,
+      SizedBox(
+        width: 46,
+        child: PenText(item.time, size: 14, color: PenColors.mut),
+      ),
+      const SizedBox(
+        width: 22,
+        height: 58,
+        child: Center(
+          child: PenEllipse(width: 11, height: 11, color: PenColors.ink),
+        ),
       ),
       Expanded(
-        child: PenText(
-          item.label,
-          size: 14,
-          color: PenColors.ink,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
+        child: PenCard(
+          lifted: false,
+          gap: 12,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 11),
+          onTap: onTap,
+          children: [
+            _ClaimItemThumb(item: item),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PenText(
+                    item.label,
+                    size: 14,
+                    color: PenColors.ink,
+                    weight: FontWeight.w600,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (item.addedLater) ...[
+                    const SizedBox(height: 4),
+                    PenText(
+                      context.l10n.claimsAddedLater,
+                      size: 11,
+                      color: PenColors.mut,
+                      softWrap: false,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (onRemove != null)
+              // Vùng chạm rộng hơn icon: ngón tay chạm trượt sang thẻ bên cạnh
+              // là chuyện thường.
+              EcTap(
+                onTap: onRemove,
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(
+                    LucideIcons.x,
+                    size: 17,
+                    color: PenColors.danger,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
-      if (item.addedLater)
-        Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: PenText(
-            context.l10n.claimsAddedLater,
-            size: 11,
-            color: PenColors.mut,
-            softWrap: false,
-          ),
-        ),
-      PenText(item.time, size: 12, color: PenColors.mut, softWrap: false),
-      if (onRemove != null)
-        // Vùng chạm rộng hơn icon: hàng chỉ cao 31pt và icon 17pt thì một ngón
-        // tay chạm trượt sang dòng bên cạnh là chuyện thường.
-        EcTap(
-          onTap: onRemove,
-          child: const Padding(
-            padding: EdgeInsets.only(left: 4, top: 6, bottom: 6),
-            child: Icon(LucideIcons.trash2, size: 17, color: PenColors.danger),
-          ),
-        ),
     ],
   );
+}
+
+/// Ô vuông đầu hàng: ảnh thu nhỏ của bằng chứng, không có thì rơi về icon.
+///
+/// Mọi đường rơi đều về cùng một ô icon, nên ảnh thiếu hay hỏng nhìn vẫn giống
+/// thiết kế chứ không giống một lỗi.
+class _ClaimItemThumb extends StatelessWidget {
+  const _ClaimItemThumb({required this.item});
+
+  final EcClaimItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = item.thumbUrl;
+    final fallback = PenBox(
+      width: 38,
+      height: 38,
+      fill: PenColors.line,
+      radius: 10,
+      axis: PenAxis.row,
+      main: MainAxisAlignment.center,
+      cross: CrossAxisAlignment.center,
+      children: [
+        Icon(
+          item.isPhoto ? LucideIcons.image : LucideIcons.video,
+          size: 18,
+          color: PenColors.ink,
+        ),
+      ],
+    );
+    if (url == null || url.isEmpty) return fallback;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Image.network(
+        url,
+        width: 38,
+        height: 38,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback,
+        loadingBuilder: (context, child, progress) =>
+            progress == null ? child : fallback,
+      ),
+    );
+  }
 }
 
 class _AttachPhotoRow extends StatelessWidget {
@@ -560,6 +647,7 @@ class EcClaimPickable {
     required this.id,
     required this.label,
     required this.time,
+    this.orderId,
     this.isPhoto = false,
     this.capturedAt,
     this.day,
@@ -567,6 +655,12 @@ class EcClaimPickable {
   });
 
   final String id;
+
+  /// Id của ĐƠN chứa bằng chứng này trên máy chủ. Hồ sơ giữ lại để về sau còn
+  /// đọc được chi tiết bằng chứng (thời lượng, thiết bị, trạng thái niêm
+  /// phong) — những thứ hồ sơ không tự lưu.
+  final String? orderId;
+
   final String label;
   final String time;
   final bool isPhoto;

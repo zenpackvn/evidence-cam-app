@@ -223,6 +223,7 @@ class EcRecording2Screen extends StatelessWidget {
   Widget build(BuildContext context) {
     return _CamScaffold(
       queueCount: queueCount,
+      onQueueTap: onQueueTap,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
@@ -303,6 +304,7 @@ class EcCutoverBScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return _CamScaffold(
       queueCount: queueCount,
+      onQueueTap: onQueueTap,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
@@ -542,6 +544,7 @@ class EcNearLimitScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return _CamScaffold(
       queueCount: queueCount,
+      onQueueTap: onQueueTap,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
@@ -682,6 +685,7 @@ class EcReturnRecScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return _CamScaffold(
       queueCount: queueCount,
+      onQueueTap: onQueueTap,
       typeLabel: typeLabel,
       resolutionLabel: resolutionLabel,
       preview: preview,
@@ -1597,13 +1601,9 @@ class EcUploadQueueScreen extends StatelessWidget {
   /// Called with an item when its remove affordance is tapped.
   final ValueChanged<EcUploadItem>? onDelete;
 
-  int _countWithStatus(EcUploadStatus status) =>
-      items.where((i) => i.status == status).length;
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final quotaWaiting = _countWithStatus(EcUploadStatus.quotaWait);
     return CupertinoPageScaffold(
       backgroundColor: BrandColors.bg,
       child: SafeArea(
@@ -1647,81 +1647,117 @@ class EcUploadQueueScreen extends StatelessWidget {
               ),
             ),
             Expanded(
-              // ponytail: the whole page scrolls as one column so the footer
-              // note sits right under the card like the design, instead of
-              // being pinned to the bottom. A queue is tens of rows, not
-              // thousands — swap in a sliver list if that ever changes.
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Only real when something is actually waiting on quota —
-                    // this used to render unconditionally, showing "out of
-                    // quota" even when nothing was quota-blocked.
-                    if (quotaWaiting > 0) ...[
-                      const _QuotaBanner(),
-                      const SizedBox(height: 16),
-                    ],
-                    if (items.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 48),
-                        child: Center(
-                          child: Text(
-                            l10n.queueEmpty,
-                            style: _t(14, FontWeight.w400, BrandColors.mut),
-                          ),
-                        ),
-                      )
-                    else
-                      DecoratedBox(
-                        decoration: ecSquircleDecoration(
-                          radius: 14,
-                          color: BrandColors.card,
-                          shadows: const [
-                            BoxShadow(
-                              color: Color(0x12161616),
-                              offset: Offset(0, 2),
-                              blurRadius: 12,
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          child: Column(
-                            children: [
-                              for (var i = 0; i < items.length; i++) ...[
-                                if (i > 0)
-                                  Container(
-                                    height: 1,
-                                    color: BrandColors.line,
-                                  ),
-                                _UploadRow(
-                                  item: items[i],
-                                  onRetry: onRetry,
-                                  onPause: onPause,
-                                  onResume: onResume,
-                                  onDelete: onDelete,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 10),
-                    Center(
-                      child: Text(
-                        l10n.queueAutoUploadNote,
-                        textAlign: TextAlign.center,
-                        style: _t(13, FontWeight.w400, BrandColors.mut),
-                      ),
-                    ),
-                  ],
-                ),
+              child: EcUploadQueueList(
+                items: items,
+                onRetry: onRetry,
+                onPause: onPause,
+                onResume: onResume,
+                onDelete: onDelete,
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Phần thân của hàng đợi — băng hạn mức, các hàng clip, và câu ghi chú.
+///
+/// Tách khỏi [EcUploadQueueScreen] để dùng lại được trong sheet nửa màn mở từ
+/// màn quay: sheet đó có tiêu đề và tay nắm riêng, không dùng được khung màn
+/// đầy đủ, nhưng nội dung phải giống hệt — hai bản chép tay sẽ lệch nhau ngay
+/// lần sửa trạng thái tiếp theo.
+class EcUploadQueueList extends StatelessWidget {
+  const EcUploadQueueList({
+    this.items = const [],
+    this.onRetry,
+    this.onPause,
+    this.onResume,
+    this.onDelete,
+    this.padding = const EdgeInsets.fromLTRB(18, 18, 18, 18),
+    super.key,
+  });
+
+  final List<EcUploadItem> items;
+  final ValueChanged<EcUploadItem>? onRetry;
+  final ValueChanged<EcUploadItem>? onPause;
+  final ValueChanged<EcUploadItem>? onResume;
+  final ValueChanged<EcUploadItem>? onDelete;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final quotaWaiting = items
+        .where((i) => i.status == EcUploadStatus.quotaWait)
+        .length;
+    // ponytail: the whole page scrolls as one column so the footer note sits
+    // right under the card like the design, instead of being pinned to the
+    // bottom. A queue is tens of rows, not thousands — swap in a sliver list
+    // if that ever changes.
+    return SingleChildScrollView(
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Only real when something is actually waiting on quota — this used
+          // to render unconditionally, showing "out of quota" even when
+          // nothing was quota-blocked.
+          if (quotaWaiting > 0) ...[
+            const _QuotaBanner(),
+            const SizedBox(height: 16),
+          ],
+          if (items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 48),
+              child: Center(
+                child: Text(
+                  l10n.queueEmpty,
+                  style: _t(14, FontWeight.w400, BrandColors.mut),
+                ),
+              ),
+            )
+          else
+            DecoratedBox(
+              decoration: ecSquircleDecoration(
+                radius: 14,
+                color: BrandColors.card,
+                shadows: const [
+                  BoxShadow(
+                    color: Color(0x12161616),
+                    offset: Offset(0, 2),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Column(
+                  children: [
+                    for (var i = 0; i < items.length; i++) ...[
+                      if (i > 0) Container(height: 1, color: BrandColors.line),
+                      _UploadRow(
+                        item: items[i],
+                        onRetry: onRetry,
+                        onPause: onPause,
+                        onResume: onResume,
+                        onDelete: onDelete,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          const SizedBox(height: 10),
+          Center(
+            child: Text(
+              l10n.queueAutoUploadNote,
+              textAlign: TextAlign.center,
+              style: _t(13, FontWeight.w400, BrandColors.mut),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1813,6 +1849,28 @@ class _UploadRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 15),
       child: Row(
         children: [
+          // Dấu tích đứng TRƯỚC mã vận đơn: người quay rà danh sách bằng cách
+          // liếc dọc mép trái, nên "đơn này xong chưa" phải nằm ngay ở mép đó
+          // chứ không phải cuối hàng, sau một đoạn mã dài ngắn khác nhau.
+          if (item.status == EcUploadStatus.done) ...[
+            Semantics(
+              label: context.l10n.uploaded,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: const BoxDecoration(
+                  color: BrandColors.ring,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  LucideIcons.check,
+                  size: 13,
+                  color: BrandColors.onRec,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1862,9 +1920,11 @@ class _UploadRow extends StatelessWidget {
               tooltip: context.l10n.queueResumeAction,
               onTap: () => onResume!(item),
             ),
+          // Dấu × chứ không phải thùng rác: thùng rác nói "vứt bỏ vĩnh viễn",
+          // mà việc thật ở đây là gạt một hàng khỏi danh sách.
           if (onDelete != null)
             _RowIconButton(
-              icon: Icons.delete_outline,
+              icon: Icons.close,
               tooltip: context.l10n.queueDeleteAction,
               onTap: () => onDelete!(item),
             ),
@@ -1940,22 +2000,9 @@ class _UploadStatusTrailing extends StatelessWidget {
         '${item.progressPercent ?? 0}%',
         style: _t(13, FontWeight.w700, BrandColors.ink),
       ),
-      EcUploadStatus.done => Semantics(
-        label: l10n.uploaded,
-        child: Container(
-          width: 26,
-          height: 26,
-          decoration: const BoxDecoration(
-            color: BrandColors.ring,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            LucideIcons.check,
-            size: 15,
-            color: BrandColors.onRec,
-          ),
-        ),
-      ),
+      // Dấu tích đã chuyển sang đứng TRƯỚC mã vận đơn, nên ở đây không vẽ gì
+      // nữa — hai dấu tích trên cùng một hàng chỉ làm hàng rộng ra vô ích.
+      EcUploadStatus.done => const SizedBox.shrink(),
       // The only action the list offers, so it looks like a button instead of
       // a bare glyph a seller has to guess at.
       EcUploadStatus.error => EcTap(

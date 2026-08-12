@@ -80,8 +80,12 @@ class EcRecordRoute extends StatefulWidget {
   /// Called when the header back chevron is tapped.
   final VoidCallback? onBack;
 
-  /// Called when the header upload chip is tapped — opens the upload-queue
-  /// screen. Đang quay thì chốt clip trước khi rời màn, y như nút back.
+  /// Called when the header upload chip is tapped — mở hàng đợi upload.
+  ///
+  /// KHÔNG chốt clip đang quay. Trước đây nó đi qua `_leaveAfterFinalizing` vì
+  /// chip này đẩy sang một màn khác, tức là rời màn quay thật. Nay nó mở một
+  /// tấm sheet ngay tại chỗ, màn quay vẫn nằm dưới — bấm xem hàng đợi mà mất
+  /// đoạn video đang quay là cái giá không ai chấp nhận cho một cú liếc.
   final VoidCallback? onQueueTap;
 
   /// Asks for a tracking code (opens the manual-entry sheet); starting a
@@ -314,9 +318,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   /// xong mở lại app là được hỏi ngay, không phải nhớ mình đang dở đơn nào rồi
   /// đi quét lại mã.
   Future<void> _offerPendingRecord() async {
-    // Hộp thoại cuộc gọi còn trên màn thì nó đã lo rồi — mở chồng cái thứ hai
-    // hỏi đúng câu đó là loạn.
-    if (_callDialogOpen) return;
     final code = ecPendingRecordCode();
     if (code == null || code.isEmpty || !mounted) return;
     if (_bloc.state.isRecording) return;
@@ -478,7 +479,15 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     // phiên ghi, nên phải CHỐT VÀ LƯU ngay tại đây. Giữ file mở qua mốc này là
     // mất trắng cả clip chứ không phải mất phần đuôi — FR-08/FR-09.
     if (state == AppLifecycleState.inactive) {
-      if (_bloc.state.isRecording) _bloc.add(const RecordingInterrupted());
+      // KHÔNG tạm dừng nữa. `inactive` là chuông reo, banner tin nhắn, trung
+      // tâm điều khiển, hay một tấm sheet trong chính app — app vẫn sống và
+      // camera vẫn ghi được. Bản trước dừng clip ở đây, nên chỉ cần một thông
+      // báo lướt qua là người đang đóng gói mất mấy giây bằng chứng và phải
+      // nhìn màn hình xử lý một hộp thoại, giữa lúc hai tay đang bận.
+      //
+      // Nhánh `paused` bên dưới vẫn giữ nguyên: khi app xuống nền THẬT thì iOS
+      // thu hồi phiên ghi, và giữ file mở qua mốc đó là mất trắng cả clip chứ
+      // không phải mất phần đuôi (FR-08/FR-09).
     } else if (state == AppLifecycleState.paused) {
       _releasedForBackground = true;
       // Nhớ đơn đang quay TRƯỚC khi clip bị chốt và `code` bị xoá khỏi state.
@@ -541,11 +550,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         );
         if (event != 'incoming' || !mounted) return;
         if (!_bloc.state.isRecording || _bloc.state.code.isEmpty) return;
+        // Chuông reo KHÔNG còn dừng clip, không đọc to, không hỏi han gì: máy
+        // vẫn ghi tiếp như thường. Chỉ nhớ lại đơn đang quay, phòng khi người
+        // dùng nghe máy thật — lúc đó app xuống nền, iOS chốt clip, và nhánh
+        // `paused` cần biết clip vừa bị cắt thuộc đơn nào.
         _interruptedCode = _bloc.state.code;
-        // Đọc to ngay lúc này, không đợi lúc quay lại app: người quay đang cúi
-        // xuống thùng hàng, đây là giây họ cần biết có chuyện xảy ra.
-        unawaited(_bloc.announceInterrupted());
-        unawaited(_showCallDialog());
       },
       onError: (Object _) {
         // Kênh không dựng được (bản build cũ, thiết bị lạ) — vòng đời app vẫn
@@ -560,69 +569,6 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   /// không hỏi gì; bị chốt rồi thì phải hỏi, và "Tiếp tục" chỉ có thể mở clip
   /// mới cho cùng đơn.
   bool _cutByBackground = false;
-
-  /// Đang mở hộp thoại cuộc gọi — chặn mở chồng khi có cuộc thứ hai gọi tới.
-  bool _callDialogOpen = false;
-
-  /// Tạm dừng clip rồi hỏi, ngay lúc chuông reo.
-  ///
-  /// TẠM DỪNG, không chốt: file vẫn mở nên "Tiếp tục" nối thẳng vào chính clip
-  /// đó, không sinh ra file thứ hai. Và không quay tiếp trong lúc chuông reo —
-  /// đoạn người quay ngẩng lên nhìn điện thoại chẳng là bằng chứng của gì.
-  ///
-  /// "Kết thúc" mới chốt clip.
-  Future<void> _showCallDialog() async {
-    if (_callDialogOpen || !mounted) return;
-    _callDialogOpen = true;
-    _bloc.add(const RecordingInterrupted());
-    final l10n = context.l10n;
-    try {
-      final keepRecording = await showCupertinoDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => CupertinoAlertDialog(
-          title: Text(l10n.recordInterruptedTitle),
-          content: Text(l10n.recordInterruptedBody),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.recordInterruptedFinish),
-            ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(l10n.recordInterruptedResume),
-            ),
-          ],
-        ),
-      );
-      if (!mounted) return;
-      final code = _interruptedCode;
-      final stillOpen = _bloc.state.status == RecordingStatus.interrupted;
-      if (!(keepRecording ?? true)) {
-        // "Kết thúc": chốt clip nếu nó còn mở. Nghe máy xong thì iOS đã chốt
-        // hộ rồi, lúc đó không còn gì phải làm.
-        if (stillOpen) _bloc.add(const RecordingStopRequested());
-      } else if (stillOpen) {
-        // Chưa ai nghe máy — nối thẳng vào chính clip đó.
-        await _resumeOrAsk();
-        return;
-      } else if (!_bloc.state.isRecording && code != null && code.isNotEmpty) {
-        // Đã nghe máy: iOS thu hồi phiên ghi và clip bị chốt trong lúc app ở
-        // nền. "Tiếp tục" giờ nghĩa là mở clip mới cho ĐÚNG đơn đó — không
-        // bắt quét lại mã. Thiếu nhánh này thì nút bấm không ra gì, và nhìn
-        // ra đúng như "phải quay lại từ đầu".
-        await _startRecordingFlow();
-        if (!mounted) return;
-        _bloc.add(RecordingManualCodeSubmitted(code));
-      }
-      _interruptedCode = null;
-      _cutByBackground = false;
-      unawaited(ecRememberPendingRecord(null));
-    } finally {
-      _callDialogOpen = false;
-    }
-  }
 
   /// Quay tiếp vào clip đang mở; nối không được thì mới hỏi.
   ///
@@ -677,39 +623,16 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     _cutByBackground = false;
     unawaited(ecRememberPendingRecord(null));
     if (code == null || !wasCut || !mounted) return;
-    final l10n = context.l10n;
     final paused = _bloc.state.status == RecordingStatus.interrupted;
-    // Nói trước khi vẽ hộp thoại: người quay có thể còn đang cầm máy áp tai,
-    // mắt chưa nhìn màn hình.
-    unawaited(_bloc.announceInterrupted());
-    final resume = await showCupertinoDialog<bool>(
-      context: context,
-      // Không cho bấm ra ngoài để đóng: bỏ lửng câu hỏi này là clip treo giữa
-      // chừng, không ai biết nó còn mở hay đã chốt.
-      barrierDismissible: false,
-      builder: (dialogContext) => CupertinoAlertDialog(
-        title: Text(l10n.recordInterruptedTitle),
-        content: Text(l10n.recordInterruptedBody),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.recordInterruptedFinish),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.recordInterruptedResume),
-          ),
-        ],
-      ),
-    );
-    if (!mounted) return;
-    if (!(resume ?? false)) {
-      // Kết thúc: chốt clip đang mở. Trạng thái `interrupted` nghĩa là file
-      // chưa đóng, nên phải đi qua đường dừng bình thường.
-      if (paused) _bloc.add(const RecordingStopRequested());
-      return;
-    }
+    // Quay TIẾP thẳng, không đọc to và không hỏi.
+    //
+    // Bản trước đọc câu "quá trình quay bị gián đoạn" rồi dựng một hộp thoại
+    // hai nút. Nhưng người vừa nghe xong cuộc gọi quay lại app thì việc họ
+    // muốn làm chỉ có một: quay tiếp đúng đơn đang dở. Hỏi lại là bắt họ trả
+    // lời một câu đã biết trước đáp án, giữa lúc hai tay đang bận thùng hàng.
+    //
+    // Clip trước đó KHÔNG mất: nhánh `paused` của vòng đời đã chốt và xếp nó
+    // vào hàng chờ upload trước khi app xuống nền.
     if (!paused) {
       // Clip đã bị chốt từ trước (iOS thu hồi phiên ghi) — chỉ còn cách mở
       // clip mới cho cùng đơn.
@@ -1021,7 +944,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         resolutionLabel: state.resolutionLabel,
         preview: preview,
         onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
-        onQueueTap: () => unawaited(_leaveAfterFinalizing(widget.onQueueTap)),
+        onQueueTap: widget.onQueueTap,
         onStop: () => _bloc.add(const RecordingStopRequested()),
       );
     }
@@ -1043,7 +966,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           resolutionLabel: state.resolutionLabel,
           preview: preview,
           onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
-          onQueueTap: () => unawaited(_leaveAfterFinalizing(widget.onQueueTap)),
+          onQueueTap: widget.onQueueTap,
           onPickType: null,
           onSettings: null,
           onNavOrders: () =>
@@ -1062,7 +985,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           resolutionLabel: state.resolutionLabel,
           preview: preview,
           onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
-          onQueueTap: () => unawaited(_leaveAfterFinalizing(widget.onQueueTap)),
+          onQueueTap: widget.onQueueTap,
           onStop: () => _bloc.add(const RecordingStopRequested()),
         );
       }
@@ -1074,7 +997,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         resolutionLabel: state.resolutionLabel,
         preview: preview,
         onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
-        onQueueTap: () => unawaited(_leaveAfterFinalizing(widget.onQueueTap)),
+        onQueueTap: widget.onQueueTap,
         onPickType: null,
         onSettings: null,
         onNavOrders: () => unawaited(_leaveAfterFinalizing(widget.onNavOrders)),

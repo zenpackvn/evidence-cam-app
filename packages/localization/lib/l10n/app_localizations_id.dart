@@ -986,6 +986,16 @@ class AppLocalizationsId extends AppLocalizations {
   String get queueDeleteAction => 'Keluarkan';
 
   @override
+  String get queueClearAction => 'Hapus semua';
+
+  @override
+  String get queueClearConfirmTitle => 'Hapus seluruh antrean?';
+
+  @override
+  String get queueClearConfirmBody =>
+      'Klip yang belum diunggah hanya ada di ponsel ini. Menghapusnya berarti hilang selamanya.';
+
+  @override
   String get queueDeleteConfirmTitle => 'Keluarkan dari antrean?';
 
   @override

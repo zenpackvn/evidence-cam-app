@@ -2603,7 +2603,9 @@ const _recordBranchIndex = 1;
 /// người bán thấy "Chờ tải 0" trong khi mở hàng đợi ra vẫn còn clip nằm đó:
 /// con số ngoài cửa nói một đằng, thứ bên trong một nẻo, và thứ nằm lại là
 /// clip chưa hề được máy chủ giữ.
-int _pendingUploads(EcUploadQueue queue) => queue.tasks.length;
+/// Số clip CÒN PHẢI LÊN — chip ☁ ở màn quay nói về việc chưa xong, nên lịch sử
+/// đã lên xong nằm chung danh sách không được tính vào đây.
+int _pendingUploads(EcUploadQueue queue) => queue.pendingCount;
 
 /// The shop clocked into at Flow 1. Direct deep links must handle null
 /// explicitly instead of silently using a fake shop.
@@ -5753,6 +5755,7 @@ class _CreateClaimRoute extends StatelessWidget {
           if (e.uploadStatus != 'deleted')
             EcClaimPickable(
               id: e.id,
+              orderId: match.first.id,
               label: typeNames[e.videoTypeId] ?? _kindLabel(l10n, e.kind),
               time: _hhmm(DateTime.fromMillisecondsSinceEpoch(e.capturedAt)),
               isPhoto: e.kind == 'photo',
@@ -5792,6 +5795,12 @@ class _CreateClaimRoute extends StatelessWidget {
           for (final order in batch)
             EcClaimOrder(
               tracking: order.orderCode,
+              // Id của đơn trên máy chủ. Thiếu nó thì màn hồ sơ không đọc được
+              // chi tiết bằng chứng về sau, và những dòng như thời lượng hay
+              // thiết bị quay đứng trống mãi.
+              orderId: order.picked
+                  .map((e) => e.orderId)
+                  .firstWhere((id) => id != null, orElse: () => null),
               evidence: [
                 for (final e in order.picked)
                   EcClaimEvidence(
@@ -5800,6 +5809,7 @@ class _CreateClaimRoute extends StatelessWidget {
                     time: e.time,
                     isPhoto: e.isPhoto,
                     capturedAt: e.capturedAt,
+                    thumbUrl: e.thumbUrl,
                   ),
               ],
             ),
@@ -5921,6 +5931,7 @@ class _ClaimDetailRoute extends StatelessWidget {
     required this.queue,
     this.budget,
     this.onBack,
+    this.videoPlayer,
   });
 
   final EcRepository repo;
@@ -5929,6 +5940,10 @@ class _ClaimDetailRoute extends StatelessWidget {
   final EcUploadQueue queue;
   final ClipBudget? budget;
   final VoidCallback? onBack;
+
+  /// Để mở và phát một bằng chứng ngay trong hồ sơ. `null` thì hàng "Phát
+  /// video" tự ẩn, không dựng nút bấm vào không chạy.
+  final VideoPlayerService? videoPlayer;
 
   /// Đính ảnh vào ĐƠN HÀNG trước, rồi mới ghi vào hồ sơ.
   ///
@@ -6055,6 +6070,100 @@ class _ClaimDetailRoute extends StatelessWidget {
     onBack?.call();
   }
 
+  /// Mở chi tiết một bằng chứng ngay trong hồ sơ, dùng ĐÚNG sheet của màn Vận
+  /// đơn để hai nơi nhìn giống nhau.
+  ///
+  /// Ba hàng bị tắt, và mỗi hàng một lý do khác nhau:
+  /// - **Người quay**: hồ sơ là thứ đem đi làm việc với sàn, ai trong shop bấm
+  ///   nút quay không phải chuyện của bên nhận.
+  /// - **Cắt đoạn ngắn** và **Xoá video**: hồ sơ chỉ TRỎ tới bằng chứng của
+  ///   đơn. Cắt ở đây đẻ ra một tệp không thuộc hồ sơ nào, còn xoá thì phá
+  ///   bằng chứng gốc của đơn — cả hai đều thuộc màn Vận đơn.
+  ///
+  /// Thời lượng và thiết bị KHÔNG có trong hồ sơ — hồ sơ chỉ giữ nhãn, giờ,
+  /// link và ảnh thu nhỏ. Nên đọc thẳng chi tiết đơn theo `orderId` để lấy đủ.
+  /// Đọc hỏng, hoặc hồ sơ cũ chưa lưu `orderId`, thì rơi về những gì hồ sơ có
+  /// và hai dòng đó ghi `—`: để trống vẫn hơn bịa ra một giá trị.
+  Future<void> _openClaimEvidence(
+    BuildContext context,
+    EcClaimDossier dossier,
+    String tracking,
+    String evidenceId,
+  ) async {
+    final order = dossier.orders
+        .where((o) => o.tracking == tracking)
+        .firstOrNull;
+    final item = order?.evidence.where((e) => e.id == evidenceId).firstOrNull;
+    if (item == null) return;
+    final l10n = context.l10n;
+    final url = item.url;
+
+    EvidenceDto? full;
+    final orderId = order?.orderId;
+    if (orderId != null && orderId.isNotEmpty) {
+      try {
+        final detail = await repo.order(shopId, orderId);
+        full = detail.evidence.where((e) => e.id == evidenceId).firstOrNull;
+      } on Object catch (error, stack) {
+        developer.log(
+          'claims: không đọc được chi tiết bằng chứng (${error.runtimeType})',
+          name: 'zenpack.claims',
+          level: 900,
+          error: error,
+          stackTrace: stack,
+        );
+      }
+    }
+    if (!context.mounted) return;
+
+    final captured = full == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(full.capturedAt);
+    unawaited(
+      showCupertinoModalPopup<void>(
+        context: context,
+        builder: (sheetContext) => EcVideoDetailScreen(
+          showRecordedBy: false,
+          canDelete: false,
+          video: EcVideoDetail(
+            title: item.label,
+            capturedAtMs: full?.capturedAt,
+            durationSeconds: full?.durationSeconds,
+            duration: _durationLabel(full?.durationSeconds),
+            recordedAt: captured == null
+                ? item.time
+                : '${_dateLabel(captured)}  ${_hhmm(captured)}',
+            recordedBy: '—',
+            device: full?.device ?? l10n.deviceUnknown,
+            uploadStatus: l10n.uploaded,
+            seal: full == null ? null : _sealLine(l10n, full),
+            tracking: tracking,
+            mediaUrl: url ?? full?.url,
+          ),
+          onClose: () => Navigator.of(sheetContext).pop(),
+          onCopyLink: url == null
+              ? null
+              : () => _copyText(sheetContext, url, l10n.assetLinkTitle),
+          onPlay: url == null || videoPlayer == null
+              ? null
+              : () {
+                  Navigator.of(sheetContext).pop();
+                  unawaited(
+                    GoRouter.of(context).push(
+                      '/video-player',
+                      extra: _VideoPlayerRouteExtra(
+                        title: item.label,
+                        url: url,
+                        videoPlayerService: videoPlayer!,
+                      ),
+                    ),
+                  );
+                },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: _claimStore,
@@ -6077,6 +6186,9 @@ class _ClaimDetailRoute extends StatelessWidget {
         onAttachPhoto: (tracking) => unawaited(_attach(context, tracking)),
         onRemoveItem: (tracking, evidenceId) =>
             unawaited(_removeItem(context, tracking, evidenceId)),
+        onItemTap: (tracking, evidenceId) => unawaited(
+          _openClaimEvidence(context, dossier, tracking, evidenceId),
+        ),
         groups: [
           for (final order in dossier.orders)
             EcClaimOrderGroup(
@@ -6363,6 +6475,152 @@ class _QueueRoute extends StatelessWidget {
   }
 }
 
+/// Mở hàng đợi ngay tại màn quay, dạng sheet kéo lên nửa màn.
+///
+/// Không đẩy sang màn khác: người đang đóng gói liếc xem "clip vừa quay lên
+/// chưa" rồi quay tiếp, mà rời hẳn màn quay là mất khung ngắm và mất luôn cả
+/// mã vận đơn đang chọn. Nửa màn để phần trên vẫn thấy được chỗ mình vừa đứng.
+Future<void> _showQueueSheet(
+  BuildContext context,
+  EcUploadQueue queue, {
+  required bool canDelete,
+}) => showCupertinoModalPopup<void>(
+  context: context,
+  builder: (sheetContext) => _QueueSheet(queue: queue, canDelete: canDelete),
+);
+
+class _QueueSheet extends StatelessWidget {
+  const _QueueSheet({required this.queue, required this.canDelete});
+
+  final EcUploadQueue queue;
+  final bool canDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Container(
+      height: MediaQuery.sizeOf(context).height * 0.5,
+      decoration: const BoxDecoration(
+        color: BrandColors.bg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      child: Column(
+        children: [
+          // Không vẽ tay nắm và không có nút đóng: bấm ra ngoài tấm này là về
+          // thẳng màn quay, mà nền phía sau chiếm nửa màn nên chỗ bấm rất rộng.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 14, 8, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.uploadQueueTitle,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: BrandColors.ink,
+                    ),
+                  ),
+                ),
+                // Xoá CẢ hàng đợi. Có hỏi lại, khác hẳn dấu × của từng hàng:
+                // một hàng bấm nhầm thì quay lại một clip, còn cả hàng đợi bấm
+                // nhầm là mất mọi clip chưa kịp lên — thứ chỉ tồn tại trên
+                // chính cái máy này.
+                //
+                // Cùng một điều kiện `canDelete` với dấu ×: bản trước để nút
+                // này hiện cho mọi vai trò, tức nhân viên xoá được CẢ hàng đợi
+                // trong khi không xoá nổi một hàng — vừa ngược đời vừa thủng
+                // đúng quy tắc FR-02 mà dấu × đang giữ.
+                if (canDelete)
+                  CupertinoButton(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    minimumSize: Size.zero,
+                    onPressed: () => _confirmClearQueue(context, queue),
+                    child: Text(
+                      l10n.queueClearAction,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: BrandColors.rec,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListenableBuilder(
+              listenable: queue,
+              builder: (context, _) => EcUploadQueueList(
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+                items: [for (final task in queue.tasks) _taskToItem(task)],
+                onRetry: (item) {
+                  final id = item.id;
+                  if (id != null) queue.retry(id);
+                },
+                onPause: (item) {
+                  final id = item.id;
+                  if (id != null) queue.pause(id);
+                },
+                onResume: (item) {
+                  final id = item.id;
+                  if (id != null) queue.resume(id);
+                },
+                // Xoá THẲNG, không hỏi lại: ở màn quay người dùng đang dọn một
+                // hàng bấm nhầm giữa lúc đóng gói, và mỗi hộp thoại là một lần
+                // họ phải rời mắt khỏi thùng hàng. Lượt xoá cả hàng đợi mới là
+                // chỗ cần hỏi.
+                onDelete: canDelete
+                    ? (item) {
+                        final id = item.id;
+                        if (id != null) unawaited(queue.delete(id));
+                      }
+                    : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Hỏi lại rồi xoá SẠCH hàng đợi.
+///
+/// Có hỏi, khác hẳn dấu × của từng hàng: bấm nhầm một hàng thì mất một clip,
+/// bấm nhầm ở đây là mất mọi clip chưa kịp lên — thứ chỉ tồn tại trên đúng cái
+/// máy đang cầm.
+Future<void> _confirmClearQueue(
+  BuildContext context,
+  EcUploadQueue queue,
+) async {
+  final l10n = context.l10n;
+  final confirmed = await showCupertinoDialog<bool>(
+    context: context,
+    builder: (dialogContext) => CupertinoAlertDialog(
+      title: Text(l10n.queueClearConfirmTitle),
+      content: Text(l10n.queueClearConfirmBody),
+      actions: [
+        CupertinoDialogAction(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: Text(l10n.commonCancel),
+        ),
+        CupertinoDialogAction(
+          isDestructiveAction: true,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: Text(l10n.queueClearAction),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true) return;
+  await queue.clearAll();
+}
+
 Future<void> _confirmDeleteQueueItem(
   BuildContext context,
   EcUploadQueue queue,
@@ -6598,6 +6856,8 @@ GoRouter _buildRouter(
                     onSettings: () => c.push('/shop-detail', extra: shop),
                     onNavRecord: () => c.go('/record'),
                     onNavClaims: () => c.go('/claims'),
+                    // Vận đơn giữ màn hàng đợi ĐẦY ĐỦ: ở đây người dùng
+                    // đang ngồi rà soát, không phải đang cầm máy quay.
                     onQueueTap: () => c.push('/queue'),
                     onOrderTap: (order) {
                       _analytics()?.trackOrderOpened(
@@ -6634,7 +6894,13 @@ GoRouter _buildRouter(
                       maxRecording: shop.clipBudget.maxRecording,
                       isActive: isRecordTabActive,
                       onBack: () => c.go('/home'),
-                      onQueueTap: () => c.push('/queue'),
+                      onQueueTap: () => _showQueueSheet(
+                        c,
+                        queue,
+                        canDelete:
+                            (_selected(selectedShop)?.role ?? 'staff') !=
+                            'staff',
+                      ),
                       onRequestCode: () => c.push<String>('/manual'),
                       onConfirmManualCode: (code) =>
                           _confirmManualTracking(c, repo, shop.id, code),
@@ -7469,6 +7735,7 @@ GoRouter _buildRouter(
             queue: queue,
             budget: _selected(selectedShop)?.clipBudget,
             onBack: () => _back(c, '/claims'),
+            videoPlayer: videoPlayer,
           );
         },
       ),
