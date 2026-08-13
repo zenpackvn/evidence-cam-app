@@ -539,7 +539,7 @@
   "quotaSubtitleVideos": "Controla cuántos vídeos has grabado este mes",
   "quotaBlockedTitle": "Cuota de vídeos agotada",
   "quotaBlockedNote": "Grabar sigue funcionando, pero los clips todavía no pueden subirse — están en este teléfono, sin protección. Se subirán solos en cuanto se amplíe la cuota.",
-  "quotaBlockedOwnerNote": "Pide al titular de la cuenta que amplíe la cuota.",
+  "quotaBlockedOwnerNote": "El límite de esta tienda lo fija el titular de la cuenta: pídele que lo amplíe. Un plan que compres se aplica solo a tu propia cuenta.",
   "quotaTopupCredits": "Recargar créditos",
   "quotaOverCap": "Por encima de la cuota del plan",
   "quotaBlockAt": "Nuevas grabaciones bloqueadas en {n} vídeos",

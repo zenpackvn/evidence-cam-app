@@ -241,16 +241,15 @@ void main() {
       expect(opened, 1);
     });
 
-    // Gói gắn với tài khoản CHỦ shop. Nhân viên bấm mua thì tiền vào đúng ví
-    // Apple của họ mà gói lại cộng cho chủ shop — nên nút không được hiện.
-    testWidgets('có cửa hàng nhưng nhân viên thì vẫn không thấy nút', (
-      tester,
-    ) async {
+    // Ai cũng mua được. Lý do ghi ở bản test trước — "gói lại cộng cho chủ
+    // shop" — là SAI: `applyRevenueCatEvent` cấp theo `app_user_id`, tức uid
+    // của chính người bấm mua. Nên nhân viên mua thì nâng tài khoản của họ.
+    testWidgets('nhân viên cũng thấy nút mua', (tester) async {
       await _pump(
         tester,
         EcQuotaScreen(canManagePlan: false, onUpgrade: () {}),
       );
-      expect(find.text('Nâng cấp gói'), findsNothing);
+      expect(find.text('Nâng cấp gói'), findsOneWidget);
     });
 
     testWidgets('hết hạn mức, không cửa hàng: báo trạng thái, không lối mua', (
@@ -304,8 +303,11 @@ void main() {
         ),
       );
       expect(find.text('Nâng cấp gói'), findsNothing);
+      // Câu này phải nói CẢ hai vế: hạn mức cửa hàng do chủ quyết, và gói tự
+      // mua chỉ là của tài khoản mình. Thiếu vế sau thì người đang tắc sẽ bấm
+      // mua để gỡ tắc, trả tiền xong vẫn tắc y nguyên.
       expect(
-        find.text('Liên hệ chủ tài khoản để được nâng hạn mức.'),
+        find.textContaining('chỉ áp cho tài khoản của chính bạn'),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);

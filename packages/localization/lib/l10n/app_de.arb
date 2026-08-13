@@ -539,7 +539,7 @@
   "quotaSubtitleVideos": "Behalte im Blick, wie viele Videos du diesen Monat aufgenommen hast",
   "quotaBlockedTitle": "Videokontingent aufgebraucht",
   "quotaBlockedNote": "Aufnehmen geht weiter, aber die Clips können noch nicht hochladen — sie liegen ungeschützt auf diesem Handy. Sie laden von selbst hoch, sobald das Kontingent erhöht wird.",
-  "quotaBlockedOwnerNote": "Bitte den Kontoinhaber, das Kontingent zu erhöhen.",
+  "quotaBlockedOwnerNote": "Das Kontingent dieses Shops legt der Kontoinhaber fest — bitte ihn um eine Erhöhung. Ein selbst gekaufter Tarif gilt nur für dein eigenes Konto.",
   "quotaTopupCredits": "Guthaben aufladen",
   "quotaOverCap": "Über dem Tarifkontingent",
   "quotaBlockAt": "Neue Aufnahmen ab {n} Videos blockiert",

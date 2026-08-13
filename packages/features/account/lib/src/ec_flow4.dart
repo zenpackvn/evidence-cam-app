@@ -1007,8 +1007,10 @@ class _VideoQuotaFacts extends StatelessWidget {
                 size: 13,
                 color: PenColors.mut,
               ),
-              // Nhân viên không sửa được gói cước — nói cho họ biết hỏi ai,
-              // KHÔNG chỉ đường sang trang thanh toán.
+              // Nhân viên MUA ĐƯỢC, nhưng gói mua về là của tài khoản họ chứ
+              // không nâng hạn mức cửa hàng này — hạn mức đó thuộc chủ tài
+              // khoản. Phải nói thẳng ra: để họ bấm mua mà tưởng đang gỡ chỗ
+              // tắc của cửa hàng là lấy tiền cho một thứ không xảy ra.
               if (!canManagePlan)
                 PenText(
                   l10n.quotaBlockedOwnerNote,
@@ -1126,7 +1128,12 @@ class _QuotaSummaryCard extends StatelessWidget {
             //
             // `onUpgrade == null` khi build không có khoá RevenueCat: thà không
             // có nút còn hơn một cái nút bấm vào không mở được gì.
-            if (onUpgrade != null && canManagePlan) ...[
+            // KHÔNG gác theo `canManagePlan` nữa: ai cũng mua được, và gói mua
+            // về thuộc tài khoản của chính người bấm. Nhân viên đang làm thuê
+            // vẫn thấy nút — thứ họ mua chỉ nâng tài khoản riêng của họ, không
+            // nâng hạn mức của cửa hàng này, và câu ghi chú ngay trên kia nói
+            // đúng điều đó thay vì giấu nút đi.
+            if (onUpgrade != null) ...[
               const SizedBox(width: 12),
               GestureDetector(
                 onTap: onUpgrade,

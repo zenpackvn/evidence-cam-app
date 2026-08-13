@@ -539,7 +539,7 @@
   "quotaSubtitleVideos": "Subaybayan kung ilang video ang naitala mo ngayong buwan",
   "quotaBlockedTitle": "Naubos ang allowance ng video",
   "quotaBlockedNote": "Gumagana pa ang pag-record, pero hindi pa maka-upload ang mga clip — nasa teleponong ito sila, hindi protektado. Kusa silang mag-a-upload kapag naitaas ang allowance.",
-  "quotaBlockedOwnerNote": "Pakiusapan ang may-ari ng account na itaas ang allowance.",
+  "quotaBlockedOwnerNote": "Ang limitasyon ng tindahang ito ay itinatakda ng may-ari ng account — hilingin sa kanila na taasan ito. Ang planong binili mo ay para lang sa sarili mong account.",
   "quotaTopupCredits": "Mag-top up ng credit",
   "quotaOverCap": "Lampas sa allowance ng plan",
   "quotaBlockAt": "Naharang ang bagong pag-record sa {n} video",

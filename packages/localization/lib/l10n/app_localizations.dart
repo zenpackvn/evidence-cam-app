@@ -3353,7 +3353,7 @@ abstract class AppLocalizations {
   /// No description provided for @quotaBlockedOwnerNote.
   ///
   /// In en, this message translates to:
-  /// **'Ask the account owner to raise the allowance.'**
+  /// **'This shop’s allowance is set by the account owner — ask them to raise it. A plan you buy applies to your own account only.'**
   String get quotaBlockedOwnerNote;
 
   /// No description provided for @quotaTopupCredits.

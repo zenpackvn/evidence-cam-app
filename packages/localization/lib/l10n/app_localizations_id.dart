@@ -1842,7 +1842,8 @@ class AppLocalizationsId extends AppLocalizations {
       'Perekaman tetap jalan, tapi klip belum bisa diunggah — klip ada di ponsel ini, belum terlindungi. Klip akan terunggah sendiri begitu jatah dinaikkan.';
 
   @override
-  String get quotaBlockedOwnerNote => 'Minta pemilik akun menaikkan jatah.';
+  String get quotaBlockedOwnerNote =>
+      'Kuota toko ini ditetapkan oleh pemilik akun — mintalah mereka menaikkannya. Paket yang Anda beli hanya berlaku untuk akun Anda sendiri.';
 
   @override
   String get quotaTopupCredits => 'Isi ulang kredit';

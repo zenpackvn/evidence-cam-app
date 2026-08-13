@@ -539,7 +539,7 @@
   "quotaSubtitleVideos": "Pantau berapa banyak video yang anda rakam bulan ini",
   "quotaBlockedTitle": "Elaun video sudah habis",
   "quotaBlockedNote": "Rakaman masih berfungsi, tetapi klip belum boleh dimuat naik — ia berada dalam telefon ini, tidak dilindungi. Ia akan dimuat naik sendiri sebaik elaun dinaikkan.",
-  "quotaBlockedOwnerNote": "Minta pemilik akaun menaikkan elaun.",
+  "quotaBlockedOwnerNote": "Kuota kedai ini ditetapkan oleh pemilik akaun — minta mereka menaikkannya. Pelan yang anda beli hanya terpakai untuk akaun anda sendiri.",
   "quotaTopupCredits": "Tambah nilai kredit",
   "quotaOverCap": "Melebihi elaun pelan",
   "quotaBlockAt": "Rakaman baharu disekat pada {n} video",

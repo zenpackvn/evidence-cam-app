@@ -539,7 +539,7 @@
   "quotaSubtitleVideos": "Pantau berapa video yang Anda rekam bulan ini",
   "quotaBlockedTitle": "Jatah video habis",
   "quotaBlockedNote": "Perekaman tetap jalan, tapi klip belum bisa diunggah — klip ada di ponsel ini, belum terlindungi. Klip akan terunggah sendiri begitu jatah dinaikkan.",
-  "quotaBlockedOwnerNote": "Minta pemilik akun menaikkan jatah.",
+  "quotaBlockedOwnerNote": "Kuota toko ini ditetapkan oleh pemilik akun — mintalah mereka menaikkannya. Paket yang Anda beli hanya berlaku untuk akun Anda sendiri.",
   "quotaTopupCredits": "Isi ulang kredit",
   "quotaOverCap": "Melebihi jatah paket",
   "quotaBlockAt": "Perekaman baru diblokir pada {n} video",

@@ -1155,9 +1155,7 @@ class _AccountRouteState extends State<_AccountRoute> {
             // hàng "Đổi gói" không hiện. Nút bấm vào không mở được gì còn tệ
             // hơn là không có nút.
             onChangePlanTap:
-                EcPurchases.isAvailable && (snap.data?.canManagePlan ?? false)
-                ? _openPaywall
-                : null,
+                EcPurchases.isAvailable ? _openPaywall : null,
             onLanguageTap: () => context.push('/language'),
             onEndQrTap: () => _showEndSessionQr(
               context,
@@ -1546,8 +1544,9 @@ class _QuotaRouteState extends State<_QuotaRoute> {
           blocked: quota.blocked,
           retentionTotalDays: quota.retentionDays,
           typeUsage: typeUsage,
-          // `canManagePlan` gác nút mua (chỉ chủ shop) VÀ quyết định câu giải
-          // thích khi hết hạn mức — nhân viên được bảo đi hỏi chủ shop.
+          // `canManagePlan` KHÔNG còn gác nút mua — ai cũng mua được. Nó chỉ
+          // còn quyết định câu giải thích: người không phải chủ shop cần biết
+          // gói họ mua thuộc về tài khoản họ, không nâng hạn mức cửa hàng này.
           canManagePlan: quota.canManagePlan,
           // Không có khoá RevenueCat trong build này → `null` → không hiện nút.
           onUpgrade: EcPurchases.isAvailable ? _openPaywall : null,

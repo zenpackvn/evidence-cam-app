@@ -1235,7 +1235,7 @@
   "quotaUpgrade": "Upgrade plan",
   "quotaBlockedTitle": "Video allowance exhausted",
   "quotaBlockedNote": "Recording still works, but clips cannot upload yet — they are sitting on this phone, unprotected. They upload by themselves once the allowance is raised.",
-  "quotaBlockedOwnerNote": "Ask the account owner to raise the allowance.",
+  "quotaBlockedOwnerNote": "This shop’s allowance is set by the account owner — ask them to raise it. A plan you buy applies to your own account only.",
   "quotaTopupCredits": "Top-up credits",
   "quotaOverCap": "Over plan allowance",
   "quotaBlockAt": "New recordings blocked at {n} videos",

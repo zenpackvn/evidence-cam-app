@@ -539,7 +539,7 @@
   "quotaSubtitleVideos": "Suivez combien de vidéos vous avez enregistrées ce mois-ci",
   "quotaBlockedTitle": "Quota de vidéos épuisé",
   "quotaBlockedNote": "L'enregistrement fonctionne toujours, mais les clips ne peuvent pas encore s'envoyer — ils sont sur ce téléphone, sans protection. Ils s'enverront tout seuls dès que le quota sera relevé.",
-  "quotaBlockedOwnerNote": "Demandez au titulaire du compte de relever le quota.",
+  "quotaBlockedOwnerNote": "Le quota de cette boutique est défini par le titulaire du compte — demandez-lui de l’augmenter. Un forfait que vous achetez ne s’applique qu’à votre propre compte.",
   "quotaTopupCredits": "Recharger des crédits",
   "quotaOverCap": "Au-dessus du quota du forfait",
   "quotaBlockAt": "Nouveaux enregistrements bloqués à {n} vidéos",

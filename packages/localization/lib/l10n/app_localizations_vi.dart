@@ -1830,7 +1830,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get quotaBlockedOwnerNote =>
-      'Liên hệ chủ tài khoản để được nâng hạn mức.';
+      'Hạn mức của cửa hàng này do chủ tài khoản quyết định — liên hệ họ để nâng. Gói bạn tự mua chỉ áp cho tài khoản của chính bạn.';
 
   @override
   String get quotaTopupCredits => 'Lượt mua thêm';

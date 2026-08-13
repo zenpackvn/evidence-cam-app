@@ -1858,7 +1858,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get quotaBlockedOwnerNote =>
-      'Pide al titular de la cuenta que amplíe la cuota.';
+      'El límite de esta tienda lo fija el titular de la cuenta: pídele que lo amplíe. Un plan que compres se aplica solo a tu propia cuenta.';
 
   @override
   String get quotaTopupCredits => 'Recargar créditos';

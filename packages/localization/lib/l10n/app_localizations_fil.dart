@@ -1856,7 +1856,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get quotaBlockedOwnerNote =>
-      'Pakiusapan ang may-ari ng account na itaas ang allowance.';
+      'Ang limitasyon ng tindahang ito ay itinatakda ng may-ari ng account — hilingin sa kanila na taasan ito. Ang planong binili mo ay para lang sa sarili mong account.';
 
   @override
   String get quotaTopupCredits => 'Mag-top up ng credit';

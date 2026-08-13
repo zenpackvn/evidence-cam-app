@@ -1851,7 +1851,8 @@ class AppLocalizationsMs extends AppLocalizations {
       'Rakaman masih berfungsi, tetapi klip belum boleh dimuat naik — ia berada dalam telefon ini, tidak dilindungi. Ia akan dimuat naik sendiri sebaik elaun dinaikkan.';
 
   @override
-  String get quotaBlockedOwnerNote => 'Minta pemilik akaun menaikkan elaun.';
+  String get quotaBlockedOwnerNote =>
+      'Kuota kedai ini ditetapkan oleh pemilik akaun — minta mereka menaikkannya. Pelan yang anda beli hanya terpakai untuk akaun anda sendiri.';
 
   @override
   String get quotaTopupCredits => 'Tambah nilai kredit';

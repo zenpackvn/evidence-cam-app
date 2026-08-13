@@ -977,7 +977,7 @@
   "quotaUpgrade": "Nâng cấp gói",
   "quotaBlockedTitle": "Đã hết hạn mức video",
   "quotaBlockedNote": "Video vẫn quay bình thường, nhưng chưa tải lên được — chúng đang nằm trên máy và chưa được bảo vệ. Hạn mức được nâng thì chúng tự tải lên.",
-  "quotaBlockedOwnerNote": "Liên hệ chủ tài khoản để được nâng hạn mức.",
+  "quotaBlockedOwnerNote": "Hạn mức của cửa hàng này do chủ tài khoản quyết định — liên hệ họ để nâng. Gói bạn tự mua chỉ áp cho tài khoản của chính bạn.",
   "quotaTopupCredits": "Lượt mua thêm",
   "quotaOverCap": "Đã vượt trần gói",
   "quotaBlockAt": "Chặn quay mới từ {n} video",

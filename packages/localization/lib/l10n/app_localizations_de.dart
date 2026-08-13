@@ -1872,7 +1872,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get quotaBlockedOwnerNote =>
-      'Bitte den Kontoinhaber, das Kontingent zu erhöhen.';
+      'Das Kontingent dieses Shops legt der Kontoinhaber fest — bitte ihn um eine Erhöhung. Ein selbst gekaufter Tarif gilt nur für dein eigenes Konto.';
 
   @override
   String get quotaTopupCredits => 'Guthaben aufladen';

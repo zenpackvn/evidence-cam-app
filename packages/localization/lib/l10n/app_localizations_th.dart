@@ -1817,7 +1817,8 @@ class AppLocalizationsTh extends AppLocalizations {
       'ยังถ่ายได้ตามปกติ แต่คลิปยังอัปโหลดไม่ได้ — คลิปอยู่ในเครื่องนี้และยังไม่ถูกคุ้มครอง จะอัปโหลดเองเมื่อเพิ่มโควตา';
 
   @override
-  String get quotaBlockedOwnerNote => 'แจ้งเจ้าของบัญชีให้เพิ่มโควตา';
+  String get quotaBlockedOwnerNote =>
+      'โควตาของร้านนี้กำหนดโดยเจ้าของบัญชี — โปรดขอให้เพิ่มให้ แพ็กเกจที่คุณซื้อเองจะใช้ได้กับบัญชีของคุณเท่านั้น';
 
   @override
   String get quotaTopupCredits => 'เติมเครดิต';

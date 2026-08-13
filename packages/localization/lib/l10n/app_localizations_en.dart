@@ -1841,7 +1841,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quotaBlockedOwnerNote =>
-      'Ask the account owner to raise the allowance.';
+      'This shop’s allowance is set by the account owner — ask them to raise it. A plan you buy applies to your own account only.';
 
   @override
   String get quotaTopupCredits => 'Top-up credits';
