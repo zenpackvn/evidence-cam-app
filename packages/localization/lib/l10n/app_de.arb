@@ -622,5 +622,10 @@
   "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… Die Videos liegen in deinem Bucket, ihre Haltbarkeit liegt bei dir.",
   "storageDriveTitle": "Google Drive",
   "storageDriveDesc": "Mit einer einzigen Freigabe verbinden, keine Schlüssel einzufügen. Ein kostenloses Konto hat nur 15 GB, geteilt mit Gmail.",
-  "storageNeedProPlan": "Eigenen Speicher zu verbinden erfordert mindestens den Professional-Tarif."
+  "storageNeedProPlan": "Eigenen Speicher zu verbinden erfordert mindestens den Professional-Tarif.",
+  "attachCodeToOrder": "Scan another code into this order",
+  "attachedCodes": "Attached codes",
+  "codeAttached": "Code attached to this order",
+  "codeBelongsToAnotherOrder": "This code already belongs to another order — cannot merge.",
+  "codeAttachFailed": "Could not attach the code. Try again."
 }

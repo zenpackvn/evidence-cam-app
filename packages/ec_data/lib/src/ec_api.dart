@@ -452,6 +452,54 @@ class EcApi {
         query: {'q': query},
       );
 
+  /// Mọi mã đang gắn vào một đơn — mã chính đứng đầu, mã gắn thêm theo thứ tự
+  /// thời gian.
+  Future<List<OrderCodeDto>> orderCodes(String shopId, String orderId) =>
+      _getList(
+        '/api/shops/$shopId/orders/$orderId/codes',
+        OrderCodeDto.fromJson,
+      );
+
+  /// Gắn thêm một mã vào đơn đang mở.
+  ///
+  /// Idempotent: gắn lại đúng mã đã có trên đơn này trả về bản ghi cũ — quét hai
+  /// lần ở bàn đóng gói là chuyện thường. Mã đang thuộc đơn KHÁC thì máy chủ trả
+  /// 409 chứ không lặng lẽ chuyển chủ: gộp nhầm hai kiện là hỏng bằng chứng của
+  /// cả hai.
+  Future<OrderCodeDto> addOrderCode(
+    String shopId,
+    String orderId, {
+    required String code,
+    required String kind,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/shops/$shopId/orders/$orderId/codes',
+      data: {'code': code, 'kind': kind},
+    );
+    return OrderCodeDto.fromJson(res.data!);
+  }
+
+  /// Gỡ một mã khỏi đơn. Mã chính không gỡ được — máy chủ từ chối.
+  Future<void> removeOrderCode(
+    String shopId,
+    String orderId,
+    String codeId,
+  ) => _dio.delete<void>(
+    '/api/shops/$shopId/orders/$orderId/codes/$codeId',
+  );
+
+  /// Tra một mã KHỚP TUYỆT ĐỐI trong cửa hàng — đường của máy quét.
+  ///
+  /// Khác `searchOrders` (tìm gần đúng, cho người gõ tay): quét ra một chuỗi thì
+  /// hoặc nó đúng là mã của một đơn, hoặc không phải. Tìm gần đúng ở đây sẽ trả
+  /// về đơn khác và người dùng gắn clip vào nhầm kiện.
+  Future<List<OrderCodeDto>> lookupOrderCode(String shopId, String code) =>
+      _getList(
+        '/api/shops/$shopId/order-codes',
+        OrderCodeDto.fromJson,
+        query: {'code': code},
+      );
+
   Future<OrderDto> findOrCreateOrder(
     String shopId,
     String tracking, {

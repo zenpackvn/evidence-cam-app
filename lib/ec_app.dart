@@ -4682,12 +4682,16 @@ class _OrderRoute extends StatefulWidget {
     this.evidenceCountOverrides,
     this.onBack,
     this.onOpenVideo,
+    this.onScan,
   });
 
   final EcRepository repo;
   final EcUploadQueue queue;
   final EcShopSummary shop;
   final OrderSummaryDto order;
+
+  /// Mở máy quét, trả mã đọc được. `null` thì màn không mời gắn thêm mã.
+  final Future<String?> Function()? onScan;
 
   /// Share sheet của hệ điều hành; `null` (thiếu DI trong test) thì nút chia
   /// sẻ rơi về clipboard.
@@ -4705,6 +4709,39 @@ class _OrderRoute extends StatefulWidget {
 
 class _OrderRouteState extends State<_OrderRoute> {
   late Future<_OrderDetailData> _detail = _load();
+
+  /// Mã đã gắn thêm vào đơn, ngoài mã chính. Nạp cùng chi tiết đơn.
+  List<String> _extraCodes = const [];
+
+  /// Quét một mã rồi gắn vào ĐƠN NÀY.
+  ///
+  /// Mặc định gắn là mã trả hàng: đó là ca gần như duy nhất người dùng cần gắn
+  /// thêm mã ở màn này — kiện đã gửi đi, khách hoàn về, sàn cấp một mã mới. Mã
+  /// vận đơn thứ hai là chuyện hiếm, và khi cần thì web làm được.
+  Future<void> _attachCode(BuildContext context) async {
+    final code = (await widget.onScan?.call())?.trim();
+    if (code == null || code.isEmpty || !mounted) return;
+    final l10n = context.l10n;
+    try {
+      await widget.repo.addOrderCode(
+        widget.shop.id,
+        widget.order.id,
+        code: code,
+        kind: 'return',
+      );
+      if (!mounted) return;
+      _toast(context, l10n.codeAttached);
+      _retry();
+    } on Object catch (error) {
+      if (!mounted) return;
+      // Mã đang thuộc đơn KHÁC thì máy chủ trả 409 — nói thẳng, đừng gộp vào
+      // một câu "lỗi" chung. Gộp nhầm hai kiện là hỏng bằng chứng của cả hai,
+      // nên người dùng cần biết đây không phải trục trặc mạng mà là từ chối có
+      // lý do.
+      final conflict = error is DioException && error.response?.statusCode == 409;
+      _toast(context, conflict ? l10n.codeBelongsToAnotherOrder : l10n.codeAttachFailed);
+    }
+  }
 
   /// Số clip của đơn này còn nằm trong hàng đợi, lần đọc gần nhất.
   ///
@@ -4872,6 +4909,18 @@ class _OrderRouteState extends State<_OrderRoute> {
       detail.evidence.where((e) => e.uploadStatus == 'error').length,
     );
     final types = await widget.repo.videoTypes(widget.shop.id);
+    // Mã đã gắn thêm. Hỏng thì để rỗng chứ không làm sập cả màn chi tiết:
+    // người dùng vào đây để xem bằng chứng, mất danh sách mã phụ vẫn xem
+    // được, còn mất cả màn thì không.
+    final codes = await widget.repo
+        .orderCodes(widget.shop.id, widget.order.id)
+        .then<List<OrderCodeDto>>((v) => v, onError: (_, __) => <OrderCodeDto>[]);
+    if (mounted) {
+      _extraCodes = codes
+          .where((c) => !c.isPrimary)
+          .map((c) => c.raw)
+          .toList(growable: false);
+    }
     // "Người quay" was showing the raw Firebase uid — resolve it to whoever
     // that account actually is (name, else email) so it reads like a person
     // instead of a token. Best-effort: an empty map just falls back to the
@@ -5013,6 +5062,10 @@ class _OrderRouteState extends State<_OrderRoute> {
             // Nạp lại NGAY sau khi đính: ảnh mới chỉ vào hàng đợi, còn danh
             // sách bằng chứng dựng từ dữ liệu server. Không nạp lại thì phải
             // thoát ra vào lại mới thấy ảnh vừa chọn.
+            extraCodes: _extraCodes,
+            onAttachCode: widget.onScan == null
+                ? null
+                : () => unawaited(_attachCode(context)),
             onAttachPhoto: () => unawaited(
               _attachPhoto(
                 context,
@@ -7034,6 +7087,7 @@ GoRouter _buildRouter(
             order: order,
             evidenceCountOverrides: evidenceCountOverrides,
             onBack: () => _back(c, '/home'),
+            onScan: () => c.push<String>('/scan'),
             // `push<bool>`: màn chi tiết trả `true` khi thực sự đổi dữ liệu
             // (xoá bằng chứng). Chỉ đóng lại — kéo xuống hay bấm ra ngoài —
             // thì trả null và danh sách khỏi nạp lại.

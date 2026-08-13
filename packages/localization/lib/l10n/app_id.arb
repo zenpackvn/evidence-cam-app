@@ -622,5 +622,10 @@
   "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… Video berada di bucket Anda, dan ketahanannya jadi tanggung jawab Anda.",
   "storageDriveTitle": "Google Drive",
   "storageDriveDesc": "Hubungkan dengan sekali pemberian izin, tanpa menempel kunci. Akun gratis hanya punya 15 GB yang dibagi dengan Gmail.",
-  "storageNeedProPlan": "Menghubungkan penyimpanan sendiri butuh paket Profesional atau lebih tinggi."
+  "storageNeedProPlan": "Menghubungkan penyimpanan sendiri butuh paket Profesional atau lebih tinggi.",
+  "attachCodeToOrder": "Pindai kode lain ke pesanan ini",
+  "attachedCodes": "Kode terlampir",
+  "codeAttached": "Kode dilampirkan ke pesanan ini",
+  "codeBelongsToAnotherOrder": "Kode ini milik pesanan lain — tidak bisa digabung.",
+  "codeAttachFailed": "Tidak dapat melampirkan kode."
 }

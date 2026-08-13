@@ -274,6 +274,43 @@ class OrderDto {
   final int createdAt;
 }
 
+/// Một mã gắn vào vận đơn.
+///
+/// Một kiện hàng thường mang nhiều mã: mã vận đơn sàn cấp lúc gửi, rồi mã trả
+/// hàng khi khách hoàn. Không gắn chúng vào cùng một đơn thì clip trả hàng đẻ ra
+/// một đơn thứ hai, và bằng chứng của cùng một kiện bị chẻ đôi — đúng lúc cần
+/// gộp lại để gửi sàn.
+class OrderCodeDto {
+  const OrderCodeDto({
+    required this.id,
+    required this.orderId,
+    required this.kind,
+    required this.raw,
+    required this.isPrimary,
+  });
+
+  factory OrderCodeDto.fromJson(Map<String, dynamic> j) => OrderCodeDto(
+    id: j['id'] as String,
+    orderId: j['order_id'] as String,
+    kind: j['kind'] as String,
+    raw: j['raw'] as String,
+    isPrimary: _int(j['is_primary']) == 1,
+  );
+
+  final String id;
+  final String orderId;
+
+  /// `shipping` = mã vận đơn · `return` = mã trả hàng do sàn cấp.
+  final String kind;
+
+  /// Mã như người dùng quét, giữ nguyên hoa-thường.
+  final String raw;
+
+  /// Mã chính của đơn. Backend không cho gỡ mã chính, nên UI cũng không được
+  /// mời người dùng thử.
+  final bool isPrimary;
+}
+
 class OrderSummaryDto {
   const OrderSummaryDto({
     required this.id,

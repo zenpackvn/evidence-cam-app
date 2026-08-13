@@ -2111,4 +2111,20 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get storageNeedProPlan =>
       'การเชื่อมที่เก็บของคุณเองต้องใช้แพ็กเกจ Professional ขึ้นไป';
+
+  @override
+  String get attachCodeToOrder => 'สแกนรหัสเพิ่มเข้าออเดอร์นี้';
+
+  @override
+  String get attachedCodes => 'รหัสที่แนบเพิ่ม';
+
+  @override
+  String get codeAttached => 'แนบรหัสเข้าออเดอร์แล้ว';
+
+  @override
+  String get codeBelongsToAnotherOrder =>
+      'รหัสนี้อยู่กับออเดอร์อื่นแล้ว รวมไม่ได้';
+
+  @override
+  String get codeAttachFailed => 'แนบรหัสไม่ได้ ลองอีกครั้ง';
 }

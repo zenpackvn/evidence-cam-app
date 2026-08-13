@@ -3865,6 +3865,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connecting your own storage needs the Professional plan or higher.'**
   String get storageNeedProPlan;
+
+  /// No description provided for @attachCodeToOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan another code into this order'**
+  String get attachCodeToOrder;
+
+  /// No description provided for @attachedCodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached codes'**
+  String get attachedCodes;
+
+  /// No description provided for @codeAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Code attached to this order'**
+  String get codeAttached;
+
+  /// No description provided for @codeBelongsToAnotherOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'This code already belongs to another order — cannot merge.'**
+  String get codeBelongsToAnotherOrder;
+
+  /// No description provided for @codeAttachFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not attach the code. Try again.'**
+  String get codeAttachFailed;
 }
 
 class _AppLocalizationsDelegate

@@ -2147,4 +2147,20 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get storageNeedProPlan =>
       'Menyambung storan sendiri memerlukan pelan Professional atau lebih tinggi.';
+
+  @override
+  String get attachCodeToOrder => 'Imbas kod lain ke pesanan ini';
+
+  @override
+  String get attachedCodes => 'Kod dilampirkan';
+
+  @override
+  String get codeAttached => 'Kod dilampirkan pada pesanan ini';
+
+  @override
+  String get codeBelongsToAnotherOrder =>
+      'Kod ini milik pesanan lain — tidak boleh digabung.';
+
+  @override
+  String get codeAttachFailed => 'Tidak dapat melampirkan kod.';
 }

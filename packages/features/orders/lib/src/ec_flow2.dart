@@ -254,6 +254,8 @@ class EcOrderTimelineScreen extends StatefulWidget {
     this.onVideoTap,
     this.onVideoMenu,
     this.onAttachPhoto,
+    this.onAttachCode,
+    this.extraCodes = const [],
     this.onCreateLink,
     super.key,
   });
@@ -285,6 +287,15 @@ class EcOrderTimelineScreen extends StatefulWidget {
 
   /// Called when "Đính kèm ảnh vào đơn" is tapped.
   final VoidCallback? onAttachPhoto;
+
+  /// Quét thêm một mã (mã trả hàng, hoặc mã vận đơn thứ hai) để gắn vào ĐƠN NÀY.
+  ///
+  /// Không có đường này thì quay clip trả hàng sẽ đẻ ra một đơn thứ hai, và bằng
+  /// chứng của cùng một kiện bị chẻ đôi — đúng lúc cần gộp lại để gửi sàn.
+  final VoidCallback? onAttachCode;
+
+  /// Các mã ĐÃ gắn thêm, ngoài mã chính ở tiêu đề. Rỗng thì không vẽ gì.
+  final List<String> extraCodes;
 
   /// Gộp các bằng chứng đã tick thành một link hồ sơ chia sẻ được.
   final ValueChanged<List<EcTimelineVideo>>? onCreateLink;
@@ -415,6 +426,19 @@ class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
                 // Chỉ vẽ khi bên gọi thật sự có việc đính kèm. Hồ sơ khiếu
                 // nại dùng chung màn này nhưng không đính ảnh — vẽ vô điều
                 // kiện là chào một nút bấm vào không làm gì.
+                // Mã đã gắn thêm hiện NGAY DƯỚI dòng thời gian, không nhét vào
+                // tiêu đề: tiêu đề chỉ có chỗ cho một mã, và mã thứ hai bị cắt
+                // cụt ở đó thì người dùng không biết nó đã gắn được hay chưa.
+                if (widget.extraCodes.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+                    child: _EcExtraCodes(codes: widget.extraCodes),
+                  ),
+                if (widget.onAttachCode != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+                    child: _EcAttachCodeRow(onTap: widget.onAttachCode),
+                  ),
                 if (widget.onAttachPhoto != null)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
@@ -1333,6 +1357,79 @@ class _EcAttachPhotoRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Hàng "quét thêm mã vào đơn này".
+///
+/// Dựng theo đúng khuôn `_EcAttachPhotoRow` ngay trên nó: hai hành động cùng
+/// nằm cuối màn, cùng là "thêm gì đó vào đơn", nên trông khác nhau là bắt người
+/// dùng học hai lần cùng một thứ.
+class _EcAttachCodeRow extends StatelessWidget {
+  const _EcAttachCodeRow({this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return EcTap(
+      onTap: onTap,
+      child: PenBox(
+        width: double.infinity,
+        height: 54,
+        fill: PenColors.card,
+        stroke: PenColors.line,
+        radius: 14,
+        axis: PenAxis.row,
+        gap: 12,
+        main: MainAxisAlignment.center,
+        cross: CrossAxisAlignment.center,
+        children: [
+          const Icon(LucideIcons.scanLine, size: 21, color: PenColors.ink),
+          Flexible(
+            child: PenText(
+              context.l10n.attachCodeToOrder,
+              size: 16,
+              color: PenColors.link,
+              weight: FontWeight.w600,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Các mã đã gắn thêm vào đơn, ngoài mã chính.
+class _EcExtraCodes extends StatelessWidget {
+  const _EcExtraCodes({required this.codes});
+
+  final List<String> codes;
+
+  @override
+  Widget build(BuildContext context) {
+    return PenBox(
+      width: double.infinity,
+      fill: PenColors.card,
+      stroke: PenColors.line,
+      radius: 14,
+      axis: PenAxis.column,
+      gap: 6,
+      cross: CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      children: [
+        PenText(
+          context.l10n.attachedCodes,
+          size: 12,
+          color: PenColors.mut,
+          weight: FontWeight.w600,
+        ),
+        for (final code in codes)
+          PenText(code, size: 15, color: PenColors.ink),
+      ],
     );
   }
 }

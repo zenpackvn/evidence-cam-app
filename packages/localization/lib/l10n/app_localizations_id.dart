@@ -2139,4 +2139,20 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get storageNeedProPlan =>
       'Menghubungkan penyimpanan sendiri butuh paket Profesional atau lebih tinggi.';
+
+  @override
+  String get attachCodeToOrder => 'Pindai kode lain ke pesanan ini';
+
+  @override
+  String get attachedCodes => 'Kode terlampir';
+
+  @override
+  String get codeAttached => 'Kode dilampirkan ke pesanan ini';
+
+  @override
+  String get codeBelongsToAnotherOrder =>
+      'Kode ini milik pesanan lain — tidak bisa digabung.';
+
+  @override
+  String get codeAttachFailed => 'Tidak dapat melampirkan kode.';
 }

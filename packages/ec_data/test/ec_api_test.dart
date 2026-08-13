@@ -21,6 +21,7 @@ Response<T> _res<T>(String path, T data) => Response<T>(
 );
 
 void main() {
+  group('mã của vận đơn', _orderCodesTests);
   late _MockDio dio;
   late EcApi api;
 
@@ -651,5 +652,88 @@ void main() {
     expect(s.byMember, isNull);
     expect(s.health, isNull);
     expect(s.videos, 4);
+  });
+}
+
+/// Một kiện hàng thường mang nhiều mã: mã vận đơn lúc gửi, mã trả hàng khi khách
+/// hoàn. App trước đây không gọi được tuyến nào trong nhóm này, nên quay clip trả
+/// hàng sẽ đẻ ra một đơn thứ hai và bằng chứng của cùng một kiện bị chẻ đôi.
+void _orderCodesTests() {
+  late _MockDio dio;
+  late EcApi api;
+
+  setUp(() {
+    dio = _MockDio();
+    api = EcApi(dio);
+  });
+
+  test('gắn mã gửi đúng đường và đúng thân request', () async {
+    when(
+      () => dio.post<Map<String, dynamic>>(
+        any(),
+        data: any(named: 'data'),
+        options: any(named: 'options'),
+      ),
+    ).thenAnswer(
+      (_) async => _res('/x', {
+        'id': 'c1',
+        'order_id': 'o1',
+        'kind': 'return',
+        'raw': 'RET-9',
+        'is_primary': 0,
+      }),
+    );
+
+    final code = await api.addOrderCode('s1', 'o1', code: 'RET-9', kind: 'return');
+
+    expect(code.raw, 'RET-9');
+    expect(code.isPrimary, isFalse);
+    final call = verify(
+      () => dio.post<Map<String, dynamic>>(
+        captureAny(),
+        data: captureAny(named: 'data'),
+        options: any(named: 'options'),
+      ),
+    ).captured;
+    expect(call[0], '/api/shops/s1/orders/o1/codes');
+    // snake_case: đó là tên trường backend nhận. Gửi camelCase thì validator trả
+    // 400 và lỗi chỉ lộ ra khi người dùng bấm nút.
+    expect(call[1], {'code': 'RET-9', 'kind': 'return'});
+  });
+
+  test('tra mã đi đường khớp tuyệt đối, không phải tìm gần đúng', () async {
+    when(
+      () => dio.get<List<dynamic>>(
+        any(),
+        queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
+      ),
+    ).thenAnswer((_) async => _res('/x', <dynamic>[]));
+
+    await api.lookupOrderCode('s1', 'SPX1');
+
+    final call = verify(
+      () => dio.get<List<dynamic>>(
+        captureAny(),
+        queryParameters: captureAny(named: 'queryParameters'),
+        options: any(named: 'options'),
+      ),
+    ).captured;
+    expect(call[0], '/api/shops/s1/order-codes');
+    // `code` chứ không `q`: quét ra một chuỗi thì hoặc nó đúng là mã của một
+    // đơn, hoặc không phải. Tìm gần đúng sẽ trả về đơn khác và người dùng gắn
+    // clip vào nhầm kiện.
+    expect(call[1], {'code': 'SPX1'});
+  });
+
+  test('mã chính đọc ra đúng cờ is_primary', () {
+    final primary = OrderCodeDto.fromJson({
+      'id': 'c0',
+      'order_id': 'o1',
+      'kind': 'shipping',
+      'raw': 'SPX1',
+      'is_primary': 1,
+    });
+    expect(primary.isPrimary, isTrue);
   });
 }

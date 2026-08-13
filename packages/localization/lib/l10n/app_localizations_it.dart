@@ -2160,4 +2160,20 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get storageNeedProPlan =>
       'Collegare il proprio archivio richiede il piano Professional o superiore.';
+
+  @override
+  String get attachCodeToOrder => 'Scan another code into this order';
+
+  @override
+  String get attachedCodes => 'Attached codes';
+
+  @override
+  String get codeAttached => 'Code attached to this order';
+
+  @override
+  String get codeBelongsToAnotherOrder =>
+      'This code already belongs to another order — cannot merge.';
+
+  @override
+  String get codeAttachFailed => 'Could not attach the code. Try again.';
 }

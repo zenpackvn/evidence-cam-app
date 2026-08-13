@@ -1135,5 +1135,10 @@
   "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… Video nằm trong bucket của bạn, bạn tự chịu trách nhiệm về độ bền.",
   "storageDriveTitle": "Google Drive",
   "storageDriveDesc": "Cắm bằng một lượt cấp quyền, không cần dán khoá. Tài khoản miễn phí chỉ có 15 GB dùng chung với Gmail.",
-  "storageNeedProPlan": "Cắm kho riêng cần gói Chuyên nghiệp trở lên."
+  "storageNeedProPlan": "Cắm kho riêng cần gói Chuyên nghiệp trở lên.",
+  "attachCodeToOrder": "Quét thêm mã vào đơn này",
+  "attachedCodes": "Mã đã gắn thêm",
+  "codeAttached": "Đã gắn mã vào đơn này",
+  "codeBelongsToAnotherOrder": "Mã này đang thuộc đơn khác — không gộp được.",
+  "codeAttachFailed": "Không gắn được mã. Thử lại."
 }

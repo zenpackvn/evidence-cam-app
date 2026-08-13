@@ -622,5 +622,10 @@
   "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… วิดีโออยู่ในบัคเก็ตของคุณ และความคงทนเป็นความรับผิดชอบของคุณเอง",
   "storageDriveTitle": "Google Drive",
   "storageDriveDesc": "เชื่อมด้วยการให้สิทธิ์ครั้งเดียว ไม่ต้องวางคีย์ บัญชีฟรีมีเพียง 15 GB ที่ใช้ร่วมกับ Gmail",
-  "storageNeedProPlan": "การเชื่อมที่เก็บของคุณเองต้องใช้แพ็กเกจ Professional ขึ้นไป"
+  "storageNeedProPlan": "การเชื่อมที่เก็บของคุณเองต้องใช้แพ็กเกจ Professional ขึ้นไป",
+  "attachCodeToOrder": "สแกนรหัสเพิ่มเข้าออเดอร์นี้",
+  "attachedCodes": "รหัสที่แนบเพิ่ม",
+  "codeAttached": "แนบรหัสเข้าออเดอร์แล้ว",
+  "codeBelongsToAnotherOrder": "รหัสนี้อยู่กับออเดอร์อื่นแล้ว รวมไม่ได้",
+  "codeAttachFailed": "แนบรหัสไม่ได้ ลองอีกครั้ง"
 }

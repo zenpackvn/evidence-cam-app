@@ -2153,4 +2153,20 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get storageNeedProPlan =>
       'Kailangan ng plan na Professional pataas para ikonekta ang sariling imbakan.';
+
+  @override
+  String get attachCodeToOrder => 'Mag-scan ng isa pang code sa order na ito';
+
+  @override
+  String get attachedCodes => 'Mga nakakabit na code';
+
+  @override
+  String get codeAttached => 'Nakakabit na ang code';
+
+  @override
+  String get codeBelongsToAnotherOrder =>
+      'Nasa ibang order na ang code na ito.';
+
+  @override
+  String get codeAttachFailed => 'Hindi maikabit ang code.';
 }

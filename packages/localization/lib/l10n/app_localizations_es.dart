@@ -2156,4 +2156,20 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get storageNeedProPlan =>
       'Conectar tu propio almacenamiento requiere el plan Profesional o superior.';
+
+  @override
+  String get attachCodeToOrder => 'Escanear otro código en este pedido';
+
+  @override
+  String get attachedCodes => 'Códigos adjuntos';
+
+  @override
+  String get codeAttached => 'Código adjuntado a este pedido';
+
+  @override
+  String get codeBelongsToAnotherOrder =>
+      'Este código ya pertenece a otro pedido.';
+
+  @override
+  String get codeAttachFailed => 'No se pudo adjuntar el código.';
 }

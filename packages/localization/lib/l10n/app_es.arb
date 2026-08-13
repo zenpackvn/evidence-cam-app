@@ -622,5 +622,10 @@
   "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… Los vídeos están en tu bucket y su durabilidad corre por tu cuenta.",
   "storageDriveTitle": "Google Drive",
   "storageDriveDesc": "Se conecta con un solo permiso, sin pegar claves. Una cuenta gratuita solo tiene 15 GB compartidos con Gmail.",
-  "storageNeedProPlan": "Conectar tu propio almacenamiento requiere el plan Profesional o superior."
+  "storageNeedProPlan": "Conectar tu propio almacenamiento requiere el plan Profesional o superior.",
+  "attachCodeToOrder": "Escanear otro código en este pedido",
+  "attachedCodes": "Códigos adjuntos",
+  "codeAttached": "Código adjuntado a este pedido",
+  "codeBelongsToAnotherOrder": "Este código ya pertenece a otro pedido.",
+  "codeAttachFailed": "No se pudo adjuntar el código."
 }

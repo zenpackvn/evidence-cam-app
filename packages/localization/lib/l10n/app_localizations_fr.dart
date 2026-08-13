@@ -2175,4 +2175,20 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get storageNeedProPlan =>
       'Connecter votre propre stockage nécessite le forfait Professionnel ou supérieur.';
+
+  @override
+  String get attachCodeToOrder => 'Scanner un autre code dans cette commande';
+
+  @override
+  String get attachedCodes => 'Codes attachés';
+
+  @override
+  String get codeAttached => 'Code rattaché à cette commande';
+
+  @override
+  String get codeBelongsToAnotherOrder =>
+      'Ce code appartient déjà à une autre commande.';
+
+  @override
+  String get codeAttachFailed => 'Impossible de rattacher le code.';
 }

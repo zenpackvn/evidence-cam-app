@@ -622,5 +622,10 @@
   "storageS3Desc": "AWS S3, Cloudflare R2, MinIO, Wasabi… Nasa bucket mo ang mga video, at ikaw ang may pananagutan sa tibay nito.",
   "storageDriveTitle": "Google Drive",
   "storageDriveDesc": "Ikonekta sa isang pagbibigay ng pahintulot, walang key na idi-paste. Ang libreng account ay may 15 GB lang na kabahagi ng Gmail.",
-  "storageNeedProPlan": "Kailangan ng plan na Professional pataas para ikonekta ang sariling imbakan."
+  "storageNeedProPlan": "Kailangan ng plan na Professional pataas para ikonekta ang sariling imbakan.",
+  "attachCodeToOrder": "Mag-scan ng isa pang code sa order na ito",
+  "attachedCodes": "Mga nakakabit na code",
+  "codeAttached": "Nakakabit na ang code",
+  "codeBelongsToAnotherOrder": "Nasa ibang order na ang code na ito.",
+  "codeAttachFailed": "Hindi maikabit ang code."
 }

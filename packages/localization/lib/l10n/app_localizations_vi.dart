@@ -2123,4 +2123,20 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get storageNeedProPlan =>
       'Cắm kho riêng cần gói Chuyên nghiệp trở lên.';
+
+  @override
+  String get attachCodeToOrder => 'Quét thêm mã vào đơn này';
+
+  @override
+  String get attachedCodes => 'Mã đã gắn thêm';
+
+  @override
+  String get codeAttached => 'Đã gắn mã vào đơn này';
+
+  @override
+  String get codeBelongsToAnotherOrder =>
+      'Mã này đang thuộc đơn khác — không gộp được.';
+
+  @override
+  String get codeAttachFailed => 'Không gắn được mã. Thử lại.';
 }

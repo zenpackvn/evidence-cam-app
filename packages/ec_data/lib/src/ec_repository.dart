@@ -152,6 +152,23 @@ abstract interface class EcRepository {
     String? videoTypeId,
   });
   Future<List<OrderSummaryDto>> searchOrders(String shopId, String query);
+
+  /// Mọi mã đang gắn vào một đơn.
+  Future<List<OrderCodeDto>> orderCodes(String shopId, String orderId);
+
+  /// Gắn thêm một mã (mã trả hàng, hoặc mã vận đơn thứ hai) vào đơn đang mở.
+  Future<OrderCodeDto> addOrderCode(
+    String shopId,
+    String orderId, {
+    required String code,
+    required String kind,
+  });
+
+  /// Gỡ một mã khỏi đơn. Mã chính không gỡ được.
+  Future<void> removeOrderCode(String shopId, String orderId, String codeId);
+
+  /// Tra mã KHỚP TUYỆT ĐỐI — đường của máy quét, khác `searchOrders` tìm gần đúng.
+  Future<List<OrderCodeDto>> lookupOrderCode(String shopId, String code);
   Future<OrderDto> createOrder(String shopId, String tracking);
   Future<OrderDetailDto> order(String shopId, String orderId);
 
@@ -385,6 +402,29 @@ class RemoteEcRepository implements EcRepository {
   @override
   Future<List<OrderSummaryDto>> searchOrders(String shopId, String query) =>
       _api.searchOrders(shopId, query);
+
+  @override
+  Future<List<OrderCodeDto>> orderCodes(String shopId, String orderId) =>
+      _api.orderCodes(shopId, orderId);
+
+  @override
+  Future<OrderCodeDto> addOrderCode(
+    String shopId,
+    String orderId, {
+    required String code,
+    required String kind,
+  }) => _api.addOrderCode(shopId, orderId, code: code, kind: kind);
+
+  @override
+  Future<void> removeOrderCode(
+    String shopId,
+    String orderId,
+    String codeId,
+  ) => _api.removeOrderCode(shopId, orderId, codeId);
+
+  @override
+  Future<List<OrderCodeDto>> lookupOrderCode(String shopId, String code) =>
+      _api.lookupOrderCode(shopId, code);
 
   @override
   Future<OrderDto> createOrder(String shopId, String tracking) =>
