@@ -78,6 +78,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get claimsCreateSearchHint => 'I-type o i-scan ang tracking code';
 
   @override
+  String get claimsCreateNameHint => 'Pangalan ng dossier';
+
+  @override
   String get claimsCreateStart =>
       'I-type ang tracking code, o pindutin ang scan, para hanapin ang order na ikinaklaim mo.';
 

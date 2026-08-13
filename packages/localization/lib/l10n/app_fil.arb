@@ -24,6 +24,7 @@
   "claimsAddedLater": "idinagdag mamaya",
   "claimsCreateTitle": "Bagong claim dossier",
   "claimsCreateSearchHint": "I-type o i-scan ang tracking code",
+  "claimsCreateNameHint": "Pangalan ng dossier",
   "claimsCreateStart": "I-type ang tracking code, o pindutin ang scan, para hanapin ang order na ikinaklaim mo.",
   "claimsCreateNoOrder": "Walang order na may ganoong tracking code sa napiling shop.",
   "claimsRemoveItemTitle": "Alisin sa dossier",

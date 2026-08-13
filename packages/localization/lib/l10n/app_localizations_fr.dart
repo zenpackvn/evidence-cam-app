@@ -79,6 +79,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Saisissez ou scannez le numéro de suivi';
 
   @override
+  String get claimsCreateNameHint => 'Nom du dossier';
+
+  @override
   String get claimsCreateStart =>
       'Saisissez le numéro de suivi, ou appuyez sur scanner, pour trouver la commande concernée.';
 

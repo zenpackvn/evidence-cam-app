@@ -157,6 +157,40 @@ class FakeEcRepository implements EcRepository {
   @override
   Future<List<ShopDto>> shops() async => const [];
 
+  // Mã của vận đơn: bản giả không giữ trạng thái, nên gắn mã trả về đúng cái
+  // vừa gắn và tra mã trả rỗng. Đủ cho màn hình dựng được; đường đi thật đã có
+  // test riêng ở `packages/ec_data/test/ec_api_test.dart`.
+  @override
+  Future<List<OrderCodeDto>> orderCodes(String shopId, String orderId) async =>
+      const [];
+
+  @override
+  Future<OrderCodeDto> addOrderCode(
+    String shopId,
+    String orderId, {
+    required String code,
+    required String kind,
+  }) async => OrderCodeDto(
+    id: 'fake-code',
+    orderId: orderId,
+    kind: kind,
+    raw: code,
+    isPrimary: false,
+  );
+
+  @override
+  Future<void> removeOrderCode(
+    String shopId,
+    String orderId,
+    String codeId,
+  ) async {}
+
+  @override
+  Future<List<OrderCodeDto>> lookupOrderCode(
+    String shopId,
+    String code,
+  ) async => const [];
+
   @override
   Future<ShopDto> shop(String shopId) async => ShopDto(
     id: shopId,

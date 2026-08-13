@@ -16,6 +16,7 @@ import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart'
     show CupertinoActivityIndicator, CupertinoTextField;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show MaxLengthEnforcement;
 import 'package:localization/localization.dart';
 
 /// Một hồ sơ trên màn danh sách.
@@ -679,8 +680,12 @@ class EcCreateClaimScreen extends StatefulWidget {
 
   final VoidCallback? onBack;
 
-  /// Tạo hồ sơ từ MỌI mã đơn đã tra và phần đã tick của từng mã.
-  final ValueChanged<List<EcClaimOrderPicks>>? onCreate;
+  /// Tạo hồ sơ từ MỌI mã đơn đã tra và phần đã tick của từng mã, kèm tên hồ sơ.
+  ///
+  /// Tên rỗng là hợp lệ — máy chủ tự đặt theo mã vận đơn đầu tiên. Không chặn
+  /// người dùng ở đây: bắt gõ tên mới cho tạo, giữa ca đóng hàng, là đổi một
+  /// hồ sơ có tên xấu lấy một hồ sơ không bao giờ được tạo.
+  final void Function(List<EcClaimOrderPicks> batch, String title)? onCreate;
 
   @override
   State<EcCreateClaimScreen> createState() => _EcCreateClaimScreenState();
@@ -688,6 +693,9 @@ class EcCreateClaimScreen extends StatefulWidget {
 
 class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
   final _search = TextEditingController();
+
+  /// Tên hồ sơ. Điền sẵn bằng mã đầu tiên tra được, sửa được.
+  final _title = TextEditingController();
 
   /// Mọi mã đã tra trong lượt này, theo đúng thứ tự tra.
   ///
@@ -725,6 +733,7 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
   @override
   void dispose() {
     _search.dispose();
+    _title.dispose();
     super.dispose();
   }
 
@@ -754,6 +763,11 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
         _order
           ..remove(code)
           ..insert(0, code);
+        // Tên mặc định là mã ĐẦU TIÊN tra được. Người bán bấm tạo ngay thì hồ
+        // sơ đã có một cái tên phân biệt được với vụ khác, khỏi phải nghĩ ra
+        // tên giữa ca đóng hàng. Chỉ điền khi ô còn trống — gõ rồi mà lượt tra
+        // sau đè lên là mất chữ vừa gõ.
+        if (_title.text.trim().isEmpty) _title.text = code;
       }
     });
   }
@@ -809,11 +823,25 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
-                child: _CreateClaimButton(
-                  count: _pickedCount,
-                  onTap: widget.onCreate == null
-                      ? null
-                      : () => widget.onCreate!(_batch),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Ô tên đứng NGAY TRÊN nút tạo chứ không ở đầu màn: lúc mới
+                    // mở màn chưa có gì để đặt tên, còn ở đây người bán vừa tick
+                    // xong và đang nhìn đúng những đơn sắp gộp lại.
+                    _ClaimNameField(
+                      controller: _title,
+                      hint: l10n.claimsCreateNameHint,
+                    ),
+                    const SizedBox(height: 10),
+                    _CreateClaimButton(
+                      count: _pickedCount,
+                      onTap: widget.onCreate == null
+                          ? null
+                          : () => widget.onCreate!(_batch, _title.text.trim()),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -988,6 +1016,48 @@ class _OrderPickSection extends StatelessWidget {
 
 /// Ô tra mã + nút quét, cùng khuôn với thanh tìm kiếm ở trang Vận đơn: một ô
 /// duy nhất, vạch ngăn, rồi nút quét nằm BÊN TRONG ô.
+/// Ô đặt tên hồ sơ.
+///
+/// Tên là thứ người bán đọc ba tuần sau, lúc sàn mới trả lời và trong danh sách
+/// đã có chục hồ sơ. Nên ô này điền sẵn mã vận đơn chứ không để trống: một cái
+/// tên phân biệt được, có ngay, mà vẫn sửa được.
+class _ClaimNameField extends StatelessWidget {
+  const _ClaimNameField({required this.controller, required this.hint});
+
+  final TextEditingController controller;
+  final String hint;
+
+  @override
+  Widget build(BuildContext context) => PenBox(
+    height: 52,
+    fill: PenColors.card,
+    stroke: PenColors.line,
+    radius: 14,
+    axis: PenAxis.row,
+    gap: 10,
+    cross: CrossAxisAlignment.center,
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    children: [
+      const Icon(LucideIcons.tag, size: 20, color: PenColors.mut),
+      Expanded(
+        child: CupertinoTextField(
+          controller: controller,
+          padding: EdgeInsets.zero,
+          decoration: const BoxDecoration(),
+          placeholder: hint,
+          textInputAction: TextInputAction.done,
+          maxLength: 120,
+          maxLengthEnforcement: MaxLengthEnforcement.enforced,
+          // Bộ đếm ký tự của Cupertino không có sẵn; giới hạn 120 khớp với
+          // trần của máy chủ nên chữ bị cắt ở đây thay vì bị từ chối sau khi
+          // người dùng đã bấm tạo.
+          style: const TextStyle(fontSize: 15, color: PenColors.ink),
+        ),
+      ),
+    ],
+  );
+}
+
 class _SearchScanBar extends StatelessWidget {
   const _SearchScanBar({
     required this.controller,

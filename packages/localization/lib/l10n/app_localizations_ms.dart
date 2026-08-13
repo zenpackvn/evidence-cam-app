@@ -77,6 +77,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get claimsCreateSearchHint => 'Taip atau imbas nombor penjejakan';
 
   @override
+  String get claimsCreateNameHint => 'Nama fail';
+
+  @override
   String get claimsCreateStart =>
       'Taip nombor penjejakan, atau ketik imbas, untuk mencari pesanan yang dituntut.';
 

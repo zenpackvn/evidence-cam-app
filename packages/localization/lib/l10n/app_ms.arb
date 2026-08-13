@@ -24,6 +24,7 @@
   "claimsAddedLater": "ditambah kemudian",
   "claimsCreateTitle": "Fail tuntutan baharu",
   "claimsCreateSearchHint": "Taip atau imbas nombor penjejakan",
+  "claimsCreateNameHint": "Nama fail",
   "claimsCreateStart": "Taip nombor penjejakan, atau ketik imbas, untuk mencari pesanan yang dituntut.",
   "claimsCreateNoOrder": "Tiada pesanan dengan nombor penjejakan itu dalam kedai yang dipilih.",
   "claimsRemoveItemTitle": "Keluarkan dari fail",

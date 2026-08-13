@@ -24,6 +24,7 @@
   "claimsAddedLater": "aggiunta dopo",
   "claimsCreateTitle": "Nuovo fascicolo di reclamo",
   "claimsCreateSearchHint": "Digita o scansiona il codice di tracciamento",
+  "claimsCreateNameHint": "Nome del fascicolo",
   "claimsCreateStart": "Digita il codice di tracciamento, o tocca scansiona, per trovare l'ordine del reclamo.",
   "claimsCreateNoOrder": "Nessun ordine con quel codice di tracciamento nel negozio selezionato.",
   "claimsRemoveItemTitle": "Rimuovi dal fascicolo",

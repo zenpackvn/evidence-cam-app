@@ -5837,10 +5837,11 @@ class _CreateClaimRoute extends StatelessWidget {
   Future<void> _create(
     BuildContext context,
     List<EcClaimOrderPicks> batch,
+    String title,
   ) async {
     final l10n = context.l10n;
     final now = DateTime.now();
-    final claim = await _publish(batch);
+    final claim = await _publish(batch, title);
     // Chụp lại NGUYÊN nội dung chứ không giữ id rồi tra sau: clip có hạn lưu
     // trữ, mà hồ sơ khiếu nại phải nói được nó ĐÃ gồm những gì.
     await _claimStore.add(
@@ -5891,7 +5892,7 @@ class _CreateClaimRoute extends StatelessWidget {
   /// Người bán vừa tick xong một danh sách đơn; bắt họ làm lại vì mất mạng là
   /// trừng phạt họ vì lỗi của mạng. Đổi lại, màn hình phải nói thẳng là chưa
   /// có link, chứ không để họ tưởng bằng chứng đã chia sẻ được.
-  Future<ClaimDto?> _publish(List<EcClaimOrderPicks> batch) async {
+  Future<ClaimDto?> _publish(List<EcClaimOrderPicks> batch, String title) async {
     try {
       // Mã vận đơn → id đơn. `_search` đã tra ra id này lúc người dùng gõ mã,
       // nhưng màn là StatelessWidget nên không giữ lại được; tra lại một lượt
@@ -5925,6 +5926,10 @@ class _CreateClaimRoute extends StatelessWidget {
       return await repo.createClaim(
         shopId,
         resolved,
+        // Tên rỗng thì KHÔNG gửi trường này: máy chủ tự đặt theo mã vận đơn.
+        // Gửi chuỗi rỗng lên là bị từ chối, và đây đúng là chỗ mọi hồ sơ tạo
+        // từ app đã chết âm thầm suốt thời gian qua.
+        title: title.isEmpty ? null : title,
         evidenceIds: picked.isEmpty ? null : picked,
       );
     } on Object catch (error, stack) {
@@ -5947,8 +5952,8 @@ class _CreateClaimRoute extends StatelessWidget {
     // Bọc bắt lỗi: `_create` chạy ngoài luồng dựng UI, nên một ngoại lệ ở
     // giữa chừng (mạng chết lúc đẩy hồ sơ, ghi đĩa hỏng) sẽ biến mất không
     // dấu vết — người dùng bấm nút và KHÔNG có gì xảy ra, không cả báo lỗi.
-    onCreate: (batch) => unawaited(
-      _create(context, batch).catchError((Object error, StackTrace stack) {
+    onCreate: (batch, title) => unawaited(
+      _create(context, batch, title).catchError((Object error, StackTrace stack) {
         developer.log(
           'claims: tạo hồ sơ hỏng (${error.runtimeType})',
           name: 'zenpack.claims',

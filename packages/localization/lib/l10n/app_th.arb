@@ -24,6 +24,7 @@
   "claimsAddedLater": "เพิ่มภายหลัง",
   "claimsCreateTitle": "แฟ้มเคลมใหม่",
   "claimsCreateSearchHint": "พิมพ์หรือสแกนเลขพัสดุ",
+  "claimsCreateNameHint": "ชื่อแฟ้มเรื่อง",
   "claimsCreateStart": "พิมพ์เลขพัสดุ หรือแตะสแกน เพื่อค้นหาออเดอร์ที่จะเคลม",
   "claimsCreateNoOrder": "ไม่พบออเดอร์ที่มีเลขพัสดุนี้ในร้านที่เลือก",
   "claimsRemoveItemTitle": "นำออกจากแฟ้ม",

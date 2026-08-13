@@ -24,6 +24,7 @@
   "claimsAddedLater": "später hinzugefügt",
   "claimsCreateTitle": "Neue Reklamationsakte",
   "claimsCreateSearchHint": "Sendungsnummer eingeben oder scannen",
+  "claimsCreateNameHint": "Name des Vorgangs",
   "claimsCreateStart": "Gib die Sendungsnummer ein oder tippe auf Scannen, um die Bestellung zu finden.",
   "claimsCreateNoOrder": "Keine Bestellung mit dieser Sendungsnummer im gewählten Shop.",
   "claimsRemoveItemTitle": "Aus der Akte entfernen",

@@ -31,6 +31,10 @@
   "claimsAddedLater": "đính thêm",
   "claimsCreateTitle": "Tạo hồ sơ khiếu nại",
   "claimsCreateSearchHint": "Nhập hoặc quét mã vận đơn",
+  "claimsCreateNameHint": "Tên hồ sơ",
+  "@claimsCreateNameHint": {
+    "description": "Chỗ điền tên hồ sơ khiếu nại, điền sẵn mã vận đơn đầu tiên."
+  },
   "claimsCreateStart": "Nhập mã vận đơn hoặc bấm quét để tìm đơn cần khiếu nại.",
   "claimsCreateNoOrder": "Không tìm thấy mã vận đơn này trong cửa hàng đang chọn.",
   "claimsRemoveItemTitle": "Gỡ khỏi hồ sơ",

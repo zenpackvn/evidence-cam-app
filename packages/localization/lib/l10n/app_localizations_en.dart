@@ -77,6 +77,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsCreateSearchHint => 'Type or scan a tracking code';
 
   @override
+  String get claimsCreateNameHint => 'Dossier name';
+
+  @override
   String get claimsCreateStart =>
       'Type a tracking code, or tap scan, to find the order you are claiming for.';
 

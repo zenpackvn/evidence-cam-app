@@ -24,6 +24,7 @@
   "claimsAddedLater": "ditambahkan kemudian",
   "claimsCreateTitle": "Berkas klaim baru",
   "claimsCreateSearchHint": "Ketik atau pindai nomor resi",
+  "claimsCreateNameHint": "Nama berkas",
   "claimsCreateStart": "Ketik nomor resi, atau ketuk pindai, untuk menemukan pesanan yang diklaim.",
   "claimsCreateNoOrder": "Tidak ada pesanan dengan nomor resi itu di toko yang dipilih.",
   "claimsRemoveItemTitle": "Keluarkan dari berkas",

@@ -234,6 +234,12 @@ abstract class AppLocalizations {
   /// **'Type or scan a tracking code'**
   String get claimsCreateSearchHint;
 
+  /// Placeholder for the claim dossier name field; prefilled with the first tracking code.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier name'**
+  String get claimsCreateNameHint;
+
   /// No description provided for @claimsCreateStart.
   ///
   /// In en, this message translates to:

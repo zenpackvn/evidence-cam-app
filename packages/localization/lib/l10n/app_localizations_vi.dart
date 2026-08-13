@@ -77,6 +77,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get claimsCreateSearchHint => 'Nhập hoặc quét mã vận đơn';
 
   @override
+  String get claimsCreateNameHint => 'Tên hồ sơ';
+
+  @override
   String get claimsCreateStart =>
       'Nhập mã vận đơn hoặc bấm quét để tìm đơn cần khiếu nại.';
 

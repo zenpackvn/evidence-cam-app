@@ -79,6 +79,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Digita o scansiona il codice di tracciamento';
 
   @override
+  String get claimsCreateNameHint => 'Nome del fascicolo';
+
+  @override
   String get claimsCreateStart =>
       'Digita il codice di tracciamento, o tocca scansiona, per trovare l\'ordine del reclamo.';
 

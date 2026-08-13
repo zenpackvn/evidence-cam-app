@@ -77,6 +77,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get claimsCreateSearchHint => 'Sendungsnummer eingeben oder scannen';
 
   @override
+  String get claimsCreateNameHint => 'Name des Vorgangs';
+
+  @override
   String get claimsCreateStart =>
       'Gib die Sendungsnummer ein oder tippe auf Scannen, um die Bestellung zu finden.';
 

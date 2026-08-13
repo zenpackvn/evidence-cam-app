@@ -24,6 +24,7 @@
   "claimsAddedLater": "ajoutée plus tard",
   "claimsCreateTitle": "Nouveau dossier de réclamation",
   "claimsCreateSearchHint": "Saisissez ou scannez le numéro de suivi",
+  "claimsCreateNameHint": "Nom du dossier",
   "claimsCreateStart": "Saisissez le numéro de suivi, ou appuyez sur scanner, pour trouver la commande concernée.",
   "claimsCreateNoOrder": "Aucune commande avec ce numéro de suivi dans la boutique sélectionnée.",
   "claimsRemoveItemTitle": "Retirer du dossier",
