@@ -506,9 +506,18 @@ class _Nav3Bar extends StatelessWidget {
   }
 }
 
+/// Lớp `Dim` thiết kế vẽ sau mọi hộp thoại — cùng mã màu với `PenSheet`.
+const _ecDialogDim = Color(0xA6636363);
+
 /// Shared frame for the two modal dialogs (CreateType, ConfirmDelete): a
 /// dimmed backdrop with a centered white rounded card, 12px gap between
 /// [children].
+///
+/// Nền phải là `Dim` chứ không phải trong suốt: route mở hộp thoại
+/// (`_modalPage`) đã cố ý đặt `barrierColor: transparent` vì tin rằng mỗi màn
+/// modal tự vẽ lớp mờ của mình. Khung này lại để trong suốt, nên hộp thoại nổi
+/// lên giữa một màn hình vẫn sáng nguyên — không có gì tách nó khỏi trang bên
+/// dưới.
 class _EcDialogFrame extends StatelessWidget {
   const _EcDialogFrame({required this.children});
   final List<Widget> children;
@@ -516,7 +525,7 @@ class _EcDialogFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: Colors.transparent,
+      color: _ecDialogDim,
       child: Stack(
         children: [
           // Bấm ra ngoài thẻ: bàn phím đang mở thì HẠ BÀN PHÍM trước, lần bấm
@@ -545,22 +554,40 @@ class _EcDialogFrame extends StatelessWidget {
                   // Bấm vào chỗ trống trong thẻ cũng hạ bàn phím — nút bấm và
                   // ô nhập vẫn nhận chạm của chúng như thường.
                   onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: ecSquircleDecoration(
-                      radius: 16,
-                      color: BrandColors.bg,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (var i = 0; i < children.length; i++) ...[
-                          if (i > 0) const SizedBox(height: 12),
-                          children[i],
+                  // Thẻ phóng nhẹ từ 0.94 lên 1 khi hiện: chỉ mờ dần thì hộp
+                  // thoại "có sẵn ở đó rồi", còn nảy lên thì mắt bám theo được
+                  // là nó vừa mở ra.
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.94, end: 1),
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutBack,
+                    builder: (context, scale, child) =>
+                        Transform.scale(scale: scale, child: child),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: ecSquircleDecoration(
+                        radius: 16,
+                        color: BrandColors.bg,
+                        // Thiết kế nhấc mọi hộp thoại khỏi lớp `Dim`.
+                        shadows: const [
+                          BoxShadow(
+                            color: Color(0x33161616),
+                            offset: Offset(0, 14),
+                            blurRadius: 36,
+                          ),
                         ],
-                      ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var i = 0; i < children.length; i++) ...[
+                            if (i > 0) const SizedBox(height: 12),
+                            children[i],
+                          ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
