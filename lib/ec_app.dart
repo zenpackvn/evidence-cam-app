@@ -5859,7 +5859,11 @@ class _CreateClaimRoute extends StatelessWidget {
         picked.addAll(batch[i].picked.map((e) => e.id));
       }
       if (resolved.isEmpty) return null;
-      return repo.createClaim(
+      // `await`, KHÔNG `return` trần: trả thẳng Future ra là nó hỏng SAU khi
+      // hàm đã rời khối `try`, nên `catch` bên dưới không bao giờ thấy. Lúc đó
+      // lời hứa "gửi hỏng thì trả null và vẫn lưu trên máy" ngay trên kia bị
+      // thủng — máy chủ trả lỗi là chết cả lượt tạo hồ sơ.
+      return await repo.createClaim(
         shopId,
         resolved,
         evidenceIds: picked.isEmpty ? null : picked,
