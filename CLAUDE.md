@@ -75,71 +75,73 @@ When a task matches a skill name (e.g. setting up routing → `flutter-setup-dec
 
 ## Code organization: app shell vs. workspace packages
 
-The repository is a Dart pub workspace. The root app (`lib/`) is a thin
-composition root; everything reusable or feature-owned lives in `packages/`.
-Place new code by asking what kind of thing it is, not which feature happens to
-need it first.
+The repository is a Dart pub workspace. Reusable and feature-owned code lives in
+`packages/`; `lib/` composes it. Place new code by asking what kind of thing it
+is, not which feature happens to need it first.
 
-- **`lib/` (root app)** — the composition root only: routing
-  (`lib/app/router.dart`), DI composition (`lib/app/di/`), optional-feature
-  wiring (`lib/app/features.dart`), Firebase bootstrap, and the small
-  app-coupled glue under `lib/core/` (the ObjectBox `@preResolve` store module,
-  the sync cursor store, the app-wide service module, app extensions). It owns
-  no feature code.
-- **`packages/features/<name>/`** (Dart package `feature_<name>`) — everything
-  owned by a single feature, under `lib/src/{data,domain,presentation}` with a
-  barrel (`lib/feature_<name>.dart`) exporting only its public surface and a
-  micro-package DI module (`Feature<Name>PackageModule`). Data-less features
-  (`home`, `splash`) ship only `presentation/`. A feature must **not** import
-  another feature except through a documented single-consumer *capability*: a
-  self-contained presentation object (e.g. a `Cubit` or widget) one feature
-  surfaces inside another. While only one consumer exists, importing the other
-  `feature_<name>` package directly is allowed and preferred over inventing a
-  shared abstraction; the moment a **second** consumer appears, the rule of
-  three applies and the contract is promoted to a `shared_*` package. Both rules
-  are enforced by `test/architecture/feature_boundaries_test.dart` (the
-  capability allowlist) and `package_layering_test.dart` (dependency direction).
-- **`packages/shared_contracts/`** — cross-feature *business* vocabulary used by
-  2+ features (e.g. `AuthUser`, the reader interfaces, the app-wide `Session`
-  lifecycle contract). Depends on Flutter only for `Session`'s `Listenable`;
-  otherwise pure-Dart.
-- **`packages/shared_ui/`** — cross-feature *presentation* widgets that need
-  Flutter: the `SessionScope` accessor (which exposes the `Session` defined in
-  `shared_contracts`) and shared widgets.
-- **`packages/app_ui/`** — the *design system*: generic visual building blocks
-  with no business meaning. **`packages/theme/`** owns theming + `ThemeBloc`.
+- **`lib/` (root app)** — the composition root. In practice most of it is
+  `lib/ec_app.dart` (~7.8k lines): the `GoRouter` (declared around line 6700),
+  the route widgets, and the glue between features. Alongside it:
+  `lib/app/` (Firebase bootstrap in `firebase.dart`, DI composition in
+  `lib/app/di/`, `update_gate.dart`, `bootstrap_error_app.dart`), `lib/core/`
+  (app-coupled glue: the ObjectBox store module, the sync cursor store, the
+  app-wide service module, locale bloc, context extensions), `lib/data/`
+  (`ec_purchases.dart`, `ec_uploader.dart`, device conditions) and
+  `lib/screens/` (record / scan / trim routes).
+- **`packages/features/<name>/`** (Dart package `feature_<name>`) — the four
+  EvidenceCam flows: **`shift`** (flow 1 + splash/login), **`orders`** (flow 2),
+  **`capture`** (flow 3: camera, scanner, upload queue, trim) and **`account`**
+  (flow 4 + claim dossiers). Each is a barrel (`lib/feature_<name>.dart`) over a
+  **flat** `lib/src/*.dart` — there is no `data/domain/presentation` split and no
+  per-package DI module. A feature must **not** import a sibling feature; the
+  allowlist for deliberate exceptions
+  (`_allowedCrossFeatureImports` in `test/architecture/feature_boundaries_test.dart`)
+  is currently **empty**, and the four features genuinely import none of each
+  other. Dependency *direction* is enforced separately by
+  `package_layering_test.dart`.
+- **`packages/ec_data/`** — the EvidenceCam backend edge: DTOs, `EcApi`,
+  `EcRepository`, Firebase/Google/Apple auth, and `ec_env.dart` (which builds the
+  app's own `Dio` with a bearer interceptor). Everything that talks to
+  `api.zenpack.vn` goes through here.
+- **`packages/ec_ui/`** — the "Pen" design kit (`PenBox`, `PenText`,
+  `PenColors`, QR widgets). This is what the EvidenceCam screens are built from.
+- **`packages/app_ui/`** — the older generic design system, still present and
+  still depended on by the feature packages.
 - **Infra packages** — `network`, `storage`, `analytics`, `app_platform`,
-  `config`, `database`, `localization`, `sync`, … each owning its third-party
-  dependencies behind a package entry point (the app depends on `network`, not
-  on `dio`).
+  `config`, `database`, `localization`, `sync_connectivity_plus`, `test_utils`,
+  `architecture`, each owning its third-party dependencies behind a package entry
+  point (the app depends on `network`, not on `dio`).
+- **`published/rev_sync/`** — the offline-first sync engine, a pure-Dart package
+  that lives **outside** `packages/` and is depended on by path.
 
-Dependency direction is `app → features → shared_contracts / shared_ui →
-app_ui / infra → architecture`.
+The authoritative layer map is `_layers` in
+`test/architecture/package_layering_test.dart`: rank 0 `architecture` /
+`rev_sync`, rank 1 primitives (`config`, `storage`, `analytics`, `app_ui`,
+`ec_ui`, `localization`, `shared_contracts`, `database`,
+`sync_connectivity_plus`), rank 2 composed infra (`shared_ui`, `network`,
+`app_platform`), rank 3 `test_utils` / `ec_data`, rank 4 the four feature
+packages. A package may depend only on strictly lower ranks. Adding a workspace
+package without giving it a rank fails the test.
 
 Promote a type into `shared_contracts` / `shared_ui` only on the **rule of
 three**: when ≥2 features actually depend on it today (not "might someday") and
-its contract is stable. Until then it stays in its owning feature package. Keep
-the shared packages a small, deliberate set of contracts — never a catch-all
-dumping ground.
+its contract is stable. Keep the shared packages a small, deliberate set of
+contracts — never a catch-all dumping ground.
 
-**Worked example — the session.** "Who is logged in" is app-wide state read by
-`home`, `profile`, and `splash`. Rather than have those features import the auth
-feature's `AuthBloc` (a presentation-layer type), they depend on the `Session`
-contract in `package:shared_contracts` (current user + the `restore`/`signOut`/
-`clearSession` lifecycle). The auth feature provides the implementation
-(`AuthSession`, an adapter over `AuthBloc`, in
-`packages/features/auth/lib/src/presentation/auth_session.dart`); the
-composition root (`lib/app/app.dart`) wires it and exposes it via `SessionScope`
-(an `InheritedWidget`, read with `SessionScope.of(context)` +
-`ListenableBuilder`). The composition root (`lib/app/`) may depend on feature
-packages directly — the "no cross-feature import" rule applies to feature code,
-not to the app shell that wires features together. Feature-specific
-*capabilities* (e.g. auth's `DeleteAccountCubit`, surfaced in profile) stay in
-their owning package and are imported directly through the barrel — this is the
-single-consumer capability exception above, and `profile`'s own UI still owns
-the reaction (its snackbars, its `clearSession()` call). Only genuinely shared
-*state* goes through a shared package, and a capability graduates there once a
-second feature needs it.
+**Leftovers from the starter template — do not build on these.** The repo still
+carries scaffolding from the template it was generated from, and it is not part
+of EvidenceCam:
+
+- `Session` (`packages/shared_contracts`) and `SessionScope`
+  (`packages/shared_ui`) still compile, but **nothing under `lib/` uses them**.
+  The implementation they document (`AuthSession`, `AuthBloc`, and the whole
+  `packages/features/auth/` package) no longer exists. Auth is handled by
+  `ec_data`'s `EcAuth` + Firebase instead.
+- `packages/network`'s `TokenRefresher` / `AuthInterceptor` POST to
+  `/api/auth/refresh`, an endpoint the backend does not have. The EvidenceCam
+  `Dio` built in `ec_env.dart` does not use them.
+- A doc comment in `lib/core/locale/locale_bloc.dart` refers to `ThemeBloc`;
+  there is no `ThemeBloc` and no `packages/theme/` in this repo.
 
 ---
 
