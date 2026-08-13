@@ -5508,6 +5508,7 @@ class _VideoRouteExtra {
     required this.canDelete,
     this.tracking = '',
     this.evidenceId,
+    this.fromClaim = false,
   });
 
   /// Nguồn SỐNG, không phải ảnh chụp lúc bấm: màn đơn hàng ghi đè giá trị này
@@ -5522,6 +5523,11 @@ class _VideoRouteExtra {
   final String orderId;
   final String? evidenceId;
   final bool canDelete;
+
+  /// Sheet mở từ hồ sơ khiếu nại. Hồ sơ chỉ TRỎ tới bằng chứng của đơn, nên ba
+  /// hàng bị tắt: người quay (không phải chuyện của bên nhận), cắt đoạn (đẻ ra
+  /// tệp không thuộc hồ sơ nào) và xoá video (phá bằng chứng gốc của đơn).
+  final bool fromClaim;
 }
 
 class _VideoPlayerRouteExtra {
@@ -6037,73 +6043,40 @@ class _ClaimDetailRoute extends StatelessWidget {
     final captured = full == null
         ? null
         : DateTime.fromMillisecondsSinceEpoch(full.capturedAt);
-    final mediaUrl = url ?? full?.url;
-    // Một `EcVideoDetail` dùng chung cho cả hai sheet — sheet ảnh cũng nhận
-    // đúng kiểu này, chỉ đọc ít trường hơn.
-    final detail = EcVideoDetail(
-      title: item.label,
-      capturedAtMs: full?.capturedAt,
-      durationSeconds: full?.durationSeconds,
-      duration: _durationLabel(full?.durationSeconds),
-      recordedAt: captured == null
-          ? item.time
-          : '${_dateLabel(captured)}  ${_hhmm(captured)}',
-      recordedBy: recordedBy,
-      device: full?.device ?? l10n.deviceUnknown,
-      uploadStatus: l10n.uploaded,
-      seal: full == null || item.isPhoto ? null : _sealLine(l10n, full),
-      tracking: tracking,
-      mediaUrl: mediaUrl,
-      type: item.isPhoto ? EcEvidenceType.image : EcEvidenceType.video,
+    // Mở ĐÚNG sheet chi tiết của màn Vận đơn qua route `/video`, không dựng
+    // bản rút gọn riêng: bản riêng luôn thiếu hàng (cắt đoạn, xoá, tải về) và
+    // mỗi lần phát hiện thiếu lại phải vá thêm. Hồ sơ có sẵn `orderId` và
+    // `evidenceId` nên đủ dữ liệu cho mọi hành động của sheet đó.
+    final detail = ValueNotifier<EcVideoDetail?>(
+      EcVideoDetail(
+        title: item.label,
+        capturedAtMs: full?.capturedAt,
+        durationSeconds: full?.durationSeconds,
+        duration: _durationLabel(full?.durationSeconds),
+        recordedAt: captured == null
+            ? item.time
+            : '${_dateLabel(captured)}  ${_hhmm(captured)}',
+        recordedBy: recordedBy,
+        device: full?.device ?? l10n.deviceUnknown,
+        uploadStatus: l10n.uploaded,
+        seal: full == null || item.isPhoto ? null : _sealLine(l10n, full),
+        tracking: tracking,
+        mediaUrl: url ?? full?.url,
+        type: item.isPhoto ? EcEvidenceType.image : EcEvidenceType.video,
+      ),
     );
-
-    final dio = downloader;
-    VoidCallback? download;
-    if (mediaUrl != null && dio != null) {
-      download = () => unawaited(
-        _downloadAndShareVideo(context, dio, share, gallery, detail),
-      );
-    }
-    final copyLink = mediaUrl == null
-        ? null
-        : () => _copyText(context, mediaUrl, l10n.assetLinkTitle);
-
     unawaited(
-      showCupertinoModalPopup<void>(
-        context: context,
-        builder: (sheetContext) => item.isPhoto
-            // Ảnh đi sheet RIÊNG: nó không có thời lượng, không có niêm phong,
-            // và người ta hỏi "ai chụp" chứ không phải "ai quay". Nhét ảnh vào
-            // sheet video là một cột nửa số dòng ghi `—`.
-            ? EcPhotoDetailScreen(
-                photo: detail,
-                canDelete: false,
-                onClose: () => Navigator.of(sheetContext).pop(),
-                onCopyLink: copyLink,
-                onDownload: download,
-              )
-            : EcVideoDetailScreen(
-                video: detail,
-                canDelete: false,
-                onClose: () => Navigator.of(sheetContext).pop(),
-                onCopyLink: copyLink,
-                onDownload: download,
-                onPlay: mediaUrl == null || videoPlayer == null
-                    ? null
-                    : () {
-                        Navigator.of(sheetContext).pop();
-                        unawaited(
-                          GoRouter.of(context).push(
-                            '/video-player',
-                            extra: _VideoPlayerRouteExtra(
-                              title: item.label,
-                              url: mediaUrl,
-                              videoPlayerService: videoPlayer!,
-                            ),
-                          ),
-                        );
-                      },
-              ),
+      GoRouter.of(context).push(
+        '/video',
+        extra: _VideoRouteExtra(
+          video: detail,
+          shopId: shopId,
+          orderId: order?.orderId ?? '',
+          evidenceId: evidenceId,
+          tracking: tracking,
+          canDelete: false,
+          fromClaim: true,
+        ),
       ),
     );
   }
@@ -6121,35 +6094,50 @@ class _ClaimDetailRoute extends StatelessWidget {
           child: SizedBox.shrink(),
         );
       }
-      return EcClaimDetailScreen(
-        dateLabel: _dayLabelOf(dossier.createdAt),
-        timeLabel: _hhmm(dossier.createdAt),
+      // Dùng CHÍNH màn dòng thời gian của mã vận đơn, không dựng bản sao.
+      //
+      // Bản trước chép lại hình dạng của hàng sang màn khiếu nại, nên nó giống
+      // mà không bằng: thiếu huy hiệu trạng thái, thiếu menu ⋮, giờ và ảnh lệch
+      // nhau — và mỗi lần phát hiện một chỗ lệch lại phải vá thêm một miếng.
+      // Dùng chung widget thì về sau sửa màn Vận đơn là màn này đổi theo.
+      //
+      // Những việc không thuộc về hồ sơ (đính kèm ảnh, gộp link, thử lại
+      // upload) truyền `null` — màn đó tự ẩn hàng khi callback rỗng.
+      final days = <EcTimelineDay>[];
+      for (final order in dossier.orders) {
+        days.add(
+          EcTimelineDay(
+            date: order.tracking,
+            videos: [
+              for (final e in order.evidence)
+                EcTimelineVideo(
+                  id: e.id,
+                  time: e.time,
+                  label: e.label,
+                  type: e.isPhoto ? EcEvidenceType.image : EcEvidenceType.video,
+                  thumbUrl: e.thumbUrl ?? e.url,
+                  mediaUrl: e.url,
+                  capturedAtMs: e.capturedAt,
+                ),
+            ],
+          ),
+        );
+      }
+      return EcOrderTimelineScreen(
+        orderCode:
+            '${_dayLabelOf(dossier.createdAt)}  '
+            '${_hhmm(dossier.createdAt)}',
+        days: days,
         onBack: onBack,
-        onCopy: () => _copyClaimSummary(context, dossier),
-        onItemTap: (tracking, evidenceId) => unawaited(
-          _openClaimEvidence(context, dossier, tracking, evidenceId),
+        onCopyCode: () => _copyClaimSummary(context, dossier),
+        onVideoTap: (video) => unawaited(
+          _openClaimEvidence(
+            context,
+            dossier,
+            _trackingOf(dossier, video.id) ?? '',
+            video.id ?? '',
+          ),
         ),
-        groups: [
-          for (final order in dossier.orders)
-            EcClaimOrderGroup(
-              tracking: order.tracking,
-              dateLabel: _claimOrderStamp(order)?.$1,
-              timeLabel: _claimOrderStamp(order)?.$2,
-              items: [
-                for (final e in order.evidence)
-                  EcClaimItem(
-                    id: e.id,
-                    label: e.label,
-                    time: e.time,
-                    isPhoto: e.isPhoto,
-                    // Ảnh đính kèm chưa lên máy chủ nên không có `thumbUrl` —
-                    // chính `url` (đường dẫn file trên máy) là ảnh xem trước.
-                    thumbUrl: e.thumbUrl ?? e.url,
-                    addedLater: e.addedLater,
-                  ),
-              ],
-            ),
-        ],
       );
     },
   );
@@ -6177,6 +6165,15 @@ String _expiredLabel(AppLocalizations l10n, int? retentionExpiresAt) {
   if (retentionExpiresAt == null) return l10n.uploadStatusExpired;
   final expired = DateTime.fromMillisecondsSinceEpoch(retentionExpiresAt);
   return l10n.expiredOnDate(_dateLabel(expired));
+}
+
+/// Mã vận đơn chứa bằng chứng [evidenceId] trong hồ sơ, hoặc `null`.
+String? _trackingOf(EcClaimDossier dossier, String? evidenceId) {
+  if (evidenceId == null) return null;
+  for (final o in dossier.orders) {
+    if (o.evidence.any((e) => e.id == evidenceId)) return o.tracking;
+  }
+  return null;
 }
 
 EcVideoDetail _videoDetail(
@@ -7078,6 +7075,7 @@ GoRouter _buildRouter(
                         uploadStatus: '—',
                       ),
                   canDelete: extra?.canDelete ?? false,
+                  showRecordedBy: !(extra?.fromClaim ?? false),
                   onClose: () => c.pop(),
                   onCopyLink: () {
                     final url = live?.mediaUrl;
@@ -7119,7 +7117,7 @@ GoRouter _buildRouter(
                       live!,
                     );
                   },
-                  onTrim: videoPlayer == null
+                  onTrim: videoPlayer == null || (extra?.fromClaim ?? false)
                       ? null
                       : () => _trimAndShareVideo(
                           pageContext,
@@ -7669,10 +7667,6 @@ GoRouter _buildRouter(
             queue: queue,
             budget: _selected(selectedShop)?.clipBudget,
             onBack: () => _back(c, '/claims'),
-            videoPlayer: videoPlayer,
-            downloader: downloader,
-            share: share,
-            gallery: gallery,
           );
         },
       ),

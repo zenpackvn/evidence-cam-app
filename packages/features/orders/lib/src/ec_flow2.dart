@@ -412,10 +412,14 @@ class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
                 // Bỏ khối gộp bằng chứng: nút đó chưa nối được endpoint nên
                 // bấm vào chỉ báo "đang chờ backend" — một nút ghim sát đáy màn
                 // mà không làm gì thì tốn chỗ hơn là giúp.
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
-                  child: _EcAttachPhotoRow(onTap: widget.onAttachPhoto),
-                ),
+                // Chỉ vẽ khi bên gọi thật sự có việc đính kèm. Hồ sơ khiếu
+                // nại dùng chung màn này nhưng không đính ảnh — vẽ vô điều
+                // kiện là chào một nút bấm vào không làm gì.
+                if (widget.onAttachPhoto != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
+                    child: _EcAttachPhotoRow(onTap: widget.onAttachPhoto),
+                  ),
               ],
             ),
           ),
@@ -439,6 +443,7 @@ class EcVideoDetailScreen extends StatelessWidget {
     this.onDelete,
     this.onVerify,
     this.canDelete = true,
+    this.showRecordedBy = true,
     super.key,
   });
 
@@ -471,6 +476,11 @@ class EcVideoDetailScreen extends StatelessWidget {
   /// Whether the current user may delete this clip. False for Nhân viên
   /// (staff) — hides the delete row.
   final bool canDelete;
+
+  /// Hiện hàng "Người quay". Tắt khi sheet mở từ hồ sơ khiếu nại: hồ sơ đó đem
+  /// đi làm việc với sàn, ai trong shop bấm nút quay không phải chuyện của bên
+  /// nhận.
+  final bool showRecordedBy;
 
   @override
   Widget build(BuildContext context) {
@@ -522,8 +532,13 @@ class EcVideoDetailScreen extends StatelessWidget {
           label: l10n.detailRecordedTime,
           value: video.recordedAt,
         ),
-        const _EcDetailDivider(),
-        _EcDetailInfoRow(label: l10n.detailRecordedBy, value: video.recordedBy),
+        if (showRecordedBy) ...[
+          const _EcDetailDivider(),
+          _EcDetailInfoRow(
+            label: l10n.detailRecordedBy,
+            value: video.recordedBy,
+          ),
+        ],
         const _EcDetailDivider(),
         _EcDetailInfoRow(label: l10n.detailDevice, value: video.device),
         const _EcDetailDivider(),

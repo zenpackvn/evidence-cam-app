@@ -1657,7 +1657,10 @@ class EcUploadQueueScreen extends StatelessWidget {
                         color: BrandColors.ink,
                       ),
                     )
-                  else
+                  // Chỗ trống giữ cân đối cho tiêu đề khi góc phải rỗng. Có
+                  // nút Xoá hết rồi thì bỏ đi, không thì nó đẩy chữ đó thụt
+                  // vào trong thay vì nằm sát mép.
+                  else if (onClear == null)
                     const SizedBox(width: 26),
                 ],
               ),
