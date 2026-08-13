@@ -97,6 +97,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get claimsItemRemoved => 'Quitada del expediente';
 
   @override
+  String get claimsItemAdded => 'Añadido al expediente';
+
+  @override
   String get commonRemove => 'Quitar';
 
   @override

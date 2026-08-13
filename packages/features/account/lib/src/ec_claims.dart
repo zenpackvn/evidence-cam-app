@@ -10,6 +10,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart'
@@ -310,7 +311,6 @@ class EcClaimDetailScreen extends StatelessWidget {
     this.onBack,
     this.onCopy,
     this.onDelete,
-    this.onAttachPhoto,
     this.onRemoveItem,
     this.onItemTap,
     super.key,
@@ -323,13 +323,8 @@ class EcClaimDetailScreen extends StatelessWidget {
   final VoidCallback? onCopy;
   final VoidCallback? onDelete;
 
-  /// Đính thêm ảnh vào MỘT mã vận đơn của hồ sơ. Nhận mã đơn vì hồ sơ có thể
-  /// gồm nhiều đơn — không có nó thì ảnh không biết thuộc về đơn nào.
-  final ValueChanged<String>? onAttachPhoto;
-
-  /// Gỡ một bằng chứng khỏi hồ sơ: `(mã đơn, id bằng chứng)`. Cùng lý do với
-  /// [onAttachPhoto] — id bằng chứng là duy nhất, nhưng mã đơn nói cho bên gọi
-  /// biết phải sửa nhánh nào của hồ sơ.
+  /// Gỡ một bằng chứng khỏi hồ sơ: `(mã đơn, id bằng chứng)`. Id bằng chứng là
+  /// duy nhất, nhưng mã đơn nói cho bên gọi biết phải sửa nhánh nào của hồ sơ.
   final void Function(String tracking, String evidenceId)? onRemoveItem;
 
   /// Mở chi tiết một bằng chứng: `(mã đơn, id bằng chứng)`. `null` = hàng không
@@ -392,7 +387,6 @@ class EcClaimDetailScreen extends StatelessWidget {
                 for (final group in groups) ...[
                   _OrderGroupCard(
                     group: group,
-                    onAttachPhoto: onAttachPhoto,
                     onRemoveItem: onRemoveItem,
                     onItemTap: onItemTap,
                   ),
@@ -417,13 +411,11 @@ class EcClaimDetailScreen extends StatelessWidget {
 class _OrderGroupCard extends StatelessWidget {
   const _OrderGroupCard({
     required this.group,
-    this.onAttachPhoto,
     this.onRemoveItem,
     this.onItemTap,
   });
 
   final EcClaimOrderGroup group;
-  final ValueChanged<String>? onAttachPhoto;
   final void Function(String tracking, String evidenceId)? onRemoveItem;
   final void Function(String tracking, String evidenceId)? onItemTap;
 
@@ -468,10 +460,6 @@ class _OrderGroupCard extends StatelessWidget {
                 ? null
                 : () => onItemTap!(group.tracking, item.id),
           ),
-        // Đính kèm ảnh ở ĐÁY mỗi mã đơn, không phải đáy màn: hồ sơ gồm nhiều
-        // đơn thì một nút chung không nói được ảnh sắp thuộc về đơn nào.
-        if (onAttachPhoto != null)
-          _AttachPhotoRow(onTap: () => onAttachPhoto!(group.tracking)),
       ],
     );
   }
@@ -593,55 +581,33 @@ class _ClaimItemThumb extends StatelessWidget {
       ],
     );
     if (url == null || url.isEmpty) return fallback;
+    // Ảnh đính kèm chưa tải lên thì `url` là ĐƯỜNG DẪN FILE trên máy, không
+    // phải link mạng. Đưa nó cho `Image.network` là hỏng im lặng, rơi về icon
+    // đúng lúc người dùng vừa tự tay chọn ảnh đó.
+    final remote = url.startsWith('http');
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
-      child: Image.network(
-        url,
-        width: 38,
-        height: 38,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => fallback,
-        loadingBuilder: (context, child, progress) =>
-            progress == null ? child : fallback,
-      ),
+      child: remote
+          ? Image.network(
+              url,
+              width: 38,
+              height: 38,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => fallback,
+              loadingBuilder: (context, child, progress) =>
+                  progress == null ? child : fallback,
+            )
+          : Image.file(
+              File(url),
+              width: 38,
+              height: 38,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => fallback,
+            ),
     );
   }
 }
 
-class _AttachPhotoRow extends StatelessWidget {
-  const _AttachPhotoRow({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => EcTap(
-    onTap: onTap,
-    child: PenBox(
-      width: double.infinity,
-      height: 44,
-      fill: PenColors.card,
-      stroke: PenColors.line,
-      radius: 12,
-      axis: PenAxis.row,
-      gap: 8,
-      main: MainAxisAlignment.center,
-      cross: CrossAxisAlignment.center,
-      children: [
-        const Icon(LucideIcons.imagePlus, size: 18, color: PenColors.ink),
-        PenText(
-          context.l10n.attachPhotoToOrder,
-          size: 14,
-          color: PenColors.ink,
-          weight: FontWeight.w600,
-          softWrap: false,
-        ),
-      ],
-    ),
-  );
-}
-
-/// Một bằng chứng có thể tick khi tạo hồ sơ, đủ để người dùng nhận ra nó là
-/// cái nào: loại, giờ quay, và ảnh hay video.
 class EcClaimPickable {
   const EcClaimPickable({
     required this.id,

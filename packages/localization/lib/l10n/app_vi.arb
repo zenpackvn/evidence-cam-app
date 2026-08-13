@@ -36,6 +36,7 @@
   "claimsRemoveItemTitle": "Gỡ khỏi hồ sơ",
   "claimsRemoveItemConfirm": "Gỡ bằng chứng này khỏi hồ sơ khiếu nại? Video/ảnh trong đơn hàng vẫn còn nguyên.",
   "claimsItemRemoved": "Đã gỡ khỏi hồ sơ",
+  "claimsItemAdded": "Đã thêm vào hồ sơ",
   "commonRemove": "Gỡ",
   "commonDelete": "Xóa",
   "settingDefaultSuffix": "mặc định",

@@ -97,6 +97,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get claimsItemRemoved => 'Retirée du dossier';
 
   @override
+  String get claimsItemAdded => 'Ajouté au dossier';
+
+  @override
   String get commonRemove => 'Retirer';
 
   @override

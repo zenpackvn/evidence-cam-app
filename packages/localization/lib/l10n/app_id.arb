@@ -29,6 +29,7 @@
   "claimsRemoveItemTitle": "Keluarkan dari berkas",
   "claimsRemoveItemConfirm": "Keluarkan bukti ini dari berkas klaim? Video/foto pada pesanan itu sendiri tidak terpengaruh.",
   "claimsItemRemoved": "Dikeluarkan dari berkas",
+  "claimsItemAdded": "Ditambahkan ke berkas",
   "commonRemove": "Keluarkan",
   "commonDelete": "Hapus",
   "settingDefaultSuffix": "bawaan",

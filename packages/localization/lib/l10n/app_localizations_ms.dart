@@ -95,6 +95,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get claimsItemRemoved => 'Dikeluarkan dari fail';
 
   @override
+  String get claimsItemAdded => 'Ditambah ke fail';
+
+  @override
   String get commonRemove => 'Keluarkan';
 
   @override

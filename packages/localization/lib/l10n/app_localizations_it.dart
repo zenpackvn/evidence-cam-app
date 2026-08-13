@@ -97,6 +97,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get claimsItemRemoved => 'Rimossa dal fascicolo';
 
   @override
+  String get claimsItemAdded => 'Aggiunto al fascicolo';
+
+  @override
   String get commonRemove => 'Rimuovi';
 
   @override

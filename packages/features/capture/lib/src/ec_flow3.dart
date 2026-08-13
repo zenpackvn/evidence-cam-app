@@ -1579,11 +1579,16 @@ class EcUploadQueueScreen extends StatelessWidget {
     this.onPause,
     this.onResume,
     this.onDelete,
+    this.onClear,
     super.key,
   });
 
   final List<EcUploadItem> items;
   final VoidCallback? onBack;
+
+  /// Xoá CẢ hàng đợi. Bên gọi phải hỏi lại trước — thứ mất đi là những clip
+  /// chưa lên máy chủ, chỉ tồn tại trên đúng cái máy này.
+  final VoidCallback? onClear;
 
   /// F3-06's header gear. Optional: no upload-settings screen exists yet, so
   /// the icon only appears once a caller has somewhere to send it.
@@ -1632,6 +1637,17 @@ class EcUploadQueueScreen extends StatelessWidget {
                   // F3-06 draws a gear here, but nothing routes to upload
                   // settings yet — drawing it unconditionally would be a
                   // button that does nothing.
+                  if (onClear != null)
+                    _Tap(
+                      onTap: onClear,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          context.l10n.queueClearAction,
+                          style: _t(16, FontWeight.w700, BrandColors.rec),
+                        ),
+                      ),
+                    ),
                   if (onSettings != null)
                     _Tap(
                       onTap: onSettings,

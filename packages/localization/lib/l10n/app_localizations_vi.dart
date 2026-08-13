@@ -95,6 +95,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get claimsItemRemoved => 'Đã gỡ khỏi hồ sơ';
 
   @override
+  String get claimsItemAdded => 'Đã thêm vào hồ sơ';
+
+  @override
   String get commonRemove => 'Gỡ';
 
   @override

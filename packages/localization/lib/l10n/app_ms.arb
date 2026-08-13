@@ -29,6 +29,7 @@
   "claimsRemoveItemTitle": "Keluarkan dari fail",
   "claimsRemoveItemConfirm": "Keluarkan bukti ini dari fail tuntutan? Video/gambar pada pesanan itu sendiri tidak terjejas.",
   "claimsItemRemoved": "Dikeluarkan dari fail",
+  "claimsItemAdded": "Ditambah ke fail",
   "commonRemove": "Keluarkan",
   "commonDelete": "Padam",
   "settingDefaultSuffix": "lalai",

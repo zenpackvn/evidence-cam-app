@@ -95,6 +95,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsItemRemoved => 'Removed from the dossier';
 
   @override
+  String get claimsItemAdded => 'Added to the dossier';
+
+  @override
   String get commonRemove => 'Remove';
 
   @override

@@ -95,6 +95,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get claimsItemRemoved => 'Aus der Akte entfernt';
 
   @override
+  String get claimsItemAdded => 'Zur Akte hinzugefügt';
+
+  @override
   String get commonRemove => 'Entfernen';
 
   @override

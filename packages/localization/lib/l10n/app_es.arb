@@ -29,6 +29,7 @@
   "claimsRemoveItemTitle": "Quitar del expediente",
   "claimsRemoveItemConfirm": "¿Quitar esta prueba del expediente? El vídeo/la foto del pedido no se toca.",
   "claimsItemRemoved": "Quitada del expediente",
+  "claimsItemAdded": "Añadido al expediente",
   "commonRemove": "Quitar",
   "commonDelete": "Eliminar",
   "settingDefaultSuffix": "predeterminado",

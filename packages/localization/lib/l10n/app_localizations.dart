@@ -264,6 +264,12 @@ abstract class AppLocalizations {
   /// **'Removed from the dossier'**
   String get claimsItemRemoved;
 
+  /// No description provided for @claimsItemAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to the dossier'**
+  String get claimsItemAdded;
+
   /// No description provided for @commonRemove.
   ///
   /// In en, this message translates to:

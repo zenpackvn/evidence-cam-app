@@ -45,6 +45,7 @@
   "claimsRemoveItemTitle": "Remove from dossier",
   "claimsRemoveItemConfirm": "Remove this evidence from the claim dossier? The video/photo on the order itself is untouched.",
   "claimsItemRemoved": "Removed from the dossier",
+  "claimsItemAdded": "Added to the dossier",
   "commonRemove": "Remove",
   "commonDelete": "Delete",
   "settingDefaultSuffix": "default",

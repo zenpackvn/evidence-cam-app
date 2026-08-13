@@ -5763,7 +5763,9 @@ class _CreateClaimRoute extends StatelessWidget {
               day: _dayLabelOf(
                 DateTime.fromMillisecondsSinceEpoch(e.capturedAt),
               ),
-              thumbUrl: e.thumbUrl,
+              // Ảnh TỰ làm ảnh xem trước; chỉ video mới cần poster trích ra.
+              // Dùng `thumbUrl` cho cả hai thì mọi hàng ảnh đều trống chỗ đó.
+              thumbUrl: e.kind == 'photo' ? e.url : e.thumbUrl,
             ),
       ];
     } on Object {
@@ -5879,7 +5881,23 @@ class _CreateClaimRoute extends StatelessWidget {
     onBack: onBack,
     onScan: onScan,
     onSearch: (code) => _search(context, code),
-    onCreate: (batch) => unawaited(_create(context, batch)),
+    // Bọc bắt lỗi: `_create` chạy ngoài luồng dựng UI, nên một ngoại lệ ở
+    // giữa chừng (mạng chết lúc đẩy hồ sơ, ghi đĩa hỏng) sẽ biến mất không
+    // dấu vết — người dùng bấm nút và KHÔNG có gì xảy ra, không cả báo lỗi.
+    onCreate: (batch) => unawaited(
+      _create(context, batch).catchError((Object error, StackTrace stack) {
+        developer.log(
+          'claims: tạo hồ sơ hỏng (${error.runtimeType})',
+          name: 'zenpack.claims',
+          level: 1000,
+          error: error,
+          stackTrace: stack,
+        );
+        if (context.mounted) {
+          _toast(context, _dataErrorText(context.l10n, error));
+        }
+      }),
+    ),
   );
 }
 
@@ -5932,6 +5950,9 @@ class _ClaimDetailRoute extends StatelessWidget {
     this.budget,
     this.onBack,
     this.videoPlayer,
+    this.downloader,
+    this.share,
+    this.gallery,
   });
 
   final EcRepository repo;
@@ -5941,134 +5962,12 @@ class _ClaimDetailRoute extends StatelessWidget {
   final ClipBudget? budget;
   final VoidCallback? onBack;
 
-  /// Để mở và phát một bằng chứng ngay trong hồ sơ. `null` thì hàng "Phát
-  /// video" tự ẩn, không dựng nút bấm vào không chạy.
+  /// Để mở, phát và tải một bằng chứng ngay trong hồ sơ. Thiếu cái nào thì
+  /// hàng tương ứng tự ẩn, không dựng nút bấm vào không chạy.
   final VideoPlayerService? videoPlayer;
-
-  /// Đính ảnh vào ĐƠN HÀNG trước, rồi mới ghi vào hồ sơ.
-  ///
-  /// Thứ tự đó là cố ý: ảnh khiếu nại phải sống trên máy chủ, nơi web admin
-  /// thấy được và gỡ app không làm mất. Bản ghi trong hồ sơ chỉ là con trỏ tới
-  /// nó. Làm ngược lại thì hồ sơ nói có ảnh trong khi ảnh chưa đi đâu cả.
-  Future<void> _attach(BuildContext context, String tracking) async {
-    final path = await _attachPhoto(
-      context,
-      queue,
-      tracking,
-      shopId,
-      budget: budget,
-      toastOnQueued: false,
-    );
-    if (path == null || !context.mounted) return;
-    final l10n = context.l10n;
-    await _claimStore.attachEvidence(
-      shopId,
-      dossierId,
-      tracking,
-      EcClaimEvidence(
-        // Chưa có id của server (ảnh mới vào hàng đợi), nên dùng chính đường
-        // dẫn file làm khoá — đủ để không trùng với bằng chứng nào khác.
-        id: path,
-        label: l10n.kindPhoto,
-        time: _hhmm(DateTime.now()),
-        isPhoto: true,
-        url: path,
-        addedLater: true,
-      ),
-    );
-    if (context.mounted) _toast(context, l10n.claimsPhotoAdded);
-  }
-
-  /// Gỡ một bằng chứng khỏi hồ sơ, sau khi hỏi lại.
-  ///
-  /// Hỏi lại vì icon thùng rác nằm ngay cạnh giờ quay, cách ngón tay đúng vài
-  /// pixel — chạm trượt là mất một dòng bằng chứng khỏi hồ sơ mà không có gì
-  /// hoàn tác. Hộp thoại cũng nói rõ đơn hàng không bị đụng tới, nếu không thì
-  /// "xóa" ở đây đọc ra như xóa hẳn clip.
-  Future<void> _removeItem(
-    BuildContext context,
-    String tracking,
-    String evidenceId,
-  ) async {
-    final l10n = context.l10n;
-    final confirmed = await showCupertinoDialog<bool>(
-      context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
-        title: Text(l10n.claimsRemoveItemTitle),
-        content: Text(l10n.claimsRemoveItemConfirm),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.commonCancel),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.commonRemove),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
-    await _claimStore.removeEvidence(shopId, dossierId, tracking, evidenceId);
-    if (context.mounted) _toast(context, l10n.claimsItemRemoved);
-  }
-
-  /// Xoá hồ sơ: thu hồi trên máy chủ TRƯỚC, xoá bản trên máy sau.
-  ///
-  /// Thứ tự đó là cả nội dung của việc này. Xoá trên máy trước rồi thu hồi hỏng
-  /// thì link công khai vẫn phát bằng chứng cho sàn xem, mà màn duy nhất bấm
-  /// thu hồi được vừa biến mất — người bán không còn cách nào gỡ nó xuống.
-  /// Nên hỏng thì GIỮ NGUYÊN hồ sơ và nói thẳng là link còn sống.
-  ///
-  /// Hồ sơ chưa từng lên máy chủ (`claimId == null`, tạo lúc mất mạng) không có
-  /// gì để thu hồi — xoá thẳng.
-  Future<void> _confirmDelete(BuildContext context) async {
-    final l10n = context.l10n;
-    final claimId = _claimStore.byId(shopId, dossierId)?.claimId;
-    final confirmed = await showCupertinoDialog<bool>(
-      context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
-        title: Text(l10n.claimsDelete),
-        content: Text(
-          claimId == null
-              ? l10n.claimsDeleteConfirm
-              : l10n.claimsDeleteConfirmLink,
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.commonCancel),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.commonDelete),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
-    if (claimId != null) {
-      try {
-        await repo.revokeClaim(shopId, claimId);
-      } on Object catch (error, stack) {
-        developer.log(
-          'claims: không thu hồi được link (${error.runtimeType})',
-          name: 'zenpack.claims',
-          level: 1000,
-          error: error,
-          stackTrace: stack,
-        );
-        if (context.mounted) _toast(context, l10n.claimsRevokeFailed);
-        return;
-      }
-    }
-    await _claimStore.remove(shopId, dossierId);
-    if (!context.mounted) return;
-    _toast(context, l10n.claimsDeleted);
-    onBack?.call();
-  }
+  final Dio? downloader;
+  final ShareService? share;
+  final GallerySaveService? gallery;
 
   /// Mở chi tiết một bằng chứng ngay trong hồ sơ, dùng ĐÚNG sheet của màn Vận
   /// đơn để hai nơi nhìn giống nhau.
@@ -6114,52 +6013,93 @@ class _ClaimDetailRoute extends StatelessWidget {
         );
       }
     }
+    // Hồ sơ bằng chứng chỉ có `created_by_uid`, không có tên. Tra danh sách
+    // thành viên để đổi uid thành tên người — hỏng thì rơi về chuỗi mặc định,
+    // vì một cái uid dài loằng ngoằng còn khó hiểu hơn là không nói tên.
+    var recordedBy = item.addedBy ?? l10n.recordedByFallback;
+    final uid = item.addedBy != null ? null : full?.createdByUid;
+    if (uid != null && uid.isNotEmpty) {
+      try {
+        final members = await repo.members(shopId);
+        final hit = members.where((m) => m.accountUid == uid).firstOrNull;
+        final name = hit?.name ?? hit?.email;
+        if (name != null && name.isNotEmpty) recordedBy = name;
+      } on Object {
+        // Đọc thành viên hỏng chỉ mất cái tên, không chặn mở chi tiết.
+      }
+    }
     if (!context.mounted) return;
 
     final captured = full == null
         ? null
         : DateTime.fromMillisecondsSinceEpoch(full.capturedAt);
+    final mediaUrl = url ?? full?.url;
+    // Một `EcVideoDetail` dùng chung cho cả hai sheet — sheet ảnh cũng nhận
+    // đúng kiểu này, chỉ đọc ít trường hơn.
+    final detail = EcVideoDetail(
+      title: item.label,
+      capturedAtMs: full?.capturedAt,
+      durationSeconds: full?.durationSeconds,
+      duration: _durationLabel(full?.durationSeconds),
+      recordedAt: captured == null
+          ? item.time
+          : '${_dateLabel(captured)}  ${_hhmm(captured)}',
+      recordedBy: recordedBy,
+      device: full?.device ?? l10n.deviceUnknown,
+      uploadStatus: l10n.uploaded,
+      seal: full == null || item.isPhoto ? null : _sealLine(l10n, full),
+      tracking: tracking,
+      mediaUrl: mediaUrl,
+      type: item.isPhoto ? EcEvidenceType.image : EcEvidenceType.video,
+    );
+
+    final dio = downloader;
+    VoidCallback? download;
+    if (mediaUrl != null && dio != null) {
+      download = () => unawaited(
+        _downloadAndShareVideo(context, dio, share, gallery, detail),
+      );
+    }
+    final copyLink = mediaUrl == null
+        ? null
+        : () => _copyText(context, mediaUrl, l10n.assetLinkTitle);
+
     unawaited(
       showCupertinoModalPopup<void>(
         context: context,
-        builder: (sheetContext) => EcVideoDetailScreen(
-          showRecordedBy: false,
-          canDelete: false,
-          video: EcVideoDetail(
-            title: item.label,
-            capturedAtMs: full?.capturedAt,
-            durationSeconds: full?.durationSeconds,
-            duration: _durationLabel(full?.durationSeconds),
-            recordedAt: captured == null
-                ? item.time
-                : '${_dateLabel(captured)}  ${_hhmm(captured)}',
-            recordedBy: '—',
-            device: full?.device ?? l10n.deviceUnknown,
-            uploadStatus: l10n.uploaded,
-            seal: full == null ? null : _sealLine(l10n, full),
-            tracking: tracking,
-            mediaUrl: url ?? full?.url,
-          ),
-          onClose: () => Navigator.of(sheetContext).pop(),
-          onCopyLink: url == null
-              ? null
-              : () => _copyText(sheetContext, url, l10n.assetLinkTitle),
-          onPlay: url == null || videoPlayer == null
-              ? null
-              : () {
-                  Navigator.of(sheetContext).pop();
-                  unawaited(
-                    GoRouter.of(context).push(
-                      '/video-player',
-                      extra: _VideoPlayerRouteExtra(
-                        title: item.label,
-                        url: url,
-                        videoPlayerService: videoPlayer!,
-                      ),
-                    ),
-                  );
-                },
-        ),
+        builder: (sheetContext) => item.isPhoto
+            // Ảnh đi sheet RIÊNG: nó không có thời lượng, không có niêm phong,
+            // và người ta hỏi "ai chụp" chứ không phải "ai quay". Nhét ảnh vào
+            // sheet video là một cột nửa số dòng ghi `—`.
+            ? EcPhotoDetailScreen(
+                photo: detail,
+                canDelete: false,
+                onClose: () => Navigator.of(sheetContext).pop(),
+                onCopyLink: copyLink,
+                onDownload: download,
+              )
+            : EcVideoDetailScreen(
+                video: detail,
+                canDelete: false,
+                onClose: () => Navigator.of(sheetContext).pop(),
+                onCopyLink: copyLink,
+                onDownload: download,
+                onPlay: mediaUrl == null || videoPlayer == null
+                    ? null
+                    : () {
+                        Navigator.of(sheetContext).pop();
+                        unawaited(
+                          GoRouter.of(context).push(
+                            '/video-player',
+                            extra: _VideoPlayerRouteExtra(
+                              title: item.label,
+                              url: mediaUrl,
+                              videoPlayerService: videoPlayer!,
+                            ),
+                          ),
+                        );
+                      },
+              ),
       ),
     );
   }
@@ -6182,10 +6122,6 @@ class _ClaimDetailRoute extends StatelessWidget {
         timeLabel: _hhmm(dossier.createdAt),
         onBack: onBack,
         onCopy: () => _copyClaimSummary(context, dossier),
-        onDelete: () => unawaited(_confirmDelete(context)),
-        onAttachPhoto: (tracking) => unawaited(_attach(context, tracking)),
-        onRemoveItem: (tracking, evidenceId) =>
-            unawaited(_removeItem(context, tracking, evidenceId)),
         onItemTap: (tracking, evidenceId) => unawaited(
           _openClaimEvidence(context, dossier, tracking, evidenceId),
         ),
@@ -6202,7 +6138,9 @@ class _ClaimDetailRoute extends StatelessWidget {
                     label: e.label,
                     time: e.time,
                     isPhoto: e.isPhoto,
-                    thumbUrl: e.thumbUrl,
+                    // Ảnh đính kèm chưa lên máy chủ nên không có `thumbUrl` —
+                    // chính `url` (đường dẫn file trên máy) là ảnh xem trước.
+                    thumbUrl: e.thumbUrl ?? e.url,
                     addedLater: e.addedLater,
                   ),
               ],
@@ -6454,6 +6392,7 @@ class _QueueRoute extends StatelessWidget {
         return EcUploadQueueScreen(
           items: items,
           onBack: onBack,
+          onClear: () => _confirmClearQueue(context, queue),
           onRetry: (item) {
             final id = item.id;
             if (id != null) queue.retry(id);
@@ -6480,20 +6419,16 @@ class _QueueRoute extends StatelessWidget {
 /// Không đẩy sang màn khác: người đang đóng gói liếc xem "clip vừa quay lên
 /// chưa" rồi quay tiếp, mà rời hẳn màn quay là mất khung ngắm và mất luôn cả
 /// mã vận đơn đang chọn. Nửa màn để phần trên vẫn thấy được chỗ mình vừa đứng.
-Future<void> _showQueueSheet(
-  BuildContext context,
-  EcUploadQueue queue, {
-  required bool canDelete,
-}) => showCupertinoModalPopup<void>(
-  context: context,
-  builder: (sheetContext) => _QueueSheet(queue: queue, canDelete: canDelete),
-);
+Future<void> _showQueueSheet(BuildContext context, EcUploadQueue queue) =>
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (sheetContext) => _QueueSheet(queue: queue),
+    );
 
 class _QueueSheet extends StatelessWidget {
-  const _QueueSheet({required this.queue, required this.canDelete});
+  const _QueueSheet({required this.queue});
 
   final EcUploadQueue queue;
-  final bool canDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -6528,27 +6463,29 @@ class _QueueSheet extends StatelessWidget {
                 // nhầm là mất mọi clip chưa kịp lên — thứ chỉ tồn tại trên
                 // chính cái máy này.
                 //
-                // Cùng một điều kiện `canDelete` với dấu ×: bản trước để nút
-                // này hiện cho mọi vai trò, tức nhân viên xoá được CẢ hàng đợi
-                // trong khi không xoá nổi một hàng — vừa ngược đời vừa thủng
-                // đúng quy tắc FR-02 mà dấu × đang giữ.
-                if (canDelete)
-                  CupertinoButton(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    minimumSize: Size.zero,
-                    onPressed: () => _confirmClearQueue(context, queue),
-                    child: Text(
-                      l10n.queueClearAction,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: BrandColors.rec,
-                      ),
+                // Hiện cho MỌI vai trò, không khoá theo `canDelete`.
+                //
+                // FR-02 cấm nhân viên xoá bằng chứng, và bản trước khoá nút này
+                // theo đúng quy tắc đó. Chủ sản phẩm chọn ngược lại: người cầm
+                // máy phải tự dọn được hàng đợi trên máy mình. Thứ bị xoá ở đây
+                // là bản CHƯA lên máy chủ, nên hộp xác nhận nói thẳng "xoá là
+                // mất hẳn" — đó là hàng rào duy nhất còn lại.
+                CupertinoButton(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  minimumSize: Size.zero,
+                  onPressed: () => _confirmClearQueue(context, queue),
+                  child: Text(
+                    l10n.queueClearAction,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: BrandColors.rec,
                     ),
                   ),
+                ),
               ],
             ),
           ),
@@ -6573,13 +6510,12 @@ class _QueueSheet extends StatelessWidget {
                 // Xoá THẲNG, không hỏi lại: ở màn quay người dùng đang dọn một
                 // hàng bấm nhầm giữa lúc đóng gói, và mỗi hộp thoại là một lần
                 // họ phải rời mắt khỏi thùng hàng. Lượt xoá cả hàng đợi mới là
-                // chỗ cần hỏi.
-                onDelete: canDelete
-                    ? (item) {
-                        final id = item.id;
-                        if (id != null) unawaited(queue.delete(id));
-                      }
-                    : null,
+                // chỗ cần hỏi. Cũng không khoá theo vai trò, cùng lý do với nút
+                // Xoá hết ở trên.
+                onDelete: (item) {
+                  final id = item.id;
+                  if (id != null) unawaited(queue.delete(id));
+                },
               ),
             ),
           ),
@@ -6894,13 +6830,7 @@ GoRouter _buildRouter(
                       maxRecording: shop.clipBudget.maxRecording,
                       isActive: isRecordTabActive,
                       onBack: () => c.go('/home'),
-                      onQueueTap: () => _showQueueSheet(
-                        c,
-                        queue,
-                        canDelete:
-                            (_selected(selectedShop)?.role ?? 'staff') !=
-                            'staff',
-                      ),
+                      onQueueTap: () => _showQueueSheet(c, queue),
                       onRequestCode: () => c.push<String>('/manual'),
                       onConfirmManualCode: (code) =>
                           _confirmManualTracking(c, repo, shop.id, code),
@@ -7736,6 +7666,9 @@ GoRouter _buildRouter(
             budget: _selected(selectedShop)?.clipBudget,
             onBack: () => _back(c, '/claims'),
             videoPlayer: videoPlayer,
+            downloader: downloader,
+            share: share,
+            gallery: gallery,
           );
         },
       ),

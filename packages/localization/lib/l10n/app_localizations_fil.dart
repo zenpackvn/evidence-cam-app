@@ -96,6 +96,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get claimsItemRemoved => 'Naalis sa dossier';
 
   @override
+  String get claimsItemAdded => 'Naidagdag sa dossier';
+
+  @override
   String get commonRemove => 'Alisin';
 
   @override

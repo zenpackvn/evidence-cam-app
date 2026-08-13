@@ -29,6 +29,7 @@
   "claimsRemoveItemTitle": "Aus der Akte entfernen",
   "claimsRemoveItemConfirm": "Diesen Nachweis aus der Akte entfernen? Das Video/Foto in der Bestellung bleibt unberührt.",
   "claimsItemRemoved": "Aus der Akte entfernt",
+  "claimsItemAdded": "Zur Akte hinzugefügt",
   "commonRemove": "Entfernen",
   "commonDelete": "Löschen",
   "settingDefaultSuffix": "Standard",

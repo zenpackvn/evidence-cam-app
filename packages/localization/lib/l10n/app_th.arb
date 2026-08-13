@@ -29,6 +29,7 @@
   "claimsRemoveItemTitle": "นำออกจากแฟ้ม",
   "claimsRemoveItemConfirm": "นำหลักฐานนี้ออกจากแฟ้มเคลมไหม วิดีโอ/รูปในออเดอร์ยังอยู่ครบ",
   "claimsItemRemoved": "นำออกจากแฟ้มแล้ว",
+  "claimsItemAdded": "เพิ่มลงในแฟ้มแล้ว",
   "commonRemove": "นำออก",
   "commonDelete": "ลบ",
   "settingDefaultSuffix": "ค่าเริ่มต้น",

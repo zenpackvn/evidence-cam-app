@@ -95,6 +95,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get claimsItemRemoved => 'Dikeluarkan dari berkas';
 
   @override
+  String get claimsItemAdded => 'Ditambahkan ke berkas';
+
+  @override
   String get commonRemove => 'Keluarkan';
 
   @override

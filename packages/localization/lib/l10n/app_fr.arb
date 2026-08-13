@@ -29,6 +29,7 @@
   "claimsRemoveItemTitle": "Retirer du dossier",
   "claimsRemoveItemConfirm": "Retirer cette preuve du dossier de réclamation ? La vidéo/photo de la commande n'est pas touchée.",
   "claimsItemRemoved": "Retirée du dossier",
+  "claimsItemAdded": "Ajouté au dossier",
   "commonRemove": "Retirer",
   "commonDelete": "Supprimer",
   "settingDefaultSuffix": "par défaut",

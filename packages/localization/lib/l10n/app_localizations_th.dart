@@ -94,6 +94,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get claimsItemRemoved => 'นำออกจากแฟ้มแล้ว';
 
   @override
+  String get claimsItemAdded => 'เพิ่มลงในแฟ้มแล้ว';
+
+  @override
   String get commonRemove => 'นำออก';
 
   @override

@@ -29,6 +29,7 @@
   "claimsRemoveItemTitle": "Rimuovi dal fascicolo",
   "claimsRemoveItemConfirm": "Rimuovere questa prova dal fascicolo? Il video/la foto sull'ordine resta intatto.",
   "claimsItemRemoved": "Rimossa dal fascicolo",
+  "claimsItemAdded": "Aggiunto al fascicolo",
   "commonRemove": "Rimuovi",
   "commonDelete": "Elimina",
   "settingDefaultSuffix": "predefinito",

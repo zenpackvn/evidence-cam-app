@@ -73,17 +73,21 @@ class EcClaimDossier {
     'orders': [for (final o in orders) o.toJson()],
   };
 
+  /// [clearLink] cho phép đặt link về `null`. Không có nó thì `null` truyền
+  /// vào chỉ có nghĩa "giữ nguyên", và một hồ sơ vừa bị thu hồi link sẽ mãi
+  /// mang cái link đã chết.
   EcClaimDossier copyWith({
     List<EcClaimOrder>? orders,
     String? claimId,
     String? shareUrl,
+    bool clearLink = false,
   }) => EcClaimDossier(
     id: id,
     shopId: shopId,
     createdAt: createdAt,
     orders: orders ?? this.orders,
-    claimId: claimId ?? this.claimId,
-    shareUrl: shareUrl ?? this.shareUrl,
+    claimId: clearLink ? claimId : (claimId ?? this.claimId),
+    shareUrl: clearLink ? shareUrl : (shareUrl ?? this.shareUrl),
   );
 }
 
@@ -140,6 +144,7 @@ class EcClaimEvidence {
     this.thumbUrl,
     this.addedLater = false,
     this.capturedAt,
+    this.addedBy,
   });
 
   factory EcClaimEvidence.fromJson(Map<String, dynamic> j) => EcClaimEvidence(
@@ -151,6 +156,7 @@ class EcClaimEvidence {
     thumbUrl: j['thumb_url'] as String?,
     addedLater: (j['added_later'] as bool?) ?? false,
     capturedAt: (j['captured_at'] as num?)?.toInt(),
+    addedBy: j['added_by'] as String?,
   );
 
   final String id;
@@ -172,6 +178,12 @@ class EcClaimEvidence {
   /// Người dùng đính thêm SAU khi hồ sơ đã tạo, không phải thứ họ tick lúc đầu.
   final bool addedLater;
 
+  /// Tên tài khoản đã đính ảnh này vào hồ sơ. Chỉ có ở ảnh [addedLater]: ảnh
+  /// đó chưa lên máy chủ nên không có hồ sơ bằng chứng nào để tra người chụp,
+  /// và người đính CHÍNH LÀ người chụp — ghi lại ngay lúc đính là cách duy
+  /// nhất còn biết được về sau.
+  final String? addedBy;
+
   /// Lúc quay/chụp, epoch ms. Dùng để hiện NGÀY ở dòng mã vận đơn — [time] chỉ
   /// có `HH:mm`, mà một hồ sơ gộp nhiều đơn thì các đơn có thể ở khác ngày.
   ///
@@ -188,5 +200,6 @@ class EcClaimEvidence {
     'thumb_url': ?thumbUrl,
     'added_later': addedLater,
     'captured_at': ?capturedAt,
+    'added_by': ?addedBy,
   };
 }

@@ -29,6 +29,7 @@
   "claimsRemoveItemTitle": "Alisin sa dossier",
   "claimsRemoveItemConfirm": "Alisin ang ebidensiyang ito sa claim dossier? Hindi maaapektuhan ang video/larawan sa order mismo.",
   "claimsItemRemoved": "Naalis sa dossier",
+  "claimsItemAdded": "Naidagdag sa dossier",
   "commonRemove": "Alisin",
   "commonDelete": "Burahin",
   "settingDefaultSuffix": "default",
