@@ -38,6 +38,11 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
+  String claimsEvidenceOnly(int evidence) {
+    return '$evidence รายการ';
+  }
+
+  @override
   String get claimsCopied => 'คัดลอกเนื้อหาแฟ้มแล้ว';
 
   @override

@@ -38,6 +38,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String claimsEvidenceOnly(int evidence) {
+    return '$evidence bằng chứng';
+  }
+
+  @override
   String get claimsCopied => 'Đã sao chép nội dung hồ sơ';
 
   @override

@@ -14,6 +14,7 @@
   "claimsLocalOnlyNote": "รายการนี้เก็บไว้ในเครื่องนี้ ถ้าถอนการติดตั้งแอปหรือเปลี่ยนเครื่องจะหายไป",
   "claimsEmpty": "ยังไม่มีแฟ้ม เปิดแท็บออเดอร์ แตะปุ่มบวก แล้วเลือกหลักฐานเพื่อสร้าง",
   "claimsSummary": "{orders} ออเดอร์ · {evidence} หลักฐาน",
+  "claimsEvidenceOnly": "{evidence} รายการ",
   "claimsCopied": "คัดลอกเนื้อหาแฟ้มแล้ว",
   "claimsCreated": "สร้างแฟ้มเคลมแล้ว",
   "claimsPickNothing": "ยังไม่ได้เลือกหลักฐาน",

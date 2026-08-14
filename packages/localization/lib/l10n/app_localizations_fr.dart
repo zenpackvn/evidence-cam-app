@@ -38,6 +38,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String claimsEvidenceOnly(int evidence) {
+    return '$evidence preuves';
+  }
+
+  @override
   String get claimsCopied => 'Contenu du dossier copié';
 
   @override

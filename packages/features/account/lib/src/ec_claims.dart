@@ -23,12 +23,17 @@ class EcClaimEntry {
   const EcClaimEntry({
     required this.id,
     required this.dateLabel,
+    this.title = '',
     required this.timeLabel,
     required this.orderCount,
     required this.evidenceCount,
   });
 
   final String id;
+
+  /// Tên do người tạo đặt — dòng ĐẦU của hàng. Rỗng với hồ sơ tạo trước khi tên
+  /// là bắt buộc; lúc đó hàng lùi về ngày giờ chứ không để trống một dòng.
+  final String title;
 
   /// `06/08/2026` — tách khỏi giờ để hai thứ vẽ hai cỡ chữ khác nhau.
   final String dateLabel;
@@ -229,17 +234,37 @@ class _ClaimRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Tên người dùng đặt là thứ họ tìm bằng mắt ba tuần sau, lúc
+                // sàn mới trả lời và danh sách đã có chục hồ sơ. Ngày giờ thì
+                // mọi hồ sơ đều có, nên để nó làm dòng đầu là bắt người ta đọc
+                // hết cả cột mới thấy vụ mình cần.
                 PenText(
-                  '${entry.dateLabel}  ${entry.timeLabel}',
+                  entry.title.trim().isEmpty
+                      ? '${entry.dateLabel}  ${entry.timeLabel}'
+                      : entry.title,
                   size: 15,
                   color: PenColors.ink,
                   weight: FontWeight.w700,
+                  maxLines: 1,
                 ),
                 const SizedBox(height: 3),
                 PenText(
-                  l10n.claimsSummary(entry.orderCount, entry.evidenceCount),
+                  // Hồ sơ chưa có tên đã hiện ngày giờ ở dòng trên rồi — lặp
+                  // lại lần nữa ở đây là hai dòng nói cùng một điều.
+                  entry.title.trim().isEmpty
+                      ? l10n.claimsSummary(
+                          entry.orderCount,
+                          entry.evidenceCount,
+                        )
+                      // Số bằng chứng và thời gian, KHÔNG kèm số đơn: ba thứ
+                      // ghép vào một dòng thì trên màn hẹp là bị cắt, mà cắt
+                      // thì mất đúng cái mốc thời gian ở cuối. Số đơn vẫn đọc
+                      // được đầy đủ trong chi tiết hồ sơ.
+                      : '${l10n.claimsEvidenceOnly(entry.evidenceCount)}'
+                            '  ·  ${entry.dateLabel}  ${entry.timeLabel}',
                   size: 13,
                   color: PenColors.mut,
+                  maxLines: 1,
                 ),
               ],
             ),

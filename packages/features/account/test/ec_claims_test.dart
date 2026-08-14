@@ -231,6 +231,7 @@ void main() {
   });
 
   group('EcClaimDetailScreen', _detailTests);
+  group('EcClaimListScreen', _listTests);
 }
 
 /// Màn chi tiết hồ sơ: một khối thông tin và một cái link, giống hệt web.
@@ -357,5 +358,61 @@ void _detailTests() {
       ),
     );
     expect(find.text('Hồ sơ không đặt tên'), findsOneWidget);
+  });
+}
+
+/// Danh sách hồ sơ: TÊN người dùng đặt ở dòng đầu, số bằng chứng và thời gian ở
+/// dòng dưới.
+///
+/// Bản trước để ngày giờ làm dòng đầu — mà mọi hồ sơ đều có ngày giờ, nên phải
+/// đọc hết cả cột mới tìm ra vụ mình cần.
+void _listTests() {
+  testWidgets('tên đứng dòng đầu, bằng chứng và giờ ở dòng dưới', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      const EcClaimListScreen(
+        entries: [
+          EcClaimEntry(
+            id: 'c1',
+            title: 'Lô hoàn 8/8',
+            dateLabel: '08/08/2026',
+            timeLabel: '17:42',
+            orderCount: 2,
+            evidenceCount: 5,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Lô hoàn 8/8'), findsOneWidget);
+    expect(find.text('5 bằng chứng  ·  08/08/2026  17:42'), findsOneWidget);
+    // Ngày giờ KHÔNG được đứng một mình làm dòng đầu nữa.
+    expect(find.text('08/08/2026  17:42'), findsNothing);
+  });
+
+  // Hồ sơ tạo TRƯỚC khi tên là bắt buộc vẫn phải đọc được. Không tên mà vẫn cố
+  // vẽ một dòng trống ở trên thì hàng đó trông như hỏng.
+  testWidgets('hồ sơ không tên lùi về ngày giờ, không để dòng trống', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      const EcClaimListScreen(
+        entries: [
+          EcClaimEntry(
+            id: 'c0',
+            dateLabel: '06/08/2026',
+            timeLabel: '09:10',
+            orderCount: 1,
+            evidenceCount: 3,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('06/08/2026  09:10'), findsOneWidget);
+    expect(find.text('1 đơn · 3 bằng chứng'), findsOneWidget);
   });
 }

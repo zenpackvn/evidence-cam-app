@@ -14,6 +14,7 @@
   "claimsLocalOnlyNote": "Questo elenco è salvato su questo dispositivo. Disinstallare l'app o cambiare dispositivo lo fa perdere.",
   "claimsEmpty": "Ancora nessun fascicolo. Apri la scheda Ordini, tocca il pulsante più e scegli le prove.",
   "claimsSummary": "{orders} ordini · {evidence} prove",
+  "claimsEvidenceOnly": "{evidence} prove",
   "claimsCopied": "Contenuto del fascicolo copiato",
   "claimsCreated": "Fascicolo di reclamo creato",
   "claimsPickNothing": "Nessuna prova selezionata",

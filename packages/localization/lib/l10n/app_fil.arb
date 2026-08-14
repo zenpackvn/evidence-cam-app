@@ -14,6 +14,7 @@
   "claimsLocalOnlyNote": "Nakaimbak ang listahang ito sa device na ito. Mawawala ito kapag inalis ang app o lumipat ka ng device.",
   "claimsEmpty": "Wala pang dossier. Buksan ang tab na Mga order, pindutin ang plus at pumili ng ebidensiya.",
   "claimsSummary": "{orders} order · {evidence} ebidensiya",
+  "claimsEvidenceOnly": "{evidence} ebidensya",
   "claimsCopied": "Nakopya ang laman ng dossier",
   "claimsCreated": "Nagawa na ang claim dossier",
   "claimsPickNothing": "Walang napiling ebidensiya",

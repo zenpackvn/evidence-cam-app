@@ -19,6 +19,7 @@
       }
     }
   },
+  "claimsEvidenceOnly": "{evidence} bằng chứng",
   "claimsCopied": "Đã sao chép nội dung hồ sơ",
   "claimsCreated": "Đã tạo hồ sơ khiếu nại",
   "claimsPickNothing": "Chưa chọn bằng chứng nào",

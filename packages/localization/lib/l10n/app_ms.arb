@@ -14,6 +14,7 @@
   "claimsLocalOnlyNote": "Senarai ini disimpan dalam peranti ini. Menyahpasang apl atau bertukar peranti akan menghilangkannya.",
   "claimsEmpty": "Belum ada fail. Buka tab Pesanan, ketik butang tambah dan pilih bukti untuk membinanya.",
   "claimsSummary": "{orders} pesanan · {evidence} bukti",
+  "claimsEvidenceOnly": "{evidence} bukti",
   "claimsCopied": "Kandungan fail disalin",
   "claimsCreated": "Fail tuntutan dicipta",
   "claimsPickNothing": "Tiada bukti dipilih",

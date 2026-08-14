@@ -19,6 +19,12 @@
       }
     }
   },
+  "claimsEvidenceOnly": "{evidence} items",
+  "@claimsEvidenceOnly": {
+    "placeholders": {
+      "evidence": { "type": "int" }
+    }
+  },
   "claimsCopied": "Dossier contents copied",
   "claimsCreated": "Claim dossier created",
   "claimsPickNothing": "No evidence selected",

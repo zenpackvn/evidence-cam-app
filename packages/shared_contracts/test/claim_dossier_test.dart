@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_contracts/shared_contracts.dart';
 
 void main() {
+  group('tên hồ sơ', _titleRoundTripTests);
   group('EcClaimDossier', () {
     // `claimId` là thứ duy nhất thu hồi link được. Nó đi qua JSON để nằm trong
     // `EcClaimStore`, nên rơi ở vòng này thì nút "Xóa hồ sơ" lặng lẽ chỉ xoá
@@ -43,5 +44,47 @@ void main() {
 
       expect(EcClaimDossier.fromJson(local.toJson()).claimId, isNull);
     });
+  });
+}
+
+void _titleRoundTripTests() {
+  // Tên hồ sơ phải SỐNG SÓT qua vòng lưu–đọc trên máy.
+  //
+  // Đã trượt đúng chỗ này một lần: `toJson` ghi `title` nhưng `fromJson` không
+  // đọc, nên tên hiện đúng cho tới khi app khởi động lại rồi biến mất — danh
+  // sách hồ sơ lùi hết về ngày giờ mà không có lỗi nào để lần theo.
+  test('tên đi qua toJson → fromJson mà không mất', () {
+    final before = EcClaimDossier(
+      id: 'd1',
+      shopId: 's1',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(1000),
+      title: 'Lô hoàn 8/8',
+      orders: const [],
+    );
+    final after = EcClaimDossier.fromJson(before.toJson());
+    expect(after.title, 'Lô hoàn 8/8');
+  });
+
+  // Hồ sơ lưu TRƯỚC khi có trường này: JSON cũ không có khoá `title`. Phải đọc
+  // được thành chuỗi rỗng chứ không ném — ném thì cả danh sách hồ sơ trắng.
+  test('JSON cũ không có khoá title vẫn đọc được', () {
+    final old = {
+      'id': 'd0',
+      'shop_id': 's1',
+      'created_at': 1000,
+      'orders': <dynamic>[],
+    };
+    expect(EcClaimDossier.fromJson(old).title, '');
+  });
+
+  test('copyWith giữ nguyên tên', () {
+    final d = EcClaimDossier(
+      id: 'd1',
+      shopId: 's1',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(1000),
+      title: 'Lô hoàn 8/8',
+      orders: const [],
+    );
+    expect(d.copyWith(shareUrl: 'https://x').title, 'Lô hoàn 8/8');
   });
 }

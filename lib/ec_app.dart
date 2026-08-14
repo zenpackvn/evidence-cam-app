@@ -5745,6 +5745,7 @@ class _ClaimListRoute extends StatelessWidget {
           for (final d in dossiers)
             EcClaimEntry(
               id: d.id,
+              title: d.title,
               dateLabel: _dayLabelOf(d.createdAt),
               timeLabel: _hhmm(d.createdAt),
               orderCount: d.orders.length,
@@ -5848,6 +5849,10 @@ class _CreateClaimRoute extends StatelessWidget {
         id: now.microsecondsSinceEpoch.toString(),
         shopId: shopId,
         createdAt: now,
+        // Giữ tên NGAY TRÊN MÁY, không chỉ gửi lên máy chủ: danh sách hồ sơ đọc
+        // bản trên máy, và hồ sơ tạo lúc mất mạng cũng phải hiện đúng tên người
+        // dùng vừa đặt chứ không phải một dòng ngày giờ vô danh.
+        title: title,
         // Giữ id của máy chủ chứ không chỉ link: đây là thứ duy nhất thu hồi
         // được về sau. Chỉ lưu link thì nút xoá chỉ xoá được bản trên máy.
         claimId: claim?.id,

@@ -14,6 +14,7 @@
   "claimsLocalOnlyNote": "Esta lista se guarda en este dispositivo. Si desinstalas la app o cambias de dispositivo, se pierde.",
   "claimsEmpty": "Aún no hay expedientes. Abre la pestaña Pedidos, toca el botón más y elige las pruebas.",
   "claimsSummary": "{orders} pedidos · {evidence} pruebas",
+  "claimsEvidenceOnly": "{evidence} pruebas",
   "claimsCopied": "Contenido del expediente copiado",
   "claimsCreated": "Expediente de reclamación creado",
   "claimsPickNothing": "No hay pruebas seleccionadas",

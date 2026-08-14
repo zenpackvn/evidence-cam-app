@@ -37,6 +37,11 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String claimsEvidenceOnly(int evidence) {
+    return '$evidence bukti';
+  }
+
+  @override
   String get claimsCopied => 'Kandungan fail disalin';
 
   @override

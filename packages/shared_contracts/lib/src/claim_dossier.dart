@@ -17,6 +17,7 @@ class EcClaimDossier {
     required this.shopId,
     required this.createdAt,
     required this.orders,
+    this.title = '',
     this.claimId,
     this.shareUrl,
   });
@@ -27,6 +28,7 @@ class EcClaimDossier {
     createdAt: DateTime.fromMillisecondsSinceEpoch(
       (j['created_at'] as num?)?.toInt() ?? 0,
     ),
+    title: (j['title'] as String?) ?? '',
     claimId: j['claim_id'] as String?,
     shareUrl: j['share_url'] as String?,
     orders: [
@@ -43,6 +45,11 @@ class EcClaimDossier {
   final DateTime createdAt;
 
   final List<EcClaimOrder> orders;
+
+  /// Tên do người tạo đặt. Rỗng với hồ sơ tạo TRƯỚC khi tên là bắt buộc —
+  /// những hồ sơ đó vẫn phải mở và hiện được, nên chỗ đọc phải lùi về ngày giờ
+  /// chứ không hiện một dòng trống.
+  final String title;
 
   /// Id hồ sơ TRÊN MÁY CHỦ — thứ duy nhất thu hồi link được.
   ///
@@ -68,6 +75,7 @@ class EcClaimDossier {
     'id': id,
     'shop_id': shopId,
     'created_at': createdAt.millisecondsSinceEpoch,
+    if (title.isNotEmpty) 'title': title,
     if (claimId != null) 'claim_id': claimId,
     if (shareUrl != null) 'share_url': shareUrl,
     'orders': [for (final o in orders) o.toJson()],
@@ -86,6 +94,7 @@ class EcClaimDossier {
     shopId: shopId,
     createdAt: createdAt,
     orders: orders ?? this.orders,
+    title: title,
     claimId: clearLink ? claimId : (claimId ?? this.claimId),
     shareUrl: clearLink ? shareUrl : (shareUrl ?? this.shareUrl),
   );

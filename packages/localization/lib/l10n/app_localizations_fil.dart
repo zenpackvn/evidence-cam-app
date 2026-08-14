@@ -38,6 +38,11 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String claimsEvidenceOnly(int evidence) {
+    return '$evidence ebidensya';
+  }
+
+  @override
   String get claimsCopied => 'Nakopya ang laman ng dossier';
 
   @override

@@ -14,6 +14,7 @@
   "claimsLocalOnlyNote": "Diese Liste liegt auf diesem Gerät. Beim Deinstallieren der App oder Gerätewechsel geht sie verloren.",
   "claimsEmpty": "Noch keine Akte. Öffne den Tab Bestellungen, tippe auf Plus und wähle die Nachweise aus.",
   "claimsSummary": "{orders} Bestellungen · {evidence} Nachweise",
+  "claimsEvidenceOnly": "{evidence} Nachweise",
   "claimsCopied": "Akteninhalt kopiert",
   "claimsCreated": "Reklamationsakte erstellt",
   "claimsPickNothing": "Keine Nachweise ausgewählt",

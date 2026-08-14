@@ -14,6 +14,7 @@
   "claimsLocalOnlyNote": "Daftar ini disimpan di perangkat ini. Menghapus aplikasi atau berganti perangkat akan menghilangkannya.",
   "claimsEmpty": "Belum ada berkas. Buka tab Pesanan, ketuk tombol plus dan pilih bukti untuk membuatnya.",
   "claimsSummary": "{orders} pesanan · {evidence} bukti",
+  "claimsEvidenceOnly": "{evidence} bukti",
   "claimsCopied": "Isi berkas disalin",
   "claimsCreated": "Berkas klaim dibuat",
   "claimsPickNothing": "Tidak ada bukti yang dipilih",

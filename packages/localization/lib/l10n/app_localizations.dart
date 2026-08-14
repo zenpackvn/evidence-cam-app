@@ -162,6 +162,12 @@ abstract class AppLocalizations {
   /// **'{orders} orders · {evidence} evidence'**
   String claimsSummary(int orders, int evidence);
 
+  /// No description provided for @claimsEvidenceOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'{evidence} items'**
+  String claimsEvidenceOnly(int evidence);
+
   /// No description provided for @claimsCopied.
   ///
   /// In en, this message translates to:
