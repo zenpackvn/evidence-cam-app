@@ -1,5 +1,6 @@
 {
   "FLAVOR": "staging",
   "API_BASE_URL": "https://api.zenpack.vn",
-  "API_TIMEOUT_SECONDS": 20
+  "API_TIMEOUT_SECONDS": 20,
+  "GOOGLE_SERVER_CLIENT_ID": "725879677565-aal47v5gbns7oqtbutamvqlvtfb1irl2.apps.googleusercontent.com"
 }

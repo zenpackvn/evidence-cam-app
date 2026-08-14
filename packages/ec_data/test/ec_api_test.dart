@@ -22,6 +22,7 @@ Response<T> _res<T>(String path, T data) => Response<T>(
 
 void main() {
   group('mã của vận đơn', _orderCodesTests);
+  group('cắm Drive từ hộp thoại gốc', _gdriveNativeTests);
   late _MockDio dio;
   late EcApi api;
 
@@ -735,5 +736,42 @@ void _orderCodesTests() {
       'is_primary': 1,
     });
     expect(primary.isPrimary, isTrue);
+  });
+}
+
+/// Cắm Drive từ hộp thoại GỐC của hệ điều hành, không nhảy sang trình duyệt.
+///
+/// Người bán muốn nó giống hệt lúc đăng nhập bằng Google. Thứ app gửi lên máy
+/// chủ chỉ là MÃ UỶ QUYỀN — máy chủ vẫn là nơi duy nhất đổi nó lấy refresh
+/// token, nên refresh token không bao giờ xuống thiết bị.
+void _gdriveNativeTests() {
+  late _MockDio dio;
+  late EcApi api;
+
+  setUp(() {
+    dio = _MockDio();
+    api = EcApi(dio);
+  });
+
+  test('gửi đúng mã uỷ quyền lên tuyến riêng, không kèm gì khác', () async {
+    when(
+      () => dio.post<void>(
+        any(),
+        data: any(named: 'data'),
+        options: any(named: 'options'),
+      ),
+    ).thenAnswer((_) async => _res<void>('/x', null));
+
+    await api.connectGdriveCode('s1', 'auth-code-abc');
+
+    final call = verify(
+      () => dio.post<void>(
+        captureAny(),
+        data: captureAny(named: 'data'),
+        options: any(named: 'options'),
+      ),
+    ).captured;
+    expect(call[0], '/api/shops/s1/storage/gdrive/code');
+    expect(call[1], {'code': 'auth-code-abc'});
   });
 }

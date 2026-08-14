@@ -164,6 +164,9 @@ class FakeEcRepository implements EcRepository {
   Future<List<OrderCodeDto>> orderCodes(String shopId, String orderId) async =>
       const [];
 
+  @override
+  Future<void> connectGdriveCode(String shopId, String code) async {}
+
   // Hồ sơ rỗng: đủ để màn chi tiết dựng được mà không cần máy chủ.
   @override
   Future<ClaimDetailDto> claimDetail(String shopId, String claimId) async =>

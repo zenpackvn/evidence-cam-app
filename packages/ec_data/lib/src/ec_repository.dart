@@ -132,6 +132,9 @@ abstract interface class EcRepository {
   Future<void> disconnectStorage(String shopId);
   Future<String> gdriveAuthUrl(String shopId);
 
+  /// Cắm Drive bằng mã uỷ quyền từ hộp thoại gốc, không qua trình duyệt.
+  Future<void> connectGdriveCode(String shopId, String code);
+
   /// Khai số clip chưa upload được đang nằm trên máy này (xem
   /// [EcApi.reportQueueDepth]). Nuốt lỗi ở tầng hiện thực: đây là báo cáo phụ
   /// trợ, hỏng thì không được làm gì khác hỏng theo.
@@ -368,6 +371,10 @@ class RemoteEcRepository implements EcRepository {
 
   @override
   Future<String> gdriveAuthUrl(String shopId) => _api.gdriveAuthUrl(shopId);
+
+  @override
+  Future<void> connectGdriveCode(String shopId, String code) =>
+      _api.connectGdriveCode(shopId, code);
 
   @override
   Future<void> reportQueueDepth(

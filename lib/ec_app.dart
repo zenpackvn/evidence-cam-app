@@ -66,6 +66,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, ValueListenable, defaultTargetPlatform;
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';
@@ -1755,7 +1756,57 @@ class _StorageRouteState extends State<_StorageRoute>
   /// KHÔNG đọc lại trạng thái ở đây: `launchUrl` trả về ngay lúc trình duyệt
   /// mở, tức lúc người dùng còn chưa kịp chọn tài khoản Google. Việc đọc lại
   /// thuộc về [didChangeAppLifecycleState].
+  /// Cắm Google Drive bằng hộp thoại GỐC của hệ điều hành — đúng thứ người dùng
+  /// đã quen khi đăng nhập bằng Google, không nhảy sang trình duyệt.
+  ///
+  /// Đường lùi về trình duyệt được GIỮ, không xoá: hộp thoại gốc cần một cặp
+  /// client Google cùng dự án với client iOS, và chừng nào máy chủ chưa có cặp
+  /// đó thì nó trả `native_not_configured`. Xoá đường lùi nghĩa là tính năng
+  /// chết hẳn cho tới khi cấu hình xong — còn giữ thì bản cài lên máy hôm nay
+  /// vẫn cắm được kho như cũ.
   Future<void> _connectDrive() async {
+    final l10n = context.l10n;
+    try {
+      final code = await _driveAuthCode();
+      if (code != null && code.isNotEmpty) {
+        await widget.repo.connectGdriveCode(widget.shopId, code);
+        if (!mounted) return;
+        _toast(context, l10n.storageConnected);
+        _reload();
+        return;
+      }
+    } on Object catch (error) {
+      // Người dùng tự huỷ hộp thoại thì im lặng — họ vừa nói "không" xong, báo
+      // lỗi vào mặt họ là nói lại điều họ vừa quyết định.
+      if (_userCancelled(error)) return;
+      developer.log(
+        'storage: hộp thoại Drive gốc không dùng được (${error.runtimeType})',
+        name: 'zenpack.storage',
+        level: 900,
+        error: error,
+      );
+      // Rơi xuống đường trình duyệt bên dưới.
+    }
+    await _connectDriveViaBrowser();
+  }
+
+  /// Mã uỷ quyền từ hộp thoại Google gốc, hoặc `null` khi người dùng huỷ.
+  Future<String?> _driveAuthCode() async {
+    final google = GoogleSignIn.instance;
+    await google.initialize(serverClientId: kGoogleServerClientId.isEmpty ? null : kGoogleServerClientId);
+    final account = await google.authenticate();
+    final auth = await account.authorizationClient.authorizeServer(
+      const ['https://www.googleapis.com/auth/drive.file'],
+    );
+    return auth?.serverAuthCode;
+  }
+
+  static bool _userCancelled(Object error) =>
+      error is GoogleSignInException &&
+      error.code == GoogleSignInExceptionCode.canceled;
+
+  /// Đường cũ: mở trình duyệt, Google gọi ngược về máy chủ.
+  Future<void> _connectDriveViaBrowser() async {
     try {
       final url = await widget.repo.gdriveAuthUrl(widget.shopId);
       if (!mounted) return;

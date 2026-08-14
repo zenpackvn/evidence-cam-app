@@ -32,6 +32,18 @@ const kApiBaseUrl = String.fromEnvironment(
   ),
 );
 
+/// Web client id của **dự án Google chứa client iOS** — dùng để xin
+/// `serverAuthCode` lúc cắm Google Drive ngay trong app.
+///
+/// Phải cùng dự án với client iOS: `serverAuthCode` chỉ đổi được trong nội bộ
+/// một dự án Google. Đây là client id, KHÔNG phải secret — nó vốn công khai
+/// trong mọi ứng dụng di động, còn secret thì chỉ máy chủ giữ.
+///
+/// Rỗng = app bỏ qua hộp thoại gốc và mở trình duyệt như trước.
+const kGoogleServerClientId = String.fromEnvironment(
+  'GOOGLE_SERVER_CLIENT_ID',
+);
+
 /// Origin của Zentam CMS nhận góp ý, phân giải lúc biên dịch:
 /// `EC_FEEDBACK_URL` → `FEEDBACK_BASE_URL` trong file env → mặc định.
 ///

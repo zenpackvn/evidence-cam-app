@@ -309,6 +309,17 @@ class EcApi {
     return (res.data!['url'] as String?) ?? '';
   }
 
+  /// Cắm Drive bằng mã uỷ quyền lấy từ hộp thoại Google của hệ điều hành.
+  ///
+  /// Chỉ gửi MÃ, không gửi token: máy chủ vẫn là nơi duy nhất đổi nó lấy refresh
+  /// token. Ném khi máy chủ chưa cấu hình cặp client cho đường này — bên gọi bắt
+  /// lỗi đó rồi lùi về mở trình duyệt.
+  Future<void> connectGdriveCode(String shopId, String code) =>
+      _dio.post<void>(
+        '/api/shops/$shopId/storage/gdrive/code',
+        data: {'code': code},
+      );
+
   Future<void> addMember(
     String shopId, {
     required String accountUid,
