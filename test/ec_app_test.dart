@@ -1,12 +1,14 @@
 import 'dart:io';
 
 import 'package:ec_data/ec_data.dart';
-import 'package:ec_ui/ec_ui.dart' show LucideIcons, PenBackButton;
+import 'package:ec_ui/ec_ui.dart'
+    show LucideIcons, PenBackButton, PenBox, PenColors;
 import 'package:evidence_cam/app/di/injection.dart';
 import 'package:evidence_cam/ec_app.dart';
 import 'package:feature_capture/feature_capture.dart' show debugPreviewDir;
 import 'package:flutter/cupertino.dart' show CupertinoAlertDialog;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 import 'package:network/network.dart'
@@ -28,7 +30,26 @@ class _FakePathProviderPlatform extends PathProviderPlatform {
       Directory.systemTemp.createTempSync('ec_app_test_docs').path;
 }
 
+/// Kênh sự kiện của `connectivity_plus`, mở ngay khi app dựng.
+const _connectivityChannel = MethodChannel(
+  'dev.fluttercommunity.plus/connectivity_status',
+);
+
 void main() {
+  // Không có bản cài plugin trong test thì `listen` trên kênh trên ném
+  // MissingPluginException — và nó ném BẤT ĐỒNG BỘ, nên lỗi rơi vào bất kỳ
+  // test nào tình cờ đang chạy lúc đó. Đó là lý do 'edit profile persists the
+  // selected avatar url' đỏ vì một chuyện không liên quan gì tới avatar. Trả
+  // lời rỗng là đủ để nó im.
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_connectivityChannel, (call) async => null);
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_connectivityChannel, null);
+  });
+
   // Người ta sao chép link mời từ email kiểu gì cũng có: link thật, link đã
   // qua redirect của site, hoặc chỉ mỗi cái token. Bắt họ dán cho "đúng" là
   // bắt sai người — cả ba dạng đều phải nhận.
@@ -743,8 +764,23 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.reads, greaterThan(readsBefore));
-      expect(find.text('Google Drive của bạn'), findsOneWidget);
-      expect(find.text('Kho của hệ thống'), findsNothing);
+
+      // Màn kho nay là BA thẻ lựa chọn luôn hiện cùng lúc, nên "thẻ Drive có
+      // mặt" và "thẻ hệ thống biến mất" đều không còn nói lên điều gì — hai
+      // khẳng định cũ ('Google Drive của bạn' / 'Kho của hệ thống' biến mất) mô
+      // tả một màn không còn tồn tại. Chuỗi `storageDriveName` chúng bám vào
+      // giờ là chuỗi mồ côi, không mã nào dùng.
+      //
+      // Thứ thật sự đổi sau khi cấp quyền là thẻ NÀO đang được chọn, và dấu
+      // chọn là viền xanh (`PenColors.success`). Nên bám vào đúng cái đó.
+      Finder selectedCardWith(String title) => find.ancestor(
+        of: find.text(title),
+        matching: find.byWidgetPredicate(
+          (w) => w is PenBox && w.stroke == PenColors.success,
+        ),
+      );
+      expect(selectedCardWith('Google Drive'), findsOneWidget);
+      expect(selectedCardWith('Kho của hệ thống'), findsNothing);
     },
   );
 
@@ -764,7 +800,11 @@ void main() {
 
       await signInWithGoogle(tester);
       await openAccount(tester);
-      await tester.tap(find.text('Dung lượng'));
+      // Hàng dẫn vào màn hạn mức đổi tên thành 'Gói cước & dung lượng' khi gói
+      // cước được gộp chung vào đó (khoá `accountPlanQuota`). Test của gói
+      // feature_account đã theo tên mới; test tầng app thì không, vì nó ghim
+      // chữ cứng thay vì đọc qua l10n.
+      await tester.tap(find.text('Gói cước & dung lượng'));
       await tester.pumpAndSettle();
 
       // Hạn mức nay đếm SỐ VIDEO trong tháng, không còn tính bằng GB — đổi có
@@ -796,7 +836,7 @@ void main() {
       // "không giữ nhãn đã cache" phải làm ở đúng màn có nhãn: vào Quota, ra,
       // vào lại — lần hai phải thấy gói MỚI.
       await openAccount(tester);
-      await tester.tap(find.text('Dung lượng'));
+      await tester.tap(find.text('Gói cước & dung lượng'));
       await tester.pumpAndSettle();
       expect(find.text('Cơ bản'), findsWidgets);
 
@@ -805,7 +845,7 @@ void main() {
 
       await tester.tap(find.byType(PenBackButton).first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Dung lượng'));
+      await tester.tap(find.text('Gói cước & dung lượng'));
       await tester.pumpAndSettle();
 
       expect(find.text('Cao cấp'), findsWidgets);
@@ -1078,8 +1118,11 @@ void main() {
       await tester.tap(find.text('Đóng hàng').first);
       await settle();
 
-      // Máy chủ đang đóng dấu ⇒ chưa phát link ra (evidence_url.ts).
+      // Máy chủ đang đóng dấu ⇒ chưa phát link ra (evidence_url.ts). 'Sao chép
+      // link' là hàng DUY NHẤT gác sau `mediaUrl != null` (ec_flow2.dart:642),
+      // nên nó chính là thứ test này mang tên — vắng lúc này, có lúc sau.
       expect(find.text('Đang đóng dấu thời gian…'), findsWidgets);
+      expect(find.text('Sao chép link'), findsNothing);
 
       // Niêm phong xong trong lúc sheet vẫn mở. Không đụng vào điều hướng.
       repo.sealed = true;
@@ -1091,8 +1134,14 @@ void main() {
       await tester.pump(const Duration(seconds: 6));
       await settle();
 
-      expect(find.textContaining('Đã khoá ·'), findsWidgets);
+      // Link đã về: hàng sao chép hiện ra, và chỉ báo "đang đóng dấu" tắt.
+      expect(find.text('Sao chép link'), findsOneWidget);
       expect(find.text('Đang đóng dấu thời gian…'), findsNothing);
+      // KHÔNG khẳng định 'Đã khoá · …' nữa: sheet chỉ vẽ dòng niêm phong khi nó
+      // ĐANG chạy (`if (video.seal?.inProgress ?? false)` — ec_flow2.dart:575).
+      // Niêm phong xong thì dòng đó biến mất hẳn, nhường chỗ cho các hàng thao
+      // tác — nên khẳng định cũ mô tả một màn không còn tồn tại, chứ không phải
+      // bắt được lỗi gì.
     },
   );
 }
