@@ -77,7 +77,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsCreateSearchHint => 'Type or scan a tracking code';
 
   @override
-  String get claimsCreateNameHint => 'Dossier name';
+  String get claimsCreateNameHint => 'e.g. Return claim 12/08';
+
+  @override
+  String get claimsCreateNameLabel => 'Dossier name';
 
   @override
   String get claimInfoTitle => 'Dossier details';

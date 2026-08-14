@@ -77,7 +77,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get claimsCreateSearchHint => 'Sendungsnummer eingeben oder scannen';
 
   @override
-  String get claimsCreateNameHint => 'Name des Vorgangs';
+  String get claimsCreateNameHint => 'z. B. Rücksendung 12.08.';
+
+  @override
+  String get claimsCreateNameLabel => 'Name des Vorgangs';
 
   @override
   String get claimInfoTitle => 'Vorgangsdetails';

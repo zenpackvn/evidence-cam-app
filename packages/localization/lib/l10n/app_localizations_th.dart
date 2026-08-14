@@ -76,7 +76,10 @@ class AppLocalizationsTh extends AppLocalizations {
   String get claimsCreateSearchHint => 'พิมพ์หรือสแกนเลขพัสดุ';
 
   @override
-  String get claimsCreateNameHint => 'ชื่อแฟ้มเรื่อง';
+  String get claimsCreateNameHint => 'เช่น เคลมพัสดุตีกลับ 12/08';
+
+  @override
+  String get claimsCreateNameLabel => 'ชื่อแฟ้มเรื่อง';
 
   @override
   String get claimInfoTitle => 'รายละเอียดแฟ้มเรื่อง';

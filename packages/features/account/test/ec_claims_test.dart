@@ -55,12 +55,12 @@ const _spx2 = [
   ),
 ];
 
-/// Ô tra mã là ô nhập ĐẦU TIÊN trên màn. Từ lúc có ô đặt tên hồ sơ ở đáy, màn
-/// có hai ô nhập, nên `find.byType(EditableText)` trần ném "Too many elements".
-Finder _searchField() => find.byType(EditableText).first;
-
-/// Ô đặt tên hồ sơ — ô nhập cuối, chỉ tồn tại khi đã tick được thứ gì.
-Finder _nameField() => find.byType(EditableText).last;
+/// Màn có đúng hai ô nhập, theo thứ tự người dùng gặp: **tên hồ sơ trước, tra
+/// mã sau**. Thứ tự đó là một phần của yêu cầu — ô tên phải thấy ngay khi mở
+/// màn — nên bám vào nó ở đây là đúng chỗ, và test "ô tên hiện ngay khi mở màn"
+/// canh luôn chính thứ tự này.
+Finder _nameField() => find.byType(EditableText).first;
+Finder _searchField() => find.byType(EditableText).last;
 
 Future<void> _lookup(WidgetTester tester, String code) async {
   await tester.enterText(_searchField(), code);
@@ -133,17 +133,17 @@ void main() {
       await tester.tap(find.text('Ảnh đính kèm'));
       await tester.pumpAndSettle();
 
-      // Mã cũ vẫn nằm dưới mã mới, và cái đã tick ở đó vẫn còn.
-      //
-      // Soi TRONG danh sách chứ không tìm khắp màn: ô đặt tên hồ sơ ở đáy cũng
-      // được điền sẵn 'SPX1', nên tìm trần sẽ khớp hai chỗ và khẳng định này
-      // không còn nói được gì về danh sách.
+      // Mã cũ vẫn nằm dưới mã mới, và cái đã tick ở đó vẫn còn. Vẫn soi TRONG
+      // danh sách: ô tên nằm ngoài nó, và một ngày nào đó ai đó gõ 'SPX1' vào
+      // ô tên thì khẳng định tìm trần sẽ im lặng hỏng.
       expect(
         find.descendant(of: find.byType(ListView), matching: find.text('SPX1')),
         findsOneWidget,
       );
       expect(find.text('Đóng hàng'), findsOneWidget);
 
+      await tester.enterText(_nameField(), 'Lô hoàn 8/8');
+      await tester.pumpAndSettle();
       await tester.tap(find.textContaining('(2)'));
       await tester.pumpAndSettle();
 
@@ -152,13 +152,29 @@ void main() {
         {for (final o in created!) o.orderCode: o.picked.single.id},
         {'SPX1': 'e1', 'SPX2': 'e3'},
       );
-      // Tên điền sẵn là mã ĐẦU TIÊN tra được, không phải mã tra gần nhất.
-      expect(createdTitle, 'SPX1');
+      // Tên là thứ người dùng gõ, KHÔNG điền hộ — giống web.
+      expect(createdTitle, 'Lô hoàn 8/8');
     });
 
     // Trước bản vá này màn hình không có ô tên nào, `onCreate` không mang tên,
     // nên máy chủ từ chối MỌI hồ sơ tạo từ app (`claim_title_required`) và hồ
     // sơ nằm lại trong máy — im lặng, vì lỗi bị nuốt ở tầng dưới.
+    // Ô tên phải thấy NGAY khi mở màn, trước cả ô tra mã. Bản trước giấu nó
+    // xuống đáy và chỉ hiện sau khi đã tick được thứ gì — mở màn ra không thấy
+    // ô tên nào, nên không ai biết hồ sơ cần đặt tên cho tới lúc đã làm xong
+    // mọi việc khác.
+    testWidgets('ô tên hiện ngay khi mở màn, kèm dấu bắt buộc', (tester) async {
+      await _pump(
+        tester,
+        EcCreateClaimScreen(onSearch: (code) async => _spx1, onCreate: (_, _) {}),
+      );
+
+      expect(find.text('Tên hồ sơ'), findsOneWidget);
+      expect(find.text('*'), findsOneWidget);
+      // Hai ô nhập ngay từ đầu: ô tên rồi tới ô tra mã, theo đúng thứ tự đó.
+      expect(find.byType(EditableText), findsNWidgets(2));
+    });
+
     testWidgets('tên rỗng thì KHÔNG tạo được — tên là bắt buộc như web', (
       tester,
     ) async {
@@ -203,12 +219,6 @@ void main() {
       await _lookup(tester, 'SPX1');
       await tester.tap(find.text('Đóng hàng'));
       await tester.pumpAndSettle();
-
-      // Ô tên chỉ hiện khi đã tick được thứ gì — trước đó chưa có gì để đặt tên,
-      // nên trước khi tick màn chỉ có đúng một ô nhập.
-      expect(find.byType(EditableText), findsNWidgets(2));
-      // Và nó được điền sẵn mã vừa tra, không để trống.
-      expect(tester.widget<EditableText>(_nameField()).controller.text, 'SPX1');
 
       await tester.enterText(_nameField(), 'Lô hoàn 8/8');
       await tester.pumpAndSettle();

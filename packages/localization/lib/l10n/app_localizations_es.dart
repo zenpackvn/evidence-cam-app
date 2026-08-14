@@ -79,7 +79,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Escribe o escanea el número de seguimiento';
 
   @override
-  String get claimsCreateNameHint => 'Nombre del expediente';
+  String get claimsCreateNameHint => 'p. ej. Reclamación de devolución 12/08';
+
+  @override
+  String get claimsCreateNameLabel => 'Nombre del expediente';
 
   @override
   String get claimInfoTitle => 'Datos del expediente';

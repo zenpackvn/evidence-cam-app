@@ -77,7 +77,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get claimsCreateSearchHint => 'Ketik atau pindai nomor resi';
 
   @override
-  String get claimsCreateNameHint => 'Nama berkas';
+  String get claimsCreateNameHint => 'mis. Klaim retur 12/08';
+
+  @override
+  String get claimsCreateNameLabel => 'Nama berkas';
 
   @override
   String get claimInfoTitle => 'Detail berkas';

@@ -79,7 +79,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Digita o scansiona il codice di tracciamento';
 
   @override
-  String get claimsCreateNameHint => 'Nome del fascicolo';
+  String get claimsCreateNameHint => 'es. Reclamo reso 12/08';
+
+  @override
+  String get claimsCreateNameLabel => 'Nome del fascicolo';
 
   @override
   String get claimInfoTitle => 'Dettagli del fascicolo';

@@ -79,7 +79,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Saisissez ou scannez le numéro de suivi';
 
   @override
-  String get claimsCreateNameHint => 'Nom du dossier';
+  String get claimsCreateNameHint => 'ex. Réclamation retour 12/08';
+
+  @override
+  String get claimsCreateNameLabel => 'Nom du dossier';
 
   @override
   String get claimInfoTitle => 'Détails du dossier';

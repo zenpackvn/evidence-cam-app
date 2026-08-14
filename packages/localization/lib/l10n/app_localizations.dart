@@ -237,8 +237,14 @@ abstract class AppLocalizations {
   /// Placeholder for the claim dossier name field; prefilled with the first tracking code.
   ///
   /// In en, this message translates to:
-  /// **'Dossier name'**
+  /// **'e.g. Return claim 12/08'**
   String get claimsCreateNameHint;
+
+  /// No description provided for @claimsCreateNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier name'**
+  String get claimsCreateNameLabel;
 
   /// No description provided for @claimInfoTitle.
   ///

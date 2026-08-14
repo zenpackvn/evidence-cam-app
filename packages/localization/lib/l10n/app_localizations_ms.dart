@@ -77,7 +77,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get claimsCreateSearchHint => 'Taip atau imbas nombor penjejakan';
 
   @override
-  String get claimsCreateNameHint => 'Nama fail';
+  String get claimsCreateNameHint => 'cth. Tuntutan pemulangan 12/08';
+
+  @override
+  String get claimsCreateNameLabel => 'Nama fail';
 
   @override
   String get claimInfoTitle => 'Butiran fail';

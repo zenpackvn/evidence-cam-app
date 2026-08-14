@@ -740,11 +740,6 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
         _order
           ..remove(code)
           ..insert(0, code);
-        // Tên mặc định là mã ĐẦU TIÊN tra được. Người bán bấm tạo ngay thì hồ
-        // sơ đã có một cái tên phân biệt được với vụ khác, khỏi phải nghĩ ra
-        // tên giữa ca đóng hàng. Chỉ điền khi ô còn trống — gõ rồi mà lượt tra
-        // sau đè lên là mất chữ vừa gõ.
-        if (_title.text.trim().isEmpty) _title.text = code;
       }
     });
   }
@@ -782,8 +777,23 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
               ],
             ),
           ),
+          // Ô tên đứng ĐẦU TIÊN, trên cả ô tra mã, và LUÔN hiện — giống hệt
+          // bản web. Bản trước giấu nó xuống đáy và chỉ hiện sau khi đã tick
+          // được thứ gì: mở màn ra không thấy ô tên nào, nên người dùng không
+          // biết hồ sơ cần đặt tên cho tới lúc đã làm xong mọi việc khác.
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+            child: _ClaimNameField(
+              controller: _title,
+              label: l10n.claimsCreateNameLabel,
+              hint: l10n.claimsCreateNameHint,
+              // Gõ tới đâu bật/tắt nút tạo tới đó — thiếu `onChanged` thì xoá
+              // trắng ô mà nút vẫn sáng, và máy chủ mới là chỗ nói không.
+              onChanged: (_) => setState(() {}),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
             child: _SearchScanBar(
               controller: _search,
               hint: l10n.claimsCreateSearchHint,
@@ -800,34 +810,15 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Ô tên đứng NGAY TRÊN nút tạo chứ không ở đầu màn: lúc mới
-                    // mở màn chưa có gì để đặt tên, còn ở đây người bán vừa tick
-                    // xong và đang nhìn đúng những đơn sắp gộp lại.
-                    _ClaimNameField(
-                      controller: _title,
-                      hint: l10n.claimsCreateNameHint,
-                      // Gõ tới đâu bật/tắt nút tới đó — không có `onChanged`
-                      // thì xoá trắng ô mà nút vẫn sáng, bấm vào thì máy chủ
-                      // mới là chỗ nói không.
-                      onChanged: (_) => setState(() {}),
-                    ),
-                    const SizedBox(height: 10),
-                    // Tên hồ sơ BẮT BUỘC, đúng như web. Ô đã điền sẵn mã vận
-                    // đơn đầu tiên nên đường thường không ai chạm vào rào này;
-                    // nó chỉ chặn đúng trường hợp người dùng tự xoá trắng ô.
-                    // Chặn bằng cách TẮT nút chứ không báo lỗi sau khi bấm:
-                    // lỗi sau khi bấm là bắt người ta làm hai lần.
-                    _CreateClaimButton(
-                      count: _pickedCount,
-                      onTap: widget.onCreate == null || _title.text.trim().isEmpty
-                          ? null
-                          : () => widget.onCreate!(_batch, _title.text.trim()),
-                    ),
-                  ],
+                // Tên hồ sơ BẮT BUỘC: nút tắt khi ô tên trống. Chặn bằng
+                // cách TẮT nút chứ không báo lỗi sau khi bấm — lỗi sau khi bấm
+                // là bắt người ta làm hai lần.
+                child: _CreateClaimButton(
+                  count: _pickedCount,
+                  onTap:
+                      widget.onCreate == null || _title.text.trim().isEmpty
+                      ? null
+                      : () => widget.onCreate!(_batch, _title.text.trim()),
                 ),
               ),
             ),
@@ -1010,16 +1001,37 @@ class _OrderPickSection extends StatelessWidget {
 class _ClaimNameField extends StatelessWidget {
   const _ClaimNameField({
     required this.controller,
+    required this.label,
     required this.hint,
     this.onChanged,
   });
 
   final TextEditingController controller;
+  final String label;
   final String hint;
   final ValueChanged<String>? onChanged;
 
   @override
-  Widget build(BuildContext context) => PenBox(
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Dấu sao đỏ ngay cạnh nhãn: người dùng biết ô này bắt buộc TRƯỚC khi
+      // làm mọi việc khác, chứ không phát hiện ra lúc bấm nút tạo thì nút mờ.
+      Padding(
+        padding: const EdgeInsets.only(left: 2, bottom: 6),
+        child: Row(
+          children: [
+            PenText(label, size: 13, color: PenColors.mut),
+            const SizedBox(width: 4),
+            const PenText('*', size: 13, color: PenColors.danger),
+          ],
+        ),
+      ),
+      _field(),
+    ],
+  );
+
+  Widget _field() => PenBox(
     height: 52,
     fill: PenColors.card,
     stroke: PenColors.line,
