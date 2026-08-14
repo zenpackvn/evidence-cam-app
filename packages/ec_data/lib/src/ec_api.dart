@@ -253,7 +253,7 @@ class EcApi {
   // chờ tạm và người duy nhất thấy điều đó ngay là người đang quay.
 
   /// Cấu hình kho + bảng tình trạng, một lời gọi.
-  /// `storage == null` = shop đang dùng kho của hệ thống.
+  /// `storage == null` = shop đang dùng Cloud Zenpack.
   Future<StorageStateDto> getStorage(String shopId) =>
       _get('/api/shops/$shopId/storage', StorageStateDto.fromJson);
 

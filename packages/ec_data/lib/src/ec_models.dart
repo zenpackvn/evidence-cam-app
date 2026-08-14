@@ -916,7 +916,7 @@ class StorageStateDto {
     byosAllowed: (j['byos_allowed'] as bool?) ?? false,
   );
 
-  /// Null = đang dùng kho của hệ thống (mặc định).
+  /// Null = đang dùng Cloud Zenpack (mặc định).
   final StorageViewDto? storage;
   final StorageHealthDto health;
 

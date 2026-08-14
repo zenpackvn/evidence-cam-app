@@ -740,7 +740,7 @@ void main() {
       await tester.tap(find.text('Kho lưu trữ').last);
       await tester.pumpAndSettle();
 
-      expect(find.text('Kho của hệ thống'), findsOneWidget);
+      expect(find.text('Cloud Zenpack'), findsOneWidget);
       final readsBefore = repo.reads;
 
       // Người dùng sang trình duyệt cấp quyền — app xuống nền — rồi quay lại.
@@ -767,7 +767,7 @@ void main() {
 
       // Màn kho nay là BA thẻ lựa chọn luôn hiện cùng lúc, nên "thẻ Drive có
       // mặt" và "thẻ hệ thống biến mất" đều không còn nói lên điều gì — hai
-      // khẳng định cũ ('Google Drive của bạn' / 'Kho của hệ thống' biến mất) mô
+      // khẳng định cũ ('Google Drive của bạn' / 'Cloud Zenpack' biến mất) mô
       // tả một màn không còn tồn tại. Chuỗi `storageDriveName` chúng bám vào
       // giờ là chuỗi mồ côi, không mã nào dùng.
       //
@@ -780,7 +780,7 @@ void main() {
         ),
       );
       expect(selectedCardWith('Google Drive'), findsOneWidget);
-      expect(selectedCardWith('Kho của hệ thống'), findsNothing);
+      expect(selectedCardWith('Cloud Zenpack'), findsNothing);
     },
   );
 

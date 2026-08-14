@@ -2016,7 +2016,7 @@ class EcShopDetailScreen extends StatelessWidget {
   /// của chủ shop, chỉ ĐỔI kho mới là.
   final VoidCallback? onTapStorage;
 
-  /// Dòng tóm tắt kho đang dùng ("Kho của hệ thống", "Kho riêng của bạn"…).
+  /// Dòng tóm tắt kho đang dùng ("Cloud Zenpack", "Kho riêng của bạn"…).
   final String storageLabel;
 
   final VoidCallback? onDeleteShop;

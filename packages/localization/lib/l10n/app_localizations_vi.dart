@@ -1951,7 +1951,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get storageTitle => 'Kho lưu trữ';
 
   @override
-  String get storageSystemName => 'Kho của hệ thống';
+  String get storageSystemName => 'Cloud Zenpack';
 
   @override
   String get storageS3Name => 'Kho riêng của bạn (S3)';

@@ -1046,7 +1046,7 @@
   },
   "quotaStrandedNote": "Những video này chỉ tồn tại trên điện thoại. Mất máy, gỡ app hoặc xoá dữ liệu app là mất luôn.",
   "storageTitle": "Kho lưu trữ",
-  "storageSystemName": "Kho của hệ thống",
+  "storageSystemName": "Cloud Zenpack",
   "storageS3Name": "Kho riêng của bạn (S3)",
   "storageDriveName": "Google Drive của bạn",
   "storageSystemDesc": "Mặc định, không phải cấu hình gì. Đây là nơi duy nhất hệ thống bảo đảm được đầy đủ mọi cam kết về bằng chứng.",
