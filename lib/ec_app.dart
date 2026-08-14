@@ -6008,141 +6008,102 @@ void _copyClaimSummary(BuildContext context, EcClaimDossier dossier) {
 
 /// Lớp con: nội dung một hồ sơ — từng mã vận đơn và bằng chứng của nó, cộng
 /// một hàng đính kèm ảnh dưới mỗi mã đơn.
-class _ClaimDetailRoute extends StatelessWidget {
+/// Lớp con: hồ sơ khiếu nại — MỘT KHỐI THÔNG TIN và MỘT CÁI LINK.
+///
+/// Giống hệt bản web: đọc để đối chiếu, sao chép link để gửi, thu hồi khi không
+/// muốn ai xem nữa. KHÔNG có đường sửa nào — bản trước dựng cả dòng thời gian
+/// bằng chứng kèm nút gỡ từng cái, tức là vẫn sửa được một hồ sơ đã phát đi cho
+/// sàn. Hồ sơ sửa được là hồ sơ không đối chứng được.
+///
+/// Muốn xem clip thì vào chi tiết đơn, nơi việc đó thuộc về.
+class _ClaimDetailRoute extends StatefulWidget {
   const _ClaimDetailRoute({
     required this.repo,
     required this.shopId,
     required this.dossierId,
-    required this.queue,
-    this.budget,
     this.onBack,
-    this.videoPlayer,
-    this.downloader,
-    this.share,
-    this.gallery,
   });
 
   final EcRepository repo;
   final String shopId;
   final String dossierId;
-  final EcUploadQueue queue;
-  final ClipBudget? budget;
   final VoidCallback? onBack;
 
-  /// Để mở, phát và tải một bằng chứng ngay trong hồ sơ. Thiếu cái nào thì
-  /// hàng tương ứng tự ẩn, không dựng nút bấm vào không chạy.
-  final VideoPlayerService? videoPlayer;
-  final Dio? downloader;
-  final ShareService? share;
-  final GallerySaveService? gallery;
+  @override
+  State<_ClaimDetailRoute> createState() => _ClaimDetailRouteState();
+}
 
-  /// Mở chi tiết một bằng chứng ngay trong hồ sơ, dùng ĐÚNG sheet của màn Vận
-  /// đơn để hai nơi nhìn giống nhau.
+class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
+  ClaimDetailDto? _detail;
+  bool _loading = true;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  /// Khối thông tin lấy từ MÁY CHỦ, không dựng từ bản trên máy.
   ///
-  /// Ba hàng bị tắt, và mỗi hàng một lý do khác nhau:
-  /// - **Người quay**: hồ sơ là thứ đem đi làm việc với sàn, ai trong shop bấm
-  ///   nút quay không phải chuyện của bên nhận.
-  /// - **Cắt đoạn ngắn** và **Xoá video**: hồ sơ chỉ TRỎ tới bằng chứng của
-  ///   đơn. Cắt ở đây đẻ ra một tệp không thuộc hồ sơ nào, còn xoá thì phá
-  ///   bằng chứng gốc của đơn — cả hai đều thuộc màn Vận đơn.
-  ///
-  /// Thời lượng và thiết bị KHÔNG có trong hồ sơ — hồ sơ chỉ giữ nhãn, giờ,
-  /// link và ảnh thu nhỏ. Nên đọc thẳng chi tiết đơn theo `orderId` để lấy đủ.
-  /// Đọc hỏng, hoặc hồ sơ cũ chưa lưu `orderId`, thì rơi về những gì hồ sơ có
-  /// và hai dòng đó ghi `—`: để trống vẫn hơn bịa ra một giá trị.
-  Future<void> _openClaimEvidence(
-    BuildContext context,
-    EcClaimDossier dossier,
-    String tracking,
-    String evidenceId,
-  ) async {
-    final order = dossier.orders
-        .where((o) => o.tracking == tracking)
-        .firstOrNull;
-    final item = order?.evidence.where((e) => e.id == evidenceId).firstOrNull;
-    if (item == null) return;
+  /// Bản trên máy không có tên shop, tên sàn, hay số đếm bằng chứng của cả hồ
+  /// sơ — và quan trọng hơn, nó không biết hồ sơ đã bị thu hồi hay chưa. Dựng
+  /// từ nó thì màn hình nói một đằng còn cái link nói một nẻo.
+  Future<void> _load() async {
+    final claimId = _claimStore.byId(widget.shopId, widget.dossierId)?.claimId;
+    if (claimId == null || claimId.isEmpty) {
+      // Hồ sơ tạo lúc mất mạng: có trên máy, chưa có trên máy chủ. Không phải
+      // lỗi — nói thẳng là chưa có link thay vì dựng màn hỏng.
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    try {
+      final detail = await widget.repo.claimDetail(widget.shopId, claimId);
+      if (mounted) setState(() => (_detail = detail, _loading = false));
+    } on Object {
+      if (mounted) setState(() => (_failed = true, _loading = false));
+    }
+  }
+
+  Future<void> _revoke(BuildContext context) async {
     final l10n = context.l10n;
-    final url = item.url;
-
-    EvidenceDto? full;
-    final orderId = order?.orderId;
-    if (orderId != null && orderId.isNotEmpty) {
-      try {
-        final detail = await repo.order(shopId, orderId);
-        full = detail.evidence.where((e) => e.id == evidenceId).firstOrNull;
-      } on Object catch (error, stack) {
-        developer.log(
-          'claims: không đọc được chi tiết bằng chứng (${error.runtimeType})',
-          name: 'zenpack.claims',
-          level: 900,
-          error: error,
-          stackTrace: stack,
-        );
-      }
-    }
-    // Hồ sơ bằng chứng chỉ có `created_by_uid`, không có tên. Tra danh sách
-    // thành viên để đổi uid thành tên người — hỏng thì rơi về chuỗi mặc định,
-    // vì một cái uid dài loằng ngoằng còn khó hiểu hơn là không nói tên.
-    var recordedBy = item.addedBy ?? l10n.recordedByFallback;
-    final uid = item.addedBy != null ? null : full?.createdByUid;
-    if (uid != null && uid.isNotEmpty) {
-      try {
-        final members = await repo.members(shopId);
-        final hit = members.where((m) => m.accountUid == uid).firstOrNull;
-        final name = hit?.name ?? hit?.email;
-        if (name != null && name.isNotEmpty) recordedBy = name;
-      } on Object {
-        // Đọc thành viên hỏng chỉ mất cái tên, không chặn mở chi tiết.
-      }
-    }
-    if (!context.mounted) return;
-
-    final captured = full == null
-        ? null
-        : DateTime.fromMillisecondsSinceEpoch(full.capturedAt);
-    // Mở ĐÚNG sheet chi tiết của màn Vận đơn qua route `/video`, không dựng
-    // bản rút gọn riêng: bản riêng luôn thiếu hàng (cắt đoạn, xoá, tải về) và
-    // mỗi lần phát hiện thiếu lại phải vá thêm. Hồ sơ có sẵn `orderId` và
-    // `evidenceId` nên đủ dữ liệu cho mọi hành động của sheet đó.
-    final detail = ValueNotifier<EcVideoDetail?>(
-      EcVideoDetail(
-        title: item.label,
-        capturedAtMs: full?.capturedAt,
-        durationSeconds: full?.durationSeconds,
-        duration: _durationLabel(full?.durationSeconds),
-        recordedAt: captured == null
-            ? item.time
-            : '${_dateLabel(captured)}  ${_hhmm(captured)}',
-        recordedBy: recordedBy,
-        device: full?.device ?? l10n.deviceUnknown,
-        uploadStatus: l10n.uploaded,
-        seal: full == null || item.isPhoto ? null : _sealLine(l10n, full),
-        tracking: tracking,
-        mediaUrl: url ?? full?.url,
-        type: item.isPhoto ? EcEvidenceType.image : EcEvidenceType.video,
+    final claimId = _detail?.claim.id;
+    if (claimId == null || claimId.isEmpty) return;
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(l10n.claimRevokeConfirmTitle),
+        content: Text(l10n.claimRevokeConfirmBody),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.claimRevoke),
+          ),
+        ],
       ),
     );
-    unawaited(
-      GoRouter.of(context).push(
-        '/video',
-        extra: _VideoRouteExtra(
-          video: detail,
-          shopId: shopId,
-          orderId: order?.orderId ?? '',
-          evidenceId: evidenceId,
-          tracking: tracking,
-          canDelete: false,
-          fromClaim: true,
-        ),
-      ),
-    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await widget.repo.revokeClaim(widget.shopId, claimId);
+    } on Object {
+      if (mounted) _toast(context, l10n.claimRevokeFailed);
+      return;
+    }
+    if (!mounted) return;
+    _toast(context, l10n.claimRevoked);
+    await _load();
   }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: _claimStore,
     builder: (context, _) {
-      final dossier = _claimStore.byId(shopId, dossierId);
+      final dossier = _claimStore.byId(widget.shopId, widget.dossierId);
       // Hồ sơ vừa bị xoá ở màn này: khung rỗng chỉ tồn tại một nhịp trước khi
       // `onBack` đưa đi, nên không dựng màn báo lỗi cho nó.
       if (dossier == null) {
@@ -6151,53 +6112,78 @@ class _ClaimDetailRoute extends StatelessWidget {
           child: SizedBox.shrink(),
         );
       }
-      // Dùng CHÍNH màn dòng thời gian của mã vận đơn, không dựng bản sao.
-      //
-      // Bản trước chép lại hình dạng của hàng sang màn khiếu nại, nên nó giống
-      // mà không bằng: thiếu huy hiệu trạng thái, thiếu menu ⋮, giờ và ảnh lệch
-      // nhau — và mỗi lần phát hiện một chỗ lệch lại phải vá thêm một miếng.
-      // Dùng chung widget thì về sau sửa màn Vận đơn là màn này đổi theo.
-      //
-      // Những việc không thuộc về hồ sơ (đính kèm ảnh, gộp link, thử lại
-      // upload) truyền `null` — màn đó tự ẩn hàng khi callback rỗng.
-      final days = <EcTimelineDay>[];
-      for (final order in dossier.orders) {
-        days.add(
-          EcTimelineDay(
-            date: order.tracking,
-            videos: [
-              for (final e in order.evidence)
-                EcTimelineVideo(
-                  id: e.id,
-                  time: e.time,
-                  label: e.label,
-                  type: e.isPhoto ? EcEvidenceType.image : EcEvidenceType.video,
-                  thumbUrl: e.thumbUrl ?? e.url,
-                  mediaUrl: e.url,
-                  capturedAtMs: e.capturedAt,
-                ),
-            ],
-          ),
+      final l10n = context.l10n;
+      if (_loading) {
+        return const CupertinoPageScaffold(
+          backgroundColor: BrandColors.bg,
+          child: Center(child: CupertinoActivityIndicator()),
         );
       }
-      return EcOrderTimelineScreen(
-        orderCode:
-            '${_dayLabelOf(dossier.createdAt)}  '
-            '${_hhmm(dossier.createdAt)}',
-        days: days,
-        onBack: onBack,
-        onCopyCode: () => _copyClaimSummary(context, dossier),
-        onVideoTap: (video) => unawaited(
-          _openClaimEvidence(
-            context,
-            dossier,
-            _trackingOf(dossier, video.id) ?? '',
-            video.id ?? '',
-          ),
-        ),
+
+      final detail = _detail;
+      // Chưa đọc được từ máy chủ (mất mạng, hoặc hồ sơ chỉ có trên máy): vẫn mở
+      // được bằng dữ liệu địa phương, nhưng nói rõ vì sao chưa có link. Bắt
+      // người dùng nhìn màn trắng vì mạng chập là phạt họ vì lỗi của mạng.
+      final trackings = detail == null
+          ? [for (final o in dossier.orders) o.tracking]
+          : [for (final o in detail.orders) o.tracking];
+      final videos =
+          detail?.videos ??
+          dossier.orders.fold<int>(
+            0,
+            (n, o) => n + o.evidence.where((e) => !e.isPhoto).length,
+          );
+      final photos =
+          detail?.photos ??
+          dossier.orders.fold<int>(
+            0,
+            (n, o) => n + o.evidence.where((e) => e.isPhoto).length,
+          );
+      final createdAt = detail == null
+          ? dossier.createdAt
+          : DateTime.fromMillisecondsSinceEpoch(detail.claim.createdAt);
+
+      return EcClaimDetailScreen(
+        title: detail?.claim.title ?? '',
+        shopName: detail?.shopName ?? '',
+        channel: detail == null
+            ? ''
+            : _platformDisplayName(detail.platform),
+        trackings: trackings,
+        orderDateLabel: detail == null
+            ? ''
+            : _claimOrderDateLabel(detail.orders),
+        videos: videos,
+        photos: photos,
+        createdAtLabel: '${_dateLabel(createdAt)}  ${_hhmm(createdAt)}',
+        url: detail?.url ?? '',
+        // Chưa lên máy chủ và đọc hỏng đều KHÔNG được hiện nút chép/thu hồi:
+        // một nút bấm vào không chạy còn tệ hơn không có nút.
+        revoked: detail == null ? true : detail.claim.revoked,
+        onBack: widget.onBack,
+        onCopy: detail == null
+            ? null
+            : () {
+                Clipboard.setData(ClipboardData(text: detail.url));
+                _toast(context, l10n.claimsLinkCopied);
+              },
+        onRevoke: detail == null || detail.claim.revoked
+            ? null
+            : () => unawaited(_revoke(context)),
       );
     },
   );
+}
+
+/// Một mốc khi hồ sơ có đúng một đơn, một KHOẢNG khi nhiều đơn — nhiều đơn mà
+/// chỉ hiện một mốc thì con số đó không nói được gì.
+String _claimOrderDateLabel(List<ClaimOrderRefDto> orders) {
+  if (orders.isEmpty) return '';
+  DateTime at(int ms) => DateTime.fromMillisecondsSinceEpoch(ms);
+  final first = at(orders.first.createdAt);
+  if (orders.length == 1) return '${_dateLabel(first)}  ${_hhmm(first)}';
+  final last = at(orders.last.createdAt);
+  return '${_dateLabel(first)} → ${_dateLabel(last)}';
 }
 
 String _kindLabel(AppLocalizations l10n, String kind) =>
@@ -7722,8 +7708,6 @@ GoRouter _buildRouter(
             repo: repo,
             shopId: shopId,
             dossierId: dossierId,
-            queue: queue,
-            budget: _selected(selectedShop)?.clipBudget,
             onBack: () => _back(c, '/claims'),
           );
         },

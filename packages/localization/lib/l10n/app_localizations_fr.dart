@@ -82,6 +82,74 @@ class AppLocalizationsFr extends AppLocalizations {
   String get claimsCreateNameHint => 'Nom du dossier';
 
   @override
+  String get claimInfoTitle => 'Détails du dossier';
+
+  @override
+  String get claimTrackingLabel => 'Numéro de suivi';
+
+  @override
+  String get claimShopLabel => 'Boutique';
+
+  @override
+  String get claimChannelLabel => 'Canal de vente';
+
+  @override
+  String get claimOrderCreatedAt => 'Date de commande';
+
+  @override
+  String get claimEvidenceLabel => 'Preuves';
+
+  @override
+  String claimEvidenceCount(int videos, int photos) {
+    return '$videos vidéos · $photos photos';
+  }
+
+  @override
+  String get claimCreatedAtLabel => 'Dossier créé';
+
+  @override
+  String get claimLinkLabel => 'Lien du dossier';
+
+  @override
+  String get claimLinkHint =>
+      'Toute personne disposant du lien peut le consulter, sans connexion. Il reste actif jusqu’à révocation.';
+
+  @override
+  String get claimRevokedBadge => 'Révoqué';
+
+  @override
+  String get claimRevokedHint =>
+      'Le lien est mort. Les données sont intactes — créez un nouveau dossier pour le partager à nouveau.';
+
+  @override
+  String get claimRevoke => 'Révoquer';
+
+  @override
+  String get claimUntitled => 'Dossier sans titre';
+
+  @override
+  String get claimRevokeConfirmTitle => 'Révoquer ce dossier ?';
+
+  @override
+  String get claimRevokeConfirmBody =>
+      'Le lien meurt immédiatement pour quiconque le détient, y compris la marketplace. Les données et les liens par commande ne sont pas affectés.';
+
+  @override
+  String get claimRevoked => 'Dossier révoqué. Le lien ne s’ouvre plus.';
+
+  @override
+  String get claimRevokeFailed =>
+      'Révocation impossible. Réessayez une fois en ligne.';
+
+  @override
+  String get claimNotUploaded =>
+      'Ce dossier n’a pas encore été envoyé, il n’a donc pas de lien. Rouvrez-le une fois en ligne.';
+
+  @override
+  String get claimDetailLoadFailed =>
+      'Impossible de charger le dossier. Vérifiez la connexion et rouvrez-le.';
+
+  @override
   String get claimsCreateStart =>
       'Saisissez le numéro de suivi, ou appuyez sur scanner, pour trouver la commande concernée.';
 

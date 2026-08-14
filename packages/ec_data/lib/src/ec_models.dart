@@ -986,6 +986,71 @@ class ShopDeletionPreviewDto {
 }
 
 /// Hồ sơ khiếu nại gộp nhiều đơn, theo bản của máy chủ.
+/// Một mã vận đơn trong hồ sơ, kèm mốc tạo đơn để xếp theo thời gian.
+class ClaimOrderRefDto {
+  const ClaimOrderRefDto({
+    required this.orderId,
+    required this.tracking,
+    required this.createdAt,
+  });
+
+  factory ClaimOrderRefDto.fromJson(Map<String, dynamic> j) =>
+      ClaimOrderRefDto(
+        orderId: (j['order_id'] as String?) ?? '',
+        tracking: (j['tracking_raw'] as String?) ?? '',
+        createdAt: _int(j['created_at']),
+      );
+
+  final String orderId;
+  final String tracking;
+  final int createdAt;
+}
+
+/// Hồ sơ nhìn từ phía người quản lý: MỘT KHỐI THÔNG TIN, không phải thư viện
+/// video.
+///
+/// Máy chủ cố ý không ký link cho từng clip ở tuyến này (services/claims.ts) —
+/// muốn xem video thì vào chi tiết đơn. Nên DTO này cũng chỉ mang thứ khối
+/// thông tin cần: mã vận đơn, cửa hàng, sàn, ngày tháng, và số đếm bằng chứng.
+class ClaimDetailDto {
+  const ClaimDetailDto({
+    required this.claim,
+    required this.url,
+    required this.shopName,
+    required this.platform,
+    required this.orders,
+    required this.videos,
+    required this.photos,
+  });
+
+  factory ClaimDetailDto.fromJson(Map<String, dynamic> j) {
+    final shop = (j['shop'] as Map<String, dynamic>?) ?? const {};
+    final evidence = (j['evidence'] as Map<String, dynamic>?) ?? const {};
+    return ClaimDetailDto(
+      claim: ClaimDto.fromJson((j['claim'] as Map<String, dynamic>?) ?? const {}),
+      url: (j['url'] as String?) ?? '',
+      shopName: (shop['name'] as String?) ?? '',
+      platform: (shop['platform'] as String?) ?? '',
+      orders: [
+        for (final o in (j['orders'] as List<dynamic>? ?? const []))
+          ClaimOrderRefDto.fromJson(o as Map<String, dynamic>),
+      ],
+      videos: _int(evidence['videos']),
+      photos: _int(evidence['photos']),
+    );
+  }
+
+  final ClaimDto claim;
+  final String url;
+  final String shopName;
+  final String platform;
+
+  /// Xếp theo thời điểm tạo đơn, cũ trước — đúng thứ tự máy chủ trả.
+  final List<ClaimOrderRefDto> orders;
+  final int videos;
+  final int photos;
+}
+
 class ClaimDto {
   const ClaimDto({
     required this.id,

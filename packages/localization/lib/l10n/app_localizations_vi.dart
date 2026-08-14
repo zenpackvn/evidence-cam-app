@@ -80,6 +80,73 @@ class AppLocalizationsVi extends AppLocalizations {
   String get claimsCreateNameHint => 'Tên hồ sơ';
 
   @override
+  String get claimInfoTitle => 'Thông tin hồ sơ';
+
+  @override
+  String get claimTrackingLabel => 'Mã vận đơn';
+
+  @override
+  String get claimShopLabel => 'Shop';
+
+  @override
+  String get claimChannelLabel => 'Kênh bán';
+
+  @override
+  String get claimOrderCreatedAt => 'Ngày tạo đơn';
+
+  @override
+  String get claimEvidenceLabel => 'Bằng chứng';
+
+  @override
+  String claimEvidenceCount(int videos, int photos) {
+    return '$videos video · $photos ảnh';
+  }
+
+  @override
+  String get claimCreatedAtLabel => 'Ngày tạo hồ sơ';
+
+  @override
+  String get claimLinkLabel => 'Link hồ sơ khiếu nại';
+
+  @override
+  String get claimLinkHint =>
+      'Ai có link đều xem được, không cần đăng nhập. Link sống mãi tới khi bạn thu hồi.';
+
+  @override
+  String get claimRevokedBadge => 'Đã thu hồi';
+
+  @override
+  String get claimRevokedHint =>
+      'Link đã chết. Dữ liệu vẫn còn nguyên — muốn gửi lại thì tạo hồ sơ mới.';
+
+  @override
+  String get claimRevoke => 'Thu hồi';
+
+  @override
+  String get claimUntitled => 'Hồ sơ không đặt tên';
+
+  @override
+  String get claimRevokeConfirmTitle => 'Thu hồi hồ sơ này?';
+
+  @override
+  String get claimRevokeConfirmBody =>
+      'Link chết ngay với bất kỳ ai đang giữ, kể cả sàn. Dữ liệu và link theo từng đơn không bị ảnh hưởng.';
+
+  @override
+  String get claimRevoked => 'Đã thu hồi hồ sơ. Link không mở được nữa.';
+
+  @override
+  String get claimRevokeFailed => 'Chưa thu hồi được. Thử lại khi có mạng.';
+
+  @override
+  String get claimNotUploaded =>
+      'Hồ sơ này chưa gửi lên được nên chưa có link. Mở lại khi có mạng.';
+
+  @override
+  String get claimDetailLoadFailed =>
+      'Chưa đọc được hồ sơ. Kiểm tra mạng rồi mở lại.';
+
+  @override
   String get claimsCreateStart =>
       'Nhập mã vận đơn hoặc bấm quét để tìm đơn cần khiếu nại.';
 

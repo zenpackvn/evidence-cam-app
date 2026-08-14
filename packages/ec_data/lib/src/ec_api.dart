@@ -215,6 +215,15 @@ class EcApi {
       _getList('/api/shops/$shopId/claims', ClaimDto.fromJson);
 
   /// Thu hồi: link chết ngay, dữ liệu còn nguyên. Chủ shop hoặc quản lý.
+  /// Khối thông tin của một hồ sơ. KHÔNG mang link từng clip — máy chủ cố ý
+  /// không ký, xem [ClaimDetailDto].
+  Future<ClaimDetailDto> claimDetail(String shopId, String claimId) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/api/shops/$shopId/claims/$claimId',
+    );
+    return ClaimDetailDto.fromJson(res.data!);
+  }
+
   Future<void> revokeClaim(String shopId, String claimId) =>
       _dio.delete<void>('/api/shops/$shopId/claims/$claimId');
 

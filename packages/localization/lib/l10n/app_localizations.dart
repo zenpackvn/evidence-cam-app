@@ -240,6 +240,126 @@ abstract class AppLocalizations {
   /// **'Dossier name'**
   String get claimsCreateNameHint;
 
+  /// No description provided for @claimInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier details'**
+  String get claimInfoTitle;
+
+  /// No description provided for @claimTrackingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracking code'**
+  String get claimTrackingLabel;
+
+  /// No description provided for @claimShopLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop'**
+  String get claimShopLabel;
+
+  /// No description provided for @claimChannelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel'**
+  String get claimChannelLabel;
+
+  /// No description provided for @claimOrderCreatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Order date'**
+  String get claimOrderCreatedAt;
+
+  /// No description provided for @claimEvidenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence'**
+  String get claimEvidenceLabel;
+
+  /// No description provided for @claimEvidenceCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{videos} videos · {photos} photos'**
+  String claimEvidenceCount(int videos, int photos);
+
+  /// No description provided for @claimCreatedAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier created'**
+  String get claimCreatedAtLabel;
+
+  /// No description provided for @claimLinkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier link'**
+  String get claimLinkLabel;
+
+  /// No description provided for @claimLinkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone with the link can view it, no sign-in needed. It stays live until you revoke it.'**
+  String get claimLinkHint;
+
+  /// No description provided for @claimRevokedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoked'**
+  String get claimRevokedBadge;
+
+  /// No description provided for @claimRevokedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The link is dead. The data is untouched — create a new dossier to share again.'**
+  String get claimRevokedHint;
+
+  /// No description provided for @claimRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get claimRevoke;
+
+  /// No description provided for @claimUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled dossier'**
+  String get claimUntitled;
+
+  /// No description provided for @claimRevokeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke this dossier?'**
+  String get claimRevokeConfirmTitle;
+
+  /// No description provided for @claimRevokeConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The link dies immediately for anyone holding it, including the marketplace. The data and per-order links are unaffected.'**
+  String get claimRevokeConfirmBody;
+
+  /// No description provided for @claimRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier revoked. The link no longer opens.'**
+  String get claimRevoked;
+
+  /// No description provided for @claimRevokeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not revoke. Try again when you are online.'**
+  String get claimRevokeFailed;
+
+  /// No description provided for @claimNotUploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'This dossier has not been uploaded yet, so it has no link. Reopen it when you are online.'**
+  String get claimNotUploaded;
+
+  /// No description provided for @claimDetailLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the dossier. Check your connection and reopen it.'**
+  String get claimDetailLoadFailed;
+
   /// No description provided for @claimsCreateStart.
   ///
   /// In en, this message translates to:

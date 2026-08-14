@@ -80,6 +80,73 @@ class AppLocalizationsId extends AppLocalizations {
   String get claimsCreateNameHint => 'Nama berkas';
 
   @override
+  String get claimInfoTitle => 'Detail berkas';
+
+  @override
+  String get claimTrackingLabel => 'Kode resi';
+
+  @override
+  String get claimShopLabel => 'Toko';
+
+  @override
+  String get claimChannelLabel => 'Kanal penjualan';
+
+  @override
+  String get claimOrderCreatedAt => 'Tanggal pesanan';
+
+  @override
+  String get claimEvidenceLabel => 'Bukti';
+
+  @override
+  String claimEvidenceCount(int videos, int photos) {
+    return '$videos video · $photos foto';
+  }
+
+  @override
+  String get claimCreatedAtLabel => 'Berkas dibuat';
+
+  @override
+  String get claimLinkLabel => 'Tautan berkas';
+
+  @override
+  String get claimLinkHint =>
+      'Siapa pun yang punya tautan bisa melihatnya, tanpa masuk. Tetap aktif sampai Anda mencabutnya.';
+
+  @override
+  String get claimRevokedBadge => 'Dicabut';
+
+  @override
+  String get claimRevokedHint =>
+      'Tautan sudah mati. Datanya utuh — buat berkas baru untuk membagikannya lagi.';
+
+  @override
+  String get claimRevoke => 'Cabut';
+
+  @override
+  String get claimUntitled => 'Berkas tanpa nama';
+
+  @override
+  String get claimRevokeConfirmTitle => 'Cabut berkas ini?';
+
+  @override
+  String get claimRevokeConfirmBody =>
+      'Tautan langsung mati bagi siapa pun yang memegangnya, termasuk marketplace. Data dan tautan per pesanan tidak terpengaruh.';
+
+  @override
+  String get claimRevoked => 'Berkas dicabut. Tautan tidak dapat dibuka lagi.';
+
+  @override
+  String get claimRevokeFailed => 'Gagal mencabut. Coba lagi saat online.';
+
+  @override
+  String get claimNotUploaded =>
+      'Berkas ini belum terunggah sehingga belum ada tautan. Buka lagi saat online.';
+
+  @override
+  String get claimDetailLoadFailed =>
+      'Gagal memuat berkas. Periksa koneksi lalu buka lagi.';
+
+  @override
   String get claimsCreateStart =>
       'Ketik nomor resi, atau ketuk pindai, untuk menemukan pesanan yang diklaim.';
 

@@ -79,6 +79,73 @@ class AppLocalizationsTh extends AppLocalizations {
   String get claimsCreateNameHint => 'ชื่อแฟ้มเรื่อง';
 
   @override
+  String get claimInfoTitle => 'รายละเอียดแฟ้มเรื่อง';
+
+  @override
+  String get claimTrackingLabel => 'รหัสพัสดุ';
+
+  @override
+  String get claimShopLabel => 'ร้านค้า';
+
+  @override
+  String get claimChannelLabel => 'ช่องทางขาย';
+
+  @override
+  String get claimOrderCreatedAt => 'วันที่สั่งซื้อ';
+
+  @override
+  String get claimEvidenceLabel => 'หลักฐาน';
+
+  @override
+  String claimEvidenceCount(int videos, int photos) {
+    return '$videos วิดีโอ · $photos รูป';
+  }
+
+  @override
+  String get claimCreatedAtLabel => 'วันที่สร้างแฟ้ม';
+
+  @override
+  String get claimLinkLabel => 'ลิงก์แฟ้มเรื่อง';
+
+  @override
+  String get claimLinkHint =>
+      'ใครก็ตามที่มีลิงก์สามารถดูได้โดยไม่ต้องเข้าสู่ระบบ ลิงก์จะใช้ได้จนกว่าคุณจะเพิกถอน';
+
+  @override
+  String get claimRevokedBadge => 'เพิกถอนแล้ว';
+
+  @override
+  String get claimRevokedHint =>
+      'ลิงก์ใช้ไม่ได้แล้ว ข้อมูลยังอยู่ครบ — สร้างแฟ้มใหม่หากต้องการส่งอีกครั้ง';
+
+  @override
+  String get claimRevoke => 'เพิกถอน';
+
+  @override
+  String get claimUntitled => 'แฟ้มที่ไม่มีชื่อ';
+
+  @override
+  String get claimRevokeConfirmTitle => 'เพิกถอนแฟ้มนี้หรือไม่?';
+
+  @override
+  String get claimRevokeConfirmBody =>
+      'ลิงก์จะใช้ไม่ได้ทันทีสำหรับทุกคนที่ถืออยู่ รวมถึงแพลตฟอร์ม ข้อมูลและลิงก์รายคำสั่งซื้อไม่ได้รับผลกระทบ';
+
+  @override
+  String get claimRevoked => 'เพิกถอนแฟ้มแล้ว ลิงก์เปิดไม่ได้อีกต่อไป';
+
+  @override
+  String get claimRevokeFailed => 'เพิกถอนไม่สำเร็จ ลองใหม่เมื่อออนไลน์';
+
+  @override
+  String get claimNotUploaded =>
+      'แฟ้มนี้ยังไม่ได้อัปโหลดจึงยังไม่มีลิงก์ เปิดใหม่เมื่อออนไลน์';
+
+  @override
+  String get claimDetailLoadFailed =>
+      'โหลดแฟ้มไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วเปิดใหม่';
+
+  @override
   String get claimsCreateStart =>
       'พิมพ์เลขพัสดุ หรือแตะสแกน เพื่อค้นหาออเดอร์ที่จะเคลม';
 

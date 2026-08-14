@@ -82,6 +82,74 @@ class AppLocalizationsEs extends AppLocalizations {
   String get claimsCreateNameHint => 'Nombre del expediente';
 
   @override
+  String get claimInfoTitle => 'Datos del expediente';
+
+  @override
+  String get claimTrackingLabel => 'Código de seguimiento';
+
+  @override
+  String get claimShopLabel => 'Tienda';
+
+  @override
+  String get claimChannelLabel => 'Canal de venta';
+
+  @override
+  String get claimOrderCreatedAt => 'Fecha del pedido';
+
+  @override
+  String get claimEvidenceLabel => 'Pruebas';
+
+  @override
+  String claimEvidenceCount(int videos, int photos) {
+    return '$videos vídeos · $photos fotos';
+  }
+
+  @override
+  String get claimCreatedAtLabel => 'Expediente creado';
+
+  @override
+  String get claimLinkLabel => 'Enlace del expediente';
+
+  @override
+  String get claimLinkHint =>
+      'Cualquiera con el enlace puede verlo, sin iniciar sesión. Sigue activo hasta que lo revoques.';
+
+  @override
+  String get claimRevokedBadge => 'Revocado';
+
+  @override
+  String get claimRevokedHint =>
+      'El enlace está muerto. Los datos siguen intactos: crea un expediente nuevo para volver a compartir.';
+
+  @override
+  String get claimRevoke => 'Revocar';
+
+  @override
+  String get claimUntitled => 'Expediente sin título';
+
+  @override
+  String get claimRevokeConfirmTitle => '¿Revocar este expediente?';
+
+  @override
+  String get claimRevokeConfirmBody =>
+      'El enlace muere de inmediato para cualquiera que lo tenga, incluido el marketplace. Los datos y los enlaces por pedido no se ven afectados.';
+
+  @override
+  String get claimRevoked => 'Expediente revocado. El enlace ya no abre.';
+
+  @override
+  String get claimRevokeFailed =>
+      'No se pudo revocar. Inténtalo de nuevo cuando tengas conexión.';
+
+  @override
+  String get claimNotUploaded =>
+      'Este expediente aún no se ha subido, por lo que no tiene enlace. Vuelve a abrirlo cuando tengas conexión.';
+
+  @override
+  String get claimDetailLoadFailed =>
+      'No se pudo cargar el expediente. Comprueba la conexión y vuelve a abrirlo.';
+
+  @override
   String get claimsCreateStart =>
       'Escribe el número de seguimiento, o toca escanear, para encontrar el pedido de la reclamación.';
 

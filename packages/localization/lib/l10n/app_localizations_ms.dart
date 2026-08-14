@@ -80,6 +80,74 @@ class AppLocalizationsMs extends AppLocalizations {
   String get claimsCreateNameHint => 'Nama fail';
 
   @override
+  String get claimInfoTitle => 'Butiran fail';
+
+  @override
+  String get claimTrackingLabel => 'Kod penjejakan';
+
+  @override
+  String get claimShopLabel => 'Kedai';
+
+  @override
+  String get claimChannelLabel => 'Saluran jualan';
+
+  @override
+  String get claimOrderCreatedAt => 'Tarikh pesanan';
+
+  @override
+  String get claimEvidenceLabel => 'Bukti';
+
+  @override
+  String claimEvidenceCount(int videos, int photos) {
+    return '$videos video · $photos foto';
+  }
+
+  @override
+  String get claimCreatedAtLabel => 'Fail dicipta';
+
+  @override
+  String get claimLinkLabel => 'Pautan fail';
+
+  @override
+  String get claimLinkHint =>
+      'Sesiapa yang ada pautan boleh melihatnya, tanpa log masuk. Ia kekal aktif sehingga anda batalkan.';
+
+  @override
+  String get claimRevokedBadge => 'Dibatalkan';
+
+  @override
+  String get claimRevokedHint =>
+      'Pautan sudah mati. Data kekal utuh — cipta fail baharu untuk berkongsi semula.';
+
+  @override
+  String get claimRevoke => 'Batalkan';
+
+  @override
+  String get claimUntitled => 'Fail tanpa nama';
+
+  @override
+  String get claimRevokeConfirmTitle => 'Batalkan fail ini?';
+
+  @override
+  String get claimRevokeConfirmBody =>
+      'Pautan mati serta-merta bagi sesiapa yang memegangnya, termasuk pasaran. Data dan pautan setiap pesanan tidak terjejas.';
+
+  @override
+  String get claimRevoked => 'Fail dibatalkan. Pautan tidak lagi boleh dibuka.';
+
+  @override
+  String get claimRevokeFailed =>
+      'Gagal membatalkan. Cuba lagi apabila dalam talian.';
+
+  @override
+  String get claimNotUploaded =>
+      'Fail ini belum dimuat naik jadi belum ada pautan. Buka semula apabila dalam talian.';
+
+  @override
+  String get claimDetailLoadFailed =>
+      'Gagal memuatkan fail. Semak sambungan dan buka semula.';
+
+  @override
   String get claimsCreateStart =>
       'Taip nombor penjejakan, atau ketik imbas, untuk mencari pesanan yang dituntut.';
 

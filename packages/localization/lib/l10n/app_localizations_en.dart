@@ -80,6 +80,74 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsCreateNameHint => 'Dossier name';
 
   @override
+  String get claimInfoTitle => 'Dossier details';
+
+  @override
+  String get claimTrackingLabel => 'Tracking code';
+
+  @override
+  String get claimShopLabel => 'Shop';
+
+  @override
+  String get claimChannelLabel => 'Channel';
+
+  @override
+  String get claimOrderCreatedAt => 'Order date';
+
+  @override
+  String get claimEvidenceLabel => 'Evidence';
+
+  @override
+  String claimEvidenceCount(int videos, int photos) {
+    return '$videos videos · $photos photos';
+  }
+
+  @override
+  String get claimCreatedAtLabel => 'Dossier created';
+
+  @override
+  String get claimLinkLabel => 'Dossier link';
+
+  @override
+  String get claimLinkHint =>
+      'Anyone with the link can view it, no sign-in needed. It stays live until you revoke it.';
+
+  @override
+  String get claimRevokedBadge => 'Revoked';
+
+  @override
+  String get claimRevokedHint =>
+      'The link is dead. The data is untouched — create a new dossier to share again.';
+
+  @override
+  String get claimRevoke => 'Revoke';
+
+  @override
+  String get claimUntitled => 'Untitled dossier';
+
+  @override
+  String get claimRevokeConfirmTitle => 'Revoke this dossier?';
+
+  @override
+  String get claimRevokeConfirmBody =>
+      'The link dies immediately for anyone holding it, including the marketplace. The data and per-order links are unaffected.';
+
+  @override
+  String get claimRevoked => 'Dossier revoked. The link no longer opens.';
+
+  @override
+  String get claimRevokeFailed =>
+      'Could not revoke. Try again when you are online.';
+
+  @override
+  String get claimNotUploaded =>
+      'This dossier has not been uploaded yet, so it has no link. Reopen it when you are online.';
+
+  @override
+  String get claimDetailLoadFailed =>
+      'Could not load the dossier. Check your connection and reopen it.';
+
+  @override
   String get claimsCreateStart =>
       'Type a tracking code, or tap scan, to find the order you are claiming for.';
 

@@ -105,6 +105,9 @@ abstract interface class EcRepository {
     List<String>? evidenceIds,
   });
   Future<List<ClaimDto>> listClaims(String shopId);
+
+  /// Khối thông tin của một hồ sơ, cho màn chi tiết. Không kèm link từng clip.
+  Future<ClaimDetailDto> claimDetail(String shopId, String claimId);
   Future<void> revokeClaim(String shopId, String claimId);
 
   /// Xoá cửa hàng này sẽ mất những gì. Chỉ chủ shop đọc được.
@@ -317,6 +320,10 @@ class RemoteEcRepository implements EcRepository {
 
   @override
   Future<List<ClaimDto>> listClaims(String shopId) => _api.listClaims(shopId);
+
+  @override
+  Future<ClaimDetailDto> claimDetail(String shopId, String claimId) =>
+      _api.claimDetail(shopId, claimId);
 
   @override
   Future<void> revokeClaim(String shopId, String claimId) =>

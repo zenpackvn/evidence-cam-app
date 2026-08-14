@@ -41,6 +41,32 @@
   "claimsCreateTitle": "New claim dossier",
   "claimsCreateSearchHint": "Type or scan a tracking code",
   "claimsCreateNameHint": "Dossier name",
+  "claimInfoTitle": "Dossier details",
+  "claimTrackingLabel": "Tracking code",
+  "claimShopLabel": "Shop",
+  "claimChannelLabel": "Channel",
+  "claimOrderCreatedAt": "Order date",
+  "claimEvidenceLabel": "Evidence",
+  "claimEvidenceCount": "{videos} videos · {photos} photos",
+  "@claimEvidenceCount": {
+    "placeholders": {
+      "videos": { "type": "int" },
+      "photos": { "type": "int" }
+    }
+  },
+  "claimCreatedAtLabel": "Dossier created",
+  "claimLinkLabel": "Dossier link",
+  "claimLinkHint": "Anyone with the link can view it, no sign-in needed. It stays live until you revoke it.",
+  "claimRevokedBadge": "Revoked",
+  "claimRevokedHint": "The link is dead. The data is untouched — create a new dossier to share again.",
+  "claimRevoke": "Revoke",
+  "claimUntitled": "Untitled dossier",
+  "claimRevokeConfirmTitle": "Revoke this dossier?",
+  "claimRevokeConfirmBody": "The link dies immediately for anyone holding it, including the marketplace. The data and per-order links are unaffected.",
+  "claimRevoked": "Dossier revoked. The link no longer opens.",
+  "claimRevokeFailed": "Could not revoke. Try again when you are online.",
+  "claimNotUploaded": "This dossier has not been uploaded yet, so it has no link. Reopen it when you are online.",
+  "claimDetailLoadFailed": "Could not load the dossier. Check your connection and reopen it.",
   "@claimsCreateNameHint": {
     "description": "Placeholder for the claim dossier name field; prefilled with the first tracking code."
   },

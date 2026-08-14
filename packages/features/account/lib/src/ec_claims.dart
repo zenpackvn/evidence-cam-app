@@ -10,7 +10,6 @@
 library;
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart'
@@ -304,33 +303,54 @@ class EcClaimItem {
 }
 
 /// Lớp con: nội dung một hồ sơ.
+/// Hồ sơ khiếu nại: MỘT KHỐI THÔNG TIN và MỘT CÁI LINK.
+///
+/// Không phải thư viện video — muốn xem clip thì vào chi tiết đơn, nơi việc đó
+/// thuộc về và nơi mọi nút sửa/xoá đã nằm sẵn. Ở đây hồ sơ là thứ ĐÃ CHỐT: đọc
+/// để đối chiếu, sao chép link để gửi, thu hồi khi không muốn ai xem nữa.
+///
+/// Đúng ba việc đó. Thêm bất kỳ đường sửa nào vào đây là biến một hồ sơ đã phát
+/// đi thành thứ không đối chứng được — đó là lý do màn này KHÔNG còn nhận
+/// `onRemoveItem`, giống hệt bản web.
 class EcClaimDetailScreen extends StatelessWidget {
   const EcClaimDetailScreen({
-    required this.dateLabel,
-    required this.timeLabel,
-    this.groups = const [],
+    required this.title,
+    required this.shopName,
+    required this.channel,
+    required this.trackings,
+    required this.orderDateLabel,
+    required this.videos,
+    required this.photos,
+    required this.createdAtLabel,
+    required this.url,
+    this.revoked = false,
     this.onBack,
     this.onCopy,
-    this.onDelete,
-    this.onRemoveItem,
-    this.onItemTap,
+    this.onRevoke,
     super.key,
   });
 
-  final String dateLabel;
-  final String timeLabel;
-  final List<EcClaimOrderGroup> groups;
+  /// Tên hồ sơ. Rỗng thì hiện "Hồ sơ không đặt tên" — hồ sơ cũ tạo trước khi
+  /// tên là bắt buộc vẫn phải mở được.
+  final String title;
+  final String shopName;
+  final String channel;
+
+  /// MỌI mã vận đơn, xếp dọc theo thời gian tạo đơn. Hồ sơ gộp nhiều kiện là
+  /// chuyện thường — hiện một mã rồi ẩn phần còn lại là giấu đúng thứ người đọc
+  /// cần đối chiếu.
+  final List<String> trackings;
+
+  /// Một mốc khi hồ sơ có một đơn, một khoảng khi nhiều đơn.
+  final String orderDateLabel;
+  final int videos;
+  final int photos;
+  final String createdAtLabel;
+  final String url;
+  final bool revoked;
   final VoidCallback? onBack;
   final VoidCallback? onCopy;
-  final VoidCallback? onDelete;
-
-  /// Gỡ một bằng chứng khỏi hồ sơ: `(mã đơn, id bằng chứng)`. Id bằng chứng là
-  /// duy nhất, nhưng mã đơn nói cho bên gọi biết phải sửa nhánh nào của hồ sơ.
-  final void Function(String tracking, String evidenceId)? onRemoveItem;
-
-  /// Mở chi tiết một bằng chứng: `(mã đơn, id bằng chứng)`. `null` = hàng không
-  /// bấm được, dùng khi bên gọi chưa có đường đọc chi tiết.
-  final void Function(String tracking, String evidenceId)? onItemTap;
+  final VoidCallback? onRevoke;
 
   @override
   Widget build(BuildContext context) {
@@ -348,36 +368,13 @@ class EcClaimDetailScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: PenText(
-                    '$dateLabel  $timeLabel',
+                    title.trim().isEmpty ? l10n.claimUntitled : title,
                     size: 20,
                     color: PenColors.ink,
                     weight: FontWeight.w800,
                     softWrap: false,
                   ),
                 ),
-                EcTap(
-                  onTap: onCopy,
-                  child: const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Icon(
-                      LucideIcons.copy,
-                      size: 21,
-                      color: PenColors.primary,
-                    ),
-                  ),
-                ),
-                if (onDelete != null)
-                  EcTap(
-                    onTap: onDelete,
-                    child: const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Icon(
-                        LucideIcons.trash2,
-                        size: 21,
-                        color: PenColors.danger,
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -385,21 +382,156 @@ class EcClaimDetailScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
               children: [
-                for (final group in groups) ...[
-                  _OrderGroupCard(
-                    group: group,
-                    onRemoveItem: onRemoveItem,
-                    onItemTap: onItemTap,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (groups.isEmpty)
-                  PenText(
-                    l10n.timelineEmpty,
-                    size: 14,
-                    color: PenColors.mut,
-                    align: TextAlign.center,
-                  ),
+                PenCard(
+                  axis: PenAxis.column,
+                  gap: 12,
+                  cross: CrossAxisAlignment.stretch,
+                  padding: const EdgeInsets.all(14),
+                  children: [
+                    PenText(
+                      l10n.claimInfoTitle,
+                      size: 15,
+                      color: PenColors.ink,
+                      weight: FontWeight.w700,
+                    ),
+                    _ClaimKv(
+                      label: l10n.claimTrackingLabel,
+                      valueLines: trackings,
+                      mono: true,
+                    ),
+                    _ClaimKv(
+                      label: l10n.claimShopLabel,
+                      valueLines: [shopName],
+                    ),
+                    _ClaimKv(
+                      label: l10n.claimChannelLabel,
+                      valueLines: [channel],
+                    ),
+                    _ClaimKv(
+                      label: l10n.claimOrderCreatedAt,
+                      valueLines: [orderDateLabel],
+                    ),
+                    _ClaimKv(
+                      label: l10n.claimEvidenceLabel,
+                      valueLines: [l10n.claimEvidenceCount(videos, photos)],
+                    ),
+                    _ClaimKv(
+                      label: l10n.claimCreatedAtLabel,
+                      valueLines: [createdAtLabel],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                PenCard(
+                  axis: PenAxis.column,
+                  gap: 10,
+                  cross: CrossAxisAlignment.stretch,
+                  padding: const EdgeInsets.all(14),
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: PenText(
+                            l10n.claimLinkLabel,
+                            size: 15,
+                            color: PenColors.ink,
+                            weight: FontWeight.w700,
+                          ),
+                        ),
+                        if (revoked)
+                          PenBox(
+                            fill: PenColors.bg,
+                            stroke: PenColors.line,
+                            radius: 999,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            children: [
+                              PenText(
+                                l10n.claimRevokedBadge,
+                                size: 12,
+                                color: PenColors.mut,
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                    // Nói link làm được gì TRƯỚC khi đưa link ra — người sắp gửi
+                    // nó cho nhân viên sàn cần biết mình đang phát ra cái gì.
+                    PenText(
+                      revoked ? l10n.claimRevokedHint : l10n.claimLinkHint,
+                      size: 13,
+                      color: PenColors.mut,
+                    ),
+                    if (!revoked) ...[
+                      // Link nằm trong một ô chỉ-đọc kèm nút chép NGAY TRONG ô,
+                      // giống web: bôi đen tay rồi hụt một ký tự là gửi đi một
+                      // link chết.
+                      PenBox(
+                        fill: PenColors.bg,
+                        stroke: PenColors.line,
+                        radius: 12,
+                        axis: PenAxis.row,
+                        gap: 8,
+                        cross: CrossAxisAlignment.center,
+                        padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+                        children: [
+                          Expanded(
+                            child: PenText(
+                              url,
+                              size: 12,
+                              color: PenColors.ink,
+                              maxLines: 2,
+                            ),
+                          ),
+                          EcTap(
+                            onTap: onCopy,
+                            child: const Padding(
+                              padding: EdgeInsets.all(8),
+                              child: Icon(
+                                LucideIcons.copy,
+                                size: 20,
+                                color: PenColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Thu hồi là nút VIỀN, không phải nút đỏ đặc đứng cạnh nút
+                      // chép. Hai nút nổi bật ngang nhau ở cạnh nhau là mời bấm
+                      // nhầm — mà nhầm ở đây nghĩa là giết một link đã gửi cho
+                      // sàn.
+                      if (onRevoke != null)
+                        EcTap(
+                          onTap: onRevoke,
+                          child: PenBox(
+                            fill: PenColors.card,
+                            stroke: PenColors.danger,
+                            radius: 12,
+                            axis: PenAxis.row,
+                            gap: 8,
+                            main: MainAxisAlignment.center,
+                            cross: CrossAxisAlignment.center,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            children: [
+                              const Icon(
+                                LucideIcons.trash2,
+                                size: 18,
+                                color: PenColors.danger,
+                              ),
+                              PenText(
+                                l10n.claimRevoke,
+                                size: 14,
+                                color: PenColors.danger,
+                                weight: FontWeight.w600,
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
@@ -409,202 +541,47 @@ class EcClaimDetailScreen extends StatelessWidget {
   }
 }
 
-class _OrderGroupCard extends StatelessWidget {
-  const _OrderGroupCard({
-    required this.group,
-    this.onRemoveItem,
-    this.onItemTap,
+/// Một dòng nhãn — giá trị của khối thông tin. Nhiều dòng giá trị cho ô "Mã vận
+/// đơn" của hồ sơ gộp.
+class _ClaimKv extends StatelessWidget {
+  const _ClaimKv({
+    required this.label,
+    required this.valueLines,
+    this.mono = false,
   });
 
-  final EcClaimOrderGroup group;
-  final void Function(String tracking, String evidenceId)? onRemoveItem;
-  final void Function(String tracking, String evidenceId)? onItemTap;
+  final String label;
+  final List<String> valueLines;
+  final bool mono;
 
   @override
   Widget build(BuildContext context) {
-    return PenCard(
-      axis: PenAxis.column,
-      gap: 10,
-      cross: CrossAxisAlignment.stretch,
-      padding: const EdgeInsets.all(14),
+    final lines = valueLines.where((v) => v.trim().isNotEmpty).toList();
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Mã vận đơn + ngày giờ. Một hồ sơ gộp nhiều đơn thì các đơn có thể ở
-        // khác ngày, nên chỉ hiện giờ là không đủ để phân biệt.
-        Row(
-          children: [
-            Expanded(
-              child: PenText(
-                group.tracking,
-                size: 15,
-                color: PenColors.ink,
-                weight: FontWeight.w800,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (group.dateLabel != null)
-              PenText(
-                '${group.dateLabel}  ${group.timeLabel ?? ''}'.trim(),
-                size: 12,
-                color: PenColors.mut,
-                softWrap: false,
-              ),
-          ],
+        SizedBox(
+          width: 116,
+          child: PenText(label, size: 13, color: PenColors.mut),
         ),
-        for (final item in group.items)
-          _ClaimItemRow(
-            item: item,
-            onRemove: onRemoveItem == null
-                ? null
-                : () => onRemoveItem!(group.tracking, item.id),
-            onTap: onItemTap == null
-                ? null
-                : () => onItemTap!(group.tracking, item.id),
-          ),
-      ],
-    );
-  }
-}
-
-/// Một bằng chứng trong hồ sơ, vẽ theo ĐÚNG hình dạng hàng ở dòng thời gian
-/// của mã vận đơn: giờ bên trái, chấm tròn, rồi một thẻ có ảnh thu nhỏ và nhãn.
-///
-/// Cố ý dựng lại ở đây thay vì dùng chung widget của package `orders`: hai bên
-/// bám vào hai kiểu dữ liệu khác nhau (`EcTimelineVideo` có trạng thái niêm
-/// phong, thời lượng, link phát; `EcClaimItem` chỉ có id/nhãn/giờ/ảnh). Ghép
-/// chúng vào một widget chung sẽ đẻ ra một kiểu thứ ba mà chẳng bên nào dùng
-/// trọn vẹn. Thứ phải giống nhau là HÌNH DẠNG, và nó nằm trọn trong hàm này.
-class _ClaimItemRow extends StatelessWidget {
-  const _ClaimItemRow({required this.item, this.onRemove, this.onTap});
-
-  final EcClaimItem item;
-
-  /// Gỡ khỏi hồ sơ. `null` = không hiện icon.
-  final VoidCallback? onRemove;
-
-  /// Mở chi tiết bằng chứng. `null` = thẻ không bấm được.
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.center,
-    children: [
-      SizedBox(
-        width: 46,
-        child: PenText(item.time, size: 14, color: PenColors.mut),
-      ),
-      const SizedBox(
-        width: 22,
-        height: 58,
-        child: Center(
-          child: PenEllipse(width: 11, height: 11, color: PenColors.ink),
-        ),
-      ),
-      Expanded(
-        child: PenCard(
-          lifted: false,
-          gap: 12,
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 11),
-          onTap: onTap,
-          children: [
-            _ClaimItemThumb(item: item),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (lines.isEmpty)
+                PenText('—', size: 13, color: PenColors.mut)
+              else
+                for (final v in lines)
                   PenText(
-                    item.label,
-                    size: 14,
+                    v,
+                    size: 13,
                     color: PenColors.ink,
-                    weight: FontWeight.w600,
-                    overflow: TextOverflow.ellipsis,
+                    align: TextAlign.right,
                   ),
-                  if (item.addedLater) ...[
-                    const SizedBox(height: 4),
-                    PenText(
-                      context.l10n.claimsAddedLater,
-                      size: 11,
-                      color: PenColors.mut,
-                      softWrap: false,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (onRemove != null)
-              // Vùng chạm rộng hơn icon: ngón tay chạm trượt sang thẻ bên cạnh
-              // là chuyện thường.
-              EcTap(
-                onTap: onRemove,
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(
-                    LucideIcons.x,
-                    size: 17,
-                    color: PenColors.danger,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    ],
-  );
-}
-
-/// Ô vuông đầu hàng: ảnh thu nhỏ của bằng chứng, không có thì rơi về icon.
-///
-/// Mọi đường rơi đều về cùng một ô icon, nên ảnh thiếu hay hỏng nhìn vẫn giống
-/// thiết kế chứ không giống một lỗi.
-class _ClaimItemThumb extends StatelessWidget {
-  const _ClaimItemThumb({required this.item});
-
-  final EcClaimItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final url = item.thumbUrl;
-    final fallback = PenBox(
-      width: 38,
-      height: 38,
-      fill: PenColors.line,
-      radius: 10,
-      axis: PenAxis.row,
-      main: MainAxisAlignment.center,
-      cross: CrossAxisAlignment.center,
-      children: [
-        Icon(
-          item.isPhoto ? LucideIcons.image : LucideIcons.video,
-          size: 18,
-          color: PenColors.ink,
+            ],
+          ),
         ),
       ],
-    );
-    if (url == null || url.isEmpty) return fallback;
-    // Ảnh đính kèm chưa tải lên thì `url` là ĐƯỜNG DẪN FILE trên máy, không
-    // phải link mạng. Đưa nó cho `Image.network` là hỏng im lặng, rơi về icon
-    // đúng lúc người dùng vừa tự tay chọn ảnh đó.
-    final remote = url.startsWith('http');
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: remote
-          ? Image.network(
-              url,
-              width: 38,
-              height: 38,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => fallback,
-              loadingBuilder: (context, child, progress) =>
-                  progress == null ? child : fallback,
-            )
-          : Image.file(
-              File(url),
-              width: 38,
-              height: 38,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => fallback,
-            ),
     );
   }
 }
@@ -833,11 +810,20 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
                     _ClaimNameField(
                       controller: _title,
                       hint: l10n.claimsCreateNameHint,
+                      // Gõ tới đâu bật/tắt nút tới đó — không có `onChanged`
+                      // thì xoá trắng ô mà nút vẫn sáng, bấm vào thì máy chủ
+                      // mới là chỗ nói không.
+                      onChanged: (_) => setState(() {}),
                     ),
                     const SizedBox(height: 10),
+                    // Tên hồ sơ BẮT BUỘC, đúng như web. Ô đã điền sẵn mã vận
+                    // đơn đầu tiên nên đường thường không ai chạm vào rào này;
+                    // nó chỉ chặn đúng trường hợp người dùng tự xoá trắng ô.
+                    // Chặn bằng cách TẮT nút chứ không báo lỗi sau khi bấm:
+                    // lỗi sau khi bấm là bắt người ta làm hai lần.
                     _CreateClaimButton(
                       count: _pickedCount,
-                      onTap: widget.onCreate == null
+                      onTap: widget.onCreate == null || _title.text.trim().isEmpty
                           ? null
                           : () => widget.onCreate!(_batch, _title.text.trim()),
                     ),
@@ -1022,10 +1008,15 @@ class _OrderPickSection extends StatelessWidget {
 /// đã có chục hồ sơ. Nên ô này điền sẵn mã vận đơn chứ không để trống: một cái
 /// tên phân biệt được, có ngay, mà vẫn sửa được.
 class _ClaimNameField extends StatelessWidget {
-  const _ClaimNameField({required this.controller, required this.hint});
+  const _ClaimNameField({
+    required this.controller,
+    required this.hint,
+    this.onChanged,
+  });
 
   final TextEditingController controller;
   final String hint;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) => PenBox(
@@ -1045,6 +1036,7 @@ class _ClaimNameField extends StatelessWidget {
           padding: EdgeInsets.zero,
           decoration: const BoxDecoration(),
           placeholder: hint,
+          onChanged: onChanged,
           textInputAction: TextInputAction.done,
           maxLength: 120,
           maxLengthEnforcement: MaxLengthEnforcement.enforced,

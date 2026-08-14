@@ -81,6 +81,73 @@ class AppLocalizationsFil extends AppLocalizations {
   String get claimsCreateNameHint => 'Pangalan ng dossier';
 
   @override
+  String get claimInfoTitle => 'Detalye ng dossier';
+
+  @override
+  String get claimTrackingLabel => 'Tracking code';
+
+  @override
+  String get claimShopLabel => 'Tindahan';
+
+  @override
+  String get claimChannelLabel => 'Channel';
+
+  @override
+  String get claimOrderCreatedAt => 'Petsa ng order';
+
+  @override
+  String get claimEvidenceLabel => 'Ebidensya';
+
+  @override
+  String claimEvidenceCount(int videos, int photos) {
+    return '$videos video · $photos larawan';
+  }
+
+  @override
+  String get claimCreatedAtLabel => 'Ginawa ang dossier';
+
+  @override
+  String get claimLinkLabel => 'Link ng dossier';
+
+  @override
+  String get claimLinkHint =>
+      'Kahit sino na may link ay makakatingin, walang sign-in. Buhay ito hangga’t hindi mo binabawi.';
+
+  @override
+  String get claimRevokedBadge => 'Binawi';
+
+  @override
+  String get claimRevokedHint =>
+      'Patay na ang link. Buo pa rin ang data — gumawa ng bagong dossier para maibahagi ulit.';
+
+  @override
+  String get claimRevoke => 'Bawiin';
+
+  @override
+  String get claimUntitled => 'Dossier na walang pangalan';
+
+  @override
+  String get claimRevokeConfirmTitle => 'Bawiin ang dossier na ito?';
+
+  @override
+  String get claimRevokeConfirmBody =>
+      'Mamamatay agad ang link para sa sinumang may hawak nito, pati sa marketplace. Hindi maaapektuhan ang data at mga link kada order.';
+
+  @override
+  String get claimRevoked => 'Nabawi ang dossier. Hindi na bumubukas ang link.';
+
+  @override
+  String get claimRevokeFailed => 'Hindi mabawi. Subukan ulit kapag online.';
+
+  @override
+  String get claimNotUploaded =>
+      'Hindi pa na-upload ang dossier na ito kaya wala pang link. Buksan ulit kapag online.';
+
+  @override
+  String get claimDetailLoadFailed =>
+      'Hindi ma-load ang dossier. Suriin ang koneksyon at buksan ulit.';
+
+  @override
   String get claimsCreateStart =>
       'I-type ang tracking code, o pindutin ang scan, para hanapin ang order na ikinaklaim mo.';
 

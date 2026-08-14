@@ -80,6 +80,74 @@ class AppLocalizationsDe extends AppLocalizations {
   String get claimsCreateNameHint => 'Name des Vorgangs';
 
   @override
+  String get claimInfoTitle => 'Vorgangsdetails';
+
+  @override
+  String get claimTrackingLabel => 'Sendungsnummer';
+
+  @override
+  String get claimShopLabel => 'Shop';
+
+  @override
+  String get claimChannelLabel => 'Verkaufskanal';
+
+  @override
+  String get claimOrderCreatedAt => 'Bestelldatum';
+
+  @override
+  String get claimEvidenceLabel => 'Nachweise';
+
+  @override
+  String claimEvidenceCount(int videos, int photos) {
+    return '$videos Videos · $photos Fotos';
+  }
+
+  @override
+  String get claimCreatedAtLabel => 'Vorgang erstellt';
+
+  @override
+  String get claimLinkLabel => 'Vorgangs-Link';
+
+  @override
+  String get claimLinkHint =>
+      'Jeder mit dem Link kann ihn ansehen, ohne Anmeldung. Er bleibt aktiv, bis du ihn widerrufst.';
+
+  @override
+  String get claimRevokedBadge => 'Widerrufen';
+
+  @override
+  String get claimRevokedHint =>
+      'Der Link ist tot. Die Daten bleiben erhalten — erstelle einen neuen Vorgang zum Teilen.';
+
+  @override
+  String get claimRevoke => 'Widerrufen';
+
+  @override
+  String get claimUntitled => 'Vorgang ohne Titel';
+
+  @override
+  String get claimRevokeConfirmTitle => 'Diesen Vorgang widerrufen?';
+
+  @override
+  String get claimRevokeConfirmBody =>
+      'Der Link stirbt sofort für alle, die ihn haben — auch für den Marktplatz. Daten und Links je Bestellung bleiben unberührt.';
+
+  @override
+  String get claimRevoked => 'Vorgang widerrufen. Der Link öffnet nicht mehr.';
+
+  @override
+  String get claimRevokeFailed =>
+      'Widerruf fehlgeschlagen. Versuche es erneut, wenn du online bist.';
+
+  @override
+  String get claimNotUploaded =>
+      'Dieser Vorgang wurde noch nicht hochgeladen und hat daher keinen Link. Öffne ihn erneut, wenn du online bist.';
+
+  @override
+  String get claimDetailLoadFailed =>
+      'Vorgang konnte nicht geladen werden. Prüfe die Verbindung und öffne ihn erneut.';
+
+  @override
   String get claimsCreateStart =>
       'Gib die Sendungsnummer ein oder tippe auf Scannen, um die Bestellung zu finden.';
 

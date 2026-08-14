@@ -164,6 +164,19 @@ class FakeEcRepository implements EcRepository {
   Future<List<OrderCodeDto>> orderCodes(String shopId, String orderId) async =>
       const [];
 
+  // Hồ sơ rỗng: đủ để màn chi tiết dựng được mà không cần máy chủ.
+  @override
+  Future<ClaimDetailDto> claimDetail(String shopId, String claimId) async =>
+      ClaimDetailDto(
+        claim: ClaimDto(id: claimId, url: ''),
+        url: '',
+        shopName: 'Shop',
+        platform: 'shopee',
+        orders: const [],
+        videos: 0,
+        photos: 0,
+      );
+
   @override
   Future<OrderCodeDto> addOrderCode(
     String shopId,

@@ -1,4 +1,5 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:ec_ui/ec_ui.dart' show LucideIcons;
 import 'package:feature_account/feature_account.dart';
 import 'package:flutter/cupertino.dart' show CupertinoTextField;
 import 'package:flutter/material.dart';
@@ -158,6 +159,37 @@ void main() {
     // Trước bản vá này màn hình không có ô tên nào, `onCreate` không mang tên,
     // nên máy chủ từ chối MỌI hồ sơ tạo từ app (`claim_title_required`) và hồ
     // sơ nằm lại trong máy — im lặng, vì lỗi bị nuốt ở tầng dưới.
+    testWidgets('tên rỗng thì KHÔNG tạo được — tên là bắt buộc như web', (
+      tester,
+    ) async {
+      var created = 0;
+      await _pump(
+        tester,
+        EcCreateClaimScreen(
+          onSearch: (code) async => _spx1,
+          onCreate: (batch, title) => created++,
+        ),
+      );
+
+      await _lookup(tester, 'SPX1');
+      await tester.tap(find.text('Đóng hàng'));
+      await tester.pumpAndSettle();
+
+      // Xoá trắng ô tên rồi bấm tạo: không có gì xảy ra.
+      await tester.enterText(_nameField(), '   ');
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('(1)'));
+      await tester.pumpAndSettle();
+      expect(created, 0);
+
+      // Gõ tên vào thì tạo được ngay, không phải làm lại từ đầu.
+      await tester.enterText(_nameField(), 'Lô hoàn 8/8');
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('(1)'));
+      await tester.pumpAndSettle();
+      expect(created, 1);
+    });
+
     testWidgets('sửa được tên hồ sơ và tên đó đi theo lúc tạo', (tester) async {
       String? createdTitle;
       await _pump(
@@ -186,5 +218,134 @@ void main() {
 
       expect(createdTitle, 'Lô hoàn 8/8');
     });
+  });
+
+  group('EcClaimDetailScreen', _detailTests);
+}
+
+/// Màn chi tiết hồ sơ: một khối thông tin và một cái link, giống hệt web.
+///
+/// Bản trước dựng cả dòng thời gian bằng chứng kèm nút gỡ từng cái — tức vẫn
+/// sửa được một hồ sơ đã phát đi cho sàn. Những test này canh đúng chỗ đó.
+void _detailTests() {
+  const detail = EcClaimDetailScreen(
+    title: 'Lô hoàn 8/8',
+    shopName: 'Shop A',
+    channel: 'Shopee',
+    trackings: ['SPXVN1', 'SPXVN2'],
+    orderDateLabel: '07/08/2026 → 08/08/2026',
+    videos: 3,
+    photos: 1,
+    createdAtLabel: '08/08/2026  10:30',
+    url: 'https://zenpack.vn/c/abc123',
+  );
+
+  testWidgets('hiện đủ sáu dòng thông tin như bên web', (tester) async {
+    await _pump(tester, detail);
+
+    for (final label in [
+      'Mã vận đơn',
+      'Shop',
+      'Kênh bán',
+      'Ngày tạo đơn',
+      'Bằng chứng',
+      'Ngày tạo hồ sơ',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: 'thiếu dòng "$label"');
+    }
+    // MỌI mã vận đơn, không phải chỉ mã đầu: hồ sơ gộp nhiều kiện là chuyện
+    // thường, và giấu phần còn lại là giấu đúng thứ người đọc cần đối chiếu.
+    expect(find.text('SPXVN1'), findsOneWidget);
+    expect(find.text('SPXVN2'), findsOneWidget);
+    expect(find.text('3 video · 1 ảnh'), findsOneWidget);
+  });
+
+  testWidgets('hiện link kèm nút chép và nút thu hồi', (tester) async {
+    var copied = 0;
+    var revoked = 0;
+    await _pump(
+      tester,
+      EcClaimDetailScreen(
+        title: detail.title,
+        shopName: detail.shopName,
+        channel: detail.channel,
+        trackings: detail.trackings,
+        orderDateLabel: detail.orderDateLabel,
+        videos: detail.videos,
+        photos: detail.photos,
+        createdAtLabel: detail.createdAtLabel,
+        url: detail.url,
+        onCopy: () => copied++,
+        onRevoke: () => revoked++,
+      ),
+    );
+
+    expect(find.text('https://zenpack.vn/c/abc123'), findsOneWidget);
+    expect(find.text('Thu hồi'), findsOneWidget);
+
+    await tester.tap(find.byIcon(LucideIcons.copy));
+    await tester.pumpAndSettle();
+    expect(copied, 1);
+
+    await tester.tap(find.text('Thu hồi'));
+    await tester.pumpAndSettle();
+    expect(revoked, 1);
+  });
+
+  // Hồ sơ là thứ ĐÃ CHỐT. Không một đường sửa nào được mọc lại ở đây: sửa được
+  // nghĩa là không đối chứng được, và bản trước đã có đúng lỗi đó.
+  testWidgets('KHÔNG có đường sửa nào', (tester) async {
+    await _pump(tester, detail);
+
+    expect(find.byIcon(LucideIcons.trash2), findsNothing);
+    expect(find.byIcon(LucideIcons.plus), findsNothing);
+    expect(find.byType(CupertinoTextField), findsNothing);
+  });
+
+  testWidgets('đã thu hồi: giấu link, đổi câu giải thích, mất nút', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      EcClaimDetailScreen(
+        title: detail.title,
+        shopName: detail.shopName,
+        channel: detail.channel,
+        trackings: detail.trackings,
+        orderDateLabel: detail.orderDateLabel,
+        videos: detail.videos,
+        photos: detail.photos,
+        createdAtLabel: detail.createdAtLabel,
+        url: detail.url,
+        revoked: true,
+        onCopy: () {},
+        onRevoke: () {},
+      ),
+    );
+
+    expect(find.text('Đã thu hồi'), findsOneWidget);
+    expect(find.textContaining('Link đã chết'), findsOneWidget);
+    // Link chết thì KHÔNG đưa ra nữa — đưa ra là mời người ta gửi đi một link
+    // mở lên báo lỗi.
+    expect(find.text('https://zenpack.vn/c/abc123'), findsNothing);
+    expect(find.text('Thu hồi'), findsNothing);
+  });
+
+  testWidgets('hồ sơ không tên vẫn mở được', (tester) async {
+    await _pump(
+      tester,
+      const EcClaimDetailScreen(
+        title: '   ',
+        shopName: 'Shop A',
+        channel: 'Shopee',
+        trackings: ['SPXVN1'],
+        orderDateLabel: '07/08/2026',
+        videos: 1,
+        photos: 0,
+        createdAtLabel: '08/08/2026  10:30',
+        url: 'https://zenpack.vn/c/abc123',
+      ),
+    );
+    expect(find.text('Hồ sơ không đặt tên'), findsOneWidget);
   });
 }

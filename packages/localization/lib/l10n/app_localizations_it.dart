@@ -82,6 +82,74 @@ class AppLocalizationsIt extends AppLocalizations {
   String get claimsCreateNameHint => 'Nome del fascicolo';
 
   @override
+  String get claimInfoTitle => 'Dettagli del fascicolo';
+
+  @override
+  String get claimTrackingLabel => 'Codice di tracciamento';
+
+  @override
+  String get claimShopLabel => 'Negozio';
+
+  @override
+  String get claimChannelLabel => 'Canale di vendita';
+
+  @override
+  String get claimOrderCreatedAt => 'Data dell’ordine';
+
+  @override
+  String get claimEvidenceLabel => 'Prove';
+
+  @override
+  String claimEvidenceCount(int videos, int photos) {
+    return '$videos video · $photos foto';
+  }
+
+  @override
+  String get claimCreatedAtLabel => 'Fascicolo creato';
+
+  @override
+  String get claimLinkLabel => 'Link del fascicolo';
+
+  @override
+  String get claimLinkHint =>
+      'Chiunque abbia il link può vederlo, senza accedere. Resta attivo finché non lo revochi.';
+
+  @override
+  String get claimRevokedBadge => 'Revocato';
+
+  @override
+  String get claimRevokedHint =>
+      'Il link è morto. I dati restano intatti: crea un nuovo fascicolo per condividerlo di nuovo.';
+
+  @override
+  String get claimRevoke => 'Revoca';
+
+  @override
+  String get claimUntitled => 'Fascicolo senza titolo';
+
+  @override
+  String get claimRevokeConfirmTitle => 'Revocare questo fascicolo?';
+
+  @override
+  String get claimRevokeConfirmBody =>
+      'Il link muore subito per chiunque lo possieda, marketplace incluso. I dati e i link per singolo ordine non sono interessati.';
+
+  @override
+  String get claimRevoked => 'Fascicolo revocato. Il link non si apre più.';
+
+  @override
+  String get claimRevokeFailed =>
+      'Revoca non riuscita. Riprova quando sei online.';
+
+  @override
+  String get claimNotUploaded =>
+      'Questo fascicolo non è ancora stato caricato, quindi non ha un link. Riaprilo quando sei online.';
+
+  @override
+  String get claimDetailLoadFailed =>
+      'Impossibile caricare il fascicolo. Controlla la connessione e riaprilo.';
+
+  @override
   String get claimsCreateStart =>
       'Digita il codice di tracciamento, o tocca scansiona, per trovare l\'ordine del reclamo.';
 
