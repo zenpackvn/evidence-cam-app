@@ -429,6 +429,7 @@ class EvidenceDto {
     required this.uploadStatus,
     this.videoTypeId,
     this.createdByUid,
+    this.recordedBy,
     this.device,
     this.r2Key,
     this.thumbUrl,
@@ -452,6 +453,7 @@ class EvidenceDto {
     uploadStatus: j['upload_status'] as String,
     videoTypeId: j['video_type_id'] as String?,
     createdByUid: j['created_by_uid'] as String?,
+    recordedBy: j['recorded_by'] as String?,
     device: j['device'] as String?,
     r2Key: j['r2_key'] as String?,
     url: j['url'] as String?,
@@ -474,6 +476,13 @@ class EvidenceDto {
   final String uploadStatus;
   final String? videoTypeId;
   final String? createdByUid;
+
+  /// Tên người quay, do máy chủ tra sẵn từ tài khoản.
+  ///
+  /// `null` khi tài khoản chưa đặt tên. Trước đây app tự đổi `createdByUid`
+  /// sang tên bằng danh sách thành viên — mà tuyến đó chỉ chủ shop gọi được,
+  /// nên với nhân viên mọi clip đều hiện "Không rõ".
+  final String? recordedBy;
   final String? device;
 
   /// When this evidence's R2 object is swept by the retention cron

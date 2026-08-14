@@ -23,6 +23,7 @@ Response<T> _res<T>(String path, T data) => Response<T>(
 void main() {
   group('mã của vận đơn', _orderCodesTests);
   group('cắm Drive từ hộp thoại gốc', _gdriveNativeTests);
+  group('tên người quay', _recordedByTests);
   late _MockDio dio;
   late EcApi api;
 
@@ -773,5 +774,37 @@ void _gdriveNativeTests() {
     ).captured;
     expect(call[0], '/api/shops/s1/storage/gdrive/code');
     expect(call[1], {'code': 'auth-code-abc'});
+  });
+}
+
+/// Tên người quay do MÁY CHỦ trả sẵn, không để app tự tra.
+///
+/// App trước đây đổi `created_by_uid` sang tên bằng danh sách thành viên — mà
+/// tuyến đó chỉ chủ shop gọi được, nên với nhân viên mọi clip đều hiện
+/// "Không rõ".
+void _recordedByTests() {
+  test('EvidenceDto đọc recorded_by từ máy chủ', () {
+    final dto = EvidenceDto.fromJson(const {
+      'id': 'e1',
+      'order_id': 'o1',
+      'kind': 'video',
+      'captured_at': 1,
+      'upload_status': 'done',
+      'created_by_uid': 'u1',
+      'recorded_by': 'Chị Hà',
+    });
+    expect(dto.recordedBy, 'Chị Hà');
+  });
+
+  test('vắng recorded_by thì null, không ném', () {
+    final dto = EvidenceDto.fromJson(const {
+      'id': 'e1',
+      'order_id': 'o1',
+      'kind': 'video',
+      'captured_at': 1,
+      'upload_status': 'done',
+      'created_by_uid': 'u1',
+    });
+    expect(dto.recordedBy, isNull);
   });
 }

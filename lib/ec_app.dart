@@ -5731,7 +5731,11 @@ List<EcTimelineDay> _timelineDays(
             },
             capturedAtMs: item.capturedAt,
             recordedAt: '${_dateLabel(captured)} · ${_hhmm(captured)}',
+            // Tên máy chủ trả sẵn đứng TRƯỚC danh sách thành viên: tuyến
+            // `listMembers` chỉ chủ shop gọi được, nên với nhân viên bản đồ
+            // `memberNames` luôn rỗng và mọi clip hiện "Không rõ".
             recordedBy:
+                item.recordedBy ??
                 (item.createdByUid == null
                     ? null
                     : memberNames[item.createdByUid]) ??
