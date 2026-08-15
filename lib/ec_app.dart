@@ -46,6 +46,8 @@ import 'package:feature_orders/feature_orders.dart'
 import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/cupertino.dart'
     show
+        CupertinoActionSheet,
+        CupertinoActionSheetAction,
         CupertinoActivityIndicator,
         CupertinoAlertDialog,
         CupertinoApp,
@@ -68,6 +70,7 @@ import 'package:flutter/foundation.dart'
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';
 import 'package:network/network.dart' show Dio, DioException, DioExceptionType;
@@ -5776,16 +5779,61 @@ String _dayLabelOf(DateTime d) {
 /// nó ngay chứ không phải sau khi khởi động lại app.
 class _ClaimListRoute extends StatelessWidget {
   const _ClaimListRoute({
+    required this.repo,
     required this.shopId,
     this.onNavOrders,
     this.onNavRecord,
     this.onCreate,
   });
 
+  final EcRepository repo;
   final String shopId;
   final VoidCallback? onNavOrders;
   final VoidCallback? onNavRecord;
   final VoidCallback? onCreate;
+
+  /// Thu hồi link của một hồ sơ, sau một lần hỏi lại.
+  ///
+  /// Hỏi lại vì thao tác này KHÔNG lùi được và hậu quả nằm ở chỗ khác: link đã
+  /// gửi cho nhân viên sàn chết ngay, mà người bấm thì đang đứng ở màn danh
+  /// sách chứ không nhìn thấy điều đó.
+  ///
+  /// Hồ sơ chưa lên máy chủ thì không có gì để thu hồi — nói thẳng thay vì mở
+  /// một hộp thoại xác nhận rồi mới báo hỏng.
+  Future<void> _revoke(BuildContext context, String dossierId) async {
+    final l10n = context.l10n;
+    final claimId = _claimStore.byId(shopId, dossierId)?.claimId;
+    if (claimId == null || claimId.isEmpty) {
+      _toast(context, l10n.claimsRevokeNoLink);
+      return;
+    }
+    final confirmed = await showCupertinoModalPopup<bool>(
+      context: context,
+      builder: (sheetContext) => CupertinoActionSheet(
+        title: Text(l10n.claimRevokeConfirmTitle),
+        message: Text(l10n.claimsDeleteConfirmLink),
+        actions: [
+          CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(sheetContext).pop(true),
+            child: Text(l10n.claimRevoke),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(sheetContext).pop(false),
+          child: Text(l10n.commonCancel),
+        ),
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await repo.revokeClaim(shopId, claimId);
+    } on Object {
+      if (context.mounted) _toast(context, l10n.claimRevokeFailed);
+      return;
+    }
+    if (context.mounted) _toast(context, l10n.claimRevoked);
+  }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -5814,6 +5862,7 @@ class _ClaimListRoute extends StatelessWidget {
           if (dossier == null) return;
           _copyClaimSummary(context, dossier);
         },
+        onRevoke: (entry) => unawaited(_revoke(context, entry.id)),
       );
     },
   );
@@ -5830,12 +5879,17 @@ class _CreateClaimRoute extends StatelessWidget {
     required this.shopId,
     this.onScan,
     this.onBack,
+    this.onCreated,
   });
 
   final EcRepository repo;
   final String shopId;
   final Future<String?> Function()? onScan;
   final VoidCallback? onBack;
+
+  /// Tạo xong và hồ sơ ĐÃ có link: mở thẳng hồ sơ vừa tạo. Tham số là id của
+  /// bản trên máy, vì đó là thứ màn hồ sơ nhận.
+  final ValueChanged<String>? onCreated;
 
   /// `null` = không có đơn nào mang mã đó; danh sách rỗng = đơn có thật nhưng
   /// chưa có bằng chứng. Hai thứ khác nhau nên màn hình nói hai câu khác nhau.
@@ -5899,9 +5953,10 @@ class _CreateClaimRoute extends StatelessWidget {
     final claim = await _publish(batch, title);
     // Chụp lại NGUYÊN nội dung chứ không giữ id rồi tra sau: clip có hạn lưu
     // trữ, mà hồ sơ khiếu nại phải nói được nó ĐÃ gồm những gì.
+    final dossierId = now.microsecondsSinceEpoch.toString();
     await _claimStore.add(
       EcClaimDossier(
-        id: now.microsecondsSinceEpoch.toString(),
+        id: dossierId,
         shopId: shopId,
         createdAt: now,
         // Giữ tên NGAY TRÊN MÁY, không chỉ gửi lên máy chủ: danh sách hồ sơ đọc
@@ -5942,7 +5997,18 @@ class _CreateClaimRoute extends StatelessWidget {
       context,
       claim == null ? l10n.claimsCreatedLocalOnly : l10n.claimsCreated,
     );
-    onBack?.call();
+    // Tạo xong thì đi THẲNG vào hồ sơ vừa tạo, không quay về danh sách. Người
+    // vừa bấm tạo muốn xem ngay mình vừa dựng ra cái gì — trả họ về một danh
+    // sách rồi bắt tìm lại đúng hàng vừa thêm là thừa một bước không ai cần.
+    //
+    // Hồ sơ chưa lên được máy chủ thì KHÔNG đi vào: bên trong sẽ chẳng có trang
+    // nào để mở. Về danh sách, nơi dòng "chưa có link" nói rõ chuyện gì đã xảy
+    // ra.
+    if (claim == null) {
+      onBack?.call();
+      return;
+    }
+    onCreated?.call(dossierId);
   }
 
   /// Đẩy hồ sơ lên máy chủ để nó có một địa chỉ công khai gửi được cho sàn.
@@ -6181,6 +6247,24 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
       }
 
       final detail = _detail;
+
+      // Hồ sơ còn sống thì mở thẳng TRANG của nó — đúng thứ nhân viên sàn thấy,
+      // video xem được tại chỗ. Chỉ khi không có trang để mở (chưa lên máy chủ,
+      // đọc hỏng, hoặc đã thu hồi) mới lùi về khối thông tin: ba trường hợp đó
+      // không có link nào sống để nhúng, và nói thẳng lý do vẫn hơn là nhúng
+      // một trang 404.
+      if (detail != null && !detail.claim.revoked && detail.url.isNotEmpty) {
+        return _ClaimPageScreen(
+          title: detail.claim.title ?? '',
+          url: detail.url,
+          onBack: widget.onBack,
+          onCopy: () {
+            Clipboard.setData(ClipboardData(text: detail.url));
+            _toast(context, l10n.claimsLinkCopied);
+          },
+        );
+      }
+
       // Chưa đọc được từ máy chủ (mất mạng, hoặc hồ sơ chỉ có trên máy): vẫn mở
       // được bằng dữ liệu địa phương, nhưng nói rõ vì sao chưa có link. Bắt
       // người dùng nhìn màn trắng vì mạng chập là phạt họ vì lỗi của mạng.
@@ -6233,6 +6317,211 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
       );
     },
   );
+}
+
+/// Trang hồ sơ (`/c/<token>`) hiện NGAY TRONG app.
+///
+/// Đây là đúng trang máy chủ dựng cho nhân viên sàn, không phải một bản vẽ lại:
+/// mở hồ sơ ra là thấy y hệt thứ mình sắp gửi đi, kể cả video. Trước đây màn
+/// này chỉ đưa ra một cái link, nên muốn xem clip phải chép link rồi dán sang
+/// trình duyệt — đúng chỗ tắc mà màn này sinh ra để gỡ.
+///
+/// Nhúng thay vì dựng lại bằng widget gốc là có lý do ở cả hai phía: không có
+/// bản thứ hai để lệch khi trang web đổi, và không phải ký link cho từng clip ở
+/// API hồ sơ — thứ `getClaimDetail` cố tình tránh vì mỗi clip trên Google Drive
+/// là một lượt đổi token.
+///
+/// Hai việc của người quản lý — chép link và thu hồi — nằm ở thanh dưới, vì
+/// trang công khai không có và không được có chúng.
+class _ClaimPageScreen extends StatefulWidget {
+  const _ClaimPageScreen({
+    required this.title,
+    required this.url,
+    this.onBack,
+    this.onCopy,
+  });
+
+  final String title;
+  final String url;
+  final VoidCallback? onBack;
+  final VoidCallback? onCopy;
+
+  @override
+  State<_ClaimPageScreen> createState() => _ClaimPageScreenState();
+}
+
+class _ClaimPageScreenState extends State<_ClaimPageScreen> {
+  late final WebViewController _controller;
+  bool _loading = true;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(BrandColors.bg)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) {
+            if (mounted) setState(() => _loading = false);
+          },
+          // CHỈ lỗi của khung chính mới là hỏng trang. Một ảnh thu nhỏ 404
+          // cũng gọi vào đây, và bắt nó thành màn "không mở được" là giấu cả
+          // hồ sơ vì một tấm ảnh vặt.
+          onWebResourceError: (e) {
+            if (!mounted || e.isForMainFrame != true) return;
+            setState(() => (_loading = false, _failed = true));
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  void _retry() {
+    setState(() => (_loading = true, _failed = false));
+    unawaited(_controller.loadRequest(Uri.parse(widget.url)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return CupertinoPageScaffold(
+      backgroundColor: BrandColors.bg,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
+              child: Row(
+                children: [
+                  PenBackButton(onTap: widget.onBack),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: PenText(
+                      widget.title.trim().isEmpty
+                          ? l10n.claimUntitled
+                          : widget.title,
+                      size: 20,
+                      color: PenColors.ink,
+                      weight: FontWeight.w800,
+                      softWrap: false,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _failed
+                  ? _ClaimPageError(onRetry: _retry)
+                  : Stack(
+                      children: [
+                        WebViewWidget(controller: _controller),
+                        if (_loading)
+                          const ColoredBox(
+                            color: BrandColors.bg,
+                            child: Center(child: CupertinoActivityIndicator()),
+                          ),
+                      ],
+                    ),
+            ),
+            _ClaimPageActions(onCopy: widget.onCopy),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ClaimPageError extends StatelessWidget {
+  const _ClaimPageError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PenText(
+              l10n.claimPageFailed,
+              size: 14,
+              color: PenColors.mut,
+              align: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            EcTap(
+              onTap: onRetry,
+              child: PenBox(
+                fill: PenColors.card,
+                stroke: PenColors.line,
+                radius: 12,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                children: [
+                  PenText(
+                    l10n.commonRetry,
+                    size: 14,
+                    color: PenColors.ink,
+                    weight: FontWeight.w600,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Chép link — việc duy nhất trang công khai không tự làm được.
+///
+/// KHÔNG có nút thu hồi ở đây, dù màn này là chỗ tự nhiên nhất để đặt nó. Thu
+/// hồi giết một link đã gửi cho sàn và không lùi lại được, nên nó không được
+/// đứng cạnh cái nút người ta bấm hàng ngày. Nó nằm ở danh sách, sau một cú
+/// nhấn giữ — đủ xa để không bấm nhầm, đủ gần để tìm ra khi cần.
+class _ClaimPageActions extends StatelessWidget {
+  const _ClaimPageActions({this.onCopy});
+
+  final VoidCallback? onCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
+      child: EcTap(
+        onTap: onCopy,
+        child: PenBox(
+          width: double.infinity,
+          fill: PenColors.primary,
+          radius: 12,
+          axis: PenAxis.row,
+          gap: 8,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          children: [
+            const Icon(LucideIcons.copy, size: 18, color: PenColors.card),
+            PenText(
+              l10n.claimCopyLink,
+              size: 14,
+              color: PenColors.card,
+              weight: FontWeight.w600,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Một mốc khi hồ sơ có đúng một đơn, một KHOẢNG khi nhiều đơn — nhiều đơn mà
@@ -7094,6 +7383,7 @@ GoRouter _buildRouter(
               GoRoute(
                 path: '/claims',
                 builder: (c, s) => _ClaimListRoute(
+                  repo: repo,
                   shopId: _selected(selectedShop)?.id ?? '',
                   onNavOrders: () => c.go('/home'),
                   onNavRecord: () => c.go('/record'),
@@ -7755,6 +8045,14 @@ GoRouter _buildRouter(
           shopId: _selected(selectedShop)?.id ?? '',
           onScan: () => c.push<String>('/scan'),
           onBack: () => _back(c, '/claims'),
+          // `pushReplacement`: màn tạo bị THAY bằng màn hồ sơ, nên thoát ra là
+          // về danh sách. Dùng `push` thì nút back đưa ngược vào màn tạo với
+          // nguyên bộ bằng chứng đã tick — mời người ta tạo thêm một hồ sơ
+          // trùng y hệt cái vừa xong.
+          onCreated: (dossierId) => c.pushReplacement(
+            '/claim-detail',
+            extra: (_selected(selectedShop)?.id ?? '', dossierId),
+          ),
         ),
       ),
       GoRoute(

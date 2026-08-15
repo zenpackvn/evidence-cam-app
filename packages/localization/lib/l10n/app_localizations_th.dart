@@ -113,6 +113,17 @@ class AppLocalizationsTh extends AppLocalizations {
   String get claimCreatedAtLabel => 'วันที่สร้างแฟ้ม';
 
   @override
+  String get claimCopyLink => 'Copy link';
+
+  @override
+  String get claimsRevokeNoLink =>
+      'This dossier is not on the server yet, so there is no link to revoke.';
+
+  @override
+  String get claimPageFailed =>
+      'Could not open the dossier page. Check your connection and try again.';
+
+  @override
   String get claimLinkLabel => 'ลิงก์แฟ้มเรื่อง';
 
   @override

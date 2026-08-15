@@ -155,6 +155,14 @@ dependencies:
   # present transitively; declared here because the app imports it directly.
   url_launcher: ^6.3.1
 
+  # Trang hồ sơ khiếu nại (`/c/<token>`) hiện NGAY TRONG app.
+  #
+  # Trang đó do máy chủ dựng và là thứ nhân viên sàn sẽ thấy; nhúng nó vào đây
+  # là cách duy nhất để người bán xem đúng cái mình sắp gửi mà không có bản thứ
+  # hai để lệch. Dựng lại bằng widget gốc thì phải ký link cho từng clip ở API
+  # hồ sơ — đúng chi phí `getClaimDetail` đang cố tình tránh.
+  webview_flutter: ^4.13.0
+
   # Real device model (e.g. "SM-M146B") sent up with each recording so the
   # evidence detail screen can show which phone recorded a clip instead of
   # "Không rõ thiết bị".

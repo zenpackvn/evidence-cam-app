@@ -51,6 +51,7 @@ class EcClaimListScreen extends StatelessWidget {
     this.entries = const [],
     this.onOpen,
     this.onCopy,
+    this.onRevoke,
     this.onCreate,
     this.onNavOrders,
     this.onNavRecord,
@@ -60,6 +61,10 @@ class EcClaimListScreen extends StatelessWidget {
   final List<EcClaimEntry> entries;
   final ValueChanged<EcClaimEntry>? onOpen;
   final ValueChanged<EcClaimEntry>? onCopy;
+
+  /// Nhấn giữ một hàng: thu hồi link của hồ sơ đó. Chỗ DUY NHẤT thu hồi được —
+  /// màn bên trong cố tình không có nút này (xem `_ClaimPageActions`).
+  final ValueChanged<EcClaimEntry>? onRevoke;
 
   /// Dấu cộng góc phải: mở màn tạo hồ sơ. Đây là lối tạo DUY NHẤT — trang Vận
   /// đơn không còn nút gộp nào, vì việc tạo hồ sơ thuộc về màn hồ sơ.
@@ -162,6 +167,7 @@ class EcClaimListScreen extends StatelessWidget {
         entry: entries[index],
         onTap: onOpen == null ? null : () => onOpen!(entries[index]),
         onCopy: onCopy == null ? null : () => onCopy!(entries[index]),
+        onLongPress: onRevoke == null ? null : () => onRevoke!(entries[index]),
       ),
     );
   }
@@ -212,17 +218,27 @@ class _LocalOnlyNote extends StatelessWidget {
 }
 
 class _ClaimRow extends StatelessWidget {
-  const _ClaimRow({required this.entry, this.onTap, this.onCopy});
+  const _ClaimRow({
+    required this.entry,
+    this.onTap,
+    this.onCopy,
+    this.onLongPress,
+  });
 
   final EcClaimEntry entry;
   final VoidCallback? onTap;
   final VoidCallback? onCopy;
+
+  /// Nhấn giữ để thu hồi link. Không có nút lộ thiên nào cho việc này — thu hồi
+  /// giết một link đã gửi cho sàn và không lùi lại được.
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return EcTap(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: PenCard(
         axis: PenAxis.row,
         gap: 12,

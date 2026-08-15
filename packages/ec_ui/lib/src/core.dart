@@ -64,6 +64,7 @@ class EcTap extends StatefulWidget {
   const EcTap({
     required this.child,
     this.onTap,
+    this.onLongPress,
     this.pressedOpacity = 0.55,
     this.haptic = true,
     this.behavior = HitTestBehavior.opaque,
@@ -72,6 +73,12 @@ class EcTap extends StatefulWidget {
 
   final Widget child;
   final VoidCallback? onTap;
+
+  /// Nhấn giữ. Dành cho việc HIẾM và nặng tay — thu hồi, xoá — thứ không được
+  /// đứng lộ thiên cạnh các nút bấm hàng ngày, nhưng cũng không nên chôn sâu
+  /// tới mức phải đi tìm.
+  final VoidCallback? onLongPress;
+
   final double pressedOpacity;
   final bool haptic;
   final HitTestBehavior behavior;
@@ -83,7 +90,9 @@ class EcTap extends StatefulWidget {
 class _EcTapState extends State<EcTap> {
   bool _pressed = false;
 
-  bool get _enabled => widget.onTap != null;
+  /// Có bất kỳ cử chỉ nào cũng phải sáng-tối theo ngón tay. Chỉ hỏi `onTap`
+  /// thì hàng chỉ có nhấn-giữ nằm im như một hàng chết.
+  bool get _enabled => widget.onTap != null || widget.onLongPress != null;
 
   void _set(bool value) {
     if (_pressed != value) setState(() => _pressed = value);
@@ -94,6 +103,14 @@ class _EcTapState extends State<EcTap> {
     widget.onTap!.call();
   }
 
+  /// Rung TRƯỚC khi gọi ra ngoài: nhấn giữ không có mốc kết thúc nhìn thấy
+  /// được, nên cú rung chính là thứ báo "đủ lâu rồi, bỏ tay ra được".
+  void _handleLongPress() {
+    _set(false);
+    if (widget.haptic) EcHaptics.tap();
+    widget.onLongPress!.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -101,7 +118,8 @@ class _EcTapState extends State<EcTap> {
       onTapDown: _enabled ? (_) => _set(true) : null,
       onTapUp: _enabled ? (_) => _set(false) : null,
       onTapCancel: _enabled ? () => _set(false) : null,
-      onTap: _enabled ? _handleTap : null,
+      onTap: widget.onTap != null ? _handleTap : null,
+      onLongPress: widget.onLongPress != null ? _handleLongPress : null,
       child: AnimatedOpacity(
         opacity: _pressed ? widget.pressedOpacity : 1,
         duration: const Duration(milliseconds: 90),

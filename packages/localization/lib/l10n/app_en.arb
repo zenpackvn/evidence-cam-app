@@ -62,6 +62,9 @@
     }
   },
   "claimCreatedAtLabel": "Dossier created",
+  "claimCopyLink": "Copy link",
+  "claimsRevokeNoLink": "This dossier is not on the server yet, so there is no link to revoke.",
+  "claimPageFailed": "Could not open the dossier page. Check your connection and try again.",
   "claimLinkLabel": "Dossier link",
   "claimLinkHint": "Anyone with the link can view it, no sign-in needed. It stays live until you revoke it.",
   "claimRevokedBadge": "Revoked",

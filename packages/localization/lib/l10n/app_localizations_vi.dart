@@ -114,6 +114,17 @@ class AppLocalizationsVi extends AppLocalizations {
   String get claimCreatedAtLabel => 'Ngày tạo hồ sơ';
 
   @override
+  String get claimCopyLink => 'Chép link';
+
+  @override
+  String get claimsRevokeNoLink =>
+      'Hồ sơ này chưa lên máy chủ nên chưa có link để thu hồi.';
+
+  @override
+  String get claimPageFailed =>
+      'Chưa mở được trang hồ sơ. Kiểm tra mạng rồi thử lại.';
+
+  @override
   String get claimLinkLabel => 'Link hồ sơ khiếu nại';
 
   @override
