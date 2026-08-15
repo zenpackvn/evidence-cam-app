@@ -300,6 +300,24 @@ abstract class AppLocalizations {
   /// **'Dossier created'**
   String get claimCreatedAtLabel;
 
+  /// No description provided for @claimCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get claimCopyLink;
+
+  /// No description provided for @claimsRevokeNoLink.
+  ///
+  /// In en, this message translates to:
+  /// **'This dossier is not on the server yet, so there is no link to revoke.'**
+  String get claimsRevokeNoLink;
+
+  /// No description provided for @claimPageFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the dossier page. Check your connection and try again.'**
+  String get claimPageFailed;
+
   /// No description provided for @claimLinkLabel.
   ///
   /// In en, this message translates to:

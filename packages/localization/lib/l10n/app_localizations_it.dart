@@ -116,6 +116,17 @@ class AppLocalizationsIt extends AppLocalizations {
   String get claimCreatedAtLabel => 'Fascicolo creato';
 
   @override
+  String get claimCopyLink => 'Copy link';
+
+  @override
+  String get claimsRevokeNoLink =>
+      'This dossier is not on the server yet, so there is no link to revoke.';
+
+  @override
+  String get claimPageFailed =>
+      'Could not open the dossier page. Check your connection and try again.';
+
+  @override
   String get claimLinkLabel => 'Link del fascicolo';
 
   @override
