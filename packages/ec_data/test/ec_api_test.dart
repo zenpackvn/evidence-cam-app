@@ -189,6 +189,8 @@ void main() {
             ).captured.single
             as Map<String, dynamic>;
     expect(captured['tracking'], 'SPXVN1');
+    // Nguồn đơn — web hiện cột này, app thì không, nhưng app phải KHAI.
+    expect(captured['source'], 'mobile');
   });
 
   test(
@@ -217,7 +219,11 @@ void main() {
               ).captured.single
               as Map<String, dynamic>;
 
-      expect(captured, {'tracking': 'SPXVN1', 'capturedAt': 222});
+      expect(captured, {
+        'tracking': 'SPXVN1',
+        'capturedAt': 222,
+        'source': 'mobile',
+      });
     },
   );
 

@@ -527,7 +527,11 @@ class EcApi {
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/shops/$shopId/orders',
-      data: {'tracking': tracking, 'capturedAt': ?capturedAt},
+      // `source` khai một lần ở đây cho MỌI đường tạo đơn của app — quét, gõ
+      // tay, hay ghi bù. Máy chủ chỉ ghi lúc tạo mới, nên quét lại một đơn do
+      // web tạo không biến nó thành `mobile`. App không hiện lại trường này:
+      // ở đây đơn nào cũng `mobile`, cột đó chỉ có nghĩa trên console web.
+      data: {'tracking': tracking, 'capturedAt': ?capturedAt, 'source': 'mobile'},
     );
     return OrderDto.fromJson(res.data!);
   }
