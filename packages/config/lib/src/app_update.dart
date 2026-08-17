@@ -7,53 +7,37 @@ library;
 
 import 'dart:convert';
 
-/// Remote Config key holding the update payload. Empty/absent (the default)
-/// means "never prompt". Set it in the Firebase console as JSON:
+/// Tham số Remote Config DUY NHẤT chứa cấu hình cập nhật: một khối JSON phẳng,
+/// tên khoá bên trong trùng khít [AppUpdateKeys].
 ///
 /// ```json
 /// {
-///   "enabled": true,
-///   "remind_after_hours": 24,
-///   "android": {
-///     "latest": "1.3.0",
-///     "min_supported": "1.1.0",
-///     "force": false,
-///     "store_url": "https://play.google.com/store/apps/details?id=...",
-///     "title": "Đã có phiên bản mới",
-///     "message": "Cập nhật ZenPack để dùng bản mới nhất."
-///   },
-///   "ios": { "latest": "1.3.0", "store_url": "https://apps.apple.com/app/id..." }
+///   "updatePopupEnabled": true,
+///   "updateRemindAfterHours": 24,
+///   "androidLatestVersion": "2.0.1",
+///   "androidMinSupportedVersion": "2.0.1",
+///   "androidIsForceUpdate": true,
+///   "androidStoreUrl": "https://play.google.com/store/apps/details?id=...",
+///   "androidUpdateTitle": "Đã có phiên bản Zenpack mới",
+///   "androidUpdateMessage": "Cập nhật để có trải nghiệm tốt hơn...",
+///   "iosLatestVersion": "2.0.0", "iosMinSupportedVersion": "2.0.0",
+///   "iosIsForceUpdate": true,
+///   "iosStoreUrl": "https://apps.apple.com/app/id..."
 /// }
 /// ```
 ///
-/// `min_supported` is the hard cutoff (blocking); `force` makes `latest` itself
-/// blocking. Omit both for a dismissible nag. `title`/`message` are optional —
-/// the app falls back to its own localized strings, which is the right choice
-/// unless the release needs a specific explanation.
-const appUpdateKey = 'app_update';
+/// Khoá vắng mặt hoặc rỗng (mặc định) nghĩa là "đừng nhắc ai cả".
+/// `*MinSupportedVersion` là mốc chặn cứng; `*IsForceUpdate` biến
+/// `*LatestVersion` thành chặn cứng. Bỏ cả hai thì chỉ là lời nhắc bỏ qua
+/// được. `*UpdateTitle`/`*UpdateMessage` không bắt buộc — thiếu thì app dùng
+/// chuỗi đã dịch của chính nó, và đó mới là lựa chọn đúng trừ khi bản phát
+/// hành cần một lời giải thích riêng.
+const appUpdateBlobKey = 'change_version_zenpack';
 
-/// Tên các THAM SỐ RỜI trên Firebase Remote Config — cách cấu hình đang dùng
-/// thật, và là cách được ưu tiên.
+/// Tên các khoá bên trong khối JSON của [appUpdateBlobKey].
 ///
-/// Khác [appUpdateKey] ở chỗ mỗi giá trị là một tham số riêng trong bảng điều
-/// khiển Firebase, đúng kiểu:
-///
-/// ```
-/// updatePopupEnabled        (boolean) true
-/// updateRemindAfterHours    (number)  24
-/// androidLatestVersion      (string)  "2.0.1"
-/// androidMinSupportedVersion(string)  "2.0.1"
-/// androidIsForceUpdate      (boolean) true
-/// androidStoreUrl           (string)  "https://play.google.com/..."
-/// androidUpdateTitle        (string)  "Đã có phiên bản Zenpack mới"
-/// androidUpdateMessage      (string)  "Cập nhật để có trải nghiệm tốt hơn..."
-/// iosLatestVersion, iosMinSupportedVersion, iosIsForceUpdate,
-/// iosStoreUrl, iosUpdateTitle, iosUpdateMessage — y hệt cho iOS.
-/// ```
-///
-/// Sửa từng dòng trong bảng điều khiển dễ hơn sửa một khối JSON: đổi một số
-/// phiên bản không phải dán lại cả đoạn, và gõ sai một dấu ngoặc không làm câm
-/// toàn bộ cổng cập nhật.
+/// Tách riêng thành hằng số vì đây là hợp đồng với bảng điều khiển Firebase:
+/// gõ sai một tên ở đây thì cổng cập nhật câm lặng, không có lỗi nào nổ.
 class AppUpdateKeys {
   const AppUpdateKeys._();
 
@@ -96,38 +80,30 @@ class AppUpdateConfig {
     this.message = '',
   });
 
-  /// Parses the Remote Config JSON, picking the `android`/`ios` sub-object for
-  /// [platform]. Returns a disabled config on anything malformed — a bad
-  /// payload must never prompt, and must never throw at startup.
+  /// Đọc khối JSON của [appUpdateBlobKey].
+  ///
+  /// Rỗng, không phải JSON, hay không phải một object đều rơi về "không bật,
+  /// không chặn ai": một cấu hình hỏng KHÔNG được phép khoá người dùng ra khỏi
+  /// app của họ, và cũng không được phép ném lỗi lúc khởi động.
   factory AppUpdateConfig.parse(String raw, {required String platform}) {
     if (raw.trim().isEmpty) return const AppUpdateConfig();
     try {
-      final root = jsonDecode(raw);
-      if (root is! Map<String, dynamic>) return const AppUpdateConfig();
-      final platformNode = root[platform];
-      final node = platformNode is Map<String, dynamic>
-          ? platformNode
-          : const <String, dynamic>{};
-      return AppUpdateConfig(
-        enabled: root['enabled'] == true,
-        remindAfterHours: (root['remind_after_hours'] as num?)?.toInt() ?? 24,
-        latestVersion: node['latest'] as String? ?? '',
-        minSupportedVersion: node['min_supported'] as String? ?? '',
-        isForceUpdate: node['force'] == true,
-        storeUrl: node['store_url'] as String? ?? '',
-        title: node['title'] as String? ?? '',
-        message: node['message'] as String? ?? '',
-      );
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, Object?>) return const AppUpdateConfig();
+      return AppUpdateConfig.fromFlat(decoded, platform: platform);
     } on Object {
       return const AppUpdateConfig();
     }
   }
 
-  /// Dựng từ các THAM SỐ RỜI đã đọc sẵn khỏi Remote Config.
+  /// Dựng từ một `Map` đã giải mã sẵn.
   ///
   /// Nhận một `Map` chứ không nhận thẳng dịch vụ Remote Config: tệp này cố ý
   /// thuần — không Firebase, không plugin, không đồng hồ — nên luật kiểm phiên
   /// bản test được mà không cần dựng cả một dự án Firebase.
+  ///
+  /// Bảng điều khiển Firebase lưu số thành chuỗi ở một số đường đọc, nên mọi
+  /// trường đều nhận cả hai kiểu.
   ///
   /// Thiếu khoá thì rơi về mặc định an toàn: không bật, không chặn ai. Một cấu
   /// hình hỏng KHÔNG được phép khoá người dùng ra khỏi app của họ.

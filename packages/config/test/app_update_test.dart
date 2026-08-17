@@ -95,31 +95,60 @@ void main() {
     });
   });
 
-  group('AppUpdateConfig.parse', () {
-    test('reads the sub-object for the running platform', () {
-      const raw = '''
-      {
-        "enabled": true,
-        "remind_after_hours": 6,
-        "android": {"latest": "2.0.0", "store_url": "market://a"},
-        "ios": {"latest": "1.5.0", "store_url": "itms://i", "force": true}
-      }''';
+  group('AppUpdateConfig.parse (khối JSON $appUpdateBlobKey)', () {
+    // Đúng nguyên văn giá trị đang nằm trên Firebase, dán lại chứ không dựng
+    // lại từ hằng số: test này để bắt lúc khối JSON thật lệch khỏi thứ app đọc
+    // được, nên nó phải là bản sao độc lập.
+    const raw = '''
+    {
+      "updatePopupEnabled": true,
+      "updateRemindAfterHours": 24,
+      "androidLatestVersion": "2.0.1",
+      "androidMinSupportedVersion": "2.0.1",
+      "androidIsForceUpdate": true,
+      "androidStoreUrl": "https://play.google.com/store/apps/details?id=com.aktechvn.zenpack",
+      "androidUpdateTitle": "Đã có phiên bản Zenpack mới",
+      "androidUpdateMessage": "Cập nhật để có trải nghiệm tốt hơn...",
+      "iosLatestVersion": "2.0.0",
+      "iosMinSupportedVersion": "2.0.0",
+      "iosIsForceUpdate": true,
+      "iosStoreUrl": "https://apps.apple.com/app/id6794540715",
+      "iosUpdateTitle": "Đã có phiên bản Zenpack mới",
+      "iosUpdateMessage": "Cập nhật để có trải nghiệm tốt hơn..."
+    }''';
+
+    test('tách đúng phần của từng nền tảng', () {
+      final android = AppUpdateConfig.parse(raw, platform: 'android');
+      expect(android.enabled, isTrue);
+      expect(android.remindAfterHours, 24);
+      expect(android.latestVersion, '2.0.1');
+      expect(android.minSupportedVersion, '2.0.1');
+      expect(android.isForceUpdate, isTrue);
+      expect(android.storeUrl, contains('com.aktechvn.zenpack'));
 
       final ios = AppUpdateConfig.parse(raw, platform: 'ios');
-      expect(ios.latestVersion, '1.5.0');
-      expect(ios.isForceUpdate, isTrue);
-      expect(ios.remindAfterHours, 6);
-
-      final android = AppUpdateConfig.parse(raw, platform: 'android');
-      expect(android.latestVersion, '2.0.0');
-      expect(android.isForceUpdate, isFalse);
+      expect(ios.latestVersion, '2.0.0');
+      expect(ios.storeUrl, contains('id6794540715'));
     });
 
-    test('degrades to disabled on empty or malformed payloads', () {
-      for (final raw in ['', '   ', 'not json', '[]', '{"android": 7}']) {
-        final cfg = AppUpdateConfig.parse(raw, platform: 'android');
-        expect(cfg.enabled, isFalse, reason: raw);
-        expect(check(cfg), isNull, reason: raw);
+    // Khối JSON thật và bảng tham số rời phải cho ra cùng một quyết định —
+    // nếu không thì một trong hai đang nói dối.
+    test('quyết định y hệt khi dựng thẳng từ Map', () {
+      final fromJson = AppUpdateConfig.parse(raw, platform: 'android');
+      final prompt = checkAppUpdate(
+        config: fromJson,
+        currentVersion: '2.0.0',
+        now: DateTime(2026, 8, 17),
+      );
+      expect(prompt!.isForced, isTrue);
+      expect(prompt.title, 'Đã có phiên bản Zenpack mới');
+    });
+
+    test('rỗng hoặc hỏng thì tắt hẳn, không chặn ai', () {
+      for (final bad in ['', '   ', 'not json', '[]', '{"androidLatest": ']) {
+        final cfg = AppUpdateConfig.parse(bad, platform: 'android');
+        expect(cfg.enabled, isFalse, reason: bad);
+        expect(check(cfg), isNull, reason: bad);
       }
     });
   });

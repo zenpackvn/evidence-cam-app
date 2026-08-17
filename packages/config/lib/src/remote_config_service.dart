@@ -71,7 +71,7 @@ class FirebaseRemoteConfigService implements RemoteConfigService {
       );
       await _remoteConfig.setDefaults(<String, Object>{
         for (final flag in FeatureFlag.values) flag.key: flag.defaultValue,
-        appUpdateKey: '',
+        appUpdateBlobKey: '',
       });
       _fetch = _fetchAndActivate();
       unawaited(_fetch);

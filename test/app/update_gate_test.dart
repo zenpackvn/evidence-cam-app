@@ -20,7 +20,7 @@ class _FakeRemoteConfig implements RemoteConfigService {
   Future<void> get fetched async {}
 
   @override
-  String getString(String key) => key == appUpdateKey ? _payload : '';
+  String getString(String key) => key == appUpdateBlobKey ? _payload : '';
 
   @override
   bool getBool(String key) => false;
@@ -66,10 +66,13 @@ void main() {
   }
 
   String payload({required bool force}) =>
-      '{"enabled": true, "android": {"latest": "2.0.0", "force": $force, '
-      '"store_url": "https://example.com", "message": "Có bản mới"}, '
-      '"ios": {"latest": "2.0.0", "force": $force, '
-      '"store_url": "https://example.com", "message": "Có bản mới"}}';
+      '{"updatePopupEnabled": true, '
+      '"androidLatestVersion": "2.0.0", "androidIsForceUpdate": $force, '
+      '"androidStoreUrl": "https://example.com", '
+      '"androidUpdateMessage": "Có bản mới", '
+      '"iosLatestVersion": "2.0.0", "iosIsForceUpdate": $force, '
+      '"iosStoreUrl": "https://example.com", '
+      '"iosUpdateMessage": "Có bản mới"}';
 
   testWidgets('renders the prompt over the app once config asks for it', (
     tester,

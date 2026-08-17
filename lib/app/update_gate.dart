@@ -50,56 +50,16 @@ class _UpdateGateState extends State<UpdateGate> {
 
     final platform = Platform.isIOS ? 'ios' : 'android';
     final prompt = checkAppUpdate(
-      config: _configFor(service, platform),
+      config: AppUpdateConfig.parse(
+        service.getString(appUpdateBlobKey),
+        platform: platform,
+      ),
       currentVersion: (await PackageInfo.fromPlatform()).version,
       now: DateTime.now(),
       lastDismissedAt: _dismissedAt(),
       postponedVersion: _store()?.getString(_postponedVersionKey),
     );
     if (prompt != null && mounted) setState(() => _prompt = prompt);
-  }
-
-  /// Cấu hình cập nhật, đọc theo THAM SỐ RỜI trước, JSON gộp sau.
-  ///
-  /// Hai cách cấu hình cùng tồn tại có chủ đích: tham số rời là cách đang dùng
-  /// thật trên Firebase (dễ sửa từng dòng, và gõ sai một chỗ không câm cả
-  /// cổng), còn khoá JSON gộp `app_update` là cách cũ và vẫn phải chạy — một
-  /// bản app đã cài trên máy khách không biết ta vừa đổi cách cấu hình.
-  ///
-  /// Chỉ lùi về JSON khi tham số rời KHÔNG nói được gì: thiếu cả phiên bản lẫn
-  /// link cửa hàng thì đó là cấu hình chưa điền xong, không phải cấu hình nói
-  /// "đừng nhắc".
-  AppUpdateConfig _configFor(RemoteConfigService service, String platform) {
-    final flat = AppUpdateConfig.fromFlat({
-      AppUpdateKeys.enabled: service.getBool(AppUpdateKeys.enabled),
-      AppUpdateKeys.remindAfterHours: service.getInt(
-        AppUpdateKeys.remindAfterHours,
-      ),
-      AppUpdateKeys.force(platform): service.getBool(
-        AppUpdateKeys.force(platform),
-      ),
-      AppUpdateKeys.latest(platform): service.getString(
-        AppUpdateKeys.latest(platform),
-      ),
-      AppUpdateKeys.minSupported(platform): service.getString(
-        AppUpdateKeys.minSupported(platform),
-      ),
-      AppUpdateKeys.storeUrl(platform): service.getString(
-        AppUpdateKeys.storeUrl(platform),
-      ),
-      AppUpdateKeys.title(platform): service.getString(
-        AppUpdateKeys.title(platform),
-      ),
-      AppUpdateKeys.message(platform): service.getString(
-        AppUpdateKeys.message(platform),
-      ),
-    }, platform: platform);
-    if (flat.latestVersion.isNotEmpty && flat.storeUrl.isNotEmpty) return flat;
-
-    return AppUpdateConfig.parse(
-      service.getString(appUpdateKey),
-      platform: platform,
-    );
   }
 
   KeyValueStore? _store() =>
