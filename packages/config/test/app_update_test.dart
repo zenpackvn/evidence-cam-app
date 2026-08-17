@@ -124,7 +124,6 @@ void main() {
     });
   });
 
-
   group('cấu hình dạng tham số rời', () {
     test('đọc đúng mọi trường của Android', () {
       final c = AppUpdateConfig.fromFlat(_live, platform: 'android');
@@ -291,5 +290,3 @@ AppUpdatePrompt? _promptFor(
   lastDismissedAt: dismissedAt,
   postponedVersion: postponed,
 );
-
-

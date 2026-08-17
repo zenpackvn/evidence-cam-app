@@ -860,7 +860,8 @@ class RecordingSessionBloc
     //
     // Vẫn nhớ mã vừa cảnh báo để bill nằm trong khung không làm câu thông báo
     // lặp lại mỗi nhịp quét.
-    final verify = state.typeLabel == 'Trả hàng' &&
+    final verify =
+        state.typeLabel == 'Trả hàng' &&
             _verifyReturnCode != null &&
             _lastRejectedReturnCode != code
         ? _verifyReturnCode

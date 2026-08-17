@@ -22,9 +22,13 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-Map<String, dynamic> _arb(String code) => jsonDecode(
-  File('packages/localization/lib/l10n/app_$code.arb').readAsStringSync(),
-) as Map<String, dynamic>;
+Map<String, dynamic> _arb(String code) =>
+    jsonDecode(
+          File(
+            'packages/localization/lib/l10n/app_$code.arb',
+          ).readAsStringSync(),
+        )
+        as Map<String, dynamic>;
 
 const _locales = [
   'vi',
@@ -63,7 +67,9 @@ void main() {
   test('hàng đợi upload dựng nhãn từ cả ngày lẫn giờ', () {
     final source = File('lib/ec_app.dart').readAsStringSync();
     expect(
-      source.contains(r"when: '${_dayLabelOf(task.createdAt)} ${_hhmm(task.createdAt)}'"),
+      source.contains(
+        r"when: '${_dayLabelOf(task.createdAt)} ${_hhmm(task.createdAt)}'",
+      ),
       isTrue,
       reason: 'hàng đợi lại chỉ mang giờ, không mang ngày',
     );

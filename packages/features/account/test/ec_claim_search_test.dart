@@ -108,7 +108,9 @@ void main() {
     await tester.tap(find.byIcon(LucideIcons.search));
     await tester.pumpAndSettle();
 
-    expect(asked, ['88081226000032'], reason: 'gửi lên máy chủ cả khoảng trắng');
+    expect(asked, [
+      '88081226000032',
+    ], reason: 'gửi lên máy chủ cả khoảng trắng');
   });
 }
 

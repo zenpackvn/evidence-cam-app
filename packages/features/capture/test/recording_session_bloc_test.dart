@@ -167,7 +167,8 @@ void main() {
       expect(
         verifyFinished,
         isFalse,
-        reason: 'lượt đối chiếu xong trước cả mốc đo, ca này không chứng minh gì',
+        reason:
+            'lượt đối chiếu xong trước cả mốc đo, ca này không chứng minh gì',
       );
     },
   );

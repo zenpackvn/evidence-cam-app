@@ -1558,6 +1558,7 @@ class EcUploadItem {
 
   final String code;
   final String typeLabel;
+
   /// NGÀY và GIỜ clip vào hàng đợi, ví dụ `17/08/2026 09:12`.
   ///
   /// Từng tên là `timeRange` và chỉ mang `HH:mm`. Hàng đợi giữ clip qua đêm khi
