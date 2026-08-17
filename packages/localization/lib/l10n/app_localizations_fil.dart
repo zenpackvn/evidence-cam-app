@@ -26,7 +26,11 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get claimsLocalOnlyNote =>
-      'Nakaimbak ang listahang ito sa device na ito. Mawawala ito kapag inalis ang app o lumipat ka ng device.';
+      'May mga dossier na hindi pa naipapadala, kaya nasa device na ito lang.';
+
+  @override
+  String get claimsOfflineNote =>
+      'Hindi maabot ang server, kaya ito ang kopyang nasa device. Buksang muli kapag may internet.';
 
   @override
   String get claimsEmpty =>

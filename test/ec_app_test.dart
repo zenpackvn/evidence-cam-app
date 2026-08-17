@@ -784,6 +784,90 @@ void main() {
     },
   );
 
+  /// Danh sách hồ sơ khiếu nại đọc từ MÁY CHỦ, không đọc bản lưu trên máy.
+  ///
+  /// Đây là chính cái bug: hồ sơ tạo ở web không bao giờ hiện ra trên app, vì
+  /// màn này chỉ vẽ `EcClaimStore` — một kho nằm trong máy, mà web thì không
+  /// ghi vào đó được. Cùng một cửa hàng, hai nơi kể hai câu chuyện.
+  testWidgets(
+    'màn hồ sơ hiện cả hồ sơ tạo ở nơi khác, không chỉ hồ sơ tạo trên máy này',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': 1,
+        'ValueNotifier<EcUser?>': 1,
+      },
+    ),
+    (tester) async {
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: _ServerClaimsRepository()),
+      );
+      await signInWithGoogle(tester);
+      await tester.tap(find.text('Khiếu nại').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hồ sơ tạo ở web'), findsOneWidget);
+      // Số bằng chứng phải là số của MÁY CHỦ. Đếm từ bản trên máy thì hồ sơ này
+      // ra 0, vì trên máy không có bản nào của nó.
+      expect(find.textContaining('3 bằng chứng'), findsOneWidget);
+    },
+  );
+
+  /// Hồ sơ đã thu hồi ở web phải TRÔNG như đã thu hồi trên app.
+  ///
+  /// Trước đây app không biết gì về việc thu hồi ở nơi khác, nên vẫn bày một
+  /// nút chép — bấm vào là người bán gửi cho sàn một link 404 lần nữa.
+  testWidgets(
+    'hồ sơ đã thu hồi hiện nhãn và không còn nút chép',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': 1,
+        'ValueNotifier<EcUser?>': 1,
+      },
+    ),
+    (tester) async {
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: _ServerClaimsRepository()),
+      );
+      await signInWithGoogle(tester);
+      await tester.tap(find.text('Khiếu nại').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Đã thu hồi'), findsOneWidget);
+      // Một hàng còn sống, một hàng đã thu hồi → đúng MỘT nút chép.
+      expect(find.byIcon(LucideIcons.copy), findsOneWidget);
+    },
+  );
+
+  /// Mất mạng thì lùi về bộ đệm trên máy và NÓI RA, không để màn trống.
+  ///
+  /// Người bán mở tab này giữa lúc đang cãi nhau với sàn; một danh sách rỗng
+  /// đọc ra là "hồ sơ của tôi mất rồi", chứ không ai đoán là mạng chập.
+  testWidgets(
+    'đọc hỏng thì vẽ bản lưu tạm và nói rõ đó là bản tạm',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': 1,
+        'ValueNotifier<EcUser?>': 1,
+      },
+    ),
+    (tester) async {
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: _ClaimListFailingRepository()),
+      );
+      await signInWithGoogle(tester);
+      await tester.tap(find.text('Khiếu nại').last);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Chưa nối được máy chủ'),
+        findsOneWidget,
+      );
+    },
+  );
+
   testWidgets(
     'quota screen shows remaining storage from the repository',
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
@@ -1582,4 +1666,38 @@ class _DemoRepository extends FakeEcRepository {
     ),
     VideoTypeDto(id: 'default-return', name: 'Trả hàng', isDefault: true),
   ];
+}
+
+/// Hai hồ sơ CHỈ có trên máy chủ — không hồ sơ nào được tạo từ máy này.
+///
+/// Đúng hình dạng của cửa hàng vừa cài app trên điện thoại mới, hoặc của một
+/// người bán vẫn tạo hồ sơ ở web.
+class _ServerClaimsRepository extends _DemoRepository {
+  @override
+  Future<List<ClaimDto>> listClaims(String shopId) async => const [
+    ClaimDto(
+      id: 'claim-web-1',
+      url: 'https://zenpack.vn/c/web1',
+      title: 'Hồ sơ tạo ở web',
+      orderCount: 2,
+      evidenceCount: 3,
+      createdAt: 1754000000000,
+    ),
+    ClaimDto(
+      id: 'claim-web-2',
+      url: 'https://zenpack.vn/c/web2',
+      title: 'Hồ sơ đã đóng',
+      orderCount: 1,
+      evidenceCount: 1,
+      revoked: true,
+      createdAt: 1754000000000,
+    ),
+  ];
+}
+
+/// Máy chủ không trả lời — đo nhánh lùi về bộ đệm trên máy.
+class _ClaimListFailingRepository extends _DemoRepository {
+  @override
+  Future<List<ClaimDto>> listClaims(String shopId) async =>
+      throw Exception('mạng hỏng');
 }

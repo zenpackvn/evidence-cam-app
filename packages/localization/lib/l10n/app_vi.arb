@@ -5,7 +5,8 @@
   "bundleCreateClaim": "Tạo hồ sơ khiếu nại",
   "accountClaims": "Hồ sơ khiếu nại",
   "claimsTitle": "Hồ sơ khiếu nại",
-  "claimsLocalOnlyNote": "Danh sách này lưu trên máy này. Gỡ ứng dụng hoặc đổi máy là không còn.",
+  "claimsLocalOnlyNote": "Một số hồ sơ chưa gửi lên được nên hiện chỉ có trên máy này.",
+  "claimsOfflineNote": "Chưa nối được máy chủ nên đây là bản lưu tạm trên máy. Mở lại khi có mạng để thấy đủ.",
   "claimsEmpty": "Chưa có hồ sơ nào. Vào tab Vận đơn, bấm dấu cộng rồi chọn bằng chứng để tạo.",
   "claimsSummary": "{orders} đơn · {evidence} bằng chứng",
   "@claimsSummary": {

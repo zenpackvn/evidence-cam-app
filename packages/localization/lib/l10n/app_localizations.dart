@@ -147,8 +147,14 @@ abstract class AppLocalizations {
   /// No description provided for @claimsLocalOnlyNote.
   ///
   /// In en, this message translates to:
-  /// **'This list is stored on this device. Uninstalling the app or switching devices loses it.'**
+  /// **'Some dossiers have not been uploaded yet, so they exist only on this device.'**
   String get claimsLocalOnlyNote;
+
+  /// No description provided for @claimsOfflineNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot reach the server, so this is the copy stored on this device. Reopen when online to see everything.'**
+  String get claimsOfflineNote;
 
   /// No description provided for @claimsEmpty.
   ///

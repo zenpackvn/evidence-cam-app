@@ -25,7 +25,11 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get claimsLocalOnlyNote =>
-      'Senarai ini disimpan dalam peranti ini. Menyahpasang apl atau bertukar peranti akan menghilangkannya.';
+      'Sesetengah fail belum dihantar, jadi ia hanya ada pada peranti ini.';
+
+  @override
+  String get claimsOfflineNote =>
+      'Tidak dapat menghubungi pelayan, ini salinan pada peranti. Buka semula apabila dalam talian.';
 
   @override
   String get claimsEmpty =>

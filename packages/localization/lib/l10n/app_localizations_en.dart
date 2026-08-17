@@ -25,7 +25,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get claimsLocalOnlyNote =>
-      'This list is stored on this device. Uninstalling the app or switching devices loses it.';
+      'Some dossiers have not been uploaded yet, so they exist only on this device.';
+
+  @override
+  String get claimsOfflineNote =>
+      'Cannot reach the server, so this is the copy stored on this device. Reopen when online to see everything.';
 
   @override
   String get claimsEmpty =>

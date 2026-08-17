@@ -5,7 +5,8 @@
   "bundleCreateClaim": "Create claim dossier",
   "accountClaims": "Claim dossiers",
   "claimsTitle": "Claim dossiers",
-  "claimsLocalOnlyNote": "This list is stored on this device. Uninstalling the app or switching devices loses it.",
+  "claimsLocalOnlyNote": "Some dossiers have not been uploaded yet, so they exist only on this device.",
+  "claimsOfflineNote": "Cannot reach the server, so this is the copy stored on this device. Reopen when online to see everything.",
   "claimsEmpty": "No dossiers yet. Open the Orders tab, tap the plus button and pick the evidence to build one.",
   "claimsSummary": "{orders} orders · {evidence} evidence",
   "@claimsSummary": {

@@ -26,7 +26,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get claimsLocalOnlyNote =>
-      'Danh sách này lưu trên máy này. Gỡ ứng dụng hoặc đổi máy là không còn.';
+      'Một số hồ sơ chưa gửi lên được nên hiện chỉ có trên máy này.';
+
+  @override
+  String get claimsOfflineNote =>
+      'Chưa nối được máy chủ nên đây là bản lưu tạm trên máy. Mở lại khi có mạng để thấy đủ.';
 
   @override
   String get claimsEmpty =>
