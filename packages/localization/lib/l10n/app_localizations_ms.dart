@@ -441,7 +441,8 @@ class AppLocalizationsMs extends AppLocalizations {
   String get uploadStatusDeleted => 'Dipadam';
 
   @override
-  String get uploadStatusError => 'Ralat pemprosesan di pelayan';
+  String get uploadStatusError =>
+      'Muat naik tidak selesai — klip masih pada peranti yang merakamnya';
 
   @override
   String get uploadStatusExpired => 'Tempoh simpanan tamat';
@@ -1070,6 +1071,15 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Menunggu dimuat naik';
+
+  @override
+  String get queueUploading => 'Sedang dimuat naik';
+
+  @override
+  String get queueQuotaShort => 'Menunggu kuota';
+
+  @override
+  String get queueUploadFailed => 'Muat naik tidak selesai';
 
   @override
   String get uploaded => 'Dimuat naik';

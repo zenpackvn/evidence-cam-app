@@ -7373,7 +7373,7 @@ EcUploadItem _taskToItem(UploadTask task) => EcUploadItem(
   id: task.id,
   code: task.tracking,
   typeLabel: task.type,
-  timeRange: _hhmm(task.createdAt),
+  when: '${_dayLabelOf(task.createdAt)} ${_hhmm(task.createdAt)}',
   status: switch (task.state) {
     EcUploadState.waiting => EcUploadStatus.waiting,
     EcUploadState.uploading => EcUploadStatus.uploading,

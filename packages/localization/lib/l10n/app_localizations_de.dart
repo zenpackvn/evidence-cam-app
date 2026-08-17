@@ -445,7 +445,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get uploadStatusDeleted => 'Gelöscht';
 
   @override
-  String get uploadStatusError => 'Verarbeitungsfehler auf dem Server';
+  String get uploadStatusError =>
+      'Upload unvollständig — der Clip liegt noch auf dem Aufnahmegerät';
 
   @override
   String get uploadStatusExpired => 'Aufbewahrungsfrist abgelaufen';
@@ -1088,6 +1089,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Wartet auf Upload';
+
+  @override
+  String get queueUploading => 'Wird hochgeladen';
+
+  @override
+  String get queueQuotaShort => 'Wartet auf Kontingent';
+
+  @override
+  String get queueUploadFailed => 'Upload unvollständig';
 
   @override
   String get uploaded => 'Hochgeladen';

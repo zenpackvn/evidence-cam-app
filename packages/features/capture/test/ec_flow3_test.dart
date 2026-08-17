@@ -12,33 +12,33 @@ const List<EcUploadItem> _sampleUploadItems = [
   EcUploadItem(
     code: 'SPXVN024567890',
     typeLabel: 'Đóng hàng đi',
-    timeRange: '02:45 - 10:23',
+    when: '17/08/2026 10:23',
     status: EcUploadStatus.uploading,
     progressPercent: 72,
   ),
   EcUploadItem(
     code: 'SPXVN098765432',
     typeLabel: 'Đóng hàng đi',
-    timeRange: '03:12 - 10:28',
+    when: '17/08/2026 10:28',
     status: EcUploadStatus.waiting,
   ),
   EcUploadItem(
     code: 'SPXVN011122233',
     typeLabel: 'Đơn vị vận chuyển',
-    timeRange: '01:05 - 10:40',
+    when: '17/08/2026 10:40',
     status: EcUploadStatus.done,
   ),
   EcUploadItem(
     code: 'SPXVN044556677',
     typeLabel: 'Trả hàng',
-    timeRange: '04:20 - 10:55',
+    when: '17/08/2026 10:55',
     status: EcUploadStatus.error,
     retryCount: 2,
   ),
   EcUploadItem(
     code: 'SPXVN055667788',
     typeLabel: 'Đóng hàng đi',
-    timeRange: '02:10 - 11:02',
+    when: '17/08/2026 11:02',
     status: EcUploadStatus.quotaWait,
   ),
 ];

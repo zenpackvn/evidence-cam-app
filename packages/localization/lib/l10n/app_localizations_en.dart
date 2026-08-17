@@ -436,7 +436,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploadStatusDeleted => 'Deleted';
 
   @override
-  String get uploadStatusError => 'Server-side processing error';
+  String get uploadStatusError =>
+      'Upload unfinished — the clip is still on the device that recorded it';
 
   @override
   String get uploadStatusExpired => 'Storage retention expired';
@@ -1065,6 +1066,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Waiting to upload';
+
+  @override
+  String get queueUploading => 'Uploading';
+
+  @override
+  String get queueQuotaShort => 'Waiting on quota';
+
+  @override
+  String get queueUploadFailed => 'Upload unfinished';
 
   @override
   String get uploaded => 'Uploaded';

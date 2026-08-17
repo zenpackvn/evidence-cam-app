@@ -233,7 +233,7 @@
   "uploadStatusPending": "Waiting to upload",
   "uploadStatusQuotaHold": "On hold (quota)",
   "uploadStatusDeleted": "Deleted",
-  "uploadStatusError": "Server-side processing error",
+  "uploadStatusError": "Upload unfinished — the clip is still on the device that recorded it",
   "uploadStatusExpired": "Storage retention expired",
   "expiredOnDate": "Storage retention expired on {date}",
   "@expiredOnDate": {
@@ -565,6 +565,9 @@
   "queueEmpty": "No videos in the queue yet",
   "queueAutoUploadNote": "Upload happens automatically when you're online",
   "waitingUpload": "Waiting to upload",
+  "queueUploading": "Uploading",
+  "queueQuotaShort": "Waiting on quota",
+  "queueUploadFailed": "Upload unfinished",
   "uploaded": "Uploaded",
   "waitingQuota": "Waiting for allowance · still on device",
   "pausedUpload": "Paused",

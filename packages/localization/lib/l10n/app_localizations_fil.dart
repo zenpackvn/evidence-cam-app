@@ -441,7 +441,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get uploadStatusDeleted => 'Nabura';
 
   @override
-  String get uploadStatusError => 'Error sa pagproseso sa server';
+  String get uploadStatusError =>
+      'Hindi natapos ang upload — nasa device pa rin na kumuha ang clip';
 
   @override
   String get uploadStatusExpired => 'Tapos na ang panahon ng imbakan';
@@ -1071,6 +1072,15 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Naghihintay mag-upload';
+
+  @override
+  String get queueUploading => 'Ina-upload';
+
+  @override
+  String get queueQuotaShort => 'Naghihintay ng quota';
+
+  @override
+  String get queueUploadFailed => 'Hindi natapos ang upload';
 
   @override
   String get uploaded => 'Na-upload';

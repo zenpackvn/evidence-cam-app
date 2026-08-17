@@ -1545,7 +1545,7 @@ class EcUploadItem {
   const EcUploadItem({
     required this.code,
     required this.typeLabel,
-    required this.timeRange,
+    required this.when,
     required this.status,
     this.id,
     this.progressPercent,
@@ -1558,7 +1558,15 @@ class EcUploadItem {
 
   final String code;
   final String typeLabel;
-  final String timeRange;
+  /// NGÀY và GIỜ clip vào hàng đợi, ví dụ `17/08/2026 09:12`.
+  ///
+  /// Từng tên là `timeRange` và chỉ mang `HH:mm`. Hàng đợi giữ clip qua đêm khi
+  /// mạng chập hoặc hết hạn mức, nên một cột chỉ có giờ thì "09:12" của hôm nay
+  /// và "09:12" của ba hôm trước trông y hệt nhau — đúng lúc người bán cần biết
+  /// clip nào đã kẹt lâu.
+  ///
+  /// Giờ theo đồng hồ 24 giờ, không AM/PM.
+  final String when;
   final EcUploadStatus status;
   final int? progressPercent;
   final int? retryCount;
@@ -1901,7 +1909,7 @@ class _UploadRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '${item.typeLabel} · ${item.timeRange}',
+                  '${item.typeLabel} · ${item.when} · ${_statusWord(context, item.status)}',
                   overflow: TextOverflow.ellipsis,
                   style: _t(12, FontWeight.w400, BrandColors.mut),
                 ),
@@ -2004,6 +2012,26 @@ class _UploadProgressBar extends StatelessWidget {
 /// The row's whole status, at the trailing edge. One place per row: the status
 /// used to be a text line under the meta line *and* a glyph out here, which
 /// said the same thing twice and pushed every row three lines tall.
+/// Trạng thái của một hàng, bằng CHỮ.
+///
+/// Phần đuôi hàng đã có phần trăm, nút thử lại, hoặc nhãn chờ — nhưng hàng đã
+/// xong thì chỉ có một dấu tích, và một dấu tích không nói được "đã lên cloud"
+/// với người chưa quen app. Đưa trạng thái vào dòng thông tin để mọi hàng đều
+/// đọc được thành lời, không phải đoán qua biểu tượng.
+String _statusWord(BuildContext context, EcUploadStatus status) {
+  final l10n = context.l10n;
+  return switch (status) {
+    EcUploadStatus.done => l10n.uploaded,
+    EcUploadStatus.uploading => l10n.queueUploading,
+    EcUploadStatus.waiting => l10n.waitingUpload,
+    EcUploadStatus.paused => l10n.pausedUpload,
+    // Bản dài ("Chờ hạn mức · còn trên máy") dành cho nhãn ở đuôi hàng, nơi nó
+    // có chỗ xuống dòng. Ở dòng thông tin thì nó đẩy ngày giờ ra khỏi màn.
+    EcUploadStatus.quotaWait => l10n.queueQuotaShort,
+    EcUploadStatus.error => l10n.queueUploadFailed,
+  };
+}
+
 class _UploadStatusTrailing extends StatelessWidget {
   const _UploadStatusTrailing({required this.item, this.onRetry});
   final EcUploadItem item;

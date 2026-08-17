@@ -436,7 +436,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get uploadStatusDeleted => 'Dihapus';
 
   @override
-  String get uploadStatusError => 'Kesalahan pemrosesan di server';
+  String get uploadStatusError =>
+      'Unggahan belum selesai — klip masih ada di perangkat yang merekam';
 
   @override
   String get uploadStatusExpired => 'Masa simpan berakhir';
@@ -1062,6 +1063,15 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Menunggu diunggah';
+
+  @override
+  String get queueUploading => 'Mengunggah';
+
+  @override
+  String get queueQuotaShort => 'Menunggu kuota';
+
+  @override
+  String get queueUploadFailed => 'Unggahan belum selesai';
 
   @override
   String get uploaded => 'Terunggah';

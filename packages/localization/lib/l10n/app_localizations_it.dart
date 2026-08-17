@@ -445,7 +445,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get uploadStatusDeleted => 'Eliminato';
 
   @override
-  String get uploadStatusError => 'Errore di elaborazione lato server';
+  String get uploadStatusError =>
+      'Caricamento non completato — il video è ancora sul dispositivo che lo ha registrato';
 
   @override
   String get uploadStatusExpired => 'Periodo di conservazione scaduto';
@@ -1080,6 +1081,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get waitingUpload => 'In attesa di caricamento';
+
+  @override
+  String get queueUploading => 'In caricamento';
+
+  @override
+  String get queueQuotaShort => 'In attesa di quota';
+
+  @override
+  String get queueUploadFailed => 'Caricamento non completato';
 
   @override
   String get uploaded => 'Caricato';

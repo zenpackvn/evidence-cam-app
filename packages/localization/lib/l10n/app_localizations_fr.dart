@@ -447,7 +447,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get uploadStatusDeleted => 'Supprimée';
 
   @override
-  String get uploadStatusError => 'Erreur de traitement côté serveur';
+  String get uploadStatusError =>
+      'Envoi inachevé — le clip est encore sur l\'appareil qui l\'a filmé';
 
   @override
   String get uploadStatusExpired => 'Durée de conservation expirée';
@@ -1092,6 +1093,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get waitingUpload => 'En attente d\'envoi';
+
+  @override
+  String get queueUploading => 'Envoi en cours';
+
+  @override
+  String get queueQuotaShort => 'En attente de quota';
+
+  @override
+  String get queueUploadFailed => 'Envoi inachevé';
 
   @override
   String get uploaded => 'Envoyée';

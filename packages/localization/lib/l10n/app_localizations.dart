@@ -879,7 +879,7 @@ abstract class AppLocalizations {
   /// No description provided for @uploadStatusError.
   ///
   /// In en, this message translates to:
-  /// **'Server-side processing error'**
+  /// **'Upload unfinished — the clip is still on the device that recorded it'**
   String get uploadStatusError;
 
   /// No description provided for @uploadStatusExpired.
@@ -1997,6 +1997,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting to upload'**
   String get waitingUpload;
+
+  /// No description provided for @queueUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading'**
+  String get queueUploading;
+
+  /// No description provided for @queueQuotaShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting on quota'**
+  String get queueQuotaShort;
+
+  /// No description provided for @queueUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload unfinished'**
+  String get queueUploadFailed;
 
   /// No description provided for @uploaded.
   ///

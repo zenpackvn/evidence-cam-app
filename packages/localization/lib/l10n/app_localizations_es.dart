@@ -443,7 +443,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get uploadStatusDeleted => 'Eliminado';
 
   @override
-  String get uploadStatusError => 'Error de procesamiento en el servidor';
+  String get uploadStatusError =>
+      'Subida sin terminar: el vídeo sigue en el dispositivo que lo grabó';
 
   @override
   String get uploadStatusExpired => 'Periodo de conservación vencido';
@@ -1077,6 +1078,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Esperando subida';
+
+  @override
+  String get queueUploading => 'Subiendo';
+
+  @override
+  String get queueQuotaShort => 'Esperando cuota';
+
+  @override
+  String get queueUploadFailed => 'Subida sin terminar';
 
   @override
   String get uploaded => 'Subido';

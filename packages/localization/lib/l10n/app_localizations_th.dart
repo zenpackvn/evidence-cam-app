@@ -434,7 +434,8 @@ class AppLocalizationsTh extends AppLocalizations {
   String get uploadStatusDeleted => 'ลบแล้ว';
 
   @override
-  String get uploadStatusError => 'เกิดข้อผิดพลาดฝั่งเซิร์ฟเวอร์';
+  String get uploadStatusError =>
+      'อัปโหลดไม่สำเร็จ — คลิปยังอยู่ในเครื่องที่ถ่าย';
 
   @override
   String get uploadStatusExpired => 'หมดอายุการเก็บรักษา';
@@ -1051,6 +1052,15 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get waitingUpload => 'รออัปโหลด';
+
+  @override
+  String get queueUploading => 'กำลังอัปโหลด';
+
+  @override
+  String get queueQuotaShort => 'รอโควตา';
+
+  @override
+  String get queueUploadFailed => 'อัปโหลดไม่สำเร็จ';
 
   @override
   String get uploaded => 'อัปโหลดแล้ว';
