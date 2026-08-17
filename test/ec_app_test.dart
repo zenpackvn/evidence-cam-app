@@ -868,6 +868,36 @@ void main() {
     },
   );
 
+  /// Nửa sau của cùng cái bug: BẤM VÀO một hồ sơ tạo ở nơi khác.
+  ///
+  /// Màn chi tiết tra `EcClaimStore` để đổi id-trên-máy sang id-máy-chủ, rồi bỏ
+  /// cuộc khi không thấy — mà hồ sơ tạo ở web thì không có bản trên máy nào.
+  /// Kết quả là một màn trắng: danh sách hiện đúng, bấm vào thì rỗng.
+  testWidgets(
+    'bấm vào hồ sơ tạo ở nơi khác thì mở được chi tiết, không ra màn trắng',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': 1,
+        'ValueNotifier<EcUser?>': 1,
+      },
+    ),
+    (tester) async {
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: _ServerClaimsRepository()),
+      );
+      await signInWithGoogle(tester);
+      await tester.tap(find.text('Khiếu nại').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hồ sơ tạo ở web'));
+      await tester.pumpAndSettle();
+
+      // Màn chi tiết đọc từ máy chủ bằng đúng id đã bấm.
+      expect(_ServerClaimsRepository.lastDetailId, 'claim-web-1');
+      expect(find.text('Thông tin hồ sơ'), findsOneWidget);
+    },
+  );
+
   testWidgets(
     'quota screen shows remaining storage from the repository',
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
@@ -1673,6 +1703,34 @@ class _DemoRepository extends FakeEcRepository {
 /// Đúng hình dạng của cửa hàng vừa cài app trên điện thoại mới, hoặc của một
 /// người bán vẫn tạo hồ sơ ở web.
 class _ServerClaimsRepository extends _DemoRepository {
+  /// Id mà màn chi tiết hỏi máy chủ. Đây là thứ cần đo: bản trước truyền id
+  /// trên máy vào đây, mà máy chủ không biết id đó.
+  static String? lastDetailId;
+
+  @override
+  Future<ClaimDetailDto> claimDetail(String shopId, String claimId) async {
+    lastDetailId = claimId;
+    return ClaimDetailDto(
+      claim: ClaimDto(
+        id: claimId,
+        url: 'https://zenpack.vn/c/web1',
+        title: 'Hồ sơ tạo ở web',
+        orderCount: 2,
+        evidenceCount: 3,
+        // Đã thu hồi: buộc màn lùi về KHỐI THÔNG TIN thay vì nhúng trang công
+        // khai — trang nhúng cần mạng thật, không dựng được trong widget test.
+        revoked: true,
+        createdAt: 1754000000000,
+      ),
+      url: 'https://zenpack.vn/c/web1',
+      shopName: 'Shop ABC',
+      platform: 'shopee',
+      orders: const [],
+      videos: 3,
+      photos: 0,
+    );
+  }
+
   @override
   Future<List<ClaimDto>> listClaims(String shopId) async => const [
     ClaimDto(
