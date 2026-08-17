@@ -692,7 +692,12 @@ void _orderCodesTests() {
       }),
     );
 
-    final code = await api.addOrderCode('s1', 'o1', code: 'RET-9', kind: 'return');
+    final code = await api.addOrderCode(
+      's1',
+      'o1',
+      code: 'RET-9',
+      kind: 'return',
+    );
 
     expect(code.raw, 'RET-9');
     expect(code.isPrimary, isFalse);

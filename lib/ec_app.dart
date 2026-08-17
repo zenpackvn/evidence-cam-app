@@ -1186,8 +1186,7 @@ class _AccountRouteState extends State<_AccountRoute> {
             // Không có khoá RevenueCat, hoặc không phải chủ shop → `null` →
             // hàng "Đổi gói" không hiện. Nút bấm vào không mở được gì còn tệ
             // hơn là không có nút.
-            onChangePlanTap:
-                EcPurchases.isAvailable ? _openPaywall : null,
+            onChangePlanTap: EcPurchases.isAvailable ? _openPaywall : null,
             onLanguageTap: () => context.push('/language'),
             onEndQrTap: () => _showEndSessionQr(
               context,
@@ -1824,7 +1823,11 @@ class _StorageRouteState extends State<_StorageRoute>
   /// Mã uỷ quyền từ hộp thoại Google gốc, hoặc `null` khi người dùng huỷ.
   Future<String?> _driveAuthCode() async {
     final google = GoogleSignIn.instance;
-    await google.initialize(serverClientId: kGoogleServerClientId.isEmpty ? null : kGoogleServerClientId);
+    await google.initialize(
+      serverClientId: kGoogleServerClientId.isEmpty
+          ? null
+          : kGoogleServerClientId,
+    );
     final account = await google.authenticate();
     final auth = await account.authorizationClient.authorizeServer(
       const ['https://www.googleapis.com/auth/drive.file'],
@@ -4853,8 +4856,12 @@ class _OrderRouteState extends State<_OrderRoute> {
       // một câu "lỗi" chung. Gộp nhầm hai kiện là hỏng bằng chứng của cả hai,
       // nên người dùng cần biết đây không phải trục trặc mạng mà là từ chối có
       // lý do.
-      final conflict = error is DioException && error.response?.statusCode == 409;
-      _toast(context, conflict ? l10n.codeBelongsToAnotherOrder : l10n.codeAttachFailed);
+      final conflict =
+          error is DioException && error.response?.statusCode == 409;
+      _toast(
+        context,
+        conflict ? l10n.codeBelongsToAnotherOrder : l10n.codeAttachFailed,
+      );
     }
   }
 
@@ -5029,7 +5036,10 @@ class _OrderRouteState extends State<_OrderRoute> {
     // được, còn mất cả màn thì không.
     final codes = await widget.repo
         .orderCodes(widget.shop.id, widget.order.id)
-        .then<List<OrderCodeDto>>((v) => v, onError: (_, __) => <OrderCodeDto>[]);
+        .then<List<OrderCodeDto>>(
+          (v) => v,
+          onError: (_, __) => <OrderCodeDto>[],
+        );
     if (mounted) {
       _extraCodes = codes
           .where((c) => !c.isPrimary)
@@ -5900,8 +5910,7 @@ class _ClaimListRouteState extends State<_ClaimListRoute> {
   /// chủ bằng `claimId`.
   Future<void> _open(BuildContext context, EcClaimEntry entry) async {
     final claim = _remote[entry.id];
-    if (claim != null &&
-        _claimStore.byId(widget.shopId, entry.id) == null) {
+    if (claim != null && _claimStore.byId(widget.shopId, entry.id) == null) {
       await _claimStore.add(
         EcClaimDossier(
           id: claim.id,
@@ -6153,22 +6162,22 @@ class _CreateClaimRoute extends StatelessWidget {
     OrderDetailDto detail,
     Map<String, String> typeNames,
   ) => [
-        for (final e in detail.evidence)
-          if (e.uploadStatus != 'deleted')
-            EcClaimPickable(
-              id: e.id,
-              orderId: orderId,
-              label: typeNames[e.videoTypeId] ?? _kindLabel(l10n, e.kind),
-              time: _hhmm(DateTime.fromMillisecondsSinceEpoch(e.capturedAt)),
-              isPhoto: e.kind == 'photo',
-              capturedAt: e.capturedAt,
-              day: _dayLabelOf(
-                DateTime.fromMillisecondsSinceEpoch(e.capturedAt),
-              ),
-              // Ảnh TỰ làm ảnh xem trước; chỉ video mới cần poster trích ra.
-              // Dùng `thumbUrl` cho cả hai thì mọi hàng ảnh đều trống chỗ đó.
-              thumbUrl: e.kind == 'photo' ? e.url : e.thumbUrl,
-            ),
+    for (final e in detail.evidence)
+      if (e.uploadStatus != 'deleted')
+        EcClaimPickable(
+          id: e.id,
+          orderId: orderId,
+          label: typeNames[e.videoTypeId] ?? _kindLabel(l10n, e.kind),
+          time: _hhmm(DateTime.fromMillisecondsSinceEpoch(e.capturedAt)),
+          isPhoto: e.kind == 'photo',
+          capturedAt: e.capturedAt,
+          day: _dayLabelOf(
+            DateTime.fromMillisecondsSinceEpoch(e.capturedAt),
+          ),
+          // Ảnh TỰ làm ảnh xem trước; chỉ video mới cần poster trích ra.
+          // Dùng `thumbUrl` cho cả hai thì mọi hàng ảnh đều trống chỗ đó.
+          thumbUrl: e.kind == 'photo' ? e.url : e.thumbUrl,
+        ),
   ];
 
   Future<void> _create(
@@ -6245,7 +6254,10 @@ class _CreateClaimRoute extends StatelessWidget {
   /// Người bán vừa tick xong một danh sách đơn; bắt họ làm lại vì mất mạng là
   /// trừng phạt họ vì lỗi của mạng. Đổi lại, màn hình phải nói thẳng là chưa
   /// có link, chứ không để họ tưởng bằng chứng đã chia sẻ được.
-  Future<ClaimDto?> _publish(List<EcClaimOrderPicks> batch, String title) async {
+  Future<ClaimDto?> _publish(
+    List<EcClaimOrderPicks> batch,
+    String title,
+  ) async {
     try {
       // Mã vận đơn → id đơn. `_search` đã tra ra id này lúc người dùng gõ mã,
       // nhưng màn là StatelessWidget nên không giữ lại được; tra lại một lượt
@@ -6306,7 +6318,10 @@ class _CreateClaimRoute extends StatelessWidget {
     // giữa chừng (mạng chết lúc đẩy hồ sơ, ghi đĩa hỏng) sẽ biến mất không
     // dấu vết — người dùng bấm nút và KHÔNG có gì xảy ra, không cả báo lỗi.
     onCreate: (batch, title) => unawaited(
-      _create(context, batch, title).catchError((Object error, StackTrace stack) {
+      _create(context, batch, title).catchError((
+        Object error,
+        StackTrace stack,
+      ) {
         developer.log(
           'claims: tạo hồ sơ hỏng (${error.runtimeType})',
           name: 'zenpack.claims',
@@ -6518,9 +6533,7 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
       return EcClaimDetailScreen(
         title: detail?.claim.title ?? '',
         shopName: detail?.shopName ?? '',
-        channel: detail == null
-            ? ''
-            : _platformDisplayName(detail.platform),
+        channel: detail == null ? '' : _platformDisplayName(detail.platform),
         trackings: trackings,
         orderDateLabel: detail == null
             ? ''
@@ -6667,9 +6680,7 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
       // `gal` ném nếu chưa từng được cấp quyền — xin trước, nếu không lần lưu
       // đầu tiên của máy nào cũng đọc ra "không tải được".
       if (gallery != null && await gallery.requestAccess()) {
-        isPhoto
-            ? await gallery.saveImage(path)
-            : await gallery.saveVideo(path);
+        isPhoto ? await gallery.saveImage(path) : await gallery.saveVideo(path);
         unawaited(_deleteQuietly(path));
         if (!mounted) return;
         _toast(

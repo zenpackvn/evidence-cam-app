@@ -180,7 +180,9 @@ void main() {
 
     // Chưa rà lần nào phải NÓI RA. Một bảng toàn số 0 không kèm mốc thời gian
     // đọc y hệt một cái kho hoàn hảo.
-    testWidgets('chưa rà lần nào thì nói thẳng, không để trống', (tester) async {
+    testWidgets('chưa rà lần nào thì nói thẳng, không để trống', (
+      tester,
+    ) async {
       await _pump(
         tester,
         const EcStorageScreen(

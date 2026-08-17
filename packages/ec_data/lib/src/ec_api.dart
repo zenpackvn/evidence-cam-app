@@ -314,11 +314,10 @@ class EcApi {
   /// Chỉ gửi MÃ, không gửi token: máy chủ vẫn là nơi duy nhất đổi nó lấy refresh
   /// token. Ném khi máy chủ chưa cấu hình cặp client cho đường này — bên gọi bắt
   /// lỗi đó rồi lùi về mở trình duyệt.
-  Future<void> connectGdriveCode(String shopId, String code) =>
-      _dio.post<void>(
-        '/api/shops/$shopId/storage/gdrive/code',
-        data: {'code': code},
-      );
+  Future<void> connectGdriveCode(String shopId, String code) => _dio.post<void>(
+    '/api/shops/$shopId/storage/gdrive/code',
+    data: {'code': code},
+  );
 
   Future<void> addMember(
     String shopId, {
@@ -531,7 +530,11 @@ class EcApi {
       // tay, hay ghi bù. Máy chủ chỉ ghi lúc tạo mới, nên quét lại một đơn do
       // web tạo không biến nó thành `mobile`. App không hiện lại trường này:
       // ở đây đơn nào cũng `mobile`, cột đó chỉ có nghĩa trên console web.
-      data: {'tracking': tracking, 'capturedAt': ?capturedAt, 'source': 'mobile'},
+      data: {
+        'tracking': tracking,
+        'capturedAt': ?capturedAt,
+        'source': 'mobile',
+      },
     );
     return OrderDto.fromJson(res.data!);
   }

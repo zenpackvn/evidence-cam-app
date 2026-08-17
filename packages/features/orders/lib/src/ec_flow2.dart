@@ -1427,8 +1427,7 @@ class _EcExtraCodes extends StatelessWidget {
           color: PenColors.mut,
           weight: FontWeight.w600,
         ),
-        for (final code in codes)
-          PenText(code, size: 15, color: PenColors.ink),
+        for (final code in codes) PenText(code, size: 15, color: PenColors.ink),
       ],
     );
   }

@@ -75,7 +75,11 @@ void main() {
     ) async {
       await _pump(
         tester,
-        EcCreateClaimScreen(onSearch: (code) async => [const EcClaimLookup(code: 'SPX1', items: _spx1)]),
+        EcCreateClaimScreen(
+          onSearch: (code) async => [
+            const EcClaimLookup(code: 'SPX1', items: _spx1),
+          ],
+        ),
       );
       await _lookup(tester, 'SPX1');
 
@@ -91,7 +95,11 @@ void main() {
     testWidgets('chạm vào cả thẻ là tick, và nút tạo đếm đúng', (tester) async {
       await _pump(
         tester,
-        EcCreateClaimScreen(onSearch: (code) async => [const EcClaimLookup(code: 'SPX1', items: _spx1)]),
+        EcCreateClaimScreen(
+          onSearch: (code) async => [
+            const EcClaimLookup(code: 'SPX1', items: _spx1),
+          ],
+        ),
       );
       await _lookup(tester, 'SPX1');
 
@@ -196,7 +204,12 @@ void main() {
     testWidgets('ô tên hiện ngay khi mở màn, kèm dấu bắt buộc', (tester) async {
       await _pump(
         tester,
-        EcCreateClaimScreen(onSearch: (code) async => [const EcClaimLookup(code: 'SPX1', items: _spx1)], onCreate: (_, _) {}),
+        EcCreateClaimScreen(
+          onSearch: (code) async => [
+            const EcClaimLookup(code: 'SPX1', items: _spx1),
+          ],
+          onCreate: (_, _) {},
+        ),
       );
 
       expect(find.text('Tên hồ sơ'), findsOneWidget);
@@ -212,7 +225,9 @@ void main() {
       await _pump(
         tester,
         EcCreateClaimScreen(
-          onSearch: (code) async => [const EcClaimLookup(code: 'SPX1', items: _spx1)],
+          onSearch: (code) async => [
+            const EcClaimLookup(code: 'SPX1', items: _spx1),
+          ],
           onCreate: (batch, title) => created++,
         ),
       );
@@ -241,7 +256,9 @@ void main() {
       await _pump(
         tester,
         EcCreateClaimScreen(
-          onSearch: (code) async => [const EcClaimLookup(code: 'SPX1', items: _spx1)],
+          onSearch: (code) async => [
+            const EcClaimLookup(code: 'SPX1', items: _spx1),
+          ],
           onCreate: (batch, title) => createdTitle = title,
         ),
       );

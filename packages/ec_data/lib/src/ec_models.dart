@@ -1009,12 +1009,11 @@ class ClaimOrderRefDto {
     required this.createdAt,
   });
 
-  factory ClaimOrderRefDto.fromJson(Map<String, dynamic> j) =>
-      ClaimOrderRefDto(
-        orderId: (j['order_id'] as String?) ?? '',
-        tracking: (j['tracking_raw'] as String?) ?? '',
-        createdAt: _int(j['created_at']),
-      );
+  factory ClaimOrderRefDto.fromJson(Map<String, dynamic> j) => ClaimOrderRefDto(
+    orderId: (j['order_id'] as String?) ?? '',
+    tracking: (j['tracking_raw'] as String?) ?? '',
+    createdAt: _int(j['created_at']),
+  );
 
   final String orderId;
   final String tracking;
@@ -1042,7 +1041,9 @@ class ClaimDetailDto {
     final shop = (j['shop'] as Map<String, dynamic>?) ?? const {};
     final evidence = (j['evidence'] as Map<String, dynamic>?) ?? const {};
     return ClaimDetailDto(
-      claim: ClaimDto.fromJson((j['claim'] as Map<String, dynamic>?) ?? const {}),
+      claim: ClaimDto.fromJson(
+        (j['claim'] as Map<String, dynamic>?) ?? const {},
+      ),
       url: (j['url'] as String?) ?? '',
       shopName: (shop['name'] as String?) ?? '',
       platform: (shop['platform'] as String?) ?? '',

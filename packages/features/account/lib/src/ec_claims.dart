@@ -922,8 +922,7 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
                 // là bắt người ta làm hai lần.
                 child: _CreateClaimButton(
                   count: _pickedCount,
-                  onTap:
-                      widget.onCreate == null || _title.text.trim().isEmpty
+                  onTap: widget.onCreate == null || _title.text.trim().isEmpty
                       ? null
                       : () => widget.onCreate!(_batch, _title.text.trim()),
                 ),
