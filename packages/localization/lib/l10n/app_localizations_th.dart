@@ -26,7 +26,11 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get claimsLocalOnlyNote =>
-      'รายการนี้เก็บไว้ในเครื่องนี้ ถ้าถอนการติดตั้งแอปหรือเปลี่ยนเครื่องจะหายไป';
+      'บางแฟ้มยังอัปโหลดไม่สำเร็จ จึงมีอยู่เฉพาะในเครื่องนี้';
+
+  @override
+  String get claimsOfflineNote =>
+      'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ นี่คือสำเนาในเครื่อง เปิดใหม่เมื่อมีเน็ตเพื่อดูทั้งหมด';
 
   @override
   String get claimsEmpty =>

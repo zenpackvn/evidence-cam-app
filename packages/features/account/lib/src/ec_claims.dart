@@ -27,6 +27,7 @@ class EcClaimEntry {
     required this.timeLabel,
     required this.orderCount,
     required this.evidenceCount,
+    this.revoked = false,
   });
 
   final String id;
@@ -43,12 +44,21 @@ class EcClaimEntry {
 
   final int orderCount;
   final int evidenceCount;
+
+  /// Link đã chết, dữ liệu còn nguyên.
+  ///
+  /// Hàng vẫn nằm trong danh sách vì "tôi đã từng gửi link nào cho sàn" là dữ
+  /// kiện người bán cần khi sàn hỏi lại sau vài tuần. Nhưng nó phải TRÔNG khác,
+  /// nếu không người ta gửi lại một link 404 cho người kiểm duyệt.
+  final bool revoked;
 }
 
 /// Lớp cha: danh sách hồ sơ đã tạo, mới nhất trước.
 class EcClaimListScreen extends StatelessWidget {
   const EcClaimListScreen({
     this.entries = const [],
+    this.note,
+    this.loading = false,
     this.onOpen,
     this.onCopy,
     this.onRevoke,
@@ -59,6 +69,15 @@ class EcClaimListScreen extends StatelessWidget {
   });
 
   final List<EcClaimEntry> entries;
+
+  /// Dòng ghi chú dưới tiêu đề, hoặc null nếu không có gì phải nói.
+  ///
+  /// Trước đây đây là một câu cố định "danh sách này lưu trên máy này" — đúng
+  /// hồi danh sách còn đọc từ máy. Giờ danh sách đọc từ máy chủ nên câu đó chỉ
+  /// còn đúng trong hai lúc: có hồ sơ chưa đẩy lên được, hoặc đang mất mạng và
+  /// màn đang vẽ bản lưu tạm. App shell quyết lúc nào cần nói.
+  final String? note;
+
   final ValueChanged<EcClaimEntry>? onOpen;
   final ValueChanged<EcClaimEntry>? onCopy;
 
@@ -69,6 +88,13 @@ class EcClaimListScreen extends StatelessWidget {
   /// Dấu cộng góc phải: mở màn tạo hồ sơ. Đây là lối tạo DUY NHẤT — trang Vận
   /// đơn không còn nút gộp nào, vì việc tạo hồ sơ thuộc về màn hồ sơ.
   final VoidCallback? onCreate;
+
+  /// Đang đọc danh sách lần đầu từ máy chủ.
+  ///
+  /// Chỉ vẽ vòng quay khi CHƯA có gì để vẽ. Lượt đọc lại (sau khi tạo, sau khi
+  /// thu hồi) giữ nguyên danh sách cũ trên màn — chớp một vòng quay giữa hai
+  /// bản gần giống nhau trông như màn hình bị lỗi.
+  final bool loading;
 
   /// Màn này là tab thứ ba, nên nó mang thanh điều hướng chứ không mang nút
   /// back.
@@ -119,13 +145,14 @@ class EcClaimListScreen extends StatelessWidget {
               ],
             ),
           ),
-          // Dòng "lưu trên máy này" đứng NGAY dưới tiêu đề, không nhét xuống
-          // đáy: người bán phải biết bằng chứng khiếu nại của mình chưa ở chỗ
-          // nào an toàn TRƯỚC khi họ dựa vào nó, không phải sau khi đổi máy.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-            child: _LocalOnlyNote(text: l10n.claimsLocalOnlyNote),
-          ),
+          // Ghi chú đứng NGAY dưới tiêu đề, không nhét xuống đáy: người bán
+          // phải biết hồ sơ của mình chưa ở chỗ nào an toàn TRƯỚC khi họ dựa
+          // vào nó, không phải sau khi đổi máy.
+          if (note != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+              child: _LocalOnlyNote(text: note!),
+            ),
           Expanded(child: _body(context, l10n)),
           _ClaimsNavBar(onOrders: onNavOrders, onRecord: onNavRecord),
         ],
@@ -134,6 +161,9 @@ class EcClaimListScreen extends StatelessWidget {
   }
 
   Widget _body(BuildContext context, AppLocalizations l10n) {
+    if (loading && entries.isEmpty) {
+      return const Center(child: CupertinoActivityIndicator());
+    }
     if (entries.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -254,14 +284,24 @@ class _ClaimRow extends StatelessWidget {
                 // sàn mới trả lời và danh sách đã có chục hồ sơ. Ngày giờ thì
                 // mọi hồ sơ đều có, nên để nó làm dòng đầu là bắt người ta đọc
                 // hết cả cột mới thấy vụ mình cần.
-                PenText(
-                  entry.title.trim().isEmpty
-                      ? '${entry.dateLabel}  ${entry.timeLabel}'
-                      : entry.title,
-                  size: 15,
-                  color: PenColors.ink,
-                  weight: FontWeight.w700,
-                  maxLines: 1,
+                Row(
+                  children: [
+                    Flexible(
+                      child: PenText(
+                        entry.title.trim().isEmpty
+                            ? '${entry.dateLabel}  ${entry.timeLabel}'
+                            : entry.title,
+                        size: 15,
+                        color: entry.revoked ? PenColors.mut : PenColors.ink,
+                        weight: FontWeight.w700,
+                        maxLines: 1,
+                      ),
+                    ),
+                    if (entry.revoked) ...[
+                      const SizedBox(width: 8),
+                      _RevokedChip(text: l10n.claimRevokedBadge),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 3),
                 PenText(
@@ -287,13 +327,24 @@ class _ClaimRow extends StatelessWidget {
           ),
           // Sao chép là hành động RIÊNG, không phải mở hồ sơ — nên nó có vùng
           // chạm riêng chứ không nằm chung với phần bấm-để-mở.
-          EcTap(
-            onTap: onCopy,
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(LucideIcons.copy, size: 20, color: PenColors.primary),
-            ),
-          ),
+          //
+          // Hồ sơ đã thu hồi thì KHÔNG có nút này: link đã chết, và bày ra một
+          // nút chép nó là mời người ta dán một trang 404 vào form khiếu nại
+          // lần nữa. Bản web giấu ô link vì đúng lý do đó.
+          if (!entry.revoked)
+            EcTap(
+              onTap: onCopy,
+              child: const Padding(
+                padding: EdgeInsets.all(8),
+                child: Icon(
+                  LucideIcons.copy,
+                  size: 20,
+                  color: PenColors.primary,
+                ),
+              ),
+            )
+          else
+            const SizedBox(width: 8),
         ],
       ),
     );
@@ -1344,5 +1395,21 @@ class _Hint extends StatelessWidget {
         ],
       ),
     ),
+  );
+}
+
+/// Nhãn nhỏ cạnh tên hồ sơ đã thu hồi.
+class _RevokedChip extends StatelessWidget {
+  const _RevokedChip({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => PenBox(
+    fill: PenColors.bg,
+    stroke: PenColors.line,
+    radius: 999,
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    children: [PenText(text, size: 11, color: PenColors.mut)],
   );
 }

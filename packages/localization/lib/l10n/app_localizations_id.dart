@@ -25,7 +25,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get claimsLocalOnlyNote =>
-      'Daftar ini disimpan di perangkat ini. Menghapus aplikasi atau berganti perangkat akan menghilangkannya.';
+      'Beberapa berkas belum terkirim sehingga hanya ada di perangkat ini.';
+
+  @override
+  String get claimsOfflineNote =>
+      'Tidak dapat terhubung ke server, ini salinan di perangkat. Buka lagi saat online untuk melihat semua.';
 
   @override
   String get claimsEmpty =>

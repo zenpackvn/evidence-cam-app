@@ -5774,10 +5774,18 @@ String _dayLabelOf(DateTime d) {
 
 /// Lớp cha: danh sách hồ sơ khiếu nại của shop đang chọn.
 ///
-/// Nghe [EcClaimStore] chứ không chụp một lần: hồ sơ có thể được tạo ở tab Vận
-/// đơn trong lúc màn này còn nằm trong stack, và người dùng quay lại phải thấy
-/// nó ngay chứ không phải sau khi khởi động lại app.
-class _ClaimListRoute extends StatelessWidget {
+/// Đọc từ MÁY CHỦ, không đọc từ [EcClaimStore]. Trước đây màn này chỉ vẽ bản
+/// lưu trên máy, nên hồ sơ tạo ở web không bao giờ hiện ra ở app, hồ sơ tạo ở
+/// điện thoại A không hiện trên điện thoại B, và một hồ sơ bị thu hồi ở web vẫn
+/// nằm đây như còn sống. Cùng một cửa hàng mà hai nơi kể hai câu chuyện.
+///
+/// [EcClaimStore] còn lại đúng vai bộ đệm mà chú thích của chính nó đã dự tính:
+/// vẽ khi chưa gọi được máy chủ, và giữ những hồ sơ tạo lúc mất mạng — thứ máy
+/// chủ chưa hề biết. Nó KHÔNG còn là nguồn sự thật.
+///
+/// Vẫn nghe store: hồ sơ tạo xong được ghi vào đó trước, nên nghe nó là màn
+/// hiện hồ sơ mới ngay lập tức thay vì đợi lượt đọc máy chủ xong.
+class _ClaimListRoute extends StatefulWidget {
   const _ClaimListRoute({
     required this.repo,
     required this.shopId,
@@ -5792,6 +5800,47 @@ class _ClaimListRoute extends StatelessWidget {
   final VoidCallback? onNavRecord;
   final VoidCallback? onCreate;
 
+  @override
+  State<_ClaimListRoute> createState() => _ClaimListRouteState();
+}
+
+class _ClaimListRouteState extends State<_ClaimListRoute> {
+  List<ClaimDto>? _server;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _claimStore.addListener(_onStoreChanged);
+    unawaited(_load());
+  }
+
+  @override
+  void dispose() {
+    _claimStore.removeListener(_onStoreChanged);
+    super.dispose();
+  }
+
+  /// Store đổi = vừa tạo xong một hồ sơ. Đọc lại máy chủ để hàng mới mang số
+  /// liệu thật (số bằng chứng, tình trạng thu hồi) thay vì bản dựng trên máy.
+  void _onStoreChanged() {
+    if (mounted) unawaited(_load());
+  }
+
+  /// Đọc hỏng thì GIỮ bản đang có, không xoá màn.
+  ///
+  /// Mạng rớt giữa chừng mà đổi danh sách thành rỗng là người bán tưởng hồ sơ
+  /// của mình mất — đúng lúc họ đang cần nó nhất. Không có bản nào thì lùi về
+  /// bộ đệm trên máy, và nói ra rằng đây là bản tạm.
+  Future<void> _load() async {
+    try {
+      final rows = await widget.repo.listClaims(widget.shopId);
+      if (mounted) setState(() => (_server = rows, _loading = false));
+    } on Object {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   /// Thu hồi link của một hồ sơ, sau một lần hỏi lại.
   ///
   /// Hỏi lại vì thao tác này KHÔNG lùi được và hậu quả nằm ở chỗ khác: link đã
@@ -5800,9 +5849,9 @@ class _ClaimListRoute extends StatelessWidget {
   ///
   /// Hồ sơ chưa lên máy chủ thì không có gì để thu hồi — nói thẳng thay vì mở
   /// một hộp thoại xác nhận rồi mới báo hỏng.
-  Future<void> _revoke(BuildContext context, String dossierId) async {
+  Future<void> _revoke(BuildContext context, String entryId) async {
     final l10n = context.l10n;
-    final claimId = _claimStore.byId(shopId, dossierId)?.claimId;
+    final claimId = _claimIdOf(entryId);
     if (claimId == null || claimId.isEmpty) {
       _toast(context, l10n.claimsRevokeNoLink);
       return;
@@ -5827,38 +5876,100 @@ class _ClaimListRoute extends StatelessWidget {
     );
     if (confirmed != true || !context.mounted) return;
     try {
-      await repo.revokeClaim(shopId, claimId);
+      await widget.repo.revokeClaim(widget.shopId, claimId);
     } on Object {
       if (context.mounted) _toast(context, l10n.claimRevokeFailed);
       return;
     }
     if (context.mounted) _toast(context, l10n.claimRevoked);
+    await _load();
   }
+
+  /// Id hồ sơ trên máy chủ ứng với một hàng trong danh sách.
+  ///
+  /// Hàng của máy chủ mang thẳng id đó. Hàng chỉ-có-trên-máy mang id do máy tự
+  /// sinh, và nó có thể đã lên máy chủ ở một lượt trước — lúc đó `claimId` nằm
+  /// trong store. Không có cả hai thì hồ sơ chưa hề tồn tại phía máy chủ.
+  String? _claimIdOf(String entryId) {
+    final local = _claimStore.byId(widget.shopId, entryId);
+    if (local != null) return local.claimId;
+    return entryId;
+  }
+
+  /// Những hồ sơ máy chủ CHƯA biết — tạo lúc mất mạng, hoặc lượt gửi hỏng.
+  ///
+  /// Nhận diện bằng `claimId`, không bằng cách dò id trong danh sách máy chủ:
+  /// hồ sơ chưa lên máy chủ thì `claimId` rỗng, và đó là dấu hiệu trực tiếp.
+  List<EcClaimDossier> _localOnly() => [
+    for (final d in _claimStore.forShop(widget.shopId))
+      if (d.claimId == null || d.claimId!.isEmpty) d,
+  ];
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: _claimStore,
     builder: (context, _) {
-      final dossiers = _claimStore.forShop(shopId);
-      return EcClaimListScreen(
-        onNavOrders: onNavOrders,
-        onNavRecord: onNavRecord,
-        onCreate: onCreate,
-        entries: [
-          for (final d in dossiers)
+      final l10n = context.l10n;
+      final server = _server;
+      final localOnly = _localOnly();
+
+      // Chưa gọi được máy chủ lần nào: vẽ nguyên bộ đệm trên máy và nói rõ đây
+      // là bản tạm. Thà một danh sách cũ còn hơn một màn trống.
+      final offline = server == null && !_loading;
+      final entries = <EcClaimEntry>[
+        if (server != null)
+          for (final c in server)
             EcClaimEntry(
-              id: d.id,
-              title: d.title,
-              dateLabel: _dayLabelOf(d.createdAt),
-              timeLabel: _hhmm(d.createdAt),
-              orderCount: d.orders.length,
-              evidenceCount: d.evidenceCount,
+              id: c.id,
+              title: c.title ?? '',
+              dateLabel: _dayLabelOf(
+                DateTime.fromMillisecondsSinceEpoch(c.createdAt),
+              ),
+              timeLabel: _hhmm(
+                DateTime.fromMillisecondsSinceEpoch(c.createdAt),
+              ),
+              orderCount: c.orderCount,
+              evidenceCount: c.evidenceCount,
+              revoked: c.revoked,
             ),
-        ],
+        // Hồ sơ chưa lên máy chủ xếp sau, nhưng KHÔNG bị bỏ đi: người bán tạo
+        // nó lúc mất mạng và vẫn phải thấy nó tồn tại.
+        for (final d in offline
+            ? _claimStore.forShop(widget.shopId)
+            : localOnly)
+          EcClaimEntry(
+            id: d.id,
+            title: d.title,
+            dateLabel: _dayLabelOf(d.createdAt),
+            timeLabel: _hhmm(d.createdAt),
+            orderCount: d.orders.length,
+            evidenceCount: d.evidenceCount,
+          ),
+      ];
+
+      return EcClaimListScreen(
+        onNavOrders: widget.onNavOrders,
+        onNavRecord: widget.onNavRecord,
+        onCreate: widget.onCreate,
+        loading: _loading,
+        note: offline
+            ? l10n.claimsOfflineNote
+            : localOnly.isEmpty
+            ? null
+            : l10n.claimsLocalOnlyNote,
+        entries: entries,
         onOpen: (entry) =>
-            context.push('/claim-detail', extra: (shopId, entry.id)),
+            context.push('/claim-detail', extra: (widget.shopId, entry.id)),
         onCopy: (entry) {
-          final dossier = _claimStore.byId(shopId, entry.id);
+          // Hàng của máy chủ: chép thẳng LINK. Chỉ hàng chưa lên máy chủ mới
+          // lùi về bản tóm tắt bằng chữ, vì nó không có link nào để chép.
+          final url = _urlOf(entry.id);
+          if (url != null && url.isNotEmpty) {
+            Clipboard.setData(ClipboardData(text: url));
+            _toast(context, l10n.claimsLinkCopied);
+            return;
+          }
+          final dossier = _claimStore.byId(widget.shopId, entry.id);
           if (dossier == null) return;
           _copyClaimSummary(context, dossier);
         },
@@ -5866,6 +5977,13 @@ class _ClaimListRoute extends StatelessWidget {
       );
     },
   );
+
+  String? _urlOf(String entryId) {
+    for (final c in _server ?? const <ClaimDto>[]) {
+      if (c.id == entryId) return c.url;
+    }
+    return _claimStore.byId(widget.shopId, entryId)?.shareUrl;
+  }
 }
 
 /// Màn tạo hồ sơ khiếu nại: tra một mã đơn rồi tick bằng chứng của nó.
@@ -6176,7 +6294,10 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
   /// sơ — và quan trọng hơn, nó không biết hồ sơ đã bị thu hồi hay chưa. Dựng
   /// từ nó thì màn hình nói một đằng còn cái link nói một nẻo.
   Future<void> _load() async {
-    final claimId = _claimStore.byId(widget.shopId, widget.dossierId)?.claimId;
+    // Không có bản trên máy nghĩa là hồ sơ này tạo ở NƠI KHÁC — web, hoặc một
+    // điện thoại khác. Lúc đó id truyền vào chính là id của máy chủ.
+    final local = _claimStore.byId(widget.shopId, widget.dossierId);
+    final claimId = local == null ? widget.dossierId : local.claimId;
     if (claimId == null || claimId.isEmpty) {
       // Hồ sơ tạo lúc mất mạng: có trên máy, chưa có trên máy chủ. Không phải
       // lỗi — nói thẳng là chưa có link thay vì dựng màn hỏng.
@@ -6232,7 +6353,10 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
       final dossier = _claimStore.byId(widget.shopId, widget.dossierId);
       // Hồ sơ vừa bị xoá ở màn này: khung rỗng chỉ tồn tại một nhịp trước khi
       // `onBack` đưa đi, nên không dựng màn báo lỗi cho nó.
-      if (dossier == null) {
+      //
+      // Nhưng CHỈ khi máy chủ cũng không có gì: hồ sơ tạo ở web không có bản
+      // trên máy nào, và bắt nó rơi vào nhánh này là mở ra một màn trắng.
+      if (dossier == null && _detail == null && !_loading && !_failed) {
         return const CupertinoPageScaffold(
           backgroundColor: BrandColors.bg,
           child: SizedBox.shrink(),
@@ -6243,6 +6367,30 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
         return const CupertinoPageScaffold(
           backgroundColor: BrandColors.bg,
           child: Center(child: CupertinoActivityIndicator()),
+        );
+      }
+
+      // Đọc hỏng và KHÔNG có bản trên máy để lùi về: nói thẳng ra. Đường này
+      // chỉ có từ khi danh sách đọc từ máy chủ — mở một hồ sơ tạo ở web trong
+      // lúc mạng chập. Dựng khối thông tin rỗng thì mọi dòng đều trắng và ngày
+      // tạo hoá thành 01/01/1970, trông như hồ sơ hỏng chứ không như mạng hỏng.
+      if (_detail == null && dossier == null) {
+        return CupertinoPageScaffold(
+          backgroundColor: BrandColors.bg,
+          child: SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: PenText(
+                  l10n.claimPageFailed,
+                  size: 14,
+                  color: PenColors.mut,
+                  align: TextAlign.center,
+                  lineHeight: 1.5,
+                ),
+              ),
+            ),
+          ),
         );
       }
 
@@ -6268,24 +6416,32 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
       // Chưa đọc được từ máy chủ (mất mạng, hoặc hồ sơ chỉ có trên máy): vẫn mở
       // được bằng dữ liệu địa phương, nhưng nói rõ vì sao chưa có link. Bắt
       // người dùng nhìn màn trắng vì mạng chập là phạt họ vì lỗi của mạng.
+      // Ba nguồn, theo thứ tự tin cậy: máy chủ, rồi bản trên máy, rồi rỗng.
+      // Nhánh rỗng có thật từ khi danh sách đọc từ máy chủ: hồ sơ tạo ở web
+      // không có bản trên máy nào, nên lượt đọc hỏng là cả hai đều trống. Lúc
+      // đó vẽ khung với dòng báo lỗi vẫn hơn là một màn trắng không lời nào.
+      final localOrders = dossier?.orders ?? const <EcClaimOrder>[];
       final trackings = detail == null
-          ? [for (final o in dossier.orders) o.tracking]
+          ? [for (final o in localOrders) o.tracking]
           : [for (final o in detail.orders) o.tracking];
       final videos =
           detail?.videos ??
-          dossier.orders.fold<int>(
+          localOrders.fold<int>(
             0,
             (n, o) => n + o.evidence.where((e) => !e.isPhoto).length,
           );
       final photos =
           detail?.photos ??
-          dossier.orders.fold<int>(
+          localOrders.fold<int>(
             0,
             (n, o) => n + o.evidence.where((e) => e.isPhoto).length,
           );
-      final createdAt = detail == null
-          ? dossier.createdAt
-          : DateTime.fromMillisecondsSinceEpoch(detail.claim.createdAt);
+      // `dossier` chắc chắn khác null ở nhánh này (đã chặn ở trên), nhưng viết
+      // an toàn null vẫn hơn — chặn ở xa mà đọc ở đây thì lần sửa sau dễ tháo
+      // nhầm cái chặn.
+      final createdAt = detail != null
+          ? DateTime.fromMillisecondsSinceEpoch(detail.claim.createdAt)
+          : dossier?.createdAt ?? DateTime.now();
 
       return EcClaimDetailScreen(
         title: detail?.claim.title ?? '',

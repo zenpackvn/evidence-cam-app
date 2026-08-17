@@ -1066,6 +1066,7 @@ class ClaimDto {
     required this.url,
     this.title,
     this.orderCount = 0,
+    this.evidenceCount = 0,
     this.revoked = false,
     this.createdAt = 0,
   });
@@ -1075,6 +1076,7 @@ class ClaimDto {
     url: (j['url'] as String?) ?? '',
     title: j['title'] as String?,
     orderCount: _int(j['order_count']),
+    evidenceCount: _int(j['evidence_count']),
     revoked: _int(j['revoked']) == 1,
     createdAt: _int(j['created_at']),
   );
@@ -1087,6 +1089,12 @@ class ClaimDto {
   final String url;
   final String? title;
   final int orderCount;
+
+  /// Số bằng chứng trong hồ sơ — dòng dưới tên trên màn danh sách.
+  ///
+  /// Đọc từ máy chủ chứ không đếm từ bản trên máy: hồ sơ tạo ở web không có bản
+  /// trên máy nào, mà nó vẫn phải hiện đúng số ở đây.
+  final int evidenceCount;
 
   /// Đã thu hồi — link chết, dữ liệu còn.
   final bool revoked;

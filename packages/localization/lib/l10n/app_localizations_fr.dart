@@ -26,7 +26,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get claimsLocalOnlyNote =>
-      'Cette liste est stockée sur cet appareil. Désinstaller l\'application ou changer d\'appareil la fait disparaître.';
+      'Certains dossiers n\'ont pas encore été envoyés et n\'existent que sur cet appareil.';
+
+  @override
+  String get claimsOfflineNote =>
+      'Serveur injoignable : ceci est la copie locale. Rouvrez une fois connecté pour tout voir.';
 
   @override
   String get claimsEmpty =>

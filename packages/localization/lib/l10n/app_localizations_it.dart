@@ -26,7 +26,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get claimsLocalOnlyNote =>
-      'Questo elenco è salvato su questo dispositivo. Disinstallare l\'app o cambiare dispositivo lo fa perdere.';
+      'Alcuni fascicoli non sono ancora stati caricati e si trovano solo su questo dispositivo.';
+
+  @override
+  String get claimsOfflineNote =>
+      'Server non raggiungibile: questa è la copia locale. Riapri quando sei online per vedere tutto.';
 
   @override
   String get claimsEmpty =>
