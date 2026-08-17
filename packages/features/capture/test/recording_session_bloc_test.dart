@@ -12,17 +12,25 @@ void main() {
   late List<String> saved;
   late _RecordingVoice voice;
   late List<List<DeviceSample>> savedSamples;
+  late List<DateTime> savedStarts;
+  DateTime? _askedAt;
+  late bool verifyStarted;
+  late bool verifyFinished;
 
   setUp(() {
     camera = _FakeCamera();
     saved = <String>[];
-    voice = _RecordingVoice();
+    voice = _RecordingVoice()..watching = camera;
     savedSamples = <List<DeviceSample>>[];
+    savedStarts = <DateTime>[];
+    verifyStarted = false;
+    verifyFinished = false;
   });
 
   RecordingSessionBloc build({
     Duration maxRecording = const Duration(minutes: 15),
     DeviceConditionSource? deviceConditions,
+    Future<bool> Function(String code)? verifyReturnCode,
   }) {
     return RecordingSessionBloc(
       camera: camera,
@@ -34,13 +42,15 @@ void main() {
       // giây rồi bị giết. Đó là toàn bộ nhóm 11 test đỏ của B-11, và 5,5 phút
       // mỗi lượt CI chỉ để ngồi chờ.
       captureTone: CaptureToneService.silent(),
-      onClipSaved: (path, tracking, type, durationSeconds, samples, _) {
+      onClipSaved: (path, tracking, type, durationSeconds, samples, startedAt) {
         saved.add(path);
         savedSamples.add(samples);
+        savedStarts.add(startedAt);
       },
       deviceConditions: deviceConditions,
       voiceAnnouncer: voice,
       maxRecording: maxRecording,
+      verifyReturnCode: verifyReturnCode,
     );
   }
 
@@ -52,6 +62,115 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 20));
     more(bloc);
   };
+
+  /// Câu "Đã bắt đầu quay" phải nói SAU khi camera đã lăn thật.
+  ///
+  /// Người bán đóng gói bằng hai tay và không nhìn màn hình — câu nói CHÍNH LÀ
+  /// hiệu lệnh. Nói trước khi máy quay là bảo họ bắt đầu thao tác vào khoảng
+  /// thời gian không được ghi lại, và thứ mất đi thường là cảnh đưa mã vận đơn
+  /// lên trước ống kính: đúng khung hình mà cả hồ sơ dựa vào.
+  ///
+  /// Máy thật mất hàng trăm mili-giây tới hơn một giây để lăn, nên bản giả ở
+  /// đây cố ý chậm — trả về tức thì thì lỗi thứ tự tàng hình.
+  blocTest<RecordingSessionBloc, RecordingSessionState>(
+    'câu "Đã bắt đầu quay" chỉ phát khi camera đã thật sự lăn',
+    build: () {
+      camera.startLatency = const Duration(milliseconds: 120);
+      return build();
+    },
+    act: initThen((bloc) => bloc.add(const RecordingCodeScanned('SPX1'))),
+    wait: const Duration(milliseconds: 400),
+    verify: (bloc) {
+      expect(voice.spoken, contains('Đã bắt đầu quay'));
+      expect(
+        voice.recordingWhenSpoken['Đã bắt đầu quay'],
+        isTrue,
+        reason: 'máy báo đã quay trong khi camera chưa lăn',
+      );
+    },
+  );
+
+  /// Mốc bắt đầu clip phải là lúc camera LĂN, không phải lúc ta ra lệnh cho nó.
+  ///
+  /// Mốc này là gốc thời gian mà dấu nung trên video đếm từ đó. Đặt sớm hơn
+  /// khung hình đầu tiên bao nhiêu thì đồng hồ in trên mọi khung hình sai bấy
+  /// nhiêu — trên một tài liệu mà cả giá trị nằm ở chỗ giờ giấc đứng vững
+  /// trước bên tranh chấp.
+  blocTest<RecordingSessionBloc, RecordingSessionState>(
+    'mốc bắt đầu clip lấy lúc camera đã lăn, không phải lúc ra lệnh',
+    build: () {
+      camera.startLatency = const Duration(milliseconds: 150);
+      return build();
+    },
+    act: initThen((bloc) async {
+      final askedAt = DateTime.now();
+      bloc.add(const RecordingCodeScanned('SPX1'));
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      bloc.add(const RecordingStopRequested());
+      // Giữ lại mốc ra lệnh để so ở `verify`.
+      _askedAt = askedAt;
+    }),
+    wait: const Duration(milliseconds: 600),
+    verify: (bloc) {
+      expect(savedStarts, hasLength(1));
+      final lag = savedStarts.single.difference(_askedAt!);
+      // Phải trễ hơn lúc ra lệnh ít nhất bằng độ trễ phần cứng giả lập.
+      expect(
+        lag,
+        greaterThanOrEqualTo(const Duration(milliseconds: 150)),
+        reason: 'mốc đặt trước khi camera lăn nên sớm hơn khung hình đầu',
+      );
+    },
+  );
+
+  /// Clip "Trả hàng" không được chờ mạng rồi mới quay.
+  ///
+  /// Bước đối chiếu mã là hai lượt gọi mạng (tìm đơn, tạo đơn nếu chưa có).
+  /// Trên mạng di động ở bàn đóng gói, chờ chúng xong nghĩa là quét mã rồi phải
+  /// đứng im một hai giây trước khi máy ghi hình — và cảnh mở kiện trong khoảng
+  /// đó mất luôn. Cảnh mở kiện là thứ duy nhất không quay lại được.
+  ///
+  /// Chờ cũng chẳng mua được quyết định nào: bước đó LUÔN cho quay.
+  blocTest<RecordingSessionBloc, RecordingSessionState>(
+    'clip trả hàng lăn ngay, không chờ lượt đối chiếu mã xong',
+    build: () => build(
+      verifyReturnCode: (code) async {
+        verifyStarted = true;
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        verifyFinished = true;
+        return true;
+      },
+    ),
+    act: initThen((bloc) {
+      bloc
+        ..add(const RecordingTypeChanged('Trả hàng'))
+        ..add(const RecordingCodeScanned('SPX-RET'));
+    }),
+    // Ngắn hơn 500ms của lượt đối chiếu: nếu quay còn chờ nó thì tới đây vẫn
+    // chưa lăn.
+    wait: const Duration(milliseconds: 150),
+    verify: (bloc) {
+      // Đo bằng TRẠNG THÁI bloc chứ không bằng `camera.recording`: `blocTest`
+      // đóng bloc trước khi `verify` chạy, mà `close()` gọi `camera.dispose()`
+      // và bản giả đặt `recording = false` ở đó. Đọc cờ ấy ở đây là đọc dấu vết
+      // của lượt dọn, không phải của lượt quay.
+      //
+      // `RecordingStatus.recording` chỉ được phát SAU khi `startVideoRecording`
+      // đã hoàn tất, nên nó là bằng chứng đủ mạnh.
+      expect(
+        bloc.state.status,
+        RecordingStatus.recording,
+        reason: 'quay còn chờ lượt gọi mạng',
+      );
+      // Lượt đối chiếu đã bắt đầu nhưng CHƯA xong — tức là quay không hề chờ nó.
+      expect(verifyStarted, isTrue);
+      expect(
+        verifyFinished,
+        isFalse,
+        reason: 'lượt đối chiếu xong trước cả mốc đo, ca này không chứng minh gì',
+      );
+    },
+  );
 
   blocTest<RecordingSessionBloc, RecordingSessionState>(
     'opens the camera and goes idle',
@@ -432,6 +551,11 @@ class _FakeCamera extends CameraService {
     streaming = false;
   }
 
+  /// Máy thật mất một khoảng để thật sự lăn — trên iPhone 11 đo được hàng trăm
+  /// mili-giây, trên Android CameraX còn lâu hơn. Bản giả trả về tức thì thì
+  /// mọi lỗi về THỨ TỰ đều tàng hình, vì mọi thứ xảy ra trong cùng một nhịp.
+  Duration startLatency = Duration.zero;
+
   @override
   Future<void> startVideoRecording({
     onLatestImageAvailable? onAvailable,
@@ -439,6 +563,7 @@ class _FakeCamera extends CameraService {
     if (onAvailable != null && failStartWithScan) {
       throw Exception('no concurrent stream+record');
     }
+    if (startLatency > Duration.zero) await Future<void>.delayed(startLatency);
     recording = true;
     streaming = false;
   }
@@ -478,8 +603,20 @@ class _FakeScanner extends BillScanner {
 class _RecordingVoice extends VoiceAnnouncerService {
   final List<String> spoken = <String>[];
 
+  /// Camera đã lăn hay chưa TẠI THỜI ĐIỂM từng câu được nói.
+  ///
+  /// Cần cái này chứ không chỉ cần danh sách câu: lỗi ở đây là THỨ TỰ, không
+  /// phải nội dung. Câu "Đã bắt đầu quay" vẫn phát đúng chữ, chỉ là phát lúc
+  /// máy chưa quay — và người bán nghe xong là bắt đầu thao tác.
+  final Map<String, bool> recordingWhenSpoken = <String, bool>{};
+
+  _FakeCamera? watching;
+
   @override
-  Future<void> speak(String text) async => spoken.add(text);
+  Future<void> speak(String text) async {
+    spoken.add(text);
+    recordingWhenSpoken[text] = watching?.recording ?? false;
+  }
 }
 
 /// Nguồn điều kiện thiết bị giả: pin tụt dần, đang dùng di động.
