@@ -477,7 +477,7 @@ void _listTests() {
       evidenceCount: 2,
     );
     await _pump(tester, const EcClaimListScreen(entries: [synced]));
-    expect(find.textContaining('lưu trên máy này'), findsNothing);
+    expect(find.textContaining('chỉ có trên máy này'), findsNothing);
 
     await _pump(
       tester,
@@ -496,7 +496,7 @@ void _listTests() {
         ],
       ),
     );
-    expect(find.textContaining('lưu trên máy này'), findsOneWidget);
+    expect(find.textContaining('chỉ có trên máy này'), findsOneWidget);
   });
 
   // Hồ sơ tạo TRƯỚC khi tên là bắt buộc vẫn phải đọc được. Không tên mà vẫn cố

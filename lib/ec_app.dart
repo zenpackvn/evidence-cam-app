@@ -5880,6 +5880,9 @@ class _ClaimListRouteState extends State<_ClaimListRoute> {
   /// hành vi cũ, thay vì một màn trắng vì mạng chập.
   Map<String, ClaimDto> _remote = const {};
 
+  /// Lượt đọc gần nhất hỏng — màn phải nói ra là đang vẽ bản tạm.
+  bool _offline = false;
+
   @override
   void initState() {
     super.initState();
@@ -5890,9 +5893,13 @@ class _ClaimListRouteState extends State<_ClaimListRoute> {
     try {
       final rows = await widget.repo.listClaims(widget.shopId);
       if (mounted) {
-        setState(() => _remote = {for (final row in rows) row.id: row});
+        setState(() {
+          _remote = {for (final row in rows) row.id: row};
+          _offline = false;
+        });
       }
     } on Object catch (error, stack) {
+      if (mounted) setState(() => _offline = true);
       developer.log(
         'claims: không đọc được danh sách hồ sơ (${error.runtimeType})',
         name: 'zenpack.claims',
@@ -6005,6 +6012,7 @@ class _ClaimListRouteState extends State<_ClaimListRoute> {
       onNavRecord: widget.onNavRecord,
       onCreate: widget.onCreate,
       entries: _entries(),
+      offline: _offline,
       onOpen: (entry) => unawaited(_open(context, entry)),
       onCopy: (entry) => _copy(context, entry),
       onRevoke: (entry) => unawaited(_revoke(context, entry)),

@@ -75,6 +75,7 @@ class EcClaimEntry {
 class EcClaimListScreen extends StatelessWidget {
   const EcClaimListScreen({
     this.entries = const [],
+    this.offline = false,
     this.onOpen,
     this.onCopy,
     this.onRevoke,
@@ -85,6 +86,13 @@ class EcClaimListScreen extends StatelessWidget {
   });
 
   final List<EcClaimEntry> entries;
+
+  /// Không đọc được máy chủ nên danh sách này là bộ đệm trên máy — thiếu hồ sơ
+  /// tạo ở nơi khác, và trạng thái thu hồi có thể đã cũ. Phải NÓI ra: người bán
+  /// mở tab này giữa lúc cãi nhau với sàn, một danh sách thiếu mà im lặng thì
+  /// đọc ra là "hồ sơ của tôi mất rồi", không ai đoán là mạng chập.
+  final bool offline;
+
   final ValueChanged<EcClaimEntry>? onOpen;
   final ValueChanged<EcClaimEntry>? onCopy;
 
@@ -153,7 +161,16 @@ class EcClaimListScreen extends StatelessWidget {
           // từ máy chủ, nên để dòng này đứng vĩnh viễn là dọa người dùng về một
           // rủi ro không còn nữa — và cảnh báo lúc nào cũng sáng thì tới lúc nó
           // đúng cũng không ai đọc.
-          if (entries.any((e) => e.localOnly))
+          //
+          // Mất mạng nói trước: lúc đó cả danh sách là bản tạm, nên nó bao trùm
+          // chuyện vài hồ sơ chưa đẩy lên. Hai dòng cảnh báo chồng nhau thì
+          // không dòng nào được đọc.
+          if (offline)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+              child: _LocalOnlyNote(text: l10n.claimsOfflineNote),
+            )
+          else if (entries.any((e) => e.localOnly))
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
               child: _LocalOnlyNote(text: l10n.claimsLocalOnlyNote),
@@ -347,13 +364,21 @@ class _ClaimRow extends StatelessWidget {
           ),
           // Sao chép là hành động RIÊNG, không phải mở hồ sơ — nên nó có vùng
           // chạm riêng chứ không nằm chung với phần bấm-để-mở.
-          EcTap(
-            onTap: onCopy,
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(LucideIcons.copy, size: 20, color: PenColors.primary),
+          //
+          // Link đã thu hồi thì không bày nút này: bấm được nghĩa là người bán
+          // gửi cho sàn thêm một link 404, đúng lúc họ cần nó mở ra nhất.
+          if (!entry.revoked)
+            EcTap(
+              onTap: onCopy,
+              child: const Padding(
+                padding: EdgeInsets.all(8),
+                child: Icon(
+                  LucideIcons.copy,
+                  size: 20,
+                  color: PenColors.primary,
+                ),
+              ),
             ),
-          ),
         ],
       ),
     );
