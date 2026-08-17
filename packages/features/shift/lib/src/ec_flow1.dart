@@ -2586,32 +2586,51 @@ class _MemberRow extends StatelessWidget {
           // ("Nhân viên · chờ xác nhận") trên màn hẹp đẩy cả hàng tràn ra ngoài
           // — đo được 33px trong test. Cho nó co lại và cắt bằng dấu ba chấm;
           // phần tên bên trái đã `Expanded` nên hai bên tự chia nhau.
+          //
+          // `Align` là thứ ghim nhãn vào mép phải. Không có nó, `Flexible` chỉ
+          // *cho phép* nhãn nhỏ hơn phần được chia chứ không trả lại chỗ thừa:
+          // nhãn ngắn ("Chủ shop") nằm sát mép trái phần của mình, tức lơ lửng
+          // giữa hàng, và mỗi hàng lại lệch một kiểu tuỳ độ dài chữ.
           Flexible(
-            child: PenBox(
-              fill: PenColors.bg,
-              radius: 999,
-              axis: PenAxis.row,
-              hugMain: true,
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 11),
-              children: [
-                Flexible(
-                  child: PenText(
-                    member.role,
-                    size: 12,
-                    color: PenColors.ink,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: PenBox(
+                fill: PenColors.bg,
+                radius: 999,
+                axis: PenAxis.row,
+                hugMain: true,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 11,
                 ),
-              ],
+                children: [
+                  Flexible(
+                    child: PenText(
+                      member.role,
+                      size: 12,
+                      color: PenColors.ink,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          if (tappable)
-            const Icon(
-              LucideIcons.chevronRight,
-              size: 18,
-              color: PenColors.mut,
-            ),
+          // Chỗ của mũi tên luôn được giữ, kể cả hàng không bấm được (chủ shop,
+          // hoặc nhân viên tự xem mình). Bỏ hẳn ô này thì hàng đó rộng thêm
+          // đúng bằng mũi tên + khoảng cách, và viên nhãn của nó thò ra phải
+          // hơn các hàng khác — nhìn là thấy so le ngay.
+          SizedBox(
+            width: 18,
+            child: tappable
+                ? const Icon(
+                    LucideIcons.chevronRight,
+                    size: 18,
+                    color: PenColors.mut,
+                  )
+                : null,
+          ),
         ],
       ),
     );
