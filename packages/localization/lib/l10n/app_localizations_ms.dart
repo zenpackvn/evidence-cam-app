@@ -397,8 +397,8 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String memberInviteAccepted(String role) {
-    return '$role · jemputan diterima';
+  String memberInvitePending(String role) {
+    return '$role · menunggu pengesahan';
   }
 
   @override
@@ -441,7 +441,8 @@ class AppLocalizationsMs extends AppLocalizations {
   String get uploadStatusDeleted => 'Dipadam';
 
   @override
-  String get uploadStatusError => 'Ralat pemprosesan di pelayan';
+  String get uploadStatusError =>
+      'Muat naik tidak selesai — klip masih pada peranti yang merakamnya';
 
   @override
   String get uploadStatusExpired => 'Tempoh simpanan tamat';
@@ -1070,6 +1071,15 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Menunggu dimuat naik';
+
+  @override
+  String get queueUploading => 'Sedang dimuat naik';
+
+  @override
+  String get queueQuotaShort => 'Menunggu kuota';
+
+  @override
+  String get queueUploadFailed => 'Muat naik tidak selesai';
 
   @override
   String get uploaded => 'Dimuat naik';
@@ -1990,6 +2000,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get storageTitle => 'Storan video';
 
   @override
+  String get storageSave => 'Simpan pilihan storan';
+
+  @override
   String get storageSystemName => 'Storan sistem';
 
   @override
@@ -2189,6 +2202,13 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get inviteQrRow => 'Kod QR';
+
+  @override
+  String get inviteQrTitle => 'Kod jemputan kedai';
+
+  @override
+  String get inviteQrNote =>
+      'Tunjukkan skrin ini kepada orang yang anda mahu jemput. Kod sekali guna — ia bertukar sebaik ada yang menyertai.';
 
   @override
   String get inviteScanTitle => 'Imbas kod jemputan';

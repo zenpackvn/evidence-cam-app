@@ -145,20 +145,32 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
 
   bool get _own => widget.state.kind != EcStorageKind.system;
 
-  /// Chạm vào một thẻ: nhích dấu tích sang đó, rồi chạy luồng của kho đó nếu
-  /// thật sự chạy được.
+  /// Chạm vào một thẻ: CHỈ nhích dấu tích sang đó. Không chạy gì cả.
   ///
-  /// Dấu tích nhảy TRƯỚC, không đợi máy chủ: luồng cắm kho riêng còn phải qua
-  /// màn nhập khoá hoặc màn cấp quyền của Google, mà một cú chạm không thấy
-  /// phản hồi thì người dùng bấm lại lần nữa.
+  /// Trước đây chạm là chạy thẳng luồng cắm kho — người bán quệt tay vào thẻ
+  /// Drive là màn cấp quyền Google bật lên, và đổi nơi cất bằng chứng của cả
+  /// cửa hàng không phải việc nên xảy ra sau một cú chạm nhầm. Giờ chọn là
+  /// chọn, áp dụng nằm ở nút lưu trên đầu màn.
   ///
-  /// Cả ba thẻ đều bấm được, kể cả khi gói chưa mở hoặc người bấm không phải
-  /// chủ shop — lúc đó chỉ có dấu tích di chuyển, không có gì chạy. Dòng nhắc
-  /// về gói nằm ngay trong thẻ để không ai tưởng đã cắm xong.
-  void _pick(EcStorageKind kind, VoidCallback? action) {
+  /// Cả ba thẻ đều chạm được, kể cả khi gói chưa mở hoặc người chạm không phải
+  /// chủ shop — chỉ dấu tích di chuyển. Nút lưu mới là chỗ chặn.
+  void _pick(EcStorageKind kind) {
     setState(() => _picked = kind);
-    widget.onPick?.call(kind);
-    action?.call();
+  }
+
+  /// Lựa chọn đang hiện khác với kho đang thật sự dùng.
+  bool get _dirty => _picked != widget.state.kind;
+
+  /// Bấm lưu: nhớ lựa chọn rồi chạy đúng luồng của kho vừa chọn.
+  ///
+  /// `onPick` bắn ở ĐÂY chứ không ở lúc chạm: nó ghi lựa chọn xuống máy, mà ghi
+  /// một lựa chọn người dùng chưa xác nhận thì thoát ra vào lại sẽ thấy dấu tích
+  /// nằm ở một kho chưa hề được cắm.
+  void _save() {
+    if (!_dirty) return;
+    final flow = _flowFor(_picked);
+    widget.onPick?.call(_picked);
+    flow?.call();
   }
 
   /// Luồng ứng với một kho, hoặc `null` khi chạm vào không chạy được gì.
@@ -192,18 +204,10 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
         onEdit: kind == EcStorageKind.s3 ? widget.onConnectS3 : null,
       );
     }
-    // Cả hai lối cắm hiện CÙNG LÚC khi đang ở kho hệ thống: người dùng cần so
-    // hai lựa chọn cạnh nhau, không phải bấm thử từng cái mới thấy nút.
-    if (!state.canManage || !state.byosAllowed) return null;
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: PenPrimaryButton(
-        label: kind == EcStorageKind.s3
-            ? context.l10n.storageConnectS3
-            : context.l10n.storageConnectDrive,
-        onPressed: widget.busy ? null : _flowFor(kind),
-      ),
-    );
+    // Kho CHƯA dùng không còn nút cắm riêng: có hai chỗ cùng áp dụng một thay
+    // đổi thì nút lưu trên đầu màn thành đồ trang trí, và người dùng học được
+    // rằng chạm vào thẻ là xong — đúng thói quen vừa bỏ đi.
+    return null;
   }
 
   @override
@@ -217,7 +221,18 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              PenHeader(title: l10n.storageTitle, onBack: widget.onBack),
+              PenHeader(
+                title: l10n.storageTitle,
+                onBack: widget.onBack,
+                // Nút lưu chỉ SÁNG khi có thay đổi chưa áp dụng. Một nút luôn
+                // sáng ở màn không có gì để lưu thì bấm vào không có chuyện gì
+                // xảy ra, và lần sau người dùng không tin nó nữa.
+                trailing: _SaveButton(
+                  enabled: _dirty && !widget.busy && state.canManage,
+                  busy: widget.busy,
+                  onTap: _save,
+                ),
+              ),
               const SizedBox(height: 10),
               // Câu này đứng ngay dưới tiêu đề vì nó trả lời nỗi lo đầu tiên
               // của người sắp đổi kho: đổi rồi bằng chứng có yếu đi không.
@@ -229,8 +244,7 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                 description: l10n.storageSystemDesc,
                 selected: _picked == EcStorageKind.system,
                 inUse: state.kind == EcStorageKind.system,
-                onTap: () =>
-                    _pick(EcStorageKind.system, _flowFor(EcStorageKind.system)),
+                onTap: () => _pick(EcStorageKind.system),
               ),
               const SizedBox(height: 10),
               _StorageOption(
@@ -242,8 +256,7 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                 label: state.kind == EcStorageKind.s3 ? state.label : null,
                 lockNote: state.byosAllowed ? null : l10n.storageNeedProPlan,
                 detail: _detailFor(EcStorageKind.s3),
-                onTap: () =>
-                    _pick(EcStorageKind.s3, _flowFor(EcStorageKind.s3)),
+                onTap: () => _pick(EcStorageKind.s3),
               ),
               const SizedBox(height: 10),
               _StorageOption(
@@ -255,8 +268,7 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                 label: state.kind == EcStorageKind.gdrive ? state.label : null,
                 lockNote: state.byosAllowed ? null : l10n.storageNeedProPlan,
                 detail: _detailFor(EcStorageKind.gdrive),
-                onTap: () =>
-                    _pick(EcStorageKind.gdrive, _flowFor(EcStorageKind.gdrive)),
+                onTap: () => _pick(EcStorageKind.gdrive),
               ),
               // Gói chưa mở kho riêng: nói MỘT lần dưới danh sách, không lặp ở
               // từng thẻ. Ba dòng cùng nội dung cạnh nhau đọc thành nhiễu, và
@@ -812,6 +824,60 @@ class _Field extends StatelessWidget {
             PenText(hint!, size: 12, color: PenColors.mut),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Nút lưu ở góc phải đầu màn Kho lưu trữ.
+///
+/// Dạng đĩa tròn như nút cộng ở màn Hồ sơ khiếu nại, để hai màn cùng một ngôn
+/// ngữ. Mờ đi khi không có gì để lưu — vẫn chiếm chỗ chứ không biến mất, vì một
+/// nút nhảy ra nhảy vào làm tiêu đề co giãn mỗi lần người dùng chạm một thẻ.
+class _SaveButton extends StatelessWidget {
+  const _SaveButton({
+    required this.enabled,
+    required this.busy,
+    required this.onTap,
+  });
+
+  final bool enabled;
+  final bool busy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final on = enabled && !busy;
+    return Semantics(
+      button: true,
+      enabled: on,
+      label: context.l10n.storageSave,
+      child: EcTap(
+        onTap: on ? onTap : null,
+        child: PenBox(
+          width: 40,
+          height: 40,
+          fill: on ? PenColors.primary : PenColors.bg,
+          stroke: on ? null : PenColors.line,
+          radius: 999,
+          axis: PenAxis.row,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          children: [
+            if (busy)
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CupertinoActivityIndicator(),
+              )
+            else
+              Icon(
+                LucideIcons.save,
+                size: 20,
+                color: on ? PenColors.card : PenColors.soft,
+              ),
+          ],
+        ),
       ),
     );
   }

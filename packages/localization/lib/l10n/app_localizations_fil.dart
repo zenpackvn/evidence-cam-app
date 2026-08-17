@@ -397,8 +397,8 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String memberInviteAccepted(String role) {
-    return '$role · tinanggap ang imbitasyon';
+  String memberInvitePending(String role) {
+    return '$role · naghihintay ng kumpirmasyon';
   }
 
   @override
@@ -441,7 +441,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get uploadStatusDeleted => 'Nabura';
 
   @override
-  String get uploadStatusError => 'Error sa pagproseso sa server';
+  String get uploadStatusError =>
+      'Hindi natapos ang upload — nasa device pa rin na kumuha ang clip';
 
   @override
   String get uploadStatusExpired => 'Tapos na ang panahon ng imbakan';
@@ -1071,6 +1072,15 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Naghihintay mag-upload';
+
+  @override
+  String get queueUploading => 'Ina-upload';
+
+  @override
+  String get queueQuotaShort => 'Naghihintay ng quota';
+
+  @override
+  String get queueUploadFailed => 'Hindi natapos ang upload';
 
   @override
   String get uploaded => 'Na-upload';
@@ -1993,6 +2003,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get storageTitle => 'Imbakan ng video';
 
   @override
+  String get storageSave => 'I-save ang piniling storage';
+
+  @override
   String get storageSystemName => 'Imbakan ng sistema';
 
   @override
@@ -2193,6 +2206,13 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get inviteQrRow => 'QR code';
+
+  @override
+  String get inviteQrTitle => 'Invite code ng shop';
+
+  @override
+  String get inviteQrNote =>
+      'Ipakita ang screen na ito sa taong gusto mong imbitahan. Isang beses lang magagamit ang code — magbabago ito kapag may sumali.';
 
   @override
   String get inviteScanTitle => 'I-scan ang invite code';

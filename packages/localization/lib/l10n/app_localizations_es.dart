@@ -399,8 +399,8 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String memberInviteAccepted(String role) {
-    return '$role · invitación aceptada';
+  String memberInvitePending(String role) {
+    return '$role · pendiente de confirmación';
   }
 
   @override
@@ -443,7 +443,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get uploadStatusDeleted => 'Eliminado';
 
   @override
-  String get uploadStatusError => 'Error de procesamiento en el servidor';
+  String get uploadStatusError =>
+      'Subida sin terminar: el vídeo sigue en el dispositivo que lo grabó';
 
   @override
   String get uploadStatusExpired => 'Periodo de conservación vencido';
@@ -1077,6 +1078,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Esperando subida';
+
+  @override
+  String get queueUploading => 'Subiendo';
+
+  @override
+  String get queueQuotaShort => 'Esperando cuota';
+
+  @override
+  String get queueUploadFailed => 'Subida sin terminar';
 
   @override
   String get uploaded => 'Subido';
@@ -1996,6 +2006,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get storageTitle => 'Almacenamiento de vídeo';
 
   @override
+  String get storageSave => 'Guardar la opción de almacenamiento';
+
+  @override
   String get storageSystemName => 'Almacenamiento del sistema';
 
   @override
@@ -2196,6 +2209,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get inviteQrRow => 'Código QR';
+
+  @override
+  String get inviteQrTitle => 'Código de invitación a la tienda';
+
+  @override
+  String get inviteQrNote =>
+      'Muestra esta pantalla a la persona que quieres invitar. El código es de un solo uso: cambia cuando alguien se une.';
 
   @override
   String get inviteScanTitle => 'Escanear el código de invitación';

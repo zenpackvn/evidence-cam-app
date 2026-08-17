@@ -203,7 +203,8 @@
   "roleOwner": "Owner",
   "roleStaff": "Staff",
   "memberInviteSent": "{role} · invite sent",
-  "@memberInviteSent": {
+  "memberInvitePending": "{role} · awaiting confirmation",
+  "@memberInvitePending": {
     "description": "Role line for an invite that has been emailed but not redeemed.",
     "placeholders": {
       "role": {
@@ -211,9 +212,8 @@
       }
     }
   },
-  "memberInviteAccepted": "{role} · invite accepted",
-  "@memberInviteAccepted": {
-    "description": "Role line for a member who joined by redeeming an invite.",
+  "@memberInviteSent": {
+    "description": "Role line for an invite that has been emailed but not redeemed.",
     "placeholders": {
       "role": {
         "type": "String"
@@ -233,7 +233,7 @@
   "uploadStatusPending": "Waiting to upload",
   "uploadStatusQuotaHold": "On hold (quota)",
   "uploadStatusDeleted": "Deleted",
-  "uploadStatusError": "Server-side processing error",
+  "uploadStatusError": "Upload unfinished — the clip is still on the device that recorded it",
   "uploadStatusExpired": "Storage retention expired",
   "expiredOnDate": "Storage retention expired on {date}",
   "@expiredOnDate": {
@@ -565,6 +565,9 @@
   "queueEmpty": "No videos in the queue yet",
   "queueAutoUploadNote": "Upload happens automatically when you're online",
   "waitingUpload": "Waiting to upload",
+  "queueUploading": "Uploading",
+  "queueQuotaShort": "Waiting on quota",
+  "queueUploadFailed": "Upload unfinished",
   "uploaded": "Uploaded",
   "waitingQuota": "Waiting for allowance · still on device",
   "pausedUpload": "Paused",
@@ -1318,6 +1321,7 @@
   },
   "quotaStrandedNote": "These videos exist only on this phone. Losing it, uninstalling the app or clearing its data loses them.",
   "storageTitle": "Video storage",
+  "storageSave": "Save storage choice",
   "storageSystemName": "System storage",
   "storageS3Name": "Your own storage (S3)",
   "storageDriveName": "Your Google Drive",
@@ -1428,6 +1432,8 @@
   "inviteTaken": "Someone else already accepted this invite",
   "inviteExpired": "The invite has expired. Ask the shop owner to resend it.",
   "inviteQrRow": "QR code",
+  "inviteQrTitle": "Shop invite code",
+  "inviteQrNote": "Show this screen to the person you want to invite. The code is single-use — it changes once someone joins.",
   "inviteScanTitle": "Scan invite code",
   "inviteScanDetail": "Ask the shop owner to show the invite QR code, then scan it here.",
   "commonShare": "Share",

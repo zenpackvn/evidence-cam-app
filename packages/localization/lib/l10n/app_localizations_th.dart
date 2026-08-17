@@ -390,8 +390,8 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String memberInviteAccepted(String role) {
-    return '$role · รับคำเชิญแล้ว';
+  String memberInvitePending(String role) {
+    return '$role · รอการยืนยัน';
   }
 
   @override
@@ -434,7 +434,8 @@ class AppLocalizationsTh extends AppLocalizations {
   String get uploadStatusDeleted => 'ลบแล้ว';
 
   @override
-  String get uploadStatusError => 'เกิดข้อผิดพลาดฝั่งเซิร์ฟเวอร์';
+  String get uploadStatusError =>
+      'อัปโหลดไม่สำเร็จ — คลิปยังอยู่ในเครื่องที่ถ่าย';
 
   @override
   String get uploadStatusExpired => 'หมดอายุการเก็บรักษา';
@@ -1051,6 +1052,15 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get waitingUpload => 'รออัปโหลด';
+
+  @override
+  String get queueUploading => 'กำลังอัปโหลด';
+
+  @override
+  String get queueQuotaShort => 'รอโควตา';
+
+  @override
+  String get queueUploadFailed => 'อัปโหลดไม่สำเร็จ';
 
   @override
   String get uploaded => 'อัปโหลดแล้ว';
@@ -1954,6 +1964,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get storageTitle => 'พื้นที่เก็บวิดีโอ';
 
   @override
+  String get storageSave => 'บันทึกการเลือกที่จัดเก็บ';
+
+  @override
   String get storageSystemName => 'พื้นที่เก็บของระบบ';
 
   @override
@@ -2152,6 +2165,13 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get inviteQrRow => 'คิวอาร์โค้ด';
+
+  @override
+  String get inviteQrTitle => 'รหัสเชิญเข้าร้าน';
+
+  @override
+  String get inviteQrNote =>
+      'ให้คนที่คุณต้องการเชิญสแกนหน้าจอนี้ รหัสใช้ได้ครั้งเดียว เมื่อมีคนเข้าร่วมรหัสจะเปลี่ยน';
 
   @override
   String get inviteScanTitle => 'สแกนรหัสคำเชิญ';

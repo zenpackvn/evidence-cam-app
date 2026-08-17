@@ -38,6 +38,51 @@ Future<void> _pump(
 }
 
 void main() {
+  /// Hàng thành viên: tên, EMAIL ngay dưới, và nhãn trạng thái nói đúng việc.
+  ///
+  /// Một cửa hàng có hai người trùng tên là chuyện thường, và tên hiển thị thì
+  /// người dùng tự đặt — nên tên không phân biệt được ai với ai.
+  group('hàng thành viên', () {
+    testWidgets('email hiện ngay dưới tên', (tester) async {
+      await _pump(
+        tester,
+        const EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          videoTypes: [],
+          members: [
+            EcShopMember(
+              name: 'Trần Thị B',
+              role: 'Nhân viên',
+              email: 'b@shop.vn',
+            ),
+          ],
+        ),
+      );
+
+      expect(find.text('Trần Thị B'), findsOneWidget);
+      expect(find.text('b@shop.vn'), findsOneWidget);
+    });
+
+    // Lời mời chưa có tài khoản thì tên ĐÃ là địa chỉ đã mời. In lại lần nữa ở
+    // dòng dưới là hai dòng nói cùng một điều.
+    testWidgets('email trùng tên thì không in hai lần', (tester) async {
+      await _pump(
+        tester,
+        const EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          videoTypes: [],
+          members: [
+            EcShopMember(name: 'moi@test.co', role: 'Nhân viên · chờ xác nhận'),
+          ],
+        ),
+      );
+
+      expect(find.text('moi@test.co'), findsOneWidget);
+    });
+  });
+
   group('bottom sheets', () {
     // Bốn sheet của flow 1 từng tự dựng lại panel: góc vuông, không vuốt xuống
     // được, và SafeArea chồng lên padding đáy nên thừa một dải trắng. Chốt vào

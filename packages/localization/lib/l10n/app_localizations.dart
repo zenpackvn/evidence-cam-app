@@ -792,11 +792,11 @@ abstract class AppLocalizations {
   /// **'{role} · invite sent'**
   String memberInviteSent(String role);
 
-  /// Role line for a member who joined by redeeming an invite.
+  /// Role line for an invite that has been emailed but not redeemed.
   ///
   /// In en, this message translates to:
-  /// **'{role} · invite accepted'**
-  String memberInviteAccepted(String role);
+  /// **'{role} · awaiting confirmation'**
+  String memberInvitePending(String role);
 
   /// No description provided for @planFree.
   ///
@@ -879,7 +879,7 @@ abstract class AppLocalizations {
   /// No description provided for @uploadStatusError.
   ///
   /// In en, this message translates to:
-  /// **'Server-side processing error'**
+  /// **'Upload unfinished — the clip is still on the device that recorded it'**
   String get uploadStatusError;
 
   /// No description provided for @uploadStatusExpired.
@@ -1997,6 +1997,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting to upload'**
   String get waitingUpload;
+
+  /// No description provided for @queueUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading'**
+  String get queueUploading;
+
+  /// No description provided for @queueQuotaShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting on quota'**
+  String get queueQuotaShort;
+
+  /// No description provided for @queueUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload unfinished'**
+  String get queueUploadFailed;
 
   /// No description provided for @uploaded.
   ///
@@ -3578,6 +3596,12 @@ abstract class AppLocalizations {
   /// **'Video storage'**
   String get storageTitle;
 
+  /// No description provided for @storageSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save storage choice'**
+  String get storageSave;
+
   /// No description provided for @storageSystemName.
   ///
   /// In en, this message translates to:
@@ -3931,6 +3955,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'QR code'**
   String get inviteQrRow;
+
+  /// No description provided for @inviteQrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop invite code'**
+  String get inviteQrTitle;
+
+  /// No description provided for @inviteQrNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Show this screen to the person you want to invite. The code is single-use — it changes once someone joins.'**
+  String get inviteQrNote;
 
   /// No description provided for @inviteScanTitle.
   ///

@@ -844,30 +844,50 @@ class RecordingSessionBloc
   ) async {
     if (scanSuspended) return;
     final code = event.code.trim();
-    // A return clip's tracking code is checked against the shop's saved
-    // orders first. [_verifyReturnCode] itself decides what "not found" means
-    // to the user — today that's a dialog offering manual entry or confirming
-    // a new order (mirrors the manual-entry find-or-create flow) — this bloc
-    // only needs to know whether recording may proceed for [code].
-    if (state.typeLabel == 'Trả hàng' && _verifyReturnCode != null) {
-      // Mã lạ chỉ được **báo tiếng**, không còn chặn quay. Hàng hoàn nhiều khi
-      // chưa có đơn trong hệ thống (khách trả thẳng, đơn tạo sau), mà chặn thì
-      // mất luôn bằng chứng mở kiện — thứ duy nhất không quay lại được. Người
-      // quay nghe "Sai mã" là biết phải đối chiếu sau, clip vẫn được lưu.
-      //
-      // Vẫn nhớ mã vừa cảnh báo để bill nằm trong khung không làm câu thông
-      // báo lặp lại mỗi nhịp quét.
-      if (_lastRejectedReturnCode != code) {
-        final known = await _verifyReturnCode(code);
-        if (!known) {
-          _lastRejectedReturnCode = code;
-          unawaited(_voice.speak(voiceLines.wrongCode));
-        } else {
-          _lastRejectedReturnCode = null;
-        }
-      }
-    }
+    // Clip "Trả hàng" có một bước đối chiếu mã với đơn của shop. Bước đó chạy
+    // SAU khi camera đã lăn, KHÔNG chặn trước nữa.
+    //
+    // Nó là hai lượt gọi mạng (tìm đơn, và tạo đơn nếu chưa có). Chờ chúng
+    // xong mới bắt đầu quay nghĩa là trên mạng di động ở bàn đóng gói, người
+    // quét mã xong phải đứng chờ một hai giây rồi máy mới ghi hình — và cảnh
+    // mở kiện trong khoảng đó mất luôn. Cảnh mở kiện là thứ duy nhất không
+    // quay lại được.
+    //
+    // Chờ cũng không đổi được gì: bước đối chiếu **luôn cho quay** — mã lạ thì
+    // tự tạo đơn mới, gọi mạng hỏng thì vẫn trả cho phép. Clip nằm trong hàng
+    // chờ và gắn theo mã, lần upload sau máy chủ tự khớp hoặc tạo đơn. Nên đây
+    // là một lượt chờ không mua được quyết định nào.
+    //
+    // Vẫn nhớ mã vừa cảnh báo để bill nằm trong khung không làm câu thông báo
+    // lặp lại mỗi nhịp quét.
+    final verify = state.typeLabel == 'Trả hàng' &&
+            _verifyReturnCode != null &&
+            _lastRejectedReturnCode != code
+        ? _verifyReturnCode
+        : null;
     await _beginRecording(code, emit);
+    if (verify != null) unawaited(_reconcileReturnCode(verify, code));
+  }
+
+  /// Đối chiếu mã trả hàng với đơn của shop, chạy nền trong lúc clip đã quay.
+  ///
+  /// Nuốt mọi lỗi: một lượt gọi mạng hỏng không được phép làm chết clip đang
+  /// ghi. Đây cũng chính là điều bản đồng bộ trước đây làm — nó luôn trả "cho
+  /// quay" kể cả khi tạo đơn thất bại.
+  Future<void> _reconcileReturnCode(
+    Future<bool> Function(String code) verify,
+    String code,
+  ) async {
+    try {
+      if (await verify(code)) {
+        _lastRejectedReturnCode = null;
+        return;
+      }
+      _lastRejectedReturnCode = code;
+      unawaited(_voice.speak(voiceLines.wrongCode));
+    } on Object {
+      // Kệ — clip quan trọng hơn việc đối chiếu.
+    }
   }
 
   Future<void> _beginRecording(
@@ -879,39 +899,44 @@ class RecordingSessionBloc
     try {
       await _serialized(() async {
         if (!_camera.isInitialized || _camera.isRecordingVideo) return;
-        // Tút trước, rồi câu nói và lượt mở ghi hình chạy CÙNG nhau.
+        // KHÔNG chờ gì trước khi lăn camera. Tiếng tút và câu nói đều bắn ra
+        // rồi thả, còn lượt mở ghi hình đi thẳng.
         //
-        // Trước đây phải chờ câu nói dứt hẳn mới lăn camera, vì hai lẽ: clip
-        // thu cả tiếng nên câu nói lọt vào video, và lượt khởi động camera
-        // giành phiên âm thanh nên cắt ngang câu đang phát. Lẽ thứ nhất đã hết
-        // từ khi clip quay với `enableAudio: false` — không còn luồng âm thanh
-        // nào để lọt vào. Lẽ thứ hai cũng theo đó nhẹ đi: không có đầu vào âm
-        // thanh thì AVCaptureSession không đụng tới phiên âm thanh.
+        // Người bán đóng gói bằng hai tay và không nhìn màn hình, nên âm thanh
+        // CHÍNH LÀ hiệu lệnh: nghe xong là họ đưa mã vận đơn lên trước ống
+        // kính. Mỗi mili-giây giữa hiệu lệnh và khung hình đầu tiên là một
+        // mili-giây thao tác của họ không được ghi lại — và thứ mất thường là
+        // đúng cảnh đưa mã lên, khung hình mà cả hồ sơ dựa vào.
         //
-        // Cái giá của việc chờ thì rất thật: hơn một giây đứng hình giữa câu
-        // "Đã bắt đầu quay" và khung hình đầu tiên — người quay nghe máy nói
-        // đã quay trong khi máy chưa quay. Cho chạy song song thì lượt mở ghi
-        // hình tan trong lúc câu nói còn đang phát, và clip bắt đầu ngay.
-        // Tắt luồng quét NGAY, cho nó chạy song song với lời thông báo.
+        // Vì thế hai việc tách vai rõ ràng:
+        //   - Tút: xác nhận "máy nhận mã rồi", bắn NGAY, không chờ. Đây là thứ
+        //     phản hồi nhanh cho thao tác vừa xong, đúng như tài liệu của
+        //     `CaptureToneService` nói.
+        //   - Câu "Đã bắt đầu quay": nói SAU khi camera đã lăn thật. Nó là một
+        //     lời khẳng định về trạng thái máy, nên nói lúc chưa quay là nói
+        //     sai — và người bán tin lời đó rồi bắt đầu thao tác quá sớm.
         //
-        // Từ giây này clip chắc chắn được mở, nên luồng quét lúc rảnh hết
-        // việc. Để nó lại sau câu nói thì hai lời gọi nền tảng nặng — tắt
-        // luồng và mở ghi hình — dồn vào đúng khoảng giữa "Đã bắt đầu quay" và
-        // khung hình đầu tiên, và người quay thấy đúng một đoạn đứng hình ở
-        // đó. Chạy trước thì nó tan trong lúc câu nói đang phát.
+        // Bản trước `await` tiếng tút rồi mới thả câu nói song song với lượt mở
+        // camera. Cách đó bỏ được đoạn đứng hình dài, nhưng vẫn để câu khẳng
+        // định chạy trước sự thật. Đường chuyển đơn A→B (`_onStop`) vốn đã bắn
+        // tút không chờ vì đúng lý do này; đây là lượt kéo đường bắt đầu theo.
+        //
+        // Tắt luồng quét cũng bắn trước để nó tan trong lúc camera đang mở, chứ
+        // không nối đuôi thành hai lời gọi nền tảng nặng liên tiếp.
         final stoppingScan = _camera.isStreamingImages
             ? _camera.stopImageStream().catchError((Object _) {})
             : Future<void>.value();
-        await _beepStart();
-        final speaking = _speakStart();
+        unawaited(_beepStart());
         previewTransitioning.value = true;
         try {
           await stoppingScan;
           await _startVideoWithScan();
+          _markClipStart();
         } finally {
           previewTransitioning.value = false;
         }
-        unawaited(speaking);
+        // Từ đây máy ĐANG quay thật, nên câu khẳng định mới đúng.
+        unawaited(_speakStart());
         _nearLimitWarned = false;
         _capRequested = false;
         if (isClosed) return;
@@ -940,7 +965,6 @@ class RecordingSessionBloc
   /// Records with the hands-free scan stream; if the hardware rejects concurrent
   /// stream+record, records without it and disables live cut-over for good.
   Future<void> _startVideoWithScan() async {
-    _clipStartedAt = DateTime.now();
     if (_liveScan) {
       try {
         await _camera.startVideoRecording(onAvailable: _onRecordingFrame);
@@ -952,6 +976,15 @@ class RecordingSessionBloc
     }
     await _camera.startVideoRecording();
   }
+
+  /// Mốc bắt đầu clip, đặt SAU khi camera đã lăn.
+  ///
+  /// Trước đây đặt ngay trước lời gọi mở ghi hình, nên nó sớm hơn khung hình
+  /// đầu tiên đúng bằng độ trễ của phần cứng. Mốc này là gốc thời gian mà dấu
+  /// nung trên video đếm từ đó (`render/server.mjs`), nên lệch bao nhiêu thì
+  /// đồng hồ in trên mọi khung hình sai bấy nhiêu — trên một tài liệu mà cả giá
+  /// trị nằm ở chỗ giờ giấc đứng vững trước bên tranh chấp.
+  void _markClipStart() => _clipStartedAt = DateTime.now();
 
   /// Watches for the end-QR or a different order's bill while a clip records.
   ///
@@ -1065,6 +1098,7 @@ class RecordingSessionBloc
             // đầu mỗi clip đã được làm câm lúc remux.
             unawaited(_tone.beep());
             await _startVideoWithScan();
+            _markClipStart();
           } else {
             // Về nghỉ thì không còn gì đang ghi, nên khỏi chờ câu nói.
             unawaited(_voice.speak(voiceLines.recordingStopped));

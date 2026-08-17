@@ -1877,12 +1877,23 @@ class EcShopMember {
   const EcShopMember({
     required this.name,
     required this.role,
+    this.email,
     this.accountUid,
     this.roleCode,
     this.inviteId,
   });
   final String name;
   final String role;
+
+  /// Địa chỉ hộp thư, hiện ngay dưới tên.
+  ///
+  /// Một cửa hàng có hai người trùng tên là chuyện thường, và tên hiển thị thì
+  /// người dùng tự đặt — nên tên KHÔNG phân biệt được ai với ai. Email thì có.
+  ///
+  /// Để rỗng khi chính nó đã là dòng tên: lời mời chưa có tài khoản thì thứ duy
+  /// nhất biết được về người ta là địa chỉ đã mời, và in lại lần nữa ở dòng
+  /// dưới chỉ là hai dòng nói cùng một điều.
+  final String? email;
   final String? accountUid;
   final String? roleCode;
 
@@ -2548,27 +2559,52 @@ class _MemberRow extends StatelessWidget {
             ],
           ),
           Expanded(
-            child: PenText(
-              member.name,
-              size: 16,
-              color: PenColors.ink,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PenText(
+                  member.name,
+                  size: 16,
+                  color: PenColors.ink,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if ((member.email ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  PenText(
+                    member.email!,
+                    size: 12.5,
+                    color: PenColors.mut,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
             ),
           ),
-          PenBox(
-            fill: PenColors.bg,
-            radius: 999,
-            axis: PenAxis.row,
-            hugMain: true,
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 11),
-            children: [
-              PenText(
-                member.role,
-                size: 12,
-                color: PenColors.ink,
-                softWrap: false,
-              ),
-            ],
+          // `Flexible` chứ không để viên nhãn tự do: nó dùng `softWrap: false`
+          // nên chiếm đúng bề rộng của chữ, và một nhãn dài
+          // ("Nhân viên · chờ xác nhận") trên màn hẹp đẩy cả hàng tràn ra ngoài
+          // — đo được 33px trong test. Cho nó co lại và cắt bằng dấu ba chấm;
+          // phần tên bên trái đã `Expanded` nên hai bên tự chia nhau.
+          Flexible(
+            child: PenBox(
+              fill: PenColors.bg,
+              radius: 999,
+              axis: PenAxis.row,
+              hugMain: true,
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 11),
+              children: [
+                Flexible(
+                  child: PenText(
+                    member.role,
+                    size: 12,
+                    color: PenColors.ink,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
           if (tappable)
             const Icon(

@@ -392,8 +392,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String memberInviteAccepted(String role) {
-    return '$role · invite accepted';
+  String memberInvitePending(String role) {
+    return '$role · awaiting confirmation';
   }
 
   @override
@@ -436,7 +436,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploadStatusDeleted => 'Deleted';
 
   @override
-  String get uploadStatusError => 'Server-side processing error';
+  String get uploadStatusError =>
+      'Upload unfinished — the clip is still on the device that recorded it';
 
   @override
   String get uploadStatusExpired => 'Storage retention expired';
@@ -1065,6 +1066,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Waiting to upload';
+
+  @override
+  String get queueUploading => 'Uploading';
+
+  @override
+  String get queueQuotaShort => 'Waiting on quota';
+
+  @override
+  String get queueUploadFailed => 'Upload unfinished';
 
   @override
   String get uploaded => 'Uploaded';
@@ -1979,6 +1989,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storageTitle => 'Video storage';
 
   @override
+  String get storageSave => 'Save storage choice';
+
+  @override
   String get storageSystemName => 'System storage';
 
   @override
@@ -2178,6 +2191,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inviteQrRow => 'QR code';
+
+  @override
+  String get inviteQrTitle => 'Shop invite code';
+
+  @override
+  String get inviteQrNote =>
+      'Show this screen to the person you want to invite. The code is single-use — it changes once someone joins.';
 
   @override
   String get inviteScanTitle => 'Scan invite code';

@@ -392,8 +392,8 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String memberInviteAccepted(String role) {
-    return '$role · undangan diterima';
+  String memberInvitePending(String role) {
+    return '$role · menunggu konfirmasi';
   }
 
   @override
@@ -436,7 +436,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get uploadStatusDeleted => 'Dihapus';
 
   @override
-  String get uploadStatusError => 'Kesalahan pemrosesan di server';
+  String get uploadStatusError =>
+      'Unggahan belum selesai — klip masih ada di perangkat yang merekam';
 
   @override
   String get uploadStatusExpired => 'Masa simpan berakhir';
@@ -1062,6 +1063,15 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Menunggu diunggah';
+
+  @override
+  String get queueUploading => 'Mengunggah';
+
+  @override
+  String get queueQuotaShort => 'Menunggu kuota';
+
+  @override
+  String get queueUploadFailed => 'Unggahan belum selesai';
 
   @override
   String get uploaded => 'Terunggah';
@@ -1980,6 +1990,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get storageTitle => 'Penyimpanan video';
 
   @override
+  String get storageSave => 'Simpan pilihan penyimpanan';
+
+  @override
   String get storageSystemName => 'Penyimpanan sistem';
 
   @override
@@ -2180,6 +2193,13 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get inviteQrRow => 'Kode QR';
+
+  @override
+  String get inviteQrTitle => 'Kode undangan toko';
+
+  @override
+  String get inviteQrNote =>
+      'Tunjukkan layar ini kepada orang yang ingin Anda undang. Kode sekali pakai — berubah begitu ada yang bergabung.';
 
   @override
   String get inviteScanTitle => 'Pindai kode undangan';

@@ -401,8 +401,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String memberInviteAccepted(String role) {
-    return '$role · Einladung angenommen';
+  String memberInvitePending(String role) {
+    return '$role · wartet auf Bestätigung';
   }
 
   @override
@@ -445,7 +445,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get uploadStatusDeleted => 'Gelöscht';
 
   @override
-  String get uploadStatusError => 'Verarbeitungsfehler auf dem Server';
+  String get uploadStatusError =>
+      'Upload unvollständig — der Clip liegt noch auf dem Aufnahmegerät';
 
   @override
   String get uploadStatusExpired => 'Aufbewahrungsfrist abgelaufen';
@@ -1088,6 +1089,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Wartet auf Upload';
+
+  @override
+  String get queueUploading => 'Wird hochgeladen';
+
+  @override
+  String get queueQuotaShort => 'Wartet auf Kontingent';
+
+  @override
+  String get queueUploadFailed => 'Upload unvollständig';
 
   @override
   String get uploaded => 'Hochgeladen';
@@ -2010,6 +2020,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storageTitle => 'Videospeicher';
 
   @override
+  String get storageSave => 'Speicherauswahl sichern';
+
+  @override
   String get storageSystemName => 'Systemspeicher';
 
   @override
@@ -2212,6 +2225,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get inviteQrRow => 'QR-Code';
+
+  @override
+  String get inviteQrTitle => 'Einladungscode für den Shop';
+
+  @override
+  String get inviteQrNote =>
+      'Zeigen Sie diesen Bildschirm der Person, die Sie einladen möchten. Der Code gilt einmalig und ändert sich, sobald jemand beitritt.';
 
   @override
   String get inviteScanTitle => 'Einladungscode scannen';

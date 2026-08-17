@@ -389,8 +389,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String memberInviteAccepted(String role) {
-    return '$role · đã nhận lời mời';
+  String memberInvitePending(String role) {
+    return '$role · chờ xác nhận';
   }
 
   @override
@@ -433,7 +433,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get uploadStatusDeleted => 'Đã xóa';
 
   @override
-  String get uploadStatusError => 'Lỗi xử lý phía máy chủ';
+  String get uploadStatusError =>
+      'Tải lên chưa xong — clip vẫn nằm trên máy đã quay';
 
   @override
   String get uploadStatusExpired => 'Đã quá hạn lưu trữ';
@@ -1059,6 +1060,15 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get waitingUpload => 'Chờ upload';
+
+  @override
+  String get queueUploading => 'Đang tải lên';
+
+  @override
+  String get queueQuotaShort => 'Chờ hạn mức';
+
+  @override
+  String get queueUploadFailed => 'Tải lên chưa xong';
 
   @override
   String get uploaded => 'Đã upload';
@@ -1966,6 +1976,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get storageTitle => 'Kho lưu trữ';
 
   @override
+  String get storageSave => 'Lưu lựa chọn kho';
+
+  @override
   String get storageSystemName => 'Cloud Zenpack';
 
   @override
@@ -2164,6 +2177,13 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get inviteQrRow => 'Mã QR';
+
+  @override
+  String get inviteQrTitle => 'Mã mời vào cửa hàng';
+
+  @override
+  String get inviteQrNote =>
+      'Đưa màn hình này cho người bạn muốn mời quét. Mã dùng một lần — có người vào là mã đổi.';
 
   @override
   String get inviteScanTitle => 'Quét mã mời';

@@ -3642,19 +3642,31 @@ String _storageLabel(BuildContext context, StorageKind kind) => switch (kind) {
 /// nhãn mời cho họ là nói sai.
 EcShopMember _memberFromDto(AppLocalizations l10n, MemberDto member) {
   final role = _roleDisplayName(l10n, member.role);
+  final name =
+      member.name ??
+      member.email ??
+      member.inviteContact ??
+      member.accountUid ??
+      '';
+  final contact = member.email ?? member.inviteContact;
   return EcShopMember(
     accountUid: member.accountUid,
     inviteId: member.inviteId,
     roleCode: member.role,
-    name:
-        member.name ??
-        member.email ??
-        member.inviteContact ??
-        member.accountUid ??
-        '',
+    name: name,
+    // Email chỉ xuống dòng dưới khi nó KHÁC dòng tên. Người chưa có tài khoản
+    // thì tên đã chính là địa chỉ đã mời — in lại lần nữa là hai dòng nói cùng
+    // một điều.
+    email: contact == name ? null : contact,
     role: switch (member.inviteStatus) {
-      'sent' => l10n.memberInviteSent(role),
-      'accepted' => l10n.memberInviteAccepted(role),
+      // Chưa xác nhận: nói theo việc CÒN PHẢI LÀM. "Đã gửi lời mời" mô tả thao
+      // tác của chủ shop; thứ họ cần đọc từ danh sách là ai chưa vào được.
+      'sent' => l10n.memberInvitePending(role),
+      // Đã nhận rồi thì họ là NHÂN VIÊN, hết. Giữ lại chữ "đã nhận lời mời" là
+      // để một dấu vết của quá trình nằm mãi trên một người đã vào shop từ lâu,
+      // và làm hàng của họ trông khác hàng của người được thêm thẳng — trong
+      // khi hai người ấy y hệt nhau về mọi mặt.
+      'accepted' => role,
       _ => role,
     },
   );
@@ -3884,7 +3896,16 @@ class _InviteMemberRouteState extends State<_InviteMemberRoute> {
       // xác nhận mới vào shop. Nhánh "đã thêm thành viên" ở đây là di tích của
       // thời tự-vào-shop, không có đường nào chạy tới nữa.
       assert(result.status == 'pending', 'lời mời mới phải là pending');
-      await _showInviteQr(context, result.inviteToken);
+      // Mời xong thì BÁO ĐÃ GỬI, không chìa mã QR ra nữa.
+      //
+      // Trước đây gửi email xong là bật luôn hộp thoại QR, nên một thao tác
+      // sinh ra hai đường mời cùng lúc — chủ shop vừa gửi mail vừa cầm một mã
+      // quét, và không biết người kia sẽ vào bằng đường nào. Hai đường đó là
+      // hai lựa chọn: mời qua email cho người chưa có tài khoản, mã QR cho
+      // người đang đứng ngay đó. Chọn một, không phải cả hai.
+      //
+      // Mã QR vẫn lấy được bất cứ lúc nào ở màn chi tiết cửa hàng.
+      _toast(context, context.l10n.toastInviteSent);
     } on Object catch (error) {
       if (mounted) _toast(context, _inviteErrorText(context.l10n, error));
     } finally {
@@ -3946,28 +3967,33 @@ Future<void> _showInviteQr(BuildContext context, String token) async {
   // Bấm ra ngoài là đóng. Mã này được chìa ra giữa chừng một việc khác — hỏi
   // email, xem danh sách thành viên — nên đường thoát phải là thứ tay đã biết
   // sẵn, không phải một nút nữa phải tìm.
-  await showCupertinoDialog<void>(
+  await showCupertinoModalPopup<void>(
     context: context,
-    barrierDismissible: true,
-    builder: (dialogContext) => _InviteQrDialog(link: link),
+    builder: (sheetContext) => _InviteQrSheet(link: link),
   );
 }
 
-/// Mã QR mời, chiếm trọn sự chú ý: chỉ mã, và hai việc làm được với nó.
+/// Mã QR mời — CÙNG khuôn với sheet "Mã dừng quay".
 ///
-/// Không tiêu đề, không đoạn giải thích, không nút Đóng. Người mở nó ra đang
-/// chìa màn hình cho người khác quét — mọi chữ thêm vào đều là thứ che mất
-/// phần duy nhất có việc phải làm.
-class _InviteQrDialog extends StatefulWidget {
-  const _InviteQrDialog({required this.link});
+/// Hai màn này làm đúng một việc: chìa một mã QR ra cho người khác quét, kèm
+/// hai đường mang nó đi (lưu, chia sẻ). Trước đây mã mời là một hộp thoại
+/// lửng giữa màn không tiêu đề, không lời giải thích, còn mã dừng quay là một
+/// sheet đầy đủ — hai lối vẽ cho cùng một việc, và người dùng phải học hai lần.
+///
+/// Nay dùng lại đúng bố cục đó: tiêu đề, mã trên nền trắng, một dòng nói mã
+/// dùng để làm gì, rồi thẻ hai hàng hành động. Kể cả `_EndQrActionRow` cũng
+/// dùng chung — hai hàng nút giống nhau thì phải là MỘT widget, nếu không lần
+/// sửa sau chúng lại trôi khỏi nhau.
+class _InviteQrSheet extends StatefulWidget {
+  const _InviteQrSheet({required this.link});
 
   final String link;
 
   @override
-  State<_InviteQrDialog> createState() => _InviteQrDialogState();
+  State<_InviteQrSheet> createState() => _InviteQrSheetState();
 }
 
-class _InviteQrDialogState extends State<_InviteQrDialog> {
+class _InviteQrSheetState extends State<_InviteQrSheet> {
   /// Neo để chụp đúng phần mã thành ảnh — lưu và chia sẻ đều cần một tấm PNG,
   /// và chụp lại chính widget đang hiện thì thứ người ta nhận được giống hệt
   /// thứ họ vừa nhìn.
@@ -4030,78 +4056,55 @@ class _InviteQrDialogState extends State<_InviteQrDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          RepaintBoundary(
+    return PenSheet(
+      onDismiss: () => Navigator.of(context).pop(),
+      children: [
+        const SizedBox(height: 18),
+        PenText(
+          l10n.inviteQrTitle,
+          size: 22,
+          color: PenColors.ink,
+          weight: FontWeight.w800,
+        ),
+        const SizedBox(height: 16),
+        Center(
+          // `RepaintBoundary` bọc ĐÚNG phần mã: ảnh lưu ra và ảnh chia sẻ đi
+          // đều chụp lại chính widget này, nên thứ người ta nhận được giống
+          // hệt thứ vừa nhìn thấy.
+          child: RepaintBoundary(
             key: _qrKey,
-            child: PenQrCard(data: widget.link, size: 260),
+            child: PenQrCard(data: widget.link, size: 220),
           ),
-          const SizedBox(height: 18),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _InviteQrAction(
-                icon: LucideIcons.download,
-                label: l10n.commonSave,
-                onTap: _busy ? null : _save,
-              ),
-              const SizedBox(width: 12),
-              _InviteQrAction(
-                icon: LucideIcons.share2,
-                label: l10n.commonShare,
-                onTap: _busy ? null : _share,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Một trong hai việc làm được với mã: viên thuốc trắng trên nền tối.
-class _InviteQrAction extends StatelessWidget {
-  const _InviteQrAction({
-    required this.icon,
-    required this.label,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) => CupertinoButton(
-    onPressed: onTap,
-    padding: EdgeInsets.zero,
-    minimumSize: Size.zero,
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFFFF),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 20),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        ),
+        const SizedBox(height: 16),
+        PenText(l10n.inviteQrNote, size: 13, color: PenColors.mut),
+        const SizedBox(height: 18),
+        PenCard(
+          axis: PenAxis.column,
+          clip: true,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           children: [
-            Icon(icon, size: 18, color: PenColors.ink),
-            const SizedBox(width: 8),
-            PenText(
-              label,
-              size: 15,
-              color: PenColors.ink,
-              weight: FontWeight.w700,
-              softWrap: false,
+            _EndQrActionRow(
+              icon: LucideIcons.share2,
+              label: l10n.accountEndQrShare,
+              onTap: _busy ? null : () => unawaited(_share()),
+            ),
+            const PenBox(
+              width: double.infinity,
+              height: 1,
+              fill: PenColors.line,
+            ),
+            _EndQrActionRow(
+              icon: LucideIcons.download,
+              label: l10n.accountEndQrSave,
+              onTap: _busy ? null : () => unawaited(_save()),
             ),
           ],
         ),
-      ),
-    ),
-  );
+        const SizedBox(height: 20),
+      ],
+    );
+  }
 }
 
 /// Nhận một lời mời bằng cách QUÉT mã QR của nó.
@@ -6163,9 +6166,18 @@ class _CreateClaimRoute extends StatelessWidget {
           ),
       ];
     } on Object {
-      // Mạng hỏng đọc ra y như "không tìm thấy mã" — cùng một màn hình rỗng.
-      // Chấp nhận được vì bước sau của người dùng giống nhau: thử lại.
-      return const [];
+      // NÉM tiếp, không nuốt.
+      //
+      // Bản trước trả `const []` cho mọi lỗi, nên màn hình nói "không tìm thấy
+      // mã" trong khi thứ vừa xảy ra là mạng chết hoặc máy chủ 500. Hai câu đó
+      // dẫn người bán đi hai hướng khác hẳn nhau: một cái bảo họ gõ lại mã (họ
+      // gõ đúng rồi), cái kia bảo họ thử lại sau.
+      //
+      // Nguy hơn: hàm này gọi `repo.order()` cho từng đơn tìm được, nên MỘT lỗi
+      // ở đường chi tiết đơn cũng biến thành "mã không tồn tại" — đúng cái lỗi
+      // người bán báo là "quét thì ra, gõ tay thì không". Nuốt lỗi ở đây là
+      // giấu mất nguyên nhân thật.
+      rethrow;
     }
   }
 
@@ -6704,13 +6716,23 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
         );
         return;
       }
-      // Không có quyền vào thư viện: bản tải về vẫn nằm trong thư mục của app,
-      // nhưng nói thẳng là chưa lưu được thay vì im lặng.
+      // KHÔNG vào được thư viện thì vẫn còn hai đường, đúng như nút "Tải về
+      // máy" ở màn chi tiết bằng chứng vẫn làm: đưa ra khay chia sẻ, hoặc chép
+      // đường dẫn tệp.
+      //
+      // Bản trước nhảy thẳng sang câu "tải thất bại" ở đây. Tệp đã tải xong
+      // nằm sẵn trong thư mục app, nhưng người dùng đọc được đúng một chữ
+      // "lỗi" — trên máy nào chưa cấp quyền thư viện thì nút này luôn hỏng,
+      // và đó là lỗi người bán báo.
       if (!mounted) return;
-      _toast(
-        context,
-        isPhoto ? l10n.toastPhotoDownloadFailed : l10n.toastVideoDownloadFailed,
-      );
+      final share = _maybeGetIt<ShareService>();
+      if (share != null) {
+        await share.shareFiles(paths: [path]);
+        return;
+      }
+      await Clipboard.setData(ClipboardData(text: path));
+      if (!mounted) return;
+      _toast(context, l10n.toastVideoDownloadedCopied);
     } on Object {
       if (!mounted) return;
       _toast(
@@ -7356,7 +7378,7 @@ EcUploadItem _taskToItem(UploadTask task) => EcUploadItem(
   id: task.id,
   code: task.tracking,
   typeLabel: task.type,
-  timeRange: _hhmm(task.createdAt),
+  when: '${_dayLabelOf(task.createdAt)} ${_hhmm(task.createdAt)}',
   status: switch (task.state) {
     EcUploadState.waiting => EcUploadStatus.waiting,
     EcUploadState.uploading => EcUploadStatus.uploading,
