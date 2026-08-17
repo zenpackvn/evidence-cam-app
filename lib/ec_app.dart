@@ -94,6 +94,7 @@ import 'package:storage/storage.dart';
 import 'app/di/injection.dart';
 import 'core/data/ec_claim_store.dart';
 import 'app/update_gate.dart';
+import 'data/ec_meta_events.dart';
 import 'data/ec_purchases.dart';
 import 'data/ec_uploader.dart';
 import 'data/platform_device_conditions.dart';
@@ -3265,6 +3266,10 @@ class _CreateShopRouteState extends State<_CreateShopRoute> {
         name: _name.text.trim(),
         platform: _platform,
       );
+      // Mốc phễu gửi về Meta Ads. Đặt sau khi backend trả shop thật, không đặt
+      // ở chỗ bấm nút: tối ưu quảng cáo theo một cú bấm hỏng thì càng tiêu tiền
+      // vào đúng nhóm người không dùng được app.
+      unawaited(EcMetaEvents.logShopCreated());
       if (!mounted) return;
       widget.onCreated?.call(_shopFromDto(context.l10n, shop));
     } on Object catch (error) {

@@ -24,6 +24,15 @@
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true"
         android:enableOnBackInvokedCallback="true">
+        <!-- Meta App Events (đo lượt cài + sự kiện cho Facebook Ads). SDK tự
+             khởi tạo và tự log install/launch từ hai giá trị này; thiếu chúng
+             thì SDK ném ngay lúc khởi động app. Xem res/values/strings.xml. -->
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id" />
+        <meta-data
+            android:name="com.facebook.sdk.ClientToken"
+            android:value="@string/facebook_client_token" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -90,6 +90,19 @@ class EcPurchases {
     }
   }
 
+  /// Nối phiên mua hàng với danh tính ẩn danh của Meta SDK.
+  ///
+  /// Không phải trang trí: tích hợp Facebook Ads của RevenueCat bắn event mua
+  /// gói (kể cả **gia hạn**) thẳng từ máy chủ họ sang Meta, và Meta chỉ quy được
+  /// event đó về đúng lượt bấm quảng cáo nếu có `fb_anon_id` này. Thiếu nó thì
+  /// chiến dịch tối ưu theo doanh thu mù hoàn toàn.
+  ///
+  /// Xem `EcMetaEvents.start` — chỗ gọi duy nhất.
+  static Future<void> setFacebookAnonymousId(String id) async {
+    if (_instance == null || id.isEmpty) return;
+    await Purchases.setFBAnonymousID(id);
+  }
+
   /// Ép ngôn ngữ hiển thị của paywall dựng sẵn.
   ///
   /// Phải gọi, không phải tuỳ chọn: paywall của RevenueCat đọc ngôn ngữ **của
