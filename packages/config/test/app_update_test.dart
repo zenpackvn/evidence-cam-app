@@ -123,4 +123,173 @@ void main() {
       }
     });
   });
+
+
+  group('cấu hình dạng tham số rời', () {
+    test('đọc đúng mọi trường của Android', () {
+      final c = AppUpdateConfig.fromFlat(_live, platform: 'android');
+      expect(c.enabled, isTrue);
+      expect(c.remindAfterHours, 24);
+      expect(c.latestVersion, '2.0.1');
+      expect(c.minSupportedVersion, '2.0.1');
+      expect(c.isForceUpdate, isTrue);
+      expect(c.storeUrl, contains('play.google.com'));
+      expect(c.title, 'Đã có phiên bản Zenpack mới');
+    });
+
+    test('đọc đúng mọi trường của iOS, không lẫn sang Android', () {
+      final c = AppUpdateConfig.fromFlat(_live, platform: 'ios');
+      expect(c.latestVersion, '2.0.0');
+      expect(c.storeUrl, contains('apps.apple.com'));
+      expect(c.storeUrl, isNot(contains('play.google.com')));
+    });
+
+    // Bảng điều khiển Firebase lưu boolean thành CHUỖI ở một số đường đọc. Hiểu
+    // "true" là false thì cờ bật mà app coi như tắt, và cổng cập nhật im lặng
+    // không ai biết vì sao.
+    test('boolean gửi về dạng chuỗi vẫn hiểu đúng', () {
+      final c = AppUpdateConfig.fromFlat({
+        ..._live,
+        'updatePopupEnabled': 'true',
+        'androidIsForceUpdate': 'true',
+      }, platform: 'android');
+      expect(c.enabled, isTrue);
+      expect(c.isForceUpdate, isTrue);
+    });
+
+    test('số gửi về dạng chuỗi vẫn hiểu đúng', () {
+      final c = AppUpdateConfig.fromFlat({
+        ..._live,
+        'updateRemindAfterHours': '48',
+      }, platform: 'android');
+      expect(c.remindAfterHours, 48);
+    });
+
+    // Cấu hình hỏng KHÔNG được phép khoá người dùng ra khỏi app của họ.
+    test('thiếu khoá thì tắt hẳn, không chặn ai', () {
+      final c = AppUpdateConfig.fromFlat(const {}, platform: 'android');
+      expect(c.enabled, isFalse);
+      expect(_promptFor('android', '1.0.0', values: const {}), isNull);
+    });
+  });
+
+  group('cấu hình thật, quyết định thật', () {
+    // Bản đang phát hành là 2.0.1 — đúng bằng `latest` của Android, nên KHÔNG
+    // được nhắc gì. Nhắc người đang ở bản mới nhất là cách nhanh nhất để họ học
+    // cách bỏ qua mọi hộp thoại của app.
+    test('Android đúng bản mới nhất: không nhắc', () {
+      expect(_promptFor('android', '2.0.1'), isNull);
+      expect(_promptFor('android', '2.0.1+683'), isNull);
+    });
+
+    // `androidIsForceUpdate` đang BẬT, nên ai ở dưới 2.0.1 bị chặn cứng.
+    test('Android bản cũ hơn: chặn cứng, không cho bỏ qua', () {
+      final p = _promptFor('android', '2.0.0');
+      expect(p, isNotNull);
+      expect(p!.isForced, isTrue);
+      expect(p.storeUrl, contains('com.aktechvn.zenpack'));
+      expect(p.title, 'Đã có phiên bản Zenpack mới');
+    });
+
+    test('iOS đúng bản mới nhất: không nhắc', () {
+      expect(_promptFor('ios', '2.0.0'), isNull);
+    });
+
+    // Bản iOS hiện tại (2.0.1) MỚI HƠN `iosLatestVersion` (2.0.0) — chuyện
+    // thường khi Android đã lên bản mới còn iOS chờ duyệt. Không được nhắc, và
+    // càng không được chặn.
+    test('iOS mới hơn cấu hình: không nhắc, không chặn', () {
+      expect(_promptFor('ios', '2.0.1'), isNull);
+    });
+
+    test('iOS bản cũ hơn: chặn cứng', () {
+      final p = _promptFor('ios', '1.9.0');
+      expect(p!.isForced, isTrue);
+      expect(p.storeUrl, contains('id6794540715'));
+    });
+
+    // Tắt công tắc tổng là im hẳn, kể cả khi mọi thứ khác nói phải chặn.
+    test('tắt công tắc tổng thì không nhắc dù bản rất cũ', () {
+      expect(
+        _promptFor(
+          'android',
+          '1.0.0',
+          values: {..._live, 'updatePopupEnabled': false},
+        ),
+        isNull,
+      );
+    });
+
+    // Bỏ chặn cứng thì thành lời nhắc mềm, và mốc 24 giờ mới có ý nghĩa.
+    test('không chặn cứng: nhắc mềm, im 24 giờ sau khi bỏ qua', () {
+      final soft = {
+        ..._live,
+        'androidIsForceUpdate': false,
+        'androidMinSupportedVersion': '1.0.0',
+      };
+      expect(_promptFor('android', '2.0.0', values: soft)!.isForced, isFalse);
+
+      // Vừa bỏ qua cách đây 1 giờ → im.
+      expect(
+        _promptFor(
+          'android',
+          '2.0.0',
+          values: soft,
+          dismissedAt: DateTime(2026, 8, 17, 11),
+          postponed: '2.0.1',
+        ),
+        isNull,
+      );
+      // Đã quá 24 giờ → nhắc lại.
+      expect(
+        _promptFor(
+          'android',
+          '2.0.0',
+          values: soft,
+          dismissedAt: DateTime(2026, 8, 16, 11),
+          postponed: '2.0.1',
+        ),
+        isNotNull,
+      );
+    });
+  });
 }
+
+/// Cấu hình THẬT đang nằm trên Firebase Remote Config, dạng tham số rời.
+///
+/// Chép nguyên giá trị của bảng điều khiển vào đây, không rút gọn: ca này tồn
+/// tại để bắt đúng lúc ai đó đổi tên một tham số bên Firebase mà quên app, và
+/// một bản chép "gần đúng" thì không bắt được gì.
+const _live = <String, Object?>{
+  'updatePopupEnabled': true,
+  'updateRemindAfterHours': 24,
+  'androidLatestVersion': '2.0.1',
+  'androidMinSupportedVersion': '2.0.1',
+  'androidIsForceUpdate': true,
+  'androidStoreUrl':
+      'https://play.google.com/store/apps/details?id=com.aktechvn.zenpack',
+  'androidUpdateTitle': 'Đã có phiên bản Zenpack mới',
+  'androidUpdateMessage': 'Cập nhật để có trải nghiệm tốt hơn...',
+  'iosLatestVersion': '2.0.0',
+  'iosMinSupportedVersion': '2.0.0',
+  'iosIsForceUpdate': true,
+  'iosStoreUrl': 'https://apps.apple.com/app/id6794540715',
+  'iosUpdateTitle': 'Đã có phiên bản Zenpack mới',
+  'iosUpdateMessage': 'Cập nhật để có trải nghiệm tốt hơn...',
+};
+
+AppUpdatePrompt? _promptFor(
+  String platform,
+  String version, {
+  Map<String, Object?> values = _live,
+  DateTime? dismissedAt,
+  String? postponed,
+}) => checkAppUpdate(
+  config: AppUpdateConfig.fromFlat(values, platform: platform),
+  currentVersion: version,
+  now: DateTime(2026, 8, 17, 12),
+  lastDismissedAt: dismissedAt,
+  postponedVersion: postponed,
+);
+
+

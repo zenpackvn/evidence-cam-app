@@ -32,6 +32,56 @@ import 'dart:convert';
 /// unless the release needs a specific explanation.
 const appUpdateKey = 'app_update';
 
+/// Tên các THAM SỐ RỜI trên Firebase Remote Config — cách cấu hình đang dùng
+/// thật, và là cách được ưu tiên.
+///
+/// Khác [appUpdateKey] ở chỗ mỗi giá trị là một tham số riêng trong bảng điều
+/// khiển Firebase, đúng kiểu:
+///
+/// ```
+/// updatePopupEnabled        (boolean) true
+/// updateRemindAfterHours    (number)  24
+/// androidLatestVersion      (string)  "2.0.1"
+/// androidMinSupportedVersion(string)  "2.0.1"
+/// androidIsForceUpdate      (boolean) true
+/// androidStoreUrl           (string)  "https://play.google.com/..."
+/// androidUpdateTitle        (string)  "Đã có phiên bản Zenpack mới"
+/// androidUpdateMessage      (string)  "Cập nhật để có trải nghiệm tốt hơn..."
+/// iosLatestVersion, iosMinSupportedVersion, iosIsForceUpdate,
+/// iosStoreUrl, iosUpdateTitle, iosUpdateMessage — y hệt cho iOS.
+/// ```
+///
+/// Sửa từng dòng trong bảng điều khiển dễ hơn sửa một khối JSON: đổi một số
+/// phiên bản không phải dán lại cả đoạn, và gõ sai một dấu ngoặc không làm câm
+/// toàn bộ cổng cập nhật.
+class AppUpdateKeys {
+  const AppUpdateKeys._();
+
+  static const enabled = 'updatePopupEnabled';
+  static const remindAfterHours = 'updateRemindAfterHours';
+
+  static String latest(String platform) => '${platform}LatestVersion';
+  static String minSupported(String platform) =>
+      '${platform}MinSupportedVersion';
+  static String force(String platform) => '${platform}IsForceUpdate';
+  static String storeUrl(String platform) => '${platform}StoreUrl';
+  static String title(String platform) => '${platform}UpdateTitle';
+  static String message(String platform) => '${platform}UpdateMessage';
+
+  /// Mọi tên tham số của một nền tảng — để bên gọi đọc đúng chừng đó khoá, và
+  /// để test đối chiếu không sót cái nào.
+  static List<String> allFor(String platform) => [
+    enabled,
+    remindAfterHours,
+    latest(platform),
+    minSupported(platform),
+    force(platform),
+    storeUrl(platform),
+    title(platform),
+    message(platform),
+  ];
+}
+
 /// The platform-specific half of the update payload, already resolved for the
 /// device this code is running on.
 class AppUpdateConfig {
@@ -71,6 +121,48 @@ class AppUpdateConfig {
     } on Object {
       return const AppUpdateConfig();
     }
+  }
+
+  /// Dựng từ các THAM SỐ RỜI đã đọc sẵn khỏi Remote Config.
+  ///
+  /// Nhận một `Map` chứ không nhận thẳng dịch vụ Remote Config: tệp này cố ý
+  /// thuần — không Firebase, không plugin, không đồng hồ — nên luật kiểm phiên
+  /// bản test được mà không cần dựng cả một dự án Firebase.
+  ///
+  /// Thiếu khoá thì rơi về mặc định an toàn: không bật, không chặn ai. Một cấu
+  /// hình hỏng KHÔNG được phép khoá người dùng ra khỏi app của họ.
+  factory AppUpdateConfig.fromFlat(
+    Map<String, Object?> values, {
+    required String platform,
+  }) {
+    String str(String key) {
+      final value = values[key];
+      return value is String ? value.trim() : '';
+    }
+
+    bool flag(String key) {
+      final value = values[key];
+      // Bảng điều khiển Firebase lưu boolean thành chuỗi ở một số đường đọc,
+      // nên "true" phải được hiểu là true — nếu không thì cờ bật mà app coi như
+      // tắt, và cổng cập nhật im lặng không ai biết vì sao.
+      if (value is bool) return value;
+      if (value is String) return value.trim().toLowerCase() == 'true';
+      return false;
+    }
+
+    final hours = values[AppUpdateKeys.remindAfterHours];
+    return AppUpdateConfig(
+      enabled: flag(AppUpdateKeys.enabled),
+      remindAfterHours: hours is num
+          ? hours.toInt()
+          : int.tryParse(hours is String ? hours : '') ?? 24,
+      latestVersion: str(AppUpdateKeys.latest(platform)),
+      minSupportedVersion: str(AppUpdateKeys.minSupported(platform)),
+      isForceUpdate: flag(AppUpdateKeys.force(platform)),
+      storeUrl: str(AppUpdateKeys.storeUrl(platform)),
+      title: str(AppUpdateKeys.title(platform)),
+      message: str(AppUpdateKeys.message(platform)),
+    );
   }
 
   /// Master switch. Off means no prompt of any kind, whatever the versions say.
