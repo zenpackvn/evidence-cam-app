@@ -2010,6 +2010,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storageTitle => 'Videospeicher';
 
   @override
+  String get storageSave => 'Speicherauswahl sichern';
+
+  @override
   String get storageSystemName => 'Systemspeicher';
 
   @override

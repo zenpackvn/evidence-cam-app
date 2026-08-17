@@ -574,6 +574,7 @@
   "quotaStrandedTitle": "{count} vidéos en attente sur ce téléphone",
   "quotaStrandedNote": "Ces vidéos n'existent que sur ce téléphone. Le perdre, désinstaller l'application ou effacer ses données les fait disparaître.",
   "storageTitle": "Stockage vidéo",
+  "storageSave": "Enregistrer le choix de stockage",
   "storageSystemName": "Stockage système",
   "storageS3Name": "Votre propre stockage (S3)",
   "storageDriveName": "Votre Google Drive",

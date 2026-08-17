@@ -574,6 +574,7 @@
   "quotaStrandedTitle": "{count} วิดีโอรออยู่ในเครื่องนี้",
   "quotaStrandedNote": "วิดีโอเหล่านี้มีอยู่แค่ในเครื่องนี้ ถ้าทำเครื่องหาย ถอนการติดตั้ง หรือล้างข้อมูล วิดีโอจะหายไปด้วย",
   "storageTitle": "พื้นที่เก็บวิดีโอ",
+  "storageSave": "บันทึกการเลือกที่จัดเก็บ",
   "storageSystemName": "พื้นที่เก็บของระบบ",
   "storageS3Name": "พื้นที่เก็บของคุณเอง (S3)",
   "storageDriveName": "Google Drive ของคุณ",

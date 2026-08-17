@@ -6699,13 +6699,23 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
         );
         return;
       }
-      // Không có quyền vào thư viện: bản tải về vẫn nằm trong thư mục của app,
-      // nhưng nói thẳng là chưa lưu được thay vì im lặng.
+      // KHÔNG vào được thư viện thì vẫn còn hai đường, đúng như nút "Tải về
+      // máy" ở màn chi tiết bằng chứng vẫn làm: đưa ra khay chia sẻ, hoặc chép
+      // đường dẫn tệp.
+      //
+      // Bản trước nhảy thẳng sang câu "tải thất bại" ở đây. Tệp đã tải xong
+      // nằm sẵn trong thư mục app, nhưng người dùng đọc được đúng một chữ
+      // "lỗi" — trên máy nào chưa cấp quyền thư viện thì nút này luôn hỏng,
+      // và đó là lỗi người bán báo.
       if (!mounted) return;
-      _toast(
-        context,
-        isPhoto ? l10n.toastPhotoDownloadFailed : l10n.toastVideoDownloadFailed,
-      );
+      final share = _maybeGetIt<ShareService>();
+      if (share != null) {
+        await share.shareFiles(paths: [path]);
+        return;
+      }
+      await Clipboard.setData(ClipboardData(text: path));
+      if (!mounted) return;
+      _toast(context, l10n.toastVideoDownloadedCopied);
     } on Object {
       if (!mounted) return;
       _toast(

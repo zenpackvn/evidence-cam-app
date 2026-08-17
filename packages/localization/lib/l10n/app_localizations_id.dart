@@ -1980,6 +1980,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get storageTitle => 'Penyimpanan video';
 
   @override
+  String get storageSave => 'Simpan pilihan penyimpanan';
+
+  @override
   String get storageSystemName => 'Penyimpanan sistem';
 
   @override

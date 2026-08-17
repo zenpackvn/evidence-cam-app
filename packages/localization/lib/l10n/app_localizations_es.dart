@@ -1996,6 +1996,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get storageTitle => 'Almacenamiento de vídeo';
 
   @override
+  String get storageSave => 'Guardar la opción de almacenamiento';
+
+  @override
   String get storageSystemName => 'Almacenamiento del sistema';
 
   @override

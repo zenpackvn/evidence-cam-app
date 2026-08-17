@@ -574,6 +574,7 @@
   "quotaStrandedTitle": "{count} vídeos esperando en este teléfono",
   "quotaStrandedNote": "Estos vídeos solo existen en este teléfono. Perderlo, desinstalar la app o borrar sus datos los hace desaparecer.",
   "storageTitle": "Almacenamiento de vídeo",
+  "storageSave": "Guardar la opción de almacenamiento",
   "storageSystemName": "Almacenamiento del sistema",
   "storageS3Name": "Tu propio almacenamiento (S3)",
   "storageDriveName": "Tu Google Drive",

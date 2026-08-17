@@ -1318,6 +1318,7 @@
   },
   "quotaStrandedNote": "These videos exist only on this phone. Losing it, uninstalling the app or clearing its data loses them.",
   "storageTitle": "Video storage",
+  "storageSave": "Save storage choice",
   "storageSystemName": "System storage",
   "storageS3Name": "Your own storage (S3)",
   "storageDriveName": "Your Google Drive",

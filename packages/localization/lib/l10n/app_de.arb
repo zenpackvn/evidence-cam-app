@@ -574,6 +574,7 @@
   "quotaStrandedTitle": "{count} Videos warten auf diesem Handy",
   "quotaStrandedNote": "Diese Videos gibt es nur auf diesem Handy. Verlust des Geräts, Deinstallation oder Löschen der Daten bedeutet, sie sind weg.",
   "storageTitle": "Videospeicher",
+  "storageSave": "Speicherauswahl sichern",
   "storageSystemName": "Systemspeicher",
   "storageS3Name": "Dein eigener Speicher (S3)",
   "storageDriveName": "Dein Google Drive",

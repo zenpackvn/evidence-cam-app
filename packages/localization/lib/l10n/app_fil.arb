@@ -574,6 +574,7 @@
   "quotaStrandedTitle": "{count} video ang naghihintay sa teleponong ito",
   "quotaStrandedNote": "Nasa teleponong ito lang ang mga video na ito. Kapag nawala ito, inalis ang app o binura ang data, mawawala rin sila.",
   "storageTitle": "Imbakan ng video",
+  "storageSave": "I-save ang piniling storage",
   "storageSystemName": "Imbakan ng sistema",
   "storageS3Name": "Sarili mong imbakan (S3)",
   "storageDriveName": "Google Drive mo",

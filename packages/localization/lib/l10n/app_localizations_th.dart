@@ -1954,6 +1954,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get storageTitle => 'พื้นที่เก็บวิดีโอ';
 
   @override
+  String get storageSave => 'บันทึกการเลือกที่จัดเก็บ';
+
+  @override
   String get storageSystemName => 'พื้นที่เก็บของระบบ';
 
   @override

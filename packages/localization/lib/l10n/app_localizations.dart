@@ -3578,6 +3578,12 @@ abstract class AppLocalizations {
   /// **'Video storage'**
   String get storageTitle;
 
+  /// No description provided for @storageSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save storage choice'**
+  String get storageSave;
+
   /// No description provided for @storageSystemName.
   ///
   /// In en, this message translates to:

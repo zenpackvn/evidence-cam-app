@@ -1979,6 +1979,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storageTitle => 'Video storage';
 
   @override
+  String get storageSave => 'Save storage choice';
+
+  @override
   String get storageSystemName => 'System storage';
 
   @override

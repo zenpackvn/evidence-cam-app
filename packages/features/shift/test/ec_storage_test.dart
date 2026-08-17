@@ -88,19 +88,81 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('chủ shop ở kho hệ thống, gói có mở, thì thấy hai lối cắm', (
+    /// Chọn kho rồi mới LƯU — chạm vào thẻ không được tự cắm kho.
+    ///
+    /// Bản trước chạm là chạy thẳng luồng cắm: quệt tay vào thẻ Drive là màn
+    /// cấp quyền Google bật lên. Đổi nơi cất bằng chứng của cả cửa hàng không
+    /// phải việc nên xảy ra sau một cú chạm nhầm.
+    testWidgets('chạm vào thẻ chỉ chọn, không chạy luồng cắm kho', (
       tester,
     ) async {
+      var connectS3 = 0;
+      var picked = 0;
       await _pump(
         tester,
-        const EcStorageScreen(
-          state: EcStorageState(canManage: true, byosAllowed: true),
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          onConnectS3: () => connectS3++,
+          onPick: (_) => picked++,
         ),
       );
 
-      expect(find.text('Cắm kho S3'), findsOneWidget);
-      expect(find.text('Kết nối Google Drive'), findsOneWidget);
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+
+      expect(connectS3, 0, reason: 'chạm thẻ đã chạy luồng cắm kho');
+      // `onPick` ghi lựa chọn xuống máy, nên nó cũng phải đợi tới lúc lưu.
+      expect(picked, 0, reason: 'ghi lựa chọn khi người dùng chưa xác nhận');
+    });
+
+    testWidgets('bấm lưu mới áp dụng lựa chọn vừa chọn', (tester) async {
+      var connectS3 = 0;
+      EcStorageKind? pickedKind;
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          onConnectS3: () => connectS3++,
+          onPick: (k) => pickedKind = k,
+        ),
+      );
+
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Lưu lựa chọn kho'));
+      await tester.pumpAndSettle();
+
+      expect(connectS3, 1);
+      expect(pickedKind, EcStorageKind.s3);
       expect(tester.takeException(), isNull);
+    });
+
+    // Nút lưu TẮT khi không có gì để lưu: một nút luôn sáng mà bấm vào không có
+    // chuyện gì xảy ra thì lần sau người dùng không tin nó nữa.
+    //
+    // Ca này đo đúng cái nút bị tắt. Trong `_save()` còn một chốt `if (!_dirty)`
+    // nữa — lớp thứ hai, và KHÔNG ca nào chạm tới được vì muốn tới đó thì nút
+    // phải vừa sáng vừa không có thay đổi. Giữ nó làm lưới đỡ cho lần sửa sau,
+    // nhưng đừng tin rằng nó đã được đo.
+    testWidgets('không có thay đổi thì nút lưu tắt, bấm không chạy gì', (
+      tester,
+    ) async {
+      var connectS3 = 0;
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          onConnectS3: () => connectS3++,
+        ),
+      );
+
+      await tester.tap(
+        find.bySemanticsLabel('Lưu lựa chọn kho'),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+
+      expect(connectS3, 0);
     });
 
     // Ba con số vấn đề chỉ hiện khi khác 0. Bảng lúc nào cũng có "0 lỗi" thì

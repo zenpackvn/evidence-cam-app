@@ -2001,6 +2001,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get storageTitle => 'Archivio video';
 
   @override
+  String get storageSave => 'Salva la scelta di archiviazione';
+
+  @override
   String get storageSystemName => 'Archivio di sistema';
 
   @override

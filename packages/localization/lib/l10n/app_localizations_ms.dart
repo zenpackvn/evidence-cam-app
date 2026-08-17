@@ -1990,6 +1990,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get storageTitle => 'Storan video';
 
   @override
+  String get storageSave => 'Simpan pilihan storan';
+
+  @override
   String get storageSystemName => 'Storan sistem';
 
   @override

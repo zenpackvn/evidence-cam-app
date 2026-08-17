@@ -2015,6 +2015,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get storageTitle => 'Stockage vidéo';
 
   @override
+  String get storageSave => 'Enregistrer le choix de stockage';
+
+  @override
   String get storageSystemName => 'Stockage système';
 
   @override

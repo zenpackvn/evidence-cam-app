@@ -1966,6 +1966,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get storageTitle => 'Kho lưu trữ';
 
   @override
+  String get storageSave => 'Lưu lựa chọn kho';
+
+  @override
   String get storageSystemName => 'Cloud Zenpack';
 
   @override

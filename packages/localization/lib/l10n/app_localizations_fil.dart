@@ -1993,6 +1993,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get storageTitle => 'Imbakan ng video';
 
   @override
+  String get storageSave => 'I-save ang piniling storage';
+
+  @override
   String get storageSystemName => 'Imbakan ng sistema';
 
   @override
