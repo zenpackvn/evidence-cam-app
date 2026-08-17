@@ -149,6 +149,48 @@ void main() {
       expect(find.textContaining('không khoá được đối tượng'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    // Ba thứ bản web có mà app từng nhận dữ liệu rồi bỏ không vẽ: nhãn "đang
+    // dùng", mốc rà gần nhất, và tài khoản Drive. Không vẽ thì chủ shop mở app
+    // ra chỉ thấy ba cái thẻ, không biết kho có được rà bao giờ chưa.
+    testWidgets('hiện nhãn đang dùng, mốc rà gần nhất và tài khoản Drive', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: EcStorageState(
+            kind: EcStorageKind.gdrive,
+            driveEmail: 'shop@gmail.com',
+            health: EcStorageHealth(
+              total: 3,
+              intact: 3,
+              // 2026-01-02 03:04 giờ máy.
+              lastCheckedAt: DateTime(2026, 1, 2, 3, 4).millisecondsSinceEpoch,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Đang dùng'), findsOneWidget);
+      expect(find.text('Rà gần nhất: 02/01/2026 03:04'), findsOneWidget);
+      expect(find.text('shop@gmail.com'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Chưa rà lần nào phải NÓI RA. Một bảng toàn số 0 không kèm mốc thời gian
+    // đọc y hệt một cái kho hoàn hảo.
+    testWidgets('chưa rà lần nào thì nói thẳng, không để trống', (tester) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(kind: EcStorageKind.s3),
+        ),
+      );
+
+      expect(find.text('Chưa rà lần nào.'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('EcStorageConnectScreen', () {

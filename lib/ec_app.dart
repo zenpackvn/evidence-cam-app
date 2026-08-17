@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert' show jsonDecode;
 import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:math' as math;
@@ -71,6 +72,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+// Chỉ để bật video toàn màn hình trên Android (`setCustomWidgetCallbacks`) —
+// webview_flutter thuần không phát ra sự kiện đó.
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';
 import 'package:network/network.dart' show Dio, DioException, DioExceptionType;
@@ -1021,9 +1025,33 @@ class _AccountRouteState extends State<_AccountRoute> {
     try {
       final account = await widget.repo.account();
       if (mounted) setState(() => _account = account);
+      await _retryPendingAvatar();
     } on Object {
       // Mất mạng thì giữ nguyên giá trị Firebase đang hiện — màn Tài khoản
       // không được trắng chỉ vì một lời gọi hỏng.
+    }
+  }
+
+  /// Gửi lại ảnh đại diện còn kẹt trên máy vì lượt tải lên trước hỏng.
+  ///
+  /// Bản trên máy được ưu tiên khi hiển thị, nên nếu nó nằm lại vĩnh viễn thì
+  /// app và web nói hai chuyện khác nhau: người dùng đổi ảnh ở web mà máy vẫn
+  /// khăng khăng ảnh cũ. Gửi được là quên ngay bản trên máy, từ đó
+  /// `accounts.avatar_url` là nguồn duy nhất cho cả hai bên.
+  ///
+  /// Im lặng khi hỏng: đây là lượt thử lại nền, không phải thao tác người dùng
+  /// vừa bấm — lần mở màn sau thử tiếp.
+  Future<void> _retryPendingAvatar() async {
+    final uid = widget.auth.currentUser?.uid;
+    final pending = _rememberedAvatar(uid);
+    if (pending == null) return;
+    try {
+      final url = await widget.repo.uploadAvatar(pending);
+      await _forgetAvatar(uid);
+      await widget.auth.updateProfile(photoUrl: url);
+      if (mounted) await _loadAccount();
+    } on Object {
+      // Vẫn chưa gửi được; ảnh trên máy giữ nguyên và màn hình vẫn có ảnh.
     }
   }
 
@@ -1878,12 +1906,14 @@ class _StorageRouteState extends State<_StorageRoute>
             canManage: widget.canManage,
             presignedDownload: view?.capabilities?.presignedDownload ?? true,
             objectLock: view?.capabilities?.objectLock ?? false,
+            driveEmail: view?.email,
             health: EcStorageHealth(
               total: dto.health.total,
               intact: dto.health.intact,
               unreachable: dto.health.unreachable,
               mismatched: dto.health.mismatched,
               pendingRelay: dto.health.pendingRelay,
+              lastCheckedAt: dto.health.lastCheckedAt,
             ),
           ),
           onTest: () => _run(
@@ -2298,12 +2328,30 @@ class _EndQrActionRow extends StatelessWidget {
   );
 }
 
-/// Đăng xuất.
+/// Đăng xuất, và dọn MỌI thứ của tài khoản cũ còn nằm trong tiến trình.
 ///
-/// Trước đây hàm này còn phải gỡ phiên mua hàng RevenueCat khỏi thiết bị, nếu
-/// không thì người đăng nhập sau mua gói lại cộng ngày cho tài khoản trước.
-/// Không còn cửa hàng nào trong app nên lỗi đó cũng không còn chỗ để xảy ra.
-Future<void> _signOutAll(EcAuth auth) => auth.signOut();
+/// Máy dùng chung ca là chuyện thường ở kho: A đăng xuất, B đăng nhập ngay
+/// trên cùng máy đó. Mọi thứ còn sót lại của A sau lằn ranh này đều hiện ra
+/// dưới tên B — ảnh đại diện của A trên màn Tài khoản của B, và tệ hơn, một
+/// lượt mua gói của B cộng ngày cho tài khoản A.
+///
+/// Ba việc, không được thiếu việc nào:
+///
+///   * `auth.signOut()` — phiên Firebase.
+///   * `EcPurchases.logOut()` — danh tính RevenueCat gắn với thiết bị, KHÔNG
+///     tự rơi theo phiên Firebase. Chú thích cũ ở đây nói việc này không còn
+///     cần vì app bỏ cửa hàng; app đã bán lại bằng IAP nên nó cần trở lại.
+///   * bộ nhớ đệm ảnh đại diện trong tiến trình — bản trên đĩa vẫn khoá theo
+///     uid nên không lẫn, nhưng bản trong RAM sống qua lượt đổi tài khoản.
+Future<void> _signOutAll(EcAuth auth) async {
+  _avatarCache.clear();
+  if (EcPurchases.isAvailable) {
+    // `logOut` tự nuốt lỗi của SDK (xem ec_purchases.dart) — người dùng bấm
+    // đăng xuất thì phải được đăng xuất, không phụ thuộc cửa hàng.
+    await EcPurchases.logOut();
+  }
+  await auth.signOut();
+}
 
 T? _maybeGetIt<T extends Object>() =>
     getIt.isRegistered<T>() ? getIt<T>() : null;
@@ -2678,7 +2726,13 @@ final EcClaimStore _claimStore = EcClaimStore(_appMemory());
 
 /// Device-local avatar image path, keyed per account since the avatar isn't
 /// uploaded/served from the backend yet (see `_EditProfileRouteState`).
-String _avatarPathKey(String? uid) => 'profile.avatar_path.${uid ?? ''}';
+/// Khoá ảnh đại diện trên máy, LUÔN theo uid.
+///
+/// `null` trả về `null` chứ không rơi về `profile.avatar_path.` — cái ô rỗng
+/// đó dùng chung cho mọi tài khoản, nên chỉ cần một lượt ghi lúc chưa đọc xong
+/// phiên đăng nhập là ảnh của người này hiện trên màn của người kia.
+String? _avatarPathKey(String? uid) =>
+    (uid == null || uid.isEmpty) ? null : 'profile.avatar_path.$uid';
 
 /// Thư mục Documents của app, chụp lại một lần lúc khởi động.
 ///
@@ -2719,11 +2773,14 @@ String? _resolveAvatarPath(String? stored) {
 /// letting a saved avatar quietly vanish (silently falls back to the
 /// placeholder icon — see `_UserRow`/`_AvatarPicker`) once the OS reclaimed it.
 Future<String> _persistAvatarFile(String pickedPath, String? uid) async {
+  // Không biết là ai thì không cất: tên tệp dùng chung (`anon.jpg`) là đúng
+  // cách để ảnh của tài khoản này đè lên ảnh của tài khoản kia trên cùng máy.
+  if (uid == null || uid.isEmpty) return pickedPath;
   try {
     final dir = await getApplicationDocumentsDirectory();
     final avatarsDir = Directory('${dir.path}/avatars');
     if (!avatarsDir.existsSync()) avatarsDir.createSync(recursive: true);
-    final name = '${uid ?? 'anon'}${_fileExtension(pickedPath)}';
+    final name = '$uid${_fileExtension(pickedPath)}';
     await File(pickedPath).copy('${avatarsDir.path}/$name');
     // Trả về đường dẫn TƯƠNG ĐỐI so với Documents — xem `_resolveAvatarPath`.
     return 'avatars/$name';
@@ -2862,6 +2919,7 @@ final _avatarCache = <String, String>{};
 
 Future<void> _rememberAvatar(String? uid, String path) {
   final key = _avatarPathKey(uid);
+  if (key == null) return Future<void>.value();
   _avatarCache[key] = path;
   return _appMemory()?.setString(key, path) ?? Future<void>.value();
 }
@@ -2870,12 +2928,16 @@ Future<void> _rememberAvatar(String? uid, String path) {
 /// là nguồn duy nhất, chung cho app và web.
 Future<void> _forgetAvatar(String? uid) {
   final key = _avatarPathKey(uid);
+  if (key == null) return Future<void>.value();
   _avatarCache.remove(key);
   return _appMemory()?.remove(key) ?? Future<void>.value();
 }
 
 String? _rememberedAvatar(String? uid) {
   final key = _avatarPathKey(uid);
+  // Chưa biết là ai thì KHÔNG đoán: thà không có ảnh trong một nhịp còn hơn
+  // hiện ảnh của tài khoản vừa đăng xuất.
+  if (key == null) return null;
   final cached = _avatarCache[key];
   if (cached != null) return _resolveAvatarPath(cached);
   final saved = _appMemory()?.getString(key);
@@ -5774,10 +5836,16 @@ String _dayLabelOf(DateTime d) {
 
 /// Lớp cha: danh sách hồ sơ khiếu nại của shop đang chọn.
 ///
-/// Nghe [EcClaimStore] chứ không chụp một lần: hồ sơ có thể được tạo ở tab Vận
-/// đơn trong lúc màn này còn nằm trong stack, và người dùng quay lại phải thấy
-/// nó ngay chứ không phải sau khi khởi động lại app.
-class _ClaimListRoute extends StatelessWidget {
+/// **Máy chủ là bản gốc, kho trên máy là bộ đệm.** Danh sách đọc
+/// `GET /api/shops/:id/claims` — cùng đúng nguồn web admin đọc — rồi ghép thêm
+/// những hồ sơ mới chỉ nằm trên máy này. Trước đây màn này chỉ đọc
+/// [EcClaimStore], nên hồ sơ tạo trên web hay trên máy khác không bao giờ hiện
+/// ra, và một link bị thu hồi ở nơi khác vẫn trông như đang sống.
+///
+/// Vẫn nghe [EcClaimStore]: hồ sơ vừa tạo lúc mất mạng phải hiện ngay, và
+/// người dùng quay lại từ màn tạo phải thấy nó chứ không phải sau khi khởi
+/// động lại app.
+class _ClaimListRoute extends StatefulWidget {
   const _ClaimListRoute({
     required this.repo,
     required this.shopId,
@@ -5792,6 +5860,78 @@ class _ClaimListRoute extends StatelessWidget {
   final VoidCallback? onNavRecord;
   final VoidCallback? onCreate;
 
+  @override
+  State<_ClaimListRoute> createState() => _ClaimListRouteState();
+}
+
+class _ClaimListRouteState extends State<_ClaimListRoute> {
+  /// Hồ sơ trên máy chủ, khoá theo id. Rỗng cho tới khi đọc xong — và khi đọc
+  /// hỏng thì cứ để rỗng: lúc đó kho trên máy là thứ duy nhất hiện ra, đúng
+  /// hành vi cũ, thay vì một màn trắng vì mạng chập.
+  Map<String, ClaimDto> _remote = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    try {
+      final rows = await widget.repo.listClaims(widget.shopId);
+      if (mounted) {
+        setState(() => _remote = {for (final row in rows) row.id: row});
+      }
+    } on Object catch (error, stack) {
+      developer.log(
+        'claims: không đọc được danh sách hồ sơ (${error.runtimeType})',
+        name: 'zenpack.claims',
+        level: 900,
+        error: error,
+        stackTrace: stack,
+      );
+    }
+  }
+
+  /// Mở một hồ sơ, kể cả hồ sơ chưa từng đi qua máy này.
+  ///
+  /// Màn chi tiết neo vào bản trên máy, nên hồ sơ tạo trên web hoặc trên máy
+  /// khác phải có một bản rỗng để neo. Rỗng là đủ: nội dung màn đó đọc từ máy
+  /// chủ bằng `claimId`.
+  Future<void> _open(BuildContext context, EcClaimEntry entry) async {
+    final claim = _remote[entry.id];
+    if (claim != null &&
+        _claimStore.byId(widget.shopId, entry.id) == null) {
+      await _claimStore.add(
+        EcClaimDossier(
+          id: claim.id,
+          shopId: widget.shopId,
+          createdAt: DateTime.fromMillisecondsSinceEpoch(claim.createdAt),
+          title: claim.title ?? '',
+          claimId: claim.id,
+          shareUrl: claim.url,
+          orders: const [],
+        ),
+      );
+    }
+    if (!context.mounted) return;
+    unawaited(context.push('/claim-detail', extra: (widget.shopId, entry.id)));
+  }
+
+  void _copy(BuildContext context, EcClaimEntry entry) {
+    final dossier = _claimStore.byId(widget.shopId, entry.id);
+    if (dossier != null) {
+      _copyClaimSummary(context, dossier);
+      return;
+    }
+    // Hồ sơ của máy khác: không có nội dung trên máy này để dựng bản chữ, mà
+    // link thì mở ra là đủ cả vụ.
+    final url = _remote[entry.id]?.url;
+    if (url == null || url.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: url));
+    _toast(context, context.l10n.claimsLinkCopied);
+  }
+
   /// Thu hồi link của một hồ sơ, sau một lần hỏi lại.
   ///
   /// Hỏi lại vì thao tác này KHÔNG lùi được và hậu quả nằm ở chỗ khác: link đã
@@ -5800,9 +5940,19 @@ class _ClaimListRoute extends StatelessWidget {
   ///
   /// Hồ sơ chưa lên máy chủ thì không có gì để thu hồi — nói thẳng thay vì mở
   /// một hộp thoại xác nhận rồi mới báo hỏng.
-  Future<void> _revoke(BuildContext context, String dossierId) async {
+  Future<void> _revoke(BuildContext context, EcClaimEntry entry) async {
     final l10n = context.l10n;
-    final claimId = _claimStore.byId(shopId, dossierId)?.claimId;
+    // Link đã chết rồi thì không mở hộp thoại nữa: hỏi lại về một thứ đã xảy ra
+    // chỉ làm người dùng tưởng mình vừa làm hỏng thêm cái gì đó.
+    if (entry.revoked) {
+      _toast(context, l10n.claimRevoked);
+      return;
+    }
+    // Bản trên máy trước, rồi tới bản máy chủ: hồ sơ tạo ở máy khác không có
+    // bản trên máy nào để tra id.
+    final claimId =
+        _claimStore.byId(widget.shopId, entry.id)?.claimId ??
+        _remote[entry.id]?.id;
     if (claimId == null || claimId.isEmpty) {
       _toast(context, l10n.claimsRevokeNoLink);
       return;
@@ -5827,46 +5977,90 @@ class _ClaimListRoute extends StatelessWidget {
     );
     if (confirmed != true || !context.mounted) return;
     try {
-      await repo.revokeClaim(shopId, claimId);
+      await widget.repo.revokeClaim(widget.shopId, claimId);
     } on Object {
       if (context.mounted) _toast(context, l10n.claimRevokeFailed);
       return;
     }
     if (context.mounted) _toast(context, l10n.claimRevoked);
+    // Đọc lại để hàng vừa thu hồi mang huy hiệu "Đã thu hồi" ngay, thay vì
+    // trông y hệt một link còn sống cho tới lần mở app sau.
+    await _load();
   }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: _claimStore,
-    builder: (context, _) {
-      final dossiers = _claimStore.forShop(shopId);
-      return EcClaimListScreen(
-        onNavOrders: onNavOrders,
-        onNavRecord: onNavRecord,
-        onCreate: onCreate,
-        entries: [
-          for (final d in dossiers)
-            EcClaimEntry(
-              id: d.id,
-              title: d.title,
-              dateLabel: _dayLabelOf(d.createdAt),
-              timeLabel: _hhmm(d.createdAt),
-              orderCount: d.orders.length,
-              evidenceCount: d.evidenceCount,
-            ),
-        ],
-        onOpen: (entry) =>
-            context.push('/claim-detail', extra: (shopId, entry.id)),
-        onCopy: (entry) {
-          final dossier = _claimStore.byId(shopId, entry.id);
-          if (dossier == null) return;
-          _copyClaimSummary(context, dossier);
-        },
-        onRevoke: (entry) => unawaited(_revoke(context, entry.id)),
-      );
-    },
+    builder: (context, _) => EcClaimListScreen(
+      onNavOrders: widget.onNavOrders,
+      onNavRecord: widget.onNavRecord,
+      onCreate: widget.onCreate,
+      entries: _entries(),
+      onOpen: (entry) => unawaited(_open(context, entry)),
+      onCopy: (entry) => _copy(context, entry),
+      onRevoke: (entry) => unawaited(_revoke(context, entry)),
+    ),
   );
+
+  /// Ghép hai nguồn thành một danh sách, mới nhất trước.
+  ///
+  /// Máy chủ thắng ở mọi hồ sơ nó biết: tên, số đếm và trạng thái thu hồi có
+  /// thể đã bị đổi ở web hoặc máy khác, còn bản trên máy thì đứng yên từ lúc
+  /// tạo. Bản trên máy chỉ đóng góp hai thứ — id để mở đúng màn chi tiết cũ, và
+  /// những hồ sơ máy chủ CHƯA có (tạo lúc mất mạng, hoặc chưa đọc được danh
+  /// sách).
+  List<EcClaimEntry> _entries() {
+    final local = _claimStore.forShop(widget.shopId);
+    final mirrors = {
+      for (final d in local)
+        if (d.claimId != null && d.claimId!.isNotEmpty) d.claimId!: d,
+    };
+    final rows = <(int, EcClaimEntry)>[];
+    for (final claim in _remote.values) {
+      final at = DateTime.fromMillisecondsSinceEpoch(claim.createdAt);
+      rows.add((
+        claim.createdAt,
+        EcClaimEntry(
+          id: mirrors[claim.id]?.id ?? claim.id,
+          title: claim.title ?? '',
+          dateLabel: _dayLabelOf(at),
+          timeLabel: _hhmm(at),
+          orderCount: claim.orderCount,
+          evidenceCount: claim.evidenceCount,
+          revoked: claim.revoked,
+        ),
+      ));
+    }
+    for (final d in local) {
+      if (d.claimId != null && _remote.containsKey(d.claimId)) continue;
+      rows.add((
+        d.createdAt.millisecondsSinceEpoch,
+        EcClaimEntry(
+          id: d.id,
+          title: d.title,
+          dateLabel: _dayLabelOf(d.createdAt),
+          timeLabel: _hhmm(d.createdAt),
+          orderCount: d.orders.length,
+          evidenceCount: d.evidenceCount,
+          // Có `claimId` = đã lên máy chủ, chỉ là lượt đọc danh sách chưa về.
+          // Gọi nó là "chỉ có trên máy" thì dòng cảnh báo bật lên mỗi lần mất
+          // mạng, và người bán tưởng hồ sơ của mình vừa bốc hơi khỏi máy chủ.
+          localOnly: d.claimId == null || d.claimId!.isEmpty,
+        ),
+      ));
+    }
+    rows.sort((a, b) => b.$1.compareTo(a.$1));
+    return [for (final row in rows) row.$2];
+  }
 }
+
+/// Bỏ mọi thứ không phải chữ-số rồi viết hoa, để so mã kiểu người dùng gõ với
+/// mã kiểu máy chủ lưu.
+///
+/// Cùng luật với `normalizeTracking` của backend: người bán gõ "spxvn 045-667"
+/// và máy chủ giữ "SPXVN045667" là CÙNG một kiện, còn so chuỗi thô thì không.
+String _normalizeCode(String raw) =>
+    raw.replaceAll(RegExp('[^A-Za-z0-9]'), '').toUpperCase();
 
 /// Màn tạo hồ sơ khiếu nại: tra một mã đơn rồi tick bằng chứng của nó.
 ///
@@ -5891,20 +6085,35 @@ class _CreateClaimRoute extends StatelessWidget {
   /// bản trên máy, vì đó là thứ màn hồ sơ nhận.
   final ValueChanged<String>? onCreated;
 
-  /// `null` = không có đơn nào mang mã đó; danh sách rỗng = đơn có thật nhưng
-  /// chưa có bằng chứng. Hai thứ khác nhau nên màn hình nói hai câu khác nhau.
-  Future<List<EcClaimPickable>?> _search(
+  /// Trần số đơn trả về cho MỘT lượt gõ.
+  ///
+  /// Gõ "0035" có thể khớp hàng chục kiện. Mở hết ra thì màn hình thành một
+  /// danh sách không đọc nổi, và mỗi đơn là một lượt gọi chi tiết nữa. Bốn là
+  /// đủ để người bán thấy mình cần gõ thêm cho hẹp lại.
+  static const _searchLimit = 4;
+
+  /// Tra một mã — hoặc một mẩu mã. Rỗng = không đơn nào khớp.
+  ///
+  /// Máy chủ tìm GẦN ĐÚNG (`LIKE %q%`, kể cả mã phụ gắn thêm vào đơn). Bản
+  /// trước vứt hết trừ đơn trùng khít cả chuỗi, nên quét QR thì chạy còn gõ
+  /// tay vài số cuối luôn ra "không tìm thấy" — đúng cái lỗi người dùng báo.
+  ///
+  /// Trùng khít thì chỉ trả đúng đơn đó: người vừa quét một mã đầy đủ không
+  /// muốn thấy thêm ba kiện khác chỉ vì chúng chứa cùng dãy số.
+  Future<List<EcClaimLookup>> _search(
     BuildContext context,
-    String code,
+    String query,
   ) async {
     final l10n = context.l10n;
     try {
-      final hits = await repo.searchOrders(shopId, code);
-      final match = hits.where(
-        (o) => o.tracking.toLowerCase() == code.toLowerCase(),
-      );
-      if (match.isEmpty) return null;
-      final detail = await repo.order(shopId, match.first.id);
+      final hits = await repo.searchOrders(shopId, query);
+      if (hits.isEmpty) return const [];
+      final needle = _normalizeCode(query);
+      final exact = hits.where((o) => _normalizeCode(o.tracking) == needle);
+      final chosen = exact.isNotEmpty
+          ? [exact.first]
+          : hits.take(_searchLimit).toList(growable: false);
+
       // Tên loại video, không phải chữ "Video" chung chung.
       //
       // Cả đơn đều là "Video" thì danh sách không nói được cái nào là đóng
@@ -5918,12 +6127,37 @@ class _CreateClaimRoute extends StatelessWidget {
       } on Object {
         // Danh sách loại chỉ làm nhãn đẹp hơn, không chặn việc chọn.
       }
+
+      // Song song: bốn đơn × một lượt gọi nối đuôi nhau là bốn lần chờ mạng
+      // cho một lần gõ.
+      final details = await Future.wait([
+        for (final o in chosen) repo.order(shopId, o.id),
+      ]);
       return [
+        for (var i = 0; i < chosen.length; i++)
+          EcClaimLookup(
+            code: chosen[i].tracking,
+            items: _pickablesOf(l10n, chosen[i].id, details[i], typeNames),
+          ),
+      ];
+    } on Object {
+      // Mạng hỏng đọc ra y như "không tìm thấy mã" — cùng một màn hình rỗng.
+      // Chấp nhận được vì bước sau của người dùng giống nhau: thử lại.
+      return const [];
+    }
+  }
+
+  List<EcClaimPickable> _pickablesOf(
+    AppLocalizations l10n,
+    String orderId,
+    OrderDetailDto detail,
+    Map<String, String> typeNames,
+  ) => [
         for (final e in detail.evidence)
           if (e.uploadStatus != 'deleted')
             EcClaimPickable(
               id: e.id,
-              orderId: match.first.id,
+              orderId: orderId,
               label: typeNames[e.videoTypeId] ?? _kindLabel(l10n, e.kind),
               time: _hhmm(DateTime.fromMillisecondsSinceEpoch(e.capturedAt)),
               isPhoto: e.kind == 'photo',
@@ -5935,13 +6169,7 @@ class _CreateClaimRoute extends StatelessWidget {
               // Dùng `thumbUrl` cho cả hai thì mọi hàng ảnh đều trống chỗ đó.
               thumbUrl: e.kind == 'photo' ? e.url : e.thumbUrl,
             ),
-      ];
-    } on Object {
-      // Mạng hỏng đọc ra y như "không tìm thấy mã" — cùng một màn hình rỗng.
-      // Chấp nhận được vì bước sau của người dùng giống nhau: thử lại.
-      return null;
-    }
-  }
+  ];
 
   Future<void> _create(
     BuildContext context,
@@ -6354,6 +6582,15 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
   late final WebViewController _controller;
   bool _loading = true;
   bool _failed = false;
+  bool _saving = false;
+
+  /// Trình phát toàn màn hình do WebView Android dựng ra, và hàm đóng nó lại.
+  ///
+  /// Android KHÔNG tự phóng to video trong WebView: nó gọi ngược ra host và
+  /// đưa cho một widget, host không nhận thì nút phóng to bấm vào không làm gì
+  /// — đúng lỗi người dùng báo. iOS thì WKWebView tự lo.
+  Widget? _fullscreen;
+  VoidCallback? _exitFullscreen;
 
   @override
   void initState() {
@@ -6361,6 +6598,18 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(BrandColors.bg)
+      // Chụm hai ngón để phóng to trang: hồ sơ có mã vận đơn in nhỏ, mà đây là
+      // thứ người ta phải đọc đúng từng ký tự.
+      ..enableZoom(true)
+      // Kênh này LÀ dấu hiệu "đang chạy trong app": trang công khai kiểm
+      // `window.EcSave` để chuyển nút tải sang đường lưu vào thư viện máy, và
+      // để bỏ menu ba chấm của trình phát. Trình duyệt thường không có kênh
+      // này nên trang giữ nguyên hành vi cũ.
+      ..addJavaScriptChannel(
+        'EcSave',
+        onMessageReceived: (message) =>
+            unawaited(_save(context, message.message)),
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageFinished: (_) {
@@ -6376,6 +6625,91 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
         ),
       )
       ..loadRequest(Uri.parse(widget.url));
+
+    final platform = _controller.platform;
+    if (platform is AndroidWebViewController) {
+      unawaited(
+        platform.setCustomWidgetCallbacks(
+          onShowCustomWidget: (view, onHidden) {
+            if (!mounted) return;
+            setState(() => (_fullscreen = view, _exitFullscreen = onHidden));
+          },
+          onHideCustomWidget: () {
+            if (!mounted) return;
+            setState(() => (_fullscreen = null, _exitFullscreen = null));
+          },
+        ),
+      );
+    }
+  }
+
+  /// Tải một bằng chứng về THƯ VIỆN của máy.
+  ///
+  /// Trang công khai chỉ có thẻ `<a download>`; trong WebView thẻ đó không tải
+  /// gì cả — bấm vào không có chuyện gì xảy ra, và người bán tưởng app hỏng.
+  /// Nên trang gọi ra đây, còn việc tải và lưu thì app làm, bằng đúng đường mà
+  /// nút "Tải về máy" ở màn chi tiết bằng chứng đang dùng.
+  Future<void> _save(BuildContext context, String payload) async {
+    if (_saving) return;
+    final data = _decodeSaveRequest(payload);
+    final url = data?.$1;
+    if (url == null || url.isEmpty) return;
+    final isPhoto = data!.$2;
+    final l10n = context.l10n;
+    setState(() => _saving = true);
+    try {
+      _toast(context, l10n.toastDownloadingVideo);
+      final dir = await getApplicationDocumentsDirectory();
+      final path =
+          '${dir.path}/${_safeFilename('zenpack-${DateTime.now().millisecondsSinceEpoch}.${isPhoto ? 'jpg' : 'mp4'}')}';
+      await _downloadWithRetry(Dio(), url, path);
+      final gallery = _maybeGetIt<GallerySaveService>();
+      // `gal` ném nếu chưa từng được cấp quyền — xin trước, nếu không lần lưu
+      // đầu tiên của máy nào cũng đọc ra "không tải được".
+      if (gallery != null && await gallery.requestAccess()) {
+        isPhoto
+            ? await gallery.saveImage(path)
+            : await gallery.saveVideo(path);
+        unawaited(_deleteQuietly(path));
+        if (!mounted) return;
+        _toast(
+          context,
+          isPhoto
+              ? l10n.toastPhotoSavedToGallery
+              : l10n.toastVideoSavedToGallery,
+        );
+        return;
+      }
+      // Không có quyền vào thư viện: bản tải về vẫn nằm trong thư mục của app,
+      // nhưng nói thẳng là chưa lưu được thay vì im lặng.
+      if (!mounted) return;
+      _toast(
+        context,
+        isPhoto ? l10n.toastPhotoDownloadFailed : l10n.toastVideoDownloadFailed,
+      );
+    } on Object {
+      if (!mounted) return;
+      _toast(
+        context,
+        isPhoto ? l10n.toastPhotoDownloadFailed : l10n.toastVideoDownloadFailed,
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  /// `{"url":…,"photo":true}` từ trang công khai. Sai khuôn thì bỏ qua — kênh
+  /// JS là dữ liệu từ một trang web, không phải lời gọi hàm tin được.
+  (String, bool)? _decodeSaveRequest(String payload) {
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is! Map<String, dynamic>) return null;
+      final url = decoded['url'];
+      if (url is! String) return null;
+      return (url, decoded['photo'] == true);
+    } on Object {
+      return null;
+    }
   }
 
   void _retry() {
@@ -6386,6 +6720,19 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    // Toàn màn hình: trình phát của WebView chiếm CẢ màn, không còn thanh tiêu
+    // đề hay thanh dưới. Nút back của máy đóng nó lại chứ không rời màn hồ sơ —
+    // rời màn giữa lúc đang xem là mất chỗ đang xem.
+    final fullscreen = _fullscreen;
+    if (fullscreen != null) {
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _exitFullscreen?.call();
+        },
+        child: ColoredBox(color: const Color(0xFF000000), child: fullscreen),
+      );
+    }
     return CupertinoPageScaffold(
       backgroundColor: BrandColors.bg,
       child: SafeArea(

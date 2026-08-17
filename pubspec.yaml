@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.9.0+586
+version: 2.0.1+683
 
 environment:
   sdk: ^3.12.0
@@ -162,6 +162,9 @@ dependencies:
   # hai để lệch. Dựng lại bằng widget gốc thì phải ký link cho từng clip ở API
   # hồ sơ — đúng chi phí `getClaimDetail` đang cố tình tránh.
   webview_flutter: ^4.13.0
+  # Dùng trực tiếp cho ĐÚNG một việc: nhận video toàn màn hình từ WebView
+  # Android (`setCustomWidgetCallbacks`). Gói mặt tiền không phát ra sự kiện đó.
+  webview_flutter_android: ^4.13.0
 
   # Real device model (e.g. "SM-M146B") sent up with each recording so the
   # evidence detail screen can show which phone recorded a clip instead of

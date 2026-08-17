@@ -12,6 +12,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
@@ -33,11 +34,35 @@ class EcPurchases {
   /// cửa hàng, và làm sập app lúc khởi động vì thiếu một khoá tuỳ chọn là đổi
   /// một tính năng vắng mặt lấy một app không mở được.
   static Future<void> configure(String apiKey) async {
-    if (apiKey.isEmpty) return;
+    // Một dòng ở logcat/Console, kể cả bản release. Khi cửa hàng vắng mặt thì
+    // hậu quả duy nhất nhìn thấy được là NÚT BIẾN MẤT — không lỗi, không dấu
+    // vết, và không cách nào phân biệt "build quên khoá" với "SDK từ chối
+    // khoá" nếu đứng ngoài nhìn vào. Đây chính là chỗ đã ngốn hai giờ dò lỗi.
+    if (apiKey.isEmpty) {
+      // `debugPrint` chứ KHÔNG phải `developer.log`: cái sau đi qua VM service,
+      // thứ bản release không có — nên ở đúng bản cần dò lỗi thì nó câm.
+      debugPrint(
+        'zenpack.purchases: KHÔNG có khoá cửa hàng cho nền tảng này — mọi nút '
+        'mua sẽ ẩn (build thiếu --dart-define-from-file env/<flavor>.json?)',
+      );
+      return;
+    }
     // Log rác của SDK chỉ có ích khi đang dò lỗi tích hợp.
     await Purchases.setLogLevel(LogLevel.warn);
-    await Purchases.configure(PurchasesConfiguration(apiKey));
+    try {
+      await Purchases.configure(PurchasesConfiguration(apiKey));
+    } on Object catch (error) {
+      // KHÔNG để ném tiếp: chỗ gọi nằm trong bootstrap, nên một lỗi cửa hàng
+      // sẽ biến thành màn "app không mở được". Không có cửa hàng thì app vẫn
+      // quay video được — đó là việc chính của nó.
+      debugPrint(
+        'zenpack.purchases: SDK từ chối khoá (${error.runtimeType}: $error) — '
+        'mọi nút mua sẽ ẩn',
+      );
+      return;
+    }
     _instance = EcPurchases._();
+    debugPrint('zenpack.purchases: sẵn sàng (khoá ${apiKey.substring(0, 8)}…)');
   }
 
   /// Gắn phiên mua hàng vào ĐÚNG tài khoản đang đăng nhập.

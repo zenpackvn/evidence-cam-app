@@ -1,17 +1,19 @@
-/// Kho hồ sơ khiếu nại — TRÊN MÁY NÀY, không phải trên máy chủ.
+/// Kho hồ sơ khiếu nại trên MÁY NÀY — bộ đệm, không phải bản gốc.
 ///
-/// Backend chưa mở endpoint gộp bằng chứng (nút "Tạo link" cũ bấm vào chỉ báo
-/// "đang chờ backend"), nên hồ sơ người dùng tạo phải nằm đâu đó ở phía app
-/// hoặc không tồn tại. Đây là chỗ đó.
+/// Bản gốc nằm trên máy chủ (`/api/shops/:id/claims`) và màn danh sách đọc từ
+/// đó, cùng đúng nguồn web admin đọc. Kho này còn lại hai việc:
 ///
-/// Hệ quả phải nói thẳng ra với người dùng, không được giấu: gỡ app là mất, đổi
-/// máy là không thấy, web admin không biết gì về những hồ sơ này. Màn Hồ sơ
-/// khiếu nại có một dòng ghi rõ điều đó — im lặng ở đây là để người bán tưởng
-/// bằng chứng khiếu nại của họ đã an toàn trên máy chủ.
+/// 1. **Hồ sơ tạo lúc mất mạng** — lượt gửi lên hỏng thì hồ sơ vẫn nằm đây với
+///    `claimId == null`. Chúng CHƯA có link, và màn danh sách bật một dòng nói
+///    thẳng điều đó: gỡ app là mất, đổi máy là không thấy, web không biết gì.
+///    Im lặng ở đây là để người bán tưởng bằng chứng của họ đã an toàn.
+/// 2. **Neo cho màn chi tiết** — màn đó mở theo id của bản trên máy, nên hồ sơ
+///    tạo ở web hay máy khác được dựng một bản rỗng mang `claimId` khi người
+///    dùng bấm vào; nội dung thì đọc từ máy chủ.
 ///
-/// Khi backend mở endpoint thật thì lớp này thành bộ đệm ngoại tuyến, không
-/// phải thứ phải vứt đi: hình dạng dữ liệu ([EcClaimDossier]) đã theo khuôn
-/// server rồi.
+/// Hồ sơ tạo lúc mất mạng KHÔNG tự gửi lại. Gửi lại mà lượt POST trước thật ra
+/// đã thành công (chỉ mất câu trả lời) là đẻ ra hồ sơ thứ hai với một link
+/// thứ hai — muốn tự động thì máy chủ phải nhận khoá chống trùng trước đã.
 library;
 
 import 'dart:convert';

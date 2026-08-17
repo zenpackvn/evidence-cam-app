@@ -22,7 +22,9 @@
   "claimsEvidenceOnly": "{evidence} items",
   "@claimsEvidenceOnly": {
     "placeholders": {
-      "evidence": { "type": "int" }
+      "evidence": {
+        "type": "int"
+      }
     }
   },
   "claimsCopied": "Dossier contents copied",
@@ -57,8 +59,12 @@
   "claimEvidenceCount": "{videos} videos · {photos} photos",
   "@claimEvidenceCount": {
     "placeholders": {
-      "videos": { "type": "int" },
-      "photos": { "type": "int" }
+      "videos": {
+        "type": "int"
+      },
+      "photos": {
+        "type": "int"
+      }
     }
   },
   "claimCreatedAtLabel": "Dossier created",
@@ -1327,6 +1333,27 @@
   "storageHealthPendingRelay": "Waiting in the relay area",
   "storageProblemsNote": "Some videos have problems in your storage. Check the access permissions on the provider side.",
   "storageTest": "Re-test the connection",
+  "storageInUse": "In use",
+  "@storageInUse": {
+    "description": "Nhan tren the kho dang thuc su dung."
+  },
+  "storageLastCheckAt": "Last audit: {time}",
+  "@storageLastCheckAt": {
+    "description": "Moc ra soat kho gan nhat.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "storageNeverChecked": "Never audited yet.",
+  "@storageNeverChecked": {
+    "description": "Kho chua he duoc ra soat."
+  },
+  "storageDriveAccount": "Drive account",
+  "@storageDriveAccount": {
+    "description": "Nhan tai khoan Google Drive."
+  },
   "storageDisconnect": "Stop using custom storage",
   "storageDisconnectConfirm": "Videos recorded from now on go to system storage. Older ones stay in your storage and the system loses its route to them.",
   "storageConnectS3": "Connect S3 storage",

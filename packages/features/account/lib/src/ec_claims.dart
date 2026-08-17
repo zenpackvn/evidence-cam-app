@@ -18,6 +18,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show MaxLengthEnforcement;
 import 'package:localization/localization.dart';
 
+/// Một đơn tra được ở màn tạo hồ sơ: mã ĐẦY ĐỦ của đơn kèm bằng chứng của nó.
+///
+/// Mang theo mã đầy đủ vì người dùng được phép gõ một mẩu: máy chủ tìm gần
+/// đúng, nên thứ hiện lên phải là mã thật của đơn tìm được, không phải mẩu đã
+/// gõ.
+class EcClaimLookup {
+  const EcClaimLookup({required this.code, required this.items});
+
+  /// Mã vận đơn đầy đủ.
+  final String code;
+
+  /// Bằng chứng của đơn. Rỗng = đơn có thật nhưng chưa quay gì.
+  final List<EcClaimPickable> items;
+}
+
 /// Một hồ sơ trên màn danh sách.
 class EcClaimEntry {
   const EcClaimEntry({
@@ -27,6 +42,8 @@ class EcClaimEntry {
     required this.timeLabel,
     required this.orderCount,
     required this.evidenceCount,
+    this.revoked = false,
+    this.localOnly = false,
   });
 
   final String id;
@@ -43,6 +60,15 @@ class EcClaimEntry {
 
   final int orderCount;
   final int evidenceCount;
+
+  /// Link đã bị thu hồi — có thể do người khác thu hồi ở máy khác hoặc trên
+  /// web. Hàng vẫn nằm trong danh sách: người bán cần thấy mình ĐÃ từng phát
+  /// link nào, nhưng phải thấy ngay là cái này không còn mở được.
+  final bool revoked;
+
+  /// Chỉ có trên máy này, chưa lên máy chủ (tạo lúc mất mạng). Quyết định dòng
+  /// cảnh báo ở đầu màn — hồ sơ đã đồng bộ thì dòng đó là lời cảnh báo sai.
+  final bool localOnly;
 }
 
 /// Lớp cha: danh sách hồ sơ đã tạo, mới nhất trước.
@@ -122,10 +148,16 @@ class EcClaimListScreen extends StatelessWidget {
           // Dòng "lưu trên máy này" đứng NGAY dưới tiêu đề, không nhét xuống
           // đáy: người bán phải biết bằng chứng khiếu nại của mình chưa ở chỗ
           // nào an toàn TRƯỚC khi họ dựa vào nó, không phải sau khi đổi máy.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-            child: _LocalOnlyNote(text: l10n.claimsLocalOnlyNote),
-          ),
+          //
+          // Chỉ hiện khi THẬT SỰ còn hồ sơ chưa lên máy chủ. Danh sách giờ đọc
+          // từ máy chủ, nên để dòng này đứng vĩnh viễn là dọa người dùng về một
+          // rủi ro không còn nữa — và cảnh báo lúc nào cũng sáng thì tới lúc nó
+          // đúng cũng không ai đọc.
+          if (entries.any((e) => e.localOnly))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+              child: _LocalOnlyNote(text: l10n.claimsLocalOnlyNote),
+            ),
           Expanded(child: _body(context, l10n)),
           _ClaimsNavBar(onOrders: onNavOrders, onRecord: onNavRecord),
         ],
@@ -254,14 +286,42 @@ class _ClaimRow extends StatelessWidget {
                 // sàn mới trả lời và danh sách đã có chục hồ sơ. Ngày giờ thì
                 // mọi hồ sơ đều có, nên để nó làm dòng đầu là bắt người ta đọc
                 // hết cả cột mới thấy vụ mình cần.
-                PenText(
-                  entry.title.trim().isEmpty
-                      ? '${entry.dateLabel}  ${entry.timeLabel}'
-                      : entry.title,
-                  size: 15,
-                  color: PenColors.ink,
-                  weight: FontWeight.w700,
-                  maxLines: 1,
+                Row(
+                  children: [
+                    Flexible(
+                      child: PenText(
+                        entry.title.trim().isEmpty
+                            ? '${entry.dateLabel}  ${entry.timeLabel}'
+                            : entry.title,
+                        size: 15,
+                        color: entry.revoked ? PenColors.mut : PenColors.ink,
+                        weight: FontWeight.w700,
+                        maxLines: 1,
+                      ),
+                    ),
+                    // Thu hồi có thể xảy ra ở MÁY KHÁC hoặc trên web, nên hàng
+                    // này là chỗ duy nhất người dùng ở máy đang cầm biết link
+                    // đã chết mà không phải mở từng hồ sơ ra xem.
+                    if (entry.revoked) ...[
+                      const SizedBox(width: 8),
+                      PenBox(
+                        fill: PenColors.bg,
+                        stroke: PenColors.line,
+                        radius: 999,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        children: [
+                          PenText(
+                            l10n.claimRevokedBadge,
+                            size: 11,
+                            color: PenColors.mut,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 3),
                 PenText(
@@ -689,9 +749,13 @@ class EcCreateClaimScreen extends StatefulWidget {
     super.key,
   });
 
-  /// Tra một mã vận đơn. Trả `null` khi không có đơn nào khớp, trả danh sách
-  /// rỗng khi đơn có thật nhưng chưa có bằng chứng nào.
-  final Future<List<EcClaimPickable>?> Function(String code) onSearch;
+  /// Tra một mã vận đơn — hoặc một MẨU của nó.
+  ///
+  /// Trả danh sách rỗng khi không đơn nào khớp. Mỗi phần tử là một đơn có
+  /// thật, mang mã ĐẦY ĐỦ của nó ([EcClaimLookup.code]) chứ không phải chuỗi
+  /// người dùng vừa gõ: gõ "0035" mà tiêu đề nhóm cũng ghi "0035" thì người
+  /// bán không biết mình đang tick bằng chứng của kiện nào.
+  final Future<List<EcClaimLookup>> Function(String query) onSearch;
 
   /// Mở máy quét, trả về mã đọc được.
   final Future<String?> Function()? onScan;
@@ -768,19 +832,21 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
     if (!mounted) return;
     setState(() {
       _loading = false;
-      _notFound = found == null;
+      _notFound = found.isEmpty;
       // Không tick sẵn gì cả. Đơn có chục clip mà người bán chỉ cần một cái để
       // khiếu nại thì tick sẵn hết bắt họ bỏ chín — nhiều thao tác hơn hẳn tự
       // tick một.
-      if (found != null) {
+      // Duyệt NGƯỢC rồi chèn lên đầu: đơn máy chủ xếp đầu (hoạt động gần đây
+      // nhất) phải nằm trên cùng sau khi mọi thứ đã vào chỗ.
+      for (final hit in found.reversed) {
         // Mã mới lên ĐẦU: người bán vừa quét cái gì thì muốn thấy ngay cái đó,
         // không phải cuộn qua mọi mã đã quét trước để tìm.
         _seen
-          ..remove(code)
-          ..[code] = found;
+          ..remove(hit.code)
+          ..[hit.code] = hit.items;
         _order
-          ..remove(code)
-          ..insert(0, code);
+          ..remove(hit.code)
+          ..insert(0, hit.code);
       }
     });
   }
@@ -1127,7 +1193,22 @@ class _SearchScanBar extends StatelessWidget {
     cross: CrossAxisAlignment.center,
     padding: const EdgeInsets.only(left: 16, right: 8),
     children: [
-      const Icon(LucideIcons.search, size: 22, color: PenColors.mut),
+      // Kính lúp là NÚT, không phải hình trang trí.
+      //
+      // Bản trước chỉ có phím "tìm" trên bàn phím kích hoạt được lượt tra. Ai
+      // gõ xong rồi bấm vào kính lúp — thao tác tự nhiên nhất, và là thứ mọi ô
+      // tìm kiếm khác trên đời đều làm — thì màn hình đứng im, không báo gì.
+      EcTap(
+        onTap: () => onSubmit(controller.text),
+        child: const SizedBox(
+          width: 34,
+          height: 44,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Icon(LucideIcons.search, size: 22, color: PenColors.mut),
+          ),
+        ),
+      ),
       Expanded(
         child: CupertinoTextField(
           controller: controller,

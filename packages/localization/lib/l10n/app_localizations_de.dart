@@ -2060,6 +2060,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storageTest => 'Verbindung erneut testen';
 
   @override
+  String get storageInUse => 'In Verwendung';
+
+  @override
+  String storageLastCheckAt(String time) {
+    return 'Letzte Prüfung: $time';
+  }
+
+  @override
+  String get storageNeverChecked => 'Noch nie geprüft.';
+
+  @override
+  String get storageDriveAccount => 'Drive-Konto';
+
+  @override
   String get storageDisconnect => 'Eigenen Speicher nicht mehr verwenden';
 
   @override

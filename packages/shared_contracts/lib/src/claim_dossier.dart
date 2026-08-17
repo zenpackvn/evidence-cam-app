@@ -3,11 +3,11 @@
 /// Thuần Dart, JSON vào/ra — mô hình này đi qua hai feature (trang vận đơn tạo
 /// nó, tab Tài khoản hiển thị nó) nên nằm ở đây thay vì thuộc về một bên.
 ///
-/// **Nội dung nằm trên máy, link nằm trên máy chủ.** Máy chủ đã có endpoint gộp
-/// (`POST /api/shops/:id/claims`) và giữ link công khai, nhưng chưa có đường
-/// đọc lại nội dung hồ sơ khi đã đăng nhập — nên danh sách và chi tiết vẫn đọc
-/// từ `EcClaimStore` ở app shell. Cặp `claimId` + `shareUrl` là sợi dây duy
-/// nhất nối bản trên máy với bản trên máy chủ.
+/// **Máy chủ là bản gốc; kiểu này là bản chụp trên máy.** Danh sách và chi tiết
+/// đọc từ máy chủ (`GET /api/shops/:id/claims`, `.../claims/:claimId`), cùng
+/// nguồn web admin đọc. Bản trên máy còn giữ hai vai: hồ sơ tạo lúc mất mạng
+/// (chưa có `claimId`), và cái neo để mở màn chi tiết. Cặp `claimId` +
+/// `shareUrl` là sợi dây nối bản trên máy với bản trên máy chủ.
 library;
 
 /// Một hồ sơ, gộp bằng chứng của một hoặc nhiều mã vận đơn.

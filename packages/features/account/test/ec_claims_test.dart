@@ -75,7 +75,7 @@ void main() {
     ) async {
       await _pump(
         tester,
-        EcCreateClaimScreen(onSearch: (code) async => _spx1),
+        EcCreateClaimScreen(onSearch: (code) async => [const EcClaimLookup(code: 'SPX1', items: _spx1)]),
       );
       await _lookup(tester, 'SPX1');
 
@@ -91,7 +91,7 @@ void main() {
     testWidgets('chạm vào cả thẻ là tick, và nút tạo đếm đúng', (tester) async {
       await _pump(
         tester,
-        EcCreateClaimScreen(onSearch: (code) async => _spx1),
+        EcCreateClaimScreen(onSearch: (code) async => [const EcClaimLookup(code: 'SPX1', items: _spx1)]),
       );
       await _lookup(tester, 'SPX1');
 
@@ -109,6 +109,32 @@ void main() {
       expect(find.textContaining('(1)'), findsNothing);
     });
 
+    // Gõ xong rồi bấm kính lúp là thao tác tự nhiên nhất của một ô tìm kiếm.
+    // Bản trước kính lúp chỉ là hình vẽ: bấm vào màn hình đứng im, không báo gì,
+    // và người dùng tưởng app hỏng.
+    testWidgets('bấm kính lúp thì tra mã, không cần phím trên bàn phím', (
+      tester,
+    ) async {
+      final asked = <String>[];
+      await _pump(
+        tester,
+        EcCreateClaimScreen(
+          onSearch: (code) async {
+            asked.add(code);
+            return [const EcClaimLookup(code: 'SPX1', items: _spx1)];
+          },
+        ),
+      );
+
+      await tester.enterText(_searchField(), 'SPX1');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(LucideIcons.search));
+      await tester.pumpAndSettle();
+
+      expect(asked, ['SPX1']);
+      expect(find.text('Đóng hàng'), findsOneWidget);
+    });
+
     testWidgets('quét mã thứ hai không làm mất phần đã tick ở mã đầu', (
       tester,
     ) async {
@@ -117,7 +143,11 @@ void main() {
       await _pump(
         tester,
         EcCreateClaimScreen(
-          onSearch: (code) async => code == 'SPX1' ? _spx1 : _spx2,
+          onSearch: (code) async => [
+            code == 'SPX1'
+                ? const EcClaimLookup(code: 'SPX1', items: _spx1)
+                : const EcClaimLookup(code: 'SPX2', items: _spx2),
+          ],
           onCreate: (batch, title) {
             created = batch;
             createdTitle = title;
@@ -166,7 +196,7 @@ void main() {
     testWidgets('ô tên hiện ngay khi mở màn, kèm dấu bắt buộc', (tester) async {
       await _pump(
         tester,
-        EcCreateClaimScreen(onSearch: (code) async => _spx1, onCreate: (_, _) {}),
+        EcCreateClaimScreen(onSearch: (code) async => [const EcClaimLookup(code: 'SPX1', items: _spx1)], onCreate: (_, _) {}),
       );
 
       expect(find.text('Tên hồ sơ'), findsOneWidget);
@@ -182,7 +212,7 @@ void main() {
       await _pump(
         tester,
         EcCreateClaimScreen(
-          onSearch: (code) async => _spx1,
+          onSearch: (code) async => [const EcClaimLookup(code: 'SPX1', items: _spx1)],
           onCreate: (batch, title) => created++,
         ),
       );
@@ -211,7 +241,7 @@ void main() {
       await _pump(
         tester,
         EcCreateClaimScreen(
-          onSearch: (code) async => _spx1,
+          onSearch: (code) async => [const EcClaimLookup(code: 'SPX1', items: _spx1)],
           onCreate: (batch, title) => createdTitle = title,
         ),
       );
@@ -390,6 +420,66 @@ void _listTests() {
     expect(find.text('5 bằng chứng  ·  08/08/2026  17:42'), findsOneWidget);
     // Ngày giờ KHÔNG được đứng một mình làm dòng đầu nữa.
     expect(find.text('08/08/2026  17:42'), findsNothing);
+  });
+
+  // Thu hồi có thể xảy ra ở web hoặc ở máy khác. Không đánh dấu ngay trên hàng
+  // thì người bán gửi lại một link đã chết mà không biết.
+  testWidgets('hồ sơ đã thu hồi mang huy hiệu ngay trên hàng', (tester) async {
+    await _pump(
+      tester,
+      const EcClaimListScreen(
+        entries: [
+          EcClaimEntry(
+            id: 'c1',
+            title: 'Lô hoàn 8/8',
+            dateLabel: '08/08/2026',
+            timeLabel: '17:42',
+            orderCount: 2,
+            evidenceCount: 5,
+            revoked: true,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Đã thu hồi'), findsOneWidget);
+  });
+
+  // Danh sách đọc từ máy chủ, nên dòng "lưu trên máy này" chỉ đúng khi CÒN hồ
+  // sơ chưa lên máy chủ. Để nó sáng vĩnh viễn là dọa người dùng về một rủi ro
+  // không còn nữa — và cảnh báo lúc nào cũng sáng thì lúc nó đúng không ai đọc.
+  testWidgets('dòng "lưu trên máy này" chỉ hiện khi có hồ sơ chưa đồng bộ', (
+    tester,
+  ) async {
+    const synced = EcClaimEntry(
+      id: 'c1',
+      title: 'Đã lên máy chủ',
+      dateLabel: '08/08/2026',
+      timeLabel: '17:42',
+      orderCount: 1,
+      evidenceCount: 2,
+    );
+    await _pump(tester, const EcClaimListScreen(entries: [synced]));
+    expect(find.textContaining('lưu trên máy này'), findsNothing);
+
+    await _pump(
+      tester,
+      const EcClaimListScreen(
+        entries: [
+          synced,
+          EcClaimEntry(
+            id: 'c2',
+            title: 'Chưa lên máy chủ',
+            dateLabel: '08/08/2026',
+            timeLabel: '18:10',
+            orderCount: 1,
+            evidenceCount: 1,
+            localOnly: true,
+          ),
+        ],
+      ),
+    );
+    expect(find.textContaining('lưu trên máy này'), findsOneWidget);
   });
 
   // Hồ sơ tạo TRƯỚC khi tên là bắt buộc vẫn phải đọc được. Không tên mà vẫn cố

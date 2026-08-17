@@ -814,6 +814,7 @@ class StorageViewDto {
     required this.kind,
     required this.ok,
     this.label = '',
+    this.email,
     this.lastError,
     this.lastCheckedAt,
     this.capabilities,
@@ -827,6 +828,7 @@ class StorageViewDto {
           : StorageKind.s3,
       ok: (j['status'] as String?) != 'error',
       label: config is Map<String, dynamic> ? _storageLabel(config) : '',
+      email: config is Map<String, dynamic> ? config['email'] as String? : null,
       lastError: j['last_error'] as String?,
       lastCheckedAt: _intN(j['last_checked_at']),
       capabilities: j['capabilities'] is Map<String, dynamic>
@@ -843,6 +845,10 @@ class StorageViewDto {
   /// Dòng nhận diện kho, đọc được bằng mắt: `bucket/prefix` với S3, tên thư
   /// mục với Drive. Đủ để chủ shop biết mình đang cắm đúng chỗ hay không.
   final String label;
+
+  /// Tài khoản Google đang giữ kho Drive. `null` với S3 — chỉ Drive mới có
+  /// khái niệm "cắm bằng tài khoản nào".
+  final String? email;
   final String? lastError;
   final int? lastCheckedAt;
   final StorageCapabilitiesDto? capabilities;
@@ -1066,6 +1072,7 @@ class ClaimDto {
     required this.url,
     this.title,
     this.orderCount = 0,
+    this.evidenceCount = 0,
     this.revoked = false,
     this.createdAt = 0,
   });
@@ -1075,6 +1082,7 @@ class ClaimDto {
     url: (j['url'] as String?) ?? '',
     title: j['title'] as String?,
     orderCount: _int(j['order_count']),
+    evidenceCount: _int(j['evidence_count']),
     revoked: _int(j['revoked']) == 1,
     createdAt: _int(j['created_at']),
   );
@@ -1087,6 +1095,11 @@ class ClaimDto {
   final String url;
   final String? title;
   final int orderCount;
+
+  /// Số bằng chứng hồ sơ đang mang, theo đúng luật của trang công khai. Máy chủ
+  /// đếm chứ không phải máy này: hồ sơ tạo trên web hoặc trên máy khác thì máy
+  /// đang mở không có gì để đếm.
+  final int evidenceCount;
 
   /// Đã thu hồi — link chết, dữ liệu còn.
   final bool revoked;

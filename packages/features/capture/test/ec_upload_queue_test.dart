@@ -84,6 +84,64 @@ void main() {
     expect(queue.tasks, isEmpty);
   });
 
+  // Máy dùng chung ca: A quay rồi đăng xuất, B đăng nhập. Clip của A phải BIẾN
+  // KHỎI MÀN của B — nhưng vẫn còn nguyên trên máy, và A đăng nhập lại là thấy
+  // đủ. Giấu chứ không xoá: clip chưa lên máy chủ là bằng chứng chưa được bảo
+  // vệ ở đâu khác.
+  test('hàng đợi chỉ hiện clip của tài khoản đang đăng nhập', () async {
+    var current = 'uid-A';
+    final queue = EcUploadQueue(
+      uploader: _FakeUploader([Exception('offline'), Exception('offline')]),
+      directory: dir,
+      currentUid: () => current,
+    );
+
+    await queue.enqueue(
+      tracking: 'SPX-A',
+      type: 'Đóng hàng',
+      filePath: clip.path,
+      ownerUid: 'uid-A',
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    expect(queue.tasks.map((t) => t.tracking), ['SPX-A']);
+    expect(queue.pendingCount, 1);
+
+    // B đăng nhập: không thấy gì của A, và chip ☁ không đếm việc của A.
+    current = 'uid-B';
+    expect(queue.tasks, isEmpty);
+    expect(queue.pendingCount, 0);
+
+    await queue.enqueue(
+      tracking: 'SPX-B',
+      type: 'Đóng hàng',
+      filePath: clip.path,
+      ownerUid: 'uid-B',
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    expect(queue.tasks.map((t) => t.tracking), ['SPX-B']);
+
+    // A đăng nhập lại: clip của A còn nguyên, không mất.
+    current = 'uid-A';
+    expect(queue.tasks.map((t) => t.tracking), ['SPX-A']);
+  });
+
+  // Hàng lưu từ trước khi có `ownerUid` không biết của ai. Giấu chúng đi thì
+  // người bán tưởng bằng chứng đã mất, nên chúng hiện với mọi tài khoản.
+  test('clip không rõ chủ vẫn hiện', () async {
+    final queue = EcUploadQueue(
+      uploader: _FakeUploader([Exception('offline')]),
+      directory: dir,
+      currentUid: () => 'uid-B',
+    );
+    await queue.enqueue(
+      tracking: 'SPX-CU',
+      type: 'Đóng hàng',
+      filePath: clip.path,
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    expect(queue.tasks.map((t) => t.tracking), ['SPX-CU']);
+  });
+
   // Cách chép tệp phải kiểm trên một task CÒN Ở LẠI, nên dùng uploader hỏng.
   // Kiểm nó ở đường thành công là không thể: task và bản sao đều bị dọn.
   test('enqueue chép clip vào thư mục riêng, lưu TÊN TỆP TRẦN', () async {

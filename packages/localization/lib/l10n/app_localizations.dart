@@ -3668,6 +3668,30 @@ abstract class AppLocalizations {
   /// **'Re-test the connection'**
   String get storageTest;
 
+  /// Nhan tren the kho dang thuc su dung.
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get storageInUse;
+
+  /// Moc ra soat kho gan nhat.
+  ///
+  /// In en, this message translates to:
+  /// **'Last audit: {time}'**
+  String storageLastCheckAt(String time);
+
+  /// Kho chua he duoc ra soat.
+  ///
+  /// In en, this message translates to:
+  /// **'Never audited yet.'**
+  String get storageNeverChecked;
+
+  /// Nhan tai khoan Google Drive.
+  ///
+  /// In en, this message translates to:
+  /// **'Drive account'**
+  String get storageDriveAccount;
+
   /// No description provided for @storageDisconnect.
   ///
   /// In en, this message translates to:

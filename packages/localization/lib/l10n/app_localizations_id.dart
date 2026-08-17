@@ -2030,6 +2030,20 @@ class AppLocalizationsId extends AppLocalizations {
   String get storageTest => 'Uji ulang koneksi';
 
   @override
+  String get storageInUse => 'Sedang dipakai';
+
+  @override
+  String storageLastCheckAt(String time) {
+    return 'Audit terakhir: $time';
+  }
+
+  @override
+  String get storageNeverChecked => 'Belum pernah diaudit.';
+
+  @override
+  String get storageDriveAccount => 'Akun Drive';
+
+  @override
   String get storageDisconnect => 'Berhenti memakai penyimpanan sendiri';
 
   @override

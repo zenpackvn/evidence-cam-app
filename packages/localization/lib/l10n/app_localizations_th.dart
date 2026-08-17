@@ -2004,6 +2004,20 @@ class AppLocalizationsTh extends AppLocalizations {
   String get storageTest => 'ทดสอบการเชื่อมต่ออีกครั้ง';
 
   @override
+  String get storageInUse => 'กำลังใช้งาน';
+
+  @override
+  String storageLastCheckAt(String time) {
+    return 'ตรวจสอบล่าสุด: $time';
+  }
+
+  @override
+  String get storageNeverChecked => 'ยังไม่เคยตรวจสอบ';
+
+  @override
+  String get storageDriveAccount => 'บัญชี Drive';
+
+  @override
   String get storageDisconnect => 'เลิกใช้พื้นที่เก็บของตัวเอง';
 
   @override

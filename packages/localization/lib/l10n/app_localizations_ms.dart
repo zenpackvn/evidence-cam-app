@@ -2040,6 +2040,20 @@ class AppLocalizationsMs extends AppLocalizations {
   String get storageTest => 'Uji semula sambungan';
 
   @override
+  String get storageInUse => 'Sedang digunakan';
+
+  @override
+  String storageLastCheckAt(String time) {
+    return 'Audit terakhir: $time';
+  }
+
+  @override
+  String get storageNeverChecked => 'Belum pernah diaudit.';
+
+  @override
+  String get storageDriveAccount => 'Akaun Drive';
+
+  @override
   String get storageDisconnect => 'Berhenti menggunakan storan sendiri';
 
   @override

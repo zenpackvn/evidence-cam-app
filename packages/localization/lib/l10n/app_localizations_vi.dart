@@ -2016,6 +2016,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get storageTest => 'Kiểm tra lại kết nối';
 
   @override
+  String get storageInUse => 'Đang dùng';
+
+  @override
+  String storageLastCheckAt(String time) {
+    return 'Rà gần nhất: $time';
+  }
+
+  @override
+  String get storageNeverChecked => 'Chưa rà lần nào.';
+
+  @override
+  String get storageDriveAccount => 'Tài khoản Drive';
+
+  @override
   String get storageDisconnect => 'Thôi dùng kho riêng';
 
   @override

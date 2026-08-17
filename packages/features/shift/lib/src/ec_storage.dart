@@ -26,6 +26,7 @@ class EcStorageHealth {
     this.unreachable = 0,
     this.mismatched = 0,
     this.pendingRelay = 0,
+    this.lastCheckedAt,
   });
 
   final int total;
@@ -40,6 +41,10 @@ class EcStorageHealth {
 
   /// Còn ở vùng chờ tạm vì kho đang có sự cố. Chưa mất, nhưng chưa về nhà.
   final int pendingRelay;
+
+  /// Lượt rà gần nhất. `null` = chưa rà lần nào — nói thẳng ra, vì một bảng
+  /// toàn số 0 không có mốc thời gian đọc y hệt một kho hoàn hảo.
+  final int? lastCheckedAt;
 
   bool get hasProblems => unreachable > 0 || mismatched > 0 || pendingRelay > 0;
 }
@@ -56,6 +61,7 @@ class EcStorageState {
     this.canManage = false,
     this.presignedDownload = true,
     this.objectLock = false,
+    this.driveEmail,
   });
 
   final EcStorageKind kind;
@@ -77,6 +83,10 @@ class EcStorageState {
 
   /// Cơ sở duy nhất để hứa "bằng chứng không thể xoá".
   final bool objectLock;
+
+  /// Tài khoản Google đang giữ kho. Chỉ để người dùng nhận ra mình đã cắm
+  /// nhầm tài khoản nào — đổi tài khoản là cắm lại từ đầu.
+  final String? driveEmail;
 }
 
 /// Màn "Kho lưu trữ": chọn một trong ba nơi cất video của shop.
@@ -163,6 +173,39 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     };
   }
 
+  /// Phần chi tiết vẽ BÊN TRONG thẻ của một kho, ngăn bằng một đường kẻ.
+  ///
+  /// Cùng cách bản web sắp xếp: bảng tình trạng nằm trong ô của chính cái kho
+  /// nó nói về, không phải một khối lơ lửng dưới cả danh sách — treo ở ngoài
+  /// thì "Cloud Zenpack" trông gọn ghẽ còn Drive/S3 kéo theo một mảng số liệu
+  /// không rõ của ai.
+  ///
+  /// Kho ĐANG dùng → bảng tình trạng. Kho chưa dùng → lối cắm.
+  Widget? _detailFor(EcStorageKind kind) {
+    final state = widget.state;
+    if (state.kind == kind) {
+      return _StatusDetail(
+        state: state,
+        busy: widget.busy,
+        onTest: widget.onTest,
+        onDisconnect: widget.onDisconnect,
+        onEdit: kind == EcStorageKind.s3 ? widget.onConnectS3 : null,
+      );
+    }
+    // Cả hai lối cắm hiện CÙNG LÚC khi đang ở kho hệ thống: người dùng cần so
+    // hai lựa chọn cạnh nhau, không phải bấm thử từng cái mới thấy nút.
+    if (!state.canManage || !state.byosAllowed) return null;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: PenPrimaryButton(
+        label: kind == EcStorageKind.s3
+            ? context.l10n.storageConnectS3
+            : context.l10n.storageConnectDrive,
+        onPressed: widget.busy ? null : _flowFor(kind),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -185,6 +228,7 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                 title: l10n.storageSystemName,
                 description: l10n.storageSystemDesc,
                 selected: _picked == EcStorageKind.system,
+                inUse: state.kind == EcStorageKind.system,
                 onTap: () =>
                     _pick(EcStorageKind.system, _flowFor(EcStorageKind.system)),
               ),
@@ -194,7 +238,10 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                 title: l10n.storageS3Title,
                 description: l10n.storageS3Desc,
                 selected: _picked == EcStorageKind.s3,
+                inUse: state.kind == EcStorageKind.s3,
+                label: state.kind == EcStorageKind.s3 ? state.label : null,
                 lockNote: state.byosAllowed ? null : l10n.storageNeedProPlan,
+                detail: _detailFor(EcStorageKind.s3),
                 onTap: () =>
                     _pick(EcStorageKind.s3, _flowFor(EcStorageKind.s3)),
               ),
@@ -204,18 +251,25 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                 title: l10n.storageDriveTitle,
                 description: l10n.storageDriveDesc,
                 selected: _picked == EcStorageKind.gdrive,
+                inUse: state.kind == EcStorageKind.gdrive,
+                label: state.kind == EcStorageKind.gdrive ? state.label : null,
                 lockNote: state.byosAllowed ? null : l10n.storageNeedProPlan,
+                detail: _detailFor(EcStorageKind.gdrive),
                 onTap: () =>
                     _pick(EcStorageKind.gdrive, _flowFor(EcStorageKind.gdrive)),
               ),
-              // Câu lỗi nguyên văn của nhà cung cấp là thứ DUY NHẤT giúp chủ
-              // shop tự sửa quyền bên phía họ, nên nó ở lại kể cả khi màn này
-              // đã gọn còn ba thẻ.
-              if (_own &&
-                  !state.ok &&
-                  (state.lastError?.isNotEmpty ?? false)) ...[
+              // Gói chưa mở kho riêng: nói MỘT lần dưới danh sách, không lặp ở
+              // từng thẻ. Ba dòng cùng nội dung cạnh nhau đọc thành nhiễu, và
+              // mỗi thẻ đã có dòng khoá ngắn của riêng nó.
+              if (state.canManage && !state.byosAllowed) ...[
                 const SizedBox(height: 12),
-                _NoteBox(text: state.lastError!, danger: true),
+                _NoteBox(text: l10n.storageNotInPlan),
+              ],
+              // Nhân viên xem được mọi thứ ở trên nhưng không đổi được gì. Nói
+              // ra, đừng để họ đi tìm cái nút không tồn tại.
+              if (!state.canManage) ...[
+                const SizedBox(height: 12),
+                _NoteBox(text: l10n.storageOwnerOnly),
               ],
             ],
           ),
@@ -236,15 +290,30 @@ class _StorageOption extends StatelessWidget {
     required this.title,
     required this.description,
     required this.selected,
+    this.inUse = false,
+    this.label,
     this.lockNote,
+    this.detail,
     this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String description;
+
+  /// Kho người dùng vừa CHỌN. Khác [inUse] — và phải nhìn ra được cả hai, vì
+  /// gộp lại thì chọn xong người ta tưởng đã đổi kho rồi.
   final bool selected;
+
+  /// Kho máy chủ đang THẬT SỰ dùng.
+  final bool inUse;
+
+  /// Dòng nhận diện kho (`bucket/prefix` hoặc thư mục Drive), chỉ ở thẻ [inUse].
+  final String? label;
   final String? lockNote;
+
+  /// Bảng tình trạng hoặc lối cắm, vẽ trong cùng khung viền với thẻ.
+  final Widget? detail;
   final VoidCallback? onTap;
 
   @override
@@ -293,6 +362,27 @@ class _StorageOption extends StatelessWidget {
                         color: PenColors.success,
                       ),
                     ],
+                    // Nhãn này KHÁC dấu tích: dấu tích là "đang ngắm", nhãn là
+                    // "máy chủ đang thật sự cất video ở đây". Thiếu nó thì chọn
+                    // xong người dùng tưởng đã đổi kho rồi.
+                    if (inUse) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: PenColors.soft,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: PenText(
+                          context.l10n.storageInUse,
+                          size: 11,
+                          color: PenColors.mut,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -302,6 +392,16 @@ class _StorageOption extends StatelessWidget {
                   color: PenColors.mut,
                   lineHeight: 1.4,
                 ),
+                if (label?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: 4),
+                  PenText(
+                    label!,
+                    size: 13,
+                    color: PenColors.ink,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 if (locked) ...[
                   const SizedBox(height: 4),
                   PenText(
@@ -311,8 +411,189 @@ class _StorageOption extends StatelessWidget {
                     lineHeight: 1.4,
                   ),
                 ],
+                if (detail != null) ...[
+                  const SizedBox(height: 12),
+                  Container(height: 1, color: PenColors.line),
+                  detail!,
+                ],
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bảng tình trạng của kho ĐANG dùng: lỗi, cam kết không giữ được, năm con số,
+/// mốc rà gần nhất, rồi tới các nút thao tác.
+class _StatusDetail extends StatelessWidget {
+  const _StatusDetail({
+    required this.state,
+    required this.busy,
+    this.onTest,
+    this.onDisconnect,
+    this.onEdit,
+  });
+
+  final EcStorageState state;
+  final bool busy;
+  final VoidCallback? onTest;
+  final VoidCallback? onDisconnect;
+
+  /// Sửa cấu hình — chỉ S3. Drive không có gì để sửa ngoài cắm lại.
+  final VoidCallback? onEdit;
+
+  /// `dd/MM/yyyy HH:mm` theo giờ máy. Tự dựng thay vì kéo `intl` vào package
+  /// này: đúng một chuỗi cần định dạng, và nó không đổi theo ngôn ngữ.
+  static String _at(int ms) {
+    final t = DateTime.fromMillisecondsSinceEpoch(ms);
+    String p(int n) => n.toString().padLeft(2, '0');
+    return '${p(t.day)}/${p(t.month)}/${t.year} ${p(t.hour)}:${p(t.minute)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final health = state.health;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Câu lỗi nguyên văn của nhà cung cấp là thứ DUY NHẤT giúp chủ shop
+          // tự sửa quyền bên phía họ. Không bao giờ thay bằng câu chung.
+          if (!state.ok && (state.lastError?.isNotEmpty ?? false)) ...[
+            _NoteBox(text: state.lastError!, danger: true),
+            const SizedBox(height: 10),
+          ],
+          // Cam kết nào hứa được là do máy chủ ĐO, không do tên nhà cung cấp.
+          if (!state.presignedDownload)
+            PenText(
+              l10n.storageNoPresign,
+              size: 12,
+              color: PenColors.mut,
+              lineHeight: 1.4,
+            ),
+          if (!state.objectLock) ...[
+            const SizedBox(height: 6),
+            PenText(
+              l10n.storageNoObjectLock,
+              size: 12,
+              color: PenColors.mut,
+              lineHeight: 1.4,
+            ),
+          ],
+          const SizedBox(height: 10),
+          PenText(
+            l10n.storageHealthTitle,
+            size: 13,
+            color: PenColors.mut,
+            weight: FontWeight.w600,
+          ),
+          const SizedBox(height: 6),
+          _HealthRow(label: l10n.storageHealthTotal, value: health.total),
+          _HealthRow(label: l10n.storageHealthIntact, value: health.intact),
+          // Ba dòng sự cố chỉ hiện khi KHÁC 0 — khác bản web, cố ý. Bảng lúc
+          // nào cũng có "0 lỗi" thì mắt lướt qua rất nhanh, và đúng hôm có lỗi
+          // thật cũng không ai thấy. Màn hình điện thoại lại càng ít chỗ.
+          if (health.unreachable > 0)
+            _HealthRow(
+              label: l10n.storageHealthUnreachable,
+              value: health.unreachable,
+              danger: true,
+            ),
+          if (health.mismatched > 0)
+            _HealthRow(
+              label: l10n.storageHealthMismatched,
+              value: health.mismatched,
+              danger: true,
+            ),
+          if (health.pendingRelay > 0)
+            _HealthRow(
+              label: l10n.storageHealthPendingRelay,
+              value: health.pendingRelay,
+            ),
+          if (health.hasProblems) ...[
+            const SizedBox(height: 8),
+            _NoteBox(text: l10n.storageProblemsNote, danger: true),
+          ],
+          const SizedBox(height: 8),
+          PenText(
+            health.lastCheckedAt == null
+                ? l10n.storageNeverChecked
+                : l10n.storageLastCheckAt(_at(health.lastCheckedAt!)),
+            size: 12,
+            color: PenColors.mut,
+          ),
+          if (state.driveEmail?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 8),
+            PenText(l10n.storageDriveAccount, size: 12, color: PenColors.mut),
+            const SizedBox(height: 2),
+            PenText(
+              state.driveEmail!,
+              size: 13,
+              color: PenColors.ink,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          if (state.canManage) ...[
+            const SizedBox(height: 12),
+            PenOutlineButton(
+              label: l10n.storageTest,
+              onPressed: busy ? null : onTest,
+            ),
+            if (onEdit != null) ...[
+              const SizedBox(height: 8),
+              PenOutlineButton(
+                label: l10n.storageConnectS3,
+                onPressed: busy ? null : onEdit,
+              ),
+            ],
+            const SizedBox(height: 8),
+            PenOutlineButton(
+              label: l10n.storageDisconnect,
+              onPressed: busy ? null : onDisconnect,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HealthRow extends StatelessWidget {
+  const _HealthRow({
+    required this.label,
+    required this.value,
+    this.danger = false,
+  });
+
+  final String label;
+  final int value;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: PenText(
+              label,
+              size: 13,
+              color: danger ? PenColors.warning : PenColors.mut,
+            ),
+          ),
+          const SizedBox(width: 8),
+          PenText(
+            '$value',
+            size: 13,
+            weight: FontWeight.w700,
+            color: danger ? PenColors.warning : PenColors.ink,
           ),
         ],
       ),

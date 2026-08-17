@@ -2065,6 +2065,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get storageTest => 'Retester la connexion';
 
   @override
+  String get storageInUse => 'Utilisé';
+
+  @override
+  String storageLastCheckAt(String time) {
+    return 'Dernier audit : $time';
+  }
+
+  @override
+  String get storageNeverChecked => 'Jamais audité.';
+
+  @override
+  String get storageDriveAccount => 'Compte Drive';
+
+  @override
   String get storageDisconnect => 'Cesser d\'utiliser le stockage personnel';
 
   @override

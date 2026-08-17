@@ -2043,6 +2043,20 @@ class AppLocalizationsFil extends AppLocalizations {
   String get storageTest => 'Subukan ulit ang koneksyon';
 
   @override
+  String get storageInUse => 'Ginagamit';
+
+  @override
+  String storageLastCheckAt(String time) {
+    return 'Huling audit: $time';
+  }
+
+  @override
+  String get storageNeverChecked => 'Hindi pa naa-audit.';
+
+  @override
+  String get storageDriveAccount => 'Drive account';
+
+  @override
   String get storageDisconnect => 'Itigil ang paggamit ng sariling imbakan';
 
   @override

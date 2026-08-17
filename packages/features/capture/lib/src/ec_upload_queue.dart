@@ -127,8 +127,18 @@ class EcUploadQueue extends ChangeNotifier {
   Directory? _dir;
   Directory? _temp;
 
-  /// Newest-first view of the queue.
-  List<UploadTask> get tasks => List.unmodifiable(_tasks);
+  /// Hàng đợi CỦA TÀI KHOẢN ĐANG ĐĂNG NHẬP, mới nhất trước.
+  ///
+  /// Lọc theo người quay chứ không trả cả bảng: điện thoại dùng chung ca, A
+  /// quay rồi đăng xuất, B đăng nhập — B mà thấy hàng chờ của A thì B tưởng đó
+  /// là clip mình vừa quay, và con số trên chip ☁ nói dối về việc của chính B.
+  ///
+  /// Clip của A KHÔNG bị xoá, chỉ bị giấu: nó vẫn nằm trên đĩa và [_uploadableNow]
+  /// vẫn chặn không cho tải nó lên dưới tài khoản B. A đăng nhập lại là thấy
+  /// đủ và clip tự đi tiếp — bằng chứng chưa lên máy chủ thì không được biến
+  /// mất vì một lượt đổi tài khoản.
+  List<UploadTask> get tasks =>
+      List.unmodifiable(_tasks.where(_belongsToCurrentUser));
 
   /// Tăng một sau mỗi clip lên máy chủ thành công.
   ///
@@ -627,7 +637,14 @@ class EcUploadQueue extends ChangeNotifier {
   ///
   /// Không khớp thì GIỮ NGUYÊN ở trạng thái chờ, không xoá và không báo lỗi:
   /// A đăng nhập lại là clip tự đi tiếp.
-  bool _uploadableNow(UploadTask task) {
+  bool _uploadableNow(UploadTask task) => _belongsToCurrentUser(task);
+
+  /// Clip này có thuộc về tài khoản đang đăng nhập không.
+  ///
+  /// `null` ở một trong hai đầu = không biết → coi là CÓ: hàng lưu trước khi
+  /// có trường `ownerUid`, và lúc app chưa đọc xong phiên đăng nhập. Đoán sai
+  /// theo hướng giấu clip đi thì người bán tưởng bằng chứng của mình mất.
+  bool _belongsToCurrentUser(UploadTask task) {
     final owner = task.ownerUid;
     if (owner == null) return true;
     final current = _currentUid?.call();
@@ -640,8 +657,9 @@ class EcUploadQueue extends ChangeNotifier {
   /// Con số trên chip ☁ ở màn quay là "còn bao nhiêu clip chưa lên", nên phải
   /// đọc cái này chứ không đọc `tasks.length`: lịch sử đã xong nằm chung danh
   /// sách sẽ làm chip đếm cả những thứ không còn phải chờ.
-  int get pendingCount =>
-      _tasks.where((t) => t.state != EcUploadState.done).length;
+  int get pendingCount => _tasks
+      .where((t) => t.state != EcUploadState.done && _belongsToCurrentUser(t))
+      .length;
 
   /// Trần số hàng giữ trong danh sách. Đầy thì hàng mới vào, hàng CŨ NHẤT ra.
   ///
