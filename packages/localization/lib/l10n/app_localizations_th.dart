@@ -390,8 +390,8 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String memberInviteAccepted(String role) {
-    return '$role · รับคำเชิญแล้ว';
+  String memberInvitePending(String role) {
+    return '$role · รอการยืนยัน';
   }
 
   @override
@@ -2155,6 +2155,13 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get inviteQrRow => 'คิวอาร์โค้ด';
+
+  @override
+  String get inviteQrTitle => 'รหัสเชิญเข้าร้าน';
+
+  @override
+  String get inviteQrNote =>
+      'ให้คนที่คุณต้องการเชิญสแกนหน้าจอนี้ รหัสใช้ได้ครั้งเดียว เมื่อมีคนเข้าร่วมรหัสจะเปลี่ยน';
 
   @override
   String get inviteScanTitle => 'สแกนรหัสคำเชิญ';

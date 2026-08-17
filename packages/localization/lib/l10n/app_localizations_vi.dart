@@ -389,8 +389,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String memberInviteAccepted(String role) {
-    return '$role · đã nhận lời mời';
+  String memberInvitePending(String role) {
+    return '$role · chờ xác nhận';
   }
 
   @override
@@ -2167,6 +2167,13 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get inviteQrRow => 'Mã QR';
+
+  @override
+  String get inviteQrTitle => 'Mã mời vào cửa hàng';
+
+  @override
+  String get inviteQrNote =>
+      'Đưa màn hình này cho người bạn muốn mời quét. Mã dùng một lần — có người vào là mã đổi.';
 
   @override
   String get inviteScanTitle => 'Quét mã mời';

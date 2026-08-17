@@ -153,17 +153,17 @@
   "roleOwner": "Chủ shop",
   "roleStaff": "Nhân viên",
   "memberInviteSent": "{role} · đã gửi lời mời",
-  "@memberInviteSent": {
-    "description": "Vai trò của một lời mời đã gửi mail nhưng chưa ai nhận.",
+  "memberInvitePending": "{role} · chờ xác nhận",
+  "@memberInvitePending": {
+    "description": "Vai trò của một lời mời chưa được xác nhận. Nói theo việc CÒN PHẢI LÀM (\"chờ xác nhận\") chứ không theo việc đã xong (\"đã gửi lời mời\"): chủ shop nhìn danh sách để biết ai chưa vào được, không phải để biết mình đã bấm gì.",
     "placeholders": {
       "role": {
         "type": "String"
       }
     }
   },
-  "memberInviteAccepted": "{role} · đã nhận lời mời",
-  "@memberInviteAccepted": {
-    "description": "Vai trò của người đã vào shop bằng cách nhận lời mời.",
+  "@memberInviteSent": {
+    "description": "Vai trò của một lời mời đã gửi mail nhưng chưa ai nhận.",
     "placeholders": {
       "role": {
         "type": "String"
@@ -1144,6 +1144,8 @@
   "inviteTaken": "Lời mời này đã có người khác nhận",
   "inviteExpired": "Lời mời đã quá hạn. Nhờ chủ shop gửi lại.",
   "inviteQrRow": "Mã QR",
+  "inviteQrTitle": "Mã mời vào cửa hàng",
+  "inviteQrNote": "Đưa màn hình này cho người bạn muốn mời quét. Mã dùng một lần — có người vào là mã đổi.",
   "inviteScanTitle": "Quét mã mời",
   "inviteScanDetail": "Nhờ chủ shop mở mã QR mời rồi quét vào đây.",
   "commonShare": "Chia sẻ",

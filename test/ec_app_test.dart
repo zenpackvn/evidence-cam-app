@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:ec_data/ec_data.dart';
 import 'package:ec_ui/ec_ui.dart'
-    show LucideIcons, PenBackButton, PenBox, PenColors;
+    show LucideIcons, PenBackButton, PenBox, PenColors, PenQrCard;
 import 'package:evidence_cam/app/di/injection.dart';
 import 'package:evidence_cam/ec_app.dart';
 import 'package:feature_capture/feature_capture.dart' show debugPreviewDir;
@@ -1148,13 +1148,20 @@ void main() {
 
       expect(repo.invitedContact, 'new@b.com');
       expect(repo.invitedRole, 'staff');
-      // Hộp thoại ĐÓNG là dấu hiệu quan sát được của một lời mời đã gửi.
-      //
-      // Bản trước chờ toast "Đã gửi lời mời". Chuỗi đó vẫn nằm trong từ điển
-      // (`toastInviteSent`) nhưng KHÔNG mã nào còn gọi tới — toast đã bị bỏ, và
-      // một khoá i18n mồ côi thì không có gì bắt được. Chờ nó là chờ mãi.
       expect(find.text('Thêm thành viên'), findsNothing);
       expect(find.text('Chi tiết cửa hàng'), findsOneWidget);
+      // Mời qua email KHÔNG được chìa mã QR ra nữa — hai đường mời là hai lựa
+      // chọn, không phải một thao tác đẻ ra cả hai. Thứ báo việc đã xong là
+      // câu "Đã gửi lời mời".
+      expect(find.text('Đã gửi lời mời'), findsOneWidget);
+      expect(find.byType(PenQrCard), findsNothing);
+
+      // Bơm qua mốc toast tự tắt (1,4 giây) để nó kịp dọn `OverlayEntry` của
+      // mình. `pumpAndSettle` dừng ngay khi không còn khung nào được lên lịch,
+      // mà toast thì chờ bằng Timer — nên nếu không bơm thêm, bộ dò rò rỉ bắt
+      // được một overlay chưa dispose và cả tệp test đỏ ở `tearDownAll`.
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
     },
   );
 

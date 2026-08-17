@@ -792,11 +792,11 @@ abstract class AppLocalizations {
   /// **'{role} · invite sent'**
   String memberInviteSent(String role);
 
-  /// Role line for a member who joined by redeeming an invite.
+  /// Role line for an invite that has been emailed but not redeemed.
   ///
   /// In en, this message translates to:
-  /// **'{role} · invite accepted'**
-  String memberInviteAccepted(String role);
+  /// **'{role} · awaiting confirmation'**
+  String memberInvitePending(String role);
 
   /// No description provided for @planFree.
   ///
@@ -3937,6 +3937,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'QR code'**
   String get inviteQrRow;
+
+  /// No description provided for @inviteQrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop invite code'**
+  String get inviteQrTitle;
+
+  /// No description provided for @inviteQrNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Show this screen to the person you want to invite. The code is single-use — it changes once someone joins.'**
+  String get inviteQrNote;
 
   /// No description provided for @inviteScanTitle.
   ///

@@ -203,7 +203,8 @@
   "roleOwner": "Owner",
   "roleStaff": "Staff",
   "memberInviteSent": "{role} · invite sent",
-  "@memberInviteSent": {
+  "memberInvitePending": "{role} · awaiting confirmation",
+  "@memberInvitePending": {
     "description": "Role line for an invite that has been emailed but not redeemed.",
     "placeholders": {
       "role": {
@@ -211,9 +212,8 @@
       }
     }
   },
-  "memberInviteAccepted": "{role} · invite accepted",
-  "@memberInviteAccepted": {
-    "description": "Role line for a member who joined by redeeming an invite.",
+  "@memberInviteSent": {
+    "description": "Role line for an invite that has been emailed but not redeemed.",
     "placeholders": {
       "role": {
         "type": "String"
@@ -1429,6 +1429,8 @@
   "inviteTaken": "Someone else already accepted this invite",
   "inviteExpired": "The invite has expired. Ask the shop owner to resend it.",
   "inviteQrRow": "QR code",
+  "inviteQrTitle": "Shop invite code",
+  "inviteQrNote": "Show this screen to the person you want to invite. The code is single-use — it changes once someone joins.",
   "inviteScanTitle": "Scan invite code",
   "inviteScanDetail": "Ask the shop owner to show the invite QR code, then scan it here.",
   "commonShare": "Share",

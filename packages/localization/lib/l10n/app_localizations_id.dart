@@ -392,8 +392,8 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String memberInviteAccepted(String role) {
-    return '$role · undangan diterima';
+  String memberInvitePending(String role) {
+    return '$role · menunggu konfirmasi';
   }
 
   @override
@@ -2183,6 +2183,13 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get inviteQrRow => 'Kode QR';
+
+  @override
+  String get inviteQrTitle => 'Kode undangan toko';
+
+  @override
+  String get inviteQrNote =>
+      'Tunjukkan layar ini kepada orang yang ingin Anda undang. Kode sekali pakai — berubah begitu ada yang bergabung.';
 
   @override
   String get inviteScanTitle => 'Pindai kode undangan';

@@ -399,8 +399,8 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String memberInviteAccepted(String role) {
-    return '$role · invitación aceptada';
+  String memberInvitePending(String role) {
+    return '$role · pendiente de confirmación';
   }
 
   @override
@@ -2199,6 +2199,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get inviteQrRow => 'Código QR';
+
+  @override
+  String get inviteQrTitle => 'Código de invitación a la tienda';
+
+  @override
+  String get inviteQrNote =>
+      'Muestra esta pantalla a la persona que quieres invitar. El código es de un solo uso: cambia cuando alguien se une.';
 
   @override
   String get inviteScanTitle => 'Escanear el código de invitación';
