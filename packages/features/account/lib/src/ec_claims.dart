@@ -821,6 +821,10 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
   bool _loading = false;
   bool _notFound = false;
 
+  /// Lượt tra vừa rồi HỎNG (mạng, hoặc máy chủ trả lỗi) — khác hẳn "tra xong,
+  /// không có đơn nào". Hai thứ dẫn người dùng đi hai hướng khác nhau.
+  bool _failed = false;
+
   /// Số bằng chứng đã tick trên tất cả các mã — con số hiện ở nút tạo.
   int get _pickedCount => _picked.length;
 
@@ -852,8 +856,18 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
     setState(() {
       _loading = true;
       _notFound = false;
+      _failed = false;
     });
-    final found = await widget.onSearch(code);
+    final List<EcClaimLookup> found;
+    try {
+      found = await widget.onSearch(code);
+    } on Object {
+      // Hỏng KHÁC rỗng. "Không tìm thấy mã" bảo người bán gõ lại mã họ vừa gõ
+      // đúng; "thử lại" bảo họ chờ mạng. Gộp hai thứ vào một câu là bắt họ đi
+      // sai hướng đúng lúc đang cần bằng chứng.
+      if (mounted) setState(() => (_loading = false, _failed = true));
+      return;
+    }
     if (!mounted) return;
     setState(() {
       _loading = false;
@@ -966,6 +980,12 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
       if (_loading) {
         return const Center(child: CircularProgressIndicator.adaptive());
       }
+      // Hỏng đứng TRƯỚC "không thấy": một lượt tra hỏng thì ta không biết mã có
+      // tồn tại hay không, nên nói "không tìm thấy" là khẳng định một điều chưa
+      // đo được.
+      if (_failed) {
+        return _Hint(icon: LucideIcons.wifiOff, text: l10n.errorGenericRetry);
+      }
       if (_notFound) {
         return _Hint(icon: LucideIcons.searchX, text: l10n.claimsCreateNoOrder);
       }
@@ -981,6 +1001,16 @@ class _EcCreateClaimScreenState extends State<EcCreateClaimScreen> {
           const Padding(
             padding: EdgeInsets.only(bottom: 14),
             child: Center(child: CupertinoActivityIndicator()),
+          )
+        else if (_failed)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: PenText(
+              l10n.errorGenericRetry,
+              size: 13,
+              color: PenColors.danger,
+              align: TextAlign.center,
+            ),
           )
         else if (_notFound)
           Padding(

@@ -6161,9 +6161,18 @@ class _CreateClaimRoute extends StatelessWidget {
           ),
       ];
     } on Object {
-      // Mạng hỏng đọc ra y như "không tìm thấy mã" — cùng một màn hình rỗng.
-      // Chấp nhận được vì bước sau của người dùng giống nhau: thử lại.
-      return const [];
+      // NÉM tiếp, không nuốt.
+      //
+      // Bản trước trả `const []` cho mọi lỗi, nên màn hình nói "không tìm thấy
+      // mã" trong khi thứ vừa xảy ra là mạng chết hoặc máy chủ 500. Hai câu đó
+      // dẫn người bán đi hai hướng khác hẳn nhau: một cái bảo họ gõ lại mã (họ
+      // gõ đúng rồi), cái kia bảo họ thử lại sau.
+      //
+      // Nguy hơn: hàm này gọi `repo.order()` cho từng đơn tìm được, nên MỘT lỗi
+      // ở đường chi tiết đơn cũng biến thành "mã không tồn tại" — đúng cái lỗi
+      // người bán báo là "quét thì ra, gõ tay thì không". Nuốt lỗi ở đây là
+      // giấu mất nguyên nhân thật.
+      rethrow;
     }
   }
 
