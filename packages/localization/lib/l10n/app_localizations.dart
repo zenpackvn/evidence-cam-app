@@ -1824,6 +1824,12 @@ abstract class AppLocalizations {
   /// **'Owner/manager only · locked while a dossier is open · two-step confirm'**
   String get deleteVideoNote;
 
+  /// Chặn xoá một bằng chứng đang nằm trong hồ sơ khiếu nại. Nói ra ĐƯỜNG ĐI TIẾP (gỡ khỏi hồ sơ) chứ không chỉ nói 'không được'.
+  ///
+  /// In en, this message translates to:
+  /// **'This evidence is in claim dossier {dossier} — remove it from the dossier first, then delete.'**
+  String deleteVideoInDossier(String dossier);
+
   /// No description provided for @deleteVideoConfirmTitle.
   ///
   /// In en, this message translates to:

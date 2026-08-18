@@ -976,6 +976,11 @@ class AppLocalizationsFil extends AppLocalizations {
       'May-ari/manager lang · naka-lock habang may bukas na dossier · dalawang hakbang na kumpirmasyon';
 
   @override
+  String deleteVideoInDossier(String dossier) {
+    return 'This evidence is in claim dossier $dossier — remove it from the dossier first, then delete.';
+  }
+
+  @override
   String get deleteVideoConfirmTitle => 'Huling kumpirmasyon';
 
   @override

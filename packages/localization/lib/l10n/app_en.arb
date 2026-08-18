@@ -503,6 +503,15 @@
   "deleteVideoAction": "Delete video",
   "deletePhotoAction": "Delete photo",
   "deleteVideoNote": "Owner/manager only · locked while a dossier is open · two-step confirm",
+  "deleteVideoInDossier": "This evidence is in claim dossier {dossier} — remove it from the dossier first, then delete.",
+  "@deleteVideoInDossier": {
+    "description": "Chặn xoá một bằng chứng đang nằm trong hồ sơ khiếu nại. Nói ra ĐƯỜNG ĐI TIẾP (gỡ khỏi hồ sơ) chứ không chỉ nói 'không được'.",
+    "placeholders": {
+      "dossier": {
+        "type": "String"
+      }
+    }
+  },
   "deleteVideoConfirmTitle": "Final confirmation",
   "deleteVideoConfirmBody": "This evidence will be permanently deleted and cannot be recovered — delete anyway?",
   "deleteVideoConfirmAction": "Delete permanently",

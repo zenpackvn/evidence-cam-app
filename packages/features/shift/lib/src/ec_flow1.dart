@@ -1343,13 +1343,20 @@ class _LogoutRow extends StatelessWidget {
 class EcNoShopScreen extends StatelessWidget {
   const EcNoShopScreen({
     this.onCreate,
-    this.onInviteTap,
+    this.onAccountTap,
     this.onJoinByInvite,
     this.onLogout,
     super.key,
   });
   final VoidCallback? onCreate;
-  final VoidCallback? onInviteTap;
+
+  /// Nút Tài khoản, cùng viên xanh góc phải như màn chọn shop.
+  ///
+  /// Tài khoản vừa đăng ký rơi thẳng vào màn này và mắc kẹt: đổi ngôn ngữ, xem
+  /// hồ sơ, đổi mật khẩu đều nằm trong Tài khoản, mà đường duy nhất tới đó lại
+  /// đi qua một shop — thứ người mới chưa có. Trước đây màn này chỉ có "Đăng
+  /// xuất", nên lựa chọn thật sự là làm lại từ đầu.
+  final VoidCallback? onAccountTap;
 
   /// Quét mã QR lời mời. Đây là màn hình người vừa được mời đứng khi họ mở app
   /// lần đầu, nên nó là chỗ đúng nhất để có nút này.
@@ -1360,8 +1367,19 @@ class EcNoShopScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return PenScreen(
-      decorations: const [
-        Positioned(left: 49, top: 118, child: PenPlatformHero()),
+      decorations: [
+        const Positioned(left: 49, top: 118, child: PenPlatformHero()),
+        // Cùng vị trí, cùng hình dáng với màn chọn shop: hai màn này là hai
+        // mặt của một chỗ đứng, nên nút Tài khoản phải ở đúng một nơi.
+        if (onAccountTap != null)
+          Positioned(
+            right: 22,
+            top: 8,
+            child: SafeArea(
+              bottom: false,
+              child: _AccountPill(onTap: onAccountTap!),
+            ),
+          ),
       ],
       child: Padding(
         padding: const EdgeInsets.fromLTRB(32, 376, 32, 30),
@@ -1420,47 +1438,11 @@ class EcNoShopScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
-            // Thẻ này PHẢI bấm được: người vừa được mời vào shop mà chưa thấy
-            // shop nào thì đây là đường duy nhất để họ kiểm tra lại. Tham số
-            // `onInviteTap` vốn được truyền vào nhưng không ai dùng, nên màn
-            // này là ngõ cụt hoàn toàn — không thấy gì, không bấm được gì.
-            PenCard(
-              stroke: PenColors.soft,
-              gap: 16,
-              onTap: onInviteTap,
-              padding: const EdgeInsets.symmetric(
-                vertical: 14,
-                horizontal: 16,
-              ),
-              children: [
-                const PenBox(
-                  width: 44,
-                  height: 44,
-                  fill: PenColors.soft,
-                  radius: 999,
-                  axis: PenAxis.row,
-                  main: MainAxisAlignment.center,
-                  cross: CrossAxisAlignment.center,
-                  children: [
-                    Icon(LucideIcons.mail, size: 22, color: PenColors.success),
-                  ],
-                ),
-                Expanded(
-                  child: PenText(
-                    l10n.noShopInviteHint,
-                    size: 14,
-                    color: PenColors.ink,
-                  ),
-                ),
-                if (onInviteTap != null)
-                  const Icon(
-                    LucideIcons.refreshCw,
-                    size: 20,
-                    color: PenColors.mut,
-                  ),
-              ],
-            ),
+            // Chỉ còn MỘT đường nhận lời mời: hàng "Tôi có lời mời" ngay dưới.
+            // Trước đây trên nó còn một thẻ "Lời mời vào shop sẽ hiện ở đây",
+            // nhưng bên gọi nối cả hai vào cùng một hàm `_joinByInvite` — bấm
+            // chỗ nào cũng ra đúng màn quét mã. Hai hàng cho một việc chỉ làm
+            // người mới tưởng đây là hai thứ khác nhau.
             if (onJoinByInvite != null) ...[
               const SizedBox(height: 14),
               _JoinByInviteRow(onTap: onJoinByInvite),
@@ -3641,6 +3623,7 @@ class EcOrderRow {
     required this.time,
     required this.type,
     required this.videoCount,
+    this.photoCount = 0,
     this.capturedAtMs,
     this.errorCount = 0,
     this.pendingCount = 0,
@@ -3656,6 +3639,11 @@ class EcOrderRow {
   /// Video type label, e.g. "Đóng hàng đi".
   final String type;
   final int videoCount;
+
+  /// Ảnh đính kèm còn sống trong đơn. Dòng chỉ vẽ số này khi nó > 0: máy chủ
+  /// KHÔNG trả số ảnh trong danh sách đơn, nên với đơn chưa mở lần nào thì app
+  /// không biết — in "0 ảnh" ở đó là nói sai chứ không phải nói thiếu.
+  final int photoCount;
 
   /// Lần quay gần nhất (đơn chưa có clip thì lùi về lúc tạo đơn), epoch ms.
   /// Dùng cho nhãn ngày trên dòng — [time] chỉ có `HH:mm` nên không suy ra
@@ -4857,6 +4845,20 @@ class _OrderTile extends StatelessWidget {
                   weight: FontWeight.w700,
                   softWrap: false,
                 ),
+                if (order.photoCount > 0) ...[
+                  const Icon(
+                    LucideIcons.image,
+                    size: 19,
+                    color: PenColors.primary,
+                  ),
+                  PenText(
+                    '${order.photoCount}',
+                    size: 16,
+                    color: PenColors.primary,
+                    weight: FontWeight.w700,
+                    softWrap: false,
+                  ),
+                ],
               ],
             ),
           const Icon(

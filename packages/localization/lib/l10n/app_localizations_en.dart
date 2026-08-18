@@ -969,6 +969,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Owner/manager only · locked while a dossier is open · two-step confirm';
 
   @override
+  String deleteVideoInDossier(String dossier) {
+    return 'This evidence is in claim dossier $dossier — remove it from the dossier first, then delete.';
+  }
+
+  @override
   String get deleteVideoConfirmTitle => 'Final confirmation';
 
   @override

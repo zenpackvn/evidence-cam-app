@@ -966,6 +966,11 @@ class AppLocalizationsId extends AppLocalizations {
       'Hanya pemilik/pengelola · terkunci saat ada berkas terbuka · konfirmasi dua langkah';
 
   @override
+  String deleteVideoInDossier(String dossier) {
+    return 'This evidence is in claim dossier $dossier — remove it from the dossier first, then delete.';
+  }
+
+  @override
   String get deleteVideoConfirmTitle => 'Konfirmasi akhir';
 
   @override

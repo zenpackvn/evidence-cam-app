@@ -20,6 +20,7 @@ class EcClaimDossier {
     this.title = '',
     this.claimId,
     this.shareUrl,
+    this.revoked = false,
   });
 
   factory EcClaimDossier.fromJson(Map<String, dynamic> j) => EcClaimDossier(
@@ -31,6 +32,7 @@ class EcClaimDossier {
     title: (j['title'] as String?) ?? '',
     claimId: j['claim_id'] as String?,
     shareUrl: j['share_url'] as String?,
+    revoked: (j['revoked'] as bool?) ?? false,
     orders: [
       for (final o in (j['orders'] as List<dynamic>? ?? const []))
         EcClaimOrder.fromJson(o as Map<String, dynamic>),
@@ -67,6 +69,14 @@ class EcClaimDossier {
   /// tưởng bằng chứng khiếu nại của họ đã an toàn trên máy chủ.
   final String? shareUrl;
 
+  /// Hồ sơ đã bị thu hồi — link công khai chết, sàn không xem được nữa.
+  ///
+  /// Lưu xuống máy chứ không chỉ giữ trong màn danh sách: màn xoá bằng chứng
+  /// cần biết điều này để thôi khoá. Một hồ sơ đã thu hồi không còn là bộ bằng
+  /// chứng đang đi kiện, nên giữ khoá clip của nó chỉ làm người bán kẹt lại
+  /// với thứ họ đã tự tay gỡ xuống.
+  final bool revoked;
+
   /// Tổng số bằng chứng trong hồ sơ, cho nhãn tóm tắt ở dòng cha.
   int get evidenceCount =>
       orders.fold(0, (total, o) => total + o.evidence.length);
@@ -78,6 +88,7 @@ class EcClaimDossier {
     if (title.isNotEmpty) 'title': title,
     if (claimId != null) 'claim_id': claimId,
     if (shareUrl != null) 'share_url': shareUrl,
+    if (revoked) 'revoked': true,
     'orders': [for (final o in orders) o.toJson()],
   };
 
@@ -88,6 +99,7 @@ class EcClaimDossier {
     List<EcClaimOrder>? orders,
     String? claimId,
     String? shareUrl,
+    bool? revoked,
     bool clearLink = false,
   }) => EcClaimDossier(
     id: id,
@@ -97,6 +109,7 @@ class EcClaimDossier {
     title: title,
     claimId: clearLink ? claimId : (claimId ?? this.claimId),
     shareUrl: clearLink ? shareUrl : (shareUrl ?? this.shareUrl),
+    revoked: revoked ?? this.revoked,
   );
 }
 
@@ -154,6 +167,7 @@ class EcClaimEvidence {
     this.addedLater = false,
     this.capturedAt,
     this.addedBy,
+    this.recordedBy,
   });
 
   factory EcClaimEvidence.fromJson(Map<String, dynamic> j) => EcClaimEvidence(
@@ -166,6 +180,7 @@ class EcClaimEvidence {
     addedLater: (j['added_later'] as bool?) ?? false,
     capturedAt: (j['captured_at'] as num?)?.toInt(),
     addedBy: j['added_by'] as String?,
+    recordedBy: j['recorded_by'] as String?,
   );
 
   final String id;
@@ -193,6 +208,13 @@ class EcClaimEvidence {
   /// nhất còn biết được về sau.
   final String? addedBy;
 
+  /// Người quay clip, chép sang lúc đưa vào hồ sơ.
+  ///
+  /// Máy chủ để trống `recorded_by` nên trang công khai in chuỗi mặc định của
+  /// nó. Bản trên máy thì tra được — nhưng chỉ tra được ĐÚNG LÚC người dùng
+  /// tick, khi màn đơn còn giữ bản đồ tên. Không chép ngay thì về sau mất hẳn.
+  final String? recordedBy;
+
   /// Lúc quay/chụp, epoch ms. Dùng để hiện NGÀY ở dòng mã vận đơn — [time] chỉ
   /// có `HH:mm`, mà một hồ sơ gộp nhiều đơn thì các đơn có thể ở khác ngày.
   ///
@@ -210,5 +232,6 @@ class EcClaimEvidence {
     'added_later': addedLater,
     'captured_at': ?capturedAt,
     'added_by': ?addedBy,
+    'recorded_by': ?recordedBy,
   };
 }

@@ -364,6 +364,7 @@
   "deleteVideoAction": "Xóa video",
   "deletePhotoAction": "Xóa ảnh",
   "deleteVideoNote": "Chỉ Chủ/QL shop · khóa nếu hồ sơ đang mở · xác nhận 2 bước",
+  "deleteVideoInDossier": "Bằng chứng này đang nằm trong hồ sơ khiếu nại {dossier} — gỡ khỏi hồ sơ trước rồi mới xoá được.",
   "deleteVideoConfirmTitle": "Xác nhận lần cuối",
   "deleteVideoConfirmBody": "Bằng chứng sẽ mất vĩnh viễn, không thể khôi phục — vẫn xóa?",
   "deleteVideoConfirmAction": "Xóa vĩnh viễn",

@@ -956,6 +956,11 @@ class AppLocalizationsTh extends AppLocalizations {
       'เฉพาะเจ้าของ/ผู้จัดการ · ล็อกไว้ระหว่างมีแฟ้มเปิดอยู่ · ยืนยันสองขั้น';
 
   @override
+  String deleteVideoInDossier(String dossier) {
+    return 'This evidence is in claim dossier $dossier — remove it from the dossier first, then delete.';
+  }
+
+  @override
   String get deleteVideoConfirmTitle => 'ยืนยันครั้งสุดท้าย';
 
   @override

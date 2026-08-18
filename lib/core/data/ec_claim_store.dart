@@ -54,6 +54,28 @@ class EcClaimStore extends ChangeNotifier {
     return List.unmodifiable(loaded);
   }
 
+  /// Hồ sơ khiếu nại đầu tiên đang giữ bằng chứng [evidenceId], hoặc `null`.
+  ///
+  /// Màn chi tiết video hứa sẵn "khóa nếu hồ sơ đang mở" trong dòng ghi chú
+  /// dưới nút xoá, nhưng trước đây không có gì tra ngược được từ một bằng
+  /// chứng về hồ sơ chứa nó — nên lời hứa đó chưa bao giờ được thực thi. Xoá
+  /// mất một clip đang nằm trong hồ sơ là làm thủng chính bộ bằng chứng người
+  /// bán dựng lên để khiếu nại.
+  EcClaimDossier? dossierWithEvidence(String shopId, String evidenceId) {
+    if (evidenceId.isEmpty) return null;
+    for (final dossier in forShop(shopId)) {
+      // Hồ sơ đã thu hồi không khoá gì cả: link công khai đã chết, sàn không
+      // còn xem được, nên clip trong đó lại là tài sản riêng của người bán.
+      if (dossier.revoked) continue;
+      for (final order in dossier.orders) {
+        for (final item in order.evidence) {
+          if (item.id == evidenceId) return dossier;
+        }
+      }
+    }
+    return null;
+  }
+
   EcClaimDossier? byId(String shopId, String dossierId) {
     for (final d in forShop(shopId)) {
       if (d.id == dossierId) return d;
@@ -90,6 +112,46 @@ class EcClaimStore extends ChangeNotifier {
   /// Thêm một hồ sơ mới lên đầu danh sách.
   Future<void> add(EcClaimDossier dossier) =>
       _write(dossier.shopId, [dossier, ...forShop(dossier.shopId)]);
+
+  /// Đánh dấu hồ sơ đã bị thu hồi, giữ nguyên nội dung.
+  ///
+  /// Không xoá: người bán vẫn phải xem lại được mình đã gửi những gì. Nhưng từ
+  /// giây này clip trong đó thôi bị khoá xoá — hồ sơ đã gỡ xuống thì không còn
+  /// là bộ bằng chứng đang đi kiện.
+  Future<void> markRevoked(String shopId, String dossierId) async {
+    final list = forShop(shopId);
+    final updated = [
+      for (final d in list)
+        if (d.id == dossierId) d.copyWith(revoked: true) else d,
+    ];
+    await _write(shopId, updated);
+  }
+
+  /// Đồng bộ cờ thu hồi từ máy chủ xuống bản trên máy.
+  ///
+  /// [revokedClaimIds] là `claim_id` của những hồ sơ máy chủ nói đã thu hồi.
+  /// Chỉ [markRevoked] thôi thì không đủ: nó chỉ chạy khi người dùng bấm thu
+  /// hồi NGAY TRONG app và ngay trên máy này. Hồ sơ thu hồi ở web, ở máy khác,
+  /// hoặc thu hồi từ trước khi có phần lưu cờ này, đều nằm lại với cờ tắt — và
+  /// clip của chúng bị khoá xoá vĩnh viễn dù link đã chết từ lâu.
+  Future<void> syncRevoked(String shopId, Set<String> revokedClaimIds) async {
+    if (revokedClaimIds.isEmpty) return;
+    final list = forShop(shopId);
+    var changed = false;
+    final updated = [
+      for (final d in list)
+        if (!d.revoked &&
+            d.claimId != null &&
+            revokedClaimIds.contains(d.claimId)) ...[
+          () {
+            changed = true;
+            return d.copyWith(revoked: true);
+          }(),
+        ] else
+          d,
+    ];
+    if (changed) await _write(shopId, updated);
+  }
 
   Future<void> remove(String shopId, String dossierId) => _write(shopId, [
     for (final d in forShop(shopId))
@@ -185,8 +247,14 @@ String ecClaimSummaryText(EcClaimDossier dossier, {required String title}) {
     lines.add(order.tracking);
     for (final e in order.evidence) {
       final url = e.url;
+      // Người quay đi kèm ngay trên dòng clip. Tên này được chép vào hồ sơ
+      // đúng lúc người bán tick, vì về sau không tra lại được: bản đồ tên dựng
+      // từ danh sách thành viên, mà tuyến đó chỉ chủ shop gọi được.
+      final by = e.recordedBy?.trim() ?? '';
       lines.add(
-        '  • ${e.label}  ${e.time}${url == null || url.isEmpty ? '' : '  $url'}',
+        '  • ${e.label}  ${e.time}'
+        '${by.isEmpty ? '' : '  · $by'}'
+        '${url == null || url.isEmpty ? '' : '  $url'}',
       );
     }
     lines.add('');

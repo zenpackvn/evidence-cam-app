@@ -963,6 +963,11 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chỉ Chủ/QL shop · khóa nếu hồ sơ đang mở · xác nhận 2 bước';
 
   @override
+  String deleteVideoInDossier(String dossier) {
+    return 'Bằng chứng này đang nằm trong hồ sơ khiếu nại $dossier — gỡ khỏi hồ sơ trước rồi mới xoá được.';
+  }
+
+  @override
   String get deleteVideoConfirmTitle => 'Xác nhận lần cuối';
 
   @override

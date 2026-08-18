@@ -140,6 +140,47 @@ class EcUploadQueue extends ChangeNotifier {
   List<UploadTask> get tasks =>
       List.unmodifiable(_tasks.where(_belongsToCurrentUser));
 
+  /// Hàng đợi CỦA MỘT SHOP.
+  ///
+  /// [tasks] lọc theo tài khoản, không theo shop — nên người có hai shop mở
+  /// màn Hàng đợi ở shop A vẫn thấy clip vừa quay ở shop B, và con số trên
+  /// icon hàng đợi cộng gộp cả hai. Người đóng gói đọc màn đó để biết "clip
+  /// vừa quay lên chưa"; trộn shop khác vào là trả lời sai câu hỏi đó.
+  List<UploadTask> tasksForShop(String? shopId) => shopId == null
+      ? const []
+      : List.unmodifiable(
+          _tasks.where((t) => t.shopId == shopId && _belongsToCurrentUser(t)),
+        );
+
+  /// Số việc chưa xong của riêng [shopId] — con số trên icon hàng đợi.
+  int pendingCountForShop(String? shopId) => tasksForShop(
+    shopId,
+  ).where((t) => t.state != EcUploadState.done).length;
+
+  /// Xoá sạch hàng đợi CỦA MỘT SHOP, cùng ý nghĩa với [clearAll].
+  ///
+  /// Tách riêng vì màn Hàng đợi nay chỉ hiện việc của shop đang mở: nút "Xoá
+  /// hết" ở đó mà quét cả hàng của shop khác thì nó xoá đúng những thứ người
+  /// dùng không nhìn thấy và không hề định đụng tới.
+  Future<void> clearShop(String? shopId) async {
+    if (shopId == null) return;
+    final mine = _tasks.where((t) => t.shopId == shopId).toList();
+    if (mine.isEmpty) return;
+    final ids = [for (final task in mine) task.id];
+    final paths = [
+      for (final task in mine)
+        if (task.state != EcUploadState.done) absolutePathOf(task.filePath),
+    ];
+    _tasks.removeWhere((t) => t.shopId == shopId);
+    notifyListeners();
+    for (final id in ids) {
+      await _store.remove(id);
+    }
+    for (final path in paths) {
+      await _deleteLocalCopyQuietly(path);
+    }
+  }
+
   /// Tăng một sau mỗi clip lên máy chủ thành công.
   ///
   /// Màn hạn mức nghe cái này để hỏi lại `/api/quota`. Một `ValueNotifier`

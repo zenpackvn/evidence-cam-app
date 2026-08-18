@@ -722,9 +722,17 @@ class EcClaimPickable {
     this.capturedAt,
     this.day,
     this.thumbUrl,
+    this.recordedBy,
   });
 
   final String id;
+
+  /// Người quay, đã tra sẵn ở màn đơn.
+  ///
+  /// Hồ sơ khiếu nại chép clip sang thì phải chép cả thông tin của nó: tra lại
+  /// về sau là không tra được nữa, vì bản đồ tên chỉ dựng được từ danh sách
+  /// thành viên mà tuyến đó chỉ chủ shop gọi được.
+  final String? recordedBy;
 
   /// Id của ĐƠN chứa bằng chứng này trên máy chủ. Hồ sơ giữ lại để về sau còn
   /// đọc được chi tiết bằng chứng (thời lượng, thiết bị, trạng thái niêm

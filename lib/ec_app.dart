@@ -2710,7 +2710,13 @@ const _recordBranchIndex = 1;
 /// clip chưa hề được máy chủ giữ.
 /// Số clip CÒN PHẢI LÊN — chip ☁ ở màn quay nói về việc chưa xong, nên lịch sử
 /// đã lên xong nằm chung danh sách không được tính vào đây.
-int _pendingUploads(EcUploadQueue queue) => queue.pendingCount;
+/// Con số trên icon hàng đợi — CHỈ của shop đang mở.
+///
+/// Trước đây đọc `queue.pendingCount`, vốn chỉ lọc theo tài khoản: người có
+/// hai shop vừa tạo shop mới đã thấy icon báo sẵn vài việc, và đó là việc của
+/// shop kia.
+int _pendingUploads(EcUploadQueue queue, String? shopId) =>
+    queue.pendingCountForShop(shopId);
 
 /// The shop clocked into at Flow 1. Direct deep links must handle null
 /// explicitly instead of silently using a fake shop.
@@ -3207,13 +3213,10 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
         if (shops.isEmpty) {
           return EcNoShopScreen(
             onCreate: widget.onCreateShop,
+            // Cùng đích với nút Tài khoản ở màn chọn shop ngay dưới: tài khoản
+            // chưa có shop vẫn phải vào được hồ sơ của chính mình.
+            onAccountTap: widget.onAccount,
             onJoinByInvite: () async {
-              if (await _joinByInvite(context, widget.repo)) _retry();
-            },
-            // Nạp lại thật, không chỉ hiện thông báo: người vừa được mời bấm
-            // vào đây là để hỏi "đã vào chưa", mà một câu toast thì không trả
-            // lời được câu đó.
-            onInviteTap: () async {
               if (await _joinByInvite(context, widget.repo)) _retry();
             },
             onLogout: widget.onLogout,
@@ -4426,6 +4429,29 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     super.initState();
     _loadFirst().then((_) => _reconcilePreviews());
     _loadVideoTypes();
+    // Tự làm mới khi có clip vừa lên xong.
+    //
+    // Trước đây danh sách chỉ đọc lại lúc mở màn hoặc khi người dùng tự vuốt
+    // xuống: quay xong quay lại đây thì dòng đơn vẫn mang số cũ, và người bán
+    // phải vuốt mới thấy clip mình vừa quay được tính. `uploadsCompleted` bắn
+    // đúng một lần mỗi clip lên xong — không phải mỗi phần trăm tiến độ — nên
+    // nghe nó không biến màn này thành một tràng request.
+    widget.queue.uploadsCompleted.addListener(_refreshOnUpload);
+  }
+
+  /// Đọc lại danh sách sau khi một clip lên máy chủ xong.
+  ///
+  /// Giữ nguyên trang và bộ lọc đang xem: người bán đang đứng ở trang 3 mà bị
+  /// kéo về trang 1 vì một clip nền vừa lên là mất chỗ đang làm.
+  void _refreshOnUpload() {
+    if (!mounted) return;
+    unawaited(_refresh());
+  }
+
+  @override
+  void dispose() {
+    widget.queue.uploadsCompleted.removeListener(_refreshOnUpload);
+    super.dispose();
   }
 
   /// Xoá bản xem tạm của những clip máy chủ đã đóng dấu xong.
@@ -4667,6 +4693,26 @@ class _OrdersRouteState extends State<_OrdersRoute> {
   int _errorCount(OrderSummaryDto o) =>
       widget.evidenceCountOverrides?[o.tracking]?.$2 ?? o.errorCount;
 
+  /// Số ảnh đính kèm, CHỈ khi app thật sự biết — tức đơn đã được mở ra ít nhất
+  /// một lần trong phiên này. Máy chủ không trả số ảnh trong danh sách đơn, và
+  /// `evidenceCount` thì gộp cả clip hỏng lẫn clip đã xoá nên trừ ra không ra
+  /// số đúng. Chưa biết thì trả 0 và dòng không vẽ gì — thà thiếu còn hơn sai.
+  int _photoCount(OrderSummaryDto o) =>
+      widget.evidenceCountOverrides?[o.tracking]?.$3 ?? 0;
+
+  /// Đơn không còn giữ bằng chứng nào thì biến khỏi danh sách.
+  ///
+  /// Quét một mã là tạo ngay một đơn trên máy chủ, kể cả khi người dùng thoát
+  /// ra mà không quay gì. Những đơn rỗng đó dồn lại thành rác che mất các đơn
+  /// thật. Đơn còn thứ gì đang chờ tải hoặc đang lỗi thì VẪN giữ — chúng chưa
+  /// rỗng, chỉ là chưa lên tới nơi, và giấu đi là giấu luôn việc còn phải làm.
+  bool _hasEvidence(OrderSummaryDto o) {
+    if (o.pendingCount > 0 || _errorCount(o) > 0) return true;
+    final known = widget.evidenceCountOverrides?[o.tracking];
+    if (known != null) return known.$1 > 0 || known.$3 > 0;
+    return o.evidenceCount > 0;
+  }
+
   EcOrderRow _toRow(AppLocalizations l10n, OrderSummaryDto o) {
     final capturedAt = o.lastCapturedAt;
     return EcOrderRow(
@@ -4676,6 +4722,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
           : _hhmm(DateTime.fromMillisecondsSinceEpoch(capturedAt)),
       type: o.latestType ?? l10n.orderNoEvidence,
       videoCount: _videoCount(o),
+      photoCount: _photoCount(o),
       // Ưu tiên lần quay gần nhất; đơn chưa có bằng chứng thì lấy lúc tạo đơn.
       // Đây là nhãn ngày của dòng, KHÔNG phải thứ chip thời gian lọc theo —
       // chip lọc `created_at`, và việc đó nay do server làm.
@@ -4710,7 +4757,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         accent: PenColors.success,
       ),
       EcHomeStat(
-        value: '${_pendingUploads(queue)}',
+        value: '${_pendingUploads(queue, widget.shopId)}',
         label: context.l10n.statPendingUpload,
         icon: LucideIcons.cloudUpload,
         accent: PenColors.warning,
@@ -4744,7 +4791,10 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     // `upload_status`, bản ghi vẫn còn nên `evidence_count` không hề giảm. Đơn
     // rỗng giờ hiện với 0 video — đó là sự thật, và web cũng cố tình nêu chúng
     // ra ở mục "đơn cần xử lý".
-    final rows = _orders.map((o) => _toRow(context.l10n, o)).toList();
+    final rows = _orders
+        .where(_hasEvidence)
+        .map((o) => _toRow(context.l10n, o))
+        .toList();
     return ListenableBuilder(
       listenable: Listenable.merge([
         widget.queue,
@@ -4935,6 +4985,18 @@ class _OrderRouteState extends State<_OrderRoute> {
   void initState() {
     super.initState();
     widget.queue.addListener(_onQueueChanged);
+    // Tải XONG cũng phải nạp lại, không chỉ lúc có việc vào/ra hàng đợi.
+    //
+    // `_onQueueChanged` so theo tập id, mà một task tải xong KHÔNG rời danh
+    // sách — nó chỉ đổi trạng thái sang `done`. Tập id y nguyên nên không lần
+    // nạp lại nào chạy, và tấm ảnh vừa đính chỉ hiện ra sau khi người dùng
+    // thoát ra vào lại. `uploadsCompleted` bắn đúng một lần mỗi clip lên xong,
+    // nên nó là tín hiệu duy nhất nói được "server đã có nó rồi, đọc lại đi".
+    widget.queue.uploadsCompleted.addListener(_onUploadCompleted);
+  }
+
+  void _onUploadCompleted() {
+    if (mounted) _retry();
   }
 
   @override
@@ -4942,6 +5004,7 @@ class _OrderRouteState extends State<_OrderRoute> {
     _sealPoll?.cancel();
     _openDetail.dispose();
     widget.queue.removeListener(_onQueueChanged);
+    widget.queue.uploadsCompleted.removeListener(_onUploadCompleted);
     super.dispose();
   }
 
@@ -4981,9 +5044,28 @@ class _OrderRouteState extends State<_OrderRoute> {
     );
   }
 
+  /// Đơn này đã từng có bằng chứng trong phiên xem hiện tại.
+  ///
+  /// Chốt an toàn cho lượt tự thoát ngay dưới: quét một mã là tạo đơn rỗng
+  /// NGAY, trước khi người dùng kịp quay gì. Không có cờ này thì vừa quét xong
+  /// mở đơn ra là bị đá về danh sách — đúng lúc họ định bấm quay.
+  bool _hadEvidence = false;
+
   /// Đẩy dữ liệu vừa nạp vào sheet đang mở, rồi hẹn lượt hỏi tiếp nếu cần.
   void _afterLoad(_OrderDetailData data) {
     if (!mounted) return;
+    // Xoá hết bằng chứng thì đơn không còn gì để xem: nó cũng biến khỏi danh
+    // sách vận đơn (xem `_hasEvidence`), nên đứng lại đây là đứng trong một
+    // màn rỗng của một đơn không còn tồn tại trong mắt người dùng.
+    final live = data.detail.evidence.where(
+      (e) => !const {'deleted', 'expired', 'error'}.contains(e.uploadStatus),
+    );
+    if (live.isNotEmpty) {
+      _hadEvidence = true;
+    } else if (_hadEvidence && _pendingCount == 0) {
+      widget.onBack?.call();
+      return;
+    }
     final l10n = context.l10n;
     final id = _openEvidenceId;
     if (id != null) {
@@ -5033,10 +5115,20 @@ class _OrderRouteState extends State<_OrderRoute> {
           e.kind == 'video' &&
           !const {'deleted', 'expired', 'error'}.contains(e.uploadStatus),
     );
+    // Ảnh đính kèm đếm riêng, cùng bộ lọc trạng thái với video: danh sách đơn
+    // chỉ có `video_count` của máy chủ, nên số ảnh CHỈ biết được khi người dùng
+    // đã mở đơn ra một lần. Không đếm ở đây thì dòng đơn vĩnh viễn không nói
+    // được đơn có mấy tấm ảnh.
+    final livePhotos = detail.evidence.where(
+      (e) =>
+          e.kind != 'video' &&
+          !const {'deleted', 'expired', 'error'}.contains(e.uploadStatus),
+    );
     widget.evidenceCountOverrides?.report(
       widget.order.tracking,
       liveVideos.length,
       detail.evidence.where((e) => e.uploadStatus == 'error').length,
+      livePhotos.length,
     );
     final types = await widget.repo.videoTypes(widget.shop.id);
     // Mã đã gắn thêm. Hỏng thì để rỗng chứ không làm sập cả màn chi tiết:
@@ -5118,6 +5210,30 @@ class _OrderRouteState extends State<_OrderRoute> {
 
   int get _pendingCount => _pendingTasks.length;
 
+  /// Ảnh vừa đính nhưng CHƯA lên máy chủ, dựng thành hàng để hiện ngay.
+  ///
+  /// Danh sách bằng chứng của đơn dựng từ dữ liệu máy chủ, mà ảnh vừa chọn thì
+  /// mới nằm trong hàng đợi trên máy — nên trước đây bấm đính xong màn hình
+  /// không đổi gì, người dùng phải thoát ra vào lại mới thấy. Lấy thẳng từ
+  /// hàng đợi nên hàng tự biến mất khi tải lên xong: không có sổ sách nào phải
+  /// tự tay dọn.
+  ///
+  /// CHỈ ảnh, không gồm video: video chờ tải vẫn ở nguyên trang Hàng đợi như
+  /// quyết định cũ. Ảnh khác ở chỗ người dùng vừa tự tay chọn nó xong và đang
+  /// nhìn đúng màn này để xem nó đã vào chưa.
+  List<EcTimelineVideo> _pendingPhotoRows(AppLocalizations l10n) => [
+    for (final task in _pendingTasks)
+      if (task.type == 'Ảnh đính kèm')
+        EcTimelineVideo(
+          time: _hhmm(DateTime.now()),
+          label: task.type,
+          localPath: widget.queue.absolutePathOf(task.filePath),
+          type: EcEvidenceType.image,
+          statusText: l10n.uploadStatusPending,
+          uploadStatus: l10n.uploadStatusPending,
+        ),
+  ];
+
   /// Bằng chứng đã lên server nhưng upload hỏng — R2 không có object, nên hồ
   /// sơ khiếu nại sẽ thiếu đúng những clip này. Hàng chờ local (`_pendingTasks`)
   /// không biết gì về chúng: task đã rời hàng chờ từ lâu, chỉ bản ghi trên
@@ -5175,43 +5291,60 @@ class _OrderRouteState extends State<_OrderRoute> {
         );
         return ListenableBuilder(
           listenable: widget.queue,
-          builder: (context, _) => EcOrderTimelineScreen(
-            orderCode: data.detail.order.tracking,
-            days: days,
-            pendingUploadCount: _pendingCount + _failedCount(data.detail),
-            onBack: widget.onBack,
-            onVideoTap: _openVideoDetail,
-            onVideoMenu: _openVideoDetail,
-            onCopyCode: () => _copyText(
-              context,
-              data.detail.order.tracking,
-              context.l10n.labelTrackingCode,
-            ),
-            onRetryUpload: () => unawaited(_retryPendingUploads()),
-            // Backend chưa có endpoint gộp bằng chứng thành hồ sơ, nên nút chỉ
-            // báo đang chờ. Giữ nguyên như trước khi khối này bị gỡ.
-            onCreateLink: (picked) =>
-                _toast(context, context.l10n.bundleBackendPending),
-            // Nạp lại NGAY sau khi đính: ảnh mới chỉ vào hàng đợi, còn danh
-            // sách bằng chứng dựng từ dữ liệu server. Không nạp lại thì phải
-            // thoát ra vào lại mới thấy ảnh vừa chọn.
-            extraCodes: _extraCodes,
-            onAttachCode: widget.onScan == null
-                ? null
-                : () => unawaited(_attachCode(context)),
-            onAttachPhoto: () => unawaited(
-              _attachPhoto(
+          builder: (context, _) {
+            // Ảnh vừa đính đứng trên cùng cho tới khi máy chủ nhận được nó.
+            // Đây là ngoại lệ CÓ CHỦ Ý của quy tắc "danh sách chỉ gồm clip máy
+            // chủ đã thật sự giữ" ngay trên: nó chỉ áp cho ảnh người dùng vừa
+            // tự tay chọn, và hàng mang nhãn "Đang chờ tải" để không ai nhầm
+            // nó đã được máy chủ đóng dấu.
+            //
+            // PHẢI tính TRONG builder này. Tính ở ngoài thì nó chỉ chạy lại khi
+            // lượt đọc máy chủ trả về, còn lượt chọn ảnh chỉ đụng vào hàng đợi
+            // — `ListenableBuilder` chạy lại nhưng dùng lại đúng danh sách cũ,
+            // nên màn hình đứng im cho tới khi thoát ra vào lại.
+            final pendingPhotos = _pendingPhotoRows(context.l10n);
+            final shownDays = pendingPhotos.isEmpty
+                ? days
+                : [
+                    EcTimelineDay(
+                      date: _dateLabel(DateTime.now()),
+                      videos: pendingPhotos,
+                    ),
+                    ...days,
+                  ];
+            return EcOrderTimelineScreen(
+              orderCode: data.detail.order.tracking,
+              days: shownDays,
+              pendingUploadCount: _pendingCount + _failedCount(data.detail),
+              onBack: widget.onBack,
+              onVideoTap: _openVideoDetail,
+              onVideoMenu: _openVideoDetail,
+              onCopyCode: () => _copyText(
                 context,
-                widget.queue,
                 data.detail.order.tracking,
-                widget.shop.id,
-                budget: widget.shop.clipBudget,
-                platformLabel: _platformDisplayName(widget.shop.platform),
-              ).then((_) {
-                if (mounted) _retry();
-              }),
-            ),
-          ),
+                context.l10n.labelTrackingCode,
+              ),
+              onRetryUpload: () => unawaited(_retryPendingUploads()),
+              // Backend chưa có endpoint gộp bằng chứng thành hồ sơ, nên nút chỉ
+              // báo đang chờ. Giữ nguyên như trước khi khối này bị gỡ.
+              onCreateLink: (picked) =>
+                  _toast(context, context.l10n.bundleBackendPending),
+              extraCodes: _extraCodes,
+              onAttachCode: widget.onScan == null
+                  ? null
+                  : () => unawaited(_attachCode(context)),
+              onAttachPhoto: () => unawaited(
+                _attachPhoto(
+                  context,
+                  widget.queue,
+                  data.detail.order.tracking,
+                  widget.shop.id,
+                  budget: widget.shop.clipBudget,
+                  platformLabel: _platformDisplayName(widget.shop.platform),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -5244,18 +5377,22 @@ class _OrderDetailData {
 /// tự cập nhật. Màn chi tiết dù sao cũng phải tải toàn bộ bằng chứng để vẽ
 /// chính nó, nên số đúng được lấy luôn từ lần tải đó — không tốn thêm request.
 class _EvidenceCountOverrides extends ChangeNotifier {
-  final Map<String, (int count, int errorCount)> _byTracking = {};
+  final Map<String, (int count, int errorCount, int photoCount)> _byTracking =
+      {};
 
-  void report(String tracking, int count, int errorCount) {
+  void report(String tracking, int count, int errorCount, int photoCount) {
     final current = _byTracking[tracking];
-    if (current != null && current.$1 == count && current.$2 == errorCount) {
+    if (current != null &&
+        current.$1 == count &&
+        current.$2 == errorCount &&
+        current.$3 == photoCount) {
       return;
     }
-    _byTracking[tracking] = (count, errorCount);
+    _byTracking[tracking] = (count, errorCount, photoCount);
     notifyListeners();
   }
 
-  (int count, int errorCount)? operator [](String tracking) =>
+  (int count, int errorCount, int photoCount)? operator [](String tracking) =>
       _byTracking[tracking];
 }
 
@@ -5900,6 +6037,14 @@ class _ClaimListRouteState extends State<_ClaimListRoute> {
   Future<void> _load() async {
     try {
       final rows = await widget.repo.listClaims(widget.shopId);
+      // Ghi cờ thu hồi xuống kho ngay tại lượt đọc này. Trước đây `revoked`
+      // chỉ đi vào danh sách hiển thị, nên hồ sơ thu hồi ở web — hoặc thu hồi
+      // trước khi kho biết lưu cờ này — vẫn khoá clip của nó ở màn vận đơn,
+      // trong khi link đã chết từ lâu.
+      await _claimStore.syncRevoked(widget.shopId, {
+        for (final row in rows)
+          if (row.revoked) row.id,
+      });
       if (mounted) {
         setState(() {
           _remote = {for (final row in rows) row.id: row};
@@ -6007,6 +6152,10 @@ class _ClaimListRouteState extends State<_ClaimListRoute> {
       return;
     }
     if (context.mounted) _toast(context, l10n.claimRevoked);
+    // Ghi cờ thu hồi xuống bản trên máy, không chỉ để nó sống trong danh sách
+    // vừa đọc về: màn xoá bằng chứng đọc kho này để biết clip có đang bị khoá
+    // không, và nó không thấy được `_remote`.
+    await _claimStore.markRevoked(widget.shopId, entry.id);
     // Đọc lại để hàng vừa thu hồi mang huy hiệu "Đã thu hồi" ngay, thay vì
     // trông y hệt một link còn sống cho tới lần mở app sau.
     await _load();
@@ -6153,6 +6302,25 @@ class _CreateClaimRoute extends StatelessWidget {
         // Danh sách loại chỉ làm nhãn đẹp hơn, không chặn việc chọn.
       }
 
+      // Bản đồ uid → tên, để clip chép vào hồ sơ mang theo tên người quay.
+      //
+      // Nuốt lỗi có chủ ý: tuyến `listMembers` chỉ chủ shop gọi được, nên với
+      // nhân viên nó luôn 403. Đó không phải lý do để chặn việc tạo hồ sơ —
+      // chỉ là hồ sơ của họ sẽ không có tên người quay, đúng như màn chi tiết
+      // đơn của họ cũng không có.
+      final memberNames = <String, String>{};
+      try {
+        for (final m in await repo.members(shopId)) {
+          final uid = m.accountUid;
+          final name = m.name?.trim() ?? '';
+          if (uid != null && uid.isNotEmpty && name.isNotEmpty) {
+            memberNames[uid] = name;
+          }
+        }
+      } on Object {
+        // Không tra được tên thì hồ sơ vẫn tạo được, chỉ thiếu một dòng.
+      }
+
       // Song song: bốn đơn × một lượt gọi nối đuôi nhau là bốn lần chờ mạng
       // cho một lần gõ.
       final details = await Future.wait([
@@ -6162,7 +6330,13 @@ class _CreateClaimRoute extends StatelessWidget {
         for (var i = 0; i < chosen.length; i++)
           EcClaimLookup(
             code: chosen[i].tracking,
-            items: _pickablesOf(l10n, chosen[i].id, details[i], typeNames),
+            items: _pickablesOf(
+              l10n,
+              chosen[i].id,
+              details[i],
+              typeNames,
+              memberNames,
+            ),
           ),
       ];
     } on Object {
@@ -6186,6 +6360,7 @@ class _CreateClaimRoute extends StatelessWidget {
     String orderId,
     OrderDetailDto detail,
     Map<String, String> typeNames,
+    Map<String, String> memberNames,
   ) => [
     for (final e in detail.evidence)
       if (e.uploadStatus != 'deleted')
@@ -6202,6 +6377,12 @@ class _CreateClaimRoute extends StatelessWidget {
           // Ảnh TỰ làm ảnh xem trước; chỉ video mới cần poster trích ra.
           // Dùng `thumbUrl` cho cả hai thì mọi hàng ảnh đều trống chỗ đó.
           thumbUrl: e.kind == 'photo' ? e.url : e.thumbUrl,
+          // Cùng chuỗi lùi với màn chi tiết đơn, để hai màn không nói hai tên
+          // khác nhau về cùng một clip. Tra NGAY tại đây: bản đồ tên chỉ có
+          // trong lượt này, chép vào hồ sơ rồi thì về sau không cần tra nữa.
+          recordedBy:
+              e.recordedBy ??
+              (e.createdByUid == null ? null : memberNames[e.createdByUid]),
         ),
   ];
 
@@ -6248,6 +6429,7 @@ class _CreateClaimRoute extends StatelessWidget {
                     isPhoto: e.isPhoto,
                     capturedAt: e.capturedAt,
                     thumbUrl: e.thumbUrl,
+                    recordedBy: e.recordedBy,
                   ),
               ],
             ),
@@ -6313,7 +6495,7 @@ class _CreateClaimRoute extends StatelessWidget {
       // hàm đã rời khối `try`, nên `catch` bên dưới không bao giờ thấy. Lúc đó
       // lời hứa "gửi hỏng thì trả null và vẫn lưu trên máy" ngay trên kia bị
       // thủng — máy chủ trả lỗi là chết cả lượt tạo hồ sơ.
-      return await repo.createClaim(
+      final created = await repo.createClaim(
         shopId,
         resolved,
         // Tên rỗng thì KHÔNG gửi trường này: máy chủ tự đặt theo mã vận đơn.
@@ -6322,6 +6504,7 @@ class _CreateClaimRoute extends StatelessWidget {
         title: title.isEmpty ? null : title,
         evidenceIds: picked.isEmpty ? null : picked,
       );
+      return created;
     } on Object catch (error, stack) {
       developer.log(
         'claims: không gửi được hồ sơ lên máy chủ (${error.runtimeType})',
@@ -7156,10 +7339,15 @@ class _QueueRoute extends StatelessWidget {
   const _QueueRoute({
     required this.queue,
     required this.canDelete,
+    this.shopId,
     this.onBack,
   });
 
   final EcUploadQueue queue;
+
+  /// Shop đang mở. Hàng đợi chỉ hiện việc của shop này; `null` (chưa chọn
+  /// shop) thì không hiện gì, vì lúc đó không có câu hỏi nào để trả lời.
+  final String? shopId;
 
   /// FR-02 — Nhân viên không được xóa bằng chứng, kể cả clip **chưa upload**
   /// còn nằm trong hàng đợi trên máy: xóa ở đây là mất vĩnh viễn và backend
@@ -7173,12 +7361,12 @@ class _QueueRoute extends StatelessWidget {
       listenable: queue,
       builder: (context, _) {
         final items = [
-          for (final task in queue.tasks) _taskToItem(task),
+          for (final task in queue.tasksForShop(shopId)) _taskToItem(task),
         ];
         return EcUploadQueueScreen(
           items: items,
           onBack: onBack,
-          onClear: () => _confirmClearQueue(context, queue),
+          onClear: () => _confirmClearQueue(context, queue, shopId),
           onRetry: (item) {
             final id = item.id;
             if (id != null) queue.retry(id);
@@ -7205,16 +7393,20 @@ class _QueueRoute extends StatelessWidget {
 /// Không đẩy sang màn khác: người đang đóng gói liếc xem "clip vừa quay lên
 /// chưa" rồi quay tiếp, mà rời hẳn màn quay là mất khung ngắm và mất luôn cả
 /// mã vận đơn đang chọn. Nửa màn để phần trên vẫn thấy được chỗ mình vừa đứng.
-Future<void> _showQueueSheet(BuildContext context, EcUploadQueue queue) =>
-    showCupertinoModalPopup<void>(
-      context: context,
-      builder: (sheetContext) => _QueueSheet(queue: queue),
-    );
+Future<void> _showQueueSheet(
+  BuildContext context,
+  EcUploadQueue queue,
+  String? shopId,
+) => showCupertinoModalPopup<void>(
+  context: context,
+  builder: (sheetContext) => _QueueSheet(queue: queue, shopId: shopId),
+);
 
 class _QueueSheet extends StatelessWidget {
-  const _QueueSheet({required this.queue});
+  const _QueueSheet({required this.queue, this.shopId});
 
   final EcUploadQueue queue;
+  final String? shopId;
 
   @override
   Widget build(BuildContext context) {
@@ -7262,7 +7454,7 @@ class _QueueSheet extends StatelessWidget {
                     vertical: 6,
                   ),
                   minimumSize: Size.zero,
-                  onPressed: () => _confirmClearQueue(context, queue),
+                  onPressed: () => _confirmClearQueue(context, queue, shopId),
                   child: Text(
                     l10n.queueClearAction,
                     style: const TextStyle(
@@ -7280,7 +7472,10 @@ class _QueueSheet extends StatelessWidget {
               listenable: queue,
               builder: (context, _) => EcUploadQueueList(
                 padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-                items: [for (final task in queue.tasks) _taskToItem(task)],
+                items: [
+                  for (final task in queue.tasksForShop(shopId))
+                    _taskToItem(task),
+                ],
                 onRetry: (item) {
                   final id = item.id;
                   if (id != null) queue.retry(id);
@@ -7319,6 +7514,7 @@ class _QueueSheet extends StatelessWidget {
 Future<void> _confirmClearQueue(
   BuildContext context,
   EcUploadQueue queue,
+  String? shopId,
 ) async {
   final l10n = context.l10n;
   final confirmed = await showCupertinoDialog<bool>(
@@ -7340,7 +7536,7 @@ Future<void> _confirmClearQueue(
     ),
   );
   if (confirmed != true) return;
-  await queue.clearAll();
+  await queue.clearShop(shopId);
 }
 
 Future<void> _confirmDeleteQueueItem(
@@ -7610,13 +7806,13 @@ GoRouter _buildRouter(
                     }
                     return EcRecordRoute(
                       permissions: _maybeGetIt<PermissionService>(),
-                      queueCount: _pendingUploads(queue),
+                      queueCount: _pendingUploads(queue, shop.id),
                       initialType: recordingType.value,
                       initialResolution: shop.resolution,
                       maxRecording: shop.clipBudget.maxRecording,
                       isActive: isRecordTabActive,
                       onBack: () => c.go('/home'),
-                      onQueueTap: () => _showQueueSheet(c, queue),
+                      onQueueTap: () => _showQueueSheet(c, queue, shop.id),
                       onRequestCode: () => c.push<String>('/manual'),
                       onConfirmManualCode: (code) =>
                           _confirmManualTracking(c, repo, shop.id, code),
@@ -7921,6 +8117,27 @@ GoRouter _buildRouter(
                       _toast(pageContext, c.l10n.toastVideoDeleteUnavailable);
                       return;
                     }
+                    // Dòng ghi chú ngay dưới nút này đã hứa "khóa nếu hồ sơ
+                    // đang mở" từ lâu, nhưng không có chỗ nào thực thi: hai
+                    // hộp thoại xác nhận rồi xoá thẳng. Xoá một clip đang nằm
+                    // trong hồ sơ khiếu nại là chọc thủng đúng bộ bằng chứng
+                    // người bán dựng lên để đi kiện — và họ chỉ phát hiện ra
+                    // khi mở hồ sơ ra thì clip đã không còn.
+                    final dossier = _claimStore.dossierWithEvidence(
+                      extra.shopId,
+                      evidenceId,
+                    );
+                    if (dossier != null) {
+                      _toast(
+                        pageContext,
+                        c.l10n.deleteVideoInDossier(
+                          dossier.title.trim().isEmpty
+                              ? c.l10n.claimUntitled
+                              : dossier.title,
+                        ),
+                      );
+                      return;
+                    }
                     final confirmed = await showCupertinoDialog<bool>(
                       context: pageContext,
                       builder: (dialogContext) => CupertinoAlertDialog(
@@ -8124,6 +8341,7 @@ GoRouter _buildRouter(
           // No shop resolved yet ⇒ treat as staff and hide the delete
           // affordance; evidence is easier to re-record than to un-delete.
           canDelete: (_selected(selectedShop)?.role ?? 'staff') != 'staff',
+          shopId: _selected(selectedShop)?.id,
           onBack: () => _back(c, '/home'),
         ),
       ),
@@ -8185,7 +8403,7 @@ GoRouter _buildRouter(
         path: '/no-shop',
         builder: (c, s) => EcNoShopScreen(
           onCreate: () => c.push('/create-shop'),
-          onInviteTap: () => _toast(c, c.l10n.toastInvitePending),
+          onAccountTap: () => c.push('/account'),
           onLogout: () {
             _analytics()?.trackSignOut();
             _signOutAll(auth).then((_) async {

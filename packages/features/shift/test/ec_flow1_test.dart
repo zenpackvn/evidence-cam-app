@@ -467,7 +467,10 @@ void main() {
       await _pump(tester, const EcNoShopScreen());
       expect(find.text('Chưa có shop nào'), findsOneWidget);
       expect(find.text('Tạo shop mới (tên + sàn)'), findsOneWidget);
-      expect(find.text('Lời mời vào shop sẽ hiện ở đây'), findsOneWidget);
+      // Hàng "Lời mời vào shop sẽ hiện ở đây" đã bỏ: nó và "Tôi có lời mời"
+      // cùng gọi một hàm nhận lời mời, nên hai hàng chỉ làm người mới tưởng
+      // đây là hai việc khác nhau.
+      expect(find.text('Lời mời vào shop sẽ hiện ở đây'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

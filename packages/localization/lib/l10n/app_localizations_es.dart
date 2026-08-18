@@ -981,6 +981,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo propietario/gerente · bloqueado mientras haya un expediente abierto · confirmación en dos pasos';
 
   @override
+  String deleteVideoInDossier(String dossier) {
+    return 'This evidence is in claim dossier $dossier — remove it from the dossier first, then delete.';
+  }
+
+  @override
   String get deleteVideoConfirmTitle => 'Confirmación final';
 
   @override
