@@ -87,6 +87,16 @@
 	<string>a1814bd3fbdc7c68039324351bc857a5</string>
 	<key>FacebookDisplayName</key>
 	<string>ZenPack</string>
+	<!-- Cả hai TẮT lúc khởi động, và chỉ bật lại sau khi người dùng trả lời hộp
+	     thoại ATT (xem lib/data/ec_meta_events.dart). Apple bắt buộc: hộp thoại
+	     phải hiện ra TRƯỚC mọi dữ liệu có thể dùng để theo dõi. Để mặc định
+	     (bật) thì SDK log lượt mở app và đọc ID quảng cáo ngay khi app chạy —
+	     tức trước khi hỏi — và đó là một nửa lý do bản 2.0.2 build 700 bị từ
+	     chối theo Guideline 2.1. -->
+	<key>FacebookAutoLogAppEventsEnabled</key>
+	<false/>
+	<key>FacebookAdvertiserIDCollectionEnabled</key>
+	<false/>
 	<!-- Không có chuỗi này thì iOS giết app ngay khi gọi hộp thoại ATT. Từ chối
 	     ATT không làm hỏng quảng cáo — attribution chỉ rơi về SKAdNetwork. -->
 	<key>NSUserTrackingUsageDescription</key>

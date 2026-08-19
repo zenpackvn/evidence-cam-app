@@ -3,8 +3,10 @@
 ///
 /// Ranh giới hẹp có chủ đích — chỉ ba thứ đi qua đây:
 ///
-///   * **Cài đặt / mở app**: SDK tự log (`AutoLogAppEvents` mặc định bật). Không
-///     có dòng code nào ở file này, và đừng thêm — log tay thì Meta đếm hai lần.
+///   * **Cài đặt / mở app**: auto-log của SDK, nhưng bị TẮT trong `Info.plist`
+///     và chỉ bật lại sau khi người dùng trả lời hộp thoại ATT — Apple bắt buộc
+///     vậy. Lượt mở app bị bỏ lỡ trong khoảng đó được bù bằng đúng một
+///     `activateApp()` trong `EcMetaEvents.start`; đừng thêm lượt log tay nào.
 ///   * **`CompleteRegistration`**: chủ shop tạo shop đầu tiên. Đây là phễu để
 ///     chạy quảng cáo lúc ngân sách còn nhỏ: Meta cần ~50 conversion/tuần/ad set
 ///     mới thoát learning, mà `Purchase` thì quá thưa để đạt ngưỡng đó.
@@ -16,12 +18,15 @@
 ///     mà không khớp được với ai đã bấm quảng cáo.
 library;
 
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:app_platform/app_platform.dart'
-    show Permission, PermissionActions;
+    show Permission, PermissionActions, PermissionStatus;
 import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/widgets.dart'
+    show AppLifecycleListener, AppLifecycleState, WidgetsBinding;
 
 import 'ec_purchases.dart';
 
@@ -31,26 +36,79 @@ class EcMetaEvents {
 
   static final _events = FacebookAppEvents();
 
-  /// Xin quyền theo dõi (iOS) và nối danh tính Meta ↔ RevenueCat.
+  /// Xin quyền theo dõi (iOS), bật thu thập của Meta, rồi nối danh tính Meta ↔
+  /// RevenueCat.
   ///
-  /// Gọi SAU `runApp`, không phải trong bootstrap: hộp thoại ATT của iOS chỉ
-  /// hiện khi app đã ở trạng thái `active`. Gọi sớm hơn thì hệ điều hành trả
-  /// `denied` ngay lập tức mà không hỏi gì — và không hỏi lại lần nào nữa.
+  /// Thứ tự ở đây là thứ Apple soi, và app đã bị từ chối vì nó (Guideline 2.1,
+  /// bản 2.0.2 build 700): hộp thoại phải hiện RA TRƯỚC mọi dữ liệu có thể dùng
+  /// để theo dõi. Nên Meta SDK bị tắt thu thập trong `Info.plist`
+  /// (`FacebookAutoLogAppEventsEnabled`, `FacebookAdvertiserIDCollectionEnabled`
+  /// đều `false`) và chỉ được bật lại ở đây, sau khi người dùng đã trả lời.
   ///
   /// Không ném: quảng cáo hỏng thì app vẫn phải quay được video.
   static Future<void> start() async {
     try {
-      // Từ chối ATT không phải lỗi — attribution chỉ rơi về SKAdNetwork, thưa
-      // hơn nhưng vẫn chạy. Không cần báo kết quả cho Meta SDK: từ FBSDK 18 nó
-      // tự đọc trạng thái ATT của hệ điều hành (`setAdvertiserTracking` đã bị
-      // đánh dấu deprecated đúng vì lý do đó).
-      if (Platform.isIOS) await Permission.appTrackingTransparency.request();
+      if (Platform.isIOS) await _requestTracking();
+
+      // Bật lại thu thập SAU câu trả lời. `activateApp` bù đúng một lượt mở app
+      // — lượt mà auto-log đã bỏ lỡ vì bị tắt lúc khởi động. Gọi một lần mỗi
+      // lượt chạy nên Meta không đếm hai lần.
+      await _events.setAutoLogAppEventsEnabled(true);
+      await _events.activateApp();
 
       final anonId = await _events.getAnonymousId();
       if (anonId != null) await EcPurchases.setFacebookAnonymousId(anonId);
       debugPrint('zenpack.meta: sẵn sàng (anon id ${anonId ?? "—"})');
     } on Object catch (error) {
       debugPrint('zenpack.meta: không khởi tạo được ($error) — bỏ qua');
+    }
+  }
+
+  /// Hiện hộp thoại ATT, rồi mở thu thập ID quảng cáo đúng theo câu trả lời.
+  ///
+  /// Chờ app thật sự `resumed` mới hỏi. Đây là lỗi làm Apple từ chối bản trước:
+  /// `addPostFrameCallback` chạy sau khung hình ĐẦU TIÊN, mà lúc đó iOS còn coi
+  /// app là `inactive` — và `requestTrackingAuthorization` gọi lúc inactive thì
+  /// trả `denied` NGAY, không hiện gì, không hỏi lại lần nào nữa. Người soi xét
+  /// không bao giờ thấy hộp thoại.
+  static Future<void> _requestTracking() async {
+    await _whenResumed();
+    // Nghỉ một nhịp sau `resumed`: iOS chuyển sang active xong vẫn còn dựng nốt
+    // cảnh, và hộp thoại xin quyền bật lên giữa lúc đó có thể bị nuốt.
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    final status = await Permission.appTrackingTransparency.request();
+    // Từ chối KHÔNG phải lỗi — attribution rơi về SKAdNetwork, thưa hơn nhưng
+    // vẫn chạy. Chỉ khác ở chỗ không được đụng vào ID quảng cáo.
+    await _events.setAdvertiserIdCollectionEnabled(
+      status == PermissionStatus.granted,
+    );
+    debugPrint('zenpack.meta: ATT trả lời $status');
+  }
+
+  /// Hoàn tất khi app ở trạng thái `resumed`, hoặc sau 10 giây thì thôi chờ.
+  ///
+  /// Có mốc bỏ cuộc vì app có thể khởi động ở nền (thông báo đẩy, tải nền) và
+  /// không bao giờ `resumed`. Treo vĩnh viễn ở đó thì cả phần nối danh tính
+  /// Meta ↔ RevenueCat bên dưới cũng không bao giờ chạy.
+  static Future<void> _whenResumed() async {
+    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+      return;
+    }
+    final resumed = Completer<void>();
+    final listener = AppLifecycleListener(
+      onStateChange: (state) {
+        if (state == AppLifecycleState.resumed && !resumed.isCompleted) {
+          resumed.complete();
+        }
+      },
+    );
+    try {
+      await resumed.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => debugPrint('zenpack.meta: chờ app active quá lâu'),
+      );
+    } finally {
+      listener.dispose();
     }
   }
 
