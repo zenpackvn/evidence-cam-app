@@ -192,11 +192,22 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   @override
   void didUpdateWidget(covariant EcStorageScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Máy chủ chốt xong thì bám theo nó. Và khi một lượt thao tác kết thúc mà
-    // kho vẫn như cũ (người dùng bấm huỷ giữa chừng), trả dấu tích về đúng chỗ
-    // — để nó nằm lại chỗ vừa bấm là nói dối về nơi video đang được cất.
-    if (oldWidget.state.kind != widget.state.kind ||
-        (oldWidget.busy && !widget.busy)) {
+    // Máy chủ chốt xong thì bám theo nó.
+    if (oldWidget.state.kind != widget.state.kind) {
+      _picked = widget.state.kind;
+      _editingS3 = false;
+      return;
+    }
+    // Một lượt thao tác kết thúc mà kho vẫn như cũ = người dùng huỷ giữa chừng;
+    // trả dấu tích về đúng chỗ, vì để nó nằm lại chỗ vừa bấm là nói dối về nơi
+    // video đang được cất.
+    //
+    // TRỪ khi lượt đó trả về một câu lỗi. Lưu kho S3 hỏng cũng là "thao tác
+    // xong mà kho không đổi", nên nhánh trên từng cuốn phăng cả form lẫn sáu ô
+    // vừa gõ NGAY LÚC câu lỗi hiện ra — người dùng thấy thẻ đóng lại, không
+    // thấy gì khác, và kết luận nút Lưu hỏng. Có lỗi thì form phải ở lại cùng
+    // thứ vừa gõ và lý do hỏng.
+    if (oldWidget.busy && !widget.busy && widget.s3ErrorText == null) {
       _picked = widget.state.kind;
       _editingS3 = false;
     }

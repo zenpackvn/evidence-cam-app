@@ -189,6 +189,62 @@ void main() {
       expect(opened, 0);
     });
 
+    // Lưu hỏng thì form PHẢI ở lại cùng thứ vừa gõ và lý do hỏng.
+    //
+    // Trước đây không: lưu xong `busy` tắt, kho vẫn như cũ vì máy chủ từ chối,
+    // và nhánh "thao tác xong mà kho không đổi" cuốn phăng cả form lẫn sáu ô
+    // ngay lúc câu lỗi hiện ra. Người dùng thấy thẻ đóng lại, không thấy gì
+    // khác, và kết luận nút Lưu hỏng.
+    testWidgets('lưu hỏng thì form ở lại kèm câu lỗi, không đóng sập', (
+      tester,
+    ) async {
+      Future<void> pumpWith({required bool busy, String? error}) => _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          busy: busy,
+          s3ErrorText: error,
+          onSaveS3:
+              ({
+                required endpoint,
+                required bucket,
+                required accessKeyId,
+                required secretAccessKey,
+                required region,
+                required prefix,
+              }) {},
+        ),
+      );
+
+      await pumpWith(busy: false);
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(CupertinoTextField).at(2),
+        'my-bucket',
+      );
+      await tester.pumpAndSettle();
+
+      // Đang gửi… — `pump` chứ không `pumpAndSettle`: nút Lưu lúc bận quay một
+      // vòng xoay không bao giờ dừng, nên `pumpAndSettle` sẽ chờ tới hết giờ.
+      await pumpWith(busy: true);
+      await tester.pump();
+      // …rồi máy chủ từ chối: hết bận, kèm câu lỗi.
+      await pumpWith(busy: false, error: 'Thiếu quyền s3:PutObject');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Endpoint'), findsOneWidget, reason: 'form đã đóng sập');
+      expect(find.text('Thiếu quyền s3:PutObject'), findsOneWidget);
+      expect(
+        tester
+            .widget<CupertinoTextField>(find.byType(CupertinoTextField).at(2))
+            .controller
+            ?.text,
+        'my-bucket',
+        reason: 'thứ vừa gõ bị xoá mất',
+      );
+    });
+
     // Chọn nhầm rồi đổi ý: Huỷ trả dấu tích về kho đang thật sự dùng, đóng
     // form và xoá trắng nó. Không có nút này thì người vừa chạm nhầm thẻ Drive
     // chỉ còn cách thoát khỏi màn rồi vào lại.

@@ -2095,7 +2095,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get storageDriveFailed =>
-      'Chưa kết nối được Google Drive. Máy chủ chưa bật cấp quyền ngay trong app — báo quản trị viên giúp bạn.';
+      'Chưa cắm được Google Drive: máy chủ chưa cấu hình xong kết nối tới Google. Đây là phần cài đặt của hệ thống, không phải quyền app xin được từ bạn — báo bên kỹ thuật.';
 
   @override
   String get storageConnected => 'Đã cắm kho riêng.';

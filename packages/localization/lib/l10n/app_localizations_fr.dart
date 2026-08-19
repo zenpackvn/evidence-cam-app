@@ -2144,7 +2144,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get storageDriveFailed =>
-      'Could not connect Google Drive. The server has not been set up for in-app authorisation yet — tell your admin.';
+      'Could not connect Google Drive: the server\'s connection to Google is not configured yet. That is system-side setup, not a permission the app can ask you for — tell your technical contact.';
 
   @override
   String get storageConnected => 'Stockage personnel connecté.';

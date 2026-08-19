@@ -1088,7 +1088,7 @@
   "storageFieldRegion": "Region",
   "storageFieldPrefix": "Prefix",
   "storageFieldPrefixHint": "Thư mục con trong bucket. Để mặc định nếu không chắc.",
-  "storageDriveFailed": "Chưa kết nối được Google Drive. Máy chủ chưa bật cấp quyền ngay trong app — báo quản trị viên giúp bạn.",
+  "storageDriveFailed": "Chưa cắm được Google Drive: máy chủ chưa cấu hình xong kết nối tới Google. Đây là phần cài đặt của hệ thống, không phải quyền app xin được từ bạn — báo bên kỹ thuật.",
   "storageConnected": "Đã cắm kho riêng.",
   "storageDisconnected": "Đã thôi dùng kho riêng.",
   "storageTestOk": "Kết nối bình thường.",

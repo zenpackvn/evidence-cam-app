@@ -1797,12 +1797,28 @@ class _StorageRouteState extends State<_StorageRoute>
         _toast(context, context.l10n.storageConnected);
         return;
       }
-      setState(
-        () => _s3Error = result.hint ?? context.l10n.errorLoadShopDetail,
+      // Câu lỗi vẽ dưới form, mà form thì cao hơn một màn hình — người vừa bấm
+      // Lưu đang nhìn lên đầu màn, không nhìn xuống đáy. Toast thêm một lượt để
+      // biết là máy chủ ĐÃ trả lời; câu đầy đủ vẫn nằm cạnh mấy ô vừa gõ.
+      final hint = result.hint ?? context.l10n.errorLoadShopDetail;
+      developer.log(
+        'storage: lưu S3 bị từ chối (${result.failedStep ?? "—"}): $hint',
+        name: 'zenpack.storage',
+        level: 900,
       );
+      _toast(context, hint);
+      setState(() => _s3Error = hint);
     } on Object catch (error) {
       if (!mounted) return;
-      setState(() => _s3Error = _dataErrorText(context.l10n, error));
+      developer.log(
+        'storage: lưu S3 hỏng (${_apiErrorCode(error) ?? error.runtimeType})',
+        name: 'zenpack.storage',
+        level: 900,
+        error: error,
+      );
+      final text = _dataErrorText(context.l10n, error);
+      _toast(context, text);
+      setState(() => _s3Error = text);
     } finally {
       if (mounted) {
         setState(() => _busy = false);
