@@ -2,6 +2,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/cupertino.dart' show CupertinoTextField;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
@@ -114,6 +115,78 @@ void main() {
       expect(connectS3, 0, reason: 'chạm thẻ đã chạy luồng cắm kho');
       // `onPick` ghi lựa chọn xuống máy, nên nó cũng phải đợi tới lúc lưu.
       expect(picked, 0, reason: 'ghi lựa chọn khi người dùng chưa xác nhận');
+    });
+
+    // Drive là thẻ duy nhất chạm là chạy: mọi thứ nằm trong hộp thoại của
+    // Google, nên bắt bấm thêm nút Lưu chỉ là một cú chạm thừa trước một màn
+    // hình người dùng vẫn còn huỷ được.
+    testWidgets('chạm thẻ Drive là mở hộp thoại Google ngay', (tester) async {
+      var opened = 0;
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          onConnectDrive: () async {
+            opened++;
+            return true;
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Google Drive'));
+      await tester.pumpAndSettle();
+
+      expect(opened, 1);
+    });
+
+    // Huỷ ở hộp thoại Google thì dấu tích phải quay về kho đang thật sự dùng.
+    // Đây là thứ khiến chạm-là-chạy an toàn: quệt nhầm không để lại dấu vết.
+    testWidgets('huỷ hộp thoại Google thì dấu tích về Cloud Zenpack', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          onConnectDrive: () async => false,
+        ),
+      );
+
+      await tester.tap(find.text('Google Drive'));
+      await tester.pumpAndSettle();
+
+      // Câu nói trước của Drive chỉ hiện khi thẻ Drive đang được chọn; nó biến
+      // mất nghĩa là dấu tích đã rời khỏi Drive.
+      expect(find.textContaining('mở màn cấp quyền của Google'), findsNothing);
+      // Và nút Lưu tắt vì không còn thay đổi nào để lưu.
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel('Lưu lựa chọn kho'))
+            .hasFlag(SemanticsFlag.isEnabled),
+        isFalse,
+      );
+    });
+
+    // Gói chưa mở kho riêng: chạm thẻ Drive KHÔNG được mở hộp thoại Google.
+    testWidgets('gói chưa mở thì chạm Drive không mở hộp thoại', (
+      tester,
+    ) async {
+      var opened = 0;
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true),
+          onConnectDrive: () async {
+            opened++;
+            return true;
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Google Drive'));
+      await tester.pumpAndSettle();
+
+      expect(opened, 0);
     });
 
     // Chọn nhầm rồi đổi ý: Huỷ trả dấu tích về kho đang thật sự dùng, đóng

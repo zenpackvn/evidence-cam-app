@@ -9,6 +9,8 @@
 /// `owner_only`, ở đây chỉ là không chào cái nút chắc chắn 403.
 library;
 
+import 'dart:async';
+
 import 'package:app_ui/app_ui.dart';
 import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart';
@@ -114,7 +116,15 @@ class EcStorageScreen extends StatefulWidget {
   /// Lúc cắm mới thì không đi đường này nữa: form nằm thẳng trong thẻ, xem
   /// [onSaveS3].
   final VoidCallback? onConnectS3;
-  final VoidCallback? onConnectDrive;
+
+  /// Mở hộp thoại Google. `true` = đã cắm xong, `false` = người dùng huỷ hoặc
+  /// hỏng.
+  ///
+  /// Trả về kết quả chứ không phải `void`: chạm vào thẻ Drive là hộp thoại bật
+  /// lên NGAY, nên màn này phải biết lúc nào người dùng bấm Huỷ để trả dấu tích
+  /// về kho cũ. Không có tín hiệu đó thì dấu tích nằm lại ở Drive và màn hình
+  /// nói dối về nơi video đang được cất.
+  final Future<bool> Function()? onConnectDrive;
   final VoidCallback? onTest;
   final VoidCallback? onDisconnect;
 
@@ -210,6 +220,33 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
       // mở sẵn mà không nhớ vì sao.
       if (kind != EcStorageKind.s3) _editingS3 = false;
     });
+    if (kind == EcStorageKind.gdrive) unawaited(_startDrive());
+  }
+
+  /// Drive là thẻ DUY NHẤT chạm vào là chạy luôn.
+  ///
+  /// Hai thẻ kia có thứ để đọc trước khi quyết: S3 sổ ra sáu ô phải điền, Cloud
+  /// Zenpack sổ ra câu nói video cũ sẽ ra sao. Drive thì không — mọi thứ nằm
+  /// trong hộp thoại của Google, nên bắt bấm thêm nút Lưu chỉ là một cú chạm
+  /// thừa trước một màn hình mà người dùng vẫn còn huỷ được.
+  ///
+  /// Huỷ ở hộp thoại thì dấu tích quay về kho đang thật sự dùng. Đây là thứ
+  /// khiến chạm-là-chạy an toàn: một cú quệt nhầm vào thẻ này không để lại dấu
+  /// vết nào.
+  Future<void> _startDrive() async {
+    final state = widget.state;
+    if (!state.canManage ||
+        !state.byosAllowed ||
+        widget.busy ||
+        state.kind == EcStorageKind.gdrive) {
+      return;
+    }
+    final connect = widget.onConnectDrive;
+    if (connect == null) return;
+    widget.onPick?.call(EcStorageKind.gdrive);
+    final ok = await connect();
+    if (!mounted || ok) return;
+    setState(() => _picked = widget.state.kind);
   }
 
   /// Có gì để lưu không: đổi sang kho khác, hoặc đang sửa cấu hình S3.
@@ -276,7 +313,10 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
       // Đang ở kho hệ thống rồi thì chạm vào đây không có việc gì để làm.
       EcStorageKind.system => _own ? widget.onDisconnect : null,
       EcStorageKind.s3 => state.byosAllowed ? widget.onConnectS3 : null,
-      EcStorageKind.gdrive => state.byosAllowed ? widget.onConnectDrive : null,
+      // Drive chạy ngay lúc chạm (xem [_startDrive]), nút Lưu không có việc gì
+      // nữa. Bấm Lưu ở đây mở hộp thoại Google LẦN HAI.
+      EcStorageKind.gdrive =>
+        state.byosAllowed ? () => unawaited(_startDrive()) : null,
     };
   }
 

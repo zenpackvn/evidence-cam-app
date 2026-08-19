@@ -1839,27 +1839,27 @@ class _StorageRouteState extends State<_StorageRoute>
   /// máy chủ giữ một cặp client Google cùng dự án với client iOS, và chừng nào
   /// máy chủ chưa có cặp đó thì nó trả `native_not_configured` — lúc ấy tính
   /// năng báo hỏng chứ không đi vòng.
-  Future<void> _connectDrive() async {
+  Future<bool> _connectDrive() async {
     final l10n = context.l10n;
     try {
       final code = await _driveAuthCode();
       if (code != null && code.isNotEmpty) {
         await widget.repo.connectGdriveCode(widget.shopId, code);
-        if (!mounted) return;
+        if (!mounted) return true;
         _toast(context, l10n.storageConnected);
         _reload();
-        return;
+        return true;
       }
       // Mã rỗng = người dùng bấm Huỷ ở hộp thoại Google. DỪNG hẳn ở đây.
       //
       // Trước đây nhánh này rơi thẳng xuống đường trình duyệt bên dưới: vừa
       // bấm "Huỷ" xong là bị đẩy sang accounts.google.com, hỏi lại đúng câu
       // vừa từ chối. Huỷ phải là huỷ.
-      return;
+      return false;
     } on Object catch (error) {
       // Người dùng tự huỷ hộp thoại thì im lặng — họ vừa nói "không" xong, báo
       // lỗi vào mặt họ là nói lại điều họ vừa quyết định.
-      if (_userCancelled(error)) return;
+      if (_userCancelled(error)) return false;
       final code = _apiErrorCode(error);
       developer.log(
         'storage: cắm Drive hỏng (${code ?? error.runtimeType})',
@@ -1876,6 +1876,7 @@ class _StorageRouteState extends State<_StorageRoute>
       // hẳn khỏi app. Nói thẳng là hỏng thì người dùng biết đường báo lại;
       // đẩy sang web thì họ tưởng app bắt làm hai lần cho vui.
       if (mounted) _toast(context, _driveErrorText(l10n, code, error));
+      return false;
     }
   }
 
