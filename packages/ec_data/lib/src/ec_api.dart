@@ -260,7 +260,7 @@ class EcApi {
   /// Cắm kho S3. Máy chủ chạy vòng PUT→HEAD→GET→DELETE rồi mới lưu, nên
   /// `ok == false` nghĩa là KHÔNG có gì được ghi — hiện nguyên `hint` cho khách.
   ///
-  /// Google Drive không đi đường này: nó cắm qua OAuth ([gdriveAuthUrl]).
+  /// Google Drive không đi đường này: nó cắm qua OAuth ([connectGdriveCode]).
   Future<StorageValidateDto> saveS3Storage(
     String shopId, {
     required String endpoint,
@@ -301,19 +301,11 @@ class EcApi {
   Future<void> deleteStorage(String shopId) =>
       _dio.delete<void>('/api/shops/$shopId/storage');
 
-  /// URL để mở trình duyệt cấp quyền Google Drive.
-  Future<String> gdriveAuthUrl(String shopId) async {
-    final res = await _dio.get<Map<String, dynamic>>(
-      '/api/shops/$shopId/storage/gdrive/auth-url',
-    );
-    return (res.data!['url'] as String?) ?? '';
-  }
-
   /// Cắm Drive bằng mã uỷ quyền lấy từ hộp thoại Google của hệ điều hành.
   ///
   /// Chỉ gửi MÃ, không gửi token: máy chủ vẫn là nơi duy nhất đổi nó lấy refresh
-  /// token. Ném khi máy chủ chưa cấu hình cặp client cho đường này — bên gọi bắt
-  /// lỗi đó rồi lùi về mở trình duyệt.
+  /// token. Ném khi máy chủ chưa cấu hình cặp client cho đường này
+  /// (`native_not_configured`) — không còn đường lùi nào, bên gọi báo hỏng.
   Future<void> connectGdriveCode(String shopId, String code) => _dio.post<void>(
     '/api/shops/$shopId/storage/gdrive/code',
     data: {'code': code},

@@ -1708,16 +1708,15 @@ class _StorageRouteState extends State<_StorageRoute>
     super.dispose();
   }
 
-  /// Cấp quyền Google Drive xảy ra Ở TRÌNH DUYỆT, ngoài app — và `launchUrl`
-  /// trả về ngay khi trình duyệt mở, KHÔNG đợi người dùng bấm xong. Nên "app
-  /// sáng lại" là tín hiệu duy nhất có thật để đọc lại trạng thái.
+  /// Kho còn đổi được từ web, và màn này không có cách nào biết lúc đó. "App
+  /// sáng lại" là tín hiệu duy nhất có thật.
   ///
-  /// Thiếu nó thì cắm kho thành công mà màn hình vẫn ghi "kho hệ thống" cho tới
-  /// khi người dùng tự thoát ra vào lại — trông y hệt một lần cắm thất bại, và
-  /// người ta sẽ bấm cắm lại.
+  /// Thiếu nó thì kho vừa đổi bên console mà màn hình vẫn ghi cấu hình cũ cho
+  /// tới khi người dùng tự thoát ra vào lại — trông y hệt một lần cắm thất bại,
+  /// và người ta sẽ bấm cắm lại.
   ///
-  /// Đọc lại ở MỌI lần sáng chứ không chỉ sau khi bấm cắm: kho còn đổi được từ
-  /// web, và một lượt đọc thừa rẻ hơn nhiều so với một bảng tình trạng nói dối.
+  /// Một lượt đọc thừa mỗi lần sáng rẻ hơn nhiều so với một bảng tình trạng nói
+  /// dối.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
@@ -1782,19 +1781,13 @@ class _StorageRouteState extends State<_StorageRoute>
     );
   }
 
-  /// Google Drive cắm qua OAuth nên phải rời app sang trình duyệt.
-  ///
-  /// KHÔNG đọc lại trạng thái ở đây: `launchUrl` trả về ngay lúc trình duyệt
-  /// mở, tức lúc người dùng còn chưa kịp chọn tài khoản Google. Việc đọc lại
-  /// thuộc về [didChangeAppLifecycleState].
   /// Cắm Google Drive bằng hộp thoại GỐC của hệ điều hành — đúng thứ người dùng
   /// đã quen khi đăng nhập bằng Google, không nhảy sang trình duyệt.
   ///
-  /// Đường lùi về trình duyệt được GIỮ, không xoá: hộp thoại gốc cần một cặp
-  /// client Google cùng dự án với client iOS, và chừng nào máy chủ chưa có cặp
-  /// đó thì nó trả `native_not_configured`. Xoá đường lùi nghĩa là tính năng
-  /// chết hẳn cho tới khi cấu hình xong — còn giữ thì bản cài lên máy hôm nay
-  /// vẫn cắm được kho như cũ.
+  /// Đây là đường DUY NHẤT: đường lùi qua trình duyệt đã xoá. Hộp thoại gốc cần
+  /// máy chủ giữ một cặp client Google cùng dự án với client iOS, và chừng nào
+  /// máy chủ chưa có cặp đó thì nó trả `native_not_configured` — lúc ấy tính
+  /// năng báo hỏng chứ không đi vòng.
   Future<void> _connectDrive() async {
     final l10n = context.l10n;
     try {

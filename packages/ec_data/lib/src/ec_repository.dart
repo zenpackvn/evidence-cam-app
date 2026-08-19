@@ -130,7 +130,6 @@ abstract interface class EcRepository {
   });
   Future<StorageValidateDto> testStorage(String shopId);
   Future<void> disconnectStorage(String shopId);
-  Future<String> gdriveAuthUrl(String shopId);
 
   /// Cắm Drive bằng mã uỷ quyền từ hộp thoại gốc, không qua trình duyệt.
   Future<void> connectGdriveCode(String shopId, String code);
@@ -368,9 +367,6 @@ class RemoteEcRepository implements EcRepository {
 
   @override
   Future<void> disconnectStorage(String shopId) => _api.deleteStorage(shopId);
-
-  @override
-  Future<String> gdriveAuthUrl(String shopId) => _api.gdriveAuthUrl(shopId);
 
   @override
   Future<void> connectGdriveCode(String shopId, String code) =>

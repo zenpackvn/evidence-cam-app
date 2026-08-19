@@ -178,3 +178,13 @@ firebase.json
 # -------------------------------------------------------------------------
 tool/seed_demo.sh
 tool/capture_sim_window.sh
+
+# -------------------------------------------------------------------------
+# Rác AppleDouble của macOS
+# -------------------------------------------------------------------------
+# Ổ này không phải APFS/HFS+, nên macOS ghi resource fork ra file `._<tên>`
+# riêng bên cạnh MỌI file bị đụng tới. Chúng không chỉ bẩn `git status`: một
+# `._native_assets.json` lạc vào `build/` từng làm `flutter test` crash hẳn
+# ("PathNotFoundException: Deletion failed"), và trong `.git/objects/pack/`
+# chúng khiến git kêu "non-monotonic index" ở mọi lệnh.
+._*
