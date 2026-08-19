@@ -2363,7 +2363,12 @@ class _FixedSettingRow extends StatelessWidget {
       // giá trị dài — "Kho đám mây riêng (chuẩn S3)" chẳng hạn — là hàng tràn
       // ra ngoài khung thẻ, và phần tràn nằm ngoài vùng chạm nên hàng trông
       // như bấm không ăn.
-      Flexible(
+      // Cả hai cột đều `Expanded` chứ không `Flexible`, và giá trị thì bọc
+      // `Align`. Cùng một bài học với nhãn vai trò ở `_MemberRow`: `Flexible`
+      // chỉ CHO PHÉP con nhỏ hơn phần được chia chứ không trả lại chỗ thừa —
+      // chỗ thừa đó rơi xuống cuối hàng, nên thứ đứng cuối không bao giờ chạm
+      // được mép phải, và mỗi hàng lại hụt một kiểu tuỳ độ dài chữ.
+      Expanded(
         child: PenText(
           label,
           size: 16,
@@ -2372,20 +2377,27 @@ class _FixedSettingRow extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
       ),
-      Flexible(
-        child: PenText(
-          value,
-          size: 16,
-          color: PenColors.ink,
-          weight: FontWeight.w600,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
-          align: TextAlign.end,
+      Expanded(
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: PenText(
+            value,
+            size: 16,
+            color: PenColors.ink,
+            weight: FontWeight.w600,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+            align: TextAlign.end,
+          ),
         ),
       ),
       // Chữ "mặc định" thay chỗ mũi tên cũ. Bỏ trống chỗ đó thì hàng trông y
       // như một hàng bấm được vừa hỏng; nói thẳng đây là mức mặc định thì
       // người dùng thôi tìm chỗ bấm.
+      //
+      // Cả hai đều dồn sát mép phải và kết thúc ở cùng một đường: hàng bấm
+      // được và hàng không bấm được nằm cạnh nhau trong một thẻ, lệch nhau vài
+      // pixel là nhìn ra ngay.
       if (onTap == null)
         PenText(
           context.l10n.settingDefaultSuffix,

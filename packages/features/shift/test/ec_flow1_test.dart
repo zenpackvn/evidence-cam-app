@@ -554,6 +554,50 @@ void main() {
     });
   });
 
+  /// Hàng cài đặt: chữ "mặc định" và mũi tên đều phải chạm mép phải.
+  ///
+  /// Ba hàng này nằm cạnh nhau trong một thẻ — hai hàng cố định và một hàng mở
+  /// sang màn Kho lưu trữ. Lệch nhau vài pixel là nhìn ra ngay, và trước đây
+  /// chúng lệch thật: cả hai cột dùng `Flexible`, mà `Flexible` chỉ cho phép
+  /// con nhỏ hơn phần được chia chứ không trả lại chỗ thừa — chỗ thừa rơi
+  /// xuống cuối hàng nên thứ đứng cuối không bao giờ chạm mép.
+  group('hàng cài đặt của chi tiết cửa hàng', () {
+    testWidgets('"mặc định" và mũi tên cùng dồn sát mép phải', (tester) async {
+      await _pump(
+        tester,
+        const EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          videoTypes: [],
+          members: [],
+          storageLabel: 'Cloud Zenpack',
+          onTapStorage: _noop,
+        ),
+      );
+
+      final defaults = find.text('mặc định');
+      expect(defaults, findsWidgets, reason: 'không còn hàng cố định nào');
+      final arrow = find.byIcon(LucideIcons.chevronRight);
+
+      // Mọi hàng cố định phải kết thúc ở cùng một đường dọc.
+      final rights = <double>{
+        for (var i = 0; i < defaults.evaluate().length; i++)
+          tester.getRect(defaults.at(i)).right,
+      };
+      expect(rights.length, 1, reason: 'các chữ "mặc định" lệch nhau: $rights');
+
+      // Và mũi tên của hàng Kho lưu trữ kết thúc đúng ở đường đó.
+      final arrowRight = tester.getRect(arrow.first).right;
+      expect(
+        (arrowRight - rights.first).abs() < 0.5,
+        isTrue,
+        reason:
+            'mũi tên lệch khỏi mép của "mặc định": '
+            '$arrowRight vs ${rights.first}',
+      );
+    });
+  });
+
   group('EcShopDetailScreen', () {
     const members = [
       EcShopMember(name: 'Nguyễn Văn A', role: 'Quản lý shop'),
@@ -1240,3 +1284,5 @@ void main() {
     });
   });
 }
+
+void _noop() {}
