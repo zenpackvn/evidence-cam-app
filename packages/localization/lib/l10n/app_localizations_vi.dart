@@ -2280,6 +2280,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get storageEditCta => 'Đổi cấu hình';
 
   @override
+  String get storageValidateOk =>
+      'Cấu hình chạy được. Bấm Lưu để chuyển sang kho này.';
+
+  @override
+  String get storageTestOnlyCta => 'Kiểm tra';
+
+  @override
+  String shopOwnerLine(String name) {
+    return 'Chủ shop: $name';
+  }
+
+  @override
   String get storageConnectNote =>
       'Hệ thống sẽ ghi–đọc–xoá thử một tệp nhỏ để kiểm tra quyền trước khi lưu. Lưu ý: rà soát định kỳ có tải video từ kho của bạn về để đối chiếu (khoảng 1% mỗi tuần) — một số nhà cung cấp tính phí lượng dữ liệu tải ra. Nếu kho của bạn mất dữ liệu, video không lấy lại được từ đâu cả.';
 

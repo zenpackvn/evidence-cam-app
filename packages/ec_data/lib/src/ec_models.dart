@@ -90,6 +90,7 @@ class ShopDto {
     required this.platform,
     required this.resolution,
     required this.role,
+    this.ownerName,
     this.clipSeconds = _kFixedClipSeconds,
     this.planMaxClipSeconds = _kFixedClipSeconds,
   });
@@ -100,6 +101,7 @@ class ShopDto {
     platform: j['platform'] as String,
     resolution: (j['resolution'] as String?) ?? '720p',
     role: (j['role'] as String?) ?? 'owner',
+    ownerName: j['owner_name'] as String?,
     clipSeconds: _int(j['effective_clip_seconds'], _kFixedClipSeconds),
     planMaxClipSeconds: _int(j['plan_max_clip_seconds'], _kFixedClipSeconds),
   );
@@ -111,6 +113,13 @@ class ShopDto {
 
   /// owner | manager | staff
   final String role;
+
+  /// Tên chủ cửa hàng, chỉ có ở `GET /shops/:id`.
+  ///
+  /// Đây là đường DUY NHẤT để nhân viên biết mình đang làm cho ai: danh sách
+  /// thành viên chỉ chủ shop gọi được. `null` khi máy chủ chưa trả trường này
+  /// hoặc chủ shop chưa đặt tên.
+  final String? ownerName;
 
   /// Ngân sách clip (FR-17/FR-18). Backend đã kẹp [clipSeconds] vào khoảng
   /// [1 phút, 5 phút], nên app dùng thẳng.
@@ -818,6 +827,7 @@ class StorageViewDto {
     this.lastError,
     this.lastCheckedAt,
     this.capabilities,
+    this.s3,
   });
 
   factory StorageViewDto.fromJson(Map<String, dynamic> j) {
@@ -831,6 +841,9 @@ class StorageViewDto {
       email: config is Map<String, dynamic> ? config['email'] as String? : null,
       lastError: j['last_error'] as String?,
       lastCheckedAt: _intN(j['last_checked_at']),
+      s3: config is Map<String, dynamic> && (j['kind'] as String?) != 'gdrive'
+          ? S3ConfigViewDto.fromJson(config)
+          : null,
       capabilities: j['capabilities'] is Map<String, dynamic>
           ? StorageCapabilitiesDto.fromJson(
               j['capabilities'] as Map<String, dynamic>,
@@ -852,6 +865,9 @@ class StorageViewDto {
   final String? lastError;
   final int? lastCheckedAt;
   final StorageCapabilitiesDto? capabilities;
+
+  /// Cấu hình S3 đã che bí mật, `null` khi kho không phải S3.
+  final S3ConfigViewDto? s3;
 }
 
 String _storageLabel(Map<String, dynamic> config) {
@@ -944,6 +960,38 @@ class StorageStateDto {
   final bool gdriveNative;
 
   StorageKind get kind => storage?.kind ?? StorageKind.system;
+}
+
+/// Cấu hình S3 máy chủ trả về — đã che bí mật.
+///
+/// Bốn trường đầu về nguyên vẹn nên điền lại được vào form. Khoá thì không:
+/// `accessKeyId` chỉ còn bốn ký tự cuối và `secretAccessKey` không bao giờ rời
+/// máy chủ. Nên sửa cấu hình vẫn phải dán lại cặp khoá — điền sẵn một chuỗi đã
+/// bị che vào ô rồi gửi đi là gửi rác.
+class S3ConfigViewDto {
+  const S3ConfigViewDto({
+    this.endpoint = '',
+    this.region = '',
+    this.bucket = '',
+    this.prefix = '',
+    this.accessKeyIdMasked = '',
+  });
+
+  factory S3ConfigViewDto.fromJson(Map<String, dynamic> j) => S3ConfigViewDto(
+    endpoint: (j['endpoint'] as String?) ?? '',
+    region: (j['region'] as String?) ?? '',
+    bucket: (j['bucket'] as String?) ?? '',
+    prefix: (j['prefix'] as String?) ?? '',
+    accessKeyIdMasked: (j['accessKeyId'] as String?) ?? '',
+  );
+
+  final String endpoint;
+  final String region;
+  final String bucket;
+  final String prefix;
+
+  /// Dạng `…abcd` — đủ để khách nhận ra đã dán khoá nào, không đủ để dùng.
+  final String accessKeyIdMasked;
 }
 
 /// Kết quả vòng kiểm tra PUT→HEAD→GET→DELETE.

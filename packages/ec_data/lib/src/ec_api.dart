@@ -296,6 +296,37 @@ class EcApi {
     return StorageValidateDto.fromJson(res.data!);
   }
 
+  /// Thử một cấu hình S3 mà KHÔNG lưu gì.
+  ///
+  /// Dò quyền bên nhà cung cấp thường mất vài lượt, và mỗi lượt thử không được
+  /// phép thay cái kho đang chạy. Máy chủ có endpoint riêng cho việc này chính
+  /// vì `PUT /storage` là kiểm-rồi-lưu nguyên khối, không tách ra được ở client.
+  Future<StorageValidateDto> validateS3Storage(
+    String shopId, {
+    required String endpoint,
+    required String bucket,
+    required String accessKeyId,
+    required String secretAccessKey,
+    String region = 'auto',
+    String prefix = 'evidencecam',
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/shops/$shopId/storage/validate',
+      data: {
+        'kind': 's3',
+        'config': {
+          'endpoint': endpoint,
+          'bucket': bucket,
+          'accessKeyId': accessKeyId,
+          'secretAccessKey': secretAccessKey,
+          'region': region,
+          'prefix': prefix,
+        },
+      },
+    );
+    return StorageValidateDto.fromJson(res.data!);
+  }
+
   /// Thôi dùng kho riêng. Video quay TỪ LÚC NÀY về kho hệ thống; video cũ nằm
   /// nguyên trong kho của khách và hệ thống mất đường tới chúng.
   Future<void> deleteStorage(String shopId) =>

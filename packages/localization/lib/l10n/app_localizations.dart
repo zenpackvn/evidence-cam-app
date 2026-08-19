@@ -4136,6 +4136,24 @@ abstract class AppLocalizations {
   /// **'Change settings'**
   String get storageEditCta;
 
+  /// No description provided for @storageValidateOk.
+  ///
+  /// In en, this message translates to:
+  /// **'The config works. Press Save to switch to this storage.'**
+  String get storageValidateOk;
+
+  /// No description provided for @storageTestOnlyCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Test'**
+  String get storageTestOnlyCta;
+
+  /// Dưới tên cửa hàng. Nhân viên không gọi được danh sách thành viên, nên đây là chỗ duy nhất họ biết mình đang làm cho ai.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop owner: {name}'**
+  String shopOwnerLine(String name);
+
   /// Dưới form S3, đúng câu bản web dùng — nói cả chuyện phí egress của lượt rà định kỳ.
   ///
   /// In en, this message translates to:

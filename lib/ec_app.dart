@@ -1827,6 +1827,58 @@ class _StorageRouteState extends State<_StorageRoute>
     }
   }
 
+  /// Thử cấu hình S3 mà KHÔNG lưu.
+  ///
+  /// Không gọi `_reload()` ở cuối, khác [_saveS3]: lượt này không đổi gì phía
+  /// máy chủ, nên đọc lại chỉ tốn một vòng mạng — và tệ hơn, nó làm `busy` đảo
+  /// trạng thái đúng kiểu từng đóng sập form.
+  Future<void> _testS3({
+    required String endpoint,
+    required String bucket,
+    required String accessKeyId,
+    required String secretAccessKey,
+    required String region,
+    required String prefix,
+  }) async {
+    if (_busy) return;
+    final l10n = context.l10n;
+    setState(() {
+      _busy = true;
+      _s3Error = null;
+    });
+    try {
+      final result = await widget.repo.validateS3Storage(
+        widget.shopId,
+        endpoint: endpoint,
+        bucket: bucket,
+        accessKeyId: accessKeyId,
+        secretAccessKey: secretAccessKey,
+        region: region,
+        prefix: prefix.isEmpty ? 'evidencecam' : prefix,
+      );
+      if (!mounted) return;
+      if (result.ok) {
+        _toast(context, l10n.storageValidateOk);
+        return;
+      }
+      final hint = result.hint ?? l10n.errorLoadShopDetail;
+      developer.log(
+        'storage: thử S3 hỏng (${result.failedStep ?? "—"}): $hint',
+        name: 'zenpack.storage',
+        level: 900,
+      );
+      _toast(context, hint);
+      setState(() => _s3Error = hint);
+    } on Object catch (error) {
+      if (!mounted) return;
+      final text = _dataErrorText(l10n, error);
+      _toast(context, text);
+      setState(() => _s3Error = text);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _disconnect() async {
     final l10n = context.l10n;
     final confirmed = await showCupertinoDialog<bool>(
@@ -2016,6 +2068,13 @@ class _StorageRouteState extends State<_StorageRoute>
             presignedDownload: view?.capabilities?.presignedDownload ?? true,
             objectLock: view?.capabilities?.objectLock ?? false,
             driveEmail: view?.email,
+            // Cấu hình S3 đang lưu, để form điền sẵn lại lúc sửa. Cặp khoá
+            // không có ở đây — máy chủ chỉ trả bốn ký tự cuối của access key.
+            s3Endpoint: view?.s3?.endpoint ?? '',
+            s3Region: view?.s3?.region ?? '',
+            s3Bucket: view?.s3?.bucket ?? '',
+            s3Prefix: view?.s3?.prefix ?? '',
+            s3KeyMasked: view?.s3?.accessKeyIdMasked ?? '',
             health: EcStorageHealth(
               total: dto.health.total,
               intact: dto.health.intact,
@@ -2037,6 +2096,24 @@ class _StorageRouteState extends State<_StorageRoute>
                 if (saved == true && mounted) _reload();
               }),
           s3ErrorText: _s3Error,
+          onTestS3:
+              ({
+                required endpoint,
+                required bucket,
+                required accessKeyId,
+                required secretAccessKey,
+                required region,
+                required prefix,
+              }) => unawaited(
+                _testS3(
+                  endpoint: endpoint,
+                  bucket: bucket,
+                  accessKeyId: accessKeyId,
+                  secretAccessKey: secretAccessKey,
+                  region: region,
+                  prefix: prefix,
+                ),
+              ),
           onCancel: () {
             if (_s3Error != null) setState(() => _s3Error = null);
           },
@@ -3609,6 +3686,7 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
           membersUnavailable: detail.membersRestricted,
           onRetryMembers: _retry,
           shopName: detail.shop.name,
+          ownerName: detail.shop.ownerName,
           platformLabel: _platformDisplayName(detail.shop.platform),
           resolution: detail.shop.resolution,
           clipBudget: _budgetFromDto(detail.shop),
@@ -3662,7 +3740,10 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
           onRenameShop: locked || widget.onRenameShop == null
               ? null
               : () => unawaited(widget.onRenameShop!().then((_) => _retry())),
-          onAddType: locked || widget.onAddType == null
+          // Thêm loại video KHÔNG khoá theo `locked`. Người đứng máy là người
+          // phát hiện ra thiếu loại — giữa ca, lúc trên tay đang là một đơn
+          // không biết xếp vào đâu. Sửa và xoá thì vẫn chỉ chủ shop.
+          onAddType: widget.onAddType == null
               ? null
               : () => widget.onAddType!().then((_) {
                   if (mounted) _retry();

@@ -657,6 +657,49 @@ void main() {
       );
     });
 
+    // Thêm loại video mở cho MỌI vai trò, khác các nút quản trị khác. Người
+    // đứng máy là người phát hiện ra thiếu loại — giữa ca, lúc trên tay đang là
+    // một đơn không biết xếp vào đâu.
+    testWidgets('vẫn thêm được loại video', (tester) async {
+      var added = 0;
+      await _pump(
+        tester,
+        EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          videoTypes: const [],
+          members: const [],
+          readOnly: true,
+          onAddType: () => added++,
+        ),
+      );
+
+      final add = find.text('Thêm loại (nhập tên)');
+      expect(add, findsOneWidget, reason: 'nhân viên không thấy nút thêm loại');
+      await tester.tap(add);
+      await tester.pumpAndSettle();
+      expect(added, 1);
+    });
+
+    // Nhân viên không gọi được danh sách thành viên (máy chủ chặn ở
+    // `requireOwner`), nên tên chủ shop dưới tên cửa hàng là chỗ DUY NHẤT họ
+    // biết mình đang làm cho ai.
+    testWidgets('thấy tên chủ shop, chỉ đọc', (tester) async {
+      await _pump(
+        tester,
+        const EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          videoTypes: [],
+          members: [],
+          readOnly: true,
+          ownerName: 'Chị Hoa',
+        ),
+      );
+
+      expect(find.textContaining('Chị Hoa'), findsOneWidget);
+    });
+
     testWidgets('loại video không có nút sửa, xoá hay ổ khoá', (tester) async {
       const types = [
         EcVideoType(id: 't1', name: 'Đóng hàng', locked: true),

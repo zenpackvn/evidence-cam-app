@@ -129,6 +129,17 @@ abstract interface class EcRepository {
     String prefix,
   });
   Future<StorageValidateDto> testStorage(String shopId);
+
+  /// Thử một cấu hình S3 mà KHÔNG lưu — nút "Kiểm tra" ở màn Kho lưu trữ.
+  Future<StorageValidateDto> validateS3Storage(
+    String shopId, {
+    required String endpoint,
+    required String bucket,
+    required String accessKeyId,
+    required String secretAccessKey,
+    String region,
+    String prefix,
+  });
   Future<void> disconnectStorage(String shopId);
 
   /// Cắm Drive bằng mã uỷ quyền từ hộp thoại gốc, không qua trình duyệt.
@@ -364,6 +375,25 @@ class RemoteEcRepository implements EcRepository {
   @override
   Future<StorageValidateDto> testStorage(String shopId) =>
       _api.testStorage(shopId);
+
+  @override
+  Future<StorageValidateDto> validateS3Storage(
+    String shopId, {
+    required String endpoint,
+    required String bucket,
+    required String accessKeyId,
+    required String secretAccessKey,
+    String region = 'auto',
+    String prefix = 'evidencecam',
+  }) => _api.validateS3Storage(
+    shopId,
+    endpoint: endpoint,
+    bucket: bucket,
+    accessKeyId: accessKeyId,
+    secretAccessKey: secretAccessKey,
+    region: region,
+    prefix: prefix,
+  );
 
   @override
   Future<void> disconnectStorage(String shopId) => _api.deleteStorage(shopId);

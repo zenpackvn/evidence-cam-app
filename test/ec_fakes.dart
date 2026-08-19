@@ -387,6 +387,17 @@ class FakeEcRepository implements EcRepository {
       const StorageValidateDto(ok: true);
 
   @override
+  Future<StorageValidateDto> validateS3Storage(
+    String shopId, {
+    required String endpoint,
+    required String bucket,
+    required String accessKeyId,
+    required String secretAccessKey,
+    String region = 'auto',
+    String prefix = 'evidencecam',
+  }) async => const StorageValidateDto(ok: true);
+
+  @override
   Future<void> disconnectStorage(String shopId) async {}
 
   @override

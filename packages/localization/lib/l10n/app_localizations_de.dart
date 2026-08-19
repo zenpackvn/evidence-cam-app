@@ -2329,6 +2329,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storageEditCta => 'Change settings';
 
   @override
+  String get storageValidateOk =>
+      'The config works. Press Save to switch to this storage.';
+
+  @override
+  String get storageTestOnlyCta => 'Test';
+
+  @override
+  String shopOwnerLine(String name) {
+    return 'Shop owner: $name';
+  }
+
+  @override
   String get storageConnectNote =>
       'We write–read–delete a tiny test object before saving. Note: periodic audits download ~1% of videos weekly to verify them — some providers charge egress. If your storage loses data, the video cannot be recovered from anywhere.';
 

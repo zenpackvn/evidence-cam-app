@@ -1480,6 +1480,17 @@
   "codeBelongsToAnotherOrder": "This code already belongs to another order — cannot merge.",
   "codeAttachFailed": "Could not attach the code. Try again.",
   "storageEditCta": "Change settings",
+  "storageValidateOk": "The config works. Press Save to switch to this storage.",
+  "storageTestOnlyCta": "Test",
+  "shopOwnerLine": "Shop owner: {name}",
+  "@shopOwnerLine": {
+    "description": "Dưới tên cửa hàng. Nhân viên không gọi được danh sách thành viên, nên đây là chỗ duy nhất họ biết mình đang làm cho ai.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "storageConnectNote": "We write\u2013read\u2013delete a tiny test object before saving. Note: periodic audits download ~1% of videos weekly to verify them \u2014 some providers charge egress. If your storage loses data, the video cannot be recovered from anywhere.",
   "@storageConnectNote": {
     "description": "Dưới form S3, đúng câu bản web dùng — nói cả chuyện phí egress của lượt rà định kỳ."

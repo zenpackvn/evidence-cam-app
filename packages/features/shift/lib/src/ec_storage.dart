@@ -64,6 +64,11 @@ class EcStorageState {
     this.presignedDownload = true,
     this.objectLock = false,
     this.driveEmail,
+    this.s3Endpoint = '',
+    this.s3Region = '',
+    this.s3Bucket = '',
+    this.s3Prefix = '',
+    this.s3KeyMasked = '',
   });
 
   final EcStorageKind kind;
@@ -89,6 +94,17 @@ class EcStorageState {
   /// Tài khoản Google đang giữ kho. Chỉ để người dùng nhận ra mình đã cắm
   /// nhầm tài khoản nào — đổi tài khoản là cắm lại từ đầu.
   final String? driveEmail;
+
+  /// Cấu hình S3 đang lưu, để điền sẵn lại vào form lúc sửa.
+  ///
+  /// Khoá KHÔNG có ở đây theo đúng nghĩa đen: máy chủ chỉ trả bốn ký tự cuối
+  /// của access key và không bao giờ trả secret. [s3KeyMasked] chỉ để làm chữ
+  /// mờ trong ô, giúp khách nhận ra mình đã dán khoá nào.
+  final String s3Endpoint;
+  final String s3Region;
+  final String s3Bucket;
+  final String s3Prefix;
+  final String s3KeyMasked;
 }
 
 /// Màn "Kho lưu trữ": chọn một trong ba nơi cất video của shop.
@@ -100,6 +116,7 @@ class EcStorageScreen extends StatefulWidget {
     this.onConnectDrive,
     this.onSaveS3,
     this.s3ErrorText,
+    this.onTestS3,
     this.onCancel,
     this.onTest,
     this.onDisconnect,
@@ -144,6 +161,20 @@ class EcStorageScreen extends StatefulWidget {
 
   /// Câu `hint` nguyên văn từ máy chủ sau một lượt lưu hỏng, vẽ dưới form.
   final String? s3ErrorText;
+
+  /// Bấm Kiểm tra: thử sáu ô hiện tại mà KHÔNG lưu.
+  ///
+  /// Tách khỏi [onSaveS3] vì hai việc khác nhau: dò quyền bên nhà cung cấp
+  /// thường mất vài lượt, và mỗi lượt thử không được thay cái kho đang chạy.
+  final void Function({
+    required String endpoint,
+    required String bucket,
+    required String accessKeyId,
+    required String secretAccessKey,
+    required String region,
+    required String prefix,
+  })?
+  onTestS3;
 
   /// Bấm Huỷ — bên gọi dọn [s3ErrorText] của lượt lưu trước.
   ///
@@ -265,6 +296,21 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
 
   /// Form S3 có mở trong thẻ không: đang ngắm S3 mà chưa cắm, hoặc vừa bấm
   /// "Đổi cấu hình" trên kho S3 đang dùng. Đúng điều kiện `showS3Form` bên web.
+  /// Đổ cấu hình đang lưu vào form, một lần mỗi lượt mở.
+  ///
+  /// Chỉ bốn ô không bí mật. Cặp khoá phải dán lại: máy chủ không bao giờ trả
+  /// secret, và access key chỉ về bốn ký tự cuối — điền một chuỗi đã bị che vào
+  /// ô rồi gửi đi là gửi rác. Chữ mờ trong ô khoá giữ lại phần đuôi đó để khách
+  /// nhận ra mình đã dán khoá nào.
+  void _prefillS3() {
+    final state = widget.state;
+    if (state.kind != EcStorageKind.s3) return;
+    _s3.endpoint.text = state.s3Endpoint;
+    _s3.region.text = state.s3Region;
+    _s3.bucket.text = state.s3Bucket;
+    _s3.prefix.text = state.s3Prefix;
+  }
+
   bool get _s3FormOpen =>
       _picked == EcStorageKind.s3 &&
       (widget.state.kind != EcStorageKind.s3 || _editingS3) &&
@@ -360,7 +406,10 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
         onTest: widget.onTest,
         onDisconnect: widget.onDisconnect,
         onEdit: kind == EcStorageKind.s3
-            ? () => setState(() => _editingS3 = true)
+            ? () => setState(() {
+                _editingS3 = true;
+                _prefillS3();
+              })
             : null,
       );
     }
@@ -371,6 +420,7 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
       return _S3Form(
         fields: _s3,
         errorText: widget.s3ErrorText,
+        keyHint: widget.state.s3KeyMasked,
         onChanged: () => setState(() {}),
       );
     }
@@ -443,6 +493,17 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                     onTap: _cancel,
                   ),
                   const SizedBox(width: 8),
+                  // Nút Kiểm tra chỉ có nghĩa khi form S3 đang mở, nên chỉ hiện
+                  // ở đó — giống bản web. Nó thử cấu hình mà KHÔNG lưu: dò
+                  // quyền bên nhà cung cấp thường mất vài lượt, và mỗi lượt thử
+                  // không được phép thay cái kho đang chạy.
+                  if (_s3FormOpen && widget.onTestS3 != null) ...[
+                    _TestButton(
+                      enabled: _s3.ready && !widget.busy,
+                      onTap: () => _s3.submit(widget.onTestS3!),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   _SaveButton(
                     enabled: _canSave,
                     busy: widget.busy,
@@ -744,6 +805,7 @@ class _S3Form extends StatelessWidget {
     required this.fields,
     required this.onChanged,
     this.errorText,
+    this.keyHint = '',
   });
 
   final _S3Controllers fields;
@@ -754,6 +816,9 @@ class _S3Form extends StatelessWidget {
 
   /// Câu `hint` nguyên văn từ máy chủ: thiếu quyền gì, sửa thế nào.
   final String? errorText;
+
+  /// Đuôi access key đang lưu (`…abcd`), làm chữ mờ cho ô khoá.
+  final String keyHint;
 
   @override
   Widget build(BuildContext context) {
@@ -794,7 +859,9 @@ class _S3Form extends StatelessWidget {
           _Field(
             label: l10n.storageFieldAccessKey,
             controller: fields.keyId,
-            placeholder: 'AKIA…',
+            // Đuôi khoá đang lưu làm chữ mờ: khách nhận ra mình đã dán khoá
+            // nào mà không có gì bí mật lọt ra.
+            placeholder: keyHint.isEmpty ? 'AKIA…' : keyHint,
             onChanged: onChanged,
           ),
           _Field(
@@ -1177,6 +1244,46 @@ class _Field extends StatelessWidget {
             PenText(hint!, size: 12, color: PenColors.mut),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Nút kiểm tra cấu hình S3, đứng giữa Huỷ và Lưu.
+///
+/// Cùng hình đĩa với hai nút kia; viền như nút Huỷ vì đây cũng không phải việc
+/// chính — nó chỉ trả lời "cấu hình này chạy được chưa" mà không đổi gì.
+class _TestButton extends StatelessWidget {
+  const _TestButton({required this.enabled, required this.onTap});
+
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: context.l10n.storageTestOnlyCta,
+      child: EcTap(
+        onTap: enabled ? onTap : null,
+        child: PenBox(
+          width: 40,
+          height: 40,
+          fill: PenColors.bg,
+          stroke: enabled ? PenColors.line : PenColors.soft,
+          radius: 999,
+          axis: PenAxis.row,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.flaskConical,
+              size: 20,
+              color: enabled ? PenColors.ink : PenColors.soft,
+            ),
+          ],
+        ),
       ),
     );
   }

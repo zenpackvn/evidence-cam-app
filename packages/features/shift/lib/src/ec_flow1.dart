@@ -1955,6 +1955,7 @@ class EcShopDetailScreen extends StatelessWidget {
     this.membersUnavailable = false,
     this.onRetryMembers,
     this.readOnly = false,
+    this.ownerName,
     super.key,
   });
 
@@ -1965,6 +1966,9 @@ class EcShopDetailScreen extends StatelessWidget {
   /// người dùng bấm đi bấm lại rồi kết luận app hỏng, chứ không đoán ra là
   /// mình không có quyền.
   final bool readOnly;
+
+  /// Tên chủ cửa hàng, vẽ dưới tên shop. `null` = không hiện dòng nào.
+  final String? ownerName;
 
   final String shopName;
   final String platformLabel;
@@ -2051,13 +2055,35 @@ class EcShopDetailScreen extends StatelessWidget {
                   ],
                 ),
                 Expanded(
-                  child: PenText(
-                    shopName,
-                    size: 24,
-                    color: PenColors.ink,
-                    weight: FontWeight.w800,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      PenText(
+                        shopName,
+                        size: 24,
+                        color: PenColors.ink,
+                        weight: FontWeight.w800,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      // Chủ shop là ai — chỉ đọc, không bấm được.
+                      //
+                      // Nhân viên không gọi được danh sách thành viên (máy chủ
+                      // chặn ở `requireOwner`), nên đây là chỗ DUY NHẤT họ biết
+                      // mình đang làm cho ai. Mà đó lại là người đầu tiên họ
+                      // cần tìm khi kho hỏng hay hết hạn mức.
+                      if (ownerName?.isNotEmpty ?? false) ...[
+                        const SizedBox(height: 2),
+                        PenText(
+                          context.l10n.shopOwnerLine(ownerName!),
+                          size: 13,
+                          color: PenColors.mut,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 // Bút sửa nằm ngay cạnh tên, không phải trong một màn cài đặt
@@ -2231,7 +2257,15 @@ class EcShopDetailScreen extends StatelessWidget {
                         ? null
                         : () => onDeleteType!(type),
                   ),
-                if (!readOnly)
+                // Thêm loại video mở cho MỌI vai trò, khác các nút quản trị
+                // khác trên màn này. Người đứng máy là người phát hiện ra thiếu
+                // loại — giữa ca đóng hàng, lúc trên tay đang là một đơn không
+                // biết xếp vào đâu. Bắt họ chờ chủ shop mở máy là clip đó không
+                // bao giờ được quay.
+                //
+                // Sửa và xoá thì vẫn chỉ chủ shop: thêm một loại là việc cộng
+                // thêm, còn sửa/xoá đụng vào clip người khác đã quay.
+                if (onAddType != null)
                   EcTap(
                     onTap: onAddType,
                     child: PenBox(
