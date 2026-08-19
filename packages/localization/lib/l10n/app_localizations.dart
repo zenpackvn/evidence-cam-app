@@ -4129,6 +4129,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not attach the code. Try again.'**
   String get codeAttachFailed;
+
+  /// Hiện ngay khi người dùng CHỌN thẻ S3 mà chưa lưu — nói trước bấm Lưu sẽ xảy ra chuyện gì.
+  ///
+  /// In en, this message translates to:
+  /// **'Save opens a form for your endpoint, bucket and key pair. New videos land in that bucket; the ones already recorded stay where they are.'**
+  String get storagePickS3Note;
+
+  /// Hiện ngay khi người dùng CHỌN thẻ Drive mà chưa lưu — nói trước bấm Lưu sẽ xảy ra chuyện gì.
+  ///
+  /// In en, this message translates to:
+  /// **'Save opens the Google dialog to pick an account. The app creates its own folder for the videos and can only reach that folder — nothing else in your Drive.'**
+  String get storagePickDriveNote;
+
+  /// Máy chủ trả `no_refresh_token`: đổi mã thành công nhưng không kèm refresh token, thường vì tài khoản đã cấp quyền từ lần trước. Cắm lại y nguyên sẽ hỏng y như vậy, nên phải chỉ đường gỡ quyền cũ.
+  ///
+  /// In en, this message translates to:
+  /// **'Google did not grant long-lived access this time. Open your Google Account → Third-party apps, remove Zenpack, then connect again.'**
+  String get storageDriveNoConsent;
+
+  /// Máy chủ trả `code_exchange_failed` / `folder_create_failed` / `probe_failed` — hỏng ở phía Google hoặc lúc tạo thư mục, không phải thiếu cấu hình.
+  ///
+  /// In en, this message translates to:
+  /// **'Google refused the grant. Try again; if it keeps failing, tell your admin.'**
+  String get storageDriveRejected;
 }
 
 class _AppLocalizationsDelegate

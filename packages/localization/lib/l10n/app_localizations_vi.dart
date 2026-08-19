@@ -2275,4 +2275,20 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get codeAttachFailed => 'Không gắn được mã. Thử lại.';
+
+  @override
+  String get storagePickS3Note =>
+      'Bấm Lưu để nhập endpoint, bucket và cặp khoá của bạn. Video quay từ lúc đó nằm trong bucket ấy; video cũ ở nguyên chỗ cũ.';
+
+  @override
+  String get storagePickDriveNote =>
+      'Bấm Lưu để mở hộp thoại Google chọn tài khoản. App tự tạo một thư mục riêng để cất video và chỉ với tới được đúng thư mục đó, không thấy gì khác trong Drive của bạn.';
+
+  @override
+  String get storageDriveNoConsent =>
+      'Google không cấp quyền dài hạn cho lượt này. Vào Tài khoản Google → Ứng dụng của bên thứ ba, gỡ Zenpack ra rồi cắm lại.';
+
+  @override
+  String get storageDriveRejected =>
+      'Google từ chối lượt cấp quyền. Thử lại; vẫn vậy thì báo quản trị viên.';
 }

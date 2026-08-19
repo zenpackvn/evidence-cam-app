@@ -2292,4 +2292,20 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get codeAttachFailed => 'Tidak dapat melampirkan kode.';
+
+  @override
+  String get storagePickS3Note =>
+      'Save opens a form for your endpoint, bucket and key pair. New videos land in that bucket; the ones already recorded stay where they are.';
+
+  @override
+  String get storagePickDriveNote =>
+      'Save opens the Google dialog to pick an account. The app creates its own folder for the videos and can only reach that folder — nothing else in your Drive.';
+
+  @override
+  String get storageDriveNoConsent =>
+      'Google did not grant long-lived access this time. Open your Google Account → Third-party apps, remove Zenpack, then connect again.';
+
+  @override
+  String get storageDriveRejected =>
+      'Google refused the grant. Try again; if it keeps failing, tell your admin.';
 }

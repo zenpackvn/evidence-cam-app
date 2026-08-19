@@ -1809,8 +1809,9 @@ class _StorageRouteState extends State<_StorageRoute>
       // Người dùng tự huỷ hộp thoại thì im lặng — họ vừa nói "không" xong, báo
       // lỗi vào mặt họ là nói lại điều họ vừa quyết định.
       if (_userCancelled(error)) return;
+      final code = _apiErrorCode(error);
       developer.log(
-        'storage: cắm Drive hỏng (${error.runtimeType})',
+        'storage: cắm Drive hỏng (${code ?? error.runtimeType})',
         name: 'zenpack.storage',
         level: 900,
         error: error,
@@ -1823,9 +1824,36 @@ class _StorageRouteState extends State<_StorageRoute>
       // câu vừa đồng ý — hai lần cấp quyền cho một việc, và lần thứ hai rời
       // hẳn khỏi app. Nói thẳng là hỏng thì người dùng biết đường báo lại;
       // đẩy sang web thì họ tưởng app bắt làm hai lần cho vui.
-      if (mounted) _toast(context, l10n.storageDriveFailed);
+      if (mounted) _toast(context, _driveErrorText(l10n, code, error));
     }
   }
+
+  /// Câu nói cho đúng lý do Drive không cắm được.
+  ///
+  /// Trước đây MỌI lỗi ở đây đều ra một câu duy nhất — "máy chủ chưa bật cấp
+  /// quyền ngay trong app". Câu đó chỉ đúng với `native_not_configured`. Gói
+  /// chưa mở, không phải chủ shop, Google từ chối, mạng rớt: tất cả đều bị kể
+  /// thành lỗi cấu hình máy chủ. Người dùng báo lại một chuyện không có thật,
+  /// còn nguyên nhân thật thì không ai lần ra — kể cả khi đọc log, vì log cũng
+  /// chỉ ghi `runtimeType`.
+  static String _driveErrorText(
+    AppLocalizations l10n,
+    String? code,
+    Object error,
+  ) => switch (code) {
+    'native_not_configured' => l10n.storageDriveFailed,
+    'byos_not_in_plan' => l10n.storageNotInPlan,
+    'owner_only' => l10n.storageOwnerOnly,
+    // Đổi mã xong nhưng Google không kèm refresh token — gần như luôn vì tài
+    // khoản đã cấp quyền từ lần trước. Cắm lại y nguyên sẽ hỏng y như vậy, nên
+    // câu này phải chỉ đường gỡ quyền cũ chứ không phải "thử lại".
+    'no_refresh_token' => l10n.storageDriveNoConsent,
+    'code_exchange_failed' ||
+    'folder_create_failed' ||
+    'probe_failed' => l10n.storageDriveRejected,
+    // Mã lạ hoặc không phải lỗi từ máy chủ (mạng, 5xx): để bộ dịch chung lo.
+    _ => _dataErrorText(l10n, error),
+  };
 
   /// Mã uỷ quyền từ hộp thoại Google gốc, hoặc `null` khi người dùng huỷ.
   Future<String?> _driveAuthCode() async {

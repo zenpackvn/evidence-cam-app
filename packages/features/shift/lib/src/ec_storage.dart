@@ -192,10 +192,22 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// thì "Cloud Zenpack" trông gọn ghẽ còn Drive/S3 kéo theo một mảng số liệu
   /// không rõ của ai.
   ///
-  /// Kho ĐANG dùng → bảng tình trạng. Kho chưa dùng → lối cắm.
+  /// Kho ĐANG dùng → bảng tình trạng. Kho vừa CHỌN mà chưa dùng → nói trước
+  /// bấm Lưu sẽ xảy ra chuyện gì. Còn lại → không mở gì.
+  ///
+  /// Trước đây chỉ kho đang dùng mới có phần này, nên chạm vào Drive hay S3
+  /// không thấy gì thêm: muốn biết chọn nó nghĩa là gì thì phải bấm Lưu rồi đi
+  /// hết luồng cắm kho mới rõ. Đó là bắt người dùng cam kết trước khi đọc.
+  ///
+  /// Phần xem trước KHÔNG có nút áp dụng: nút Lưu trên đầu màn vẫn là chỗ duy
+  /// nhất đổi kho. Hai chỗ cùng làm một việc thì người dùng học rằng chạm vào
+  /// thẻ là xong — đúng thói quen đã bỏ đi.
   Widget? _detailFor(EcStorageKind kind) {
     final state = widget.state;
     if (state.kind == kind) {
+      // Cloud Zenpack không mở bảng tình trạng: bốn con số đó đếm video trong
+      // kho RIÊNG của shop, và "thôi dùng kho riêng" ở đây không có gì để thôi.
+      if (kind == EcStorageKind.system) return null;
       return _StatusDetail(
         state: state,
         busy: widget.busy,
@@ -204,10 +216,36 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
         onEdit: kind == EcStorageKind.s3 ? widget.onConnectS3 : null,
       );
     }
-    // Kho CHƯA dùng không còn nút cắm riêng: có hai chỗ cùng áp dụng một thay
-    // đổi thì nút lưu trên đầu màn thành đồ trang trí, và người dùng học được
-    // rằng chạm vào thẻ là xong — đúng thói quen vừa bỏ đi.
-    return null;
+    if (_picked != kind) return null;
+    final lines = _previewLines(kind);
+    // Không có gì để nói thì KHÔNG mở phần này: thẻ vẽ một đường kẻ ngăn cách
+    // ngay khi `detail != null`, nên một khối rỗng để lại đúng cái đường kẻ
+    // treo lơ lửng dưới đáy thẻ.
+    return lines.isEmpty ? null : _PickPreview(lines: lines);
+  }
+
+  /// Những câu nói trước cho kho vừa chọn, theo thứ tự đọc.
+  ///
+  /// Chỉ những thứ đúng mà không cần hỏi máy chủ. Drive chắc chắn không ký được
+  /// link tải — đó là tính chất của Drive, không phải kết quả đo. S3 thì tuỳ
+  /// nhà cung cấp nên ở đây im lặng: bảng tình trạng sau khi cắm mới nói, dựa
+  /// trên thứ máy chủ đo thật.
+  ///
+  /// Gói chưa mở kho riêng thì không hứa gì: thẻ đã có dòng khoá của nó, và mô
+  /// tả một luồng người dùng chưa đi được chỉ làm dòng khoá kia đọc như lời
+  /// nói suông.
+  List<String> _previewLines(EcStorageKind kind) {
+    final l10n = context.l10n;
+    final byos = widget.state.byosAllowed;
+    return switch (kind) {
+      // Chọn Cloud Zenpack trong lúc đang dùng kho riêng = sắp GỠ kho riêng.
+      // Đó là câu hộp xác nhận vẫn hỏi — nói trước ở đây để không ai bấm Lưu
+      // mà chưa biết video cũ sẽ ra sao.
+      EcStorageKind.system => _own ? [l10n.storageDisconnectConfirm] : const [],
+      EcStorageKind.s3 => byos ? [l10n.storagePickS3Note] : const [],
+      EcStorageKind.gdrive =>
+        byos ? [l10n.storagePickDriveNote, l10n.storageNoPresign] : const [],
+    };
   }
 
   @override
@@ -244,6 +282,7 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                 description: l10n.storageSystemDesc,
                 selected: _picked == EcStorageKind.system,
                 inUse: state.kind == EcStorageKind.system,
+                detail: _detailFor(EcStorageKind.system),
                 onTap: () => _pick(EcStorageKind.system),
               ),
               const SizedBox(height: 10),
@@ -431,6 +470,32 @@ class _StorageOption extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Xem trước kho vừa CHỌN nhưng chưa lưu: bấm Lưu sẽ xảy ra chuyện gì.
+///
+/// Thuần chữ, không nút. Nút Lưu trên đầu màn vẫn là chỗ duy nhất đổi kho.
+class _PickPreview extends StatelessWidget {
+  const _PickPreview({required this.lines});
+
+  final List<String> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final (index, line) in lines.indexed) ...[
+            if (index > 0) const SizedBox(height: 6),
+            PenText(line, size: 12, color: PenColors.mut, lineHeight: 1.4),
+          ],
         ],
       ),
     );

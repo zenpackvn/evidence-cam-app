@@ -115,6 +115,70 @@ void main() {
       expect(picked, 0, reason: 'ghi lựa chọn khi người dùng chưa xác nhận');
     });
 
+    // Chạm là đọc được ngay. Trước đây phần mô tả chỉ mở ra cho kho ĐANG dùng,
+    // nên muốn biết chọn Drive nghĩa là gì thì phải bấm Lưu rồi đi hết luồng
+    // cấp quyền Google mới rõ — cam kết trước, đọc sau.
+    testWidgets('chọn một kho chưa dùng thì mở phần nói trước ngay', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(canManage: true, byosAllowed: true),
+        ),
+      );
+
+      final note = find.textContaining('App tự tạo một thư mục riêng');
+      expect(note, findsNothing, reason: 'chưa chọn đã mở phần nói trước');
+
+      await tester.tap(find.text('Google Drive'));
+      await tester.pumpAndSettle();
+
+      expect(note, findsOneWidget);
+      // Drive chắc chắn không ký được link tải — biết trước, nói trước.
+      expect(find.textContaining('đi vòng qua máy chủ'), findsOneWidget);
+    });
+
+    // Chọn Cloud Zenpack trong lúc đang dùng kho riêng = sắp GỠ kho riêng. Câu
+    // này phải đọc được TRƯỚC khi bấm Lưu, không phải trong hộp xác nhận hiện
+    // ra sau đó.
+    testWidgets('chọn kho hệ thống khi đang dùng kho riêng thì báo trước', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(
+            kind: EcStorageKind.s3,
+            canManage: true,
+            byosAllowed: true,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Cloud Zenpack'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Video quay từ lúc này'), findsOneWidget);
+    });
+
+    // Gói chưa mở kho riêng: thẻ đã có dòng khoá của nó. Mô tả thêm một luồng
+    // người dùng không đi được chỉ làm dòng khoá kia đọc như lời nói suông.
+    testWidgets('gói chưa mở thì chọn Drive không hứa hẹn gì thêm', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(state: EcStorageState(canManage: true)),
+      );
+
+      await tester.tap(find.text('Google Drive'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('App tự tạo một thư mục riêng'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('bấm lưu mới áp dụng lựa chọn vừa chọn', (tester) async {
       var connectS3 = 0;
       EcStorageKind? pickedKind;
