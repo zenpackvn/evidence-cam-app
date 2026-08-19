@@ -910,6 +910,7 @@ class StorageStateDto {
     this.storage,
     this.health = const StorageHealthDto(),
     this.byosAllowed = false,
+    this.gdriveNative = false,
   });
 
   factory StorageStateDto.fromJson(Map<String, dynamic> j) => StorageStateDto(
@@ -920,6 +921,10 @@ class StorageStateDto {
         ? StorageHealthDto.fromJson(j['health'] as Map<String, dynamic>)
         : const StorageHealthDto(),
     byosAllowed: (j['byos_allowed'] as bool?) ?? false,
+    // Mặc định FALSE khi máy chủ chưa trả trường này: bản backend cũ không có
+    // cặp client native, nên đoán "có" là đẩy người dùng vào đúng cái ngõ cụt
+    // mà cờ này sinh ra để tránh.
+    gdriveNative: (j['gdrive_native'] as bool?) ?? false,
   );
 
   /// Null = đang dùng Cloud Zenpack (mặc định).
@@ -929,6 +934,14 @@ class StorageStateDto {
   /// Gói hiện tại có được cắm kho riêng không. Ẩn nút theo cờ NÀY, đừng tự suy
   /// từ mã gói ở client — quy tắc phân gói chỉ sống ở một chỗ.
   final bool byosAllowed;
+
+  /// Máy chủ có đổi được `serverAuthCode` từ hộp thoại Google của điện thoại
+  /// không.
+  ///
+  /// False = phải đi luồng trình duyệt. Biết TRƯỚC khi hiện bất cứ màn Google
+  /// nào mới có nghĩa: phát hiện sau khi người dùng đã cấp quyền xong thì lần
+  /// cấp quyền thứ hai ở trình duyệt là hỏi lại đúng câu họ vừa đồng ý.
+  final bool gdriveNative;
 
   StorageKind get kind => storage?.kind ?? StorageKind.system;
 }
