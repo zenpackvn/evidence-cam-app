@@ -1956,6 +1956,7 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onRetryMembers,
     this.readOnly = false,
     this.ownerName,
+    this.ownerEmail,
     super.key,
   });
 
@@ -1969,6 +1970,9 @@ class EcShopDetailScreen extends StatelessWidget {
 
   /// Tên chủ cửa hàng, vẽ dưới tên shop. `null` = không hiện dòng nào.
   final String? ownerName;
+
+  /// Email chủ cửa hàng, vẽ ngay dưới [ownerName].
+  final String? ownerEmail;
 
   final String shopName;
   final String platformLabel;
@@ -2077,6 +2081,20 @@ class EcShopDetailScreen extends StatelessWidget {
                         const SizedBox(height: 2),
                         PenText(
                           context.l10n.shopOwnerLine(ownerName!),
+                          size: 13,
+                          color: PenColors.mut,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      // Email xuống dòng riêng chứ không nối vào dòng trên:
+                      // gộp lại thì trên máy hẹp một trong hai bị cắt ba chấm,
+                      // và cái bị cắt gần như luôn là email — thứ phải copy
+                      // được nguyên vẹn mới dùng được.
+                      if (ownerEmail?.isNotEmpty ?? false) ...[
+                        const SizedBox(height: 1),
+                        PenText(
+                          ownerEmail!,
                           size: 13,
                           color: PenColors.mut,
                           softWrap: false,

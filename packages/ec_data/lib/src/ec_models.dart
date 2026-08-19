@@ -91,6 +91,7 @@ class ShopDto {
     required this.resolution,
     required this.role,
     this.ownerName,
+    this.ownerEmail,
     this.clipSeconds = _kFixedClipSeconds,
     this.planMaxClipSeconds = _kFixedClipSeconds,
   });
@@ -102,6 +103,7 @@ class ShopDto {
     resolution: (j['resolution'] as String?) ?? '720p',
     role: (j['role'] as String?) ?? 'owner',
     ownerName: j['owner_name'] as String?,
+    ownerEmail: j['owner_email'] as String?,
     clipSeconds: _int(j['effective_clip_seconds'], _kFixedClipSeconds),
     planMaxClipSeconds: _int(j['plan_max_clip_seconds'], _kFixedClipSeconds),
   );
@@ -120,6 +122,10 @@ class ShopDto {
   /// thành viên chỉ chủ shop gọi được. `null` khi máy chủ chưa trả trường này
   /// hoặc chủ shop chưa đặt tên.
   final String? ownerName;
+
+  /// Email chủ cửa hàng, cùng phạm vi với [ownerName]. Đường liên lạc khi kho
+  /// hỏng giữa ca — một cái tên thì không gọi được cho ai.
+  final String? ownerEmail;
 
   /// Ngân sách clip (FR-17/FR-18). Backend đã kẹp [clipSeconds] vào khoảng
   /// [1 phút, 5 phút], nên app dùng thẳng.

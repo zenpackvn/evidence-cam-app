@@ -3687,6 +3687,7 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
           onRetryMembers: _retry,
           shopName: detail.shop.name,
           ownerName: detail.shop.ownerName,
+          ownerEmail: detail.shop.ownerEmail,
           platformLabel: _platformDisplayName(detail.shop.platform),
           resolution: detail.shop.resolution,
           clipBudget: _budgetFromDto(detail.shop),

@@ -694,10 +694,32 @@ void main() {
           members: [],
           readOnly: true,
           ownerName: 'Chị Hoa',
+          ownerEmail: 'hoa@shop.vn',
+        ),
+      );
+
+      // Ba thứ: chức vụ, tên, email. Chức vụ nằm trong chính câu "Chủ shop:".
+      expect(find.textContaining('Chủ shop'), findsOneWidget);
+      expect(find.textContaining('Chị Hoa'), findsOneWidget);
+      expect(find.text('hoa@shop.vn'), findsOneWidget);
+    });
+
+    // Chủ shop cũng thấy khối đó — không phải thứ chỉ dành cho nhân viên.
+    testWidgets('chủ shop cũng thấy khối thông tin đó', (tester) async {
+      await _pump(
+        tester,
+        const EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          videoTypes: [],
+          members: [],
+          ownerName: 'Chị Hoa',
+          ownerEmail: 'hoa@shop.vn',
         ),
       );
 
       expect(find.textContaining('Chị Hoa'), findsOneWidget);
+      expect(find.text('hoa@shop.vn'), findsOneWidget);
     });
 
     testWidgets('loại video không có nút sửa, xoá hay ổ khoá', (tester) async {
