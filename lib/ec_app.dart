@@ -1806,19 +1806,32 @@ class _StorageRouteState extends State<_StorageRoute>
         _reload();
         return;
       }
+      // Mã rỗng = người dùng bấm Huỷ ở hộp thoại Google. DỪNG hẳn ở đây.
+      //
+      // Trước đây nhánh này rơi thẳng xuống đường trình duyệt bên dưới: vừa
+      // bấm "Huỷ" xong là bị đẩy sang accounts.google.com, hỏi lại đúng câu
+      // vừa từ chối. Huỷ phải là huỷ.
+      return;
     } on Object catch (error) {
       // Người dùng tự huỷ hộp thoại thì im lặng — họ vừa nói "không" xong, báo
       // lỗi vào mặt họ là nói lại điều họ vừa quyết định.
       if (_userCancelled(error)) return;
       developer.log(
-        'storage: hộp thoại Drive gốc không dùng được (${error.runtimeType})',
+        'storage: cắm Drive hỏng (${error.runtimeType})',
         name: 'zenpack.storage',
         level: 900,
         error: error,
       );
-      // Rơi xuống đường trình duyệt bên dưới.
+      // KHÔNG còn đường lùi sang trình duyệt.
+      //
+      // Đường đó từng đứng đây để tính năng vẫn dùng được khi máy chủ chưa
+      // nhận mã native. Nhưng khi máy chủ từ chối, người dùng đã bấm "Tiếp
+      // tục" ở hộp thoại Google GỐC xong rồi mới bị đẩy sang web hỏi lại đúng
+      // câu vừa đồng ý — hai lần cấp quyền cho một việc, và lần thứ hai rời
+      // hẳn khỏi app. Nói thẳng là hỏng thì người dùng biết đường báo lại;
+      // đẩy sang web thì họ tưởng app bắt làm hai lần cho vui.
+      if (mounted) _toast(context, l10n.storageDriveFailed);
     }
-    await _connectDriveViaBrowser();
   }
 
   /// Mã uỷ quyền từ hộp thoại Google gốc, hoặc `null` khi người dùng huỷ.
@@ -1839,21 +1852,6 @@ class _StorageRouteState extends State<_StorageRoute>
   static bool _userCancelled(Object error) =>
       error is GoogleSignInException &&
       error.code == GoogleSignInExceptionCode.canceled;
-
-  /// Đường cũ: mở trình duyệt, Google gọi ngược về máy chủ.
-  Future<void> _connectDriveViaBrowser() async {
-    try {
-      final url = await widget.repo.gdriveAuthUrl(widget.shopId);
-      if (!mounted) return;
-      if (url.isEmpty) {
-        _toast(context, context.l10n.supportOpenFailed);
-        return;
-      }
-      await _openSupport(context, url);
-    } on Object catch (error) {
-      if (mounted) _toast(context, _dataErrorText(context.l10n, error));
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

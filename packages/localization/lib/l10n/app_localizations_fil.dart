@@ -2121,6 +2121,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Sub-folder sa loob ng bucket. Iwan ang default kung hindi sigurado.';
 
   @override
+  String get storageDriveFailed =>
+      'Could not connect Google Drive. The server has not been set up for in-app authorisation yet — tell your admin.';
+
+  @override
   String get storageConnected => 'Nakakonekta ang sariling imbakan.';
 
   @override

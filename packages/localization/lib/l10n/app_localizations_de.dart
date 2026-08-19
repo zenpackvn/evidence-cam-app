@@ -2138,6 +2138,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Unterordner im Bucket. Lass die Voreinstellung, wenn du unsicher bist.';
 
   @override
+  String get storageDriveFailed =>
+      'Could not connect Google Drive. The server has not been set up for in-app authorisation yet — tell your admin.';
+
+  @override
   String get storageConnected => 'Eigener Speicher verbunden.';
 
   @override

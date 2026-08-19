@@ -2118,6 +2118,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Sub-folder dalam bucket. Biarkan lalai jika tidak pasti.';
 
   @override
+  String get storageDriveFailed =>
+      'Could not connect Google Drive. The server has not been set up for in-app authorisation yet — tell your admin.';
+
+  @override
   String get storageConnected => 'Storan sendiri disambungkan.';
 
   @override

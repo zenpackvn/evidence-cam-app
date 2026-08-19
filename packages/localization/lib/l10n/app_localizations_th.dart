@@ -2082,6 +2082,10 @@ class AppLocalizationsTh extends AppLocalizations {
       'โฟลเดอร์ย่อยใน bucket ถ้าไม่แน่ใจให้ใช้ค่าเริ่มต้น';
 
   @override
+  String get storageDriveFailed =>
+      'Could not connect Google Drive. The server has not been set up for in-app authorisation yet — tell your admin.';
+
+  @override
   String get storageConnected => 'เชื่อมพื้นที่เก็บของคุณแล้ว';
 
   @override

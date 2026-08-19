@@ -3806,6 +3806,12 @@ abstract class AppLocalizations {
   /// **'Sub-folder inside the bucket. Leave the default if unsure.'**
   String get storageFieldPrefixHint;
 
+  /// Đường native trả về mã nhưng máy chủ từ chối (native_not_configured). Nói thẳng thay vì đẩy người dùng sang trình duyệt hỏi lại đúng câu vừa đồng ý.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect Google Drive. The server has not been set up for in-app authorisation yet — tell your admin.'**
+  String get storageDriveFailed;
+
   /// No description provided for @storageConnected.
   ///
   /// In en, this message translates to:

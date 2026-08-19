@@ -2129,6 +2129,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Sottocartella dentro il bucket. Lascia il valore predefinito se non sei sicuro.';
 
   @override
+  String get storageDriveFailed =>
+      'Could not connect Google Drive. The server has not been set up for in-app authorisation yet — tell your admin.';
+
+  @override
   String get storageConnected => 'Archivio personale collegato.';
 
   @override

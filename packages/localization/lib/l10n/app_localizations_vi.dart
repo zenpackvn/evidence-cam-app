@@ -2094,6 +2094,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Thư mục con trong bucket. Để mặc định nếu không chắc.';
 
   @override
+  String get storageDriveFailed =>
+      'Chưa kết nối được Google Drive. Máy chủ chưa bật cấp quyền ngay trong app — báo quản trị viên giúp bạn.';
+
+  @override
   String get storageConnected => 'Đã cắm kho riêng.';
 
   @override
