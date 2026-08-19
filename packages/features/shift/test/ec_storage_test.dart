@@ -69,7 +69,8 @@ void main() {
 
       expect(find.text('Kiểm tra lại kết nối'), findsOneWidget);
       expect(find.text('Thôi dùng kho riêng'), findsOneWidget);
-      expect(find.text('Cắm kho S3'), findsNothing);
+      // Kho đã cắm rồi thì nút là "Đổi cấu hình", không phải "Cắm kho S3".
+      expect(find.text('Đổi cấu hình'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -115,6 +116,128 @@ void main() {
       expect(picked, 0, reason: 'ghi lựa chọn khi người dùng chưa xác nhận');
     });
 
+    // Chạm vào S3 là sổ ra nguyên form, không phải một dòng mô tả rồi bắt bấm
+    // Lưu mới thấy ô nào cần điền.
+    testWidgets('chọn S3 thì sổ nguyên form ngay trong thẻ', (tester) async {
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          onSaveS3:
+              ({
+                required endpoint,
+                required bucket,
+                required accessKeyId,
+                required secretAccessKey,
+                required region,
+                required prefix,
+              }) {},
+        ),
+      );
+
+      expect(find.text('Endpoint'), findsNothing);
+
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+
+      for (final label in [
+        'Endpoint',
+        'Bucket',
+        'Access key ID',
+        'Secret access key',
+        'Region',
+        'Prefix',
+      ]) {
+        expect(find.text(label), findsOneWidget, reason: 'thiếu ô $label');
+      }
+    });
+
+    // Nút Lưu gửi thẳng thứ vừa gõ. Đẩy sang một màn nữa để gõ lại đúng sáu ô
+    // đó là bắt làm hai lần cho một việc.
+    testWidgets('bấm lưu gửi thẳng giá trị trong form S3', (tester) async {
+      String? sentBucket;
+      String? sentRegion;
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          onSaveS3:
+              ({
+                required endpoint,
+                required bucket,
+                required accessKeyId,
+                required secretAccessKey,
+                required region,
+                required prefix,
+              }) {
+                sentBucket = bucket;
+                sentRegion = region;
+              },
+        ),
+      );
+
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+
+      // Nút Lưu còn tắt khi chưa đủ bốn ô bắt buộc.
+      await tester.tap(find.bySemanticsLabel('Lưu lựa chọn kho'));
+      await tester.pumpAndSettle();
+      expect(sentBucket, isNull, reason: 'gửi đi khi form còn trống');
+
+      // Thứ tự ô bám theo bản web: endpoint, region, bucket, prefix, key, secret.
+      await tester.enterText(
+        find.byType(CupertinoTextField).at(0),
+        'https://s3.example.com',
+      );
+      await tester.enterText(
+        find.byType(CupertinoTextField).at(2),
+        'my-bucket',
+      );
+      await tester.enterText(find.byType(CupertinoTextField).at(4), 'AKIA123');
+      await tester.enterText(find.byType(CupertinoTextField).at(5), 'secret');
+      await tester.pumpAndSettle();
+      // Gõ xong thì form đã cuộn, và nút Lưu trên đầu màn trôi khỏi khung nhìn
+      // — đúng như trên máy thật. Cuộn về nó trước khi bấm.
+      await tester.ensureVisible(find.bySemanticsLabel('Lưu lựa chọn kho'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Lưu lựa chọn kho'));
+      await tester.pumpAndSettle();
+
+      expect(sentBucket, 'my-bucket');
+      expect(sentRegion, 'auto', reason: 'region mặc định không đi theo');
+    });
+
+    // Câu `hint` của máy chủ ở lại cạnh mấy ô vừa gõ. Toast trôi mất trước khi
+    // người ta kịp đọc xem thiếu quyền nào.
+    testWidgets('lỗi máy chủ hiện nguyên văn ngay dưới form trong thẻ', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          s3ErrorText: 'Thiếu quyền s3:DeleteObject trên prefix',
+          onSaveS3:
+              ({
+                required endpoint,
+                required bucket,
+                required accessKeyId,
+                required secretAccessKey,
+                required region,
+                required prefix,
+              }) {},
+        ),
+      );
+
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Thiếu quyền s3:DeleteObject trên prefix'),
+        findsOneWidget,
+      );
+    });
+
     // Chạm là đọc được ngay. Trước đây phần mô tả chỉ mở ra cho kho ĐANG dùng,
     // nên muốn biết chọn Drive nghĩa là gì thì phải bấm Lưu rồi đi hết luồng
     // cấp quyền Google mới rõ — cam kết trước, đọc sau.
@@ -128,7 +251,7 @@ void main() {
         ),
       );
 
-      final note = find.textContaining('App tự tạo một thư mục riêng');
+      final note = find.textContaining('mở màn cấp quyền của Google');
       expect(note, findsNothing, reason: 'chưa chọn đã mở phần nói trước');
 
       await tester.tap(find.text('Google Drive'));
@@ -159,7 +282,7 @@ void main() {
       await tester.tap(find.text('Cloud Zenpack'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Video quay từ lúc này'), findsOneWidget);
+      expect(find.textContaining('sẽ gỡ kho riêng'), findsOneWidget);
     });
 
     // Gói chưa mở kho riêng: thẻ đã có dòng khoá của nó. Mô tả thêm một luồng
@@ -175,7 +298,7 @@ void main() {
       await tester.tap(find.text('Google Drive'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('App tự tạo một thư mục riêng'), findsNothing);
+      expect(find.textContaining('mở màn cấp quyền của Google'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

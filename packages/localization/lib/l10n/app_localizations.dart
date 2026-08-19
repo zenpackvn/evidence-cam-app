@@ -4130,17 +4130,29 @@ abstract class AppLocalizations {
   /// **'Could not attach the code. Try again.'**
   String get codeAttachFailed;
 
-  /// Hiện ngay khi người dùng CHỌN thẻ S3 mà chưa lưu — nói trước bấm Lưu sẽ xảy ra chuyện gì.
+  /// No description provided for @storageEditCta.
   ///
   /// In en, this message translates to:
-  /// **'Save opens a form for your endpoint, bucket and key pair. New videos land in that bucket; the ones already recorded stay where they are.'**
-  String get storagePickS3Note;
+  /// **'Change settings'**
+  String get storageEditCta;
 
-  /// Hiện ngay khi người dùng CHỌN thẻ Drive mà chưa lưu — nói trước bấm Lưu sẽ xảy ra chuyện gì.
+  /// Dưới form S3, đúng câu bản web dùng — nói cả chuyện phí egress của lượt rà định kỳ.
   ///
   /// In en, this message translates to:
-  /// **'Save opens the Google dialog to pick an account. The app creates its own folder for the videos and can only reach that folder — nothing else in your Drive.'**
-  String get storagePickDriveNote;
+  /// **'We write–read–delete a tiny test object before saving. Note: periodic audits download ~1% of videos weekly to verify them — some providers charge egress. If your storage loses data, the video cannot be recovered from anywhere.'**
+  String get storageConnectNote;
+
+  /// No description provided for @storageSystemSaveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Save removes your own storage: new videos go to system storage.'**
+  String get storageSystemSaveNote;
+
+  /// No description provided for @storageDriveSaveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Save opens Google\'s consent screen so you can pick an account.'**
+  String get storageDriveSaveNote;
 
   /// Máy chủ trả `no_refresh_token`: đổi mã thành công nhưng không kèm refresh token, thường vì tài khoản đã cấp quyền từ lần trước. Cắm lại y nguyên sẽ hỏng y như vậy, nên phải chỉ đường gỡ quyền cũ.
   ///

@@ -1479,14 +1479,13 @@
   "codeAttached": "Code attached to this order",
   "codeBelongsToAnotherOrder": "This code already belongs to another order — cannot merge.",
   "codeAttachFailed": "Could not attach the code. Try again.",
-  "storagePickS3Note": "Save opens a form for your endpoint, bucket and key pair. New videos land in that bucket; the ones already recorded stay where they are.",
-  "@storagePickS3Note": {
-    "description": "Hiện ngay khi người dùng CHỌN thẻ S3 mà chưa lưu — nói trước bấm Lưu sẽ xảy ra chuyện gì."
+  "storageEditCta": "Change settings",
+  "storageConnectNote": "We write\u2013read\u2013delete a tiny test object before saving. Note: periodic audits download ~1% of videos weekly to verify them \u2014 some providers charge egress. If your storage loses data, the video cannot be recovered from anywhere.",
+  "@storageConnectNote": {
+    "description": "Dưới form S3, đúng câu bản web dùng — nói cả chuyện phí egress của lượt rà định kỳ."
   },
-  "storagePickDriveNote": "Save opens the Google dialog to pick an account. The app creates its own folder for the videos and can only reach that folder — nothing else in your Drive.",
-  "@storagePickDriveNote": {
-    "description": "Hiện ngay khi người dùng CHỌN thẻ Drive mà chưa lưu — nói trước bấm Lưu sẽ xảy ra chuyện gì."
-  },
+  "storageSystemSaveNote": "Save removes your own storage: new videos go to system storage.",
+  "storageDriveSaveNote": "Save opens Google's consent screen so you can pick an account.",
   "storageDriveNoConsent": "Google did not grant long-lived access this time. Open your Google Account → Third-party apps, remove Zenpack, then connect again.",
   "@storageDriveNoConsent": {
     "description": "Máy chủ trả `no_refresh_token`: đổi mã thành công nhưng không kèm refresh token, thường vì tài khoản đã cấp quyền từ lần trước. Cắm lại y nguyên sẽ hỏng y như vậy, nên phải chỉ đường gỡ quyền cũ."

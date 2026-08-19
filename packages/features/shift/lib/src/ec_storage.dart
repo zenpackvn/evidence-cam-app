@@ -96,6 +96,8 @@ class EcStorageScreen extends StatefulWidget {
     this.onBack,
     this.onConnectS3,
     this.onConnectDrive,
+    this.onSaveS3,
+    this.s3ErrorText,
     this.onTest,
     this.onDisconnect,
     this.onPick,
@@ -105,10 +107,32 @@ class EcStorageScreen extends StatefulWidget {
 
   final EcStorageState state;
   final VoidCallback? onBack;
+
+  /// Sửa cấu hình của kho S3 ĐANG dùng — mở màn riêng.
+  ///
+  /// Lúc cắm mới thì không đi đường này nữa: form nằm thẳng trong thẻ, xem
+  /// [onSaveS3].
   final VoidCallback? onConnectS3;
   final VoidCallback? onConnectDrive;
   final VoidCallback? onTest;
   final VoidCallback? onDisconnect;
+
+  /// Bấm Lưu khi đang chọn S3: gửi sáu ô của form trong thẻ đi.
+  ///
+  /// `null` = màn này không cắm S3 được (test dựng màn tối giản); thẻ vẫn chọn
+  /// được nhưng không mở form.
+  final void Function({
+    required String endpoint,
+    required String bucket,
+    required String accessKeyId,
+    required String secretAccessKey,
+    required String region,
+    required String prefix,
+  })?
+  onSaveS3;
+
+  /// Câu `hint` nguyên văn từ máy chủ sau một lượt lưu hỏng, vẽ dưới form.
+  final String? s3ErrorText;
 
   /// Người dùng vừa bấm chọn một kho — bắn ở MỌI lượt bấm, kể cả khi luồng
   /// cắm kho phía sau không chạy được.
@@ -131,6 +155,23 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// quyền, mà một cú chạm không thấy phản hồi thì người dùng bấm lại lần nữa.
   late EcStorageKind _picked = widget.state.kind;
 
+  /// Sáu ô của form S3. Sống ở đây chứ không trong thẻ: nút Lưu nằm trên đầu
+  /// màn và phải đọc được giá trị người dùng vừa gõ.
+  final _s3 = _S3Controllers();
+
+  /// Đang sửa cấu hình của kho S3 ĐANG dùng.
+  ///
+  /// Cùng cách bản web làm: "Đổi cấu hình" mở đúng cái form đó ngay trong thẻ
+  /// chứ không đẩy sang màn khác. Cần một cờ riêng vì lúc này lựa chọn không
+  /// đổi — kho đang dùng là S3 và người dùng vẫn chọn S3.
+  bool _editingS3 = false;
+
+  @override
+  void dispose() {
+    _s3.dispose();
+    super.dispose();
+  }
+
   @override
   void didUpdateWidget(covariant EcStorageScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -140,6 +181,7 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     if (oldWidget.state.kind != widget.state.kind ||
         (oldWidget.busy && !widget.busy)) {
       _picked = widget.state.kind;
+      _editingS3 = false;
     }
   }
 
@@ -155,11 +197,34 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// Cả ba thẻ đều chạm được, kể cả khi gói chưa mở hoặc người chạm không phải
   /// chủ shop — chỉ dấu tích di chuyển. Nút lưu mới là chỗ chặn.
   void _pick(EcStorageKind kind) {
-    setState(() => _picked = kind);
+    setState(() {
+      _picked = kind;
+      // Chạm sang thẻ khác thì thôi sửa: để cờ bật là quay lại thẻ S3 thấy form
+      // mở sẵn mà không nhớ vì sao.
+      if (kind != EcStorageKind.s3) _editingS3 = false;
+    });
   }
 
-  /// Lựa chọn đang hiện khác với kho đang thật sự dùng.
-  bool get _dirty => _picked != widget.state.kind;
+  /// Có gì để lưu không: đổi sang kho khác, hoặc đang sửa cấu hình S3.
+  bool get _dirty => _picked != widget.state.kind || _editingS3;
+
+  /// Form S3 có mở trong thẻ không: đang ngắm S3 mà chưa cắm, hoặc vừa bấm
+  /// "Đổi cấu hình" trên kho S3 đang dùng. Đúng điều kiện `showS3Form` bên web.
+  bool get _s3FormOpen =>
+      _picked == EcStorageKind.s3 &&
+      (widget.state.kind != EcStorageKind.s3 || _editingS3) &&
+      widget.state.canManage &&
+      widget.state.byosAllowed &&
+      widget.onSaveS3 != null;
+
+  /// Nút Lưu có bấm được không.
+  ///
+  /// Form S3 mở thì đủ bốn ô bắt buộc mới cho bấm: gửi một cấu hình thiếu
+  /// endpoint đi chỉ để nhận về một câu lỗi mà chính app đoán được từ trước.
+  bool get _canSave {
+    if (!_dirty || widget.busy || !widget.state.canManage) return false;
+    return _s3FormOpen ? _s3.ready : true;
+  }
 
   /// Bấm lưu: nhớ lựa chọn rồi chạy đúng luồng của kho vừa chọn.
   ///
@@ -168,6 +233,14 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// nằm ở một kho chưa hề được cắm.
   void _save() {
     if (!_dirty) return;
+    // S3 cắm mới: giá trị đã nằm sẵn trong form, gửi thẳng đi thay vì đẩy người
+    // dùng sang một màn nữa để gõ lại đúng sáu ô vừa gõ.
+    if (_s3FormOpen) {
+      if (!_s3.ready) return;
+      widget.onPick?.call(_picked);
+      _s3.submit(widget.onSaveS3!);
+      return;
+    }
     final flow = _flowFor(_picked);
     widget.onPick?.call(_picked);
     flow?.call();
@@ -204,7 +277,7 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// thẻ là xong — đúng thói quen đã bỏ đi.
   Widget? _detailFor(EcStorageKind kind) {
     final state = widget.state;
-    if (state.kind == kind) {
+    if (state.kind == kind && !(kind == EcStorageKind.s3 && _s3FormOpen)) {
       // Cloud Zenpack không mở bảng tình trạng: bốn con số đó đếm video trong
       // kho RIÊNG của shop, và "thôi dùng kho riêng" ở đây không có gì để thôi.
       if (kind == EcStorageKind.system) return null;
@@ -213,10 +286,21 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
         busy: widget.busy,
         onTest: widget.onTest,
         onDisconnect: widget.onDisconnect,
-        onEdit: kind == EcStorageKind.s3 ? widget.onConnectS3 : null,
+        onEdit: kind == EcStorageKind.s3
+            ? () => setState(() => _editingS3 = true)
+            : null,
       );
     }
     if (_picked != kind) return null;
+    // S3 sổ ra nguyên form, không phải một dòng mô tả: thứ người dùng cần đọc
+    // khi chỉ vào S3 chính là những ô họ sắp phải điền.
+    if (kind == EcStorageKind.s3 && _s3FormOpen) {
+      return _S3Form(
+        fields: _s3,
+        errorText: widget.s3ErrorText,
+        onChanged: () => setState(() {}),
+      );
+    }
     final lines = _previewLines(kind);
     // Không có gì để nói thì KHÔNG mở phần này: thẻ vẽ một đường kẻ ngăn cách
     // ngay khi `detail != null`, nên một khối rỗng để lại đúng cái đường kẻ
@@ -241,10 +325,13 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
       // Chọn Cloud Zenpack trong lúc đang dùng kho riêng = sắp GỠ kho riêng.
       // Đó là câu hộp xác nhận vẫn hỏi — nói trước ở đây để không ai bấm Lưu
       // mà chưa biết video cũ sẽ ra sao.
-      EcStorageKind.system => _own ? [l10n.storageDisconnectConfirm] : const [],
-      EcStorageKind.s3 => byos ? [l10n.storagePickS3Note] : const [],
+      EcStorageKind.system => _own ? [l10n.storageSystemSaveNote] : const [],
+      // S3 không có dòng mô tả nào: hoặc nguyên form sổ ra (bắt ở [_detailFor]),
+      // hoặc người đang xem không cắm được kho — và mô tả một luồng họ đi không
+      // tới chỉ là hứa suông.
+      EcStorageKind.s3 => const [],
       EcStorageKind.gdrive =>
-        byos ? [l10n.storagePickDriveNote, l10n.storageNoPresign] : const [],
+        byos ? [l10n.storageDriveSaveNote, l10n.storageNoPresign] : const [],
     };
   }
 
@@ -266,7 +353,7 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                 // sáng ở màn không có gì để lưu thì bấm vào không có chuyện gì
                 // xảy ra, và lần sau người dùng không tin nó nữa.
                 trailing: _SaveButton(
-                  enabled: _dirty && !widget.busy && state.canManage,
+                  enabled: _canSave,
                   busy: widget.busy,
                   onTap: _save,
                 ),
@@ -476,6 +563,143 @@ class _StorageOption extends StatelessWidget {
   }
 }
 
+/// Sáu ô của form S3, gom lại một chỗ.
+///
+/// Tách khỏi widget vì hai nơi cùng cần: form trong thẻ ở màn Kho lưu trữ, và
+/// màn sửa cấu hình của kho đang dùng. Bản sao thứ hai của sáu ô này là chỗ hai
+/// đường sẽ lệch nhau — một bên `trim()`, một bên không.
+class _S3Controllers {
+  final endpoint = TextEditingController();
+  final bucket = TextEditingController();
+  final keyId = TextEditingController();
+  final secret = TextEditingController();
+  // Để TRỐNG kèm placeholder, không điền sẵn — giống bản web. Điền sẵn thì
+  // `auto`/`evidencecam` trông như thứ người dùng đã tự chọn, và họ xoá đi rồi
+  // ngồi nghĩ xem phải điền gì. Giá trị mặc định áp ở [submit].
+  final region = TextEditingController();
+  final prefix = TextEditingController();
+
+  /// Bốn ô bắt buộc đã có chữ. Region và prefix đều có mặc định dùng được.
+  bool get ready =>
+      endpoint.text.trim().isNotEmpty &&
+      bucket.text.trim().isNotEmpty &&
+      keyId.text.trim().isNotEmpty &&
+      secret.text.trim().isNotEmpty;
+
+  /// Gọi [sink] với giá trị đã chuẩn hoá. Region để trống quay về `auto` —
+  /// nhiều nhà cung cấp không có khái niệm region và bỏ trống là hợp lệ, nhưng
+  /// SDK phía máy chủ vẫn cần một chuỗi.
+  void submit(
+    void Function({
+      required String endpoint,
+      required String bucket,
+      required String accessKeyId,
+      required String secretAccessKey,
+      required String region,
+      required String prefix,
+    })
+    sink,
+  ) {
+    final trimmedRegion = region.text.trim();
+    sink(
+      endpoint: endpoint.text.trim(),
+      bucket: bucket.text.trim(),
+      accessKeyId: keyId.text.trim(),
+      secretAccessKey: secret.text.trim(),
+      region: trimmedRegion.isEmpty ? 'auto' : trimmedRegion,
+      prefix: prefix.text.trim(),
+    );
+  }
+
+  void dispose() {
+    for (final c in [endpoint, bucket, keyId, secret, region, prefix]) {
+      c.dispose();
+    }
+  }
+}
+
+/// Sáu ô S3 xếp dọc, kèm câu chỉ dẫn quyền và câu lỗi từ máy chủ.
+///
+/// Không có nút gửi: nơi dùng nó tự quyết định nút nằm ở đâu — trong thẻ thì nút
+/// Lưu ở đầu màn, ở màn riêng thì nút nằm cuối form.
+class _S3Form extends StatelessWidget {
+  const _S3Form({
+    required this.fields,
+    required this.onChanged,
+    this.errorText,
+  });
+
+  final _S3Controllers fields;
+
+  /// Gõ một ký tự là bên ngoài phải tính lại: nút gửi bật/tắt theo bốn ô bắt
+  /// buộc, và nó không nằm trong widget này.
+  final VoidCallback onChanged;
+
+  /// Câu `hint` nguyên văn từ máy chủ: thiếu quyền gì, sửa thế nào.
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Thứ tự sáu ô bám theo bản web: endpoint trước, rồi region/bucket,
+          // rồi prefix, cuối cùng mới tới cặp khoá. Hai bản lệch thứ tự thì
+          // người vừa cắm kho trên web xuống app phải dò lại từ đầu.
+          _Field(
+            label: l10n.storageFieldEndpoint,
+            controller: fields.endpoint,
+            placeholder: 'https://s3.ap-southeast-1.amazonaws.com',
+            keyboardType: TextInputType.url,
+            onChanged: onChanged,
+          ),
+          _Field(
+            label: l10n.storageFieldRegion,
+            controller: fields.region,
+            placeholder: 'auto',
+          ),
+          _Field(
+            label: l10n.storageFieldBucket,
+            controller: fields.bucket,
+            placeholder: 'shop-evidence',
+            onChanged: onChanged,
+          ),
+          _Field(
+            label: l10n.storageFieldPrefix,
+            controller: fields.prefix,
+            placeholder: 'evidencecam',
+            hint: l10n.storageFieldPrefixHint,
+          ),
+          _Field(
+            label: l10n.storageFieldAccessKey,
+            controller: fields.keyId,
+            placeholder: 'AKIA…',
+            onChanged: onChanged,
+          ),
+          _Field(
+            label: l10n.storageFieldSecretKey,
+            controller: fields.secret,
+            placeholder: '••••••••',
+            obscure: true,
+            onChanged: onChanged,
+          ),
+          // Câu này nằm DƯỚI form, đúng chỗ bản web đặt nó: đọc trước khi gõ
+          // thì nó là lý thuyết, đọc lúc sắp bấm Lưu mới là cảnh báo.
+          _NoteBox(text: l10n.storageConnectNote),
+          if (errorText?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 8),
+            _NoteBox(text: errorText!, danger: true),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// Xem trước kho vừa CHỌN nhưng chưa lưu: bấm Lưu sẽ xảy ra chuyện gì.
 ///
 /// Thuần chữ, không nút. Nút Lưu trên đầu màn vẫn là chỗ duy nhất đổi kho.
@@ -624,7 +848,7 @@ class _StatusDetail extends StatelessWidget {
             if (onEdit != null) ...[
               const SizedBox(height: 8),
               PenOutlineButton(
-                label: l10n.storageConnectS3,
+                label: l10n.storageEditCta,
                 onPressed: busy ? null : onEdit,
               ),
             ],
@@ -740,26 +964,13 @@ class EcStorageConnectScreen extends StatefulWidget {
 }
 
 class _EcStorageConnectScreenState extends State<EcStorageConnectScreen> {
-  final _endpoint = TextEditingController();
-  final _bucket = TextEditingController();
-  final _keyId = TextEditingController();
-  final _secret = TextEditingController();
-  final _region = TextEditingController(text: 'auto');
-  final _prefix = TextEditingController(text: 'evidencecam');
+  final _fields = _S3Controllers();
 
   @override
   void dispose() {
-    for (final c in [_endpoint, _bucket, _keyId, _secret, _region, _prefix]) {
-      c.dispose();
-    }
+    _fields.dispose();
     super.dispose();
   }
-
-  bool get _ready =>
-      _endpoint.text.trim().isNotEmpty &&
-      _bucket.text.trim().isNotEmpty &&
-      _keyId.text.trim().isNotEmpty &&
-      _secret.text.trim().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -772,57 +983,17 @@ class _EcStorageConnectScreenState extends State<EcStorageConnectScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               PenHeader(title: l10n.storageConnectS3, onBack: widget.onBack),
-              const SizedBox(height: 12),
-              _NoteBox(text: l10n.storageConnectHint),
-              const SizedBox(height: 12),
-              _Field(
-                label: l10n.storageFieldEndpoint,
-                controller: _endpoint,
-                placeholder: 'https://s3.ap-southeast-1.amazonaws.com',
-                keyboardType: TextInputType.url,
+              _S3Form(
+                fields: _fields,
+                errorText: widget.errorText,
                 onChanged: () => setState(() {}),
               ),
-              _Field(
-                label: l10n.storageFieldBucket,
-                controller: _bucket,
-                onChanged: () => setState(() {}),
-              ),
-              _Field(
-                label: l10n.storageFieldAccessKey,
-                controller: _keyId,
-                onChanged: () => setState(() {}),
-              ),
-              _Field(
-                label: l10n.storageFieldSecretKey,
-                controller: _secret,
-                obscure: true,
-                onChanged: () => setState(() {}),
-              ),
-              _Field(label: l10n.storageFieldRegion, controller: _region),
-              _Field(
-                label: l10n.storageFieldPrefix,
-                controller: _prefix,
-                hint: l10n.storageFieldPrefixHint,
-              ),
-              if (widget.errorText?.isNotEmpty ?? false) ...[
-                const SizedBox(height: 4),
-                _NoteBox(text: widget.errorText!, danger: true),
-              ],
               const SizedBox(height: 16),
               PenPrimaryButton(
                 label: l10n.storageConnectSubmit,
-                onPressed: widget.busy || !_ready
+                onPressed: widget.busy || !_fields.ready
                     ? null
-                    : () => widget.onSubmit(
-                        endpoint: _endpoint.text.trim(),
-                        bucket: _bucket.text.trim(),
-                        accessKeyId: _keyId.text.trim(),
-                        secretAccessKey: _secret.text.trim(),
-                        region: _region.text.trim().isEmpty
-                            ? 'auto'
-                            : _region.text.trim(),
-                        prefix: _prefix.text.trim(),
-                      ),
+                    : () => _fields.submit(widget.onSubmit),
               ),
             ],
           ),

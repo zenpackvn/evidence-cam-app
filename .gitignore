@@ -188,3 +188,6 @@ tool/capture_sim_window.sh
 # ("PathNotFoundException: Deletion failed"), và trong `.git/objects/pack/`
 # chúng khiến git kêu "non-monotonic index" ở mọi lệnh.
 ._*
+
+# Báo cáo sự cố của flutter tool — sinh ra lúc chạy, không phải nguồn.
+flutter_*.log

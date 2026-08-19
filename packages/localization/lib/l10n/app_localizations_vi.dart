@@ -2277,12 +2277,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get codeAttachFailed => 'Không gắn được mã. Thử lại.';
 
   @override
-  String get storagePickS3Note =>
-      'Bấm Lưu để nhập endpoint, bucket và cặp khoá của bạn. Video quay từ lúc đó nằm trong bucket ấy; video cũ ở nguyên chỗ cũ.';
+  String get storageEditCta => 'Đổi cấu hình';
 
   @override
-  String get storagePickDriveNote =>
-      'Bấm Lưu để mở hộp thoại Google chọn tài khoản. App tự tạo một thư mục riêng để cất video và chỉ với tới được đúng thư mục đó, không thấy gì khác trong Drive của bạn.';
+  String get storageConnectNote =>
+      'Hệ thống sẽ ghi–đọc–xoá thử một tệp nhỏ để kiểm tra quyền trước khi lưu. Lưu ý: rà soát định kỳ có tải video từ kho của bạn về để đối chiếu (khoảng 1% mỗi tuần) — một số nhà cung cấp tính phí lượng dữ liệu tải ra. Nếu kho của bạn mất dữ liệu, video không lấy lại được từ đâu cả.';
+
+  @override
+  String get storageSystemSaveNote =>
+      'Bấm Lưu sẽ gỡ kho riêng: video quay từ lúc đó về kho hệ thống.';
+
+  @override
+  String get storageDriveSaveNote =>
+      'Bấm Lưu sẽ mở màn cấp quyền của Google để bạn chọn tài khoản.';
 
   @override
   String get storageDriveNoConsent =>

@@ -2294,12 +2294,19 @@ class AppLocalizationsId extends AppLocalizations {
   String get codeAttachFailed => 'Tidak dapat melampirkan kode.';
 
   @override
-  String get storagePickS3Note =>
-      'Save opens a form for your endpoint, bucket and key pair. New videos land in that bucket; the ones already recorded stay where they are.';
+  String get storageEditCta => 'Change settings';
 
   @override
-  String get storagePickDriveNote =>
-      'Save opens the Google dialog to pick an account. The app creates its own folder for the videos and can only reach that folder — nothing else in your Drive.';
+  String get storageConnectNote =>
+      'We write–read–delete a tiny test object before saving. Note: periodic audits download ~1% of videos weekly to verify them — some providers charge egress. If your storage loses data, the video cannot be recovered from anywhere.';
+
+  @override
+  String get storageSystemSaveNote =>
+      'Save removes your own storage: new videos go to system storage.';
+
+  @override
+  String get storageDriveSaveNote =>
+      'Save opens Google\'s consent screen so you can pick an account.';
 
   @override
   String get storageDriveNoConsent =>

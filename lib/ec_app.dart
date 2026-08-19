@@ -1696,6 +1696,9 @@ class _StorageRouteState extends State<_StorageRoute>
   late Future<StorageStateDto> _state = widget.repo.storage(widget.shopId);
   bool _busy = false;
 
+  /// Câu `hint` của lượt lưu S3 gần nhất, vẽ dưới form trong thẻ.
+  String? _s3Error;
+
   @override
   void initState() {
     super.initState();
@@ -1746,6 +1749,54 @@ class _StorageRouteState extends State<_StorageRoute>
       if (mounted) _toast(context, okMessage);
     } on Object catch (error) {
       if (mounted) _toast(context, _dataErrorText(context.l10n, error));
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+        _reload();
+      }
+    }
+  }
+
+  /// Cắm kho S3 từ form nằm trong thẻ.
+  ///
+  /// `ok == false` KHÁC với ném lỗi: máy chủ chạy hết vòng PUT→HEAD→GET→DELETE
+  /// rồi từ chối, và `hint` của nó là câu DUY NHẤT nói được khách thiếu quyền
+  /// nào bên nhà cung cấp. Câu đó ở lại ngay dưới form, cạnh mấy ô vừa gõ —
+  /// toast trôi mất trước khi người ta kịp sửa.
+  Future<void> _saveS3({
+    required String endpoint,
+    required String bucket,
+    required String accessKeyId,
+    required String secretAccessKey,
+    required String region,
+    required String prefix,
+  }) async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _s3Error = null;
+    });
+    try {
+      final result = await widget.repo.saveS3Storage(
+        widget.shopId,
+        endpoint: endpoint,
+        bucket: bucket,
+        accessKeyId: accessKeyId,
+        secretAccessKey: secretAccessKey,
+        region: region,
+        prefix: prefix.isEmpty ? 'evidencecam' : prefix,
+      );
+      if (!mounted) return;
+      if (result.ok) {
+        _toast(context, context.l10n.storageConnected);
+        return;
+      }
+      setState(
+        () => _s3Error = result.hint ?? context.l10n.errorLoadShopDetail,
+      );
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _s3Error = _dataErrorText(context.l10n, error));
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -1950,6 +2001,25 @@ class _StorageRouteState extends State<_StorageRoute>
               .then((saved) {
                 if (saved == true && mounted) _reload();
               }),
+          s3ErrorText: _s3Error,
+          onSaveS3:
+              ({
+                required endpoint,
+                required bucket,
+                required accessKeyId,
+                required secretAccessKey,
+                required region,
+                required prefix,
+              }) => unawaited(
+                _saveS3(
+                  endpoint: endpoint,
+                  bucket: bucket,
+                  accessKeyId: accessKeyId,
+                  secretAccessKey: secretAccessKey,
+                  region: region,
+                  prefix: prefix,
+                ),
+              ),
         );
       },
     );
