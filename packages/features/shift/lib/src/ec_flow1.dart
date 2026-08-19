@@ -2207,7 +2207,13 @@ class EcShopDetailScreen extends StatelessWidget {
                   icon: LucideIcons.hardDrive,
                   label: l10n.storageTitle,
                   value: storageLabel,
-                  onTap: onTapStorage,
+                  // Tên kho xuống dòng dưới nhãn: nó là thứ dài nhất trong ba
+                  // hàng ("Kho đám mây riêng (chuẩn S3)"), và nhét chung một
+                  // dòng thì hoặc nhãn hoặc giá trị phải cắt ba chấm.
+                  stacked: true,
+                  // Nhân viên chỉ ĐỌC dòng này, không mở được màn Kho lưu trữ.
+                  // Bỏ luôn mũi tên chứ không để nó bấm không ăn.
+                  onTap: readOnly ? null : onTapStorage,
                 ),
               ],
             ),
@@ -2219,6 +2225,7 @@ class EcShopDetailScreen extends StatelessWidget {
                 for (final type in videoTypes)
                   _VideoTypeRow(
                     type: type,
+                    readOnly: readOnly,
                     onEdit: onEditType == null ? null : () => onEditType!(type),
                     onDelete: onDeleteType == null
                         ? null
@@ -2320,7 +2327,15 @@ class _FixedSettingRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.onTap,
+    this.stacked = false,
   });
+
+  /// Giá trị nằm ở DÒNG DƯỚI nhãn thay vì cùng dòng, dồn phải.
+  ///
+  /// Dành cho hàng có giá trị dài. Ở chế độ này không bao giờ hiện chữ "mặc
+  /// định": hàng xếp chồng là hàng có nội dung thật để đọc, không phải hàng nói
+  /// "đây là mức cố định".
+  final bool stacked;
 
   final IconData icon;
   final String label;
@@ -2368,29 +2383,56 @@ class _FixedSettingRow extends StatelessWidget {
       // chỉ CHO PHÉP con nhỏ hơn phần được chia chứ không trả lại chỗ thừa —
       // chỗ thừa đó rơi xuống cuối hàng, nên thứ đứng cuối không bao giờ chạm
       // được mép phải, và mỗi hàng lại hụt một kiểu tuỳ độ dài chữ.
-      Expanded(
-        child: PenText(
-          label,
-          size: 16,
-          color: PenColors.ink,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      Expanded(
-        child: Align(
-          alignment: Alignment.centerRight,
+      if (stacked)
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PenText(
+                label,
+                size: 16,
+                color: PenColors.ink,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              PenText(
+                value,
+                size: 14,
+                color: PenColors.mut,
+                weight: FontWeight.w600,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        )
+      else ...[
+        Expanded(
           child: PenText(
-            value,
+            label,
             size: 16,
             color: PenColors.ink,
-            weight: FontWeight.w600,
             softWrap: false,
             overflow: TextOverflow.ellipsis,
-            align: TextAlign.end,
           ),
         ),
-      ),
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: PenText(
+              value,
+              size: 16,
+              color: PenColors.ink,
+              weight: FontWeight.w600,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              align: TextAlign.end,
+            ),
+          ),
+        ),
+      ],
       // Chữ "mặc định" thay chỗ mũi tên cũ. Bỏ trống chỗ đó thì hàng trông y
       // như một hàng bấm được vừa hỏng; nói thẳng đây là mức mặc định thì
       // người dùng thôi tìm chỗ bấm.
@@ -2398,7 +2440,21 @@ class _FixedSettingRow extends StatelessWidget {
       // Cả hai đều dồn sát mép phải và kết thúc ở cùng một đường: hàng bấm
       // được và hàng không bấm được nằm cạnh nhau trong một thẻ, lệch nhau vài
       // pixel là nhìn ra ngay.
-      if (onTap == null)
+      if (stacked)
+        // Chỗ của mũi tên luôn được giữ, kể cả khi hàng không bấm được: bỏ hẳn
+        // thì hàng của nhân viên rộng thêm đúng bằng mũi tên cộng khoảng cách,
+        // và tên kho của họ thò ra phải hơn hàng của chủ shop.
+        SizedBox(
+          width: 18,
+          child: onTap == null
+              ? null
+              : const Icon(
+                  LucideIcons.chevronRight,
+                  size: 18,
+                  color: PenColors.mut,
+                ),
+        )
+      else if (onTap == null)
         PenText(
           context.l10n.settingDefaultSuffix,
           size: 13,
@@ -2632,7 +2688,19 @@ class _MemberRow extends StatelessWidget {
 }
 
 class _VideoTypeRow extends StatelessWidget {
-  const _VideoTypeRow({required this.type, this.onEdit, this.onDelete});
+  const _VideoTypeRow({
+    required this.type,
+    this.onEdit,
+    this.onDelete,
+    this.readOnly = false,
+  });
+
+  /// Nhân viên: bỏ hẳn cả cụm bút–thùng rác lẫn ổ khoá.
+  ///
+  /// Ổ khoá đi theo vì nó trả lời câu "vì sao hàng này không sửa được" — một
+  /// câu chỉ có nghĩa với người sửa được những hàng khác. Với nhân viên thì
+  /// không hàng nào sửa được, nên ổ khoá chỉ còn là một biểu tượng bí ẩn.
+  final bool readOnly;
 
   final EcVideoType type;
   final VoidCallback? onEdit;
@@ -2671,7 +2739,9 @@ class _VideoTypeRow extends StatelessWidget {
         ),
         // Built-in types can't be renamed or removed; the design marks that
         // with a padlock instead of hiding the affordances.
-        if (type.locked)
+        if (readOnly)
+          const SizedBox.shrink()
+        else if (type.locked)
           const Icon(LucideIcons.lock, size: 19, color: PenColors.mut)
         else ...[
           EcTap(

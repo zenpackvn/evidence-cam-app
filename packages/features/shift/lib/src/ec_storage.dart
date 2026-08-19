@@ -402,90 +402,113 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     final l10n = context.l10n;
     final state = widget.state;
     return PenScreen(
+      // `scrollable: false` vì màn này tự dựng vùng cuộn: `PenScreen` bọc con
+      // trong một `SingleChildScrollView` chiều cao vô hạn, mà `Expanded` bên
+      // dưới thì cần một chiều cao có thật.
+      scrollable: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              PenHeader(
-                title: l10n.storageTitle,
-                onBack: widget.onBack,
-                // Nút lưu chỉ SÁNG khi có thay đổi chưa áp dụng. Một nút luôn
-                // sáng ở màn không có gì để lưu thì bấm vào không có chuyện gì
-                // xảy ra, và lần sau người dùng không tin nó nữa.
-                // Huỷ đứng TRÁI nút Lưu, cùng một chỗ cố định — như bản web.
-                // Cả hai mờ đi chứ không biến mất khi không có gì để làm: nút
-                // nhảy ra nhảy vào làm tiêu đề co giãn mỗi lần chạm một thẻ.
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+        // Tiêu đề nằm NGOÀI vùng cuộn. Nút Lưu và Huỷ sống ở đó, mà form S3 dài
+        // hơn một màn hình: gõ tới ô cuối là nội dung bị đẩy lên, hai nút trôi
+        // khỏi khung nhìn, và người dùng kết luận màn này không cho lưu. Đo
+        // được lúc viết test: nút Lưu nằm ở y = -68 sau khi điền xong form.
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PenHeader(
+              title: l10n.storageTitle,
+              onBack: widget.onBack,
+              // Nút lưu chỉ SÁNG khi có thay đổi chưa áp dụng. Một nút luôn
+              // sáng ở màn không có gì để lưu thì bấm vào không có chuyện gì
+              // xảy ra, và lần sau người dùng không tin nó nữa.
+              // Huỷ đứng TRÁI nút Lưu, cùng một chỗ cố định — như bản web.
+              // Cả hai mờ đi chứ không biến mất khi không có gì để làm: nút
+              // nhảy ra nhảy vào làm tiêu đề co giãn mỗi lần chạm một thẻ.
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _CancelButton(
+                    enabled: _dirty && !widget.busy,
+                    onTap: _cancel,
+                  ),
+                  const SizedBox(width: 8),
+                  _SaveButton(
+                    enabled: _canSave,
+                    busy: widget.busy,
+                    onTap: _save,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _CancelButton(
-                      enabled: _dirty && !widget.busy,
-                      onTap: _cancel,
+                    // Câu này đứng ngay dưới tiêu đề vì nó trả lời nỗi lo đầu tiên
+                    // của người sắp đổi kho: đổi rồi bằng chứng có yếu đi không.
+                    PenText(l10n.storageIntro, size: 14, color: PenColors.mut),
+                    const SizedBox(height: 16),
+                    _StorageOption(
+                      icon: LucideIcons.cloud,
+                      title: l10n.storageSystemName,
+                      description: l10n.storageSystemDesc,
+                      selected: _picked == EcStorageKind.system,
+                      inUse: state.kind == EcStorageKind.system,
+                      detail: _detailFor(EcStorageKind.system),
+                      onTap: () => _pick(EcStorageKind.system),
                     ),
-                    const SizedBox(width: 8),
-                    _SaveButton(
-                      enabled: _canSave,
-                      busy: widget.busy,
-                      onTap: _save,
+                    const SizedBox(height: 10),
+                    _StorageOption(
+                      icon: LucideIcons.hardDrive,
+                      title: l10n.storageS3Title,
+                      description: l10n.storageS3Desc,
+                      selected: _picked == EcStorageKind.s3,
+                      inUse: state.kind == EcStorageKind.s3,
+                      label: state.kind == EcStorageKind.s3
+                          ? state.label
+                          : null,
+                      lockNote: state.byosAllowed
+                          ? null
+                          : l10n.storageNeedProPlan,
+                      detail: _detailFor(EcStorageKind.s3),
+                      onTap: () => _pick(EcStorageKind.s3),
                     ),
+                    const SizedBox(height: 10),
+                    _StorageOption(
+                      icon: LucideIcons.hardDrive,
+                      title: l10n.storageDriveTitle,
+                      description: l10n.storageDriveDesc,
+                      selected: _picked == EcStorageKind.gdrive,
+                      inUse: state.kind == EcStorageKind.gdrive,
+                      label: state.kind == EcStorageKind.gdrive
+                          ? state.label
+                          : null,
+                      lockNote: state.byosAllowed
+                          ? null
+                          : l10n.storageNeedProPlan,
+                      detail: _detailFor(EcStorageKind.gdrive),
+                      onTap: () => _pick(EcStorageKind.gdrive),
+                    ),
+                    // Gói chưa mở kho riêng: nói MỘT lần dưới danh sách, không lặp ở
+                    // từng thẻ. Ba dòng cùng nội dung cạnh nhau đọc thành nhiễu, và
+                    // mỗi thẻ đã có dòng khoá ngắn của riêng nó.
+                    if (state.canManage && !state.byosAllowed) ...[
+                      const SizedBox(height: 12),
+                      _NoteBox(text: l10n.storageNotInPlan),
+                    ],
+                    // Nhân viên xem được mọi thứ ở trên nhưng không đổi được gì. Nói
+                    // ra, đừng để họ đi tìm cái nút không tồn tại.
+                    if (!state.canManage) ...[
+                      const SizedBox(height: 12),
+                      _NoteBox(text: l10n.storageOwnerOnly),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
-              // Câu này đứng ngay dưới tiêu đề vì nó trả lời nỗi lo đầu tiên
-              // của người sắp đổi kho: đổi rồi bằng chứng có yếu đi không.
-              PenText(l10n.storageIntro, size: 14, color: PenColors.mut),
-              const SizedBox(height: 16),
-              _StorageOption(
-                icon: LucideIcons.cloud,
-                title: l10n.storageSystemName,
-                description: l10n.storageSystemDesc,
-                selected: _picked == EcStorageKind.system,
-                inUse: state.kind == EcStorageKind.system,
-                detail: _detailFor(EcStorageKind.system),
-                onTap: () => _pick(EcStorageKind.system),
-              ),
-              const SizedBox(height: 10),
-              _StorageOption(
-                icon: LucideIcons.hardDrive,
-                title: l10n.storageS3Title,
-                description: l10n.storageS3Desc,
-                selected: _picked == EcStorageKind.s3,
-                inUse: state.kind == EcStorageKind.s3,
-                label: state.kind == EcStorageKind.s3 ? state.label : null,
-                lockNote: state.byosAllowed ? null : l10n.storageNeedProPlan,
-                detail: _detailFor(EcStorageKind.s3),
-                onTap: () => _pick(EcStorageKind.s3),
-              ),
-              const SizedBox(height: 10),
-              _StorageOption(
-                icon: LucideIcons.hardDrive,
-                title: l10n.storageDriveTitle,
-                description: l10n.storageDriveDesc,
-                selected: _picked == EcStorageKind.gdrive,
-                inUse: state.kind == EcStorageKind.gdrive,
-                label: state.kind == EcStorageKind.gdrive ? state.label : null,
-                lockNote: state.byosAllowed ? null : l10n.storageNeedProPlan,
-                detail: _detailFor(EcStorageKind.gdrive),
-                onTap: () => _pick(EcStorageKind.gdrive),
-              ),
-              // Gói chưa mở kho riêng: nói MỘT lần dưới danh sách, không lặp ở
-              // từng thẻ. Ba dòng cùng nội dung cạnh nhau đọc thành nhiễu, và
-              // mỗi thẻ đã có dòng khoá ngắn của riêng nó.
-              if (state.canManage && !state.byosAllowed) ...[
-                const SizedBox(height: 12),
-                _NoteBox(text: l10n.storageNotInPlan),
-              ],
-              // Nhân viên xem được mọi thứ ở trên nhưng không đổi được gì. Nói
-              // ra, đừng để họ đi tìm cái nút không tồn tại.
-              if (!state.canManage) ...[
-                const SizedBox(height: 12),
-                _NoteBox(text: l10n.storageOwnerOnly),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

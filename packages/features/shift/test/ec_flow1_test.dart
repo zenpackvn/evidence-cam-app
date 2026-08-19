@@ -598,6 +598,99 @@ void main() {
     });
   });
 
+  /// Nhân viên ĐỌC được mọi thứ trên màn này, nhưng không có lối vào thao tác
+  /// nào cả. Một cái nút bấm không ăn thì người dùng bấm đi bấm lại rồi kết
+  /// luận app hỏng, chứ không đoán ra là mình thiếu quyền.
+  group('chi tiết cửa hàng ở chế độ nhân viên', () {
+    testWidgets('không có mũi tên ở hàng Kho lưu trữ', (tester) async {
+      Future<void> pumpAs({required bool readOnly}) => _pump(
+        tester,
+        EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          videoTypes: const [],
+          members: const [],
+          readOnly: readOnly,
+          storageLabel: 'Google Drive',
+          onTapStorage: _noop,
+        ),
+      );
+
+      await pumpAs(readOnly: false);
+      // Chủ shop: đúng một mũi tên, của hàng Kho lưu trữ.
+      expect(find.byIcon(LucideIcons.chevronRight), findsOneWidget);
+
+      await pumpAs(readOnly: true);
+      expect(find.byIcon(LucideIcons.chevronRight), findsNothing);
+      // Tên kho vẫn đọc được — đó là thứ người đứng máy cần biết giữa ca.
+      expect(find.text('Google Drive'), findsOneWidget);
+    });
+
+    // Tên kho nằm ở DÒNG DƯỚI nhãn, không dồn phải cùng dòng: nó là giá trị dài
+    // nhất trong ba hàng cài đặt ("Kho đám mây riêng (chuẩn S3)"), và nhét
+    // chung một dòng thì hoặc nhãn hoặc giá trị phải cắt ba chấm.
+    testWidgets('tên kho nằm dưới chữ "Kho lưu trữ"', (tester) async {
+      await _pump(
+        tester,
+        EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          videoTypes: const [],
+          members: const [],
+          storageLabel: 'Kho đám mây riêng (chuẩn S3)',
+          onTapStorage: _noop,
+        ),
+      );
+
+      final label = tester.getRect(find.text('Kho lưu trữ'));
+      final value = tester.getRect(find.text('Kho đám mây riêng (chuẩn S3)'));
+      expect(
+        value.top,
+        greaterThan(label.bottom - 1),
+        reason: 'tên kho vẫn nằm cùng dòng với nhãn: $label / $value',
+      );
+      // Và nó bắt đầu thẳng hàng với nhãn, không thụt vào.
+      expect(
+        (value.left - label.left).abs() < 0.5,
+        isTrue,
+        reason: 'tên kho lệch trái so với nhãn',
+      );
+    });
+
+    testWidgets('loại video không có nút sửa, xoá hay ổ khoá', (tester) async {
+      const types = [
+        EcVideoType(id: 't1', name: 'Đóng hàng', locked: true),
+        EcVideoType(id: 't2', name: 'Trả hàng'),
+      ];
+      Future<void> pumpAs({required bool readOnly}) => _pump(
+        tester,
+        EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          videoTypes: types,
+          members: const [],
+          readOnly: readOnly,
+          onEditType: (_) {},
+          onDeleteType: (_) {},
+        ),
+      );
+
+      await pumpAs(readOnly: false);
+      expect(find.byIcon(LucideIcons.pencil), findsOneWidget);
+      expect(find.byIcon(LucideIcons.trash2), findsOneWidget);
+      expect(find.byIcon(LucideIcons.lock), findsOneWidget);
+
+      await pumpAs(readOnly: true);
+      expect(find.byIcon(LucideIcons.pencil), findsNothing);
+      expect(find.byIcon(LucideIcons.trash2), findsNothing);
+      // Ổ khoá đi theo: nó trả lời "vì sao hàng này không sửa được", câu chỉ có
+      // nghĩa với người sửa được những hàng khác.
+      expect(find.byIcon(LucideIcons.lock), findsNothing);
+      // Tên loại vẫn đọc được.
+      expect(find.text('Đóng hàng'), findsOneWidget);
+    });
+  });
+
   group('EcShopDetailScreen', () {
     const members = [
       EcShopMember(name: 'Nguyễn Văn A', role: 'Quản lý shop'),

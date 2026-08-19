@@ -218,8 +218,6 @@ void main() {
         'my-bucket',
       );
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.bySemanticsLabel('Hủy'));
-      await tester.pumpAndSettle();
       await tester.tap(find.bySemanticsLabel('Hủy'));
       await tester.pumpAndSettle();
 
@@ -319,10 +317,17 @@ void main() {
       await tester.enterText(find.byType(CupertinoTextField).at(4), 'AKIA123');
       await tester.enterText(find.byType(CupertinoTextField).at(5), 'secret');
       await tester.pumpAndSettle();
-      // Gõ xong thì form đã cuộn, và nút Lưu trên đầu màn trôi khỏi khung nhìn
-      // — đúng như trên máy thật. Cuộn về nó trước khi bấm.
-      await tester.ensureVisible(find.bySemanticsLabel('Lưu lựa chọn kho'));
-      await tester.pumpAndSettle();
+      // KHÔNG cuộn về nút: tiêu đề nằm ngoài vùng cuộn nên nút Lưu phải còn
+      // nguyên trong khung nhìn sau khi điền hết form. Trước đây nó nằm ở
+      // y = -68 và người dùng kết luận màn này không cho lưu.
+      final saveRect = tester.getRect(
+        find.bySemanticsLabel('Lưu lựa chọn kho'),
+      );
+      expect(
+        saveRect.top,
+        greaterThanOrEqualTo(0.0),
+        reason: 'nút Lưu trôi khỏi màn hình: $saveRect',
+      );
       await tester.tap(find.bySemanticsLabel('Lưu lựa chọn kho'));
       await tester.pumpAndSettle();
 

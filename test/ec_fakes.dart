@@ -390,9 +390,6 @@ class FakeEcRepository implements EcRepository {
   Future<void> disconnectStorage(String shopId) async {}
 
   @override
-  Future<String> gdriveAuthUrl(String shopId) async => '';
-
-  @override
   Future<void> reportQueueDepth(
     String shopId, {
     required int pending,

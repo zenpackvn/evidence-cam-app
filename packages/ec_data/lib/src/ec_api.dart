@@ -301,18 +301,6 @@ class EcApi {
   Future<void> deleteStorage(String shopId) =>
       _dio.delete<void>('/api/shops/$shopId/storage');
 
-  /// URL trang cấp quyền Google Drive, mở bằng trình duyệt.
-  ///
-  /// Đường này dùng cặp client của dự án `zenpack` — cặp đã có sẵn trên máy
-  /// chủ. Nó là lối đi khi `gdrive_native` bằng false, tức khi máy chủ chưa có
-  /// cặp client cùng dự án với client iOS để đổi mã native.
-  Future<String> gdriveAuthUrl(String shopId) async {
-    final res = await _dio.get<Map<String, dynamic>>(
-      '/api/shops/$shopId/storage/gdrive/auth-url',
-    );
-    return (res.data!['url'] as String?) ?? '';
-  }
-
   /// Cắm Drive bằng mã uỷ quyền lấy từ hộp thoại Google của hệ điều hành.
   ///
   /// Chỉ gửi MÃ, không gửi token: máy chủ vẫn là nơi duy nhất đổi nó lấy refresh

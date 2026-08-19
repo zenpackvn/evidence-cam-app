@@ -1846,11 +1846,18 @@ class _StorageRouteState extends State<_StorageRoute>
   /// máy chủ chưa có cặp đó thì nó trả `native_not_configured` — lúc ấy tính
   /// năng báo hỏng chứ không đi vòng.
   Future<bool> _connectDrive() async {
-    // Máy chủ chưa có cặp client cùng dự án với client iOS thì hộp thoại gốc là
-    // ngõ cụt: người dùng cấp quyền xong mới nhận được câu từ chối. Hỏi trước
-    // rồi đi thẳng đường trình duyệt — một lượt cấp quyền, và là lượt duy nhất.
-    if (!_gdriveNative) return _connectDriveViaBrowser();
     final l10n = context.l10n;
+    // Máy chủ chưa có cặp client cùng dự án với client iOS thì hộp thoại gốc là
+    // ngõ cụt: người dùng chọn tài khoản, cấp quyền, rồi mới nhận câu từ chối.
+    // Biết trước thì nói trước — KHÔNG mở màn Google chỉ để hỏng.
+    //
+    // Không có đường lùi sang trình duyệt. Cắm Drive là việc phải xong trong
+    // app; đẩy người dùng sang Safari rồi bắt tự quay về là một luồng khác hẳn,
+    // và nó từng làm họ tưởng app bắt cấp quyền hai lần cho một việc.
+    if (!_gdriveNative) {
+      if (mounted) _toast(context, l10n.storageDriveFailed);
+      return false;
+    }
     try {
       final code = await _driveAuthCode();
       if (code != null && code.isNotEmpty) {
@@ -1916,41 +1923,6 @@ class _StorageRouteState extends State<_StorageRoute>
     // Mã lạ hoặc không phải lỗi từ máy chủ (mạng, 5xx): để bộ dịch chung lo.
     _ => _dataErrorText(l10n, error),
   };
-
-  /// Cắm Drive qua trình duyệt — đường dùng cặp client của dự án `zenpack`,
-  /// cặp đã có sẵn trên máy chủ.
-  ///
-  /// Luôn trả `false`, kể cả khi mở trình duyệt thành công: lúc hàm này kết
-  /// thúc thì người dùng còn đang đứng ở trang của Google và CHƯA có gì đổi cả.
-  /// Trả `true` là để dấu tích nằm lại ở Drive trong khi kho vẫn là kho cũ —
-  /// đúng kiểu nói dối mà [didChangeAppLifecycleState] sinh ra để tránh. Kết
-  /// quả thật về theo lượt đọc lại khi app sáng lại.
-  Future<bool> _connectDriveViaBrowser() async {
-    final l10n = context.l10n;
-    try {
-      final url = await widget.repo.gdriveAuthUrl(widget.shopId);
-      if (url.isEmpty) {
-        if (mounted) _toast(context, l10n.storageDriveFailed);
-        return false;
-      }
-      final opened = await launchUrl(
-        Uri.parse(url),
-        mode: LaunchMode.externalApplication,
-      );
-      if (!opened && mounted) _toast(context, l10n.storageDriveFailed);
-      return false;
-    } on Object catch (error) {
-      if (!mounted) return false;
-      developer.log(
-        'storage: mở trang cấp quyền Drive hỏng (${error.runtimeType})',
-        name: 'zenpack.storage',
-        level: 900,
-        error: error,
-      );
-      _toast(context, _dataErrorText(l10n, error));
-      return false;
-    }
-  }
 
   /// Mã uỷ quyền từ hộp thoại Google gốc, hoặc `null` khi người dùng huỷ.
   Future<String?> _driveAuthCode() async {
