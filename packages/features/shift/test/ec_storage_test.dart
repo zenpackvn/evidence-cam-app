@@ -116,6 +116,56 @@ void main() {
       expect(picked, 0, reason: 'ghi lựa chọn khi người dùng chưa xác nhận');
     });
 
+    // Chọn nhầm rồi đổi ý: Huỷ trả dấu tích về kho đang thật sự dùng, đóng
+    // form và xoá trắng nó. Không có nút này thì người vừa chạm nhầm thẻ Drive
+    // chỉ còn cách thoát khỏi màn rồi vào lại.
+    testWidgets('bấm huỷ trả lựa chọn và form về như cũ', (tester) async {
+      var cancelled = 0;
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          onCancel: () => cancelled++,
+          onSaveS3:
+              ({
+                required endpoint,
+                required bucket,
+                required accessKeyId,
+                required secretAccessKey,
+                required region,
+                required prefix,
+              }) {},
+        ),
+      );
+
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(CupertinoTextField).at(2),
+        'my-bucket',
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.bySemanticsLabel('Hủy'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Hủy'));
+      await tester.pumpAndSettle();
+
+      expect(cancelled, 1);
+      // Form đóng lại vì dấu tích đã về kho hệ thống.
+      expect(find.text('Endpoint'), findsNothing);
+
+      // Mở lại: sáu ô phải trắng, không còn thứ của lượt vừa bỏ.
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<CupertinoTextField>(find.byType(CupertinoTextField).at(2))
+            .controller
+            ?.text,
+        isEmpty,
+      );
+    });
+
     // Chạm vào S3 là sổ ra nguyên form, không phải một dòng mô tả rồi bắt bấm
     // Lưu mới thấy ô nào cần điền.
     testWidgets('chọn S3 thì sổ nguyên form ngay trong thẻ', (tester) async {

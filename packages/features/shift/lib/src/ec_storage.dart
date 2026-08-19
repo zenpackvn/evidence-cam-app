@@ -98,6 +98,7 @@ class EcStorageScreen extends StatefulWidget {
     this.onConnectDrive,
     this.onSaveS3,
     this.s3ErrorText,
+    this.onCancel,
     this.onTest,
     this.onDisconnect,
     this.onPick,
@@ -133,6 +134,12 @@ class EcStorageScreen extends StatefulWidget {
 
   /// Câu `hint` nguyên văn từ máy chủ sau một lượt lưu hỏng, vẽ dưới form.
   final String? s3ErrorText;
+
+  /// Bấm Huỷ — bên gọi dọn [s3ErrorText] của lượt lưu trước.
+  ///
+  /// Màn này tự trả dấu tích và sáu ô về chỗ cũ; riêng câu lỗi thì nó không
+  /// giữ, nên phải nhờ bên gọi.
+  final VoidCallback? onCancel;
 
   /// Người dùng vừa bấm chọn một kho — bắn ở MỌI lượt bấm, kể cả khi luồng
   /// cắm kho phía sau không chạy được.
@@ -224,6 +231,21 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   bool get _canSave {
     if (!_dirty || widget.busy || !widget.state.canManage) return false;
     return _s3FormOpen ? _s3.ready : true;
+  }
+
+  /// Bấm huỷ: trả mọi thứ về đúng trạng thái trước khi người dùng đụng vào.
+  ///
+  /// Dấu tích quay lại kho đang THẬT SỰ dùng, form đóng và xoá trắng, câu lỗi
+  /// của lượt lưu trước biến mất. Không có nút này thì người vừa chạm nhầm thẻ
+  /// Drive chỉ còn cách thoát khỏi màn rồi vào lại — mà lúc đó họ chưa biết
+  /// thoát ra có mất thứ mình vừa gõ không.
+  void _cancel() {
+    setState(() {
+      _picked = widget.state.kind;
+      _editingS3 = false;
+      _s3.clear();
+    });
+    widget.onCancel?.call();
   }
 
   /// Bấm lưu: nhớ lựa chọn rồi chạy đúng luồng của kho vừa chọn.
@@ -352,10 +374,23 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                 // Nút lưu chỉ SÁNG khi có thay đổi chưa áp dụng. Một nút luôn
                 // sáng ở màn không có gì để lưu thì bấm vào không có chuyện gì
                 // xảy ra, và lần sau người dùng không tin nó nữa.
-                trailing: _SaveButton(
-                  enabled: _canSave,
-                  busy: widget.busy,
-                  onTap: _save,
+                // Huỷ đứng TRÁI nút Lưu, cùng một chỗ cố định — như bản web.
+                // Cả hai mờ đi chứ không biến mất khi không có gì để làm: nút
+                // nhảy ra nhảy vào làm tiêu đề co giãn mỗi lần chạm một thẻ.
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _CancelButton(
+                      enabled: _dirty && !widget.busy,
+                      onTap: _cancel,
+                    ),
+                    const SizedBox(width: 8),
+                    _SaveButton(
+                      enabled: _canSave,
+                      busy: widget.busy,
+                      onTap: _save,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 10),
@@ -609,6 +644,14 @@ class _S3Controllers {
       region: trimmedRegion.isEmpty ? 'auto' : trimmedRegion,
       prefix: prefix.text.trim(),
     );
+  }
+
+  /// Trả sáu ô về trống. Bấm Huỷ mà giữ lại khoá vừa gõ thì lần sau mở form ra
+  /// thấy sẵn secret của một lượt đã bỏ.
+  void clear() {
+    for (final c in [endpoint, bucket, keyId, secret, region, prefix]) {
+      c.clear();
+    }
   }
 
   void dispose() {
@@ -1060,6 +1103,46 @@ class _Field extends StatelessWidget {
             PenText(hint!, size: 12, color: PenColors.mut),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Nút huỷ, đứng cạnh nút lưu.
+///
+/// Cùng hình đĩa 40×40 với nút lưu để hai nút đọc như một cặp; viền chứ không
+/// tô đặc, vì đây là đường lùi chứ không phải việc chính.
+class _CancelButton extends StatelessWidget {
+  const _CancelButton({required this.enabled, required this.onTap});
+
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: context.l10n.commonCancel,
+      child: EcTap(
+        onTap: enabled ? onTap : null,
+        child: PenBox(
+          width: 40,
+          height: 40,
+          fill: PenColors.bg,
+          stroke: enabled ? PenColors.line : PenColors.soft,
+          radius: 999,
+          axis: PenAxis.row,
+          main: MainAxisAlignment.center,
+          cross: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.x,
+              size: 20,
+              color: enabled ? PenColors.ink : PenColors.soft,
+            ),
+          ],
+        ),
       ),
     );
   }

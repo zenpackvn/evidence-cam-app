@@ -2002,6 +2002,9 @@ class _StorageRouteState extends State<_StorageRoute>
                 if (saved == true && mounted) _reload();
               }),
           s3ErrorText: _s3Error,
+          onCancel: () {
+            if (_s3Error != null) setState(() => _s3Error = null);
+          },
           onSaveS3:
               ({
                 required endpoint,
