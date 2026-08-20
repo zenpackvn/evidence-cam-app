@@ -131,6 +131,61 @@ void main() {
     expect(q.warnLevel, QuotaWarnLevel.none);
   });
 
+  // Chốt hợp đồng với backend: `'w90' | 'w100' | 'blocked'`.
+  //
+  // Ca này sinh ra vì app từng đọc `w80`/`w95` — hai mốc máy chủ chưa bao giờ
+  // gửi. `w90` rơi vào nhánh mặc định thành `none`, và vì không màn nào nối
+  // `warnLevel` vào giao diện nên chẳng ai thấy gì suốt thời gian đó. Ai nối
+  // dây sau này sẽ tưởng nó chạy.
+  test('đọc đúng ba mốc cảnh báo máy chủ thật sự gửi', () async {
+    for (final (raw, want) in <(String, QuotaWarnLevel)>[
+      ('w90', QuotaWarnLevel.w90),
+      ('w100', QuotaWarnLevel.w100),
+      ('blocked', QuotaWarnLevel.blocked),
+    ]) {
+      when(
+        () => dio.get<Map<String, dynamic>>(
+          '/api/quota',
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => _res('/api/quota', {
+          'plan_code': 'free',
+          'used_videos': 46,
+          'cap_videos': 50,
+          'warn_level': raw,
+        }),
+      );
+
+      expect(
+        (await api.getQuota()).warnLevel,
+        want,
+        reason: 'máy chủ gửi "$raw" mà app đọc ra khác',
+      );
+    }
+  });
+
+  // Mốc máy chủ chưa từng gửi phải im lặng, KHÔNG được đoán thành một mốc thật.
+  test('mốc lạ về none chứ không nổ và không đoán bừa', () async {
+    when(
+      () => dio.get<Map<String, dynamic>>(
+        '/api/quota',
+        queryParameters: any(named: 'queryParameters'),
+        options: any(named: 'options'),
+      ),
+    ).thenAnswer(
+      (_) async => _res('/api/quota', {
+        'plan_code': 'free',
+        'used_videos': 1,
+        'cap_videos': 50,
+        'warn_level': 'w80',
+      }),
+    );
+
+    expect((await api.getQuota()).warnLevel, QuotaWarnLevel.none);
+  });
+
   test('listShops maps the list with roles', () async {
     when(
       () => dio.get<List<dynamic>>(

@@ -614,11 +614,19 @@ class QuotaTypeUsageDto {
 }
 
 /// Mốc cảnh báo hạn mức video. `blocked` = đã vượt 110%, không quay mới được.
-enum QuotaWarnLevel { none, w80, w95, w100, blocked }
+///
+/// Tên phải khớp `QuotaWarnLevel` của backend TỪNG CHỮ:
+/// `'w90' | 'w100' | 'blocked'`. Bản trước đọc `w80`/`w95` — hai mốc máy chủ
+/// chưa bao giờ gửi — nên `w90` rơi vào nhánh mặc định và thành `none`. Không
+/// có gì đổ, không có cảnh báo nào: mốc 90% chỉ lặng lẽ không tồn tại. Console
+/// web đọc đúng ba tên này, nên app là bên duy nhất lệch.
+enum QuotaWarnLevel { none, w90, w100, blocked }
 
+/// Giá trị lạ về `none` chứ không ném: máy chủ thêm một mốc mới không được
+/// phép làm màn gói cước của người dùng trắng xoá. Đổi lại, `ec_api_test` chốt
+/// đủ ba tên thật, nên lệch hợp đồng thì đỏ ở CI chứ không im lặng ngoài đời.
 QuotaWarnLevel _warnLevel(Object? raw) => switch (raw) {
-  'w80' => QuotaWarnLevel.w80,
-  'w95' => QuotaWarnLevel.w95,
+  'w90' => QuotaWarnLevel.w90,
   'w100' => QuotaWarnLevel.w100,
   'blocked' => QuotaWarnLevel.blocked,
   _ => QuotaWarnLevel.none,
