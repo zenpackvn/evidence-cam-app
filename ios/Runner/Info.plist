@@ -79,31 +79,20 @@
 	<string>ZenPack cần quyền này để bạn chọn ảnh có sẵn làm bằng chứng cho đơn hàng. / ZenPack needs this so you can attach existing photos as evidence for an order.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>ZenPack lưu video và ảnh bằng chứng bạn tải về vào thư viện của máy. / ZenPack saves the evidence videos and photos you download to your device library.</string>
-	<!-- Meta App Events. Hai khoá dưới là giá trị CÔNG KHAI (Meta thiết kế vậy);
-	     App Secret và App Decryption Key thì tuyệt đối không để trong bundle. -->
-	<key>FacebookAppID</key>
-	<string>1619665319676271</string>
-	<key>FacebookClientToken</key>
-	<string>a1814bd3fbdc7c68039324351bc857a5</string>
-	<key>FacebookDisplayName</key>
-	<string>ZenPack</string>
-	<!-- Cả hai TẮT lúc khởi động, và chỉ bật lại sau khi người dùng trả lời hộp
-	     thoại ATT (xem lib/data/ec_meta_events.dart). Apple bắt buộc: hộp thoại
-	     phải hiện ra TRƯỚC mọi dữ liệu có thể dùng để theo dõi. Để mặc định
-	     (bật) thì SDK log lượt mở app và đọc ID quảng cáo ngay khi app chạy —
-	     tức trước khi hỏi — và đó là một nửa lý do bản 2.0.2 build 700 bị từ
-	     chối theo Guideline 2.1. -->
-	<key>FacebookAutoLogAppEventsEnabled</key>
-	<false/>
-	<key>FacebookAdvertiserIDCollectionEnabled</key>
-	<false/>
+	<!-- AppsFlyer nhận postback SKAdNetwork trực tiếp từ Apple qua endpoint này.
+	     Thiếu nó thì chỉ mạng quảng cáo thấy postback, còn dashboard AppsFlyer
+	     mù phần SKAN. Dev key + App Store ID đi qua dart-define, không ở đây. -->
+	<key>NSAdvertisingAttributionReportEndpoint</key>
+	<string>https://appsflyer-skadnetwork.com/</string>
 	<!-- Không có chuỗi này thì iOS giết app ngay khi gọi hộp thoại ATT. Từ chối
 	     ATT không làm hỏng quảng cáo — attribution chỉ rơi về SKAdNetwork. -->
 	<key>NSUserTrackingUsageDescription</key>
 	<string>ZenPack dùng dữ liệu này để biết quảng cáo nào đưa bạn tới app, nhờ đó hiển thị quảng cáo phù hợp hơn. / ZenPack uses this to see which ad brought you to the app, so the ads you see are more relevant.</string>
-	<!-- Mạng quảng cáo của Meta. Thiếu chúng thì iOS không gửi postback
-	     SKAdNetwork về Meta, và chiến dịch iOS mù hoàn toàn khi người dùng từ
-	     chối ATT — tức phần lớn người dùng. -->
+	<!-- Một dòng cho MỖI mạng quảng cáo đang chạy (đây là Meta), không phải cho
+	     SDK đo đạc — đổi từ Facebook SDK sang AppsFlyer không xoá chúng. Thiếu
+	     ID của mạng nào thì iOS không gửi postback SKAdNetwork về mạng đó, và
+	     chiến dịch iOS mù hoàn toàn khi người dùng từ chối ATT — tức phần lớn
+	     người dùng. Danh sách đầy đủ: support.appsflyer.com → SKAN ad networks. -->
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

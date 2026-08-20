@@ -4,5 +4,7 @@
   "API_TIMEOUT_SECONDS": 10,
   "REVENUECAT_IOS_KEY": "appl_jZPlACvnjGPKioYVCbFwWVJYpTw",
   "REVENUECAT_ANDROID_KEY": "goog_gYeQdywenohuqVXZWouEyHIiaTz",
-  "GOOGLE_SERVER_CLIENT_ID": "725879677565-aal47v5gbns7oqtbutamvqlvtfb1irl2.apps.googleusercontent.com"
+  "GOOGLE_SERVER_CLIENT_ID": "725879677565-aal47v5gbns7oqtbutamvqlvtfb1irl2.apps.googleusercontent.com",
+  "APPSFLYER_DEV_KEY": "",
+  "APPSFLYER_IOS_APP_ID": ""
 }

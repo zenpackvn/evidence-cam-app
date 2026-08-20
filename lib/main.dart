@@ -19,7 +19,7 @@ import 'app/bootstrap_error_app.dart';
 import 'app/di/injection.dart';
 import 'app/firebase.dart';
 import 'core/platform/firebase/firebase_service.dart';
-import 'data/ec_meta_events.dart';
+import 'data/ec_appsflyer.dart';
 import 'data/ec_purchases.dart';
 import 'ec_app.dart';
 
@@ -138,11 +138,11 @@ Future<void> main() async {
           ),
         );
 
-        // Meta App Events. Đặt SAU `runApp` chứ không cùng chỗ với RevenueCat
-        // ở trên: hộp thoại ATT của iOS chỉ bật lên khi app đã `active`, gọi
+        // AppsFlyer. Đặt SAU `runApp` chứ không cùng chỗ với RevenueCat ở
+        // trên: hộp thoại ATT của iOS chỉ bật lên khi app đã `active`, gọi
         // trong bootstrap thì iOS trả `denied` ngay và KHÔNG hỏi lại lần nào.
         WidgetsBinding.instance.addPostFrameCallback(
-          (_) => unawaited(EcMetaEvents.start()),
+          (_) => unawaited(EcAppsflyer.start()),
         );
       } on Object catch (error, stackTrace) {
         await _reportBootstrapFailure(error, stackTrace);

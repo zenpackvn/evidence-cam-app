@@ -90,17 +90,17 @@ class EcPurchases {
     }
   }
 
-  /// Nối phiên mua hàng với danh tính ẩn danh của Meta SDK.
+  /// Nối phiên mua hàng với AppsFlyer UID của máy.
   ///
-  /// Không phải trang trí: tích hợp Facebook Ads của RevenueCat bắn event mua
-  /// gói (kể cả **gia hạn**) thẳng từ máy chủ họ sang Meta, và Meta chỉ quy được
-  /// event đó về đúng lượt bấm quảng cáo nếu có `fb_anon_id` này. Thiếu nó thì
+  /// Không phải trang trí: tích hợp AppsFlyer của RevenueCat bắn event mua gói
+  /// (kể cả **gia hạn**) thẳng từ máy chủ họ sang AppsFlyer, và AppsFlyer chỉ
+  /// quy được event đó về đúng lượt bấm quảng cáo nếu có UID này. Thiếu nó thì
   /// chiến dịch tối ưu theo doanh thu mù hoàn toàn.
   ///
-  /// Xem `EcMetaEvents.start` — chỗ gọi duy nhất.
-  static Future<void> setFacebookAnonymousId(String id) async {
+  /// Xem `EcAppsflyer.start` — chỗ gọi duy nhất.
+  static Future<void> setAppsflyerId(String id) async {
     if (_instance == null || id.isEmpty) return;
-    await Purchases.setFBAnonymousID(id);
+    await Purchases.setAppsflyerID(id);
   }
 
   /// Ép ngôn ngữ hiển thị của paywall dựng sẵn.

@@ -94,7 +94,7 @@ import 'package:storage/storage.dart';
 import 'app/di/injection.dart';
 import 'core/data/ec_claim_store.dart';
 import 'app/update_gate.dart';
-import 'data/ec_meta_events.dart';
+import 'data/ec_appsflyer.dart';
 import 'data/ec_purchases.dart';
 import 'data/ec_uploader.dart';
 import 'data/platform_device_conditions.dart';
@@ -620,6 +620,7 @@ class _LoginRouteState extends State<_LoginRoute> {
       // `login` is a reserved Firebase event, so it keeps its English name and
       // goes through `logLogin` — that is what feeds the built-in funnel.
       _analytics()?.logLogin(method: _AuthMethods.email);
+      unawaited(EcAppsflyer.logLogin(_AuthMethods.email));
       await _credentials()?.save(
         email: _email.text.trim(),
         password: _password.text,
@@ -920,6 +921,7 @@ Future<void> _afterSocialSignIn(
   try {
     await signIn;
     _analytics()?.logLogin(method: method);
+    unawaited(EcAppsflyer.logLogin(method));
     if (!context.mounted) return;
     context.go('/shops', extra: 'forward');
   } on EcAuthCancelled {
@@ -1079,6 +1081,10 @@ class _AccountRouteState extends State<_AccountRoute> {
   /// lại, hạn dùng do webhook RevenueCat → backend chốt. Hàng đợi cũng được đá
   /// một cái vì clip đang đỗ do hết hạn mức phải tự đi tiếp.
   Future<void> _openPaywall() async {
+    // `trackPaywallViewed` tồn tại từ đầu nhưng chưa có chỗ gọi — bảng giá là
+    // mốc ý định trả tiền, thiếu nó thì phễu đứt ngay trước bước mua.
+    _analytics()?.trackPaywallViewed();
+    unawaited(EcAppsflyer.logPaywallViewed());
     final purchased = await EcPurchases.presentPaywall();
     if (!purchased || !mounted) return;
     unawaited(widget.queue.retryQuotaWaiting());
@@ -1514,6 +1520,10 @@ class _QuotaRouteState extends State<_QuotaRoute> {
   /// vẫn ra gói cũ. Hàng đợi cũng được đá một cái: clip đang đỗ vì hết hạn mức
   /// phải tự đi tiếp khi vừa có thêm chỗ, đó là lý do người dùng vừa trả tiền.
   Future<void> _openPaywall() async {
+    // `trackPaywallViewed` tồn tại từ đầu nhưng chưa có chỗ gọi — bảng giá là
+    // mốc ý định trả tiền, thiếu nó thì phễu đứt ngay trước bước mua.
+    _analytics()?.trackPaywallViewed();
+    unawaited(EcAppsflyer.logPaywallViewed());
     final purchased = await EcPurchases.presentPaywall();
     if (!purchased || !mounted) return;
     unawaited(widget.queue.retryQuotaWaiting());
@@ -3476,7 +3486,7 @@ class _CreateShopRouteState extends State<_CreateShopRoute> {
       // Mốc phễu gửi về Meta Ads. Đặt sau khi backend trả shop thật, không đặt
       // ở chỗ bấm nút: tối ưu quảng cáo theo một cú bấm hỏng thì càng tiêu tiền
       // vào đúng nhóm người không dùng được app.
-      unawaited(EcMetaEvents.logShopCreated());
+      unawaited(EcAppsflyer.logShopCreated());
       if (!mounted) return;
       widget.onCreated?.call(_shopFromDto(context.l10n, shop));
     } on Object catch (error) {

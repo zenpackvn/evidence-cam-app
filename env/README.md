@@ -19,6 +19,8 @@ These configuration files are injected into the Flutter application at compile/r
 | `API_TIMEOUT_SECONDS` | int | Connect/receive timeout for Dio, in seconds. Defaults to 10 if omitted. |
 | `REVENUECAT_IOS_KEY` | string | RevenueCat **public** SDK key (`appl_…`). **`prod.json` only** — see below. |
 | `REVENUECAT_ANDROID_KEY` | string | Same for Android (`goog_…`). Set 2026-08-11. Offering `default` trả đủ **6 package** cho cả hai nền tảng (kiểm 2026-08-11: `GET api.revenuecat.com/v1/subscribers/<id>/offerings` với `X-Platform: android`). |
+| `APPSFLYER_DEV_KEY` | string | AppsFlyer dev key (dashboard → App Settings). Một key cho cả hai nền tảng, **công khai** (nằm trong binary theo thiết kế). Set 2026-08-20, **`prod.json` only** — bản dev/staging bắn install/session sẽ làm bẩn số liệu attribution của prod. Rỗng = không khởi tạo AppsFlyer, app vẫn chạy đủ. |
+| `APPSFLYER_IOS_APP_ID` | string | App Store ID dạng số, **không có tiền tố `id`** (App Store hiện `id6794540715` → điền `6794540715`). Bắt buộc cho AppsFlyer trên iOS; thiếu thì SDK bỏ qua hẳn thay vì chạy với attribution hỏng âm thầm. Android bỏ qua giá trị này. |
 
 ### Why the RevenueCat keys are only in `prod.json`
 

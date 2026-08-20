@@ -25,5 +25,12 @@ void main() {
     test('defaults the API timeout to 10 seconds', () {
       expect(env.apiTimeout, const Duration(seconds: 10));
     });
+
+    test('defaults AppsFlyer to off', () {
+      // Vắng khoá thì `EcAppsflyer.start` phải bỏ qua chứ không khởi động SDK
+      // với dev key rỗng — bản build nội bộ không được làm bẩn số liệu prod.
+      expect(env.appsflyerDevKey, isEmpty);
+      expect(env.appsflyerIosAppId, isEmpty);
+    });
   });
 }

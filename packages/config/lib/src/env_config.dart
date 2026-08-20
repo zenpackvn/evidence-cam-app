@@ -56,6 +56,20 @@ class EnvConfig {
   String get revenueCatAndroidKey =>
       const String.fromEnvironment('REVENUECAT_ANDROID_KEY');
 
+  /// Dev key của AppsFlyer (AppsFlyer dashboard → App Settings). Một key cho cả
+  /// hai nền tảng. Nó nằm sẵn trong binary theo thiết kế của AppsFlyer, nên để
+  /// ở dart-define chứ không phải secret store — thứ KHÔNG được nhúng là API
+  /// token S2S, cái đó chỉ sống ở server.
+  ///
+  /// Vắng = KHÔNG khởi tạo AppsFlyer (không đo attribution, app vẫn chạy đủ).
+  String get appsflyerDevKey =>
+      const String.fromEnvironment('APPSFLYER_DEV_KEY');
+
+  /// App Store ID dạng số (không có tiền tố `id`), bắt buộc cho AppsFlyer trên
+  /// iOS. Android bỏ qua giá trị này.
+  String get appsflyerIosAppId =>
+      const String.fromEnvironment('APPSFLYER_IOS_APP_ID');
+
   bool get isDev => flavor == 'dev';
   bool get isStaging => flavor == 'staging';
   bool get isProd => flavor == 'prod';
