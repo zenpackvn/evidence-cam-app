@@ -67,7 +67,8 @@ import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart'
-    show TargetPlatform, ValueListenable, defaultTargetPlatform;
+    show Factory, TargetPlatform, ValueListenable, defaultTargetPlatform;
+import 'package:flutter/gestures.dart' show VerticalDragGestureRecognizer;
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1715,6 +1716,13 @@ class _StorageRouteState extends State<_StorageRoute>
   /// đi đường nào TRƯỚC khi hiện bất cứ màn Google nào.
   bool _gdriveNative = false;
 
+  /// Loại kho ĐÃ CẮM — kể cả khi đang tắt.
+  ///
+  /// Dùng để chọn chữ cho hộp thoại xác nhận: gỡ một tài khoản Google và gỡ
+  /// một cái bucket S3 là hai câu khác nhau, và câu sai làm người dùng tưởng
+  /// mình đang bấm việc kia.
+  StorageKind _configuredKind = StorageKind.system;
+
   @override
   void initState() {
     super.initState();
@@ -1891,11 +1899,18 @@ class _StorageRouteState extends State<_StorageRoute>
 
   Future<void> _disconnect() async {
     final l10n = context.l10n;
+    // Chữ theo ĐÚNG việc đang làm. Người bán vừa bấm "Đăng xuất khỏi Drive" mà
+    // hộp thoại mở ra nói "Thôi dùng kho riêng" thì họ đọc ra là bấm nhầm nút, và
+    // gỡ một cái bucket S3 lại là một câu khác hẳn.
+    final isDrive = _configuredKind == StorageKind.gdrive;
+    final title = isDrive ? l10n.storageDriveLogout : l10n.storageDisconnect;
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
-        title: Text(l10n.storageDisconnect),
-        content: Text(l10n.storageDisconnectConfirm),
+        title: Text(title),
+        content: Text(
+          isDrive ? l10n.storageDriveLogoutConfirm : l10n.storageDisconnectConfirm,
+        ),
         actions: [
           CupertinoDialogAction(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -1904,38 +1919,44 @@ class _StorageRouteState extends State<_StorageRoute>
           CupertinoDialogAction(
             isDestructiveAction: true,
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.storageDisconnect),
+            child: Text(title),
           ),
         ],
       ),
     );
     if (confirmed != true || !mounted) return;
     await _run(
-      () => widget.repo.disconnectStorage(widget.shopId),
-      l10n.storageDisconnected,
+      () async {
+        await widget.repo.disconnectStorage(widget.shopId);
+        // Ghi thẳng lựa chọn về kho hệ thống, ngay tại đây.
+        //
+        // [_displayedStorageKind] ưu tiên lựa chọn đã nhớ hơn kho máy chủ báo,
+        // còn [_syncStoragePick] thì chạy nền và không kịp xong trước lượt vẽ
+        // lại. Không có dòng này thì đăng xuất xong thẻ Drive vẫn còn dấu tích
+        // — màn hình nói sai về nơi video đang được cất.
+        await _rememberStoragePick(widget.shopId, StorageKind.system);
+      },
+      isDrive ? l10n.storageDriveLoggedOut : l10n.storageDisconnected,
     );
   }
 
-  /// Cắm Google Drive bằng hộp thoại GỐC của hệ điều hành — đúng thứ người dùng
-  /// đã quen khi đăng nhập bằng Google, không nhảy sang trình duyệt.
+  /// Cắm Google Drive: ưu tiên hộp thoại GỐC của hệ điều hành — đúng thứ người
+  /// dùng đã quen khi đăng nhập bằng Google.
   ///
-  /// Đây là đường DUY NHẤT: đường lùi qua trình duyệt đã xoá. Hộp thoại gốc cần
-  /// máy chủ giữ một cặp client Google cùng dự án với client iOS, và chừng nào
-  /// máy chủ chưa có cặp đó thì nó trả `native_not_configured` — lúc ấy tính
-  /// năng báo hỏng chứ không đi vòng.
+  /// Hộp thoại gốc cần máy chủ giữ một cặp client Google cùng dự án với client
+  /// di động. Chừng nào chưa có cặp đó, máy chủ khai `gdrive_native: false` và
+  /// ta rẽ sang [_connectDriveInApp]: trang đồng ý của Google mở trong WebView
+  /// của app, dùng cặp client của luồng trình duyệt — cặp đã cấu hình sẵn.
+  ///
+  /// Cả hai đường đều KHÔNG rời app. Thứ bản 2.0.2 gỡ bỏ là nhảy ra TRÌNH
+  /// DUYỆT NGOÀI rồi bắt người dùng tự tìm đường quay về, không phải bản thân
+  /// luồng OAuth qua web.
   Future<bool> _connectDrive() async {
     final l10n = context.l10n;
-    // Máy chủ chưa có cặp client cùng dự án với client iOS thì hộp thoại gốc là
-    // ngõ cụt: người dùng chọn tài khoản, cấp quyền, rồi mới nhận câu từ chối.
-    // Biết trước thì nói trước — KHÔNG mở màn Google chỉ để hỏng.
-    //
-    // Không có đường lùi sang trình duyệt. Cắm Drive là việc phải xong trong
-    // app; đẩy người dùng sang Safari rồi bắt tự quay về là một luồng khác hẳn,
-    // và nó từng làm họ tưởng app bắt cấp quyền hai lần cho một việc.
-    if (!_gdriveNative) {
-      if (mounted) _toast(context, l10n.storageDriveFailed);
-      return false;
-    }
+    // Rẽ TRƯỚC khi mở bất cứ màn Google nào: hộp thoại gốc chắc chắn hỏng khi
+    // máy chủ chưa có cặp client, và cho người dùng cấp quyền xong rồi mới báo
+    // là bắt họ làm không công.
+    if (!_gdriveNative) return _connectDriveInApp();
     try {
       final code = await _driveAuthCode();
       if (code != null && code.isNotEmpty) {
@@ -1970,6 +1991,64 @@ class _StorageRouteState extends State<_StorageRoute>
       // câu vừa đồng ý — hai lần cấp quyền cho một việc, và lần thứ hai rời
       // hẳn khỏi app. Nói thẳng là hỏng thì người dùng biết đường báo lại;
       // đẩy sang web thì họ tưởng app bắt làm hai lần cho vui.
+      if (mounted) _toast(context, _driveErrorText(l10n, code, error));
+      return false;
+    }
+  }
+
+  /// Cắm Drive bằng trang đồng ý của Google mở trong WebView của app.
+  ///
+  /// Dùng cặp client của luồng trình duyệt — cặp đã cấu hình sẵn trên máy chủ —
+  /// nên chạy được kể cả khi cặp `GOOGLE_APP_*` của hộp thoại gốc còn thiếu.
+  ///
+  /// Máy chủ tự đổi mã và cắm kho ở `/oauth/gdrive/callback`; app chỉ nhận lại
+  /// một chữ `ok` hoặc mã lỗi. Refresh token không bao giờ xuống thiết bị,
+  /// giống hệt đường hộp thoại gốc.
+  Future<bool> _connectDriveInApp() async {
+    final l10n = context.l10n;
+    try {
+      final url = await widget.repo.gdriveAuthUrl(widget.shopId);
+      if (!mounted) return false;
+      // Trượt lên từ đáy, không đẩy ngang như một trang mới: cùng dáng với
+      // bảng chọn tài khoản của hệ điều hành lúc đăng nhập bằng Google, và
+      // dải màn cũ còn thấy ở đỉnh là thứ nói rằng ta vẫn đang trong app.
+      //
+      // Dùng bottom sheet của Material chứ không phải `showCupertinoModalPopup`
+      // vì chỉ nó có sẵn VUỐT XUỐNG ĐỂ ĐÓNG. Thanh gạch ngang ở đầu tấm hứa
+      // đúng thao tác đó; hứa mà vuốt không ăn thì thà đừng vẽ nó ra.
+      //
+      // WebView nuốt cử chỉ kéo trong vùng của nó (để cuộn trang Google), nên
+      // chỗ vuốt được là dải trống quanh thanh gạch — y như mọi bottom sheet
+      // có nội dung cuộn.
+      final result = await showModalBottomSheet<String>(
+        context: context,
+        // Cho tấm cao quá nửa màn; mặc định bị kẹp ở 50%.
+        isScrollControlled: true,
+        useSafeArea: true,
+        // Nền trong suốt để phần bo góc là của widget bên trong, không phải
+        // của Material — nếu không sẽ có hai lớp bo góc chồng nhau.
+        backgroundColor: const Color(0x00000000),
+        builder: (_) => _DriveConsentScreen(url: url),
+      );
+      if (!mounted) return false;
+      if (result == 'ok') {
+        _toast(context, l10n.storageConnected);
+        _reload();
+        return true;
+      }
+      // Tự thoát thì im lặng. `null` là bấm back của máy, `cancelled` là bấm
+      // nút back trên thanh tiêu đề — cả hai đều là họ vừa nói "không".
+      if (result == null || result == 'cancelled') return false;
+      _toast(context, _driveErrorText(l10n, result, result));
+      return false;
+    } on Object catch (error) {
+      final code = _apiErrorCode(error);
+      developer.log(
+        'storage: cắm Drive trong app hỏng (${code ?? error.runtimeType})',
+        name: 'zenpack.storage',
+        level: 900,
+        error: error,
+      );
       if (mounted) _toast(context, _driveErrorText(l10n, code, error));
       return false;
     }
@@ -2042,6 +2121,7 @@ class _StorageRouteState extends State<_StorageRoute>
         final dto = snap.data!;
         final view = dto.storage;
         _gdriveNative = dto.gdriveNative;
+        _configuredKind = dto.configuredKind ?? StorageKind.system;
         // Máy chủ vừa nói kho thật là gì; nếu nó đổi so với lần đọc trước thì
         // lựa chọn đã nhớ bám theo. Chạy ở nền, không chặn lượt dựng này.
         unawaited(_syncStoragePick(widget.shopId, dto.kind));
@@ -2062,6 +2142,15 @@ class _StorageRouteState extends State<_StorageRoute>
             // mình đã chọn.
             kind: switch (displayed) {
               StorageKind.system => EcStorageKind.system,
+              StorageKind.s3 => EcStorageKind.s3,
+              StorageKind.gdrive => EcStorageKind.gdrive,
+            },
+            // Kho ĐÃ CẮM, kể cả khi shop đang dùng kho hệ thống. Đây là thứ
+            // cho phép "chọn lại Drive rồi bấm Lưu" chỉ là bật lại, thay vì
+            // một vòng cấp quyền Google mới.
+            configuredKind: switch (dto.configuredKind) {
+              null => null,
+              StorageKind.system => null,
               StorageKind.s3 => EcStorageKind.s3,
               StorageKind.gdrive => EcStorageKind.gdrive,
             },
@@ -2094,12 +2183,28 @@ class _StorageRouteState extends State<_StorageRoute>
               lastCheckedAt: dto.health.lastCheckedAt,
             ),
           ),
-          onTest: () => _run(
-            () => widget.repo.testStorage(widget.shopId),
-            context.l10n.storageTestOk,
-          ),
           onDisconnect: _disconnect,
+          // LƯU LÀ LƯU: về kho hệ thống, giữ nguyên tài khoản đã cắm, không
+          // hỏi lại và không đăng xuất. Cắt đứt tài khoản là việc của nút đăng
+          // xuất riêng trong thẻ.
+          onUseSystem: () => unawaited(
+            _run(
+              () => widget.repo.setStorageActive(widget.shopId, active: false),
+              context.l10n.storageSwitchedToSystem,
+            ),
+          ),
+          // Dùng lại kho đã cắm — một lượt gọi, không màn cấp quyền nào.
+          onResumeStorage: () => unawaited(
+            _run(
+              () => widget.repo.setStorageActive(widget.shopId, active: true),
+              context.l10n.storageResumed,
+            ),
+          ),
           onConnectDrive: _connectDrive,
+          // Đổi tài khoản = chạy lại đúng luồng cắm. URL cấp quyền đã mang
+          // `prompt=select_account`, nên Google hiện lại bảng chọn thay vì
+          // lặng lẽ dùng tài khoản cũ.
+          onSwitchDriveAccount: () => unawaited(_connectDrive()),
           onConnectS3: () => context
               .push<bool>('/storage-connect', extra: widget.shopId)
               .then((saved) {
@@ -3584,52 +3689,56 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
   /// - **loại video** hỏng → rỗng, đúng như spec, và người dùng nhận ra ngay
   ///   vì màn này có sẵn nút thêm loại.
   ///
-  /// Nhân viên KHÔNG hỏi danh sách thành viên: endpoint đó chỉ mở cho chủ shop
-  /// nên lượt gọi ấy chắc chắn 403. Nhưng thay vì bỏ trống phần đó, hỏi
-  /// `/api/me` rồi dựng đúng MỘT dòng — chính họ.
+  /// Nhân viên đọc CÙNG danh sách thành viên như chủ shop — khác nhau ở chỗ
+  /// không sửa được gì trên đó ([EcShopDetailScreen.readOnly]). Biết mình làm
+  /// cùng ai, và ai là chủ shop, không phải đặc quyền quản trị: đó là câu đầu
+  /// tiên người đứng máy hỏi khi mở màn này.
   ///
-  /// Một khối trống hoặc một câu "bạn không có quyền xem" không trả lời được
-  /// câu người nhân viên thật sự hỏi khi mở màn này: mình đang ở shop nào, với
-  /// vai trò gì. Còn danh sách đồng nghiệp thì đúng là việc của chủ shop.
+  /// Vẫn hỏi `/api/me` song song khi vai trò là nhân viên, để có đường lùi:
+  /// máy chủ từng chặn `listMembers` ở `requireOwner`, nên nếu bản backend
+  /// đang chạy vẫn chặn thì khối này dựng đúng MỘT dòng — chính họ — thay vì
+  /// bỏ trống. Một khối trống không trả lời được câu hỏi nào cả.
   Future<_ShopDetailData> _load() async {
     final l10n = context.l10n;
-    final canReadMembers = !widget.isReadOnly;
-    final results = await Future.wait([
-      _orLog('shop', () => widget.repo.shop(widget.shop.id)),
-      if (canReadMembers)
-        _orLog('members', () => widget.repo.members(widget.shop.id))
-      else
-        _orLog('self', () => widget.repo.account()),
-      _orLog('video-types', () => widget.repo.videoTypes(widget.shop.id)),
-      // Kho chỉ để hiện một dòng tóm tắt, nên hỏng thì rơi về "kho hệ thống"
-      // chứ không làm hỏng cả màn — người dùng vẫn mở được màn kho và thấy
-      // lỗi thật ở đó.
-      _orLog('storage', () => widget.repo.storage(widget.shop.id)),
-    ]);
-    final members = canReadMembers ? results[1] as List<MemberDto>? : null;
-    final self = canReadMembers ? null : results[1] as AccountDto?;
+    final staff = _shopDetailIsReadOnly(widget.shop);
+    // Mở hết lượt gọi trước rồi mới `await`, để chúng chạy song song.
+    final shopCall = _orLog('shop', () => widget.repo.shop(widget.shop.id));
+    final membersCall = _orLog(
+      'members',
+      () => widget.repo.members(widget.shop.id),
+    );
+    final selfCall = staff ? _orLog('self', () => widget.repo.account()) : null;
+    final typesCall = _orLog(
+      'video-types',
+      () => widget.repo.videoTypes(widget.shop.id),
+    );
+    // Kho chỉ để hiện một dòng tóm tắt, nên hỏng thì rơi về "kho hệ thống"
+    // chứ không làm hỏng cả màn — người dùng vẫn mở được màn kho và thấy
+    // lỗi thật ở đó.
+    final storageCall = _orLog(
+      'storage',
+      () => widget.repo.storage(widget.shop.id),
+    );
+
+    final shop = await shopCall;
+    final members = await membersCall;
+    final self = selfCall == null ? null : await selfCall;
+    final types = await typesCall;
+    final storage = await storageCall;
+
     return _ShopDetailData(
-      shop: (results[0] as ShopDto?) ?? _snapshotDto(),
-      members: canReadMembers
-          ? (members ?? const []).map((m) => _memberFromDto(l10n, m)).toList()
-          : [
-              if (self != null)
-                EcShopMember(
-                  accountUid: self.uid,
-                  roleCode: widget.shop.role,
-                  name: self.name?.isNotEmpty ?? false
-                      ? self.name!
-                      : self.email ?? l10n.memberFallbackName,
-                  role: _roleDisplayName(l10n, widget.shop.role),
-                ),
-            ],
+      shop: shop ?? _snapshotDto(),
+      members: members != null
+          ? members.map((m) => _memberFromDto(l10n, m)).toList()
+          : _fallbackMembers(l10n, shop ?? _snapshotDto(), self),
       // Đọc `/api/me` hỏng cũng là "không tải được", y như đọc danh sách hỏng —
-      // cả hai đều để lại phần thành viên trống mà không nói vì sao.
-      membersFailed: canReadMembers ? members == null : self == null,
+      // cả hai đều để lại phần thành viên trống mà không nói vì sao. Với chủ
+      // shop không có lượt `/api/me` nào, nên vế sau luôn đúng và cờ này rút
+      // về đúng "đọc danh sách hỏng".
+      membersFailed: members == null && self == null,
       membersRestricted: false,
-      storageKind:
-          (results.last as StorageStateDto?)?.kind ?? StorageKind.system,
-      videoTypes: ((results[2] as List<VideoTypeDto>?) ?? const [])
+      storageKind: storage?.kind ?? StorageKind.system,
+      videoTypes: (types ?? const [])
           .map((type) => _videoTypeFromDto(type, l10n))
           .toList(),
     );
@@ -3857,6 +3966,65 @@ String _storageLabel(BuildContext context, StorageKind kind) => switch (kind) {
   StorageKind.s3 => context.l10n.storageS3Title,
   StorageKind.gdrive => context.l10n.storageDriveTitle,
 };
+
+/// Danh sách thành viên dựng từ những gì đọc được, khi máy chủ không cho đọc
+/// danh sách thật.
+///
+/// HAI hàng chứ không phải một. Chủ shop lấy từ `owner_name`/`owner_email` —
+/// hai trường `GET /shops/:id` vẫn trả cho MỌI vai trò — còn người đang đăng
+/// nhập lấy từ `/api/me`. Chỉ hiện mình thì nhân viên không biết mình đang làm
+/// cho ai, mà đó lại là người duy nhất sửa được hạn mức hay kho hỏng giữa ca.
+///
+/// Rút về một hàng khi người đang đăng nhập CHÍNH LÀ chủ shop: khớp theo email
+/// vì hai nguồn không dùng chung khoá nào khác. Không khớp thì thà thừa một
+/// hàng còn hơn giấu mất chủ shop.
+List<EcShopMember> _fallbackMembers(
+  AppLocalizations l10n,
+  ShopDto shop,
+  AccountDto? self,
+) {
+  final ownerEmail = shop.ownerEmail?.trim() ?? '';
+  final ownerName = shop.ownerName?.trim() ?? '';
+  final ownerLine = ownerName.isNotEmpty ? ownerName : ownerEmail;
+  final selfEmail = self?.email?.trim().toLowerCase() ?? '';
+  final selfIsOwner =
+      ownerEmail.isNotEmpty && ownerEmail.toLowerCase() == selfEmail;
+  return [
+    if (ownerLine.isNotEmpty)
+      EcShopMember(
+        name: ownerLine,
+        role: _roleDisplayName(l10n, 'owner'),
+        roleCode: 'owner',
+        // Cùng quy ước với [_memberFromDto]: email chỉ xuống dòng dưới khi nó
+        // KHÁC dòng tên.
+        email: ownerEmail == ownerLine || ownerEmail.isEmpty
+            ? null
+            : ownerEmail,
+      ),
+    if (self != null && !selfIsOwner) _selfMember(l10n, self, shop.role),
+  ];
+}
+
+/// Đúng MỘT dòng — chính người đang đăng nhập — dựng từ `/api/me`.
+///
+/// Đường lùi cho màn Chi tiết cửa hàng khi máy chủ không cho vai trò hiện tại
+/// đọc danh sách thành viên. Không thay được danh sách thật, nhưng trả lời
+/// được câu tối thiểu: mình đang ở shop nào, với vai trò gì.
+EcShopMember _selfMember(AppLocalizations l10n, AccountDto self, String role) {
+  final name = self.name?.isNotEmpty ?? false
+      ? self.name!
+      : self.email ?? l10n.memberFallbackName;
+  return EcShopMember(
+    accountUid: self.uid,
+    roleCode: role,
+    name: name,
+    // Cùng quy ước với [_memberFromDto]: email chỉ xuống dòng dưới khi nó KHÁC
+    // dòng tên — chưa đặt tên thì tên đã chính là email, in lại lần nữa là hai
+    // dòng nói cùng một điều.
+    email: self.email == name ? null : self.email,
+    role: _roleDisplayName(l10n, role),
+  );
+}
 
 /// Hàng `pending` chưa có tài khoản: không uid, không tên, không email — chỉ
 /// có địa chỉ đã mời. Nhãn trạng thái lấy theo `invite_status`, không theo
@@ -7227,6 +7395,176 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
       ),
     );
   }
+}
+
+/// Cấp quyền Google Drive NGAY TRONG APP.
+///
+/// Đường thứ hai của việc cắm Drive, đi khi máy chủ chưa có cặp `GOOGLE_APP_*`
+/// cho hộp thoại gốc. Nó mở đúng trang đồng ý mà luồng trình duyệt vẫn dùng —
+/// cặp client của luồng ấy đã cấu hình sẵn trên máy chủ — nhưng mở trong
+/// WebView của app.
+///
+/// KHÔNG đẩy sang trình duyệt ngoài. Đó đúng là chỗ luồng cũ đã gãy và đã bị
+/// gỡ ở 2.0.2: người dùng bị ném sang Chrome, cấp quyền xong thì đứng lại ở
+/// một trang web lạ và không biết đường về app.
+///
+/// Kết thúc bằng CHUYỂN HƯỚNG chứ không bằng nút bấm: máy chủ đổi mã xong thì
+/// 302 về một URL mang `gdrive=ok` (hoặc `gdrive=<mã lỗi>`). Chặn ngay lượt
+/// điều hướng ấy — trang đích là console web, tải nó trong app chỉ hiện một
+/// màn lạc quẻ ngay trước lúc đóng.
+class _DriveConsentScreen extends StatefulWidget {
+  const _DriveConsentScreen({required this.url});
+
+  final String url;
+
+  @override
+  State<_DriveConsentScreen> createState() => _DriveConsentScreenState();
+}
+
+class _DriveConsentScreenState extends State<_DriveConsentScreen> {
+  late final WebViewController _controller;
+  bool _loading = true;
+
+  /// Đã trả kết quả chưa.
+  ///
+  /// Google còn chuyển hướng thêm vài nhịp sau lượt ta bắt được, và `pop` lần
+  /// thứ hai sẽ đóng nhầm màn nằm dưới.
+  bool _done = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(BrandColors.bg)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (request) {
+            final result = _gdriveResultOf(request.url);
+            if (result == null) return NavigationDecision.navigate;
+            _finish(result);
+            return NavigationDecision.prevent;
+          },
+          onPageFinished: (_) {
+            if (mounted) setState(() => _loading = false);
+          },
+          // CHỈ khung chính mới tính là hỏng. Trang của Google kéo theo cả
+          // đống tài nguyên phụ, và một cái 404 trong đó không phải lý do để
+          // bỏ dở lượt cấp quyền.
+          onWebResourceError: (e) {
+            if (e.isForMainFrame == true) _finish('failed');
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  void _finish(String result) {
+    if (_done || !mounted) return;
+    _done = true;
+    Navigator.of(context).pop(result);
+  }
+
+  /// Tấm trượt lên từ đáy, không phải một trang đẩy ngang.
+  ///
+  /// Cùng dáng với bảng chọn tài khoản của hệ điều hành lúc đăng nhập bằng
+  /// Google: bo góc trên, nền dưới mờ đi, và chừa lại một dải ở đỉnh để thấy
+  /// màn cũ vẫn còn đó. Đây là thứ nói cho người dùng biết họ chưa rời app —
+  /// một trang chiếm trọn màn hình thì trông y như đã nhảy sang trình duyệt.
+  @override
+  Widget build(BuildContext context) {
+    final inset = MediaQuery.viewInsetsOf(context).bottom;
+    return Padding(
+      // Bàn phím đẩy tấm này lên thay vì che mất ô đang gõ: trang của Google
+      // có ô mật khẩu, và ô đó nằm ở nửa dưới.
+      padding: EdgeInsets.only(bottom: inset),
+      child: FractionallySizedBox(
+        heightFactor: 0.92,
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: BrandColors.bg,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Thanh vuốt: dấu hiệu quen thuộc của một tấm kéo xuống được,
+                  // và cũng là thứ tách phần của app khỏi phần của Google.
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(top: 10, bottom: 6),
+                      decoration: BoxDecoration(
+                        color: PenColors.line,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  // KHÔNG có thanh tiêu đề của app ở đây.
+                  //
+                  // Bảng chọn tài khoản của hệ điều hành cũng không có: chỉ
+                  // thanh vuốt rồi vào thẳng nội dung của Google. Thêm một
+                  // hàng "‹ Google Drive" là biến tấm này thành một TRANG của
+                  // app, đúng cái cảm giác cần tránh. Thoát bằng vuốt xuống
+                  // hoặc chạm ra ngoài, y như bảng kia.
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        // Nhường cử chỉ KÉO DỌC cho WebView.
+                        //
+                        // Bottom sheet cũng nhận kéo dọc (để vuốt xuống đóng),
+                        // và mặc định nó thắng — nên trang đồng ý của Google
+                        // không cuộn được, mà nút xác nhận thì nằm tận cuối
+                        // trang. Người dùng chọn tài khoản xong là kẹt.
+                        //
+                        // Khai recognizer ở đây là WebView giành được cử chỉ
+                        // trong vùng của nó. Tấm vẫn vuốt xuống đóng được ở
+                        // dải trống quanh thanh gạch ngang — chỗ không phải
+                        // WebView.
+                        WebViewWidget(
+                          controller: _controller,
+                          gestureRecognizers: {
+                            Factory<VerticalDragGestureRecognizer>(
+                              VerticalDragGestureRecognizer.new,
+                            ),
+                          },
+                        ),
+                        if (_loading)
+                          const ColoredBox(
+                            color: BrandColors.bg,
+                            child: Center(child: CupertinoActivityIndicator()),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Đọc `gdrive=` ở CẢ query lẫn fragment.
+///
+/// URL máy chủ chốt lại là `…/app#/shops/<id>?gdrive=ok` — dấu `?` nằm SAU
+/// `#`, nên `Uri.queryParameters` trả về rỗng. Chỉ đọc query thì màn cấp quyền
+/// không bao giờ tự đóng: nó đứng mãi ở trang console web.
+String? _gdriveResultOf(String url) {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return null;
+  final direct = uri.queryParameters['gdrive'];
+  if (direct != null) return direct;
+  final fragment = uri.fragment;
+  if (fragment.isEmpty) return null;
+  return Uri.tryParse(fragment)?.queryParameters['gdrive'];
 }
 
 class _ClaimPageError extends StatelessWidget {

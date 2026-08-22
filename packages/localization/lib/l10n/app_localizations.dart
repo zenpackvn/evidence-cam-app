@@ -3728,6 +3728,30 @@ abstract class AppLocalizations {
   /// **'Drive account'**
   String get storageDriveAccount;
 
+  /// Nút đổi sang tài khoản Google khác cho kho Drive. Nằm ngay cạnh email đang cắm — đổi kho là việc của dòng đó, không phải của một màn khác.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch account'**
+  String get storageDriveSwitchAccount;
+
+  /// Gỡ tài khoản Google khỏi shop. Nói bằng việc người dùng nghĩ mình đang làm (đăng xuất khỏi Drive) chứ không bằng cơ chế (xoá cấu hình kho).
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out of Drive'**
+  String get storageDriveLogout;
+
+  /// Câu báo sau khi ĐĂNG XUẤT. Khác `storageDisconnected` của "thôi dùng kho riêng": nói sai câu thì người dùng tưởng tài khoản còn đó.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed out of Drive.'**
+  String get storageDriveLoggedOut;
+
+  /// Câu xác nhận cho ĐĂNG XUẤT, khác hẳn `storageDisconnectConfirm` của "thôi dùng kho riêng": chỗ này mất tài khoản nên phải cấp quyền lại, chỗ kia thì không. Nói ra điều đó trước khi bấm, vì sau khi bấm thì không lùi được.
+  ///
+  /// In en, this message translates to:
+  /// **'The Google account will be removed from this shop and new videos go to system storage. Older videos stay in your Drive, but the system loses its path to them. Reconnecting means granting access again.'**
+  String get storageDriveLogoutConfirm;
+
   /// No description provided for @storageDisconnect.
   ///
   /// In en, this message translates to:
@@ -3823,6 +3847,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Custom storage disconnected.'**
   String get storageDisconnected;
+
+  /// Bấm Lưu khi đang chọn Cloud Zenpack. Nói RÕ là tài khoản vẫn còn — nếu không thì người dùng tưởng vừa đăng xuất và đi cấp quyền lại.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved. New videos go to Cloud Zenpack; your own-storage account is kept.'**
+  String get storageSwitchedToSystem;
+
+  /// Bấm Lưu khi chọn lại kho đã cắm mà đang không dùng. Không có vòng cấp quyền nào ở đây.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved. Using your connected storage again.'**
+  String get storageResumed;
 
   /// No description provided for @storageTestOk.
   ///

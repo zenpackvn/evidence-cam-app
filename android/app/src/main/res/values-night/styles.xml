@@ -1,18 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is on -->
-    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
-        <!-- Show a splash screen on the activity. Automatically removed when
-             the Flutter engine draws its first frame -->
+    <!-- CỐ Ý dùng theme SÁNG kể cả khi máy bật Dark Mode.
+
+         Giao diện Flutter của ZenPack chỉ có một bảng màu sáng, không có bản
+         tối. Để cửa sổ Android theo chế độ tối thì lệch ở hai chỗ thấy được:
+         một nháy đen lúc khởi động trước khi Flutter vẽ khung đầu tiên, và —
+         nặng hơn — WebView khai với trang web rằng đang ở chế độ tối.
+
+         Chỗ thứ hai là lý do thật: màn cấp quyền Google Drive nhúng trang của
+         Google, và trang đó đọc `prefers-color-scheme` từ theme này. Để tối
+         thì người dùng thấy một tấm đen sì trồi lên giữa một app trắng, không
+         còn giống bảng chọn tài khoản của hệ điều hành nữa.
+
+         Đổi lại đây là chỗ đúng: webview_flutter không phơi ra
+         `setAlgorithmicDarkeningAllowed`, nên theme của cửa sổ là cần gạt duy
+         nhất. Ngày nào ZenPack có giao diện tối thật thì trả file này về
+         Theme.Black. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
     </style>
-    <!-- Theme applied to the Android Window as soon as the process has started.
-         This theme determines the color of the Android Window while your
-         Flutter UI initializes, as well as behind your Flutter UI while its
-         running.
-
-         This Theme is only used starting with V2 of Flutter's Android embedding. -->
-    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 </resources>

@@ -2052,6 +2052,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get storageDriveAccount => 'Tài khoản Drive';
 
   @override
+  String get storageDriveSwitchAccount => 'Đổi tài khoản';
+
+  @override
+  String get storageDriveLogout => 'Đăng xuất khỏi Drive';
+
+  @override
+  String get storageDriveLoggedOut => 'Đã đăng xuất khỏi Drive.';
+
+  @override
+  String get storageDriveLogoutConfirm =>
+      'Tài khoản Google sẽ được gỡ khỏi cửa hàng và video quay từ lúc này về kho hệ thống. Video cũ vẫn nằm trong Drive của bạn, nhưng hệ thống mất đường tới chúng. Muốn dùng lại phải cấp quyền từ đầu.';
+
+  @override
   String get storageDisconnect => 'Thôi dùng kho riêng';
 
   @override
@@ -2102,6 +2115,13 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get storageDisconnected => 'Đã thôi dùng kho riêng.';
+
+  @override
+  String get storageSwitchedToSystem =>
+      'Đã lưu. Video mới về Cloud Zenpack; tài khoản kho riêng vẫn giữ.';
+
+  @override
+  String get storageResumed => 'Đã lưu. Dùng lại kho riêng đã cắm.';
 
   @override
   String get storageTestOk => 'Kết nối bình thường.';

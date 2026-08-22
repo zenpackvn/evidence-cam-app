@@ -329,6 +329,16 @@ class EcApi {
 
   /// Thôi dùng kho riêng. Video quay TỪ LÚC NÀY về kho hệ thống; video cũ nằm
   /// nguyên trong kho của khách và hệ thống mất đường tới chúng.
+
+  /// Bật/tắt kho riêng mà KHÔNG xoá cấu hình.
+  ///
+  /// Đây là "chọn kho khác": shop về kho hệ thống, tài khoản đã cắm nằm yên.
+  /// Xoá hẳn là [deleteStorage] — hai việc khác nhau, đừng gộp.
+  Future<void> setStorageActive(String shopId, {required bool active}) =>
+      _dio.patch<void>(
+        '/api/shops/$shopId/storage/active',
+        data: {'active': active},
+      );
   Future<void> deleteStorage(String shopId) =>
       _dio.delete<void>('/api/shops/$shopId/storage');
 
@@ -341,6 +351,24 @@ class EcApi {
     '/api/shops/$shopId/storage/gdrive/code',
     data: {'code': code},
   );
+
+  /// Link cấp quyền Drive để mở trong WebView của chính app.
+  ///
+  /// Đường thứ hai, dùng khi máy chủ chưa có cặp `GOOGLE_APP_*` cho đường hộp
+  /// thoại gốc ([connectGdriveCode] trả `native_not_configured`). Nó dùng cặp
+  /// client của luồng trình duyệt — cặp ĐÃ cấu hình sẵn trên prod — nên chạy
+  /// được ngay mà không phải đặt thêm secret nào.
+  ///
+  /// Mở link này TRONG APP, không đẩy sang trình duyệt ngoài: rời app rồi bắt
+  /// người dùng tự quay về là chỗ luồng cũ đã gãy. Cắm xong Google chuyển
+  /// hướng về `/oauth/gdrive/callback`, máy chủ đổi mã rồi 302 tiếp về một URL
+  /// mang `gdrive=ok` — đó là tín hiệu để đóng WebView.
+  Future<String> gdriveAuthUrl(String shopId) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/api/shops/$shopId/storage/gdrive/auth-url',
+    );
+    return res.data!['url']! as String;
+  }
 
   Future<void> addMember(
     String shopId, {

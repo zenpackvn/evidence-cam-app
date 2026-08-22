@@ -167,6 +167,13 @@ class FakeEcRepository implements EcRepository {
   @override
   Future<void> connectGdriveCode(String shopId, String code) async {}
 
+  @override
+
+  @override
+  Future<void> setStorageActive(String shopId, {required bool active}) async {}
+  Future<String> gdriveAuthUrl(String shopId) async =>
+      'https://accounts.google.com/o/oauth2/v2/auth?fake=$shopId';
+
   // Hồ sơ rỗng: đủ để màn chi tiết dựng được mà không cần máy chủ.
   @override
   Future<ClaimDetailDto> claimDetail(String shopId, String claimId) async =>

@@ -1365,6 +1365,22 @@
     "description": "Kho chua he duoc ra soat."
   },
   "storageDriveAccount": "Drive account",
+  "storageDriveSwitchAccount": "Switch account",
+  "@storageDriveSwitchAccount": {
+    "description": "Nút đổi sang tài khoản Google khác cho kho Drive. Nằm ngay cạnh email đang cắm — đổi kho là việc của dòng đó, không phải của một màn khác."
+  },
+  "storageDriveLogout": "Sign out of Drive",
+  "@storageDriveLogout": {
+    "description": "Gỡ tài khoản Google khỏi shop. Nói bằng việc người dùng nghĩ mình đang làm (đăng xuất khỏi Drive) chứ không bằng cơ chế (xoá cấu hình kho)."
+  },
+  "storageDriveLoggedOut": "Signed out of Drive.",
+  "@storageDriveLoggedOut": {
+    "description": "Câu báo sau khi ĐĂNG XUẤT. Khác `storageDisconnected` của \"thôi dùng kho riêng\": nói sai câu thì người dùng tưởng tài khoản còn đó."
+  },
+  "storageDriveLogoutConfirm": "The Google account will be removed from this shop and new videos go to system storage. Older videos stay in your Drive, but the system loses its path to them. Reconnecting means granting access again.",
+  "@storageDriveLogoutConfirm": {
+    "description": "Câu xác nhận cho ĐĂNG XUẤT, khác hẳn `storageDisconnectConfirm` của \"thôi dùng kho riêng\": chỗ này mất tài khoản nên phải cấp quyền lại, chỗ kia thì không. Nói ra điều đó trước khi bấm, vì sau khi bấm thì không lùi được."
+  },
   "@storageDriveAccount": {
     "description": "Nhan tai khoan Google Drive."
   },
@@ -1387,6 +1403,14 @@
   },
   "storageConnected": "Custom storage connected.",
   "storageDisconnected": "Custom storage disconnected.",
+  "storageSwitchedToSystem": "Saved. New videos go to Cloud Zenpack; your own-storage account is kept.",
+  "@storageSwitchedToSystem": {
+    "description": "Bấm Lưu khi đang chọn Cloud Zenpack. Nói RÕ là tài khoản vẫn còn — nếu không thì người dùng tưởng vừa đăng xuất và đi cấp quyền lại."
+  },
+  "storageResumed": "Saved. Using your connected storage again.",
+  "@storageResumed": {
+    "description": "Bấm Lưu khi chọn lại kho đã cắm mà đang không dùng. Không có vòng cấp quyền nào ở đây."
+  },
   "storageTestOk": "Connection is healthy.",
   "storageOwnerOnly": "Only the shop owner can change storage.",
   "dangerZone": "Danger zone",

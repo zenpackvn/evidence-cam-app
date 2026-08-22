@@ -2066,6 +2066,19 @@ class AppLocalizationsId extends AppLocalizations {
   String get storageDriveAccount => 'Akun Drive';
 
   @override
+  String get storageDriveSwitchAccount => 'Switch account';
+
+  @override
+  String get storageDriveLogout => 'Sign out of Drive';
+
+  @override
+  String get storageDriveLoggedOut => 'Signed out of Drive.';
+
+  @override
+  String get storageDriveLogoutConfirm =>
+      'The Google account will be removed from this shop and new videos go to system storage. Older videos stay in your Drive, but the system loses its path to them. Reconnecting means granting access again.';
+
+  @override
   String get storageDisconnect => 'Berhenti memakai penyimpanan sendiri';
 
   @override
@@ -2116,6 +2129,13 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get storageDisconnected => 'Penyimpanan sendiri diputus.';
+
+  @override
+  String get storageSwitchedToSystem =>
+      'Saved. New videos go to Cloud Zenpack; your own-storage account is kept.';
+
+  @override
+  String get storageResumed => 'Saved. Using your connected storage again.';
 
   @override
   String get storageTestOk => 'Koneksi sehat.';

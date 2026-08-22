@@ -55,6 +55,7 @@ class EcStorageHealth {
 class EcStorageState {
   const EcStorageState({
     this.kind = EcStorageKind.system,
+    this.configuredKind,
     this.label = '',
     this.ok = true,
     this.lastError,
@@ -72,6 +73,17 @@ class EcStorageState {
   });
 
   final EcStorageKind kind;
+
+  /// Kho ĐÃ CẮM, kể cả khi shop đang dùng kho hệ thống.
+  ///
+  /// Khác [kind]: kia là nơi video đang được cất, đây là cấu hình còn giữ trên
+  /// máy chủ. Bằng nhau trong phần lớn trường hợp; lệch nhau đúng lúc người bán
+  /// chọn kho khác mà chưa đăng xuất — và lúc ấy chọn lại kho cũ chỉ là bật lại,
+  /// không phải cấp quyền từ đầu.
+  final EcStorageKind? configuredKind;
+
+  /// Kho riêng đã cắm nhưng đang KHÔNG dùng.
+  bool get parked => configuredKind != null && configuredKind != kind;
 
   /// Dòng nhận diện kho: `bucket/prefix`, hoặc tên thư mục Drive.
   final String label;
@@ -114,12 +126,14 @@ class EcStorageScreen extends StatefulWidget {
     this.onBack,
     this.onConnectS3,
     this.onConnectDrive,
+    this.onSwitchDriveAccount,
     this.onSaveS3,
     this.s3ErrorText,
     this.onTestS3,
     this.onCancel,
-    this.onTest,
     this.onDisconnect,
+    this.onUseSystem,
+    this.onResumeStorage,
     this.onPick,
     this.busy = false,
     super.key,
@@ -142,8 +156,21 @@ class EcStorageScreen extends StatefulWidget {
   /// về kho cũ. Không có tín hiệu đó thì dấu tích nằm lại ở Drive và màn hình
   /// nói dối về nơi video đang được cất.
   final Future<bool> Function()? onConnectDrive;
-  final VoidCallback? onTest;
+
+  /// Đổi sang tài khoản Google khác cho kho Drive ĐANG dùng.
+  ///
+  /// Tách khỏi [onConnectDrive] vì đường kia tự chặn khi kho hiện tại đã là
+  /// Drive — mà đó đúng là lúc người ta muốn đổi tài khoản.
+  final VoidCallback? onSwitchDriveAccount;
   final VoidCallback? onDisconnect;
+
+  /// Về kho hệ thống, GIỮ nguyên cấu hình đã cắm. Đây là việc của nút Lưu khi
+  /// người dùng chọn thẻ Cloud Zenpack — LƯU LÀ LƯU, không hỏi lại, không đăng
+  /// xuất. Muốn cắt đứt tài khoản thì có nút đăng xuất riêng.
+  final VoidCallback? onUseSystem;
+
+  /// Dùng lại kho đã cắm mà chưa đăng xuất. Không mở màn cấp quyền nào.
+  final VoidCallback? onResumeStorage;
 
   /// Bấm Lưu khi đang chọn S3: gửi sáu ô của form trong thẻ đi.
   ///
@@ -280,7 +307,7 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     if (!state.canManage ||
         !state.byosAllowed ||
         widget.busy ||
-        state.kind == EcStorageKind.gdrive) {
+        state.configuredKind == EcStorageKind.gdrive) {
       return;
     }
     final connect = widget.onConnectDrive;
@@ -362,16 +389,26 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     flow?.call();
   }
 
-  /// Luồng ứng với một kho, hoặc `null` khi chạm vào không chạy được gì.
+  /// Luồng ứng với một kho, hoặc `null` khi bấm Lưu không có việc gì để làm.
   VoidCallback? _flowFor(EcStorageKind kind) {
     final state = widget.state;
     if (!state.canManage || widget.busy) return null;
+    // Chọn lại đúng cái kho ĐÃ CẮM mà đang không dùng: chỉ bật lại, không mở
+    // màn cấp quyền nào. Đây là điểm của cả tính năng — tài khoản vẫn nằm trên
+    // máy chủ, nên "dùng lại" phải rẻ như bật một công tắc.
+    if (kind != EcStorageKind.system && kind == state.configuredKind) {
+      return widget.onResumeStorage;
+    }
     return switch (kind) {
-      // Đang ở kho hệ thống rồi thì chạm vào đây không có việc gì để làm.
-      EcStorageKind.system => _own ? widget.onDisconnect : null,
+      // Về kho hệ thống mà GIỮ tài khoản đã cắm. Không phải `onDisconnect`:
+      // Lưu là lưu, không hỏi lại và không cắt đứt tài khoản nào. Muốn cắt đứt
+      // thì đã có nút đăng xuất riêng trong thẻ.
+      EcStorageKind.system => state.configuredKind != null
+          ? widget.onUseSystem
+          : null,
       EcStorageKind.s3 => state.byosAllowed ? widget.onConnectS3 : null,
-      // Drive chạy ngay lúc chạm (xem [_startDrive]), nút Lưu không có việc gì
-      // nữa. Bấm Lưu ở đây mở hộp thoại Google LẦN HAI.
+      // Drive chưa cắm bao giờ thì chạm là chạy luôn (xem [_startDrive]), nên
+      // tới nút Lưu không còn việc gì — bấm nữa là mở hộp thoại Google lần hai.
       EcStorageKind.gdrive =>
         state.byosAllowed ? () => unawaited(_startDrive()) : null,
     };
@@ -403,8 +440,8 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
       return _StatusDetail(
         state: state,
         busy: widget.busy,
-        onTest: widget.onTest,
         onDisconnect: widget.onDisconnect,
+        onSwitchDriveAccount: widget.onSwitchDriveAccount,
         onEdit: kind == EcStorageKind.s3
             ? () => setState(() {
                 _editingS3 = true;
@@ -916,15 +953,17 @@ class _StatusDetail extends StatelessWidget {
   const _StatusDetail({
     required this.state,
     required this.busy,
-    this.onTest,
     this.onDisconnect,
     this.onEdit,
+    this.onSwitchDriveAccount,
   });
 
   final EcStorageState state;
   final bool busy;
-  final VoidCallback? onTest;
   final VoidCallback? onDisconnect;
+
+  /// Đổi sang tài khoản Google khác. Chỉ Drive; `null` = không hiện nút.
+  final VoidCallback? onSwitchDriveAccount;
 
   /// Sửa cấu hình — chỉ S3. Drive không có gì để sửa ngoài cắm lại.
   final VoidCallback? onEdit;
@@ -1015,30 +1054,59 @@ class _StatusDetail extends StatelessWidget {
             const SizedBox(height: 8),
             PenText(l10n.storageDriveAccount, size: 12, color: PenColors.mut),
             const SizedBox(height: 2),
-            PenText(
-              state.driveEmail!,
-              size: 13,
-              color: PenColors.ink,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
+            // Nút đổi tài khoản nằm NGAY CẠNH email, không nằm dưới cùng cùng
+            // đám nút kia: thứ người ta muốn đổi là đúng cái địa chỉ đang đọc,
+            // và đặt nút cạnh nó thì không phải dò xem nút nào tác động lên gì.
+            Row(
+              children: [
+                Expanded(
+                  child: PenText(
+                    state.driveEmail!,
+                    size: 13,
+                    color: PenColors.ink,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (state.canManage && onSwitchDriveAccount != null) ...[
+                  const SizedBox(width: 8),
+                  EcTap(
+                    onTap: busy ? null : onSwitchDriveAccount,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        LucideIcons.repeat,
+                        size: 18,
+                        color: busy ? PenColors.mut : PenColors.link,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
           if (state.canManage) ...[
             const SizedBox(height: 12),
-            PenOutlineButton(
-              label: l10n.storageTest,
-              onPressed: busy ? null : onTest,
-            ),
             if (onEdit != null) ...[
-              const SizedBox(height: 8),
               PenOutlineButton(
                 label: l10n.storageEditCta,
                 onPressed: busy ? null : onEdit,
               ),
+              const SizedBox(height: 8),
             ],
-            const SizedBox(height: 8),
+            // ĐÚNG MỘT nút gỡ kho, và nó nói bằng chữ của loại kho đang cắm.
+            //
+            // Bản trước có hai nút cạnh nhau — "đăng xuất" và "thôi dùng kho
+            // riêng". Hai chữ khác nhau cho hai việc mà người dùng đọc ra là
+            // gần như một, nên chỉ tổ bắt họ dừng lại đoán xem nút nào làm gì.
+            //
+            // Muốn về kho hệ thống thì chọn thẳng thẻ Cloud Zenpack rồi bấm
+            // Lưu — đó mới là chỗ tự nhiên để ĐỔI kho, chứ không phải một cái
+            // nút nằm lẫn trong bảng tình trạng của kho hiện tại.
             PenOutlineButton(
-              label: l10n.storageDisconnect,
+              label: state.kind == EcStorageKind.gdrive
+                  ? l10n.storageDriveLogout
+                  : l10n.storageDisconnect,
               onPressed: busy ? null : onDisconnect,
             ),
           ],

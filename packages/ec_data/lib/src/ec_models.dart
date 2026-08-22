@@ -939,6 +939,7 @@ class StorageStateDto {
   const StorageStateDto({
     this.storage,
     this.health = const StorageHealthDto(),
+    this.storageActive = true,
     this.byosAllowed = false,
     this.gdriveNative = false,
   });
@@ -950,7 +951,11 @@ class StorageStateDto {
     health: j['health'] is Map<String, dynamic>
         ? StorageHealthDto.fromJson(j['health'] as Map<String, dynamic>)
         : const StorageHealthDto(),
-    byosAllowed: (j['byos_allowed'] as bool?) ?? false,
+    // Mặc định TRUE: backend cũ không có cờ này, và ở đó hễ có `storage` là kho
+    // đang được dùng. Đoán "false" sẽ làm mọi shop đang chạy kho riêng đột ngột
+    // hiện thành Cloud Zenpack.
+    storageActive: (j["storage_active"] as bool?) ?? true,
+    byosAllowed: (j["byos_allowed"] as bool?) ?? false,
     // Mặc định FALSE khi máy chủ chưa trả trường này: bản backend cũ không có
     // cặp client native, nên đoán "có" là đẩy người dùng vào đúng cái ngõ cụt
     // mà cờ này sinh ra để tránh.
@@ -960,6 +965,10 @@ class StorageStateDto {
   /// Null = đang dùng Cloud Zenpack (mặc định).
   final StorageViewDto? storage;
   final StorageHealthDto health;
+
+  /// Kho riêng có ĐANG được dùng không. `storage != null` mà cờ này `false` =
+  /// đã chọn kho khác nhưng chưa đăng xuất.
+  final bool storageActive;
 
   /// Gói hiện tại có được cắm kho riêng không. Ẩn nút theo cờ NÀY, đừng tự suy
   /// từ mã gói ở client — quy tắc phân gói chỉ sống ở một chỗ.
@@ -973,7 +982,13 @@ class StorageStateDto {
   /// cấp quyền thứ hai ở trình duyệt là hỏi lại đúng câu họ vừa đồng ý.
   final bool gdriveNative;
 
-  StorageKind get kind => storage?.kind ?? StorageKind.system;
+  /// Kho ĐANG dùng. Thôi dùng kho riêng thì về hệ thống, dù cấu hình còn đó.
+  StorageKind get kind =>
+      storageActive ? (storage?.kind ?? StorageKind.system) : StorageKind.system;
+
+  /// Loại kho đã cắm — dùng để chọn chữ cho hộp thoại gỡ kho, vì gỡ một tài
+  /// khoản Google và gỡ một cái bucket S3 là hai câu khác nhau.
+  StorageKind? get configuredKind => storage?.kind;
 }
 
 /// Cấu hình S3 máy chủ trả về — đã che bí mật.
