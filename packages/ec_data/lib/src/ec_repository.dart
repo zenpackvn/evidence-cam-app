@@ -416,7 +416,6 @@ class RemoteEcRepository implements EcRepository {
       _api.setStorageActive(shopId, active: active);
 
   @override
-
   @override
   Future<void> reportQueueDepth(
     String shopId, {

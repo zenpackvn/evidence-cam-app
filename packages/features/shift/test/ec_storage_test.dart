@@ -77,6 +77,41 @@ void main() {
       },
     );
 
+    // Lý do khoá phải đọc được mà KHÔNG cần cuộn: nó nằm trên đầu ba thẻ.
+    //
+    // Trước đây nó ở đáy danh sách, dưới cả ba thẻ — ngoài khung nhìn trên
+    // điện thoại. Người dùng thấy thẻ chạm được, dấu tích nhảy, nút Lưu không
+    // bao giờ sáng, và không có gì trên màn nói vì sao.
+    testWidgets('lý do khoá đứng trên ba thẻ, không nằm dưới đáy', (
+      tester,
+    ) async {
+      Future<void> pumpWith(EcStorageState state) =>
+          _pump(tester, EcStorageScreen(state: state));
+
+      // Nhân viên: câu owner-only phải nằm CAO hơn thẻ đầu tiên.
+      await pumpWith(const EcStorageState(byosAllowed: true));
+      final ownerNote = find.textContaining('Chỉ chủ cửa hàng');
+      expect(ownerNote, findsOneWidget);
+      expect(
+        tester.getTopLeft(ownerNote).dy,
+        lessThan(tester.getTopLeft(find.text('Cloud Zenpack')).dy),
+      );
+
+      // Chủ shop nhưng gói chưa mở: đổi câu, vẫn đứng trên.
+      await pumpWith(const EcStorageState(canManage: true));
+      final planNote = find.textContaining('chưa mở kho riêng');
+      expect(planNote, findsOneWidget);
+      expect(
+        tester.getTopLeft(planNote).dy,
+        lessThan(tester.getTopLeft(find.text('Cloud Zenpack')).dy),
+      );
+
+      // Mở hết thì không có câu nào cả.
+      await pumpWith(const EcStorageState(canManage: true, byosAllowed: true));
+      expect(find.textContaining('Chỉ chủ cửa hàng'), findsNothing);
+      expect(find.textContaining('chưa mở kho riêng'), findsNothing);
+    });
+
     // Gói chưa mở kho riêng thì nói thẳng ra. Ẩn im lặng nghĩa là người bán đọc
     // bảng giá thấy có tính năng rồi đi tìm trong app mãi không ra.
     testWidgets('gói chưa mở kho riêng thì hiện lý do, không hiện nút', (

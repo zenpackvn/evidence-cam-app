@@ -983,8 +983,9 @@ class StorageStateDto {
   final bool gdriveNative;
 
   /// Kho ĐANG dùng. Thôi dùng kho riêng thì về hệ thống, dù cấu hình còn đó.
-  StorageKind get kind =>
-      storageActive ? (storage?.kind ?? StorageKind.system) : StorageKind.system;
+  StorageKind get kind => storageActive
+      ? (storage?.kind ?? StorageKind.system)
+      : StorageKind.system;
 
   /// Loại kho đã cắm — dùng để chọn chữ cho hộp thoại gỡ kho, vì gỡ một tài
   /// khoản Google và gỡ một cái bucket S3 là hai câu khác nhau.

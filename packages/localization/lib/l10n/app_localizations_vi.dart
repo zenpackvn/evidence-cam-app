@@ -2068,10 +2068,22 @@ class AppLocalizationsVi extends AppLocalizations {
   String get storageNeverChecked => 'Chưa rà lần nào.';
 
   @override
+  String storageDriveCurrentAccount(String email) {
+    return 'Đang cắm: $email. Đăng nhập đúng địa chỉ này để giữ nguyên kho, hoặc chọn tài khoản khác để đổi.';
+  }
+
+  @override
   String get storageDriveAccount => 'Tài khoản Drive';
 
   @override
   String get storageDriveSwitchAccount => 'Đổi tài khoản';
+
+  @override
+  String get storageDriveSwitchNote =>
+      'Đổi tài khoản là cấp quyền lại từ đầu — Google sẽ hỏi bạn đăng nhập. Chọn một địa chỉ đã dùng, hoặc dùng tài khoản khác.';
+
+  @override
+  String get storageDriveOtherAccount => 'Dùng tài khoản khác';
 
   @override
   String get storageDriveLogout => 'Đăng xuất khỏi Drive';

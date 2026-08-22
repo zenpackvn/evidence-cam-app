@@ -6,6 +6,7 @@ export 'src/ec_api.dart';
 export 'src/ec_auth.dart';
 export 'src/ec_auth_firebase.dart';
 export 'src/ec_env.dart';
+export 'src/ec_google_signin.dart';
 export 'src/ec_feedback.dart';
 export 'src/ec_models.dart';
 export 'src/ec_repository.dart';

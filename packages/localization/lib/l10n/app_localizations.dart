@@ -3758,6 +3758,12 @@ abstract class AppLocalizations {
   /// **'Never audited yet.'**
   String get storageNeverChecked;
 
+  /// Đầu tấm cấp quyền Drive. Google chỉ chào bảng chọn tài khoản khi WebView còn cookie phiên — cài lại app là mất, và người dùng đứng trước một ô email trống không biết gõ gì.
+  ///
+  /// In en, this message translates to:
+  /// **'Currently connected: {email}. Sign in with that address to keep the same Drive, or pick another to switch.'**
+  String storageDriveCurrentAccount(String email);
+
   /// Nhan tai khoan Google Drive.
   ///
   /// In en, this message translates to:
@@ -3769,6 +3775,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch account'**
   String get storageDriveSwitchAccount;
+
+  /// Bảng chọn tài khoản Drive của app. Nói trước rằng chọn một dòng vẫn phải qua Google, vì máy chủ chỉ giữ một refresh token cho mỗi shop.
+  ///
+  /// In en, this message translates to:
+  /// **'Switching means granting access again — Google will ask you to sign in. Pick an address you have used before, or use a different one.'**
+  String get storageDriveSwitchNote;
+
+  /// Bảng chọn tài khoản Drive: đi tiếp mà không gợi ý địa chỉ nào.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a different account'**
+  String get storageDriveOtherAccount;
 
   /// Gỡ tài khoản Google khỏi shop. Nói bằng việc người dùng nghĩ mình đang làm (đăng xuất khỏi Drive) chứ không bằng cơ chế (xoá cấu hình kho).
   ///

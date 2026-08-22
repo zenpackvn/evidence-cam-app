@@ -569,6 +569,21 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                     // Câu này đứng ngay dưới tiêu đề vì nó trả lời nỗi lo đầu tiên
                     // của người sắp đổi kho: đổi rồi bằng chứng có yếu đi không.
                     PenText(l10n.storageIntro, size: 14, color: PenColors.mut),
+                    // Lý do màn này khoá đứng NGAY ĐÂY, trên đầu ba thẻ.
+                    //
+                    // Trước đây nó nằm dưới đáy danh sách — tức dưới ba thẻ,
+                    // tức ngoài khung nhìn trên điện thoại. Người dùng thấy ba
+                    // thẻ chạm được, dấu tích nhảy qua nhảy lại, mà nút Lưu
+                    // không bao giờ sáng, và không có gì trên màn nói vì sao.
+                    // Câu trả lời có sẵn nhưng phải cuộn xuống mới đọc được,
+                    // mà không ai cuộn đi tìm một câu mình không biết là có.
+                    if (!state.canManage) ...[
+                      const SizedBox(height: 12),
+                      _NoteBox(text: l10n.storageOwnerOnly),
+                    ] else if (!state.byosAllowed) ...[
+                      const SizedBox(height: 12),
+                      _NoteBox(text: l10n.storageNotInPlan),
+                    ],
                     const SizedBox(height: 16),
                     _StorageOption(
                       icon: LucideIcons.cloud,
@@ -611,19 +626,6 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                       detail: _detailFor(EcStorageKind.gdrive),
                       onTap: () => _pick(EcStorageKind.gdrive),
                     ),
-                    // Gói chưa mở kho riêng: nói MỘT lần dưới danh sách, không lặp ở
-                    // từng thẻ. Ba dòng cùng nội dung cạnh nhau đọc thành nhiễu, và
-                    // mỗi thẻ đã có dòng khoá ngắn của riêng nó.
-                    if (state.canManage && !state.byosAllowed) ...[
-                      const SizedBox(height: 12),
-                      _NoteBox(text: l10n.storageNotInPlan),
-                    ],
-                    // Nhân viên xem được mọi thứ ở trên nhưng không đổi được gì. Nói
-                    // ra, đừng để họ đi tìm cái nút không tồn tại.
-                    if (!state.canManage) ...[
-                      const SizedBox(height: 12),
-                      _NoteBox(text: l10n.storageOwnerOnly),
-                    ],
                   ],
                 ),
               ),

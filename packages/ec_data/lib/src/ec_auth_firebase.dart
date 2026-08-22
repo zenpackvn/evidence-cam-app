@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'ec_auth.dart';
+import 'ec_google_signin.dart';
 
 /// Real Firebase implementation of [EcAuth] (FR-15) — email/password, Google and
 /// Apple, all linking to one account by email. Compiles today; it authenticates
@@ -100,9 +101,11 @@ class FirebaseEcAuth implements EcAuth {
   }
 
   Future<AuthCredential> _googleCredential() async {
-    final google = GoogleSignIn.instance;
-    await google.initialize();
-    final account = await google.authenticate();
+    // Qua [ensureGoogleSignInReady] chứ không tự gọi `initialize()`: singleton
+    // này chỉ chịu được đúng một lượt khởi tạo, và lượt cắm Google Drive cũng
+    // cần chính nó.
+    await ensureGoogleSignInReady();
+    final account = await GoogleSignIn.instance.authenticate();
     return GoogleAuthProvider.credential(
       idToken: account.authentication.idToken,
     );

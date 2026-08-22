@@ -2083,10 +2083,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storageNeverChecked => 'Never audited yet.';
 
   @override
+  String storageDriveCurrentAccount(String email) {
+    return 'Currently connected: $email. Sign in with that address to keep the same Drive, or pick another to switch.';
+  }
+
+  @override
   String get storageDriveAccount => 'Drive account';
 
   @override
   String get storageDriveSwitchAccount => 'Switch account';
+
+  @override
+  String get storageDriveSwitchNote =>
+      'Switching means granting access again — Google will ask you to sign in. Pick an address you have used before, or use a different one.';
+
+  @override
+  String get storageDriveOtherAccount => 'Use a different account';
 
   @override
   String get storageDriveLogout => 'Sign out of Drive';

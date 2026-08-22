@@ -1392,10 +1392,23 @@
   "@storageNeverChecked": {
     "description": "Kho chua he duoc ra soat."
   },
+  "storageDriveCurrentAccount": "Currently connected: {email}. Sign in with that address to keep the same Drive, or pick another to switch.",
+  "@storageDriveCurrentAccount": {
+    "description": "Đầu tấm cấp quyền Drive. Google chỉ chào bảng chọn tài khoản khi WebView còn cookie phiên — cài lại app là mất, và người dùng đứng trước một ô email trống không biết gõ gì.",
+    "placeholders": { "email": { "type": "String" } }
+  },
   "storageDriveAccount": "Drive account",
   "storageDriveSwitchAccount": "Switch account",
   "@storageDriveSwitchAccount": {
     "description": "Nút đổi sang tài khoản Google khác cho kho Drive. Nằm ngay cạnh email đang cắm — đổi kho là việc của dòng đó, không phải của một màn khác."
+  },
+  "storageDriveSwitchNote": "Switching means granting access again — Google will ask you to sign in. Pick an address you have used before, or use a different one.",
+  "@storageDriveSwitchNote": {
+    "description": "Bảng chọn tài khoản Drive của app. Nói trước rằng chọn một dòng vẫn phải qua Google, vì máy chủ chỉ giữ một refresh token cho mỗi shop."
+  },
+  "storageDriveOtherAccount": "Use a different account",
+  "@storageDriveOtherAccount": {
+    "description": "Bảng chọn tài khoản Drive: đi tiếp mà không gợi ý địa chỉ nào."
   },
   "storageDriveLogout": "Sign out of Drive",
   "@storageDriveLogout": {

@@ -945,6 +945,18 @@ Future<void> _afterSocialSignIn(
     await signIn;
     _analytics()?.logLogin(method: method);
     unawaited(EcAppsflyer.logLogin(method));
+    // Dựng hồ sơ phía máy chủ NGAY, y như đường đăng ký bằng email vẫn làm.
+    //
+    // Đăng ký bằng email gọi `updateProfile` nên `PUT /api/me` tạo hàng
+    // `accounts` cho tài khoản mới. Đường Google thì đi thẳng vào `/shops` và
+    // chưa bao giờ chạm tới `/api/me` — nên tài khoản Google sống trên Firebase
+    // mà chưa có mặt ở máy chủ, và mọi thứ đọc `accounts` (tên trong danh sách
+    // thành viên, email trên lời mời) đều thấy trống.
+    //
+    // `GET /api/me` tự tạo hàng đó ở lượt gọi đầu, nên chỉ cần đọc một lượt.
+    // Hỏng thì im lặng: đăng nhập đã xong rồi, và mọi màn phía sau vẫn tự gọi
+    // lại được — chặn người dùng ở đây vì một lượt đọc hỏng là tệ hơn nhiều.
+    await _ensureServerAccount(context);
     if (!context.mounted) return;
     context.go('/shops', extra: 'forward');
   } on EcAuthCancelled {
@@ -953,6 +965,24 @@ Future<void> _afterSocialSignIn(
   } on Object catch (error) {
     _analytics()?.trackLoginFailed(errorType: error.runtimeType.toString());
     if (context.mounted) _toast(context, _authErrorText(context.l10n, error));
+  }
+}
+
+/// Chạm `GET /api/me` một lượt để máy chủ dựng hàng `accounts` nếu chưa có.
+Future<void> _ensureServerAccount(BuildContext context) async {
+  final repo = _maybeGetIt<EcRepository>();
+  if (repo == null) return;
+  try {
+    await repo.account();
+  } on Object catch (error, stack) {
+    developer.log(
+      'auth: dựng hồ sơ máy chủ sau lượt đăng nhập mạng xã hội hỏng '
+      '(${error.runtimeType})',
+      name: 'zenpack.auth',
+      level: 900,
+      error: error,
+      stackTrace: stack,
+    );
   }
 }
 
@@ -1744,6 +1774,12 @@ class _StorageRouteState extends State<_StorageRoute>
   /// đi đường nào TRƯỚC khi hiện bất cứ màn Google nào.
   bool _gdriveNative = false;
 
+  /// Email của tài khoản Drive đang cắm, đọc từ lượt tải trạng thái gần nhất.
+  ///
+  /// Giữ ở đây cùng lý do với [_gdriveNative]: [_connectDriveInApp] chạy ngoài
+  /// `FutureBuilder` nên không với tới `dto` được.
+  String? _connectedDriveEmail;
+
   /// Loại kho ĐÃ CẮM — kể cả khi đang tắt.
   ///
   /// Dùng để chọn chữ cho hộp thoại xác nhận: gỡ một tài khoản Google và gỡ
@@ -2042,10 +2078,13 @@ class _StorageRouteState extends State<_StorageRoute>
   /// Máy chủ tự đổi mã và cắm kho ở `/oauth/gdrive/callback`; app chỉ nhận lại
   /// một chữ `ok` hoặc mã lỗi. Refresh token không bao giờ xuống thiết bị,
   /// giống hệt đường hộp thoại gốc.
-  Future<bool> _connectDriveInApp() async {
+  Future<bool> _connectDriveInApp({String? loginHint}) async {
     final l10n = context.l10n;
     try {
-      final url = await widget.repo.gdriveAuthUrl(widget.shopId);
+      final url = _withLoginHint(
+        await widget.repo.gdriveAuthUrl(widget.shopId),
+        loginHint ?? _connectedDriveEmail,
+      );
       if (!mounted) return false;
       // Trượt lên từ đáy, không đẩy ngang như một trang mới: cùng dáng với
       // bảng chọn tài khoản của hệ điều hành lúc đăng nhập bằng Google, và
@@ -2066,10 +2105,22 @@ class _StorageRouteState extends State<_StorageRoute>
         // Nền trong suốt để phần bo góc là của widget bên trong, không phải
         // của Material — nếu không sẽ có hai lớp bo góc chồng nhau.
         backgroundColor: const Color(0x00000000),
-        builder: (_) => _DriveConsentScreen(url: url),
+        builder: (_) => _DriveConsentScreen(
+          url: url,
+          currentAccount: loginHint ?? _connectedDriveEmail,
+        ),
       );
       if (!mounted) return false;
       if (result == 'ok') {
+        // Nhớ địa chỉ vừa cắm để lần sau chào lại. `_reload()` chạy ngay sau
+        // đây và sẽ ghi đè `_connectedDriveEmail` bằng thứ máy chủ trả về, nên
+        // ghi bằng chính gợi ý vừa dùng là đủ đúng và không phải đợi mạng.
+        unawaited(
+          _rememberDriveAccount(
+            widget.shopId,
+            loginHint ?? _connectedDriveEmail,
+          ),
+        );
         _toast(context, l10n.storageConnected);
         _reload();
         return true;
@@ -2090,6 +2141,94 @@ class _StorageRouteState extends State<_StorageRoute>
       if (mounted) _toast(context, _driveErrorText(l10n, code, error));
       return false;
     }
+  }
+
+  /// Bảng chọn tài khoản Drive CỦA APP, mở khi bấm "Đổi tài khoản".
+  ///
+  /// Google chỉ chào ra bảng của nó cho những phiên còn cookie trong WebView
+  /// này — cài lại app là mất sạch, và người bán gặp một ô email trống. Bảng
+  /// này không phụ thuộc cookie: nó đọc danh sách địa chỉ app đã ghi nhớ.
+  ///
+  /// Chọn một dòng KHÔNG phải là đăng nhập lại nó. Máy chủ chỉ giữ một refresh
+  /// token cho mỗi shop, nên đổi tài khoản luôn là một lượt cấp quyền mới —
+  /// dòng vừa chọn chỉ đi vào `login_hint` để khỏi phải gõ lại địa chỉ.
+  ///
+  /// Chỉ có đúng một địa chỉ đã nhớ thì bỏ qua bảng, đi thẳng vào Google: một
+  /// bảng chọn một dòng là bắt người dùng chạm thêm một cái không để làm gì.
+  Future<void> _switchDriveAccount() async {
+    final known = _rememberedDriveAccounts(widget.shopId);
+    if (known.length < 2) {
+      unawaited(_connectDrive());
+      return;
+    }
+    final l10n = context.l10n;
+    final picked = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (sheetContext) => PenSheet(
+        onDismiss: () => Navigator.of(sheetContext).pop(),
+        children: [
+          const SizedBox(height: 12),
+          PenText(
+            l10n.storageDriveSwitchAccount,
+            size: 20,
+            color: PenColors.ink,
+            weight: FontWeight.w800,
+          ),
+          const SizedBox(height: 6),
+          PenText(
+            l10n.storageDriveSwitchNote,
+            size: 13,
+            color: PenColors.mut,
+            lineHeight: 1.4,
+          ),
+          const SizedBox(height: 14),
+          for (final email in known) ...[
+            _DriveAccountRow(
+              email: email,
+              inUse: email == _connectedDriveEmail,
+              onTap: () => Navigator.of(sheetContext).pop(email),
+            ),
+            const SizedBox(height: 8),
+          ],
+          const SizedBox(height: 4),
+          PenOutlineButton(
+            label: l10n.storageDriveOtherAccount,
+            // Chuỗi rỗng, KHÔNG phải `null`: `null` là "người dùng vuốt đóng
+            // bảng", còn đây là "đi tiếp nhưng đừng gợi ý ai cả".
+            onPressed: () => Navigator.of(sheetContext).pop(''),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+    if (picked == null || !mounted) return;
+    unawaited(_connectDriveInApp(loginHint: picked.isEmpty ? null : picked));
+  }
+
+  /// Điền sẵn địa chỉ đang giữ kho vào ô email của Google.
+  ///
+  /// Google chỉ vẽ được bảng "Chọn tài khoản" cho những phiên nó CÒN COOKIE
+  /// trong đúng WebView này — mà kho cookie ấy nằm trong container của app và
+  /// bị xoá mỗi lần cài lại. Lúc đó người bán đang có kho Drive chạy tốt lại
+  /// gặp một ô email trống trơn, và phải tự nhớ mình đã cắm bằng địa chỉ nào.
+  ///
+  /// KHÔNG khoá lựa chọn: `prompt=select_account` vẫn nằm trong URL, nên còn
+  /// phiên thì bảng chọn vẫn hiện, và muốn đổi sang tài khoản khác thì xoá đi
+  /// gõ cái mới. Đây chỉ là điền hộ, không phải quyết định hộ.
+  ///
+  /// Nhường máy chủ nếu nó đã tự đặt: hai `login_hint` trong một URL là một URL
+  /// hỏng, và bản backend mới cũng đặt trường này.
+  static String _withLoginHint(String url, String? email) {
+    if (email == null || email.isEmpty) return url;
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.queryParameters.containsKey('login_hint')) {
+      return url;
+    }
+    return uri
+        .replace(
+          queryParameters: {...uri.queryParameters, 'login_hint': email},
+        )
+        .toString();
   }
 
   /// Câu nói cho đúng lý do Drive không cắm được.
@@ -2137,12 +2276,11 @@ class _StorageRouteState extends State<_StorageRoute>
 
   /// Mã uỷ quyền từ hộp thoại Google gốc, hoặc `null` khi người dùng huỷ.
   Future<String?> _driveAuthCode() async {
+    // Dùng chung lượt khởi tạo với đường đăng nhập ([ensureGoogleSignInReady]).
+    // Trước đây mỗi bên tự gọi `initialize()` với một cấu hình khác nhau, và
+    // singleton giữ lại cấu hình của bên chạy TRƯỚC.
+    await ensureGoogleSignInReady();
     final google = GoogleSignIn.instance;
-    await google.initialize(
-      serverClientId: kGoogleServerClientId.isEmpty
-          ? null
-          : kGoogleServerClientId,
-    );
     // Bỏ tài khoản đang nhớ TRƯỚC khi hỏi.
     //
     // `authenticate()` dùng lại lặng lẽ tài khoản Google đã đăng nhập vào app,
@@ -2184,7 +2322,36 @@ class _StorageRouteState extends State<_StorageRoute>
         }
         final dto = snap.data!;
         final view = dto.storage;
+        // Ghi ra những cờ QUYẾT ĐỊNH màn này khoá hay mở, kèm DANH TÍNH của
+        // người đang xem.
+        //
+        // "Không dùng được cái gì" là triệu chứng câm: thẻ vẫn vẽ, chữ vẫn
+        // đúng, chỉ có nút không ăn — và ba nguyên nhân khả dĩ (không phải chủ
+        // shop, gói chưa mở kho riêng, máy chủ chưa có cặp client Google) nhìn
+        // từ ngoài giống hệt nhau.
+        //
+        // `uid` và `providers` ở đây để so hai lượt đăng nhập với nhau. Cùng
+        // một địa chỉ email vẫn có thể là HAI tài khoản Firebase khác nhau —
+        // `password` và `google.com` là hai credential riêng — mà máy chủ khoá
+        // mọi thứ theo `uid`. Hai `uid` khác nhau là câu trả lời cho toàn bộ
+        // câu hỏi "vì sao đăng nhập bằng Google lại khác".
+        final user = _maybeGetIt<EcAuth>()?.currentUser;
+        developer.log(
+          'storage: uid=${user?.uid} email=${user?.email} '
+          'providers=${user?.providers.join(",")} '
+          'canManage=${widget.canManage} '
+          'byos=${dto.byosAllowed} gdriveNative=${dto.gdriveNative} '
+          'kind=${dto.kind.name} configured=${dto.configuredKind?.name}',
+          name: 'zenpack.storage',
+        );
         _gdriveNative = dto.gdriveNative;
+        _connectedDriveEmail = view?.email;
+        // Nguồn đáng tin nhất về "đang cắm bằng ai" là máy chủ, nên mỗi lượt
+        // đọc trạng thái cũng là một lượt bổ sung danh sách — kể cả khi kho
+        // được cắm từ web chứ không phải từ máy này.
+        if (dto.configuredKind == StorageKind.gdrive) {
+          unawaited(_rememberDriveAccount(widget.shopId, view?.email));
+        }
         _configuredKind = dto.configuredKind ?? StorageKind.system;
         // Máy chủ vừa nói kho thật là gì; nếu nó đổi so với lần đọc trước thì
         // lựa chọn đã nhớ bám theo. Chạy ở nền, không chặn lượt dựng này.
@@ -2268,7 +2435,7 @@ class _StorageRouteState extends State<_StorageRoute>
           // Đổi tài khoản = chạy lại đúng luồng cắm. URL cấp quyền đã mang
           // `prompt=select_account`, nên Google hiện lại bảng chọn thay vì
           // lặng lẽ dùng tài khoản cũ.
-          onSwitchDriveAccount: () => unawaited(_connectDrive()),
+          onSwitchDriveAccount: () => unawaited(_switchDriveAccount()),
           onConnectS3: () => context
               .push<bool>('/storage-connect', extra: widget.shopId)
               .then((saved) {
@@ -4007,6 +4174,40 @@ class _ShopDetailData {
   /// Tài khoản Google đang giữ kho Drive. `null` với mọi kho khác — chỉ Drive
   /// mới có khái niệm "cắm bằng tài khoản nào".
   final String? storageAccount;
+}
+
+/// Những tài khoản Google đã từng cắm kho cho shop này, nhớ trên máy.
+///
+/// Máy chủ chỉ giữ ĐÚNG MỘT refresh token cho mỗi shop, nên nó không biết gì về
+/// những tài khoản trước đó. Danh sách này là của riêng app, và nó tồn tại để
+/// trả lời đúng một câu: "tôi từng cắm bằng địa chỉ nào?".
+///
+/// Vì sao cần: Google chỉ vẽ được bảng "Chọn tài khoản" cho những phiên nó CÒN
+/// COOKIE trong WebView của app — mà kho cookie ấy bị xoá mỗi lần cài lại. Lúc
+/// đó người bán bấm "Đổi tài khoản" và gặp một ô email trống trơn. Danh sách
+/// này cho phép app tự chào ra các địa chỉ đã dùng, không phụ thuộc cookie.
+///
+/// Chọn một địa chỉ ở đây KHÔNG phải là đăng nhập lại nó — vẫn phải qua Google
+/// một lượt. Nó chỉ điền sẵn `login_hint`, tức tiết kiệm đúng thao tác gõ.
+String _driveAccountsKey(String shopId) => 'drive_accounts_$shopId';
+
+List<String> _rememberedDriveAccounts(String shopId) {
+  final raw = _appMemory()?.getString(_driveAccountsKey(shopId)) ?? '';
+  return raw.split('\n').where((line) => line.trim().isNotEmpty).toList();
+}
+
+/// Ghi nhớ một địa chỉ vừa cắm thành công, mới nhất lên đầu.
+///
+/// Trần 5: quá số đó thì danh sách thành một cuộn lịch sử chứ không còn là một
+/// bảng chọn, và người bán thật sự chỉ xoay quanh một hai tài khoản.
+Future<void> _rememberDriveAccount(String shopId, String? email) async {
+  final memory = _appMemory();
+  if (memory == null || email == null || email.isEmpty) return;
+  final kept = [
+    email,
+    ..._rememberedDriveAccounts(shopId).where((e) => e != email),
+  ].take(5);
+  await memory.setString(_driveAccountsKey(shopId), kept.join('\n'));
 }
 
 /// Kho người dùng vừa BẤM CHỌN trong màn Kho lưu trữ, nhớ ngay trên máy theo
@@ -7649,6 +7850,58 @@ class _TermsSheetState extends State<_TermsSheet> {
   }
 }
 
+/// Một dòng tài khoản trong bảng chọn kho Drive.
+class _DriveAccountRow extends StatelessWidget {
+  const _DriveAccountRow({
+    required this.email,
+    required this.inUse,
+    required this.onTap,
+  });
+
+  final String email;
+
+  /// Tài khoản đang thật sự giữ kho. Có nhãn riêng chứ không chỉ đổi màu: hai
+  /// địa chỉ Gmail cạnh nhau trông rất giống nhau, và chọn nhầm ở đây là đổi
+  /// nơi cất bằng chứng của cả cửa hàng.
+  final bool inUse;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => EcTap(
+    onTap: onTap,
+    child: PenBox(
+      width: double.infinity,
+      fill: PenColors.card,
+      stroke: inUse ? PenColors.success : PenColors.line,
+      radius: 12,
+      axis: PenAxis.row,
+      gap: 12,
+      cross: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+      children: [
+        const Icon(LucideIcons.userRound, size: 20, color: PenColors.ink),
+        Expanded(
+          child: PenText(
+            email,
+            size: 14,
+            color: PenColors.ink,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (inUse)
+          PenText(
+            context.l10n.storageInUse,
+            size: 12,
+            color: PenColors.success,
+            weight: FontWeight.w600,
+            softWrap: false,
+          ),
+      ],
+    ),
+  );
+}
+
 /// Cấp quyền Google Drive NGAY TRONG APP.
 ///
 /// Đường thứ hai của việc cắm Drive, đi khi máy chủ chưa có cặp `GOOGLE_APP_*`
@@ -7665,9 +7918,21 @@ class _TermsSheetState extends State<_TermsSheet> {
 /// điều hướng ấy — trang đích là console web, tải nó trong app chỉ hiện một
 /// màn lạc quẻ ngay trước lúc đóng.
 class _DriveConsentScreen extends StatefulWidget {
-  const _DriveConsentScreen({required this.url});
+  const _DriveConsentScreen({required this.url, this.currentAccount});
 
   final String url;
+
+  /// Tài khoản Google đang giữ kho, in ở đầu tấm. `null` = chưa cắm bao giờ.
+  ///
+  /// Google chỉ chào ra bảng "Chọn tài khoản" khi nó CÓ COOKIE phiên trong
+  /// đúng WebView này — mà kho cookie ấy nằm trong container của app và bị xoá
+  /// mỗi lần cài lại. Lúc đó người bán đang có kho Drive chạy tốt lại thấy một
+  /// ô email trống trơn, và không có gì trên màn nói tài khoản họ đang dùng là
+  /// gì để mà gõ vào.
+  ///
+  /// Kho vẫn cắm nguyên — refresh token nằm ở máy chủ, không nằm ở cookie. Chỉ
+  /// là màn hình đang không nói ra điều đó.
+  final String? currentAccount;
 
   @override
   State<_DriveConsentScreen> createState() => _DriveConsentScreenState();
@@ -7795,6 +8060,19 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
                       ),
                     ),
                   ),
+                  if (widget.currentAccount?.isNotEmpty ?? false)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 2, 20, 10),
+                      child: PenText(
+                        context.l10n.storageDriveCurrentAccount(
+                          widget.currentAccount!,
+                        ),
+                        size: 13,
+                        color: PenColors.mut,
+                        align: TextAlign.center,
+                        lineHeight: 1.35,
+                      ),
+                    ),
                   // KHÔNG có thanh tiêu đề của app ở đây.
                   //
                   // Bảng chọn tài khoản của hệ điều hành cũng không có: chỉ
