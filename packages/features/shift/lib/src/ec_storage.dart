@@ -241,6 +241,14 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// đổi — kho đang dùng là S3 và người dùng vẫn chọn S3.
   bool _editingS3 = false;
 
+  /// Thẻ Drive đã lộ hai nút "đổi tài khoản" và "đăng xuất" chưa.
+  ///
+  /// Hai nút đó đổi nơi cất bằng chứng của cả cửa hàng, nên chúng không nên
+  /// nằm sẵn dưới ngón tay ngay lúc thẻ mở ra. Mở thẻ là để ĐỌC xem đang cắm
+  /// tài khoản nào — việc thường xuyên nhất; chạm thêm một lần nữa mới là
+  /// "tôi định làm gì đó với tài khoản này".
+  bool _driveActionsOpen = false;
+
   @override
   void dispose() {
     _s3.dispose();
@@ -284,6 +292,13 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// chủ shop — chỉ dấu tích di chuyển. Nút lưu mới là chỗ chặn.
   void _pick(EcStorageKind kind) {
     setState(() {
+      // Chạm thẻ Drive = lộ hoặc giấu hai nút thao tác. Chạm sang thẻ khác thì
+      // đóng chúng lại, để lần sau quay về Drive luôn bắt đầu ở trạng thái
+      // chỉ-đọc.
+      //
+      // KHÔNG đòi thẻ phải đang được chọn trước: bảng tài khoản vốn đã mở sẵn
+      // lúc vào màn, nên bắt chạm một lần chỉ để "chọn" là một nhịp thừa.
+      _driveActionsOpen = kind == EcStorageKind.gdrive && !_driveActionsOpen;
       _picked = kind;
       // Chạm sang thẻ khác thì thôi sửa: để cờ bật là quay lại thẻ S3 thấy form
       // mở sẵn mà không nhớ vì sao.
@@ -436,19 +451,20 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     // Cloud Zenpack không mở bảng tình trạng: bốn con số đó đếm video trong
     // kho RIÊNG của shop, và "thôi dùng kho riêng" ở đây không có gì để thôi.
     if (kind != EcStorageKind.system && !s3FormHere) {
-      // Bảng đầy đủ của một kho riêng mở ra trong HAI trường hợp, không phải
-      // một: kho đang dùng, VÀ kho đã cắm mà người dùng vừa chạm vào.
+      // Kho riêng ĐÃ CẮM luôn mở sẵn bảng của nó, không đợi ai chạm.
       //
-      // Vế thứ hai là thứ còn thiếu. Chủ shop đang ở Cloud Zenpack, chạm sang
-      // thẻ Drive để xem mình sắp bật lại tài khoản nào — và không thấy gì
-      // ngoài một dòng chữ. Muốn biết email đó là gì thì phải bấm Lưu trước,
-      // tức là cam kết xong rồi mới được đọc. Giờ chạm là thấy đủ tài khoản,
-      // thư mục và tình trạng; nút Lưu chỉ còn việc chốt lại.
-      if (state.kind == kind ||
-          (_picked == kind && state.configuredKind == kind)) {
+      // Trước đây bảng chỉ mở cho kho đang dùng, hoặc cho kho vừa được chạm —
+      // nên chủ shop đang ở Cloud Zenpack phải chạm một lần để đọc được tài
+      // khoản Drive, rồi chạm thêm lần nữa mới ra nút. Mà "đang cắm tài khoản
+      // nào" chính là câu người ta vào màn này để hỏi, nên nó phải trả lời sẵn.
+      if (state.kind == kind || state.configuredKind == kind) {
         return _StatusDetail(
           state: state,
           busy: widget.busy,
+          // Chỉ thẻ Drive mới giấu phần thao tác. Thẻ S3 giữ nguyên: nút của nó
+          // là "đổi cấu hình" và "gỡ kho", đi kèm một bảng tình trạng dài — ẩn
+          // chúng đi thì thẻ mở ra chỉ toàn số liệu mà không có lối đi tiếp.
+          actionsOpen: kind != EcStorageKind.gdrive || _driveActionsOpen,
           onDisconnect: widget.onDisconnect,
           onSwitchDriveAccount: widget.onSwitchDriveAccount,
           onEdit: kind == EcStorageKind.s3
@@ -614,7 +630,9 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                     _StorageOption(
                       icon: LucideIcons.hardDrive,
                       title: l10n.storageDriveTitle,
-                      description: l10n.storageDriveDesc,
+                      // Không có dòng mô tả: thẻ này mở ra là tài khoản đang
+                      // cắm, và đó mới là thứ người ta vào đây để đọc.
+                      description: null,
                       selected: _picked == EcStorageKind.gdrive,
                       inUse: state.kind == EcStorageKind.gdrive,
                       label: state.kind == EcStorageKind.gdrive
@@ -657,7 +675,10 @@ class _StorageOption extends StatelessWidget {
 
   final IconData icon;
   final String title;
-  final String description;
+
+  /// Dòng mô tả dưới tên kho. `null` = thẻ chỉ có tên, và phần mở ra bên dưới
+  /// tự nói hết phần còn lại.
+  final String? description;
 
   /// Kho người dùng vừa CHỌN. Khác [inUse] — và phải nhìn ra được cả hai, vì
   /// gộp lại thì chọn xong người ta tưởng đã đổi kho rồi.
@@ -743,13 +764,15 @@ class _StorageOption extends StatelessWidget {
                     ],
                   ],
                 ),
-                const SizedBox(height: 4),
-                PenText(
-                  description,
-                  size: 13,
-                  color: PenColors.mut,
-                  lineHeight: 1.4,
-                ),
+                if (description != null) ...[
+                  const SizedBox(height: 4),
+                  PenText(
+                    description!,
+                    size: 13,
+                    color: PenColors.mut,
+                    lineHeight: 1.4,
+                  ),
+                ],
                 if (label?.isNotEmpty ?? false) ...[
                   const SizedBox(height: 4),
                   PenText(
@@ -921,9 +944,6 @@ class _S3Form extends StatelessWidget {
             obscure: true,
             onChanged: onChanged,
           ),
-          // Câu này nằm DƯỚI form, đúng chỗ bản web đặt nó: đọc trước khi gõ
-          // thì nó là lý thuyết, đọc lúc sắp bấm Lưu mới là cảnh báo.
-          _NoteBox(text: l10n.storageConnectNote),
           if (errorText?.isNotEmpty ?? false) ...[
             const SizedBox(height: 8),
             _NoteBox(text: errorText!, danger: true),
@@ -966,6 +986,7 @@ class _StatusDetail extends StatelessWidget {
   const _StatusDetail({
     required this.state,
     required this.busy,
+    this.actionsOpen = true,
     this.onDisconnect,
     this.onEdit,
     this.onSwitchDriveAccount,
@@ -973,6 +994,10 @@ class _StatusDetail extends StatelessWidget {
 
   final EcStorageState state;
   final bool busy;
+
+  /// Đã lộ phần thao tác (đổi tài khoản, đăng xuất) chưa. `false` = bảng này
+  /// chỉ để đọc.
+  final bool actionsOpen;
   final VoidCallback? onDisconnect;
 
   /// Đổi sang tài khoản Google khác. Chỉ Drive; `null` = không hiện nút.
@@ -993,76 +1018,86 @@ class _StatusDetail extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final health = state.health;
+    final isDrive =
+        (state.configuredKind ?? state.kind) == EcStorageKind.gdrive;
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Câu lỗi nguyên văn của nhà cung cấp là thứ DUY NHẤT giúp chủ shop
-          // tự sửa quyền bên phía họ. Không bao giờ thay bằng câu chung.
-          if (!state.ok && (state.lastError?.isNotEmpty ?? false)) ...[
-            _NoteBox(text: state.lastError!, danger: true),
+          // Thẻ Drive chỉ giữ phần TÀI KHOẢN đổ xuống.
+          //
+          // Bảng tình trạng, hai câu cảnh báo về cam kết và mốc rà gần nhất
+          // đều nói về kho nói chung; với Drive thì thứ người ta mở thẻ ra để
+          // đọc chỉ có một: đang cắm bằng tài khoản nào. Mọi dòng khác đứng
+          // trên nó chỉ đẩy câu trả lời xuống dưới màn hình.
+          if (!isDrive) ...[
+            // Câu lỗi nguyên văn của nhà cung cấp là thứ DUY NHẤT giúp chủ shop
+            // tự sửa quyền bên phía họ. Không bao giờ thay bằng câu chung.
+            if (!state.ok && (state.lastError?.isNotEmpty ?? false)) ...[
+              _NoteBox(text: state.lastError!, danger: true),
+              const SizedBox(height: 10),
+            ],
+            // Cam kết nào hứa được là do máy chủ ĐO, không do tên nhà cung cấp.
+            if (!state.presignedDownload)
+              PenText(
+                l10n.storageNoPresign,
+                size: 12,
+                color: PenColors.mut,
+                lineHeight: 1.4,
+              ),
+            if (!state.objectLock) ...[
+              const SizedBox(height: 6),
+              PenText(
+                l10n.storageNoObjectLock,
+                size: 12,
+                color: PenColors.mut,
+                lineHeight: 1.4,
+              ),
+            ],
             const SizedBox(height: 10),
-          ],
-          // Cam kết nào hứa được là do máy chủ ĐO, không do tên nhà cung cấp.
-          if (!state.presignedDownload)
             PenText(
-              l10n.storageNoPresign,
-              size: 12,
+              l10n.storageHealthTitle,
+              size: 13,
               color: PenColors.mut,
-              lineHeight: 1.4,
+              weight: FontWeight.w600,
             ),
-          if (!state.objectLock) ...[
             const SizedBox(height: 6),
+            _HealthRow(label: l10n.storageHealthTotal, value: health.total),
+            _HealthRow(label: l10n.storageHealthIntact, value: health.intact),
+            // Ba dòng sự cố chỉ hiện khi KHÁC 0 — khác bản web, cố ý. Bảng lúc
+            // nào cũng có "0 lỗi" thì mắt lướt qua rất nhanh, và đúng hôm có lỗi
+            // thật cũng không ai thấy. Màn hình điện thoại lại càng ít chỗ.
+            if (health.unreachable > 0)
+              _HealthRow(
+                label: l10n.storageHealthUnreachable,
+                value: health.unreachable,
+                danger: true,
+              ),
+            if (health.mismatched > 0)
+              _HealthRow(
+                label: l10n.storageHealthMismatched,
+                value: health.mismatched,
+                danger: true,
+              ),
+            if (health.pendingRelay > 0)
+              _HealthRow(
+                label: l10n.storageHealthPendingRelay,
+                value: health.pendingRelay,
+              ),
+            if (health.hasProblems) ...[
+              const SizedBox(height: 8),
+              _NoteBox(text: l10n.storageProblemsNote, danger: true),
+            ],
+            const SizedBox(height: 8),
             PenText(
-              l10n.storageNoObjectLock,
+              health.lastCheckedAt == null
+                  ? l10n.storageNeverChecked
+                  : l10n.storageLastCheckAt(_at(health.lastCheckedAt!)),
               size: 12,
               color: PenColors.mut,
-              lineHeight: 1.4,
             ),
           ],
-          const SizedBox(height: 10),
-          PenText(
-            l10n.storageHealthTitle,
-            size: 13,
-            color: PenColors.mut,
-            weight: FontWeight.w600,
-          ),
-          const SizedBox(height: 6),
-          _HealthRow(label: l10n.storageHealthTotal, value: health.total),
-          _HealthRow(label: l10n.storageHealthIntact, value: health.intact),
-          // Ba dòng sự cố chỉ hiện khi KHÁC 0 — khác bản web, cố ý. Bảng lúc
-          // nào cũng có "0 lỗi" thì mắt lướt qua rất nhanh, và đúng hôm có lỗi
-          // thật cũng không ai thấy. Màn hình điện thoại lại càng ít chỗ.
-          if (health.unreachable > 0)
-            _HealthRow(
-              label: l10n.storageHealthUnreachable,
-              value: health.unreachable,
-              danger: true,
-            ),
-          if (health.mismatched > 0)
-            _HealthRow(
-              label: l10n.storageHealthMismatched,
-              value: health.mismatched,
-              danger: true,
-            ),
-          if (health.pendingRelay > 0)
-            _HealthRow(
-              label: l10n.storageHealthPendingRelay,
-              value: health.pendingRelay,
-            ),
-          if (health.hasProblems) ...[
-            const SizedBox(height: 8),
-            _NoteBox(text: l10n.storageProblemsNote, danger: true),
-          ],
-          const SizedBox(height: 8),
-          PenText(
-            health.lastCheckedAt == null
-                ? l10n.storageNeverChecked
-                : l10n.storageLastCheckAt(_at(health.lastCheckedAt!)),
-            size: 12,
-            color: PenColors.mut,
-          ),
           if (state.driveEmail?.isNotEmpty ?? false) ...[
             const SizedBox(height: 8),
             PenText(l10n.storageDriveAccount, size: 12, color: PenColors.mut),
@@ -1081,7 +1116,9 @@ class _StatusDetail extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (state.canManage && onSwitchDriveAccount != null) ...[
+                if (actionsOpen &&
+                    state.canManage &&
+                    onSwitchDriveAccount != null) ...[
                   const SizedBox(width: 8),
                   EcTap(
                     onTap: busy ? null : onSwitchDriveAccount,
@@ -1098,7 +1135,7 @@ class _StatusDetail extends StatelessWidget {
               ],
             ),
           ],
-          if (state.canManage) ...[
+          if (actionsOpen && state.canManage) ...[
             const SizedBox(height: 12),
             if (onEdit != null) ...[
               PenOutlineButton(

@@ -891,7 +891,7 @@
       }
     }
   },
-  "shopDetailAddType": "Thêm loại (nhập tên)",
+  "shopDetailAddType": "Thêm loại video",
   "@shopDetailAddType": {
     "description": "Shop detail: shopDetailAddType."
   },
@@ -1065,7 +1065,7 @@
   "storageSystemName": "Cloud Zenpack",
   "storageS3Name": "Kho riêng của bạn (S3)",
   "storageDriveName": "Google Drive của bạn",
-  "storageSystemDesc": "Mặc định, không phải cấu hình gì. Đây là nơi duy nhất hệ thống bảo đảm được đầy đủ mọi cam kết về bằng chứng.",
+  "storageSystemDesc": "Lưu video 30 ngày. Video đã đưa vào hồ sơ khiếu nại được giữ thêm 15 ngày.",
   "storageOwnDesc": "Video mới lưu thẳng vào kho của bạn. Video cũ nằm nguyên chỗ cũ cho tới khi hết hạn lưu.",
   "storageNoPresign": "Kho này không ký được link tải, nên video phải đi vòng qua máy chủ — người nhận link sẽ thấy chậm hơn.",
   "storageNoObjectLock": "Kho này không khoá được đối tượng. Không thể hứa với sàn rằng bằng chứng không xoá được.",

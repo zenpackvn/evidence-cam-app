@@ -3251,7 +3251,7 @@ abstract class AppLocalizations {
   /// Shop detail: shopDetailAddType.
   ///
   /// In en, this message translates to:
-  /// **'Add a type (enter a name)'**
+  /// **'Add a video type'**
   String get shopDetailAddType;
 
   /// Shop detail: inviteMemberTitle.
@@ -3665,7 +3665,7 @@ abstract class AppLocalizations {
   /// No description provided for @storageSystemDesc.
   ///
   /// In en, this message translates to:
-  /// **'The default; nothing to configure. It is the only place where every evidence commitment holds.'**
+  /// **'Videos are kept for 30 days. Videos attached to a claim dossier are kept for 15 days longer.'**
   String get storageSystemDesc;
 
   /// No description provided for @storageOwnDesc.

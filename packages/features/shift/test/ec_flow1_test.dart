@@ -765,7 +765,8 @@ void main() {
         ),
       );
 
-      final add = find.text('Thêm loại (nhập tên)');
+      // Nút cộng ở góc phải tiêu đề nhóm, không còn là một hàng dưới đáy.
+      final add = find.bySemanticsLabel('Thêm loại video');
       expect(add, findsOneWidget, reason: 'nhân viên không thấy nút thêm loại');
       await tester.tap(add);
       await tester.pumpAndSettle();
@@ -887,7 +888,7 @@ void main() {
         ),
       );
       expect(find.text('Mời thành viên'), findsOneWidget);
-      expect(find.text('Thêm loại (nhập tên)'), findsOneWidget);
+      expect(find.bySemanticsLabel('Thêm loại video'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

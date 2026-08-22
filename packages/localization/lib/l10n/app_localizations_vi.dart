@@ -1781,7 +1781,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get shopDetailAddType => 'Thêm loại (nhập tên)';
+  String get shopDetailAddType => 'Thêm loại video';
 
   @override
   String get inviteMemberTitle => 'Mời thành viên';
@@ -2013,7 +2013,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get storageSystemDesc =>
-      'Mặc định, không phải cấu hình gì. Đây là nơi duy nhất hệ thống bảo đảm được đầy đủ mọi cam kết về bằng chứng.';
+      'Lưu video 30 ngày. Video đã đưa vào hồ sơ khiếu nại được giữ thêm 15 ngày.';
 
   @override
   String get storageOwnDesc =>

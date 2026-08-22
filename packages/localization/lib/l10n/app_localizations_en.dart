@@ -1793,7 +1793,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get shopDetailAddType => 'Add a type (enter a name)';
+  String get shopDetailAddType => 'Add a video type';
 
   @override
   String get inviteMemberTitle => 'Invite a member';
@@ -2028,7 +2028,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storageSystemDesc =>
-      'The default; nothing to configure. It is the only place where every evidence commitment holds.';
+      'Videos are kept for 30 days. Videos attached to a claim dossier are kept for 15 days longer.';
 
   @override
   String get storageOwnDesc =>

@@ -611,11 +611,12 @@ void main() {
     testWidgets('cảnh báo khi kho không ký được link hoặc không khoá được', (
       tester,
     ) async {
+      // Trên thẻ S3. Thẻ Drive cố ý KHÔNG vẽ hai câu này nữa — xem test dưới.
       await _pump(
         tester,
         const EcStorageScreen(
           state: EcStorageState(
-            kind: EcStorageKind.gdrive,
+            kind: EcStorageKind.s3,
             presignedDownload: false,
           ),
         ),
@@ -626,10 +627,13 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    // Ba thứ bản web có mà app từng nhận dữ liệu rồi bỏ không vẽ: nhãn "đang
-    // dùng", mốc rà gần nhất, và tài khoản Drive. Không vẽ thì chủ shop mở app
-    // ra chỉ thấy ba cái thẻ, không biết kho có được rà bao giờ chưa.
-    testWidgets('hiện nhãn đang dùng, mốc rà gần nhất và tài khoản Drive', (
+    // Thẻ Drive chỉ giữ phần tài khoản đổ xuống.
+    //
+    // Bảng tình trạng, hai câu cảnh báo về cam kết và mốc rà gần nhất đều nói
+    // về kho nói chung; với Drive thì thứ người ta mở thẻ ra để đọc chỉ có một
+    // — đang cắm bằng tài khoản nào — và mọi dòng đứng trên nó chỉ đẩy câu trả
+    // lời xuống dưới màn hình.
+    testWidgets('thẻ Drive chỉ còn tài khoản, không bảng tình trạng', (
       tester,
     ) async {
       await _pump(
@@ -638,6 +642,41 @@ void main() {
           state: EcStorageState(
             kind: EcStorageKind.gdrive,
             driveEmail: 'shop@gmail.com',
+            presignedDownload: false,
+            canManage: true,
+            health: EcStorageHealth(
+              total: 3,
+              intact: 3,
+              lastCheckedAt: DateTime(2026, 1, 2, 3, 4).millisecondsSinceEpoch,
+            ),
+          ),
+        ),
+      );
+
+      // Kho đang dùng là Drive: thẻ mở sẵn và in tài khoản, nhưng hai nút thao
+      // tác vẫn đợi một cú chạm nữa.
+      expect(find.text('shop@gmail.com'), findsOneWidget);
+      expect(find.text('Đăng xuất khỏi Drive'), findsNothing);
+      await tester.tap(find.text('Google Drive'));
+      await tester.pumpAndSettle();
+      expect(find.text('Đăng xuất khỏi Drive'), findsOneWidget);
+      expect(find.textContaining('Tình trạng kho'), findsNothing);
+      expect(find.textContaining('Rà gần nhất'), findsNothing);
+      expect(find.textContaining('không ký được link tải'), findsNothing);
+      // Và cả dòng mô tả trên đầu thẻ cũng đã bỏ.
+      expect(find.textContaining('không cần dán khoá'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Ba thứ bản web có mà app từng nhận dữ liệu rồi bỏ không vẽ: nhãn "đang
+    // dùng", mốc rà gần nhất, và tài khoản Drive. Không vẽ thì chủ shop mở app
+    // ra chỉ thấy ba cái thẻ, không biết kho có được rà bao giờ chưa.
+    testWidgets('hiện nhãn đang dùng và mốc rà gần nhất', (tester) async {
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: EcStorageState(
+            kind: EcStorageKind.s3,
             health: EcStorageHealth(
               total: 3,
               intact: 3,
@@ -650,16 +689,17 @@ void main() {
 
       expect(find.text('Đang dùng'), findsOneWidget);
       expect(find.text('Rà gần nhất: 02/01/2026 03:04'), findsOneWidget);
-      expect(find.text('shop@gmail.com'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    // Tài khoản Drive đang nằm chờ phải đọc được TRƯỚC khi bấm Lưu.
+    // Tài khoản Drive đang nằm chờ phải đọc được NGAY khi vào màn.
     //
-    // Chủ shop đang ở Cloud Zenpack, chạm sang thẻ Drive để xem mình sắp bật
-    // lại tài khoản nào. Trước đây thẻ chỉ mở một dòng chữ mô tả, còn email thì
-    // phải bấm Lưu xong mới hiện — tức là cam kết trước, đọc sau.
-    testWidgets('chạm vào kho đã cắm mà đang không dùng thì mở đủ thông tin', (
+    // Chủ shop đang ở Cloud Zenpack vẫn cần biết mình sắp bật lại tài khoản
+    // nào. Trước đây thẻ chỉ mở một dòng chữ mô tả, còn email thì phải bấm Lưu
+    // xong mới hiện — tức là cam kết trước, đọc sau. Rồi một bản nữa bắt chạm
+    // một lần để đọc và chạm lần hai mới ra nút; giờ đọc được luôn, chạm một
+    // lần là ra nút.
+    testWidgets('kho đã cắm mà đang không dùng vẫn mở sẵn tài khoản', (
       tester,
     ) async {
       await _pump(
@@ -674,15 +714,22 @@ void main() {
         ),
       );
 
-      expect(find.text('shop@gmail.com'), findsNothing);
+      // Chưa chạm gì cả: tài khoản đã đọc được, nút thì chưa.
+      expect(find.text('shop@gmail.com'), findsOneWidget);
+      expect(find.text('Đăng xuất khỏi Drive'), findsNothing);
 
+      // MỘT cú chạm ra nút. Nút gỡ nói bằng chữ của kho ĐÃ CẮM, không phải kho
+      // đang dùng — lúc này kho đang dùng là Cloud Zenpack, mà thứ nút đó gỡ là
+      // tài khoản Google.
       await tester.tap(find.text('Google Drive'));
       await tester.pumpAndSettle();
-
-      expect(find.text('shop@gmail.com'), findsOneWidget);
-      // Nút gỡ nói bằng chữ của kho ĐÃ CẮM, không phải kho đang dùng — lúc này
-      // kho đang dùng là Cloud Zenpack, mà thứ nút đó gỡ là tài khoản Google.
       expect(find.text('Đăng xuất khỏi Drive'), findsOneWidget);
+
+      // Chạm lần nữa thì giấu lại.
+      await tester.tap(find.text('Google Drive'));
+      await tester.pumpAndSettle();
+      expect(find.text('Đăng xuất khỏi Drive'), findsNothing);
+      expect(find.text('shop@gmail.com'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

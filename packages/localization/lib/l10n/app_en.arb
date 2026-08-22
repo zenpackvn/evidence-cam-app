@@ -1189,7 +1189,7 @@
       }
     }
   },
-  "shopDetailAddType": "Add a type (enter a name)",
+  "shopDetailAddType": "Add a video type",
   "@shopDetailAddType": {
     "description": "Shop detail: shopDetailAddType."
   },
@@ -1362,7 +1362,7 @@
   "storageSystemName": "System storage",
   "storageS3Name": "Your own storage (S3)",
   "storageDriveName": "Your Google Drive",
-  "storageSystemDesc": "The default; nothing to configure. It is the only place where every evidence commitment holds.",
+  "storageSystemDesc": "Videos are kept for 30 days. Videos attached to a claim dossier are kept for 15 days longer.",
   "storageOwnDesc": "New videos go straight to your storage. Older ones stay where they are until their retention ends.",
   "storageNoPresign": "This storage cannot sign download links, so videos must be relayed through the server — whoever opens your link will find it slower.",
   "storageNoObjectLock": "This storage has no object lock. You cannot promise a marketplace that the evidence is undeletable.",

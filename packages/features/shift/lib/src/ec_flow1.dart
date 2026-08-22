@@ -2187,22 +2187,39 @@ class EcShopDetailScreen extends StatelessWidget {
                 if (!readOnly)
                   EcTap(
                     onTap: onInviteMember,
+                    // Cùng bộ khung với ba hàng cài đặt bên dưới (thời lượng,
+                    // dung lượng, kho lưu trữ): cùng nền, cùng viền, cùng bo
+                    // góc, cùng đệm, cùng ô biểu tượng 38pt. Trước đây hàng này
+                    // trong suốt và viền nhạt hơn, nên bốn hàng nằm cạnh nhau
+                    // trên một màn mà trông như hai loại thành phần khác nhau.
                     child: PenBox(
                       width: double.infinity,
-                      stroke: PenColors.soft,
+                      fill: PenColors.card,
+                      stroke: PenColors.line,
                       radius: 10,
                       axis: PenAxis.row,
                       gap: 14,
                       cross: CrossAxisAlignment.center,
                       padding: const EdgeInsets.symmetric(
-                        vertical: 9,
+                        vertical: 8,
                         horizontal: 12,
                       ),
                       children: [
-                        const Icon(
-                          LucideIcons.plus,
-                          size: 22,
-                          color: PenColors.ink,
+                        const PenBox(
+                          width: 38,
+                          height: 38,
+                          fill: PenColors.bg,
+                          radius: 10,
+                          axis: PenAxis.row,
+                          main: MainAxisAlignment.center,
+                          cross: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              LucideIcons.plus,
+                              size: 22,
+                              color: PenColors.ink,
+                            ),
+                          ],
                         ),
                         Expanded(
                           child: Column(
@@ -2211,15 +2228,16 @@ class EcShopDetailScreen extends StatelessWidget {
                             children: [
                               PenText(
                                 l10n.inviteMemberTitle,
-                                size: 14,
+                                size: 16,
                                 color: PenColors.link,
-                                weight: FontWeight.w700,
+                                weight: FontWeight.w600,
                                 softWrap: false,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 2),
                               PenText(
                                 l10n.inviteMemberHint,
-                                size: 12,
+                                size: 13,
                                 color: PenColors.mut,
                                 softWrap: false,
                                 overflow: TextOverflow.ellipsis,
@@ -2298,6 +2316,16 @@ class EcShopDetailScreen extends StatelessWidget {
             _PenSectionCard(
               icon: LucideIcons.squarePlay,
               label: l10n.sectionVideoTypes,
+              // Thêm loại video mở cho MỌI vai trò, khác các nút quản trị khác
+              // trên màn này. Người đứng máy là người phát hiện ra thiếu loại —
+              // giữa ca đóng hàng, lúc trên tay đang là một đơn không biết xếp
+              // vào đâu. Bắt họ chờ chủ shop mở máy là clip đó không bao giờ
+              // được quay.
+              //
+              // Sửa và xoá thì vẫn chỉ chủ shop: thêm một loại là việc cộng
+              // thêm, còn sửa/xoá đụng vào clip người khác đã quay.
+              onAdd: onAddType,
+              addLabel: l10n.shopDetailAddType,
               children: [
                 for (final type in videoTypes)
                   _VideoTypeRow(
@@ -2307,44 +2335,6 @@ class EcShopDetailScreen extends StatelessWidget {
                     onDelete: onDeleteType == null
                         ? null
                         : () => onDeleteType!(type),
-                  ),
-                // Thêm loại video mở cho MỌI vai trò, khác các nút quản trị
-                // khác trên màn này. Người đứng máy là người phát hiện ra thiếu
-                // loại — giữa ca đóng hàng, lúc trên tay đang là một đơn không
-                // biết xếp vào đâu. Bắt họ chờ chủ shop mở máy là clip đó không
-                // bao giờ được quay.
-                //
-                // Sửa và xoá thì vẫn chỉ chủ shop: thêm một loại là việc cộng
-                // thêm, còn sửa/xoá đụng vào clip người khác đã quay.
-                if (onAddType != null)
-                  EcTap(
-                    onTap: onAddType,
-                    child: PenBox(
-                      width: double.infinity,
-                      stroke: PenColors.soft,
-                      radius: 10,
-                      axis: PenAxis.row,
-                      gap: 12,
-                      main: MainAxisAlignment.center,
-                      cross: CrossAxisAlignment.center,
-                      padding: const EdgeInsets.symmetric(vertical: 9),
-                      children: [
-                        const Icon(
-                          LucideIcons.plus,
-                          size: 21,
-                          color: PenColors.ink,
-                        ),
-                        Flexible(
-                          child: PenText(
-                            l10n.shopDetailAddType,
-                            size: 16,
-                            color: PenColors.link,
-                            weight: FontWeight.w600,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
               ],
             ),
@@ -2503,19 +2493,27 @@ class _FixedSettingRow extends StatelessWidget {
                 softWrap: false,
                 overflow: TextOverflow.ellipsis,
               ),
-              // Email KHÔNG cắt ba chấm: mất đuôi là không còn nhận ra tài
-              // khoản nào, mà đó đúng là câu dòng này trả lời.
               if (_hasAccount)
                 PenText(
                   account!,
                   size: 13,
                   color: PenColors.mut,
-                  lineHeight: 1.3,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
                 ),
             ],
           ),
         )
       else ...[
+        // MỘT dòng cho nhãn, một dòng cho giá trị: ở bề ngang thật của hàng
+        // này cả hai đều vừa, nên xuống dòng chỉ làm hàng cao lên vô cớ. Dấu
+        // ba chấm giữ lại làm lưới đỡ cho cỡ chữ hệ thống phóng to.
+        // Giá trị lấy ĐÚNG bề ngang nó cần; nhãn ăn phần còn lại.
+        //
+        // Trước đây cả hai đều `Expanded`, tức chia cứng đôi hàng — nên "5 phút
+        // mỗi clip" bị bó vào nửa bên phải và mất đuôi, dù nhãn bên trái chỉ
+        // dùng hết một phần ba chỗ của nó. Đảo lại: giá trị là thứ không được
+        // phép cắt (mất đơn vị là mất nghĩa), còn nhãn thì cố định và ngắn.
         Expanded(
           child: PenText(
             label,
@@ -2525,19 +2523,12 @@ class _FixedSettingRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        Expanded(
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: PenText(
-              value,
-              size: 16,
-              color: PenColors.ink,
-              weight: FontWeight.w600,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              align: TextAlign.end,
-            ),
-          ),
+        PenText(
+          value,
+          size: 16,
+          color: PenColors.ink,
+          weight: FontWeight.w600,
+          softWrap: false,
         ),
       ],
       // Chữ "mặc định" thay chỗ mũi tên cũ. Bỏ trống chỗ đó thì hàng trông y
@@ -2587,11 +2578,23 @@ class _PenSectionCard extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.children,
+    this.onAdd,
+    this.addLabel,
   });
 
   final IconData icon;
   final String label;
   final List<Widget> children;
+
+  /// Nút cộng ở góc phải tiêu đề nhóm. `null` = nhóm không thêm được gì.
+  ///
+  /// Thay cho hàng "Thêm loại" chạy hết bề ngang dưới đáy danh sách: hàng đó
+  /// trông y như một mục trong danh sách, nên đọc lướt qua thì loại video cuối
+  /// cùng của cửa hàng là "Thêm loại video".
+  final VoidCallback? onAdd;
+
+  /// Nhãn trợ năng cho [onAdd]. Bắt buộc khi có [onAdd].
+  final String? addLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -2618,6 +2621,37 @@ class _PenSectionCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            if (onAdd != null)
+              // Nhãn trợ năng bắt buộc: một nút chỉ có biểu tượng là ngõ cụt
+              // với trình đọc màn hình — nó đọc được "nút" mà không biết nút
+              // làm gì.
+              Semantics(
+                label: addLabel,
+                button: true,
+                child: EcTap(
+                  onTap: onAdd,
+                  child: const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: PenBox(
+                      width: 30,
+                      height: 30,
+                      fill: PenColors.bg,
+                      stroke: PenColors.line,
+                      radius: 999,
+                      axis: PenAxis.row,
+                      main: MainAxisAlignment.center,
+                      cross: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.plus,
+                          size: 18,
+                          color: PenColors.ink,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
         ...children,
@@ -2677,6 +2711,12 @@ class _MembersNoticeRow extends StatelessWidget {
   }
 }
 
+/// Trần bề ngang của viên nhãn vai trò ở hàng thành viên.
+///
+/// Đo cho nhãn dài nhất đang dùng ("Nhân viên · chờ xác nhận" ở cỡ 12) cộng
+/// phần đệm hai bên của viên. Nhãn nào ngắn hơn thì viên co lại theo chữ.
+const double _memberRoleMaxWidth = 165;
+
 class _MemberRow extends StatelessWidget {
   const _MemberRow({required this.member, this.onTap});
 
@@ -2715,67 +2755,66 @@ class _MemberRow extends StatelessWidget {
               Icon(LucideIcons.user, size: 20, color: PenColors.ink),
             ],
           ),
+          // Nhãn vai trò lấy ĐÚNG bề ngang nó cần; tên và email ăn phần còn
+          // lại.
+          //
+          // Chốt tỉ lệ cứng 3:1 thì nhãn bị khoá ở đúng một phần tư hàng, mà
+          // "Nhân viên · chờ xác nhận" cần nhiều hơn thế nên mất đuôi. Trong
+          // một `Row`, con KHÔNG có flex được đo trước ở kích thước tự nhiên,
+          // rồi `Expanded` mới nhận phần thừa — nên đặt nhãn ngoài hệ flex là
+          // nó luôn hiện trọn, và tự đẩy sang trái đúng bằng chỗ nó cần.
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Tên một dòng, email một dòng ngay dưới.
                 PenText(
                   member.name,
                   size: 16,
                   color: PenColors.ink,
+                  softWrap: false,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if ((member.email ?? '').isNotEmpty) ...[
                   const SizedBox(height: 2),
-                  // KHÔNG cắt ba chấm: một địa chỉ mất đuôi thì không còn nhận
-                  // ra được là ai, mà phân biệt hai người trùng tên chính là
-                  // việc dòng này sinh ra để làm. Dài thì xuống dòng — hàng cao
-                  // thêm một nhịp rẻ hơn một địa chỉ đọc không ra.
                   PenText(
                     member.email!,
                     size: 12.5,
                     color: PenColors.mut,
-                    lineHeight: 1.3,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ],
             ),
           ),
-          // `Flexible` chứ không để viên nhãn tự do: nó dùng `softWrap: false`
-          // nên chiếm đúng bề rộng của chữ, và một nhãn dài
-          // ("Nhân viên · chờ xác nhận") trên màn hẹp đẩy cả hàng tràn ra ngoài
-          // — đo được 33px trong test. Cho nó co lại và cắt bằng dấu ba chấm;
-          // phần tên bên trái đã `Expanded` nên hai bên tự chia nhau.
+          // Trần bề ngang cho viên nhãn.
           //
-          // `Align` là thứ ghim nhãn vào mép phải. Không có nó, `Flexible` chỉ
-          // *cho phép* nhãn nhỏ hơn phần được chia chứ không trả lại chỗ thừa:
-          // nhãn ngắn ("Chủ shop") nằm sát mép trái phần của mình, tức lơ lửng
-          // giữa hàng, và mỗi hàng lại lệch một kiểu tuỳ độ dài chữ.
-          Flexible(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: PenBox(
-                fill: PenColors.bg,
-                radius: 999,
-                axis: PenAxis.row,
-                hugMain: true,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 11,
-                ),
-                children: [
-                  Flexible(
-                    child: PenText(
-                      member.role,
-                      size: 12,
-                      color: PenColors.ink,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+          // Con không có flex trong một `Row` được đo với trần là TRỌN bề ngang
+          // hàng, không phải phần còn lại — nên một nhãn dài đẩy cả hàng tràn
+          // ra ngoài (test đo được 63px). Trần này đủ rộng cho nhãn dài nhất
+          // đang có ("Nhân viên · chờ xác nhận") nên trong thực tế nó không cắt
+          // gì; nó chỉ tồn tại để chặn trường hợp cùng cực.
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _memberRoleMaxWidth),
+            child: PenBox(
+              fill: PenColors.bg,
+              radius: 999,
+              axis: PenAxis.row,
+              hugMain: true,
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 11),
+              children: [
+                Flexible(
+                  child: PenText(
+                    member.role,
+                    size: 12,
+                    color: PenColors.ink,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           // Chỗ của mũi tên luôn được giữ, kể cả hàng không bấm được (chủ shop,
