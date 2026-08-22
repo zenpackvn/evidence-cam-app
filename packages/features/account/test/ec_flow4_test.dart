@@ -162,14 +162,15 @@ void main() {
     ) async {
       await _pump(tester, const EcLanguageScreen());
       expect(find.text('Ngôn ngữ'), findsOneWidget);
-      // Mỗi hàng có tên NGÔN NGỮ ĐÓ tự gọi mình, và phụ đề là tên nó trong
-      // ngôn ngữ KIA: "Tiếng Việt / Vietnamese" và "English / Tiếng Anh". Bản
-      // trước hiểu là phụ đề dịch sang ngôn ngữ ĐANG dùng, nên chờ "Tiếng Việt"
-      // hai lần — dưới `vi` thì nó chỉ xuất hiện một.
+      // Mỗi hàng gọi tên ngôn ngữ đó bằng CHÍNH nó, phụ đề là tên tiếng Anh:
+      // "Tiếng Việt / Vietnamese". Không dịch sang ngôn ngữ đang dùng — mười
+      // thứ tiếng thì cách đó cần một trăm bản dịch, và người đi tìm tiếng của
+      // mình vẫn tìm theo tên bản xứ.
       expect(find.text(vi.languageNameVietnamese), findsOneWidget);
       expect(find.text('Vietnamese'), findsOneWidget);
+      // Hàng English chỉ có MỘT dòng: tên bản xứ và tên tiếng Anh trùng nhau,
+      // in hai lần thì dòng dưới không nói thêm được gì.
       expect(find.text('English'), findsOneWidget);
-      expect(find.text(vi.languageNameEnglish), findsOneWidget);
       expect(find.byIcon(LucideIcons.check), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

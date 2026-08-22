@@ -1595,6 +1595,27 @@ class AppLocalizationsFil extends AppLocalizations {
   String get registerFullNameRequired => 'Pakilagay ang buong pangalan mo';
 
   @override
+  String get registerFullNamePlaceholder => 'e.g. Jane Doe';
+
+  @override
+  String get registerFullNameTooShort =>
+      'Full name needs at least 2 characters.';
+
+  @override
+  String get phonePlaceholder => 'e.g. 0912 345 678';
+
+  @override
+  String get registerConfirmPasswordPlaceholder =>
+      'Type the same password again';
+
+  @override
+  String get termsLoadFailed =>
+      'Could not open the terms page. Check your connection and try again.';
+
+  @override
+  String get termsOpenInBrowser => 'Open in browser';
+
+  @override
   String get registerAgreePrefix => 'Sumasang-ayon ako sa';
 
   @override
@@ -2346,12 +2367,19 @@ class AppLocalizationsFil extends AppLocalizations {
       'We write–read–delete a tiny test object before saving. Note: periodic audits download ~1% of videos weekly to verify them — some providers charge egress. If your storage loses data, the video cannot be recovered from anywhere.';
 
   @override
+  String get storageNotConfigured =>
+      'This shop has no storage of its own connected, so there is nothing to switch on or off. Reload this screen and try again.';
+
+  @override
+  String get storageDriveAccountUnknown => 'Google account not read yet';
+
+  @override
   String get storageSystemSaveNote =>
       'Save removes your own storage: new videos go to system storage.';
 
   @override
   String get storageDriveSaveNote =>
-      'Save opens Google\'s consent screen so you can pick an account.';
+      'Tapping this card opens Google\'s account picker right away. Grant access and the storage is connected — Save only confirms it.';
 
   @override
   String get storageDriveNoConsent =>

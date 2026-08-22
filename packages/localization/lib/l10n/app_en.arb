@@ -875,6 +875,34 @@
   "@registerFullNameRequired": {
     "description": "Register screen: registerFullNameRequired."
   },
+  "registerFullNamePlaceholder": "e.g. Jane Doe",
+  "@registerFullNamePlaceholder": {
+    "description": "Register screen: placeholder for the full-name field."
+  },
+  "registerFullNameTooShort": "Full name needs at least 2 characters.",
+  "@registerFullNameTooShort": {
+    "description": "Register screen: the name field holds one character or only spaces."
+  },
+  "phonePlaceholder": "e.g. 0912 345 678",
+  "@phonePlaceholder": {
+    "description": "Placeholder for the optional phone field."
+  },
+  "phoneInvalid": "Phone number must be 8-15 digits.",
+  "@phoneInvalid": {
+    "description": "The optional phone field holds something that is not a plausible phone number. Only checked when the field is non-empty."
+  },
+  "registerConfirmPasswordPlaceholder": "Type the same password again",
+  "@registerConfirmPasswordPlaceholder": {
+    "description": "Register screen: placeholder for the confirm-password field."
+  },
+  "termsLoadFailed": "Could not open the terms page. Check your connection and try again.",
+  "@termsLoadFailed": {
+    "description": "The in-app terms sheet failed to load zenpack.vn/terms."
+  },
+  "termsOpenInBrowser": "Open in browser",
+  "@termsOpenInBrowser": {
+    "description": "Terms sheet: escape hatch when the embedded page will not load."
+  },
   "registerAgreePrefix": "I agree to the",
   "@registerAgreePrefix": {
     "description": "Register screen: registerAgreePrefix."
@@ -1519,8 +1547,16 @@
   "@storageConnectNote": {
     "description": "Dưới form S3, đúng câu bản web dùng — nói cả chuyện phí egress của lượt rà định kỳ."
   },
+  "storageNotConfigured": "This shop has no storage of its own connected, so there is nothing to switch on or off. Reload this screen and try again.",
+  "@storageNotConfigured": {
+    "description": "Máy chủ trả `storage_not_configured` cho `PATCH /storage/active` hoặc `DELETE /storage`: không có hàng nào để bật/tắt. Câu chung chung ở đây đọc thành \"app hỏng\", trong khi việc cần làm là nạp lại."
+  },
+  "storageDriveAccountUnknown": "Google account not read yet",
+  "@storageDriveAccountUnknown": {
+    "description": "Thẻ Drive đã cắm nhưng máy chủ chưa trả email của tài khoản."
+  },
   "storageSystemSaveNote": "Save removes your own storage: new videos go to system storage.",
-  "storageDriveSaveNote": "Save opens Google's consent screen so you can pick an account.",
+  "storageDriveSaveNote": "Tapping this card opens Google's account picker right away. Grant access and the storage is connected — Save only confirms it.",
   "storageDriveNoConsent": "Google did not grant long-lived access this time. Open your Google Account → Third-party apps, remove Zenpack, then connect again.",
   "@storageDriveNoConsent": {
     "description": "Máy chủ trả `no_refresh_token`: đổi mã thành công nhưng không kèm refresh token, thường vì tài khoản đã cấp quyền từ lần trước. Cắm lại y nguyên sẽ hỏng y như vậy, nên phải chỉ đường gỡ quyền cũ."

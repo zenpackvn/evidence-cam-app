@@ -12,6 +12,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Image;
+import 'package:flutter/services.dart' show MaxLengthEnforcement;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -291,6 +292,8 @@ class PenField extends StatefulWidget {
     this.keyboardType,
     this.validator,
     this.readOnly = false,
+    this.maxLength,
+    this.textCapitalization = TextCapitalization.none,
     super.key,
   });
 
@@ -302,6 +305,16 @@ class PenField extends StatefulWidget {
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
   final bool readOnly;
+
+  /// Trần ký tự, chặn NGAY LÚC GÕ chứ không báo lỗi sau khi bấm gửi.
+  ///
+  /// Không vẽ bộ đếm: ô nhập ở đây cao 60px và không có chỗ cho một dòng
+  /// "12/50" mà người dùng chỉ nhìn tới đúng một lần trong đời. Trần này để
+  /// chặn dán nguyên một trang văn bản vào ô họ tên, không phải để nhắc.
+  final int? maxLength;
+
+  /// Viết hoa tự động — họ tên viết hoa từng từ, email thì tuyệt đối không.
+  final TextCapitalization textCapitalization;
 
   @override
   State<PenField> createState() => _PenFieldState();
@@ -358,6 +371,11 @@ class _PenFieldState extends State<PenField> {
                 obscureText: _obscure,
                 readOnly: widget.readOnly,
                 keyboardType: widget.keyboardType,
+                textCapitalization: widget.textCapitalization,
+                maxLength: widget.maxLength,
+                // Cắt ở ký tự thứ N, KHÔNG cho gõ quá rồi bôi đỏ: bôi đỏ là
+                // bắt người dùng tự đếm xem phải xoá bao nhiêu.
+                maxLengthEnforcement: MaxLengthEnforcement.enforced,
                 padding: EdgeInsets.zero,
                 decoration: const BoxDecoration(),
                 placeholder: widget.hint,
@@ -400,6 +418,8 @@ class PenStackedField extends StatefulWidget {
     this.obscure = false,
     this.keyboardType,
     this.validator,
+    this.maxLength,
+    this.textCapitalization = TextCapitalization.none,
     super.key,
   });
 
@@ -409,6 +429,10 @@ class PenStackedField extends StatefulWidget {
   final bool obscure;
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
+
+  /// Trần ký tự — xem [PenField.maxLength].
+  final int? maxLength;
+  final TextCapitalization textCapitalization;
 
   @override
   State<PenStackedField> createState() => _PenStackedFieldState();
@@ -477,6 +501,9 @@ class _PenStackedFieldState extends State<PenStackedField> {
                     onChanged: state?.didChange,
                     obscureText: _obscure,
                     keyboardType: widget.keyboardType,
+                    textCapitalization: widget.textCapitalization,
+                    maxLength: widget.maxLength,
+                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
                     padding: EdgeInsets.zero,
                     decoration: const BoxDecoration(),
                     placeholder: widget.label,

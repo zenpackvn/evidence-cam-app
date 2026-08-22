@@ -17,6 +17,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:localization/localization.dart';
 
+import 'ec_form_limits.dart';
+
 // Shared text styles (Inter is inherited from the CupertinoApp text theme).
 TextStyle _t(double size, FontWeight weight, Color color) =>
     TextStyle(fontSize: size, fontWeight: weight, color: color, height: 1.3);
@@ -165,6 +167,7 @@ class EcLoginScreen extends StatelessWidget {
     this.showApple = true,
     this.onRegister,
     this.onLanguage,
+    this.languageLabel = 'VI',
     super.key,
   });
 
@@ -180,6 +183,13 @@ class EcLoginScreen extends StatelessWidget {
   final bool showApple;
   final VoidCallback? onRegister;
   final VoidCallback? onLanguage;
+
+  /// Mã ngôn ngữ ĐANG dùng, viết hoa — "VI", "EN", "TH"…
+  ///
+  /// Trước đây viên này in cứng chữ "VI": đổi sang tiếng Anh xong cả màn hình
+  /// dịch hết, riêng viên ngôn ngữ vẫn ghi "VI". Người dùng đọc ra là lượt đổi
+  /// không ăn và bấm lại lần nữa — đổi ngược về đúng thứ tiếng họ vừa bỏ.
+  final String languageLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -206,6 +216,7 @@ class EcLoginScreen extends StatelessWidget {
                     icon: LucideIcons.mail,
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
+                    maxLength: kEmailMaxLength,
                     validator: FormBuilderValidators.compose([
                       FormBuilderValidators.required(
                         errorText: l10n.authEmailRequired,
@@ -222,6 +233,7 @@ class EcLoginScreen extends StatelessWidget {
                     icon: LucideIcons.lock,
                     controller: passwordController,
                     obscure: true,
+                    maxLength: kPasswordMaxLength,
                     validator: FormBuilderValidators.required(
                       errorText: l10n.authPasswordRequired,
                     ),
@@ -265,7 +277,7 @@ class EcLoginScreen extends StatelessWidget {
               // Design `LangPill`: x=294, y=14 on the 390pt artboard.
               top: 14,
               right: 12,
-              child: PenLangPill(label: 'VI', onTap: onLanguage),
+              child: PenLangPill(label: languageLabel, onTap: onLanguage),
             ),
           ],
         ),

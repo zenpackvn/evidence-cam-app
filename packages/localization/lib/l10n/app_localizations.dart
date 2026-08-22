@@ -1230,10 +1230,10 @@ abstract class AppLocalizations {
   /// **'Optional — for account support only'**
   String get phoneOptionalHint;
 
-  /// No description provided for @phoneInvalid.
+  /// The optional phone field holds something that is not a plausible phone number. Only checked when the field is non-empty.
   ///
   /// In en, this message translates to:
-  /// **'Invalid phone number'**
+  /// **'Phone number must be 8-15 digits.'**
   String get phoneInvalid;
 
   /// No description provided for @accountSaveChanges.
@@ -2922,6 +2922,42 @@ abstract class AppLocalizations {
   /// **'Please enter your full name'**
   String get registerFullNameRequired;
 
+  /// Register screen: placeholder for the full-name field.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Jane Doe'**
+  String get registerFullNamePlaceholder;
+
+  /// Register screen: the name field holds one character or only spaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name needs at least 2 characters.'**
+  String get registerFullNameTooShort;
+
+  /// Placeholder for the optional phone field.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 0912 345 678'**
+  String get phonePlaceholder;
+
+  /// Register screen: placeholder for the confirm-password field.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the same password again'**
+  String get registerConfirmPasswordPlaceholder;
+
+  /// The in-app terms sheet failed to load zenpack.vn/terms.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the terms page. Check your connection and try again.'**
+  String get termsLoadFailed;
+
+  /// Terms sheet: escape hatch when the embedded page will not load.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in browser'**
+  String get termsOpenInBrowser;
+
   /// Register screen: registerAgreePrefix.
   ///
   /// In en, this message translates to:
@@ -4196,6 +4232,18 @@ abstract class AppLocalizations {
   /// **'We write–read–delete a tiny test object before saving. Note: periodic audits download ~1% of videos weekly to verify them — some providers charge egress. If your storage loses data, the video cannot be recovered from anywhere.'**
   String get storageConnectNote;
 
+  /// Máy chủ trả `storage_not_configured` cho `PATCH /storage/active` hoặc `DELETE /storage`: không có hàng nào để bật/tắt. Câu chung chung ở đây đọc thành "app hỏng", trong khi việc cần làm là nạp lại.
+  ///
+  /// In en, this message translates to:
+  /// **'This shop has no storage of its own connected, so there is nothing to switch on or off. Reload this screen and try again.'**
+  String get storageNotConfigured;
+
+  /// Thẻ Drive đã cắm nhưng máy chủ chưa trả email của tài khoản.
+  ///
+  /// In en, this message translates to:
+  /// **'Google account not read yet'**
+  String get storageDriveAccountUnknown;
+
   /// No description provided for @storageSystemSaveNote.
   ///
   /// In en, this message translates to:
@@ -4205,7 +4253,7 @@ abstract class AppLocalizations {
   /// No description provided for @storageDriveSaveNote.
   ///
   /// In en, this message translates to:
-  /// **'Save opens Google\'s consent screen so you can pick an account.'**
+  /// **'Tapping this card opens Google\'s account picker right away. Grant access and the storage is connected — Save only confirms it.'**
   String get storageDriveSaveNote;
 
   /// Máy chủ trả `no_refresh_token`: đổi mã thành công nhưng không kèm refresh token, thường vì tài khoản đã cấp quyền từ lần trước. Cắm lại y nguyên sẽ hỏng y như vậy, nên phải chỉ đường gỡ quyền cũ.

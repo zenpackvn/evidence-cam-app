@@ -627,7 +627,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get phoneOptionalHint => 'Tùy chọn — chỉ dùng để hỗ trợ tài khoản';
 
   @override
-  String get phoneInvalid => 'Số điện thoại không hợp lệ';
+  String get phoneInvalid => 'Số điện thoại phải gồm 8-15 chữ số.';
 
   @override
   String get accountSaveChanges => 'Lưu thay đổi';
@@ -1576,6 +1576,25 @@ class AppLocalizationsVi extends AppLocalizations {
   String get registerFullNameRequired => 'Vui lòng nhập họ tên';
 
   @override
+  String get registerFullNamePlaceholder => 'Ví dụ: Nguyễn Văn A';
+
+  @override
+  String get registerFullNameTooShort => 'Họ tên phải có ít nhất 2 ký tự.';
+
+  @override
+  String get phonePlaceholder => 'Ví dụ: 0912 345 678';
+
+  @override
+  String get registerConfirmPasswordPlaceholder => 'Gõ lại mật khẩu vừa nhập';
+
+  @override
+  String get termsLoadFailed =>
+      'Không mở được trang điều khoản. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get termsOpenInBrowser => 'Mở bằng trình duyệt';
+
+  @override
   String get registerAgreePrefix => 'Tôi đồng ý với';
 
   @override
@@ -2316,12 +2335,19 @@ class AppLocalizationsVi extends AppLocalizations {
       'Hệ thống sẽ ghi–đọc–xoá thử một tệp nhỏ để kiểm tra quyền trước khi lưu. Lưu ý: rà soát định kỳ có tải video từ kho của bạn về để đối chiếu (khoảng 1% mỗi tuần) — một số nhà cung cấp tính phí lượng dữ liệu tải ra. Nếu kho của bạn mất dữ liệu, video không lấy lại được từ đâu cả.';
 
   @override
+  String get storageNotConfigured =>
+      'Cửa hàng chưa cắm kho riêng nào nên không có gì để bật hay tắt. Tải lại màn này rồi thử lại.';
+
+  @override
+  String get storageDriveAccountUnknown => 'Chưa đọc được tài khoản Google';
+
+  @override
   String get storageSystemSaveNote =>
       'Bấm Lưu sẽ gỡ kho riêng: video quay từ lúc đó về kho hệ thống.';
 
   @override
   String get storageDriveSaveNote =>
-      'Bấm Lưu sẽ mở màn cấp quyền của Google để bạn chọn tài khoản.';
+      'Chạm vào thẻ này là bảng chọn tài khoản Google mở ra ngay. Cấp quyền xong là kho được cắm — nút Lưu chỉ để chốt lại.';
 
   @override
   String get storageDriveNoConsent =>

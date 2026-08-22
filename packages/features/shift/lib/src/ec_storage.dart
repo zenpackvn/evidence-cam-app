@@ -403,9 +403,8 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
       // Về kho hệ thống mà GIỮ tài khoản đã cắm. Không phải `onDisconnect`:
       // Lưu là lưu, không hỏi lại và không cắt đứt tài khoản nào. Muốn cắt đứt
       // thì đã có nút đăng xuất riêng trong thẻ.
-      EcStorageKind.system => state.configuredKind != null
-          ? widget.onUseSystem
-          : null,
+      EcStorageKind.system =>
+        state.configuredKind != null ? widget.onUseSystem : null,
       EcStorageKind.s3 => state.byosAllowed ? widget.onConnectS3 : null,
       // Drive chưa cắm bao giờ thì chạm là chạy luôn (xem [_startDrive]), nên
       // tới nút Lưu không còn việc gì — bấm nữa là mở hộp thoại Google lần hai.
@@ -433,23 +432,35 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// thẻ là xong — đúng thói quen đã bỏ đi.
   Widget? _detailFor(EcStorageKind kind) {
     final state = widget.state;
-    if (state.kind == kind && !(kind == EcStorageKind.s3 && _s3FormOpen)) {
-      // Cloud Zenpack không mở bảng tình trạng: bốn con số đó đếm video trong
-      // kho RIÊNG của shop, và "thôi dùng kho riêng" ở đây không có gì để thôi.
-      if (kind == EcStorageKind.system) return null;
-      return _StatusDetail(
-        state: state,
-        busy: widget.busy,
-        onDisconnect: widget.onDisconnect,
-        onSwitchDriveAccount: widget.onSwitchDriveAccount,
-        onEdit: kind == EcStorageKind.s3
-            ? () => setState(() {
-                _editingS3 = true;
-                _prefillS3();
-              })
-            : null,
-      );
+    final s3FormHere = kind == EcStorageKind.s3 && _s3FormOpen;
+    // Cloud Zenpack không mở bảng tình trạng: bốn con số đó đếm video trong
+    // kho RIÊNG của shop, và "thôi dùng kho riêng" ở đây không có gì để thôi.
+    if (kind != EcStorageKind.system && !s3FormHere) {
+      // Bảng đầy đủ của một kho riêng mở ra trong HAI trường hợp, không phải
+      // một: kho đang dùng, VÀ kho đã cắm mà người dùng vừa chạm vào.
+      //
+      // Vế thứ hai là thứ còn thiếu. Chủ shop đang ở Cloud Zenpack, chạm sang
+      // thẻ Drive để xem mình sắp bật lại tài khoản nào — và không thấy gì
+      // ngoài một dòng chữ. Muốn biết email đó là gì thì phải bấm Lưu trước,
+      // tức là cam kết xong rồi mới được đọc. Giờ chạm là thấy đủ tài khoản,
+      // thư mục và tình trạng; nút Lưu chỉ còn việc chốt lại.
+      if (state.kind == kind ||
+          (_picked == kind && state.configuredKind == kind)) {
+        return _StatusDetail(
+          state: state,
+          busy: widget.busy,
+          onDisconnect: widget.onDisconnect,
+          onSwitchDriveAccount: widget.onSwitchDriveAccount,
+          onEdit: kind == EcStorageKind.s3
+              ? () => setState(() {
+                  _editingS3 = true;
+                  _prefillS3();
+                })
+              : null,
+        );
+      }
     }
+    if (state.kind == kind && !s3FormHere) return null;
     if (_picked != kind) return null;
     // S3 sổ ra nguyên form, không phải một dòng mô tả: thứ người dùng cần đọc
     // khi chỉ vào S3 chính là những ô họ sắp phải điền.
@@ -1104,7 +1115,12 @@ class _StatusDetail extends StatelessWidget {
             // Lưu — đó mới là chỗ tự nhiên để ĐỔI kho, chứ không phải một cái
             // nút nằm lẫn trong bảng tình trạng của kho hiện tại.
             PenOutlineButton(
-              label: state.kind == EcStorageKind.gdrive
+              // Theo kho ĐÃ CẮM, không theo kho đang dùng: bảng này giờ mở
+              // được cả khi tài khoản Drive đang nằm chờ, và lúc đó `kind` là
+              // `system` — nút sẽ hiện "Thôi dùng kho riêng" cho một thao tác
+              // thật ra là gỡ tài khoản Google.
+              label:
+                  (state.configuredKind ?? state.kind) == EcStorageKind.gdrive
                   ? l10n.storageDriveLogout
                   : l10n.storageDisconnect,
               onPressed: busy ? null : onDisconnect,

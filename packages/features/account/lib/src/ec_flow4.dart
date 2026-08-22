@@ -511,7 +511,12 @@ class EcLanguageScreen extends StatelessWidget {
                           // người đi tìm thứ tiếng của mình tìm theo tên bản
                           // xứ, không phải theo tên tiếng Anh của nó.
                           title: language.nativeName,
-                          subtitle: language.enName,
+                          // Bỏ phụ đề khi nó lặp lại đúng tiêu đề: hàng English
+                          // có cả hai tên đều là "English", và in hai lần thì
+                          // dòng dưới không thêm được gì ngoài tiếng ồn.
+                          subtitle: language.enName == language.nativeName
+                              ? null
+                              : language.enName,
                           selected: selected == language,
                           onTap: () => onSelect?.call(language),
                         ),
@@ -2776,7 +2781,9 @@ class _LanguageOption extends StatelessWidget {
   });
 
   final String title;
-  final String subtitle;
+
+  /// Tên tiếng Anh làm dòng phụ. `null` khi nó trùng tiêu đề.
+  final String? subtitle;
   final bool selected;
   final VoidCallback? onTap;
 
@@ -2804,13 +2811,15 @@ class _LanguageOption extends StatelessWidget {
                 weight: FontWeight.w700,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
-              PenText(
-                subtitle,
-                size: 14,
-                color: PenColors.mut,
-                overflow: TextOverflow.ellipsis,
-              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 4),
+                PenText(
+                  subtitle!,
+                  size: 14,
+                  color: PenColors.mut,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ],
           ),
         ),

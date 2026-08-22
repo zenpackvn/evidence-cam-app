@@ -26,7 +26,10 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:flutter/services.dart' show MaxLengthEnforcement;
 import 'package:localization/localization.dart';
+
+import 'ec_form_limits.dart';
 import 'package:shared_contracts/shared_contracts.dart';
 
 import 'invite_contact.dart';
@@ -635,6 +638,7 @@ class EcRegisterScreen extends StatelessWidget {
     this.onApple,
     this.showApple = true,
     this.onLogin,
+    this.languageLabel = 'VI',
     super.key,
   });
 
@@ -661,6 +665,9 @@ class EcRegisterScreen extends StatelessWidget {
   final bool showApple;
   final VoidCallback? onLogin;
 
+  /// Mã ngôn ngữ đang dùng — xem [EcLoginScreen.languageLabel].
+  final String languageLabel;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -679,21 +686,29 @@ class EcRegisterScreen extends StatelessWidget {
                     title: l10n.authRegister,
                     subtitle: l10n.registerCreateAccountSubtitle,
                   ),
-                  const SizedBox(height: 16),
-                  PenStackedField(
+                  const SizedBox(height: 18),
+                  // Cùng một kiểu ô với màn đăng nhập: nhãn NGOÀI hộp, hộp cao
+                  // 60px, chữ 14. Trước đây màn này dùng ô kiểu xếp chồng —
+                  // nhãn nằm trong hộp, chữ 16 đậm, hộp co theo nội dung — nên
+                  // đi từ đăng nhập sang đăng ký là đổi hẳn một bộ mặt, dù hai
+                  // màn hỏi gần như cùng một thứ.
+                  PenField(
                     icon: LucideIcons.user,
                     label: l10n.registerFullName,
+                    hint: l10n.registerFullNamePlaceholder,
                     controller: nameController,
-                    validator: FormBuilderValidators.required(
-                      errorText: l10n.registerFullNameRequired,
-                    ),
+                    textCapitalization: TextCapitalization.words,
+                    maxLength: kNameMaxLength,
+                    validator: (value) => _nameError(context, value),
                   ),
-                  const SizedBox(height: 8),
-                  PenStackedField(
+                  const SizedBox(height: 16),
+                  PenField(
                     icon: LucideIcons.mail,
                     label: 'Email',
+                    hint: l10n.authEmailPlaceholder,
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
+                    maxLength: kEmailMaxLength,
                     validator: FormBuilderValidators.compose([
                       FormBuilderValidators.required(
                         errorText: l10n.authEmailRequired,
@@ -703,38 +718,49 @@ class EcRegisterScreen extends StatelessWidget {
                       ),
                     ]),
                   ),
-                  const SizedBox(height: 8),
-                  // Không bắt buộc và không chặn gì: email là danh tính, số
-                  // điện thoại chỉ để hỗ trợ tài khoản khi cần liên hệ.
-                  PenStackedField(
+                  const SizedBox(height: 16),
+                  // Không bắt buộc: email là danh tính, số điện thoại chỉ để
+                  // liên hệ khi cần. Nhưng ĐÃ gõ thì phải gõ được ra một số
+                  // gọi được — một ô để trống và một ô chứa rác là hai chuyện
+                  // khác nhau.
+                  PenField(
                     icon: LucideIcons.phone,
                     label: l10n.phoneOptionalLabel,
+                    hint: l10n.phonePlaceholder,
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
+                    maxLength: kPhoneMaxLength,
+                    validator: (value) => isPlausiblePhone(value ?? '')
+                        ? null
+                        : l10n.phoneInvalid,
                   ),
-                  const SizedBox(height: 8),
-                  PenStackedField(
+                  const SizedBox(height: 16),
+                  PenField(
                     icon: LucideIcons.lock,
                     label: l10n.authPassword,
+                    hint: l10n.authPasswordPlaceholder,
                     controller: passwordController,
                     obscure: true,
+                    maxLength: kPasswordMaxLength,
                     validator: (value) => _passwordError(
                       context,
                       value,
                       emailController?.text,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  PenStackedField(
+                  const SizedBox(height: 16),
+                  PenField(
                     icon: LucideIcons.lock,
                     label: l10n.registerConfirmPassword,
+                    hint: l10n.registerConfirmPasswordPlaceholder,
                     controller: confirmPasswordController,
                     obscure: true,
+                    maxLength: kPasswordMaxLength,
                     validator: (value) => value == passwordController?.text
                         ? null
                         : l10n.passwordMismatch,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       PenCheckbox(
@@ -791,13 +817,32 @@ class EcRegisterScreen extends StatelessWidget {
             Positioned(
               left: 26,
               top: 16,
-              child: PenBackButton(onTap: onLogin, size: 28),
+              child: PenBackButton(onTap: onBack ?? onLogin, size: 28),
+            ),
+            // Viên ngôn ngữ đứng ĐÚNG chỗ của nó ở màn đăng nhập.
+            //
+            // Màn này nhận `onLanguage` từ đầu nhưng chưa bao giờ vẽ ra nút
+            // nào gọi tới: người mở app lần đầu, bấm "Đăng ký", rồi mới nhận
+            // ra mình đọc không hiểu thứ tiếng đang hiện thì phải quay ngược
+            // về đăng nhập mới đổi được.
+            Positioned(
+              top: 14,
+              right: 12,
+              child: PenLangPill(label: languageLabel, onTap: onLanguage),
             ),
           ],
         ),
       ),
     );
   }
+}
+
+/// Họ tên phải là một cái tên, không phải một dấu cách.
+String? _nameError(BuildContext context, String? value) {
+  final trimmed = (value ?? '').trim();
+  if (trimmed.isEmpty) return context.l10n.registerFullNameRequired;
+  if (trimmed.length < 2) return context.l10n.registerFullNameTooShort;
+  return null;
 }
 
 /// ForgotPassword — lang chip, title, email field, primary "Gửi link đặt
@@ -810,6 +855,7 @@ class EcForgotPasswordScreen extends StatelessWidget {
     this.onLanguage,
     this.onSend,
     this.onLogin,
+    this.languageLabel = 'VI',
     super.key,
   });
 
@@ -823,6 +869,9 @@ class EcForgotPasswordScreen extends StatelessWidget {
   final VoidCallback? onLanguage;
   final VoidCallback? onSend;
   final VoidCallback? onLogin;
+
+  /// Mã ngôn ngữ đang dùng — xem [EcLoginScreen.languageLabel].
+  final String languageLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -864,6 +913,7 @@ class EcForgotPasswordScreen extends StatelessWidget {
                     icon: LucideIcons.mail,
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
+                    maxLength: kEmailMaxLength,
                     validator: FormBuilderValidators.compose([
                       FormBuilderValidators.required(
                         errorText: l10n.authEmailRequired,
@@ -915,6 +965,13 @@ class EcForgotPasswordScreen extends StatelessWidget {
               left: 26,
               top: 16,
               child: PenBackButton(onTap: onBack, size: 28),
+            ),
+            // Cùng lý do với màn đăng ký: `onLanguage` có sẵn mà không có nút
+            // nào gọi tới.
+            Positioned(
+              top: 14,
+              right: 12,
+              child: PenLangPill(label: languageLabel, onTap: onLanguage),
             ),
           ],
         ),
@@ -1532,6 +1589,9 @@ class EcCreateShopScreen extends StatelessWidget {
                   Expanded(
                     child: CupertinoTextField(
                       controller: nameController,
+                      maxLength: kShopNameMaxLength,
+                      maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                      textCapitalization: TextCapitalization.words,
                       padding: EdgeInsets.zero,
                       decoration: const BoxDecoration(),
                       placeholder: l10n.createShopNameHint,
@@ -1949,14 +2009,13 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onAddType,
     this.onTapStorage,
     this.storageLabel = '',
+    this.storageAccount,
     this.onDeleteShop,
     this.onRenameShop,
     this.membersError = false,
     this.membersUnavailable = false,
     this.onRetryMembers,
     this.readOnly = false,
-    this.ownerName,
-    this.ownerEmail,
     super.key,
   });
 
@@ -1969,10 +2028,6 @@ class EcShopDetailScreen extends StatelessWidget {
   final bool readOnly;
 
   /// Tên chủ cửa hàng, vẽ dưới tên shop. `null` = không hiện dòng nào.
-  final String? ownerName;
-
-  /// Email chủ cửa hàng, vẽ ngay dưới [ownerName].
-  final String? ownerEmail;
 
   final String shopName;
   final String platformLabel;
@@ -2019,6 +2074,13 @@ class EcShopDetailScreen extends StatelessWidget {
 
   /// Dòng tóm tắt kho đang dùng ("Cloud Zenpack", "Kho riêng của bạn"…).
   final String storageLabel;
+
+  /// Tài khoản Google đang giữ kho, đứng cạnh tên kho ở hàng "Kho lưu trữ".
+  ///
+  /// Người đứng máy đọc hàng này để biết clip vừa quay bay vào Drive NÀO —
+  /// "Google Drive" một mình không trả lời được câu đó ở cửa hàng từng đổi tài
+  /// khoản. `null` với kho không có khái niệm tài khoản (Cloud Zenpack, S3).
+  final String? storageAccount;
 
   final VoidCallback? onDeleteShop;
 
@@ -2071,36 +2133,6 @@ class EcShopDetailScreen extends StatelessWidget {
                         softWrap: false,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      // Chủ shop là ai — chỉ đọc, không bấm được.
-                      //
-                      // Nhân viên không gọi được danh sách thành viên (máy chủ
-                      // chặn ở `requireOwner`), nên đây là chỗ DUY NHẤT họ biết
-                      // mình đang làm cho ai. Mà đó lại là người đầu tiên họ
-                      // cần tìm khi kho hỏng hay hết hạn mức.
-                      if (ownerName?.isNotEmpty ?? false) ...[
-                        const SizedBox(height: 2),
-                        PenText(
-                          context.l10n.shopOwnerLine(ownerName!),
-                          size: 13,
-                          color: PenColors.mut,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                      // Email xuống dòng riêng chứ không nối vào dòng trên:
-                      // gộp lại thì trên máy hẹp một trong hai bị cắt ba chấm,
-                      // và cái bị cắt gần như luôn là email — thứ phải copy
-                      // được nguyên vẹn mới dùng được.
-                      if (ownerEmail?.isNotEmpty ?? false) ...[
-                        const SizedBox(height: 1),
-                        PenText(
-                          ownerEmail!,
-                          size: 13,
-                          color: PenColors.mut,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -2251,6 +2283,7 @@ class EcShopDetailScreen extends StatelessWidget {
                   icon: LucideIcons.hardDrive,
                   label: l10n.storageTitle,
                   value: storageLabel,
+                  account: storageAccount,
                   // Tên kho xuống dòng dưới nhãn: nó là thứ dài nhất trong ba
                   // hàng ("Kho đám mây riêng (chuẩn S3)"), và nhét chung một
                   // dòng thì hoặc nhãn hoặc giá trị phải cắt ba chấm.
@@ -2378,9 +2411,20 @@ class _FixedSettingRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.account,
     this.onTap,
     this.stacked = false,
   });
+
+  /// Dòng phụ dưới [value] — hiện chỉ có email của tài khoản Drive.
+  ///
+  /// Dòng RIÊNG chứ không nối vào [value] bằng dấu chấm giữa: địa chỉ email dài
+  /// hơn bề ngang hàng nên chỗ nối luôn rơi đúng cuối dòng, để lại một dấu chấm
+  /// lơ lửng không dính vào đâu. Hai dòng thì mỗi dòng là một thứ trọn vẹn.
+  ///
+  /// Mọi vai trò đều đọc được: nhân viên không mở được màn Kho lưu trữ, nên đây
+  /// là chỗ duy nhất họ biết clip mình vừa quay bay vào Drive nào.
+  final String? account;
 
   /// Giá trị nằm ở DÒNG DƯỚI nhãn thay vì cùng dòng, dồn phải.
   ///
@@ -2397,6 +2441,8 @@ class _FixedSettingRow extends StatelessWidget {
   /// chữ "mặc định" nhường chỗ cho mũi tên — hai kiểu hàng phải nhìn ra khác
   /// nhau, không thì người dùng đi tìm chỗ bấm trên một hàng không bấm được.
   final VoidCallback? onTap;
+
+  bool get _hasAccount => account != null && account!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) => EcTap(
@@ -2457,6 +2503,15 @@ class _FixedSettingRow extends StatelessWidget {
                 softWrap: false,
                 overflow: TextOverflow.ellipsis,
               ),
+              // Email KHÔNG cắt ba chấm: mất đuôi là không còn nhận ra tài
+              // khoản nào, mà đó đúng là câu dòng này trả lời.
+              if (_hasAccount)
+                PenText(
+                  account!,
+                  size: 13,
+                  color: PenColors.mut,
+                  lineHeight: 1.3,
+                ),
             ],
           ),
         )
@@ -2673,11 +2728,15 @@ class _MemberRow extends StatelessWidget {
                 ),
                 if ((member.email ?? '').isNotEmpty) ...[
                   const SizedBox(height: 2),
+                  // KHÔNG cắt ba chấm: một địa chỉ mất đuôi thì không còn nhận
+                  // ra được là ai, mà phân biệt hai người trùng tên chính là
+                  // việc dòng này sinh ra để làm. Dài thì xuống dòng — hàng cao
+                  // thêm một nhịp rẻ hơn một địa chỉ đọc không ra.
                   PenText(
                     member.email!,
                     size: 12.5,
                     color: PenColors.mut,
-                    overflow: TextOverflow.ellipsis,
+                    lineHeight: 1.3,
                   ),
                 ],
               ],
@@ -2881,6 +2940,8 @@ class EcCreateTypeScreen extends StatelessWidget {
             Expanded(
               child: CupertinoTextField(
                 controller: nameController,
+                maxLength: kVideoTypeNameMaxLength,
+                maxLengthEnforcement: MaxLengthEnforcement.enforced,
                 padding: EdgeInsets.zero,
                 decoration: const BoxDecoration(),
                 placeholder: l10n.videoTypeNameHint,
@@ -4240,6 +4301,9 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                                 setState(() => _query = v);
                                 widget.onSearchChanged?.call(v);
                               },
+                              maxLength: kSearchMaxLength,
+                              maxLengthEnforcement:
+                                  MaxLengthEnforcement.enforced,
                               textInputAction: TextInputAction.search,
                               padding: EdgeInsets.zero,
                               decoration: const BoxDecoration(),

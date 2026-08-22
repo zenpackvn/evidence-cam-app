@@ -83,6 +83,97 @@ void main() {
     });
   });
 
+  /// Hàng "Kho lưu trữ": tên kho, và với Drive thì cả tài khoản đang giữ nó.
+  ///
+  /// Nhân viên chỉ ĐỌC được hàng này — họ không mở được màn Kho lưu trữ. Nên
+  /// "Google Drive" một mình để lại đúng câu hỏi mà hàng này sinh ra để trả
+  /// lời: Drive của ai.
+  group('hàng kho lưu trữ', () {
+    testWidgets('kho Drive hiện email tài khoản ở dòng riêng dưới tên kho', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          videoTypes: [],
+          members: [],
+          storageLabel: 'Google Drive',
+          storageAccount: 'kho@shop.vn',
+        ),
+      );
+
+      expect(find.text('Google Drive'), findsOneWidget);
+      expect(find.text('kho@shop.vn'), findsOneWidget);
+    });
+
+    // Kho không có khái niệm tài khoản thì không được đẻ ra dấu chấm giữa lơ
+    // lửng ở cuối dòng.
+    testWidgets('kho không có tài khoản thì chỉ in tên kho', (tester) async {
+      await _pump(
+        tester,
+        const EcShopDetailScreen(
+          shopName: 'Shop ABC',
+          platformLabel: 'Shopee',
+          videoTypes: [],
+          members: [],
+          storageLabel: 'Cloud Zenpack',
+        ),
+      );
+
+      expect(find.text('Cloud Zenpack'), findsOneWidget);
+    });
+  });
+
+  /// Viên ngôn ngữ phải nói ĐÚNG thứ tiếng đang dùng, và phải có mặt ở cả ba
+  /// màn trước khi đăng nhập.
+  group('viên ngôn ngữ ở luồng tài khoản', () {
+    testWidgets('màn đăng ký in đúng mã ngôn ngữ đang dùng', (tester) async {
+      var taps = 0;
+      await _pump(
+        tester,
+        EcRegisterScreen(languageLabel: 'TH', onLanguage: () => taps++),
+      );
+
+      expect(find.text('TH'), findsOneWidget);
+      expect(find.text('VI'), findsNothing);
+
+      await tester.tap(find.text('TH'));
+      await tester.pumpAndSettle();
+      expect(taps, 1);
+    });
+
+    testWidgets('màn quên mật khẩu cũng có viên ngôn ngữ', (tester) async {
+      var taps = 0;
+      await _pump(
+        tester,
+        EcForgotPasswordScreen(languageLabel: 'EN', onLanguage: () => taps++),
+      );
+
+      expect(find.text('EN'), findsOneWidget);
+      await tester.tap(find.text('EN'));
+      await tester.pumpAndSettle();
+      expect(taps, 1);
+    });
+  });
+
+  /// Ô không bắt buộc vẫn phải từ chối rác: bỏ trống là hợp lệ, gõ bậy thì
+  /// không. Hai chuyện khác nhau.
+  group('validate ô nhập', () {
+    test('số điện thoại rỗng là hợp lệ, rác thì không', () {
+      expect(isPlausiblePhone(''), isTrue);
+      expect(isPlausiblePhone('   '), isTrue);
+      expect(isPlausiblePhone('0912345678'), isTrue);
+      expect(isPlausiblePhone('+84 912 345 678'), isTrue);
+      expect(isPlausiblePhone('(028) 3822-1234'), isTrue);
+      // Quá ngắn, quá dài, và chữ cái.
+      expect(isPlausiblePhone('1234567'), isFalse);
+      expect(isPlausiblePhone('1234567890123456'), isFalse);
+      expect(isPlausiblePhone('0912abc678'), isFalse);
+    });
+  });
+
   group('bottom sheets', () {
     // Bốn sheet của flow 1 từng tự dựng lại panel: góc vuông, không vuốt xuống
     // được, và SafeArea chồng lên padding đáy nên thừa một dải trắng. Chốt vào
@@ -681,44 +772,31 @@ void main() {
       expect(added, 1);
     });
 
-    // Nhân viên không gọi được danh sách thành viên (máy chủ chặn ở
-    // `requireOwner`), nên tên chủ shop dưới tên cửa hàng là chỗ DUY NHẤT họ
-    // biết mình đang làm cho ai.
-    testWidgets('thấy tên chủ shop, chỉ đọc', (tester) async {
+    // Thẻ đầu màn chỉ còn TÊN cửa hàng và logo sàn. Chủ shop và email của họ
+    // đã chuyển hẳn về khối Thành viên — hai chỗ cùng in một địa chỉ thì cái
+    // trên đầu màn luôn là cái bị cắt ba chấm trước.
+    testWidgets('thẻ đầu màn không in chủ shop hay email', (tester) async {
       await _pump(
         tester,
         const EcShopDetailScreen(
           shopName: 'Shop ABC',
           platformLabel: 'Shopee',
           videoTypes: [],
-          members: [],
+          members: [
+            EcShopMember(
+              name: 'Chị Hoa',
+              role: 'Chủ shop',
+              roleCode: 'owner',
+              email: 'hoa@shop.vn',
+            ),
+          ],
           readOnly: true,
-          ownerName: 'Chị Hoa',
-          ownerEmail: 'hoa@shop.vn',
         ),
       );
 
-      // Ba thứ: chức vụ, tên, email. Chức vụ nằm trong chính câu "Chủ shop:".
-      expect(find.textContaining('Chủ shop'), findsOneWidget);
-      expect(find.textContaining('Chị Hoa'), findsOneWidget);
-      expect(find.text('hoa@shop.vn'), findsOneWidget);
-    });
-
-    // Chủ shop cũng thấy khối đó — không phải thứ chỉ dành cho nhân viên.
-    testWidgets('chủ shop cũng thấy khối thông tin đó', (tester) async {
-      await _pump(
-        tester,
-        const EcShopDetailScreen(
-          shopName: 'Shop ABC',
-          platformLabel: 'Shopee',
-          videoTypes: [],
-          members: [],
-          ownerName: 'Chị Hoa',
-          ownerEmail: 'hoa@shop.vn',
-        ),
-      );
-
-      expect(find.textContaining('Chị Hoa'), findsOneWidget);
+      expect(find.text('Shop ABC'), findsOneWidget);
+      expect(find.textContaining('Chủ shop:'), findsNothing);
+      // Đúng MỘT lần, ở khối Thành viên.
       expect(find.text('hoa@shop.vn'), findsOneWidget);
     });
 

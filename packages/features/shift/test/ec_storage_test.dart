@@ -54,26 +54,28 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('chủ shop đang dùng kho riêng thấy kiểm tra lại + gỡ kho', (
-      tester,
-    ) async {
-      await _pump(
+    testWidgets(
+      'chủ shop đang dùng kho riêng thấy nút gỡ kho và đổi cấu hình',
+      (
         tester,
-        const EcStorageScreen(
-          state: EcStorageState(
-            kind: EcStorageKind.s3,
-            canManage: true,
-            byosAllowed: true,
+      ) async {
+        await _pump(
+          tester,
+          const EcStorageScreen(
+            state: EcStorageState(
+              kind: EcStorageKind.s3,
+              canManage: true,
+              byosAllowed: true,
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Kiểm tra lại kết nối'), findsOneWidget);
-      expect(find.text('Thôi dùng kho riêng'), findsOneWidget);
-      // Kho đã cắm rồi thì nút là "Đổi cấu hình", không phải "Cắm kho S3".
-      expect(find.text('Đổi cấu hình'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.text('Thôi dùng kho riêng'), findsOneWidget);
+        // Kho đã cắm rồi thì nút là "Đổi cấu hình", không phải "Cắm kho S3".
+        expect(find.text('Đổi cấu hình'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     // Gói chưa mở kho riêng thì nói thẳng ra. Ẩn im lặng nghĩa là người bán đọc
     // bảng giá thấy có tính năng rồi đi tìm trong app mãi không ra.
@@ -157,7 +159,10 @@ void main() {
 
       // Câu nói trước của Drive chỉ hiện khi thẻ Drive đang được chọn; nó biến
       // mất nghĩa là dấu tích đã rời khỏi Drive.
-      expect(find.textContaining('mở màn cấp quyền của Google'), findsNothing);
+      expect(
+        find.textContaining('bảng chọn tài khoản Google mở ra ngay'),
+        findsNothing,
+      );
       // Và nút Lưu tắt vì không còn thay đổi nào để lưu.
       expect(
         tester
@@ -435,7 +440,7 @@ void main() {
         ),
       );
 
-      final note = find.textContaining('mở màn cấp quyền của Google');
+      final note = find.textContaining('bảng chọn tài khoản Google mở ra ngay');
       expect(note, findsNothing, reason: 'chưa chọn đã mở phần nói trước');
 
       await tester.tap(find.text('Google Drive'));
@@ -482,7 +487,10 @@ void main() {
       await tester.tap(find.text('Google Drive'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('mở màn cấp quyền của Google'), findsNothing);
+      expect(
+        find.textContaining('bảng chọn tài khoản Google mở ra ngay'),
+        findsNothing,
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -608,6 +616,38 @@ void main() {
       expect(find.text('Đang dùng'), findsOneWidget);
       expect(find.text('Rà gần nhất: 02/01/2026 03:04'), findsOneWidget);
       expect(find.text('shop@gmail.com'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Tài khoản Drive đang nằm chờ phải đọc được TRƯỚC khi bấm Lưu.
+    //
+    // Chủ shop đang ở Cloud Zenpack, chạm sang thẻ Drive để xem mình sắp bật
+    // lại tài khoản nào. Trước đây thẻ chỉ mở một dòng chữ mô tả, còn email thì
+    // phải bấm Lưu xong mới hiện — tức là cam kết trước, đọc sau.
+    testWidgets('chạm vào kho đã cắm mà đang không dùng thì mở đủ thông tin', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(
+            configuredKind: EcStorageKind.gdrive,
+            driveEmail: 'shop@gmail.com',
+            canManage: true,
+            byosAllowed: true,
+          ),
+        ),
+      );
+
+      expect(find.text('shop@gmail.com'), findsNothing);
+
+      await tester.tap(find.text('Google Drive'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('shop@gmail.com'), findsOneWidget);
+      // Nút gỡ nói bằng chữ của kho ĐÃ CẮM, không phải kho đang dùng — lúc này
+      // kho đang dùng là Cloud Zenpack, mà thứ nút đó gỡ là tài khoản Google.
+      expect(find.text('Đăng xuất khỏi Drive'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

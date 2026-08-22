@@ -677,26 +677,38 @@ class _LoginRouteState extends State<_LoginRoute> {
     }
   }
 
+  /// Bọc trong [ValueListenableBuilder] chứ không đọc `language.value` một
+  /// lần lúc dựng.
+  ///
+  /// Đọc một lần thì viên ngôn ngữ chỉ đổi khi có thứ KHÁC tình cờ vẽ lại màn
+  /// này — nên đổi tiếng xong phải thoát ra vào lại mới thấy. Nghe thẳng cái
+  /// notifier thì viên luôn nói đúng thứ tiếng đang dùng, không phụ thuộc vào
+  /// việc ai vẽ lại ai.
   @override
-  Widget build(BuildContext context) => EcLoginScreen(
-    emailController: _email,
-    passwordController: _password,
-    onLogin: () =>
-        _afterSignIn(widget.auth.signInWithEmail(_email.text, _password.text)),
-    onRegister: () => context.push('/register'),
-    onForgot: () => context.push('/forgot'),
-    onGoogle: () => _afterSocialSignIn(
-      context,
-      widget.auth.signInWithGoogle(),
-      method: _AuthMethods.google,
+  Widget build(BuildContext context) => ValueListenableBuilder<EcAppLanguage>(
+    valueListenable: widget.language,
+    builder: (context, language, _) => EcLoginScreen(
+      emailController: _email,
+      passwordController: _password,
+      onLogin: () => _afterSignIn(
+        widget.auth.signInWithEmail(_email.text, _password.text),
+      ),
+      onRegister: () => context.push('/register'),
+      onForgot: () => context.push('/forgot'),
+      onGoogle: () => _afterSocialSignIn(
+        context,
+        widget.auth.signInWithGoogle(),
+        method: _AuthMethods.google,
+      ),
+      onApple: () => _afterSocialSignIn(
+        context,
+        widget.auth.signInWithApple(),
+        method: _AuthMethods.apple,
+      ),
+      showApple: _appleSignInAvailable,
+      languageLabel: language.code.toUpperCase(),
+      onLanguage: () => unawaited(_pickLanguage(context, widget.language)),
     ),
-    onApple: () => _afterSocialSignIn(
-      context,
-      widget.auth.signInWithApple(),
-      method: _AuthMethods.apple,
-    ),
-    showApple: _appleSignInAvailable,
-    onLanguage: () => _toggleLanguage(context, widget.language),
   );
 }
 
@@ -836,31 +848,36 @@ class _RegisterRouteState extends State<_RegisterRoute> {
     ),
   );
 
+  /// Nghe thẳng notifier ngôn ngữ — xem [_LoginRouteState.build].
   @override
-  Widget build(BuildContext context) => EcRegisterScreen(
-    nameController: _name,
-    emailController: _email,
-    phoneController: _phone,
-    passwordController: _password,
-    confirmPasswordController: _confirm,
-    policyAccepted: _policyAccepted,
-    onPolicyChanged: (accepted) => setState(() => _policyAccepted = accepted),
-    onBack: () => _back(context, '/login'),
-    onLogin: () => _back(context, '/login'),
-    onRegister: _policyAccepted && !_saving ? _register : null,
-    onGoogle: () => _afterSocialSignIn(
-      context,
-      widget.auth.signInWithGoogle(),
-      method: _AuthMethods.google,
+  Widget build(BuildContext context) => ValueListenableBuilder<EcAppLanguage>(
+    valueListenable: widget.language,
+    builder: (context, language, _) => EcRegisterScreen(
+      nameController: _name,
+      emailController: _email,
+      phoneController: _phone,
+      passwordController: _password,
+      confirmPasswordController: _confirm,
+      policyAccepted: _policyAccepted,
+      onPolicyChanged: (accepted) => setState(() => _policyAccepted = accepted),
+      onBack: () => _back(context, '/login'),
+      onLogin: () => _back(context, '/login'),
+      onRegister: _policyAccepted && !_saving ? _register : null,
+      onGoogle: () => _afterSocialSignIn(
+        context,
+        widget.auth.signInWithGoogle(),
+        method: _AuthMethods.google,
+      ),
+      onApple: () => _afterSocialSignIn(
+        context,
+        widget.auth.signInWithApple(),
+        method: _AuthMethods.apple,
+      ),
+      showApple: _appleSignInAvailable,
+      languageLabel: language.code.toUpperCase(),
+      onLanguage: () => unawaited(_pickLanguage(context, widget.language)),
+      onViewPolicy: () => unawaited(_showTerms(context)),
     ),
-    onApple: () => _afterSocialSignIn(
-      context,
-      widget.auth.signInWithApple(),
-      method: _AuthMethods.apple,
-    ),
-    showApple: _appleSignInAvailable,
-    onLanguage: () => _toggleLanguage(context, widget.language),
-    onViewPolicy: () => _toast(context, context.l10n.toastTermsPolicy),
   );
 }
 
@@ -898,14 +915,19 @@ class _ForgotRouteState extends State<_ForgotRoute> {
     }
   }
 
+  /// Nghe thẳng notifier ngôn ngữ — xem [_LoginRouteState.build].
   @override
-  Widget build(BuildContext context) => EcForgotPasswordScreen(
-    emailController: _email,
-    sent: _sent,
-    onBack: () => _back(context, '/login'),
-    onLogin: () => _back(context, '/login'),
-    onSend: _sending ? null : _send,
-    onLanguage: () => _toggleLanguage(context, widget.language),
+  Widget build(BuildContext context) => ValueListenableBuilder<EcAppLanguage>(
+    valueListenable: widget.language,
+    builder: (context, language, _) => EcForgotPasswordScreen(
+      emailController: _email,
+      sent: _sent,
+      onBack: () => _back(context, '/login'),
+      onLogin: () => _back(context, '/login'),
+      onSend: _sending ? null : _send,
+      languageLabel: language.code.toUpperCase(),
+      onLanguage: () => unawaited(_pickLanguage(context, widget.language)),
+    ),
   );
 }
 
@@ -968,6 +990,12 @@ String? _apiErrorText(AppLocalizations l10n, Object error) {
   switch (_apiErrorCode(error)) {
     case 'open_dossiers_exist':
       return l10n.errorPendingDossier;
+    // `PATCH /storage/active` và `DELETE /storage` trả mã này khi shop không có
+    // hàng cấu hình nào để bật/tắt — gần như luôn vì màn đang cầm một trạng
+    // thái cũ. Câu chung ở đây đọc thành "app hỏng", trong khi việc cần làm là
+    // nạp lại màn.
+    case 'storage_not_configured':
+      return l10n.storageNotConfigured;
     case 'invalid_token':
     case 'missing_bearer_token':
     case 'no_subject':
@@ -1909,7 +1937,9 @@ class _StorageRouteState extends State<_StorageRoute>
       builder: (dialogContext) => CupertinoAlertDialog(
         title: Text(title),
         content: Text(
-          isDrive ? l10n.storageDriveLogoutConfirm : l10n.storageDisconnectConfirm,
+          isDrive
+              ? l10n.storageDriveLogoutConfirm
+              : l10n.storageDisconnectConfirm,
         ),
         actions: [
           CupertinoDialogAction(
@@ -1956,7 +1986,15 @@ class _StorageRouteState extends State<_StorageRoute>
     // Rẽ TRƯỚC khi mở bất cứ màn Google nào: hộp thoại gốc chắc chắn hỏng khi
     // máy chủ chưa có cặp client, và cho người dùng cấp quyền xong rồi mới báo
     // là bắt họ làm không công.
-    if (!_gdriveNative) return _connectDriveInApp();
+    //
+    // Cũng rẽ khi bản build này KHÔNG mang theo web client id: hộp thoại gốc
+    // vẫn mở, người dùng vẫn chọn tài khoản, nhưng `serverAuthCode` về rỗng vì
+    // không có ai để cấp mã cho — và nhánh mã rỗng bên dưới đọc đó là "người
+    // dùng bấm Huỷ" rồi im lặng. Chạm vào Drive không ra gì, không một câu nào.
+    // Xảy ra ở mọi build quên `--dart-define-from-file=env/<flavor>.json`.
+    if (!_gdriveNative || kGoogleServerClientId.isEmpty) {
+      return _connectDriveInApp();
+    }
     try {
       final code = await _driveAuthCode();
       if (code != null && code.isNotEmpty) {
@@ -2067,16 +2105,32 @@ class _StorageRouteState extends State<_StorageRoute>
     String? code,
     Object error,
   ) => switch (code) {
-    'native_not_configured' => l10n.storageDriveFailed,
+    // Ba mã cùng một nghĩa với người dùng: máy chủ chưa có đủ thứ để nói
+    // chuyện với Google. `native_not_configured` là thiếu cặp client của hộp
+    // thoại gốc, `google_oauth_not_configured` là thiếu cặp của luồng trình
+    // duyệt, `storage_kek_missing` là thiếu khoá để ký `state`. Cả ba đều nằm
+    // ngoài tầm tay người bán — và cả ba trước đây rơi xuống câu chung "Không
+    // thực hiện được, vui lòng thử lại", thứ bảo họ thử lại một việc không bao
+    // giờ chạy được cho tới khi có người sửa cấu hình máy chủ.
+    'native_not_configured' ||
+    'google_oauth_not_configured' ||
+    'storage_kek_missing' => l10n.storageDriveFailed,
     'byos_not_in_plan' => l10n.storageNotInPlan,
     'owner_only' => l10n.storageOwnerOnly,
     // Đổi mã xong nhưng Google không kèm refresh token — gần như luôn vì tài
     // khoản đã cấp quyền từ lần trước. Cắm lại y nguyên sẽ hỏng y như vậy, nên
     // câu này phải chỉ đường gỡ quyền cũ chứ không phải "thử lại".
     'no_refresh_token' => l10n.storageDriveNoConsent,
+    // Hỏng ở phía Google hoặc ở lượt quay về. `missing_code`/`bad_state` là
+    // link cấp quyền đã quá hạn 15 phút hoặc bị cắt dở — thử lại thật sự giúp
+    // được, nên câu "thử lại" ở đây là đúng chứ không phải câu chống chế.
     'code_exchange_failed' ||
     'folder_create_failed' ||
-    'probe_failed' => l10n.storageDriveRejected,
+    'probe_failed' ||
+    'gdrive_connect_failed' ||
+    'missing_code' ||
+    'bad_state' ||
+    'failed' => l10n.storageDriveRejected,
     // Mã lạ hoặc không phải lỗi từ máy chủ (mạng, 5xx): để bộ dịch chung lo.
     _ => _dataErrorText(l10n, error),
   };
@@ -2089,6 +2143,16 @@ class _StorageRouteState extends State<_StorageRoute>
           ? null
           : kGoogleServerClientId,
     );
+    // Bỏ tài khoản đang nhớ TRƯỚC khi hỏi.
+    //
+    // `authenticate()` dùng lại lặng lẽ tài khoản Google đã đăng nhập vào app,
+    // không hiện bảng chọn — nên người bán đăng nhập bằng Google rồi bấm "Đổi
+    // tài khoản" ở thẻ Drive sẽ được nối lại đúng tài khoản họ đang muốn bỏ,
+    // và không hiểu vì sao bấm mãi không đổi được.
+    //
+    // Chỉ xoá phiên của plugin này. Phiên Firebase nằm chỗ khác, nên đăng nhập
+    // của app không hề bị ảnh hưởng.
+    await google.signOut();
     final account = await google.authenticate();
     final auth = await account.authorizationClient.authorizeServer(
       const ['https://www.googleapis.com/auth/drive.file'],
@@ -2686,19 +2750,49 @@ CrashReporter? _crashReporter() => _maybeGetIt<CrashReporter>();
 /// Chỉ có hai ngôn ngữ, nên nút quả địa cầu ở màn trước-đăng-nhập lật thẳng
 /// chứ không đẩy sang màn `/language` (màn đó back về `/account`, chưa đăng
 /// nhập thì không có chỗ mà về).
-void _toggleLanguage(
+/// Bảng chọn ngôn ngữ của các màn TRƯỚC khi đăng nhập.
+///
+/// Trước đây viên ngôn ngữ chỉ lật qua lại Việt ↔ Anh, nên tám thứ tiếng còn
+/// lại không có đường nào tới được cho tới sau khi đăng nhập xong — mà người
+/// cần chúng nhất chính là người đang đứng ở màn đăng nhập và đọc không hiểu.
+///
+/// Dùng lại đúng màn của tab Tài khoản chứ không dựng một bảng riêng: hai danh
+/// sách ngôn ngữ ở hai chỗ là hai chỗ để quên cập nhật khi thêm thứ tiếng mới.
+/// Đẩy thành một trang chồng lên chứ không đi qua router: route `/language`
+/// quay về `/account`, nơi người chưa đăng nhập không có quyền vào.
+Future<void> _pickLanguage(
   BuildContext context,
   ValueNotifier<EcAppLanguage> language,
-) {
-  final next = language.value == EcAppLanguage.vi
-      ? EcAppLanguage.en
-      : EcAppLanguage.vi;
-  language.value = next;
-  _toast(
-    context,
-    next == EcAppLanguage.vi ? 'Đã đổi sang Tiếng Việt' : 'Switched to English',
+) async {
+  await Navigator.of(context).push<void>(
+    CupertinoPageRoute<void>(
+      builder: (pageContext) => ValueListenableBuilder<EcAppLanguage>(
+        valueListenable: language,
+        builder: (_, selected, _) => EcLanguageScreen(
+          selected: selected,
+          onBack: () => Navigator.of(pageContext).pop(),
+          onSelect: (choice) {
+            language.value = choice;
+            Navigator.of(pageContext).pop();
+          },
+        ),
+      ),
+    ),
   );
 }
+
+/// Điều khoản sử dụng, đọc NGAY TRONG APP.
+///
+/// Trước đây chạm vào dòng "Điều khoản sử dụng" chỉ hiện một cái toast ghi
+/// đúng bốn chữ "Điều khoản & Chính sách" — tức là bắt người dùng tích vào ô
+/// "Tôi đồng ý với…" một thứ họ không có cách nào đọc được.
+Future<void> _showTerms(BuildContext context) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  useSafeArea: true,
+  backgroundColor: const Color(0x00000000),
+  builder: (_) => const _TermsSheet(),
+);
 
 Future<void> _copyText(BuildContext context, String text, String label) async {
   await Clipboard.setData(ClipboardData(text: text));
@@ -3738,6 +3832,7 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
       membersFailed: members == null && self == null,
       membersRestricted: false,
       storageKind: storage?.kind ?? StorageKind.system,
+      storageAccount: storage?.storage?.email,
       videoTypes: (types ?? const [])
           .map((type) => _videoTypeFromDto(type, l10n))
           .toList(),
@@ -3805,8 +3900,6 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
           membersUnavailable: detail.membersRestricted,
           onRetryMembers: _retry,
           shopName: detail.shop.name,
-          ownerName: detail.shop.ownerName,
-          ownerEmail: detail.shop.ownerEmail,
           platformLabel: _platformDisplayName(detail.shop.platform),
           resolution: detail.shop.resolution,
           clipBudget: _budgetFromDto(detail.shop),
@@ -3852,6 +3945,15 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
             context,
             _displayedStorageKind(widget.shop.id, detail.storageKind),
           ),
+          // Chỉ kèm email khi thứ đang hiện ĐÚNG là Drive. Lựa chọn đã nhớ có
+          // thể nói "Cloud Zenpack" trong lúc máy chủ vẫn còn giữ tài khoản
+          // Drive đã cắm — dán email vào đó là nói rằng video đang bay vào
+          // Drive, đúng cái điều vừa không còn đúng nữa.
+          storageAccount:
+              _displayedStorageKind(widget.shop.id, detail.storageKind) ==
+                  StorageKind.gdrive
+              ? detail.storageAccount
+              : null,
           onDeleteShop: locked || widget.onDeleteShop == null
               ? null
               : () => unawaited(widget.onDeleteShop!()),
@@ -3882,6 +3984,7 @@ class _ShopDetailData {
     this.membersFailed = false,
     this.membersRestricted = false,
     this.storageKind = StorageKind.system,
+    this.storageAccount,
   });
 
   /// Đọc thành viên hỏng — phân biệt với cửa hàng thật sự không có ai, thứ
@@ -3900,6 +4003,10 @@ class _ShopDetailData {
   /// Chỉ để hiện tóm tắt trên hàng "Kho lưu trữ". Đọc hỏng → kho hệ thống, và
   /// màn kho sẽ nói ra lỗi thật khi người dùng mở nó.
   final StorageKind storageKind;
+
+  /// Tài khoản Google đang giữ kho Drive. `null` với mọi kho khác — chỉ Drive
+  /// mới có khái niệm "cắm bằng tài khoản nào".
+  final String? storageAccount;
 }
 
 /// Kho người dùng vừa BẤM CHỌN trong màn Kho lưu trữ, nhớ ngay trên máy theo
@@ -7397,6 +7504,151 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
   }
 }
 
+/// Địa chỉ trang điều khoản. Trang web thật, không phải bản chép trong app:
+/// điều khoản đổi thì phải đổi ở MỘT chỗ, và chỗ đó không thể là một bản build
+/// đã nằm trên máy khách.
+const _kTermsUrl = 'https://zenpack.vn/terms';
+
+/// Tấm đọc điều khoản sử dụng, trượt lên từ đáy.
+///
+/// Cùng dáng với tấm cấp quyền Google ([_DriveConsentScreen]) — cùng thanh
+/// vuốt, cùng bo góc, cùng cách nhường cử chỉ kéo cho WebView — vì cả hai đều
+/// là "một trang web đọc trong app", và hai kiểu tấm cho cùng một việc thì
+/// người dùng phải học hai lần.
+///
+/// Có đường thoát ra trình duyệt khi trang không tải được: điều khoản là thứ
+/// người ta có quyền đọc trước khi tích vào ô đồng ý, nên một lượt mạng hỏng
+/// không được phép là dấu chấm hết.
+class _TermsSheet extends StatefulWidget {
+  const _TermsSheet();
+
+  @override
+  State<_TermsSheet> createState() => _TermsSheetState();
+}
+
+class _TermsSheetState extends State<_TermsSheet> {
+  late final WebViewController _controller;
+  bool _loading = true;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(BrandColors.bg)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) {
+            if (mounted) setState(() => _loading = false);
+          },
+          // CHỈ khung chính. Một ảnh hay font phụ 404 không phải lý do để nói
+          // rằng cả bản điều khoản không mở được.
+          onWebResourceError: (e) {
+            if (!mounted || e.isForMainFrame != true) return;
+            setState(() => (_loading = false, _failed = true));
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(_kTermsUrl));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return FractionallySizedBox(
+      heightFactor: 0.92,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: BrandColors.bg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 10, bottom: 6),
+                    decoration: BoxDecoration(
+                      color: PenColors.line,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
+                  child: PenText(
+                    l10n.registerTermsOfUse,
+                    size: 17,
+                    color: PenColors.ink,
+                    weight: FontWeight.w700,
+                  ),
+                ),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      // Nhường cử chỉ kéo dọc cho WebView, y như tấm cấp quyền:
+                      // không có nó thì bản điều khoản không cuộn nổi.
+                      WebViewWidget(
+                        controller: _controller,
+                        gestureRecognizers: {
+                          Factory<VerticalDragGestureRecognizer>(
+                            VerticalDragGestureRecognizer.new,
+                          ),
+                        },
+                      ),
+                      if (_loading || _failed)
+                        ColoredBox(
+                          color: BrandColors.bg,
+                          child: Center(
+                            child: _failed
+                                ? Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        PenText(
+                                          l10n.termsLoadFailed,
+                                          size: 14,
+                                          color: PenColors.mut,
+                                          align: TextAlign.center,
+                                          lineHeight: 1.45,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        PenOutlineButton(
+                                          label: l10n.termsOpenInBrowser,
+                                          onPressed: () => unawaited(
+                                            launchUrl(
+                                              Uri.parse(_kTermsUrl),
+                                              mode: LaunchMode
+                                                  .externalApplication,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : const CupertinoActivityIndicator(),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Cấp quyền Google Drive NGAY TRONG APP.
 ///
 /// Đường thứ hai của việc cắm Drive, đi khi máy chủ chưa có cặp `GOOGLE_APP_*`
@@ -7425,6 +7677,16 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
   late final WebViewController _controller;
   bool _loading = true;
 
+  /// Màu nền THẬT của trang Google, hỏi chính trang đó sau khi tải xong.
+  ///
+  /// Không đoán được từ phía app: trang đồng ý của Google đi theo chế độ sáng/
+  /// tối của HỆ ĐIỀU HÀNH, không theo giao diện app. Máy để nền tối mà tấm sơn
+  /// trắng thì phần thẻ của Google không phủ hết chiều cao sẽ để lộ một mảng
+  /// trắng nằm trên đầu trang — đúng mảng trắng người dùng nhìn thấy.
+  ///
+  /// `null` = chưa đọc được; giữ nguyên nền của app cho tới lúc có câu trả lời.
+  Color? _pageColor;
+
   /// Đã trả kết quả chưa.
   ///
   /// Google còn chuyển hướng thêm vài nhịp sau lượt ta bắt được, và `pop` lần
@@ -7446,7 +7708,9 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
             return NavigationDecision.prevent;
           },
           onPageFinished: (_) {
-            if (mounted) setState(() => _loading = false);
+            if (!mounted) return;
+            setState(() => _loading = false);
+            unawaited(_readPageColor());
           },
           // CHỈ khung chính mới tính là hỏng. Trang của Google kéo theo cả
           // đống tài nguyên phụ, và một cái 404 trong đó không phải lý do để
@@ -7457,6 +7721,31 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
         ),
       )
       ..loadRequest(Uri.parse(widget.url));
+  }
+
+  /// Hỏi trang xem nó đang sơn nền màu gì, rồi sơn tấm y hệt.
+  ///
+  /// Đọc `body` trước, rồi tới `html`: rất nhiều trang để `body` trong suốt và
+  /// đặt màu ở thẻ gốc. Cả hai đều trong suốt thì thôi, giữ nền của app.
+  Future<void> _readPageColor() async {
+    try {
+      final raw = await _controller.runJavaScriptReturningResult(
+        '(function(){'
+        "function on(c){return !!c&&c!=='transparent'"
+        "&&!/^rgba\\(.*,\\s*0\\)\$/.test(c);}"
+        'var b=getComputedStyle(document.body).backgroundColor;'
+        'var h=getComputedStyle(document.documentElement).backgroundColor;'
+        "return on(b)?b:(on(h)?h:'');"
+        '})()',
+      );
+      final color = _cssColor(raw.toString());
+      if (color == null || !mounted) return;
+      setState(() => _pageColor = color);
+      await _controller.setBackgroundColor(color);
+    } on Object {
+      // Không đọc được thì giữ nền cũ. Một tấm hơi lệch màu vẫn dùng được;
+      // một lượt cấp quyền chết vì đọc màu hỏng thì không.
+    }
   }
 
   void _finish(String result) {
@@ -7474,6 +7763,7 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
   @override
   Widget build(BuildContext context) {
     final inset = MediaQuery.viewInsetsOf(context).bottom;
+    final surface = _pageColor ?? BrandColors.bg;
     return Padding(
       // Bàn phím đẩy tấm này lên thay vì che mất ô đang gõ: trang của Google
       // có ô mật khẩu, và ô đó nằm ở nửa dưới.
@@ -7481,9 +7771,9 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
       child: FractionallySizedBox(
         heightFactor: 0.92,
         child: DecoratedBox(
-          decoration: const BoxDecoration(
-            color: BrandColors.bg,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -7535,9 +7825,11 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
                           },
                         ),
                         if (_loading)
-                          const ColoredBox(
-                            color: BrandColors.bg,
-                            child: Center(child: CupertinoActivityIndicator()),
+                          ColoredBox(
+                            color: surface,
+                            child: const Center(
+                              child: CupertinoActivityIndicator(),
+                            ),
                           ),
                       ],
                     ),
@@ -7550,6 +7842,22 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
       ),
     );
   }
+}
+
+/// Màu Dart từ chuỗi `background-color` của CSS, hoặc `null` khi không đọc ra.
+///
+/// Chỉ nhận `rgb()`/`rgba()` — đó là dạng DUY NHẤT `getComputedStyle` trả về,
+/// bất kể trang viết màu bằng tên, hex hay biến. Alpha bỏ đi: tấm cần một màu
+/// đặc để phủ, và trang đã tự loại nền trong suốt trước khi trả lời.
+Color? _cssColor(String raw) {
+  final match = RegExp(r'rgba?\((\d+),\s*(\d+),\s*(\d+)').firstMatch(raw);
+  if (match == null) return null;
+  return Color.fromARGB(
+    255,
+    int.parse(match.group(1)!),
+    int.parse(match.group(2)!),
+    int.parse(match.group(3)!),
+  );
 }
 
 /// Đọc `gdrive=` ở CẢ query lẫn fragment.
