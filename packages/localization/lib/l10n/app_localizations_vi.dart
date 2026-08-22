@@ -2359,7 +2359,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get storageDriveSaveNote =>
-      'Chạm vào thẻ này là bảng chọn tài khoản Google mở ra ngay. Cấp quyền xong là kho được cắm — nút Lưu chỉ để chốt lại.';
+      'Chưa cắm tài khoản nào. Chạm vào thẻ này để chọn tài khoản Google.';
 
   @override
   String get storageDriveNoConsent =>

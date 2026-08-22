@@ -2414,7 +2414,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get storageDriveSaveNote =>
-      'Tapping this card opens Google\'s account picker right away. Grant access and the storage is connected — Save only confirms it.';
+      'No account connected yet. Tap this card to pick a Google account.';
 
   @override
   String get storageDriveNoConsent =>

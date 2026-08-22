@@ -2355,7 +2355,13 @@ class _StorageRouteState extends State<_StorageRoute>
         _configuredKind = dto.configuredKind ?? StorageKind.system;
         // Máy chủ vừa nói kho thật là gì; nếu nó đổi so với lần đọc trước thì
         // lựa chọn đã nhớ bám theo. Chạy ở nền, không chặn lượt dựng này.
-        unawaited(_syncStoragePick(widget.shopId, dto.kind));
+        unawaited(
+          _syncStoragePick(
+            widget.shopId,
+            dto.kind,
+            configured: dto.configuredKind,
+          ),
+        );
         final displayed = _displayedStorageKind(widget.shopId, dto.kind);
         return EcStorageScreen(
           busy: _busy,
@@ -4253,9 +4259,25 @@ Future<void> _rememberStoragePick(String shopId, StorageKind kind) async =>
 /// chọn thì mỗi lượt đọc lại sẽ xoá ngay thứ người dùng vừa bấm mà chưa cắm
 /// xong. Kho chỉ đổi thật khi máy chủ trả về một giá trị khác lần trước — kể
 /// cả khi đổi từ web, và lúc ấy lựa chọn cũ đã hết nghĩa.
-Future<void> _syncStoragePick(String shopId, StorageKind server) async {
+Future<void> _syncStoragePick(
+  String shopId,
+  StorageKind server, {
+  required StorageKind? configured,
+}) async {
   final memory = _appMemory();
   if (memory == null) return;
+  final pick = _parseStorageKind(memory.getString(_storagePickKey(shopId)));
+  // Lựa chọn trỏ vào một kho riêng máy chủ KHÔNG có cấu hình nào cho nó là một
+  // lựa chọn đã hết nghĩa — gần như luôn vì người dùng bấm Huỷ giữa chừng lượt
+  // cấp quyền, hoặc vừa gỡ kho từ web. Bỏ nó đi, nếu không màn hình sẽ vẽ một
+  // kho chưa hề được cắm như thể đang dùng, và mời người ta "đăng xuất" khỏi
+  // một tài khoản không tồn tại.
+  //
+  // Kiểm ĐỘC LẬP với nhánh dưới: nhánh kia chỉ chạy khi kho máy chủ đổi, nên
+  // một lựa chọn hỏng nằm lại lúc kho không đổi sẽ mắc kẹt ở đó vĩnh viễn.
+  if (pick != null && pick != StorageKind.system && pick != configured) {
+    await memory.setString(_storagePickKey(shopId), _storageKindName(server));
+  }
   final seen = _parseStorageKind(memory.getString(_storageServerKey(shopId)));
   await memory.setString(_storageServerKey(shopId), _storageKindName(server));
   if (seen == server) return;

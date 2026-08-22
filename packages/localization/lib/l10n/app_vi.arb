@@ -1207,7 +1207,7 @@
   "storageNotConfigured": "Cửa hàng chưa cắm kho riêng nào nên không có gì để bật hay tắt. Tải lại màn này rồi thử lại.",
   "storageDriveAccountUnknown": "Chưa đọc được tài khoản Google",
   "storageSystemSaveNote": "Bấm Lưu sẽ gỡ kho riêng: video quay từ lúc đó về kho hệ thống.",
-  "storageDriveSaveNote": "Chạm vào thẻ này là bảng chọn tài khoản Google mở ra ngay. Cấp quyền xong là kho được cắm — nút Lưu chỉ để chốt lại.",
+  "storageDriveSaveNote": "Chưa cắm tài khoản nào. Chạm vào thẻ này để chọn tài khoản Google.",
   "storageDriveNoConsent": "Google không cấp quyền dài hạn cho lượt này. Vào Tài khoản Google → Ứng dụng của bên thứ ba, gỡ Zenpack ra rồi cắm lại.",
   "storageDriveRejected": "Google từ chối lượt cấp quyền. Thử lại; vẫn vậy thì báo quản trị viên."
 }

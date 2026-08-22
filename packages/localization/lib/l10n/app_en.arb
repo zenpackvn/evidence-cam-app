@@ -1569,7 +1569,7 @@
     "description": "Thẻ Drive đã cắm nhưng máy chủ chưa trả email của tài khoản."
   },
   "storageSystemSaveNote": "Save removes your own storage: new videos go to system storage.",
-  "storageDriveSaveNote": "Tapping this card opens Google's account picker right away. Grant access and the storage is connected — Save only confirms it.",
+  "storageDriveSaveNote": "No account connected yet. Tap this card to pick a Google account.",
   "storageDriveNoConsent": "Google did not grant long-lived access this time. Open your Google Account → Third-party apps, remove Zenpack, then connect again.",
   "@storageDriveNoConsent": {
     "description": "Máy chủ trả `no_refresh_token`: đổi mã thành công nhưng không kèm refresh token, thường vì tài khoản đã cấp quyền từ lần trước. Cắm lại y nguyên sẽ hỏng y như vậy, nên phải chỉ đường gỡ quyền cũ."

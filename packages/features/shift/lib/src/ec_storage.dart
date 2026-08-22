@@ -241,14 +241,6 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// đổi — kho đang dùng là S3 và người dùng vẫn chọn S3.
   bool _editingS3 = false;
 
-  /// Thẻ Drive đã lộ hai nút "đổi tài khoản" và "đăng xuất" chưa.
-  ///
-  /// Hai nút đó đổi nơi cất bằng chứng của cả cửa hàng, nên chúng không nên
-  /// nằm sẵn dưới ngón tay ngay lúc thẻ mở ra. Mở thẻ là để ĐỌC xem đang cắm
-  /// tài khoản nào — việc thường xuyên nhất; chạm thêm một lần nữa mới là
-  /// "tôi định làm gì đó với tài khoản này".
-  bool _driveActionsOpen = false;
-
   @override
   void dispose() {
     _s3.dispose();
@@ -281,6 +273,23 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
 
   bool get _own => widget.state.kind != EcStorageKind.system;
 
+  /// Thẻ này có chạm được không.
+  ///
+  /// Gói chưa mở kho riêng thì hai thẻ S3 và Drive KHÔNG chạm được, chứ không
+  /// phải chạm được rồi tắc ở nút Lưu. Cho dấu tích nhảy sang một kho người
+  /// dùng không dùng được là mời họ bấm vào ngõ cụt, rồi để họ tự đoán vì sao
+  /// nút Lưu không sáng.
+  ///
+  /// TRỪ kho đang dùng hoặc đã cắm: shop hạ gói vẫn phải xem được tình trạng
+  /// và gỡ kho ra. Khoá luôn cả đường đó thì họ kẹt với một cái kho không tháo
+  /// được — máy chủ cũng cố ý không chặn hai việc ấy.
+  bool _canPick(EcStorageKind kind) {
+    final state = widget.state;
+    if (kind == EcStorageKind.system) return true;
+    if (state.kind == kind || state.configuredKind == kind) return true;
+    return state.byosAllowed;
+  }
+
   /// Chạm vào một thẻ: CHỈ nhích dấu tích sang đó. Không chạy gì cả.
   ///
   /// Trước đây chạm là chạy thẳng luồng cắm kho — người bán quệt tay vào thẻ
@@ -288,17 +297,10 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// cửa hàng không phải việc nên xảy ra sau một cú chạm nhầm. Giờ chọn là
   /// chọn, áp dụng nằm ở nút lưu trên đầu màn.
   ///
-  /// Cả ba thẻ đều chạm được, kể cả khi gói chưa mở hoặc người chạm không phải
-  /// chủ shop — chỉ dấu tích di chuyển. Nút lưu mới là chỗ chặn.
+  /// Thẻ nào gói chưa mở thì [_canPick] đã chặn từ trước; ở đây chỉ còn những
+  /// thẻ thật sự chọn được.
   void _pick(EcStorageKind kind) {
     setState(() {
-      // Chạm thẻ Drive = lộ hoặc giấu hai nút thao tác. Chạm sang thẻ khác thì
-      // đóng chúng lại, để lần sau quay về Drive luôn bắt đầu ở trạng thái
-      // chỉ-đọc.
-      //
-      // KHÔNG đòi thẻ phải đang được chọn trước: bảng tài khoản vốn đã mở sẵn
-      // lúc vào màn, nên bắt chạm một lần chỉ để "chọn" là một nhịp thừa.
-      _driveActionsOpen = kind == EcStorageKind.gdrive && !_driveActionsOpen;
       _picked = kind;
       // Chạm sang thẻ khác thì thôi sửa: để cờ bật là quay lại thẻ S3 thấy form
       // mở sẵn mà không nhớ vì sao.
@@ -307,16 +309,16 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     if (kind == EcStorageKind.gdrive) unawaited(_startDrive());
   }
 
-  /// Drive là thẻ DUY NHẤT chạm vào là chạy luôn.
+  /// Chạm thẻ Drive là mở thẳng màn cấp quyền của Google.
   ///
-  /// Hai thẻ kia có thứ để đọc trước khi quyết: S3 sổ ra sáu ô phải điền, Cloud
-  /// Zenpack sổ ra câu nói video cũ sẽ ra sao. Drive thì không — mọi thứ nằm
-  /// trong hộp thoại của Google, nên bắt bấm thêm nút Lưu chỉ là một cú chạm
-  /// thừa trước một màn hình mà người dùng vẫn còn huỷ được.
+  /// Được phép làm vậy vì thẻ này đã nói hết phần của nó TRƯỚC khi ai chạm
+  /// vào: phần mô tả của Drive mở sẵn ngay lúc vào màn, không đợi dấu tích.
+  /// Có lúc nó chỉ mở khi thẻ được chọn — mà chọn cũng chính là chạm, nên chữ
+  /// vừa hiện được một nhịp thì màn Google đã che mất, và người dùng không kịp
+  /// đọc gì.
   ///
-  /// Huỷ ở hộp thoại thì dấu tích quay về kho đang thật sự dùng. Đây là thứ
-  /// khiến chạm-là-chạy an toàn: một cú quệt nhầm vào thẻ này không để lại dấu
-  /// vết nào.
+  /// Huỷ ở hộp thoại thì dấu tích quay về kho đang thật sự dùng, và không có
+  /// lựa chọn nào được ghi xuống máy.
   Future<void> _startDrive() async {
     final state = widget.state;
     if (!state.canManage ||
@@ -327,7 +329,17 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     }
     final connect = widget.onConnectDrive;
     if (connect == null) return;
-    widget.onPick?.call(EcStorageKind.gdrive);
+    // KHÔNG ghi lựa chọn xuống máy ở đây.
+    //
+    // `onPick` ghi xuống bộ nhớ máy, mà lượt cấp quyền này người dùng còn huỷ
+    // được. Ghi trước rồi họ bấm Huỷ thì lựa chọn "Drive" nằm lại trong máy:
+    // thoát ra vào lại, màn hình đọc lựa chọn đó và vẽ thẻ Drive như một kho
+    // đang dùng — kèm cả nút "Đăng xuất khỏi Drive" cho một tài khoản chưa bao
+    // giờ được cắm.
+    //
+    // Cắm xong thì `_reload()` bên ngoài kéo trạng thái mới về, và
+    // `_syncStoragePick` tự chỉnh lựa chọn đã nhớ theo kho máy chủ báo. Không
+    // cần ai ghi trước cả.
     final ok = await connect();
     if (!mounted || ok) return;
     setState(() => _picked = widget.state.kind);
@@ -461,10 +473,18 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
         return _StatusDetail(
           state: state,
           busy: widget.busy,
-          // Chỉ thẻ Drive mới giấu phần thao tác. Thẻ S3 giữ nguyên: nút của nó
-          // là "đổi cấu hình" và "gỡ kho", đi kèm một bảng tình trạng dài — ẩn
-          // chúng đi thì thẻ mở ra chỉ toàn số liệu mà không có lối đi tiếp.
-          actionsOpen: kind != EcStorageKind.gdrive || _driveActionsOpen,
+          // Hai nút "đổi tài khoản" và "đăng xuất" của Drive chỉ hiện khi thẻ
+          // Drive ĐANG ĐƯỢC CHỌN.
+          //
+          // Chúng đổi nơi cất bằng chứng của cả cửa hàng, nên khi người dùng
+          // vừa chỉ sang Cloud Zenpack thì để chúng nằm đó là mời bấm nhầm vào
+          // một kho họ đang định rời khỏi. Tài khoản thì vẫn đọc được — cái ẩn
+          // đi chỉ là lối thao tác.
+          //
+          // Thẻ S3 giữ nguyên: nút của nó là "đổi cấu hình" và "gỡ kho", đi kèm
+          // một bảng tình trạng dài — ẩn chúng đi thì thẻ mở ra chỉ toàn số
+          // liệu mà không có lối đi tiếp.
+          actionsOpen: kind != EcStorageKind.gdrive || _picked == kind,
           onDisconnect: widget.onDisconnect,
           onSwitchDriveAccount: widget.onSwitchDriveAccount,
           onEdit: kind == EcStorageKind.s3
@@ -477,7 +497,13 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
       }
     }
     if (state.kind == kind && !s3FormHere) return null;
-    if (_picked != kind) return null;
+    // Thẻ Drive nói hết phần của nó NGAY LÚC VÀO MÀN, không đợi ai chạm.
+    //
+    // Chạm vào Drive là màn Google bật lên ngay, nên nếu phần mô tả chỉ mở khi
+    // thẻ được chọn thì nó chớp đúng một nhịp rồi bị che — người dùng chưa kịp
+    // đọc đã đứng ở màn nhập tài khoản, không hiểu vì sao. Mở sẵn thì họ đọc
+    // trước, rồi chạm khi đã quyết.
+    if (kind != EcStorageKind.gdrive && _picked != kind) return null;
     // S3 sổ ra nguyên form, không phải một dòng mô tả: thứ người dùng cần đọc
     // khi chỉ vào S3 chính là những ô họ sắp phải điền.
     if (kind == EcStorageKind.s3 && _s3FormOpen) {
@@ -608,7 +634,9 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                       selected: _picked == EcStorageKind.system,
                       inUse: state.kind == EcStorageKind.system,
                       detail: _detailFor(EcStorageKind.system),
-                      onTap: () => _pick(EcStorageKind.system),
+                      onTap: _canPick(EcStorageKind.system)
+                          ? () => _pick(EcStorageKind.system)
+                          : null,
                     ),
                     const SizedBox(height: 10),
                     _StorageOption(
@@ -624,7 +652,9 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                           ? null
                           : l10n.storageNeedProPlan,
                       detail: _detailFor(EcStorageKind.s3),
-                      onTap: () => _pick(EcStorageKind.s3),
+                      onTap: _canPick(EcStorageKind.s3)
+                          ? () => _pick(EcStorageKind.s3)
+                          : null,
                     ),
                     const SizedBox(height: 10),
                     _StorageOption(
@@ -642,7 +672,9 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                           ? null
                           : l10n.storageNeedProPlan,
                       detail: _detailFor(EcStorageKind.gdrive),
-                      onTap: () => _pick(EcStorageKind.gdrive),
+                      onTap: _canPick(EcStorageKind.gdrive)
+                          ? () => _pick(EcStorageKind.gdrive)
+                          : null,
                     ),
                   ],
                 ),
@@ -699,11 +731,15 @@ class _StorageOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final locked = lockNote != null;
     final ink = locked && !selected ? PenColors.mut : PenColors.ink;
+    // Chạm không ăn thì phải NHÌN RA được là không ăn. Một thẻ trông y hệt ba
+    // thẻ kia mà chạm vào không có gì xảy ra đọc thành "app đơ", không đọc
+    // thành "gói của tôi chưa có cái này".
+    final disabled = onTap == null;
     return EcTap(
       onTap: onTap,
       child: PenBox(
         width: double.infinity,
-        fill: PenColors.card,
+        fill: disabled ? PenColors.bg : PenColors.card,
         stroke: selected ? PenColors.success : PenColors.line,
         strokeWidth: selected ? 2 : 1,
         radius: 14,
@@ -788,7 +824,8 @@ class _StorageOption extends StatelessWidget {
                   PenText(
                     lockNote!,
                     size: 13,
-                    color: PenColors.mut,
+                    color: PenColors.ink,
+                    weight: FontWeight.w600,
                     lineHeight: 1.4,
                   ),
                 ],

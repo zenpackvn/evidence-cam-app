@@ -4271,7 +4271,7 @@ abstract class AppLocalizations {
   /// No description provided for @storageDriveSaveNote.
   ///
   /// In en, this message translates to:
-  /// **'Tapping this card opens Google\'s account picker right away. Grant access and the storage is connected — Save only confirms it.'**
+  /// **'No account connected yet. Tap this card to pick a Google account.'**
   String get storageDriveSaveNote;
 
   /// Máy chủ trả `no_refresh_token`: đổi mã thành công nhưng không kèm refresh token, thường vì tài khoản đã cấp quyền từ lần trước. Cắm lại y nguyên sẽ hỏng y như vậy, nên phải chỉ đường gỡ quyền cũ.

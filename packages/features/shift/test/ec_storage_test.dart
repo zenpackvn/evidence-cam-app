@@ -154,10 +154,13 @@ void main() {
       expect(picked, 0, reason: 'ghi lựa chọn khi người dùng chưa xác nhận');
     });
 
-    // Drive là thẻ duy nhất chạm là chạy: mọi thứ nằm trong hộp thoại của
-    // Google, nên bắt bấm thêm nút Lưu chỉ là một cú chạm thừa trước một màn
-    // hình người dùng vẫn còn huỷ được.
-    testWidgets('chạm thẻ Drive là mở hộp thoại Google ngay', (tester) async {
+    // Thẻ Drive nói hết phần của nó NGAY LÚC VÀO MÀN, rồi chạm là mở Google.
+    //
+    // Hai vế đi với nhau: chạm vào Drive là màn Google bật lên ngay, nên nếu
+    // phần mô tả chỉ mở khi thẻ được chọn thì nó chớp đúng một nhịp rồi bị che.
+    testWidgets('thẻ Drive mở sẵn phần mô tả, rồi chạm là mở hộp thoại', (
+      tester,
+    ) async {
       var opened = 0;
       await _pump(
         tester,
@@ -170,28 +173,39 @@ void main() {
         ),
       );
 
+      // Chưa chạm gì: đã đọc được thẻ nói gì.
+      expect(find.textContaining('Chưa cắm tài khoản nào'), findsOneWidget);
+      expect(opened, 0);
+
       await tester.tap(find.text('Google Drive'));
       await tester.pumpAndSettle();
-
       expect(opened, 1);
     });
 
-    // Huỷ ở hộp thoại Google thì dấu tích phải quay về kho đang thật sự dùng.
-    // Đây là thứ khiến chạm-là-chạy an toàn: quệt nhầm không để lại dấu vết.
-    testWidgets('huỷ hộp thoại Google thì dấu tích về Cloud Zenpack', (
+    // Huỷ ở hộp thoại Google thì dấu tích phải quay về kho đang thật sự dùng,
+    // và KHÔNG được để lại dấu vết nào trong bộ nhớ máy.
+    //
+    // `onPick` ghi lựa chọn xuống máy. Bắn nó lúc mở hộp thoại — trước khi biết
+    // người dùng có đồng ý không — thì bấm Huỷ xong lựa chọn "Drive" nằm lại:
+    // thoát ra vào lại, màn hình đọc lựa chọn đó và vẽ thẻ Drive như kho đang
+    // dùng, kèm nút "Đăng xuất khỏi Drive" cho một tài khoản chưa hề cắm.
+    testWidgets('huỷ hộp thoại Google thì không ghi lựa chọn nào', (
       tester,
     ) async {
+      var picked = 0;
       await _pump(
         tester,
         EcStorageScreen(
           state: const EcStorageState(canManage: true, byosAllowed: true),
           onConnectDrive: () async => false,
+          onPick: (_) => picked++,
         ),
       );
 
       await tester.tap(find.text('Google Drive'));
       await tester.pumpAndSettle();
 
+      expect(picked, 0, reason: 'ghi lựa chọn cho một lượt cắm đã bị huỷ');
       // Câu nói trước của Drive chỉ hiện khi thẻ Drive đang được chọn; nó biến
       // mất nghĩa là dấu tích đã rời khỏi Drive.
       expect(
@@ -227,6 +241,53 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(opened, 0);
+    });
+
+    // Gói chưa mở kho riêng: hai thẻ S3 và Drive KHÔNG chạm được.
+    //
+    // Trước đây chạm vẫn ăn — dấu tích nhảy sang, rồi nút Lưu không sáng và
+    // người dùng tự đoán vì sao. Mời người ta bấm vào một thứ họ không dùng
+    // được là tệ hơn không mời.
+    testWidgets('gói chưa mở thì không chọn được S3 hay Drive', (tester) async {
+      var picked = 0;
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true),
+          onPick: (_) => picked++,
+        ),
+      );
+
+      for (final title in ['Kho đám mây riêng (chuẩn S3)', 'Google Drive']) {
+        await tester.tap(find.text(title));
+        await tester.pumpAndSettle();
+      }
+
+      // Dấu tích không nhúc nhích, và không có lượt ghi lựa chọn nào.
+      expect(picked, 0);
+      // Và lý do vì sao vẫn đọc được ngay trên thẻ.
+      expect(find.textContaining('gói Chuyên nghiệp'), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    });
+
+    // Hạ gói xuống mà kho riêng vẫn đang chạy: thẻ đó PHẢI còn chạm được, nếu
+    // không thì shop kẹt với một cái kho họ không xem và không tháo ra được.
+    // Máy chủ cũng cố ý không chặn hai việc ấy.
+    testWidgets('gói đã hạ vẫn mở được thẻ của kho đang dùng', (tester) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(
+            kind: EcStorageKind.gdrive,
+            driveEmail: 'shop@gmail.com',
+            canManage: true,
+          ),
+        ),
+      );
+
+      expect(find.text('shop@gmail.com'), findsOneWidget);
+      expect(find.text('Đăng xuất khỏi Drive'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     // Lưu hỏng thì form PHẢI ở lại cùng thứ vừa gõ và lý do hỏng.
@@ -462,10 +523,13 @@ void main() {
       );
     });
 
-    // Chạm là đọc được ngay. Trước đây phần mô tả chỉ mở ra cho kho ĐANG dùng,
-    // nên muốn biết chọn Drive nghĩa là gì thì phải bấm Lưu rồi đi hết luồng
-    // cấp quyền Google mới rõ — cam kết trước, đọc sau.
-    testWidgets('chọn một kho chưa dùng thì mở phần nói trước ngay', (
+    // Phần mô tả của Drive mở SẴN, không đợi chạm.
+    //
+    // Trước đây nó chỉ mở cho kho đang dùng, nên muốn biết chọn Drive nghĩa là
+    // gì thì phải bấm Lưu rồi đi hết luồng cấp quyền Google mới rõ — cam kết
+    // trước, đọc sau. Rồi một bản nữa mở nó lúc chạm, mà chạm cũng chính là mở
+    // màn Google, nên chữ chớp một nhịp rồi bị che.
+    testWidgets('phần nói trước của Drive mở sẵn, không đợi chạm', (
       tester,
     ) async {
       await _pump(
@@ -475,13 +539,7 @@ void main() {
         ),
       );
 
-      final note = find.textContaining('bảng chọn tài khoản Google mở ra ngay');
-      expect(note, findsNothing, reason: 'chưa chọn đã mở phần nói trước');
-
-      await tester.tap(find.text('Google Drive'));
-      await tester.pumpAndSettle();
-
-      expect(note, findsOneWidget);
+      expect(find.textContaining('Chưa cắm tài khoản nào'), findsOneWidget);
       // Drive chắc chắn không ký được link tải — biết trước, nói trước.
       expect(find.textContaining('đi vòng qua máy chủ'), findsOneWidget);
     });
@@ -653,12 +711,9 @@ void main() {
         ),
       );
 
-      // Kho đang dùng là Drive: thẻ mở sẵn và in tài khoản, nhưng hai nút thao
-      // tác vẫn đợi một cú chạm nữa.
+      // Kho đang dùng là Drive, tức thẻ Drive cũng đang được chọn: hiện đủ cả
+      // tài khoản lẫn hai nút thao tác, không đợi cú chạm nào.
       expect(find.text('shop@gmail.com'), findsOneWidget);
-      expect(find.text('Đăng xuất khỏi Drive'), findsNothing);
-      await tester.tap(find.text('Google Drive'));
-      await tester.pumpAndSettle();
       expect(find.text('Đăng xuất khỏi Drive'), findsOneWidget);
       expect(find.textContaining('Tình trạng kho'), findsNothing);
       expect(find.textContaining('Rà gần nhất'), findsNothing);
@@ -714,19 +769,21 @@ void main() {
         ),
       );
 
-      // Chưa chạm gì cả: tài khoản đã đọc được, nút thì chưa.
+      // Đang chỉ vào Cloud Zenpack: tài khoản vẫn đọc được, nhưng hai nút thao
+      // tác thì không — chúng đổi nơi cất bằng chứng của cả cửa hàng, để nằm đó
+      // lúc người dùng đang định rời khỏi Drive là mời bấm nhầm.
       expect(find.text('shop@gmail.com'), findsOneWidget);
       expect(find.text('Đăng xuất khỏi Drive'), findsNothing);
 
-      // MỘT cú chạm ra nút. Nút gỡ nói bằng chữ của kho ĐÃ CẮM, không phải kho
-      // đang dùng — lúc này kho đang dùng là Cloud Zenpack, mà thứ nút đó gỡ là
-      // tài khoản Google.
+      // Chọn lại thẻ Drive thì hiện đủ. Nút gỡ nói bằng chữ của kho ĐÃ CẮM,
+      // không phải kho đang dùng — lúc này kho đang dùng là Cloud Zenpack, mà
+      // thứ nút đó gỡ là tài khoản Google.
       await tester.tap(find.text('Google Drive'));
       await tester.pumpAndSettle();
       expect(find.text('Đăng xuất khỏi Drive'), findsOneWidget);
 
-      // Chạm lần nữa thì giấu lại.
-      await tester.tap(find.text('Google Drive'));
+      // Quay sang Cloud Zenpack thì hai nút ẩn lại, tài khoản vẫn còn.
+      await tester.tap(find.text('Cloud Zenpack'));
       await tester.pumpAndSettle();
       expect(find.text('Đăng xuất khỏi Drive'), findsNothing);
       expect(find.text('shop@gmail.com'), findsOneWidget);
