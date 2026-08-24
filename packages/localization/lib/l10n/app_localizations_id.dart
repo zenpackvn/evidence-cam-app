@@ -579,6 +579,20 @@ class AppLocalizationsId extends AppLocalizations {
   String get accountSectionApp => 'PAKET & APLIKASI';
 
   @override
+  String get avatarCropTitle => 'Adjust photo';
+
+  @override
+  String get avatarCropHint =>
+      'Drag and pinch to choose the part you want. Only what is inside the circle is saved.';
+
+  @override
+  String get avatarCropConfirm => 'Use this photo';
+
+  @override
+  String get avatarCropFailed =>
+      'Could not process the photo. Pick another one.';
+
+  @override
   String get accountLanguage => 'Bahasa';
 
   @override
@@ -2095,13 +2109,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get storageDriveSwitchAccount => 'Switch account';
 
   @override
-  String get storageDriveSwitchNote =>
-      'Switching means granting access again — Google will ask you to sign in. Pick an address you have used before, or use a different one.';
-
-  @override
-  String get storageDriveOtherAccount => 'Use a different account';
-
-  @override
   String get storageDriveLogout => 'Sign out of Drive';
 
   @override
@@ -2172,6 +2179,10 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get storageTestOk => 'Koneksi sehat.';
+
+  @override
+  String get storageServerOutdated =>
+      'The server does not support switching storage yet. Your videos stay where they are — tell your admin to update the server.';
 
   @override
   String get storageOwnerOnly =>

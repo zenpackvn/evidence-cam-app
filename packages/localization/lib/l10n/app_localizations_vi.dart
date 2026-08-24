@@ -578,6 +578,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountSectionApp => 'GÓI & ỨNG DỤNG';
 
   @override
+  String get avatarCropTitle => 'Chỉnh ảnh';
+
+  @override
+  String get avatarCropHint =>
+      'Kéo và chụm tay để chọn phần bạn muốn. Chỉ phần nằm trong vòng tròn được lưu.';
+
+  @override
+  String get avatarCropConfirm => 'Dùng ảnh này';
+
+  @override
+  String get avatarCropFailed =>
+      'Không xử lý được ảnh này. Chọn ảnh khác giúp bạn.';
+
+  @override
   String get accountLanguage => 'Ngôn ngữ';
 
   @override
@@ -2079,13 +2093,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get storageDriveSwitchAccount => 'Đổi tài khoản';
 
   @override
-  String get storageDriveSwitchNote =>
-      'Đổi tài khoản là cấp quyền lại từ đầu — Google sẽ hỏi bạn đăng nhập. Chọn một địa chỉ đã dùng, hoặc dùng tài khoản khác.';
-
-  @override
-  String get storageDriveOtherAccount => 'Dùng tài khoản khác';
-
-  @override
   String get storageDriveLogout => 'Đăng xuất khỏi Drive';
 
   @override
@@ -2156,6 +2163,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get storageTestOk => 'Kết nối bình thường.';
+
+  @override
+  String get storageServerOutdated =>
+      'Máy chủ chưa hỗ trợ đổi kho. Video vẫn nằm nguyên chỗ cũ — báo bên kỹ thuật cập nhật máy chủ.';
 
   @override
   String get storageOwnerOnly => 'Chỉ chủ cửa hàng đổi được kho lưu trữ.';

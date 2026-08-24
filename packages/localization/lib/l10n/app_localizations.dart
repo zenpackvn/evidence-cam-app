@@ -1140,6 +1140,30 @@ abstract class AppLocalizations {
   /// **'PLAN & APP'**
   String get accountSectionApp;
 
+  /// Tiêu đề màn kéo–phóng ảnh đại diện.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust photo'**
+  String get avatarCropTitle;
+
+  /// Câu hướng dẫn dưới tiêu đề màn cắt ảnh đại diện.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag and pinch to choose the part you want. Only what is inside the circle is saved.'**
+  String get avatarCropHint;
+
+  /// Nút chốt vùng đã chọn ở màn cắt ảnh đại diện.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this photo'**
+  String get avatarCropConfirm;
+
+  /// Giải mã hoặc mã hoá ảnh hỏng ở màn cắt.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not process the photo. Pick another one.'**
+  String get avatarCropFailed;
+
   /// No description provided for @accountLanguage.
   ///
   /// In en, this message translates to:
@@ -3776,18 +3800,6 @@ abstract class AppLocalizations {
   /// **'Switch account'**
   String get storageDriveSwitchAccount;
 
-  /// Bảng chọn tài khoản Drive của app. Nói trước rằng chọn một dòng vẫn phải qua Google, vì máy chủ chỉ giữ một refresh token cho mỗi shop.
-  ///
-  /// In en, this message translates to:
-  /// **'Switching means granting access again — Google will ask you to sign in. Pick an address you have used before, or use a different one.'**
-  String get storageDriveSwitchNote;
-
-  /// Bảng chọn tài khoản Drive: đi tiếp mà không gợi ý địa chỉ nào.
-  ///
-  /// In en, this message translates to:
-  /// **'Use a different account'**
-  String get storageDriveOtherAccount;
-
   /// Gỡ tài khoản Google khỏi shop. Nói bằng việc người dùng nghĩ mình đang làm (đăng xuất khỏi Drive) chứ không bằng cơ chế (xoá cấu hình kho).
   ///
   /// In en, this message translates to:
@@ -3919,6 +3931,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connection is healthy.'**
   String get storageTestOk;
+
+  /// `PATCH /storage/active` trả 404 rỗng vì bản Worker đang chạy cũ hơn app. Thử lại không bao giờ giúp được, nên câu này phải nói ra ai mới sửa được.
+  ///
+  /// In en, this message translates to:
+  /// **'The server does not support switching storage yet. Your videos stay where they are — tell your admin to update the server.'**
+  String get storageServerOutdated;
 
   /// No description provided for @storageOwnerOnly.
   ///

@@ -15,8 +15,11 @@ import 'ec_models.dart';
 String _avatarContentTypeOf(String path) {
   final lower = path.toLowerCase();
   if (lower.endsWith('.png')) return 'image/png';
-  if (lower.endsWith('.heic')) return 'image/heic';
   if (lower.endsWith('.webp')) return 'image/webp';
+  // KHÔNG khai `image/heic`: máy chủ chỉ nhận jpeg/png/webp và trả 400
+  // `unsupported_image_type`. Khai một kiểu máy chủ từ chối là tự hứa một thứ
+  // không có thật; rơi về jpeg thì ít nhất phần lớn ảnh iOS đi lọt, vì bước
+  // thu nhỏ lúc chọn đã chuyển chúng sang JPEG.
   return 'image/jpeg';
 }
 
@@ -644,15 +647,21 @@ class EcApi {
   /// R2 rồi trả account có `avatar_url` mới. Không có bước presign nào cả —
   /// `POST /api/account/avatar/presign` mà bản trước gọi không tồn tại, nên
   /// mọi lần đổi ảnh trên app ăn 404 và không bao giờ tới máy chủ.
+  /// Gửi thẳng `Uint8List`, KHÔNG bọc trong `Stream`.
+  ///
+  /// `Stream.fromIterable` chỉ nghe được MỘT lần. `RetryInterceptor` thử lại
+  /// bằng chính `RequestOptions` cũ, nên lượt thử thứ hai đọc lại một luồng đã
+  /// tiêu thụ và chết với `Bad state: Stream has already been listened to` —
+  /// tức một lỗi mạng tạm thời (429/5xx) biến thành lỗi vĩnh viễn, và ảnh đại
+  /// diện kẹt lại trên máy thay vì lên tài khoản.
+  ///
+  /// Dio dựng lại luồng gửi từ `Uint8List` ở MỖI lượt fetch, và tự đặt
+  /// `Content-Length` — nên không cần khai tay header đó nữa.
   Future<AccountDto> uploadAvatar(File file) async {
-    final bytes = await file.readAsBytes();
     final res = await _dio.put<Map<String, dynamic>>(
       '/api/me/avatar',
-      data: Stream.fromIterable([bytes]),
-      options: Options(
-        headers: {Headers.contentLengthHeader: bytes.length},
-        contentType: _avatarContentTypeOf(file.path),
-      ),
+      data: await file.readAsBytes(),
+      options: Options(contentType: _avatarContentTypeOf(file.path)),
     );
     return AccountDto.fromJson(res.data!);
   }

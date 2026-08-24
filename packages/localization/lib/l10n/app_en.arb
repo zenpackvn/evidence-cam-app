@@ -293,6 +293,22 @@
   "accountPlanQuota": "Plan & storage",
   "accountChangePlan": "Change plan",
   "accountSectionApp": "PLAN & APP",
+  "avatarCropTitle": "Adjust photo",
+  "@avatarCropTitle": {
+    "description": "Tiêu đề màn kéo–phóng ảnh đại diện."
+  },
+  "avatarCropHint": "Drag and pinch to choose the part you want. Only what is inside the circle is saved.",
+  "@avatarCropHint": {
+    "description": "Câu hướng dẫn dưới tiêu đề màn cắt ảnh đại diện."
+  },
+  "avatarCropConfirm": "Use this photo",
+  "@avatarCropConfirm": {
+    "description": "Nút chốt vùng đã chọn ở màn cắt ảnh đại diện."
+  },
+  "avatarCropFailed": "Could not process the photo. Pick another one.",
+  "@avatarCropFailed": {
+    "description": "Giải mã hoặc mã hoá ảnh hỏng ở màn cắt."
+  },
   "accountLanguage": "Language",
   "accountSectionSecurity": "SECURITY & SIGN-IN",
   "accountLoginMethods": "Sign-in method",
@@ -1402,14 +1418,6 @@
   "@storageDriveSwitchAccount": {
     "description": "Nút đổi sang tài khoản Google khác cho kho Drive. Nằm ngay cạnh email đang cắm — đổi kho là việc của dòng đó, không phải của một màn khác."
   },
-  "storageDriveSwitchNote": "Switching means granting access again — Google will ask you to sign in. Pick an address you have used before, or use a different one.",
-  "@storageDriveSwitchNote": {
-    "description": "Bảng chọn tài khoản Drive của app. Nói trước rằng chọn một dòng vẫn phải qua Google, vì máy chủ chỉ giữ một refresh token cho mỗi shop."
-  },
-  "storageDriveOtherAccount": "Use a different account",
-  "@storageDriveOtherAccount": {
-    "description": "Bảng chọn tài khoản Drive: đi tiếp mà không gợi ý địa chỉ nào."
-  },
   "storageDriveLogout": "Sign out of Drive",
   "@storageDriveLogout": {
     "description": "Gỡ tài khoản Google khỏi shop. Nói bằng việc người dùng nghĩ mình đang làm (đăng xuất khỏi Drive) chứ không bằng cơ chế (xoá cấu hình kho)."
@@ -1453,6 +1461,10 @@
     "description": "Bấm Lưu khi chọn lại kho đã cắm mà đang không dùng. Không có vòng cấp quyền nào ở đây."
   },
   "storageTestOk": "Connection is healthy.",
+  "storageServerOutdated": "The server does not support switching storage yet. Your videos stay where they are — tell your admin to update the server.",
+  "@storageServerOutdated": {
+    "description": "`PATCH /storage/active` trả 404 rỗng vì bản Worker đang chạy cũ hơn app. Thử lại không bao giờ giúp được, nên câu này phải nói ra ai mới sửa được."
+  },
   "storageOwnerOnly": "Only the shop owner can change storage.",
   "dangerZone": "Danger zone",
   "shopDelete": "Delete shop",

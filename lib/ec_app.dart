@@ -101,6 +101,7 @@ import 'data/ec_uploader.dart';
 import 'data/platform_device_conditions.dart';
 import 'screens/ec_record_route.dart';
 import 'screens/ec_scan_route.dart';
+import 'screens/ec_avatar_crop_route.dart';
 import 'screens/ec_trim_route.dart';
 
 const _lastShopIdKey = 'shop.last_id';
@@ -239,7 +240,7 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     _selectedShop,
     _recordingType,
     _recordingTypeId,
-    widget.pickAvatarPath ?? _pickImagePath,
+    widget.pickAvatarPath ?? _pickAvatarImagePath,
     shareService: widget.shareService,
     videoPlayerService: widget.videoPlayerService,
     downloadDio: widget.downloadDio,
@@ -1112,6 +1113,16 @@ class _AccountRouteState extends State<_AccountRoute> {
       await _forgetAvatar(uid);
       await widget.auth.updateProfile(photoUrl: url);
       if (mounted) await _loadAccount();
+    } on AvatarTooLargeException {
+      // Ảnh này vĩnh viễn không tới được tài khoản: trần là cố định, còn tệp
+      // thì không tự nhỏ đi. Giữ nó lại chỉ để nó tiếp tục CHE MẤT ảnh thật
+      // của tài khoản trên mọi lượt mở màn sau. Bỏ đi, máy quay về đúng ảnh
+      // `accounts.avatar_url`.
+      //
+      // Đây là lối chữa cho những máy đã kẹt từ trước khi có bước thu nhỏ ở
+      // [_pickAvatarImagePath].
+      await _forgetAvatar(uid);
+      if (mounted) await _loadAccount();
     } on Object {
       // Vẫn chưa gửi được; ảnh trên máy giữ nguyên và màn hình vẫn có ảnh.
     }
@@ -1343,8 +1354,33 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
   }
 
   Future<void> _pickAvatar() async {
-    final path = await widget.pickAvatarPath();
-    if (path != null && mounted) setState(() => _avatarPath = path);
+    final picked = await widget.pickAvatarPath();
+    if (picked == null || !mounted) return;
+    // Không phải một TỆP trên máy thì đi thẳng, không qua màn cắt: seam này
+    // được tiêm URL trong test và trong lượt chụp màn hình, mà một URL thì
+    // không có gì để giải mã và cắt. Cùng lối lùi `_persistAvatarFile` vẫn
+    // dùng cho đúng trường hợp ấy.
+    if (!File(picked).existsSync()) {
+      setState(() => _avatarPath = picked);
+      return;
+    }
+    // Người dùng tự chọn phần ảnh, thay vì để `BoxFit.cover` cắt hộ. Cắt bằng
+    // `cover` là máy tự quyết giữ phần GIỮA — với ảnh chụp nghiêng hay ảnh có
+    // người đứng lệch thì đó đúng là phần đáng bỏ.
+    //
+    // Đẩy màn từ ĐÂY chứ không từ trong seam `pickAvatarPath`: seam đó được
+    // dựng ở gốc app, nơi `context` nằm TRÊN Navigator, nên `Navigator.of` ở
+    // đó ném "context that does not include a Navigator". Chỗ này là State của
+    // chính màn Sửa hồ sơ, tức chắc chắn nằm dưới Navigator.
+    //
+    // Thoát khỏi màn cắt = huỷ cả lượt đổi ảnh, chứ KHÔNG lặng lẽ dùng ảnh
+    // chưa cắt: ảnh chưa cắt có thể vượt trần 2 MB của `uploadAvatar`.
+    final cropped = await Navigator.of(context).push<String>(
+      CupertinoPageRoute<String>(
+        builder: (_) => EcAvatarCropRoute(sourcePath: picked),
+      ),
+    );
+    if (cropped != null && mounted) setState(() => _avatarPath = cropped);
   }
 
   Future<void> _save() async {
@@ -1373,7 +1409,19 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
       String? avatarError;
       if (avatarPath != null) {
         try {
-          avatarUrl = await widget.repo.uploadAvatar(avatarPath);
+          // Phân giải sang đường dẫn TUYỆT ĐỐI trước khi gửi đi.
+          //
+          // `_persistAvatarFile` trả về đường dẫn tương đối so với Documents —
+          // đúng cho thứ đem đi NHỚ, vì thư mục Documents đổi chỗ sau mỗi lần
+          // cài lại app. Nhưng `uploadAvatar` mở tệp bằng `File(path)`, và một
+          // đường dẫn tương đối thì phân giải theo THƯ MỤC LÀM VIỆC, không phải
+          // Documents. Gửi thẳng bản tương đối là ném `FileSystemException`
+          // trước cả lượt gọi mạng — tức lượt lưu ảnh ĐẦU TIÊN luôn hỏng, và
+          // ảnh chỉ lên được máy chủ ở lần mở tab Tài khoản sau, qua
+          // `_retryPendingAvatar` (đường đó vốn đã truyền bản tuyệt đối).
+          avatarUrl = await widget.repo.uploadAvatar(
+            _resolveAvatarPath(avatarPath) ?? avatarPath,
+          );
           // Máy chủ đã có ảnh → quên bản trên máy, nếu không nó sẽ che mất ảnh
           // mà người dùng đổi ở bên web (bản trên máy được ưu tiên khi hiện).
           await _forgetAvatar(widget.auth.currentUser?.uid);
@@ -1829,6 +1877,37 @@ class _StorageRouteState extends State<_StorageRoute>
   /// Đọc lại ở `finally` chứ không chỉ khi thành công: một lượt "kiểm tra lại"
   /// hỏng cũng đổi `last_error` phía máy chủ, và đó chính là câu người dùng
   /// cần đọc.
+  /// Máy chủ CHƯA CÓ đường đổi kho.
+  ///
+  /// `PATCH /storage/active` là route mới; bản Worker đang chạy trên prod có
+  /// thể cũ hơn app. Lúc đó Cloudflare trả 404 của một route không tồn tại —
+  /// 404 RỖNG, không kèm `{"error": "..."}` nào — nên bộ dịch lỗi chung không
+  /// có gì để bám và rơi xuống câu "Không thực hiện được, vui lòng thử lại".
+  ///
+  /// Câu đó sai ở chỗ nguy hiểm nhất: nó bảo người dùng thử lại một việc sẽ
+  /// KHÔNG BAO GIỜ chạy được cho tới khi có người deploy máy chủ. Người bán bấm
+  /// đi bấm lại, mỗi lần đều thấy màn hình đổi kho (vì lựa chọn nhớ trên máy)
+  /// rồi lại thấy lỗi, và không ai lần ra được vì sao.
+  static bool _isMissingRoute(Object error) =>
+      error is DioException &&
+      error.response?.statusCode == 404 &&
+      _apiErrorCode(error) == null;
+
+  /// Về kho hệ thống mà GIỮ NGUYÊN tài khoản đã cắm.
+  ///
+  /// `PATCH /storage/active` chỉ tắt cờ, không đụng tới cấu hình — nên đăng
+  /// nhập Drive một lần là xong, đổi kho qua lại bao nhiêu lượt cũng không phải
+  /// cấp quyền lại. Cắt đứt tài khoản là việc riêng của nút Đăng xuất.
+  ///
+  /// Từng có một nhánh lùi ở đây gọi `DELETE /storage` cho những bản máy chủ
+  /// chưa có route này. Nó đã bị gỡ cùng lượt deploy: giữ lại là để một ngày
+  /// máy chủ trục trặc, app âm thầm XOÁ tài khoản Drive của người dùng trong
+  /// khi họ chỉ định đổi kho.
+  Future<void> _switchToSystem() async {
+    await widget.repo.setStorageActive(widget.shopId, active: false);
+    await _rememberStoragePick(widget.shopId, StorageKind.system);
+  }
+
   Future<void> _run(Future<void> Function() action, String okMessage) async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -1836,7 +1915,14 @@ class _StorageRouteState extends State<_StorageRoute>
       await action();
       if (mounted) _toast(context, okMessage);
     } on Object catch (error) {
-      if (mounted) _toast(context, _dataErrorText(context.l10n, error));
+      if (mounted) {
+        _toast(
+          context,
+          _isMissingRoute(error)
+              ? context.l10n.storageServerOutdated
+              : _dataErrorText(context.l10n, error),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -2112,15 +2198,6 @@ class _StorageRouteState extends State<_StorageRoute>
       );
       if (!mounted) return false;
       if (result == 'ok') {
-        // Nhớ địa chỉ vừa cắm để lần sau chào lại. `_reload()` chạy ngay sau
-        // đây và sẽ ghi đè `_connectedDriveEmail` bằng thứ máy chủ trả về, nên
-        // ghi bằng chính gợi ý vừa dùng là đủ đúng và không phải đợi mạng.
-        unawaited(
-          _rememberDriveAccount(
-            widget.shopId,
-            loginHint ?? _connectedDriveEmail,
-          ),
-        );
         _toast(context, l10n.storageConnected);
         _reload();
         return true;
@@ -2141,68 +2218,6 @@ class _StorageRouteState extends State<_StorageRoute>
       if (mounted) _toast(context, _driveErrorText(l10n, code, error));
       return false;
     }
-  }
-
-  /// Bảng chọn tài khoản Drive CỦA APP, mở khi bấm "Đổi tài khoản".
-  ///
-  /// Google chỉ chào ra bảng của nó cho những phiên còn cookie trong WebView
-  /// này — cài lại app là mất sạch, và người bán gặp một ô email trống. Bảng
-  /// này không phụ thuộc cookie: nó đọc danh sách địa chỉ app đã ghi nhớ.
-  ///
-  /// Chọn một dòng KHÔNG phải là đăng nhập lại nó. Máy chủ chỉ giữ một refresh
-  /// token cho mỗi shop, nên đổi tài khoản luôn là một lượt cấp quyền mới —
-  /// dòng vừa chọn chỉ đi vào `login_hint` để khỏi phải gõ lại địa chỉ.
-  ///
-  /// Chỉ có đúng một địa chỉ đã nhớ thì bỏ qua bảng, đi thẳng vào Google: một
-  /// bảng chọn một dòng là bắt người dùng chạm thêm một cái không để làm gì.
-  Future<void> _switchDriveAccount() async {
-    final known = _rememberedDriveAccounts(widget.shopId);
-    if (known.length < 2) {
-      unawaited(_connectDrive());
-      return;
-    }
-    final l10n = context.l10n;
-    final picked = await showCupertinoModalPopup<String>(
-      context: context,
-      builder: (sheetContext) => PenSheet(
-        onDismiss: () => Navigator.of(sheetContext).pop(),
-        children: [
-          const SizedBox(height: 12),
-          PenText(
-            l10n.storageDriveSwitchAccount,
-            size: 20,
-            color: PenColors.ink,
-            weight: FontWeight.w800,
-          ),
-          const SizedBox(height: 6),
-          PenText(
-            l10n.storageDriveSwitchNote,
-            size: 13,
-            color: PenColors.mut,
-            lineHeight: 1.4,
-          ),
-          const SizedBox(height: 14),
-          for (final email in known) ...[
-            _DriveAccountRow(
-              email: email,
-              inUse: email == _connectedDriveEmail,
-              onTap: () => Navigator.of(sheetContext).pop(email),
-            ),
-            const SizedBox(height: 8),
-          ],
-          const SizedBox(height: 4),
-          PenOutlineButton(
-            label: l10n.storageDriveOtherAccount,
-            // Chuỗi rỗng, KHÔNG phải `null`: `null` là "người dùng vuốt đóng
-            // bảng", còn đây là "đi tiếp nhưng đừng gợi ý ai cả".
-            onPressed: () => Navigator.of(sheetContext).pop(''),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-    if (picked == null || !mounted) return;
-    unawaited(_connectDriveInApp(loginHint: picked.isEmpty ? null : picked));
   }
 
   /// Điền sẵn địa chỉ đang giữ kho vào ô email của Google.
@@ -2346,12 +2361,6 @@ class _StorageRouteState extends State<_StorageRoute>
         );
         _gdriveNative = dto.gdriveNative;
         _connectedDriveEmail = view?.email;
-        // Nguồn đáng tin nhất về "đang cắm bằng ai" là máy chủ, nên mỗi lượt
-        // đọc trạng thái cũng là một lượt bổ sung danh sách — kể cả khi kho
-        // được cắm từ web chứ không phải từ máy này.
-        if (dto.configuredKind == StorageKind.gdrive) {
-          unawaited(_rememberDriveAccount(widget.shopId, view?.email));
-        }
         _configuredKind = dto.configuredKind ?? StorageKind.system;
         // Máy chủ vừa nói kho thật là gì; nếu nó đổi so với lần đọc trước thì
         // lựa chọn đã nhớ bám theo. Chạy ở nền, không chặn lượt dựng này.
@@ -2425,10 +2434,7 @@ class _StorageRouteState extends State<_StorageRoute>
           // hỏi lại và không đăng xuất. Cắt đứt tài khoản là việc của nút đăng
           // xuất riêng trong thẻ.
           onUseSystem: () => unawaited(
-            _run(
-              () => widget.repo.setStorageActive(widget.shopId, active: false),
-              context.l10n.storageSwitchedToSystem,
-            ),
+            _run(_switchToSystem, context.l10n.storageSwitchedToSystem),
           ),
           // Dùng lại kho đã cắm — một lượt gọi, không màn cấp quyền nào.
           onResumeStorage: () => unawaited(
@@ -2441,7 +2447,11 @@ class _StorageRouteState extends State<_StorageRoute>
           // Đổi tài khoản = chạy lại đúng luồng cắm. URL cấp quyền đã mang
           // `prompt=select_account`, nên Google hiện lại bảng chọn thay vì
           // lặng lẽ dùng tài khoản cũ.
-          onSwitchDriveAccount: () => unawaited(_switchDriveAccount()),
+          // Đi THẲNG vào màn cấp quyền của Google, đúng chỗ mà chạm vào thẻ
+          // Drive lúc chưa cắm gì cũng tới. Một cửa duy nhất cho một việc duy
+          // nhất — bảng chọn riêng của app đứng chen vào giữa chỉ thêm một
+          // nhịp, mà rốt cuộc vẫn phải đi qua đúng màn ấy.
+          onSwitchDriveAccount: () => unawaited(_connectDrive()),
           onConnectS3: () => context
               .push<bool>('/storage-connect', extra: widget.shopId)
               .then((saved) {
@@ -3632,6 +3642,30 @@ Future<String?> _pickImagePath() async {
   return file?.path;
 }
 
+/// Chọn ảnh ĐẠI DIỆN — thu nhỏ ngay lúc chọn.
+///
+/// Tách khỏi [_pickImagePath] vì hai đường có luật ngược nhau: ảnh bằng chứng
+/// phải giữ NGUYÊN VẸN từng byte (nén là làm hỏng thứ đang dùng để đối chứng),
+/// còn ảnh đại diện thì không.
+///
+/// Đây là gốc của chuyện "ảnh không đi theo tài khoản". `uploadAvatar` chặn tại
+/// chỗ ở 2 MB và ném trước cả lượt gọi mạng, mà ảnh máy ảnh điện thoại đời nay
+/// vượt ngưỡng đó là chuyện thường. Lượt tải lên không bao giờ thành công →
+/// bản trên máy không bao giờ bị quên → nó vĩnh viễn che mất `avatar_url` của
+/// tài khoản, và ảnh chỉ sống trên đúng một máy.
+///
+/// 1024²@85 ra khoảng 150–400 KB, thừa chỗ dưới trần. Chỗ to nhất app vẽ ảnh
+/// đại diện là 124 px, nên không mất gì nhìn thấy được.
+Future<String?> _pickAvatarImagePath() async {
+  final file = await ImagePicker().pickImage(
+    source: ImageSource.gallery,
+    maxWidth: 1024,
+    maxHeight: 1024,
+    imageQuality: 85,
+  );
+  return file?.path;
+}
+
 /// Picks a photo and attaches it to [tracking]'s evidence via the upload queue
 /// (uploads once the backend is configured). Shows a confirmation, or nothing
 /// if the user cancelled.
@@ -4180,40 +4214,6 @@ class _ShopDetailData {
   /// Tài khoản Google đang giữ kho Drive. `null` với mọi kho khác — chỉ Drive
   /// mới có khái niệm "cắm bằng tài khoản nào".
   final String? storageAccount;
-}
-
-/// Những tài khoản Google đã từng cắm kho cho shop này, nhớ trên máy.
-///
-/// Máy chủ chỉ giữ ĐÚNG MỘT refresh token cho mỗi shop, nên nó không biết gì về
-/// những tài khoản trước đó. Danh sách này là của riêng app, và nó tồn tại để
-/// trả lời đúng một câu: "tôi từng cắm bằng địa chỉ nào?".
-///
-/// Vì sao cần: Google chỉ vẽ được bảng "Chọn tài khoản" cho những phiên nó CÒN
-/// COOKIE trong WebView của app — mà kho cookie ấy bị xoá mỗi lần cài lại. Lúc
-/// đó người bán bấm "Đổi tài khoản" và gặp một ô email trống trơn. Danh sách
-/// này cho phép app tự chào ra các địa chỉ đã dùng, không phụ thuộc cookie.
-///
-/// Chọn một địa chỉ ở đây KHÔNG phải là đăng nhập lại nó — vẫn phải qua Google
-/// một lượt. Nó chỉ điền sẵn `login_hint`, tức tiết kiệm đúng thao tác gõ.
-String _driveAccountsKey(String shopId) => 'drive_accounts_$shopId';
-
-List<String> _rememberedDriveAccounts(String shopId) {
-  final raw = _appMemory()?.getString(_driveAccountsKey(shopId)) ?? '';
-  return raw.split('\n').where((line) => line.trim().isNotEmpty).toList();
-}
-
-/// Ghi nhớ một địa chỉ vừa cắm thành công, mới nhất lên đầu.
-///
-/// Trần 5: quá số đó thì danh sách thành một cuộn lịch sử chứ không còn là một
-/// bảng chọn, và người bán thật sự chỉ xoay quanh một hai tài khoản.
-Future<void> _rememberDriveAccount(String shopId, String? email) async {
-  final memory = _appMemory();
-  if (memory == null || email == null || email.isEmpty) return;
-  final kept = [
-    email,
-    ..._rememberedDriveAccounts(shopId).where((e) => e != email),
-  ].take(5);
-  await memory.setString(_driveAccountsKey(shopId), kept.join('\n'));
 }
 
 /// Kho người dùng vừa BẤM CHỌN trong màn Kho lưu trữ, nhớ ngay trên máy theo
@@ -7872,58 +7872,6 @@ class _TermsSheetState extends State<_TermsSheet> {
   }
 }
 
-/// Một dòng tài khoản trong bảng chọn kho Drive.
-class _DriveAccountRow extends StatelessWidget {
-  const _DriveAccountRow({
-    required this.email,
-    required this.inUse,
-    required this.onTap,
-  });
-
-  final String email;
-
-  /// Tài khoản đang thật sự giữ kho. Có nhãn riêng chứ không chỉ đổi màu: hai
-  /// địa chỉ Gmail cạnh nhau trông rất giống nhau, và chọn nhầm ở đây là đổi
-  /// nơi cất bằng chứng của cả cửa hàng.
-  final bool inUse;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => EcTap(
-    onTap: onTap,
-    child: PenBox(
-      width: double.infinity,
-      fill: PenColors.card,
-      stroke: inUse ? PenColors.success : PenColors.line,
-      radius: 12,
-      axis: PenAxis.row,
-      gap: 12,
-      cross: CrossAxisAlignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-      children: [
-        const Icon(LucideIcons.userRound, size: 20, color: PenColors.ink),
-        Expanded(
-          child: PenText(
-            email,
-            size: 14,
-            color: PenColors.ink,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        if (inUse)
-          PenText(
-            context.l10n.storageInUse,
-            size: 12,
-            color: PenColors.success,
-            weight: FontWeight.w600,
-            softWrap: false,
-          ),
-      ],
-    ),
-  );
-}
-
 /// Cấp quyền Google Drive NGAY TRONG APP.
 ///
 /// Đường thứ hai của việc cắm Drive, đi khi máy chủ chưa có cặp `GOOGLE_APP_*`
@@ -8035,6 +7983,20 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
     }
   }
 
+  /// Bảo trang web đang mở nhả tiêu điểm, tức đóng bàn phím của nó.
+  ///
+  /// Nuốt lỗi: trang chưa tải xong hoặc không cho chạy JavaScript thì cùng lắm
+  /// là bàn phím ở nguyên chỗ cũ — không đáng để một cú chạm ném ra ngoại lệ.
+  void _blurWebPage() {
+    unawaited(
+      _controller
+          .runJavaScript(
+            'document.activeElement && document.activeElement.blur();',
+          )
+          .catchError((Object _) {}),
+    );
+  }
+
   void _finish(String result) {
     if (_done || !mounted) return;
     _done = true;
@@ -8071,14 +8033,27 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
                 children: [
                   // Thanh vuốt: dấu hiệu quen thuộc của một tấm kéo xuống được,
                   // và cũng là thứ tách phần của app khỏi phần của Google.
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(top: 10, bottom: 6),
-                      decoration: BoxDecoration(
-                        color: PenColors.line,
-                        borderRadius: BorderRadius.circular(999),
+                  // Chạm dải này là ẩn bàn phím của TRANG WEB.
+                  //
+                  // Bộ ẩn bàn phím ở gốc app chỉ với tới ô nhập của Flutter;
+                  // ô mật khẩu Google nằm trong trang web bên trong WebView,
+                  // nơi `FocusManager` không có quyền gì. Phải bảo chính trang
+                  // đó nhả tiêu điểm — và chỉ có JavaScript làm được.
+                  //
+                  // `behavior: opaque` để cả dải trống hai bên thanh vuốt đều
+                  // ăn chạm, chứ không riêng đúng cái gạch 40px.
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _blurWebPage,
+                    child: Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(top: 10, bottom: 6),
+                        decoration: BoxDecoration(
+                          color: PenColors.line,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                       ),
                     ),
                   ),
