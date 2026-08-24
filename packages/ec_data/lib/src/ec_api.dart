@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:network/network.dart' show Dio, Headers, Options, Response;
 
+import 'ec_auth.dart';
 import 'ec_models.dart';
 
 /// Typed client for the EvidenceCam Workers API. Paths mirror
@@ -23,7 +24,7 @@ String _avatarContentTypeOf(String path) {
   return 'image/jpeg';
 }
 
-class EcApi {
+class EcApi implements EcAuthMailApi {
   const EcApi(this._dio);
 
   final Dio _dio;
@@ -344,6 +345,27 @@ class EcApi {
       );
   Future<void> deleteStorage(String shopId) =>
       _dio.delete<void>('/api/shops/$shopId/storage');
+
+  /// Mail xác minh địa chỉ, do MÁY CHỦ MÌNH gửi.
+  ///
+  /// Firebase đã khoá phần thân của mẫu xác thực trong Console, nên để nó gửi là
+  /// gửi chữ mẫu của Google — và người dùng app sẽ nhận một lá thư khác hẳn thứ
+  /// người dùng web nhận. Tuyến này lấy link từ chính Firebase rồi bọc vào mẫu
+  /// đã duyệt của ZenPack.
+  ///
+  /// Địa chỉ lấy từ token, không gửi lên: nhận từ thân request là cho người ta
+  /// tự chọn nạn nhân.
+  @override
+  Future<void> sendVerifyEmail() =>
+      _dio.post<void>('/api/auth/verify-email');
+
+  /// Mail đặt lại mật khẩu. KHÔNG cần đăng nhập.
+  ///
+  /// Máy chủ luôn trả `{sent:true}` kể cả khi địa chỉ chưa có tài khoản — trả
+  /// lời khác nhau sẽ biến tuyến công khai này thành máy dò xem ai có tài khoản.
+  @override
+  Future<void> sendPasswordReset(String email) =>
+      _dio.post<void>('/auth/password-reset', data: {'email': email});
 
   /// Cắm Drive bằng mã uỷ quyền lấy từ hộp thoại Google của hệ điều hành.
   ///

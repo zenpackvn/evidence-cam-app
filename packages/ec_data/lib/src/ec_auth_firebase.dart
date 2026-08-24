@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'ec_auth.dart';
+
 import 'ec_google_signin.dart';
 
 /// Real Firebase implementation of [EcAuth] (FR-15) — email/password, Google and
@@ -23,6 +24,18 @@ class FirebaseEcAuth implements EcAuth {
   }
 
   final FirebaseAuth _auth;
+
+  /// Gửi mail xác thực qua máy chủ mình thay vì để Firebase gửi.
+  ///
+  /// Firebase đã khoá phần thân của mẫu xác thực trong Console, nên để nó gửi là
+  /// gửi chữ mẫu của Google — người dùng app sẽ nhận một lá thư khác hẳn thứ
+  /// người dùng web nhận, dù cả hai cùng một hệ thống.
+  ///
+  /// GÁN SAU khi dựng, không nhận qua hàm dựng: `EcApi` cần chính đối tượng này
+  /// để gắn `Authorization`, nên hai bên phụ thuộc vòng. Vắng nó thì lớp này rơi
+  /// hẳn về Firebase — đúng hành vi cũ, và là mặc định trong test.
+  EcAuthMailApi? mailApi;
+
   late final ValueNotifier<EcUser?> _user;
 
   EcUser? _map(User? u) => u == null
@@ -129,8 +142,21 @@ class FirebaseEcAuth implements EcAuth {
       ? _googleCredential()
       : _appleCredential();
 
+  /// Máy chủ mình trước, Firebase là ĐƯỜNG LÙI.
+  ///
+  /// Rơi về khi máy chủ chưa cấu hình (503) hoặc gọi hỏng: mail chữ Google vẫn
+  /// hơn hẳn không có mail nào, vì người quên mật khẩu là người đang không vào
+  /// được tài khoản.
   @override
   Future<void> sendPasswordReset(String email) async {
+    if (mailApi != null) {
+      try {
+        await mailApi!.sendPasswordReset(email);
+        return;
+      } on Object {
+        // Đường lùi.
+      }
+    }
     try {
       await _auth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (error) {
@@ -139,10 +165,20 @@ class FirebaseEcAuth implements EcAuth {
   }
 
   @override
+  /// Máy chủ mình trước, Firebase là ĐƯỜNG LÙI — cùng lẽ với
+  /// [sendPasswordReset].
   Future<void> sendEmailVerification() async {
+    final user = _requireUser();
+    if (user.emailVerified) return;
+    if (mailApi != null) {
+      try {
+        await mailApi!.sendVerifyEmail();
+        return;
+      } on Object {
+        // Đường lùi.
+      }
+    }
     try {
-      final user = _requireUser();
-      if (user.emailVerified) return;
       await user.sendEmailVerification();
     } on FirebaseAuthException catch (error) {
       throw _authException(error);

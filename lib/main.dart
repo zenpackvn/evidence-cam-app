@@ -107,6 +107,13 @@ Future<void> main() async {
         // here instead of signing a demo user in. The repository comes from
         // EC_API_URL/API_BASE_URL, which must name a real origin.
         final ecAuth = FirebaseEcAuth();
+        // Mail xác thực đi qua MÁY CHỦ MÌNH thay vì để Firebase gửi: Console đã
+        // khoá phần thân của mẫu xác thực, nên để nó gửi là gửi chữ mẫu của
+        // Google — người dùng app sẽ nhận một lá thư khác hẳn thứ người dùng web
+        // nhận, dù cùng một hệ thống.
+        //
+        // Gán SAU khi dựng vì `buildApi` cần chính `ecAuth` để gắn token.
+        ecAuth.mailApi = buildApi(auth: ecAuth);
 
         // Góp ý đi thẳng sang CMS dùng chung (tenant zenpack), không qua backend
         // EvidenceCam.
