@@ -21,7 +21,7 @@ dependencies:
 
   # The design file draws its icons from lucide; this ships the same set as a
   # font so `PenIcon` names map straight across from the `.pen` nodes.
-  lucide_icons_flutter: ^3.1.15
+  lucide_icons_flutter: ^3.1.17
 
   # `path` nodes in the design file are raw SVG geometry.
   flutter_svg: ^2.3.0
