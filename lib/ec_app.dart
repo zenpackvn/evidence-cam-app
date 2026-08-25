@@ -2387,6 +2387,7 @@ class _StorageRouteState extends State<_StorageRoute>
         // Hai chỗ hỏng vì thế: `login_hint` của lượt cấp quyền mất chỗ dựa, và
         // thẻ Drive trên màn kho không còn dòng nào để vẽ (xem [driveEmail]).
         final driveView = dto.viewFor(StorageKind.gdrive);
+        final s3View = dto.viewFor(StorageKind.s3);
         _connectedDriveEmail = driveView?.email;
         _configuredKind = dto.configuredKind ?? StorageKind.system;
         // Máy chủ vừa nói kho thật là gì; nếu nó đổi so với lần đọc trước thì
@@ -2455,11 +2456,16 @@ class _StorageRouteState extends State<_StorageRoute>
             driveEmail: driveView?.email,
             // Cấu hình S3 đang lưu, để form điền sẵn lại lúc sửa. Cặp khoá
             // không có ở đây — máy chủ chỉ trả bốn ký tự cuối của access key.
-            s3Endpoint: view?.s3?.endpoint ?? '',
-            s3Region: view?.s3?.region ?? '',
-            s3Bucket: view?.s3?.bucket ?? '',
-            s3Prefix: view?.s3?.prefix ?? '',
-            s3KeyMasked: view?.s3?.accessKeyIdMasked ?? '',
+            //
+            // Đọc từ HÀNG S3 chứ không từ kho đang dùng, cùng lý do với
+            // [driveEmail]: shop cắm S3 rồi tạm về Cloud Zenpack thì `view` là
+            // kho hệ thống, bốn ô này rỗng, và "Đổi cấu hình" mở ra một form
+            // trắng của một cấu hình vẫn còn nguyên trên máy chủ.
+            s3Endpoint: s3View?.s3?.endpoint ?? '',
+            s3Region: s3View?.s3?.region ?? '',
+            s3Bucket: s3View?.s3?.bucket ?? '',
+            s3Prefix: s3View?.s3?.prefix ?? '',
+            s3KeyMasked: s3View?.s3?.accessKeyIdMasked ?? '',
             health: EcStorageHealth(
               total: dto.health.total,
               intact: dto.health.intact,

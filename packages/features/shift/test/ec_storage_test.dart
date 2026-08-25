@@ -255,6 +255,67 @@ void main() {
       expect(_saveEnabled(tester), isTrue);
     });
 
+    // Shop đã cắm S3 rồi tạm về Cloud Zenpack: "Đổi cấu hình" vẫn phải mở
+    // được, mở ra có sẵn cấu hình cũ, và thử xanh thì lưu được — lưu ở đây
+    // đồng thời là quay lại dùng S3.
+    //
+    // Trước đây hỏng cả ba: nút không kéo dấu tích sang thẻ S3 nên bấm vào
+    // không có gì xảy ra, và `_prefillS3` bỏ qua khi kho đang dùng không phải
+    // S3 nên form ra trắng.
+    testWidgets('đang ở kho khác vẫn đổi được cấu hình S3 rồi lưu', (
+      tester,
+    ) async {
+      const parked = EcStorageState(
+        configuredKind: EcStorageKind.s3,
+        configuredKinds: {EcStorageKind.s3},
+        canManage: true,
+        byosAllowed: true,
+        s3Endpoint: 'https://s3.example.com',
+        s3Region: 'auto',
+        s3Bucket: 'my-bucket',
+        s3Prefix: 'evidencecam',
+        s3KeyMasked: '…abcd',
+      );
+      Future<void> pumpWith({bool busy = false, bool passed = false}) => _pump(
+        tester,
+        EcStorageScreen(
+          state: parked,
+          busy: busy,
+          s3TestPassed: passed,
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+
+      await pumpWith();
+      // KHÔNG chạm vào thẻ trước: bấm thẳng nút, đúng như người dùng làm.
+      await tester.tap(find.text('Đổi cấu hình'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CupertinoTextField), findsNWidgets(6));
+      final fields = find.byType(CupertinoTextField);
+      expect(
+        tester.widget<CupertinoTextField>(fields.at(0)).controller?.text,
+        'https://s3.example.com',
+      );
+      expect(
+        tester.widget<CupertinoTextField>(fields.at(2)).controller?.text,
+        'my-bucket',
+      );
+
+      // Đổi bucket rồi thử: cặp khoá cũ máy chủ vẫn giữ nên không phải dán lại.
+      await tester.enterText(fields.at(2), 'bucket-moi');
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel('Kiểm tra'));
+      await tester.pump();
+      await pumpWith(busy: true);
+      await pumpWith(passed: true);
+      await tester.pump();
+
+      expect(_saveEnabled(tester), isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
     // Khoá bí mật dài mấy chục ký tự và luôn được DÁN vào. Dán hụt một ký tự
     // thì máy chủ chỉ nói `SignatureDoesNotMatch` — câu không chỉ ra ô nào sai,
     // mà một hàng chấm tròn thì không soi lại được. Con mắt là đường duy nhất

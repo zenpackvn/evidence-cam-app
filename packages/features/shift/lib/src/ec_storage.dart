@@ -441,7 +441,12 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// nhận ra mình đã dán khoá nào.
   void _prefillS3() {
     final state = widget.state;
-    if (state.kind != EcStorageKind.s3) return;
+    // Điền theo CẤU HÌNH ĐANG GIỮ, không theo kho đang dùng.
+    //
+    // Hỏi "kho đang dùng có phải S3 không" là bỏ trắng form đúng lúc cần nó
+    // nhất: shop đã cắm S3 rồi tạm về Cloud Zenpack thì bấm "Đổi cấu hình" ra
+    // một form rỗng, và họ phải đi tìm lại endpoint với tên bucket chỉ để sửa
+    // một chữ. Cấu hình đó máy chủ vẫn giữ và vẫn trả về.
     _s3.endpoint.text = state.s3Endpoint;
     _s3.region.text = state.s3Region;
     _s3.bucket.text = state.s3Bucket;
@@ -597,6 +602,11 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
           onSwitchDriveAccount: widget.onSwitchDriveAccount,
           onEdit: kind == EcStorageKind.s3
               ? () => setState(() {
+                  _picked = EcStorageKind.s3;
+                  // Bấm nút này là đang nói "tôi muốn dùng S3 với cấu hình
+                  // mới", nên dấu tích phải sang theo. Thiếu dòng này thì với
+                  // shop đang ở kho khác, [_s3FormOpen] vẫn false và cái nút
+                  // bấm vào không có gì xảy ra — một nút chết nằm giữa màn.
                   _editingS3 = true;
                   _editedSinceTest = true;
                   _prefillS3();
