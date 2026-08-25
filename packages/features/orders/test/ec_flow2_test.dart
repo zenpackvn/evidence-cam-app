@@ -78,10 +78,14 @@ void main() {
     ) async {
       await _pump(
         tester,
-        const EcOrderTimelineScreen(
+        EcOrderTimelineScreen(
           orderCode: 'SPXVN024567890',
           days: _days,
           pendingUploadCount: 4,
+          // Hàng "Đính kèm ảnh" chỉ vẽ khi bên gọi thật sự có việc đính kèm —
+          // hồ sơ khiếu nại dùng chung màn này nhưng không đính ảnh. Muốn thấy
+          // hàng đó thì phải đưa callback, đúng như màn đơn hàng vẫn làm.
+          onAttachPhoto: () {},
         ),
       );
 
@@ -94,6 +98,24 @@ void main() {
       expect(find.text('Lỗi · Thử lại'), findsOneWidget);
       expect(find.text('Đính kèm ảnh vào đơn'), findsOneWidget);
       expect(find.text('Tạo link'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Mặt còn lại của luật trên. Thiếu test này thì việc bỏ callback đi lại
+    // lặng lẽ vẽ ra một nút bấm vào không làm gì.
+    testWidgets('không có việc đính kèm thì không vẽ hàng đính kèm ảnh', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcOrderTimelineScreen(
+          orderCode: 'SPXVN024567890',
+          days: _days,
+          pendingUploadCount: 4,
+        ),
+      );
+
+      expect(find.text('Đính kèm ảnh vào đơn'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -151,7 +173,10 @@ void main() {
       await _pump(tester, const EcVideoDetailScreen(video: _videoDetail));
 
       expect(find.text('Chi tiết video'), findsOneWidget);
-      expect(find.text('Đóng hàng đi · 02:45'), findsOneWidget);
+      // Tên loại và thời lượng là HAI ô, không phải một chuỗi ghép — xem test
+      // "tên loại dài không nuốt mất thời lượng" ngay dưới.
+      expect(find.text('Đóng hàng đi'), findsOneWidget);
+      expect(find.text(' · 02:45'), findsOneWidget);
       expect(find.text('Giờ quay'), findsOneWidget);
       expect(find.text('23/07/2026 · 10:23'), findsOneWidget);
       expect(find.text('Người quay'), findsOneWidget);
@@ -164,6 +189,65 @@ void main() {
       expect(find.text('Tải video về máy'), findsOneWidget);
       expect(find.text('Xóa video'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    // Ô tiêu đề rộng tối đa 170. Khi tên loại và thời lượng còn là MỘT chuỗi
+    // ghép cắt bằng ellipsis, thứ bị cắt luôn là phần đuôi — đúng con số thời
+    // lượng. "Đóng hàng" đủ ngắn nên vừa và không ai thấy; "Đơn vị vận chuyển"
+    // thì clip nào cũng mất sạch thời lượng, nhìn như app quên ghi.
+    testWidgets('tên loại dài không nuốt mất thời lượng', (tester) async {
+      await _pump(
+        tester,
+        const EcVideoDetailScreen(
+          video: EcVideoDetail(
+            title: 'Đơn vị vận chuyển',
+            duration: '01:05',
+            recordedAt: '23/07/2026 · 10:23',
+            recordedBy: 'Trần Thị B (Nhân viên)',
+            device: 'iPhone 12 · app 1.0',
+            uploadStatus: 'Đã upload ✓',
+            mediaUrl: 'https://cdn.example.com/evidence/video-1.mp4',
+          ),
+        ),
+      );
+
+      final duration = find.text(' · 01:05');
+      expect(duration, findsOneWidget);
+      // Vẽ ra thật, không phải chỉ tồn tại trong cây: một `Text` bị ellipsis
+      // nuốt vẫn `findsOneWidget` như thường, nên khẳng định đó một mình không
+      // bắt được lỗi này. Bề rộng thật mới bắt được.
+      expect(tester.getSize(duration).width, greaterThan(0));
+      expect(tester.takeException(), isNull);
+    });
+
+    // Đổi kho KHÔNG kéo clip cũ đi theo, nên một đơn có thể có clip nằm ở hai
+    // kho khác nhau. Hỏi "clip này nằm ở đâu" mà phải mở màn Cài đặt kho ra
+    // đoán là trả lời sai chỗ.
+    testWidgets('hiện kho đang giữ clip', (tester) async {
+      await _pump(
+        tester,
+        const EcVideoDetailScreen(
+          video: EcVideoDetail(
+            title: 'Đóng hàng đi',
+            duration: '02:45',
+            recordedAt: '23/07/2026 · 10:23',
+            recordedBy: 'Trần Thị B (Nhân viên)',
+            device: 'iPhone 12 · app 1.0',
+            uploadStatus: 'Đã upload ✓',
+            storage: 'Google Drive',
+          ),
+        ),
+      );
+
+      expect(find.text('Kho lưu trữ'), findsOneWidget);
+      expect(find.text('Google Drive'), findsOneWidget);
+    });
+
+    // Bằng chứng cũ, có trước khi máy chủ trả trường này, không được hiện một
+    // hàng trống hay một chữ "Không rõ" — thà thiếu hàng còn hơn nói bừa.
+    testWidgets('không biết kho thì không vẽ hàng nào', (tester) async {
+      await _pump(tester, const EcVideoDetailScreen(video: _videoDetail));
+      expect(find.text('Kho lưu trữ'), findsNothing);
     });
 
     testWidgets('play, download, delete and close callbacks fire', (

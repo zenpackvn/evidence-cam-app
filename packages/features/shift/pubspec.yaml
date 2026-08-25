@@ -10,6 +10,7 @@ environment:
 resolution: workspace
 
 dependencies:
+  font_awesome_flutter: ^11.0.0
   flutter:
     sdk: flutter
 

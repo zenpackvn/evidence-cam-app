@@ -878,6 +878,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detailSize => 'Tamaño';
 
   @override
+  String get detailStorage => 'Storage';
+
+  @override
+  String get storageNameCloud => 'ZenPack Cloud';
+
+  @override
+  String get storageNameDrive => 'Google Drive';
+
+  @override
+  String get storageNameS3 => 'Own storage (S3)';
+
+  @override
   String get detailUploadStatus => 'Estado de subida';
 
   @override

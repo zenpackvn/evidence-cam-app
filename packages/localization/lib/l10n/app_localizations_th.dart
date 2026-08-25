@@ -858,6 +858,18 @@ class AppLocalizationsTh extends AppLocalizations {
   String get detailSize => 'ขนาด';
 
   @override
+  String get detailStorage => 'Storage';
+
+  @override
+  String get storageNameCloud => 'ZenPack Cloud';
+
+  @override
+  String get storageNameDrive => 'Google Drive';
+
+  @override
+  String get storageNameS3 => 'Own storage (S3)';
+
+  @override
   String get detailUploadStatus => 'สถานะอัปโหลด';
 
   @override

@@ -24,6 +24,7 @@ void main() {
   group('mã của vận đơn', _orderCodesTests);
   group('cắm Drive từ hộp thoại gốc', _gdriveNativeTests);
   group('tên người quay', _recordedByTests);
+  group('kho giữ clip', _storageFieldsTests);
   late _MockDio dio;
   late EcApi api;
 
@@ -840,6 +841,39 @@ void _gdriveNativeTests() {
     ).captured;
     expect(call[0], '/api/shops/s1/storage/gdrive/code');
     expect(call[1], {'code': 'auth-code-abc'});
+  });
+}
+
+/// Kho đang giữ clip, và link Drive để NGƯỜI ĐỌC mở.
+///
+/// Hai trường này đi cùng nhau: `storage_kind` nói clip nằm ở đâu, `share_url`
+/// là đường mở tệp ở chính chỗ đó. Vắng cả hai là bằng chứng cũ hoặc kho hệ
+/// thống — phải ra `null` chứ không được ném.
+void _storageFieldsTests() {
+  test('EvidenceDto đọc storage_kind và share_url', () {
+    final dto = EvidenceDto.fromJson(const {
+      'id': 'e1',
+      'order_id': 'o1',
+      'kind': 'video',
+      'captured_at': 1,
+      'upload_status': 'done',
+      'storage_kind': 'gdrive',
+      'share_url': 'https://drive.google.com/file/d/abc/view?usp=drive_link',
+    });
+    expect(dto.storageKind, 'gdrive');
+    expect(dto.shareUrl, contains('drive.google.com/file/d/abc/view'));
+  });
+
+  test('kho hệ thống: cả hai đều null, không ném', () {
+    final dto = EvidenceDto.fromJson(const {
+      'id': 'e1',
+      'order_id': 'o1',
+      'kind': 'video',
+      'captured_at': 1,
+      'upload_status': 'done',
+    });
+    expect(dto.storageKind, isNull);
+    expect(dto.shareUrl, isNull);
   });
 }
 

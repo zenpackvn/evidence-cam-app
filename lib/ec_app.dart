@@ -2313,9 +2313,10 @@ class _StorageRouteState extends State<_StorageRoute>
     return auth?.serverAuthCode;
   }
 
-  static bool _userCancelled(Object error) =>
-      error is GoogleSignInException &&
-      error.code == GoogleSignInExceptionCode.canceled;
+  /// Người dùng bỏ dở hộp thoại Google — KHÔNG phải mọi mã `canceled`, xem
+  /// [isGoogleSignInCancellation]. Nhận nhầm ở đây thì một lượt cắm Drive hỏng
+  /// vì cấu hình sẽ im lặng đúng như một cú bấm ra ngoài.
+  static bool _userCancelled(Object error) => isGoogleSignInCancellation(error);
 
   @override
   Widget build(BuildContext context) {
@@ -5940,7 +5941,7 @@ class _OrderRouteState extends State<_OrderRoute> {
   /// nhìn đúng màn này để xem nó đã vào chưa.
   List<EcTimelineVideo> _pendingPhotoRows(AppLocalizations l10n) => [
     for (final task in _pendingTasks)
-      if (task.type == 'Ảnh đính kèm')
+      if (task.type == _attachedPhotoType)
         EcTimelineVideo(
           time: _hhmm(DateTime.now()),
           label: task.type,
@@ -6596,8 +6597,10 @@ class _MemberActionExtra {
   final EcShopMember member;
 }
 
-/// Ghép các bằng chứng CHƯA tải xong của đơn vào danh sách.
+/// Dựng dòng thời gian bằng chứng của một đơn, nhóm theo ngày, mới nhất trước.
 ///
+/// Danh sách CHỈ gồm những gì máy chủ đã thật sự giữ — clip còn nằm trong hàng
+/// đợi ở nguyên trang Hàng đợi, xem lý lẽ ở nơi gọi.
 List<EcTimelineDay> _timelineDays(
   AppLocalizations l10n,
   List<EvidenceDto> evidence,
@@ -6607,7 +6610,20 @@ List<EcTimelineDay> _timelineDays(
 ) {
   final typeNames = {for (final t in videoTypes) t.id: t.name};
   final groups = <String, List<EcTimelineVideo>>{};
-  for (final item in evidence) {
+  // Mới nhất lên trên — cả thứ tự ngày lẫn thứ tự trong một ngày.
+  //
+  // `getOrderDetail` trả bằng chứng theo `captured_at` TĂNG dần, nên clip vừa
+  // quay xong rơi xuống tận đáy đơn: đúng thứ người bán vừa làm lại là thứ họ
+  // phải cuộn xa nhất mới thấy. Sắp lại ở đây chứ không đổi câu SQL, vì thứ tự
+  // tăng dần là hợp đồng của API với những bên đọc khác — web admin và trang
+  // hồ sơ công khai đều dựng dòng thời gian theo chiều đó.
+  //
+  // Nhóm ngày ăn theo luôn thứ tự này: `putIfAbsent` dựng nhóm theo lần gặp
+  // đầu tiên, nên duyệt một danh sách đã giảm dần thì ngày mới nhất cũng là
+  // nhóm được dựng trước.
+  final ordered = [...evidence]
+    ..sort((a, b) => b.capturedAt.compareTo(a.capturedAt));
+  for (final item in ordered) {
     // A deleted clip should vanish from the list entirely, not linger with a
     // "Đã xóa" badge — deletion already happened server-side (deleteEvidence);
     // showing it here was the actual bug, not a missing status label.
@@ -6681,6 +6697,10 @@ List<EcTimelineDay> _timelineDays(
             uploadStatus: _uploadStatusLabel(l10n, item.uploadStatus),
             // The R2 object is gone once expired — nothing left to play/download.
             mediaUrl: item.uploadStatus == 'expired' ? null : item.url,
+            // Cùng luật với `mediaUrl`: hết hạn lưu trữ thì tệp ở kho cũng đã
+            // bị dọn, đưa ra một link Drive trỏ vào chỗ trống là hứa suông.
+            shareUrl: item.uploadStatus == 'expired' ? null : item.shareUrl,
+            storage: _evidenceStorageLabel(l10n, item.storageKind),
             // Chỉ gắn khi máy chủ CHƯA phát được. Có link thật rồi mà vẫn trỏ
             // về bản tạm là cố tình phát bản không dấu trong khi bản có dấu đã
             // nằm sẵn ở kho.
@@ -8299,6 +8319,8 @@ EcVideoDetail _videoDetail(
   device: video.device ?? l10n.deviceUnknown,
   uploadStatus: video.uploadStatus ?? l10n.uploadStatusDone,
   mediaUrl: video.mediaUrl,
+  shareUrl: video.shareUrl,
+  storage: video.storage,
   localPath: video.localPath,
   type: video.type,
   seal: video.seal,
@@ -8338,6 +8360,19 @@ String _sealedAtLabel(int? sealedAt) {
 
 /// Formats a recorded clip length as `mm:ss`. Photos and evidence captured
 /// before this field existed have no duration — falls back to `—`.
+/// Tên kho đang GIỮ clip, để hiện trong Chi tiết video.
+///
+/// `null` là "Cloud ZenPack" chứ không phải "không rõ": cột `storage_kind` chỉ
+/// được ghi khi clip đã đẩy sang kho riêng xong. Trước đó byte vẫn nằm ở vùng
+/// chờ của ZenPack — nói "Google Drive" lúc ấy là nói sai chỗ bằng chứng đang
+/// nằm, và người bán mở Drive ra sẽ không thấy gì.
+String _evidenceStorageLabel(AppLocalizations l10n, String? kind) =>
+    switch (kind) {
+      'gdrive' => l10n.storageNameDrive,
+      's3' => l10n.storageNameS3,
+      _ => l10n.storageNameCloud,
+    };
+
 String _durationLabel(int? seconds) {
   if (seconds == null) return '—';
   String two(int n) => n.toString().padLeft(2, '0');
@@ -8479,11 +8514,17 @@ class _QueueRoute extends StatelessWidget {
   const _QueueRoute({
     required this.queue,
     required this.canDelete,
+    required this.repo,
+    this.player,
     this.shopId,
     this.onBack,
   });
 
   final EcUploadQueue queue;
+
+  /// Để tra link phát khi bản xem tạm trên máy đã bị dọn. Xem [_playQueuedClip].
+  final EcRepository repo;
+  final VideoPlayerService? player;
 
   /// Shop đang mở. Hàng đợi chỉ hiện việc của shop này; `null` (chưa chọn
   /// shop) thì không hiện gì, vì lúc đó không có câu hỏi nào để trả lời.
@@ -8522,6 +8563,14 @@ class _QueueRoute extends StatelessWidget {
           onDelete: canDelete
               ? (item) => _confirmDeleteQueueItem(context, queue, item)
               : null,
+          onOpen: (item) {
+            final id = item.id;
+            if (id != null) {
+              unawaited(
+                _playQueuedClip(context, queue, repo, player, shopId, id),
+              );
+            }
+          },
         );
       },
     );
@@ -8536,16 +8585,30 @@ class _QueueRoute extends StatelessWidget {
 Future<void> _showQueueSheet(
   BuildContext context,
   EcUploadQueue queue,
+  EcRepository repo,
+  VideoPlayerService? player,
   String? shopId,
 ) => showCupertinoModalPopup<void>(
   context: context,
-  builder: (sheetContext) => _QueueSheet(queue: queue, shopId: shopId),
+  builder: (sheetContext) => _QueueSheet(
+    queue: queue,
+    repo: repo,
+    player: player,
+    shopId: shopId,
+  ),
 );
 
 class _QueueSheet extends StatelessWidget {
-  const _QueueSheet({required this.queue, this.shopId});
+  const _QueueSheet({
+    required this.queue,
+    required this.repo,
+    this.player,
+    this.shopId,
+  });
 
   final EcUploadQueue queue;
+  final EcRepository repo;
+  final VideoPlayerService? player;
   final String? shopId;
 
   @override
@@ -8637,6 +8700,26 @@ class _QueueSheet extends StatelessWidget {
                   final id = item.id;
                   if (id != null) unawaited(queue.delete(id));
                 },
+                // Đóng tấm sheet TRƯỚC khi mở trình phát: để lại nó nằm dưới
+                // thì thoát trình phát ra là rơi về nửa màn hàng đợi chứ không
+                // về màn quay, và người đang đóng gói mất khung ngắm.
+                onOpen: (item) {
+                  final id = item.id;
+                  if (id == null) return;
+                  final router = GoRouter.of(context);
+                  Navigator.of(context).pop();
+                  unawaited(
+                    _playQueuedClip(
+                      router.routerDelegate.navigatorKey.currentContext ??
+                          context,
+                      queue,
+                      repo,
+                      player,
+                      shopId,
+                      id,
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -8710,8 +8793,119 @@ Future<void> _confirmDeleteQueueItem(
   if (context.mounted) _toast(context, l10n.toastQueueItemDeleted);
 }
 
+/// Nhãn loại của một ẢNH đính kèm trong hàng đợi.
+///
+/// Hàng đợi không mang cờ "đây là ảnh" — nó chỉ mang nhãn loại người dùng thấy,
+/// và ảnh đính kèm luôn vào bằng đúng nhãn này (`_attachPhoto`). Gom về một
+/// hằng để hai chỗ đang so chuỗi không lệch nhau khi nhãn đổi.
+const _attachedPhotoType = 'Ảnh đính kèm';
+
+/// Bấm vào một hàng ĐÃ TẢI XONG trong hàng đợi → xem lại clip ngay.
+///
+/// Hai nguồn, theo đúng thứ tự này:
+///   1. bản xem tạm còn trên máy — mở tức thì, không tốn một byte mạng nào, và
+///      đây là trường hợp thường gặp nhất ở màn này: người ta mở hàng đợi ngay
+///      sau khi clip vừa lên xong.
+///   2. link máy chủ — khi bản tạm đã bị dọn, tức máy chủ đã có bản đóng dấu.
+///      Bản đó mới là bằng chứng thật, nên xem nó cũng đúng hơn.
+///
+/// Không có nguồn nào thì nói thẳng, đừng mở một trình phát trắng.
+Future<void> _playQueuedClip(
+  BuildContext context,
+  EcUploadQueue queue,
+  EcRepository repo,
+  VideoPlayerService? player,
+  String? shopId,
+  String taskId,
+) async {
+  final l10n = context.l10n;
+  UploadTask? task;
+  for (final candidate in queue.tasks) {
+    if (candidate.id == taskId) task = candidate;
+  }
+  final evidenceId = task?.remoteUrl;
+  if (task == null || evidenceId == null || player == null) {
+    _toast(context, l10n.toastVideoNoPlayLink);
+    return;
+  }
+
+  final local = (await ecPreviews())[evidenceId];
+  if (!context.mounted) return;
+  if (local != null) {
+    _pushQueuePlayer(context, task.tracking, local, player, isLocalFile: true);
+    return;
+  }
+
+  try {
+    final clip = await _serverClip(repo, shopId, task.tracking, evidenceId);
+    if (!context.mounted) return;
+    final url = clip?.url;
+    if (url != null) {
+      _pushQueuePlayer(context, task.tracking, url, player);
+      return;
+    }
+    // Nói ĐÚNG lý do. "Chưa có link" cho cả hai trường hợp là bắt người dùng
+    // đoán xem nên đợi hay nên đi tìm chỗ khác.
+    final sealing =
+        clip?.sealStatus == 'pending' || clip?.sealStatus == 'rendering';
+    _toast(context, sealing ? l10n.sealWorking : l10n.toastVideoNoPlayLink);
+  } on Object {
+    if (context.mounted) _toast(context, l10n.toastVideoNoPlayLink);
+  }
+}
+
+/// Dòng bằng chứng trên máy chủ của một clip trong hàng đợi.
+///
+/// Hàng đợi chỉ giữ mã vận đơn chứ không giữ `order_id`, nên phải tìm đơn
+/// trước. Trả về cả DTO chứ không chỉ `url`: vắng link có thể là "máy chủ đang
+/// đóng dấu" (đợi một lát là xong) hoặc "clip không còn" (đợi mãi cũng không
+/// xong), và người dùng cần biết mình đang ở tình huống nào.
+///
+/// `null` = không tìm thấy dòng nào.
+Future<EvidenceDto?> _serverClip(
+  EcRepository repo,
+  String? shopId,
+  String tracking,
+  String evidenceId,
+) async {
+  if (shopId == null || shopId.isEmpty) return null;
+  for (final summary in await repo.searchOrders(shopId, tracking)) {
+    final detail = await repo.order(shopId, summary.id);
+    for (final item in detail.evidence) {
+      if (item.id == evidenceId) return item;
+    }
+  }
+  return null;
+}
+
+void _pushQueuePlayer(
+  BuildContext context,
+  String title,
+  String url,
+  VideoPlayerService player, {
+  bool isLocalFile = false,
+}) => GoRouter.of(context).push(
+  '/video-player',
+  extra: _VideoPlayerRouteExtra(
+    title: title,
+    url: url,
+    videoPlayerService: player,
+    isLocalFile: isLocalFile,
+  ),
+);
+
 EcUploadItem _taskToItem(UploadTask task) => EcUploadItem(
   id: task.id,
+  // Chỉ clip ĐÃ lên xong mới bấm xem được. Trước đó thứ duy nhất tồn tại là
+  // tệp thô trên máy, và hàng đợi cố ý không mời người dùng xem nó.
+  //
+  // `remoteUrl` mang `evidence_id` chứ không phải URL — tên trường đặt sai từ
+  // trước (`ApiEvidenceUploader.upload` trả về id, xem ghi chú ở đó). Vắng id
+  // thì không tra được bản xem tạm lẫn dòng bằng chứng trên máy chủ.
+  playable:
+      task.state == EcUploadState.done &&
+      task.remoteUrl != null &&
+      task.type != _attachedPhotoType,
   code: task.tracking,
   typeLabel: task.type,
   when: '${_dayLabelOf(task.createdAt)} ${_hhmm(task.createdAt)}',
@@ -8952,7 +9146,8 @@ GoRouter _buildRouter(
                       maxRecording: shop.clipBudget.maxRecording,
                       isActive: isRecordTabActive,
                       onBack: () => c.go('/home'),
-                      onQueueTap: () => _showQueueSheet(c, queue, shop.id),
+                      onQueueTap: () =>
+                          _showQueueSheet(c, queue, repo, videoPlayer, shop.id),
                       onRequestCode: () => c.push<String>('/manual'),
                       onConfirmManualCode: (code) =>
                           _confirmManualTracking(c, repo, shop.id, code),
@@ -9201,7 +9396,12 @@ GoRouter _buildRouter(
                   showRecordedBy: !(extra?.fromClaim ?? false),
                   onClose: () => c.pop(),
                   onCopyLink: () {
-                    final url = live?.mediaUrl;
+                    // Link Drive TRƯỚC khi có: đây là thứ người bán chép rồi
+                    // gửi đi, và với shop cắm Drive thì họ muốn thấy tệp nằm
+                    // trong kho của chính mình chứ không phải một tên miền lạ.
+                    // Phát / Tải về / Cắt đoạn vẫn đi bằng `mediaUrl` — xem
+                    // [EcVideoDetail.shareUrl] để biết vì sao không đổi cả ba.
+                    final url = live?.shareUrl ?? live?.mediaUrl;
                     if (url == null) {
                       _toast(pageContext, c.l10n.toastVideoNoPlayLink);
                       return;
@@ -9478,6 +9678,8 @@ GoRouter _buildRouter(
         path: '/queue',
         builder: (c, s) => _QueueRoute(
           queue: queue,
+          repo: repo,
+          player: videoPlayer,
           // No shop resolved yet ⇒ treat as staff and hide the delete
           // affordance; evidence is easier to re-record than to un-delete.
           canDelete: (_selected(selectedShop)?.role ?? 'staff') != 'staff',

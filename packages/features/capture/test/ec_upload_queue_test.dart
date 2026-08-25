@@ -59,15 +59,19 @@ void main() {
 
   tearDown(() => dir.deleteSync(recursive: true));
 
-  // Hợp đồng của hàng đợi ĐÃ ĐỔI: upload xong thì task RỜI hàng đợi, không nằm
-  // lại dưới dạng `done`. Lý do ghi ngay trong `_process`: clip lúc đó đã nằm
-  // trên dòng thời gian bằng chứng của vận đơn, để lại một mục "xong" vĩnh viễn
-  // ở đây là kể cùng một việc hai lần.
+  // Hợp đồng của hàng đợi: upload xong thì hàng Ở LẠI danh sách dưới dạng
+  // `done`, cho tới khi chính người dùng xoá nó (dấu × từng hàng, nút Xoá hết,
+  // hay trần `queueDisplayLimit`). Lý do ghi ngay trong `_process`: người đang
+  // đóng gói cần thấy mình đã quay được bao nhiêu clip, mà danh sách tự rỗng đi
+  // sau mỗi lượt lọt thì trông y như vừa bị xoá sạch — và họ quay lại lần nữa
+  // cho chắc.
   //
-  // Ba test dưới đây từng khẳng định điều ngược lại và đỏ vì vậy — không phải
-  // vì hàng đợi "không chạy trong test" như chẩn đoán ban đầu. Nó chạy, chạy
-  // xong, rồi dọn chỗ.
-  test('upload xong thì clip RỜI hàng đợi', () async {
+  // Thứ phải về 0 là `pendingCount`, không phải `tasks.length`: đó mới là con
+  // số chip ☁ trên màn quay đọc, tức "còn bao nhiêu clip CHƯA lên".
+  //
+  // Ba test dưới đây từng khẳng định điều ngược lại — chúng có trước lúc lịch
+  // sử "đã xong" được giữ lại, và đỏ kể từ đó.
+  test('upload xong thì hàng ở lại làm lịch sử, nhưng hết việc phải làm', () async {
     final queue = EcUploadQueue(
       uploader: _FakeUploader(['https://cdn/x.mp4']),
       directory: dir,
@@ -81,7 +85,9 @@ void main() {
     // Let the async processor run to completion.
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(queue.tasks, isEmpty);
+    expect(queue.tasks.single.state, EcUploadState.done);
+    expect(queue.tasks.single.remoteUrl, 'https://cdn/x.mp4');
+    expect(queue.pendingCount, 0);
   });
 
   // Máy dùng chung ca: A quay rồi đăng xuất, B đăng nhập. Clip của A phải BIẾN
@@ -186,7 +192,8 @@ void main() {
     await queue.retry(queue.tasks.single.id);
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(queue.tasks, isEmpty);
+    expect(queue.tasks.single.state, EcUploadState.done);
+    expect(queue.pendingCount, 0);
   });
 
   test('quota failures wait for quota and retry can resume upload', () async {
@@ -211,7 +218,8 @@ void main() {
     await queue.retry(queue.tasks.single.id);
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(queue.tasks, isEmpty);
+    expect(queue.tasks.single.state, EcUploadState.done);
+    expect(queue.pendingCount, 0);
   });
 
   test('without an uploader clips persist and wait', () async {

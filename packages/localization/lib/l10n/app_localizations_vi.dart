@@ -863,6 +863,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get detailSize => 'Dung lượng';
 
   @override
+  String get detailStorage => 'Kho lưu trữ';
+
+  @override
+  String get storageNameCloud => 'Cloud ZenPack';
+
+  @override
+  String get storageNameDrive => 'Google Drive';
+
+  @override
+  String get storageNameS3 => 'Kho riêng (S3)';
+
+  @override
   String get detailUploadStatus => 'Trạng thái upload';
 
   @override

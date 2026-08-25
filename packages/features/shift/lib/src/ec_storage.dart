@@ -9,6 +9,7 @@
 /// `owner_only`, ở đây chỉ là không chào cái nút chắc chắn 403.
 library;
 
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:async';
 
 import 'package:app_ui/app_ui.dart';
@@ -658,7 +659,14 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                     ),
                     const SizedBox(height: 10),
                     _StorageOption(
-                      icon: LucideIcons.hardDrive,
+                      // Logo Drive thật, không dùng chung ổ cứng với thẻ S3
+                      // ngay trên: hai thẻ cùng một hình thì mắt phải đọc chữ
+                      // mới phân biệt được, mà chữ là thứ người ta lướt qua.
+                      iconBuilder: (ink) => FaIcon(
+                        FontAwesomeIcons.googleDrive,
+                        size: 20,
+                        color: ink,
+                      ),
                       title: l10n.storageDriveTitle,
                       // Không có dòng mô tả: thẻ này mở ra là tài khoản đang
                       // cắm, và đó mới là thứ người ta vào đây để đọc.
@@ -694,7 +702,6 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
 /// liệu thấy có tính năng rồi đi tìm mãi không ra.
 class _StorageOption extends StatelessWidget {
   const _StorageOption({
-    required this.icon,
     required this.title,
     required this.description,
     required this.selected,
@@ -703,9 +710,21 @@ class _StorageOption extends StatelessWidget {
     this.lockNote,
     this.detail,
     this.onTap,
-  });
+    this.icon,
+    this.iconBuilder,
+  }) : assert(
+         icon != null || iconBuilder != null,
+         'thẻ kho phải có một hình để nhận ra nó',
+       );
 
-  final IconData icon;
+  final IconData? icon;
+
+  /// Hình vẽ tay khi bộ icon chung không có cái cần dùng — logo Google Drive
+  /// nằm ở bộ thương hiệu của Font Awesome, và bộ đó dùng widget riêng
+  /// (`FaIcon`) chứ không cắm được vào `Icon`.
+  ///
+  /// Nhận màu chữ của thẻ để hình mờ đi cùng lúc với chữ khi thẻ bị khoá.
+  final Widget Function(Color ink)? iconBuilder;
   final String title;
 
   /// Dòng mô tả dưới tên kho. `null` = thẻ chỉ có tên, và phần mở ra bên dưới
@@ -750,7 +769,7 @@ class _StorageOption extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: Icon(icon, size: 20, color: ink),
+            child: iconBuilder?.call(ink) ?? Icon(icon, size: 20, color: ink),
           ),
           Expanded(
             child: Column(

@@ -1644,6 +1644,30 @@ abstract class AppLocalizations {
   /// **'Size'**
   String get detailSize;
 
+  /// No description provided for @detailStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get detailStorage;
+
+  /// No description provided for @storageNameCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'ZenPack Cloud'**
+  String get storageNameCloud;
+
+  /// No description provided for @storageNameDrive.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Drive'**
+  String get storageNameDrive;
+
+  /// No description provided for @storageNameS3.
+  ///
+  /// In en, this message translates to:
+  /// **'Own storage (S3)'**
+  String get storageNameS3;
+
   /// No description provided for @detailUploadStatus.
   ///
   /// In en, this message translates to:

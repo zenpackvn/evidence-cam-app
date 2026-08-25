@@ -1551,6 +1551,7 @@ class EcUploadItem {
     this.progressPercent,
     this.retryCount,
     this.errorMessage,
+    this.playable = false,
   });
 
   /// Stable id used to route retry actions back to the queue.
@@ -1576,6 +1577,17 @@ class EcUploadItem {
   /// [EcUploadStatus.error] — shown under the retry count so a seller isn't
   /// left staring at an unexplained "Lỗi".
   final String? errorMessage;
+
+  /// Bấm vào hàng này thì xem lại được clip.
+  ///
+  /// Chỉ đúng với clip ĐÃ tải lên xong: trước đó thứ duy nhất tồn tại là tệp
+  /// thô trên máy, và hàng đợi cố ý không mời người dùng xem nó — họ đang đợi
+  /// nó lên, không đợi nó phát. Ảnh đính kèm cũng không bật, vì màn mở ra là
+  /// trình phát video.
+  ///
+  /// Bên gọi quyết định, không phải giao diện: chỉ nó biết clip còn bản xem
+  /// tạm trên máy hay còn link ở máy chủ hay không.
+  final bool playable;
 }
 
 /// The upload queue list — quota banner and one status per video.
@@ -1589,6 +1601,7 @@ class EcUploadQueueScreen extends StatelessWidget {
     this.onResume,
     this.onDelete,
     this.onClear,
+    this.onOpen,
     super.key,
   });
 
@@ -1614,6 +1627,9 @@ class EcUploadQueueScreen extends StatelessWidget {
 
   /// Called with an item when its remove affordance is tapped.
   final ValueChanged<EcUploadItem>? onDelete;
+
+  /// Bấm vào một hàng [EcUploadItem.playable] để xem lại clip.
+  final ValueChanged<EcUploadItem>? onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -1681,6 +1697,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                 onPause: onPause,
                 onResume: onResume,
                 onDelete: onDelete,
+                onOpen: onOpen,
               ),
             ),
           ],
@@ -1703,6 +1720,7 @@ class EcUploadQueueList extends StatelessWidget {
     this.onPause,
     this.onResume,
     this.onDelete,
+    this.onOpen,
     this.padding = const EdgeInsets.fromLTRB(18, 18, 18, 18),
     super.key,
   });
@@ -1712,6 +1730,9 @@ class EcUploadQueueList extends StatelessWidget {
   final ValueChanged<EcUploadItem>? onPause;
   final ValueChanged<EcUploadItem>? onResume;
   final ValueChanged<EcUploadItem>? onDelete;
+
+  /// Bấm vào một hàng [EcUploadItem.playable] để xem lại clip.
+  final ValueChanged<EcUploadItem>? onOpen;
   final EdgeInsets padding;
 
   @override
@@ -1771,6 +1792,7 @@ class EcUploadQueueList extends StatelessWidget {
                         onPause: onPause,
                         onResume: onResume,
                         onDelete: onDelete,
+                        onOpen: onOpen,
                       ),
                     ],
                   ],
@@ -1844,6 +1866,22 @@ class _QuotaBanner extends StatelessWidget {
   }
 }
 
+/// Bọc [child] trong một vùng bấm CHỈ KHI có [onTap].
+///
+/// Không có việc để làm thì không dựng thêm một lớp widget nào: một danh sách
+/// dài mà mỗi hàng đội thêm một `StatefulWidget` chỉ để không làm gì là phí, và
+/// quan trọng hơn — cây widget không đổi thì bản dựng ra không đổi.
+class _MaybeTap extends StatelessWidget {
+  const _MaybeTap({required this.child, this.onTap});
+
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) =>
+      onTap == null ? child : EcTap(onTap: onTap, child: child);
+}
+
 class _UploadRow extends StatelessWidget {
   const _UploadRow({
     required this.item,
@@ -1851,6 +1889,7 @@ class _UploadRow extends StatelessWidget {
     this.onPause,
     this.onResume,
     this.onDelete,
+    this.onOpen,
   });
   final EcUploadItem item;
   final ValueChanged<EcUploadItem>? onRetry;
@@ -1865,6 +1904,9 @@ class _UploadRow extends StatelessWidget {
   /// Called when the item's remove icon is tapped.
   final ValueChanged<EcUploadItem>? onDelete;
 
+  /// Bấm vào phần thân hàng để xem lại clip. Xem [EcUploadItem.playable].
+  final ValueChanged<EcUploadItem>? onOpen;
+
   @override
   Widget build(BuildContext context) {
     final canPause =
@@ -1873,6 +1915,7 @@ class _UploadRow extends StatelessWidget {
             item.status == EcUploadStatus.error ||
             item.status == EcUploadStatus.quotaWait);
     final canResume = onResume != null && item.status == EcUploadStatus.paused;
+    final canOpen = onOpen != null && item.playable;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 15),
       child: Row(
@@ -1900,35 +1943,62 @@ class _UploadRow extends StatelessWidget {
             const SizedBox(width: 10),
           ],
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.code,
-                  overflow: TextOverflow.ellipsis,
-                  style: _t(16, FontWeight.w700, BrandColors.ink),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  '${item.typeLabel} · ${item.when} · ${_statusWord(context, item.status)}',
-                  overflow: TextOverflow.ellipsis,
-                  style: _t(12, FontWeight.w400, BrandColors.mut),
-                ),
-                if (item.status == EcUploadStatus.uploading) ...[
-                  const SizedBox(height: 8),
-                  _UploadProgressBar(percent: item.progressPercent ?? 0),
-                ],
-                if (item.status == EcUploadStatus.error &&
-                    item.errorMessage != null) ...[
+            // Bấm vào THÂN hàng, không phải vào một nút riêng: chỗ bấm rộng
+            // bằng cả hàng nên không phải ngắm, và dấu × vẫn nằm ngoài vùng
+            // này nên không có chuyện định xem lại mà bấm trúng xoá.
+            //
+            // `EcTap` trần chứ KHÔNG phải `_Tap`: `_Tap` là vỏ cho nút icon và
+            // nó tự thêm `Padding(all: 4)`, đủ để đẩy lệch mọi hàng trong danh
+            // sách. Và chỉ bọc khi hàng thật sự bấm được — hàng chưa lên xong
+            // phải dựng ra đúng từng điểm ảnh như trước.
+            child: _MaybeTap(
+              onTap: canOpen ? () => onOpen!(item) : null,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          item.code,
+                          overflow: TextOverflow.ellipsis,
+                          style: _t(16, FontWeight.w700, BrandColors.ink),
+                        ),
+                      ),
+                      // Dấu phát nhỏ: không có nó thì không ai đoán được hàng
+                      // này bấm vào được, và tính năng coi như không tồn tại.
+                      if (canOpen) ...[
+                        const SizedBox(width: 8),
+                        const Icon(
+                          LucideIcons.circlePlay,
+                          size: 16,
+                          color: BrandColors.mut,
+                        ),
+                      ],
+                    ],
+                  ),
                   const SizedBox(height: 5),
                   Text(
-                    item.errorMessage!,
-                    maxLines: 2,
+                    '${item.typeLabel} · ${item.when} · ${_statusWord(context, item.status)}',
                     overflow: TextOverflow.ellipsis,
-                    style: _t(12, FontWeight.w400, BrandColors.rec),
+                    style: _t(12, FontWeight.w400, BrandColors.mut),
                   ),
+                  if (item.status == EcUploadStatus.uploading) ...[
+                    const SizedBox(height: 8),
+                    _UploadProgressBar(percent: item.progressPercent ?? 0),
+                  ],
+                  if (item.status == EcUploadStatus.error &&
+                      item.errorMessage != null) ...[
+                    const SizedBox(height: 5),
+                    Text(
+                      item.errorMessage!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: _t(12, FontWeight.w400, BrandColors.rec),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           const SizedBox(width: 12),

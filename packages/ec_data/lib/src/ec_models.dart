@@ -450,6 +450,8 @@ class EvidenceDto {
     this.thumbUrl,
     this.sha256,
     this.url,
+    this.shareUrl,
+    this.storageKind,
     this.retentionExpiresAt,
     this.durationSeconds,
     this.clockSkewMs,
@@ -472,6 +474,8 @@ class EvidenceDto {
     device: j['device'] as String?,
     r2Key: j['r2_key'] as String?,
     url: j['url'] as String?,
+    shareUrl: j['share_url'] as String?,
+    storageKind: j['storage_kind'] as String?,
     thumbUrl: j['thumb_url'] as String?,
     sha256: j['sha256'] as String?,
     retentionExpiresAt: _intN(j['retention_expires_at']),
@@ -506,6 +510,18 @@ class EvidenceDto {
   final int? retentionExpiresAt;
   final String? r2Key;
   final String? url;
+
+  /// Trang tệp trên Google Drive của shop, để NGƯỜI ĐỌC mở.
+  ///
+  /// Khác [url] — thứ trình phát dùng. `null` với kho hệ thống và kho S3.
+  final String? shareUrl;
+
+  /// Kho đang GIỮ clip này: `gdrive`, `s3`, hoặc `null` = Cloud ZenPack.
+  ///
+  /// `null` cũng đúng với clip của shop cắm kho riêng nhưng CHƯA đẩy sang được
+  /// — lúc đó byte vẫn nằm ở vùng chờ của ZenPack, và nói "Google Drive" là
+  /// nói sai về chỗ bằng chứng đang nằm.
+  final String? storageKind;
 
   /// Poster frame for this clip — a few dozen KB, so a timeline can show every
   /// entry without pulling a single video byte. Null for photos (their own
@@ -954,8 +970,8 @@ class StorageStateDto {
     // Mặc định TRUE: backend cũ không có cờ này, và ở đó hễ có `storage` là kho
     // đang được dùng. Đoán "false" sẽ làm mọi shop đang chạy kho riêng đột ngột
     // hiện thành Cloud Zenpack.
-    storageActive: (j["storage_active"] as bool?) ?? true,
-    byosAllowed: (j["byos_allowed"] as bool?) ?? false,
+    storageActive: (j['storage_active'] as bool?) ?? true,
+    byosAllowed: (j['byos_allowed'] as bool?) ?? false,
     // Mặc định FALSE khi máy chủ chưa trả trường này: bản backend cũ không có
     // cặp client native, nên đoán "có" là đẩy người dùng vào đúng cái ngõ cụt
     // mà cờ này sinh ra để tránh.
