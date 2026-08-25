@@ -322,11 +322,16 @@ EcAuthException _authException(FirebaseAuthException error) {
 Exception _socialException(Object error) {
   if (error is EcAuthException) return error;
   if (error is FirebaseAuthException) return _authException(error);
-  if (_isSignInCancellation(error)) return const EcAuthCancelled();
+  if (isGoogleSignInCancellation(error)) return const EcAuthCancelled();
   return const EcAuthException('Không thực hiện được, vui lòng thử lại.');
 }
 
-bool _isSignInCancellation(Object error) {
+/// Người dùng TỰ TẮT hộp thoại đăng nhập của Google/Apple, không phải lỗi.
+///
+/// Công khai vì màn cắm kho Drive cũng cần phân biệt: huỷ giữa chừng thì không
+/// được để lại một kho ma, và cũng không được hiện thông báo lỗi — người ta vừa
+/// chủ động bấm huỷ.
+bool isGoogleSignInCancellation(Object error) {
   if (error is GoogleSignInException) {
     return error.code == GoogleSignInExceptionCode.canceled;
   }
