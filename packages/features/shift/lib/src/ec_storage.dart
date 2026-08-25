@@ -1657,8 +1657,13 @@ class _FieldState extends State<_Field> {
                     padding: const EdgeInsets.only(right: 10),
                     child: EcTap(
                       onTap: () => setState(() => _obscure = !_obscure),
+                      // Hình nói TRẠNG THÁI ĐANG CÓ, không nói việc sắp làm:
+                      // mắt gạch = chữ đang bị che, mắt mở = chữ đang hiện.
+                      // Lối kia (mắt mở = "bấm để hiện") đọc ngược với thứ
+                      // đang thấy trên màn, và ở một ô toàn chấm tròn thì
+                      // không có gì để đối chiếu cho ra lẽ.
                       child: Icon(
-                        _obscure ? LucideIcons.eye : LucideIcons.eyeOff,
+                        _obscure ? LucideIcons.eyeOff : LucideIcons.eye,
                         size: 18,
                         color: PenColors.mut,
                       ),

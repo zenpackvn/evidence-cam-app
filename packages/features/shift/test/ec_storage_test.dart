@@ -339,20 +339,23 @@ void main() {
           .widget<CupertinoTextField>(find.byType(CupertinoTextField).at(5))
           .obscureText;
 
+      // Hình nói trạng thái ĐANG CÓ: che thì mắt gạch, hiện thì mắt mở.
       expect(secretHidden(), isTrue, reason: 'mở form ra là phải che sẵn');
       // Đúng MỘT con mắt: năm ô kia không có gì để giấu.
-      expect(find.byIcon(LucideIcons.eye), findsOneWidget);
-
-      await tester.ensureVisible(find.byIcon(LucideIcons.eye));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(LucideIcons.eye));
-      await tester.pump();
-      expect(secretHidden(), isFalse);
       expect(find.byIcon(LucideIcons.eyeOff), findsOneWidget);
+      expect(find.byIcon(LucideIcons.eye), findsNothing);
 
+      await tester.ensureVisible(find.byIcon(LucideIcons.eyeOff));
+      await tester.pumpAndSettle();
       await tester.tap(find.byIcon(LucideIcons.eyeOff));
       await tester.pump();
+      expect(secretHidden(), isFalse);
+      expect(find.byIcon(LucideIcons.eye), findsOneWidget);
+
+      await tester.tap(find.byIcon(LucideIcons.eye));
+      await tester.pump();
       expect(secretHidden(), isTrue);
+      expect(find.byIcon(LucideIcons.eyeOff), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
