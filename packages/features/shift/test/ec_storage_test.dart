@@ -254,6 +254,108 @@ void main() {
       expect(_saveEnabled(tester), isTrue);
     });
 
+    // Thử XANH mà form vẫn phải ở lại.
+    //
+    // Bộ test cũ không dựng lại được lỗi này vì nó không mô phỏng `busy`: app
+    // thật bật `busy` lúc gọi máy chủ rồi tắt khi có trả lời, và
+    // `didUpdateWidget` đọc đúng cặp bật-tắt đó thành "thao tác xong mà kho
+    // không đổi = người dùng huỷ" — nên một lượt thử THÀNH CÔNG đóng sập form
+    // và cuốn theo sáu ô vừa gõ. Hậu quả người dùng thấy: thử được đúng một
+    // lần, muốn thử lần nữa phải mở lại "Đổi cấu hình" và gõ lại từ đầu.
+    testWidgets('thử xanh thì form ở lại, và thử lại được lần nữa', (
+      tester,
+    ) async {
+      Future<void> pumpWith({bool busy = false, bool passed = false}) => _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          busy: busy,
+          s3TestPassed: passed,
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+
+      await pumpWith();
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+      await _fillS3(tester);
+
+      await tester.tap(find.bySemanticsLabel('Kiểm tra'));
+      await tester.pump();
+      // Máy chủ nhận lệnh (bận) rồi trả lời xanh (hết bận).
+      await pumpWith(busy: true);
+      await pumpWith(passed: true);
+      await tester.pump();
+
+      // Sáu ô còn nguyên, và câu trả lời nằm ngay cạnh chúng.
+      expect(find.byType(CupertinoTextField), findsNWidgets(6));
+      expect(
+        find.text('Cấu hình chạy được. Bấm Lưu để chuyển sang kho này.'),
+        findsOneWidget,
+      );
+      expect(_saveEnabled(tester), isTrue);
+
+      // Sửa tiếp một ký tự: câu trả lời cũ hết hiệu lực, Lưu khoá lại, và nút
+      // Kiểm tra vẫn còn đó để thử bộ giá trị mới.
+      await tester.enterText(
+        find.byType(CupertinoTextField).at(2),
+        'bucket-khac',
+      );
+      await tester.pump();
+      expect(find.bySemanticsLabel('Kiểm tra'), findsOneWidget);
+      expect(_saveEnabled(tester), isFalse);
+      expect(
+        find.text('Cấu hình chạy được. Bấm Lưu để chuyển sang kho này.'),
+        findsNothing,
+      );
+
+      await tester.tap(find.bySemanticsLabel('Kiểm tra'));
+      await tester.pump();
+      await pumpWith(busy: true);
+      await pumpWith(passed: true);
+      await tester.pump();
+      expect(find.byType(CupertinoTextField), findsNWidgets(6));
+      expect(_saveEnabled(tester), isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Thử ĐỎ thì form cũng ở lại — đã đúng từ trước, giữ lại để nhánh `_testing`
+    // không vô tình cướp mất đường này.
+    testWidgets('thử đỏ thì form ở lại cùng câu lỗi của máy chủ', (
+      tester,
+    ) async {
+      Future<void> pumpWith({bool busy = false, String? error}) => _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          busy: busy,
+          s3ErrorText: error,
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+
+      await pumpWith();
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+      await _fillS3(tester);
+      await tester.tap(find.bySemanticsLabel('Kiểm tra'));
+      await tester.pump();
+      await pumpWith(busy: true);
+      await pumpWith(error: 'AccessDenied: thiếu quyền s3:PutObject');
+      await tester.pump();
+
+      expect(find.byType(CupertinoTextField), findsNWidgets(6));
+      expect(
+        find.text('AccessDenied: thiếu quyền s3:PutObject'),
+        findsOneWidget,
+      );
+      expect(_saveEnabled(tester), isFalse);
+      expect(find.bySemanticsLabel('Kiểm tra'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     // Thử xanh rồi đổi endpoint thì kết quả cũ không còn nói gì về bộ giá trị
     // đang nằm trên màn.
     testWidgets('sửa ô sau khi thử xanh thì Lưu khoá lại', (tester) async {

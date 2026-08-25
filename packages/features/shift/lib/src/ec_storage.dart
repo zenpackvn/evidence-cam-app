@@ -291,6 +291,15 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// khách để xác nhận điều đã biết.
   List<String>? _s3Prefilled;
 
+  /// Lượt Kiểm tra do chính màn này bắn đi và đang chờ máy chủ trả lời.
+  ///
+  /// [didUpdateWidget] đọc "vừa bận xong mà kho không đổi" thành "người dùng
+  /// huỷ giữa chừng" và đóng form lại. Một lượt Kiểm tra XANH khớp đúng mô tả
+  /// đó — nó cố ý KHÔNG đổi kho — nên không tách ra thì thử thành công là form
+  /// đóng sập, mang theo sáu ô vừa gõ. Người dùng thử được đúng một lần, và
+  /// muốn thử lần nữa thì phải mở lại "Đổi cấu hình" rồi gõ lại từ đầu.
+  bool _testing = false;
+
   /// Form đang khác so với lúc mở ra.
   bool get _s3Changed {
     final before = _s3Prefilled;
@@ -326,9 +335,17 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     // vừa gõ NGAY LÚC câu lỗi hiện ra — người dùng thấy thẻ đóng lại, không
     // thấy gì khác, và kết luận nút Lưu hỏng. Có lỗi thì form phải ở lại cùng
     // thứ vừa gõ và lý do hỏng.
-    if (oldWidget.busy && !widget.busy && widget.s3ErrorText == null) {
-      _picked = widget.state.kind;
-      _editingS3 = false;
+    if (oldWidget.busy && !widget.busy) {
+      // Lượt Kiểm tra không phải một thao tác bỏ dở: chạy xong thì mọi thứ phải
+      // nằm y nguyên chỗ cũ để người dùng đọc kết quả rồi sửa tiếp.
+      if (_testing) {
+        _testing = false;
+        return;
+      }
+      if (widget.s3ErrorText == null) {
+        _picked = widget.state.kind;
+        _editingS3 = false;
+      }
     }
   }
 
@@ -603,6 +620,14 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
       return _S3Form(
         fields: _s3,
         errorText: widget.s3ErrorText,
+        // Lượt thử xanh phải để lại một câu ĐỌC ĐƯỢC ngay cạnh mấy ô vừa gõ:
+        // toast trôi mất sau vài giây, mà "bộ khoá này có kết nối được không"
+        // là thứ người dùng còn phải nhìn trong lúc quyết định bấm Lưu. Sửa
+        // một ký tự là câu này biến mất — nó nói về bộ giá trị ĐÃ THỬ, không
+        // nói về bộ đang nằm trên màn.
+        okText: widget.s3TestPassed && !_editedSinceTest
+            ? context.l10n.storageValidateOk
+            : null,
         keyHint: widget.state.s3KeyMasked,
         onChanged: () => setState(() => _editedSinceTest = true),
       );
@@ -688,7 +713,10 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                     _TestButton(
                       enabled: _s3.readyWithStoredKeys && !widget.busy,
                       onTap: () {
-                        setState(() => _editedSinceTest = false);
+                        setState(() {
+                          _editedSinceTest = false;
+                          _testing = true;
+                        });
                         _s3.submit(widget.onTestS3!);
                       },
                     ),
@@ -1085,6 +1113,7 @@ class _S3Form extends StatelessWidget {
     required this.fields,
     required this.onChanged,
     this.errorText,
+    this.okText,
     this.keyHint = '',
   });
 
@@ -1096,6 +1125,9 @@ class _S3Form extends StatelessWidget {
 
   /// Câu `hint` nguyên văn từ máy chủ: thiếu quyền gì, sửa thế nào.
   final String? errorText;
+
+  /// Câu báo lượt thử ĐÃ XANH, cho đúng bộ giá trị đang hiện trên màn.
+  final String? okText;
 
   /// Đuôi access key đang lưu (`…abcd`), làm chữ mờ cho ô khoá.
   final String keyHint;
@@ -1160,6 +1192,9 @@ class _S3Form extends StatelessWidget {
           if (errorText?.isNotEmpty ?? false) ...[
             const SizedBox(height: 8),
             _NoteBox(text: errorText!, danger: true),
+          ] else if (okText?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 8),
+            _NoteBox(text: okText!),
           ],
         ],
       ),
