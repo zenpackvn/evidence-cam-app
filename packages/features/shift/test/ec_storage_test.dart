@@ -6,6 +6,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 Future<void> _pump(WidgetTester tester, Widget screen) {
   tester.view.physicalSize = const Size(390, 844);
@@ -252,6 +253,46 @@ void main() {
       await tester.pump();
 
       expect(_saveEnabled(tester), isTrue);
+    });
+
+    // Khoá bí mật dài mấy chục ký tự và luôn được DÁN vào. Dán hụt một ký tự
+    // thì máy chủ chỉ nói `SignatureDoesNotMatch` — câu không chỉ ra ô nào sai,
+    // mà một hàng chấm tròn thì không soi lại được. Con mắt là đường duy nhất
+    // để tự kiểm thứ vừa dán.
+    testWidgets('ô khoá bí mật có con mắt để nhìn hoặc che lại', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(canManage: true, byosAllowed: true),
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+
+      // Sáu ô theo thứ tự endpoint · region · bucket · prefix · khoá · bí mật.
+      bool secretHidden() => tester
+          .widget<CupertinoTextField>(find.byType(CupertinoTextField).at(5))
+          .obscureText;
+
+      expect(secretHidden(), isTrue, reason: 'mở form ra là phải che sẵn');
+      // Đúng MỘT con mắt: năm ô kia không có gì để giấu.
+      expect(find.byIcon(LucideIcons.eye), findsOneWidget);
+
+      await tester.ensureVisible(find.byIcon(LucideIcons.eye));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(LucideIcons.eye));
+      await tester.pump();
+      expect(secretHidden(), isFalse);
+      expect(find.byIcon(LucideIcons.eyeOff), findsOneWidget);
+
+      await tester.tap(find.byIcon(LucideIcons.eyeOff));
+      await tester.pump();
+      expect(secretHidden(), isTrue);
+      expect(tester.takeException(), isNull);
     });
 
     // Thử XANH mà form vẫn phải ở lại.

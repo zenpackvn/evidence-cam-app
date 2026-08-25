@@ -1577,7 +1577,7 @@ class _EcStorageConnectScreenState extends State<EcStorageConnectScreen> {
   }
 }
 
-class _Field extends StatelessWidget {
+class _Field extends StatefulWidget {
   const _Field({
     required this.label,
     required this.controller,
@@ -1597,6 +1597,20 @@ class _Field extends StatelessWidget {
   final VoidCallback? onChanged;
 
   @override
+  State<_Field> createState() => _FieldState();
+}
+
+class _FieldState extends State<_Field> {
+  /// Ô khoá đang che hay đang hiện. Chỉ đổi thứ MẮT nhìn thấy — thứ gửi đi vẫn
+  /// là nguyên chuỗi trong controller.
+  ///
+  /// Khoá bí mật dài mấy chục ký tự và luôn được dán từ bảng điều khiển của nhà
+  /// cung cấp. Dán hụt một ký tự thì máy chủ trả về `SignatureDoesNotMatch` —
+  /// câu đó không chỉ ra ô nào sai, và một hàng chấm tròn thì không soi lại
+  /// được. Con mắt là đường DUY NHẤT để tự kiểm tra thứ mình vừa dán.
+  late bool _obscure = widget.obscure;
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1604,17 +1618,17 @@ class _Field extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PenText(
-            label,
+            widget.label,
             size: 13,
             color: PenColors.mut,
             weight: FontWeight.w600,
           ),
           const SizedBox(height: 6),
           CupertinoTextField(
-            controller: controller,
-            placeholder: placeholder,
-            obscureText: obscure,
-            keyboardType: keyboardType,
+            controller: widget.controller,
+            placeholder: widget.placeholder,
+            obscureText: _obscure,
+            keyboardType: widget.keyboardType,
             // Endpoint và khoá phân biệt hoa thường; bàn phím tự viết hoa chữ
             // đầu là hỏng ngay ô đầu tiên và lỗi trả về không nói được vì sao.
             autocorrect: false,
@@ -1627,11 +1641,24 @@ class _Field extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: PenColors.soft),
             ),
-            onChanged: (_) => onChanged?.call(),
+            onChanged: (_) => widget.onChanged?.call(),
+            suffix: widget.obscure
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: EcTap(
+                      onTap: () => setState(() => _obscure = !_obscure),
+                      child: Icon(
+                        _obscure ? LucideIcons.eye : LucideIcons.eyeOff,
+                        size: 18,
+                        color: PenColors.mut,
+                      ),
+                    ),
+                  )
+                : null,
           ),
-          if (hint != null) ...[
+          if (widget.hint != null) ...[
             const SizedBox(height: 4),
-            PenText(hint!, size: 12, color: PenColors.mut),
+            PenText(widget.hint!, size: 12, color: PenColors.mut),
           ],
         ],
       ),
