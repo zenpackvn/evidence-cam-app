@@ -140,10 +140,14 @@ abstract interface class EcRepository {
     String region,
     String prefix,
   });
-  Future<void> disconnectStorage(String shopId);
+  Future<void> disconnectStorage(String shopId, {StorageKind? kind});
 
   /// Thôi dùng / dùng lại kho riêng, giữ nguyên cấu hình đã cắm.
-  Future<void> setStorageActive(String shopId, {required bool active});
+  Future<void> setStorageActive(
+    String shopId, {
+    required bool active,
+    StorageKind? kind,
+  });
 
   /// Cắm Drive bằng mã uỷ quyền từ hộp thoại gốc, không qua trình duyệt.
   Future<void> connectGdriveCode(String shopId, String code);
@@ -402,7 +406,8 @@ class RemoteEcRepository implements EcRepository {
   );
 
   @override
-  Future<void> disconnectStorage(String shopId) => _api.deleteStorage(shopId);
+  Future<void> disconnectStorage(String shopId, {StorageKind? kind}) =>
+      _api.deleteStorage(shopId, kind: kind);
 
   @override
   Future<void> connectGdriveCode(String shopId, String code) =>
@@ -412,8 +417,11 @@ class RemoteEcRepository implements EcRepository {
   Future<String> gdriveAuthUrl(String shopId) => _api.gdriveAuthUrl(shopId);
 
   @override
-  Future<void> setStorageActive(String shopId, {required bool active}) =>
-      _api.setStorageActive(shopId, active: active);
+  Future<void> setStorageActive(
+    String shopId, {
+    required bool active,
+    StorageKind? kind,
+  }) => _api.setStorageActive(shopId, active: active, kind: kind);
 
   @override
   @override

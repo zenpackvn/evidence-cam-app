@@ -863,6 +863,27 @@ class AppLocalizationsVi extends AppLocalizations {
   String get detailSize => 'Dung lượng';
 
   @override
+  String get storageFieldEndpointHint =>
+      'Phải bắt đầu bằng https:// và là tên miền công khai của nhà cung cấp — http thường sẽ để lộ khoá của bạn trên đường truyền.';
+
+  @override
+  String get storageProbeStepPut => 'Ghi tệp lên kho';
+
+  @override
+  String get storageProbeStepHead => 'Đọc thông tin tệp';
+
+  @override
+  String get storageProbeStepGet => 'Tải tệp về';
+
+  @override
+  String get storageProbeStepDelete => 'Xoá tệp thử';
+
+  @override
+  String storageErrorCode(String code) {
+    return 'Mã lỗi: $code';
+  }
+
+  @override
   String get detailStorage => 'Kho lưu trữ';
 
   @override

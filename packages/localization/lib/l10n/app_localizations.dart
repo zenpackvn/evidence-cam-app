@@ -1644,6 +1644,42 @@ abstract class AppLocalizations {
   /// **'Size'**
   String get detailSize;
 
+  /// No description provided for @storageFieldEndpointHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Must start with https:// and be the provider public domain — plain http would leak your keys in transit.'**
+  String get storageFieldEndpointHint;
+
+  /// No description provided for @storageProbeStepPut.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a file'**
+  String get storageProbeStepPut;
+
+  /// No description provided for @storageProbeStepHead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read file info'**
+  String get storageProbeStepHead;
+
+  /// No description provided for @storageProbeStepGet.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the file'**
+  String get storageProbeStepGet;
+
+  /// No description provided for @storageProbeStepDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the file'**
+  String get storageProbeStepDelete;
+
+  /// No description provided for @storageErrorCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Error code: {code}'**
+  String storageErrorCode(String code);
+
   /// No description provided for @detailStorage.
   ///
   /// In en, this message translates to:

@@ -25,6 +25,7 @@ void main() {
   group('cắm Drive từ hộp thoại gốc', _gdriveNativeTests);
   group('tên người quay', _recordedByTests);
   group('kho giữ clip', _storageFieldsTests);
+  group('vòng thử kho S3', _storageProbeTests);
   late _MockDio dio;
   late EcApi api;
 
@@ -844,6 +845,55 @@ void _gdriveNativeTests() {
   });
 }
 
+/// Vòng thử kho S3 phải về tới app NGUYÊN VẸN.
+///
+/// Câu lỗi của nhà cung cấp (`AccessDenied`, `NoSuchBucket`…) là thứ duy nhất
+/// nói đúng chuyện gì đã xảy ra, và người điền form mới là người sửa được IAM
+/// bên đó. Rút gọn ở tầng DTO là bịt mắt đúng người có quyền sửa.
+void _storageProbeTests() {
+  test('giữ đủ từng bước kèm lỗi nguyên văn', () {
+    final dto = StorageValidateDto.fromJson(const {
+      'ok': false,
+      'hint': 'Thiếu quyền s3:GetObject trên bucket.',
+      'steps': [
+        {'step': 'put', 'ok': true},
+        {'step': 'head', 'ok': true},
+        {'step': 'get', 'ok': false, 'detail': 'AccessDenied'},
+        {'step': 'delete', 'ok': false, 'detail': 'AccessDenied'},
+      ],
+    });
+
+    expect(dto.ok, isFalse);
+    expect(dto.steps, hasLength(4));
+    // Bước hỏng ĐẦU TIÊN, không phải bước cuối: nó chỉ đúng quyền còn thiếu.
+    expect(dto.failedStep, 'get');
+    expect(
+      dto.steps.where((s) => !s.ok).map((s) => s.detail),
+      ['AccessDenied', 'AccessDenied'],
+    );
+  });
+
+  test('vòng xanh thì không có bước hỏng nào', () {
+    final dto = StorageValidateDto.fromJson(const {
+      'ok': true,
+      'steps': [
+        {'step': 'put', 'ok': true},
+        {'step': 'delete', 'ok': true},
+      ],
+    });
+    expect(dto.ok, isTrue);
+    expect(dto.failedStep, isNull);
+  });
+
+  // Bản máy chủ cũ, hoặc lỗi trước cả vòng thử: không được ném.
+  test('vắng steps thì rỗng, không ném', () {
+    final dto = StorageValidateDto.fromJson(const {'ok': false});
+    expect(dto.steps, isEmpty);
+    expect(dto.failedStep, isNull);
+    expect(dto.hint, isNull);
+  });
+}
+
 /// Kho đang giữ clip, và link Drive để NGƯỜI ĐỌC mở.
 ///
 /// Hai trường này đi cùng nhau: `storage_kind` nói clip nằm ở đâu, `share_url`
@@ -874,6 +924,50 @@ void _storageFieldsTests() {
     });
     expect(dto.storageKind, isNull);
     expect(dto.shareUrl, isNull);
+  });
+
+  // `storage` là kho ĐANG DÙNG, nên hỏi nó về tài khoản Drive thì mọi shop
+  // đang chạy S3 đều trả lời "không có" — trong khi tài khoản Google vẫn nằm
+  // nguyên trong `storages`, và màn kho thì vẽ thẻ Drive dựa trên câu trả lời
+  // đó.
+  test('viewFor đọc hàng Drive kể cả khi kho đang dùng là S3', () {
+    final dto = StorageStateDto.fromJson(const {
+      'storage': {
+        'kind': 's3',
+        'status': 'ok',
+        'config': {'bucket': 'evidencecam', 'prefix': 'video'},
+      },
+      'storages': [
+        {
+          'kind': 's3',
+          'status': 'ok',
+          'config': {'bucket': 'evidencecam', 'prefix': 'video'},
+        },
+        {
+          'kind': 'gdrive',
+          'status': 'ok',
+          'config': {'folderId': 'f1', 'email': 'shop@gmail.com'},
+        },
+      ],
+    });
+
+    expect(dto.kind, StorageKind.s3);
+    expect(dto.storage?.email, isNull);
+    expect(dto.viewFor(StorageKind.gdrive)?.email, 'shop@gmail.com');
+    expect(dto.viewFor(StorageKind.s3)?.s3?.bucket, 'evidencecam');
+  });
+
+  test('viewFor rơi về `storage` khi máy chủ chưa trả `storages`', () {
+    final dto = StorageStateDto.fromJson(const {
+      'storage': {
+        'kind': 'gdrive',
+        'status': 'ok',
+        'config': {'folderId': 'f1', 'email': 'shop@gmail.com'},
+      },
+    });
+
+    expect(dto.viewFor(StorageKind.gdrive)?.email, 'shop@gmail.com');
+    expect(dto.viewFor(StorageKind.s3), isNull);
   });
 }
 

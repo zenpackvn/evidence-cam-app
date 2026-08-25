@@ -954,6 +954,7 @@ class StorageHealthDto {
 class StorageStateDto {
   const StorageStateDto({
     this.storage,
+    this.storages = const [],
     this.health = const StorageHealthDto(),
     this.storageActive = true,
     this.byosAllowed = false,
@@ -964,6 +965,11 @@ class StorageStateDto {
     storage: j['storage'] is Map<String, dynamic>
         ? StorageViewDto.fromJson(j['storage'] as Map<String, dynamic>)
         : null,
+    storages: [
+      if (j['storages'] case final List<dynamic> raw)
+        for (final item in raw)
+          if (item is Map<String, dynamic>) StorageViewDto.fromJson(item),
+    ],
     health: j['health'] is Map<String, dynamic>
         ? StorageHealthDto.fromJson(j['health'] as Map<String, dynamic>)
         : const StorageHealthDto(),
@@ -980,6 +986,12 @@ class StorageStateDto {
 
   /// Null = đang dùng Cloud Zenpack (mặc định).
   final StorageViewDto? storage;
+
+  /// MỌI kho shop đang giữ cấu hình, kể cả cái đang tắt — một phần tử mỗi loại.
+  ///
+  /// Rỗng với bản máy chủ cũ chưa trả trường này; lúc đó [storage] một mình là
+  /// tất cả những gì biết được, và màn hình rơi về đúng hành vi trước đây.
+  final List<StorageViewDto> storages;
   final StorageHealthDto health;
 
   /// Kho riêng có ĐANG được dùng không. `storage != null` mà cờ này `false` =
@@ -1006,6 +1018,30 @@ class StorageStateDto {
   /// Loại kho đã cắm — dùng để chọn chữ cho hộp thoại gỡ kho, vì gỡ một tài
   /// khoản Google và gỡ một cái bucket S3 là hai câu khác nhau.
   StorageKind? get configuredKind => storage?.kind;
+
+  /// MỌI loại kho shop đang giữ cấu hình.
+  ///
+  /// Rơi về [configuredKind] khi máy chủ chưa trả `storages` — bản cũ chỉ giữ
+  /// được một cấu hình nên tập hợp đó cũng chỉ có một phần tử, và màn hình vẽ ra
+  /// đúng như trước.
+  Set<StorageKind> get configuredKinds => storages.isEmpty
+      ? {?configuredKind}
+      : {for (final view in storages) view.kind};
+
+  /// Cấu hình của MỘT loại kho, kể cả khi shop đang dùng loại khác.
+  ///
+  /// Đọc tài khoản Drive từ [storage] là đọc đúng một nửa sự thật: [storage] là
+  /// kho ĐANG DÙNG, nên shop chạy S3 mà vẫn giữ tài khoản Drive thì nó là hàng
+  /// S3 và `email` ở đó luôn null — trong khi tài khoản Google vẫn còn nguyên
+  /// trong cơ sở dữ liệu, và [storages] đang mang nó.
+  StorageViewDto? viewFor(StorageKind kind) {
+    for (final view in storages) {
+      if (view.kind == kind) return view;
+    }
+    // Backend cũ chưa trả `storages`, và ở đó một shop chỉ giữ được một cấu
+    // hình — [storage] một mình là tất cả những gì biết được.
+    return storage?.kind == kind ? storage : null;
+  }
 }
 
 /// Cấu hình S3 máy chủ trả về — đã che bí mật.
@@ -1041,24 +1077,52 @@ class S3ConfigViewDto {
 }
 
 /// Kết quả vòng kiểm tra PUT→HEAD→GET→DELETE.
+/// Một bước trong vòng thử kho: PUT → HEAD → GET → DELETE.
+///
+/// [detail] là câu lỗi NGUYÊN VĂN nhà cung cấp trả về (`AccessDenied`,
+/// `NoSuchBucket`, `SignatureDoesNotMatch`…). Đây là thứ duy nhất nói đúng
+/// chuyện gì đã xảy ra, nên nó phải đi tới tận mắt người đang điền form — họ là
+/// người có quyền sửa IAM bên phía họ, không phải mình.
+class StorageProbeStepDto {
+  const StorageProbeStepDto({
+    required this.step,
+    required this.ok,
+    this.detail,
+  });
+
+  factory StorageProbeStepDto.fromJson(Map<String, dynamic> j) =>
+      StorageProbeStepDto(
+        step: (j['step'] as String?) ?? '',
+        ok: (j['ok'] as bool?) ?? false,
+        detail: j['detail'] as String?,
+      );
+
+  /// `put` | `head` | `get` | `delete`.
+  final String step;
+  final bool ok;
+  final String? detail;
+}
+
 class StorageValidateDto {
-  const StorageValidateDto({required this.ok, this.hint, this.failedStep});
+  const StorageValidateDto({
+    required this.ok,
+    this.hint,
+    this.failedStep,
+    this.steps = const [],
+  });
 
   factory StorageValidateDto.fromJson(Map<String, dynamic> j) {
-    final steps = j['steps'];
-    String? failed;
-    if (steps is List) {
-      for (final s in steps) {
-        if (s is Map<String, dynamic> && (s['ok'] as bool?) == false) {
-          failed = s['step'] as String?;
-          break;
-        }
-      }
-    }
+    final raw = j['steps'];
+    final steps = <StorageProbeStepDto>[
+      if (raw is List)
+        for (final s in raw)
+          if (s is Map<String, dynamic>) StorageProbeStepDto.fromJson(s),
+    ];
     return StorageValidateDto(
       ok: (j['ok'] as bool?) ?? false,
       hint: j['hint'] as String?,
-      failedStep: failed,
+      failedStep: steps.where((s) => !s.ok).firstOrNull?.step,
+      steps: steps,
     );
   }
 
@@ -1071,6 +1135,14 @@ class StorageValidateDto {
 
   /// Bước đầu tiên hỏng (`put`/`head`/`get`/`delete`), để chỉ đúng quyền thiếu.
   final String? failedStep;
+
+  /// CẢ vòng thử, kể cả những bước xanh.
+  ///
+  /// Giữ nguyên chứ không rút gọn còn mỗi bước hỏng đầu tiên: "PUT xanh, GET
+  /// đỏ" và "PUT đỏ" là hai vấn đề khác hẳn nhau — cái đầu là thiếu quyền đọc,
+  /// cái sau là sai khoá hoặc sai tên bucket — và bản trước gộp cả hai thành
+  /// một câu duy nhất không nói gì.
+  final List<StorageProbeStepDto> steps;
 }
 
 /// Số hiện trên màn xác nhận xoá cửa hàng.

@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -318,22 +320,81 @@ EcAuthException _authException(FirebaseAuthException error) {
 /// Normalizes a federated (Google/Apple) sign-in/link failure: Firebase errors
 /// map by code, a user cancellation becomes [EcAuthCancelled] (silent), an
 /// already-friendly [EcAuthException] passes through, and anything else gets a
-/// clean generic line instead of a raw provider-exception string.
+/// clean line that at least says WHICH kind of thing went wrong.
+///
+/// Mọi lượt hỏng không phải "người dùng bấm Huỷ" đều được ghi log kèm mã và
+/// mô tả gốc. Trước đây tất cả đổ chung vào một câu "vui lòng thử lại" và
+/// không ghi lại gì: một máy ký bằng keystore chưa đăng ký SHA-1 trên Firebase
+/// hỏng y hệt một máy mất mạng, nhìn từ ngoài không tài nào phân biệt được.
 Exception _socialException(Object error) {
   if (error is EcAuthException) return error;
   if (error is FirebaseAuthException) return _authException(error);
-  if (isGoogleSignInCancellation(error)) return const EcAuthCancelled();
+  if (_isSignInCancellation(error)) return const EcAuthCancelled();
+  _logSocialFailure(error);
+  if (error is GoogleSignInException) return _googleException(error);
   return const EcAuthException('Không thực hiện được, vui lòng thử lại.');
 }
 
-/// Người dùng TỰ TẮT hộp thoại đăng nhập của Google/Apple, không phải lỗi.
-///
-/// Công khai vì màn cắm kho Drive cũng cần phân biệt: huỷ giữa chừng thì không
-/// được để lại một kho ma, và cũng không được hiện thông báo lỗi — người ta vừa
-/// chủ động bấm huỷ.
-bool isGoogleSignInCancellation(Object error) {
+void _logSocialFailure(Object error) {
+  final detail = error is GoogleSignInException
+      ? '${error.code.name}: ${error.description}'
+      : '$error';
+  developer.log(
+    'auth: lượt đăng nhập mạng xã hội hỏng — $detail',
+    name: 'zenpack.auth',
+    level: 1000,
+    error: error,
+  );
+}
+
+/// Câu tiếng Việt cho một lượt Google hỏng, tách theo mã để người dùng biết
+/// việc cần làm thay vì chỉ biết "hỏng rồi".
+EcAuthException _googleException(GoogleSignInException error) {
+  // Trên Android, "không tìm được thông tin đăng nhập nào" là mã `unknownError`
+  // kèm mô tả bắt đầu bằng 'No credential available' — xem
+  // `google_sign_in_android`, nhánh `GetCredentialFailureType.noCredential`.
+  // Máy chưa thêm tài khoản Google rơi vào đúng đây.
+  if (error.code == GoogleSignInExceptionCode.unknownError &&
+      (error.description ?? '').startsWith('No credential available')) {
+    return const EcAuthException(
+      'Máy chưa có tài khoản Google nào dùng được. Hãy thêm tài khoản Google '
+      'trong Cài đặt rồi thử lại.',
+    );
+  }
+  // Lượt hỏng của Play services đội lốt `canceled` — xem
+  // [_isSignInCancellation]. Kèm luôn mã trạng thái GMS vào câu báo: đó là thứ
+  // DUY NHẤT bộ phận hỗ trợ bám được để biết máy này hỏng vì gì, mà người dùng
+  // thì không có cách nào đọc log ra để đọc cho họ nghe.
+  final gmsStatus = googleServicesStatusCode(error);
+  if (error.code == GoogleSignInExceptionCode.canceled && gmsStatus != null) {
+    return EcAuthException(
+      'Google chưa cấp được quyền đăng nhập cho ứng dụng (mã $gmsStatus). Vui '
+      'lòng thử lại; nếu vẫn vậy, báo bộ phận hỗ trợ kèm mã này.',
+    );
+  }
+  return switch (error.code) {
+    // Sai cấu hình phía bản cài: SHA-1 của keystore chưa đăng ký trên Firebase,
+    // thiếu `serverClientId`, hoặc máy không có Play services dùng được. Không
+    // có thao tác nào của người dùng cứu được, nên nói thẳng là báo hỗ trợ.
+    GoogleSignInExceptionCode.clientConfigurationError ||
+    GoogleSignInExceptionCode.providerConfigurationError =>
+      const EcAuthException(
+        'Đăng nhập bằng Google chưa dùng được trên bản cài này. Vui lòng cập '
+        'nhật ứng dụng và Google Play services, hoặc báo bộ phận hỗ trợ.',
+      ),
+    GoogleSignInExceptionCode.interrupted ||
+    GoogleSignInExceptionCode.uiUnavailable => const EcAuthException(
+      'Không mở được hộp thoại Google, vui lòng thử lại.',
+    ),
+    _ => const EcAuthException('Không thực hiện được, vui lòng thử lại.'),
+  };
+}
+
+bool _isSignInCancellation(Object error) {
+  // Một mã `canceled` từ Google KHÔNG chắc là người dùng bấm huỷ — xem
+  // [isGoogleSignInCancellation].
   if (error is GoogleSignInException) {
-    return error.code == GoogleSignInExceptionCode.canceled;
+    return isGoogleSignInCancellation(error);
   }
   if (error is SignInWithAppleAuthorizationException) {
     return error.code == AuthorizationErrorCode.canceled;

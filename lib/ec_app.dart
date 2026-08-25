@@ -1949,6 +1949,8 @@ class _StorageRouteState extends State<_StorageRoute>
     setState(() {
       _busy = true;
       _s3Error = null;
+      // Lưu xong là bắt đầu một vòng mới: muốn lưu tiếp phải thử lại từ đầu.
+      _s3TestPassed = false;
     });
     try {
       final result = await widget.repo.saveS3Storage(
@@ -1968,14 +1970,17 @@ class _StorageRouteState extends State<_StorageRoute>
       // Câu lỗi vẽ dưới form, mà form thì cao hơn một màn hình — người vừa bấm
       // Lưu đang nhìn lên đầu màn, không nhìn xuống đáy. Toast thêm một lượt để
       // biết là máy chủ ĐÃ trả lời; câu đầy đủ vẫn nằm cạnh mấy ô vừa gõ.
-      final hint = result.hint ?? context.l10n.errorLoadShopDetail;
+      final detail = _s3FailureText(context.l10n, result);
       developer.log(
-        'storage: lưu S3 bị từ chối (${result.failedStep ?? "—"}): $hint',
+        'storage: lưu S3 bị từ chối (${result.failedStep ?? "—"}): $detail',
         name: 'zenpack.storage',
         level: 900,
       );
-      _toast(context, hint);
-      setState(() => _s3Error = hint);
+      // Toast chỉ mang DÒNG ĐẦU: nó là lời báo "máy chủ đã trả lời", không phải
+      // chỗ đọc. Câu đầy đủ — kể cả lỗi nguyên văn của từng bước — nằm trong ô
+      // cảnh báo ngay cạnh mấy ô vừa gõ, nơi người ta sửa được.
+      _toast(context, detail.split('\n').first);
+      setState(() => _s3Error = detail);
     } on Object catch (error) {
       if (!mounted) return;
       developer.log(
@@ -1984,7 +1989,7 @@ class _StorageRouteState extends State<_StorageRoute>
         level: 900,
         error: error,
       );
-      final text = _dataErrorText(context.l10n, error);
+      final text = _s3ExceptionText(context.l10n, error);
       _toast(context, text);
       setState(() => _s3Error = text);
     } finally {
@@ -2000,6 +2005,13 @@ class _StorageRouteState extends State<_StorageRoute>
   /// Không gọi `_reload()` ở cuối, khác [_saveS3]: lượt này không đổi gì phía
   /// máy chủ, nên đọc lại chỉ tốn một vòng mạng — và tệ hơn, nó làm `busy` đảo
   /// trạng thái đúng kiểu từng đóng sập form.
+  /// Lượt Kiểm tra gần nhất có xanh không.
+  ///
+  /// Nút Lưu của form S3 đợi cờ này: lưu là THAY cái kho đang giữ bằng chứng,
+  /// và một cấu hình sai được lưu thì clip quay sau đó không có chỗ nào nhận —
+  /// người bán chỉ biết khi mở đơn ra tìm video.
+  bool _s3TestPassed = false;
+
   Future<void> _testS3({
     required String endpoint,
     required String bucket,
@@ -2026,33 +2038,40 @@ class _StorageRouteState extends State<_StorageRoute>
       );
       if (!mounted) return;
       if (result.ok) {
+        setState(() => _s3TestPassed = true);
         _toast(context, l10n.storageValidateOk);
         return;
       }
-      final hint = result.hint ?? l10n.errorLoadShopDetail;
+      setState(() => _s3TestPassed = false);
+      final detail = _s3FailureText(l10n, result);
       developer.log(
-        'storage: thử S3 hỏng (${result.failedStep ?? "—"}): $hint',
+        'storage: thử S3 hỏng (${result.failedStep ?? "—"}): $detail',
         name: 'zenpack.storage',
         level: 900,
       );
-      _toast(context, hint);
-      setState(() => _s3Error = hint);
+      _toast(context, detail.split('\n').first);
+      setState(() => _s3Error = detail);
     } on Object catch (error) {
       if (!mounted) return;
-      final text = _dataErrorText(l10n, error);
+      final text = _s3ExceptionText(l10n, error);
       _toast(context, text);
-      setState(() => _s3Error = text);
+      setState(() {
+        _s3TestPassed = false;
+        _s3Error = text;
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _disconnect() async {
+  Future<void> _disconnect(StorageKind kind) async {
     final l10n = context.l10n;
     // Chữ theo ĐÚNG việc đang làm. Người bán vừa bấm "Đăng xuất khỏi Drive" mà
     // hộp thoại mở ra nói "Thôi dùng kho riêng" thì họ đọc ra là bấm nhầm nút, và
     // gỡ một cái bucket S3 lại là một câu khác hẳn.
-    final isDrive = _configuredKind == StorageKind.gdrive;
+    // Theo loại kho của THẺ vừa bấm, không theo kho đang dùng: shop giữ tài
+    // khoản của cả hai, và hỏi nhầm tên là người bán xác nhận gỡ nhầm kho.
+    final isDrive = kind == StorageKind.gdrive;
     final title = isDrive ? l10n.storageDriveLogout : l10n.storageDisconnect;
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
@@ -2079,7 +2098,7 @@ class _StorageRouteState extends State<_StorageRoute>
     if (confirmed != true || !mounted) return;
     await _run(
       () async {
-        await widget.repo.disconnectStorage(widget.shopId);
+        await widget.repo.disconnectStorage(widget.shopId, kind: kind);
         // Ghi thẳng lựa chọn về kho hệ thống, ngay tại đây.
         //
         // [_displayedStorageKind] ưu tiên lựa chọn đã nhớ hơn kho máy chủ báo,
@@ -2361,7 +2380,14 @@ class _StorageRouteState extends State<_StorageRoute>
           name: 'zenpack.storage',
         );
         _gdriveNative = dto.gdriveNative;
-        _connectedDriveEmail = view?.email;
+        // Tài khoản Drive đọc từ HÀNG DRIVE, không từ kho đang dùng.
+        //
+        // `dto.storage` là kho ĐANG DÙNG, nên một shop chạy S3 mà vẫn giữ tài
+        // khoản Google sẽ có `view?.email == null` — dù tài khoản còn nguyên.
+        // Hai chỗ hỏng vì thế: `login_hint` của lượt cấp quyền mất chỗ dựa, và
+        // thẻ Drive trên màn kho không còn dòng nào để vẽ (xem [driveEmail]).
+        final driveView = dto.viewFor(StorageKind.gdrive);
+        _connectedDriveEmail = driveView?.email;
         _configuredKind = dto.configuredKind ?? StorageKind.system;
         // Máy chủ vừa nói kho thật là gì; nếu nó đổi so với lần đọc trước thì
         // lựa chọn đã nhớ bám theo. Chạy ở nền, không chặn lượt dựng này.
@@ -2401,6 +2427,16 @@ class _StorageRouteState extends State<_StorageRoute>
               StorageKind.s3 => EcStorageKind.s3,
               StorageKind.gdrive => EcStorageKind.gdrive,
             },
+            // MỌI loại kho đang giữ tài khoản. Shop cắm cả S3 lẫn Drive thì cả
+            // hai thẻ đều phải nói "đã cắm" — chọn lại một trong hai chỉ là bật
+            // công tắc, không phải nhập lại từ đầu.
+            configuredKinds: {
+              for (final kind in dto.configuredKinds)
+                if (kind == StorageKind.s3)
+                  EcStorageKind.s3
+                else if (kind == StorageKind.gdrive)
+                  EcStorageKind.gdrive,
+            },
             label: view?.label ?? '',
             ok: view?.ok ?? true,
             lastError: view?.lastError,
@@ -2413,7 +2449,10 @@ class _StorageRouteState extends State<_StorageRoute>
             canManage: widget.canManage,
             presignedDownload: view?.capabilities?.presignedDownload ?? true,
             objectLock: view?.capabilities?.objectLock ?? false,
-            driveEmail: view?.email,
+            // Theo hàng Drive, không theo kho đang dùng: đây là thứ DUY NHẤT
+            // thẻ Drive có để nói khi shop đang chạy S3, và thiếu nó thì thẻ
+            // vẽ ra một đường kẻ ngăn cách rồi bỏ trống bên dưới.
+            driveEmail: driveView?.email,
             // Cấu hình S3 đang lưu, để form điền sẵn lại lúc sửa. Cặp khoá
             // không có ở đây — máy chủ chỉ trả bốn ký tự cuối của access key.
             s3Endpoint: view?.s3?.endpoint ?? '',
@@ -2430,7 +2469,13 @@ class _StorageRouteState extends State<_StorageRoute>
               lastCheckedAt: dto.health.lastCheckedAt,
             ),
           ),
-          onDisconnect: _disconnect,
+          onDisconnect: (k) => unawaited(
+            _disconnect(switch (k) {
+              EcStorageKind.s3 => StorageKind.s3,
+              EcStorageKind.gdrive => StorageKind.gdrive,
+              EcStorageKind.system => StorageKind.system,
+            }),
+          ),
           // LƯU LÀ LƯU: về kho hệ thống, giữ nguyên tài khoản đã cắm, không
           // hỏi lại và không đăng xuất. Cắt đứt tài khoản là việc của nút đăng
           // xuất riêng trong thẻ.
@@ -2438,9 +2483,19 @@ class _StorageRouteState extends State<_StorageRoute>
             _run(_switchToSystem, context.l10n.storageSwitchedToSystem),
           ),
           // Dùng lại kho đã cắm — một lượt gọi, không màn cấp quyền nào.
-          onResumeStorage: () => unawaited(
+          onResumeStorage: (kind) => unawaited(
             _run(
-              () => widget.repo.setStorageActive(widget.shopId, active: true),
+              () => widget.repo.setStorageActive(
+                widget.shopId,
+                active: true,
+                // Nói RÕ loại: shop giữ tài khoản của cả hai kho thì máy chủ
+                // không đoán được người dùng vừa chọn cái nào.
+                kind: switch (kind) {
+                  EcStorageKind.s3 => StorageKind.s3,
+                  EcStorageKind.gdrive => StorageKind.gdrive,
+                  EcStorageKind.system => null,
+                },
+              ),
               context.l10n.storageResumed,
             ),
           ),
@@ -2459,6 +2514,7 @@ class _StorageRouteState extends State<_StorageRoute>
                 if (saved == true && mounted) _reload();
               }),
           s3ErrorText: _s3Error,
+          s3TestPassed: _s3TestPassed,
           onTestS3:
               ({
                 required endpoint,
@@ -2478,7 +2534,15 @@ class _StorageRouteState extends State<_StorageRoute>
                 ),
               ),
           onCancel: () {
-            if (_s3Error != null) setState(() => _s3Error = null);
+            // Bỏ luôn kết quả thử: form đóng lại và sáu ô bị xoá trắng, nên một
+            // lượt xanh của bộ giá trị vừa vứt đi không được phép mở khoá nút
+            // Lưu cho bộ giá trị nào khác.
+            if (_s3Error != null || _s3TestPassed) {
+              setState(() {
+                _s3Error = null;
+                _s3TestPassed = false;
+              });
+            }
           },
           onSaveS3:
               ({
@@ -2555,17 +2619,18 @@ class _StorageConnectRouteState extends State<_StorageConnectRoute> {
                 context.pop(true);
                 return;
               }
-              // `ok == false` = máy chủ CHƯA lưu gì. Hiện nguyên `hint` — đó là
-              // câu duy nhất nói được khách thiếu quyền nào bên nhà cung cấp.
+              // `ok == false` = máy chủ CHƯA lưu gì. Hiện ĐỦ: câu chỉ đường
+              // của máy chủ và từng bước hỏng kèm lỗi nguyên văn của nhà cung
+              // cấp — xem [_s3FailureText].
               setState(() {
                 _busy = false;
-                _error = result.hint ?? context.l10n.errorLoadShopDetail;
+                _error = _s3FailureText(context.l10n, result);
               });
             } on Object catch (error) {
               if (!mounted) return;
               setState(() {
                 _busy = false;
-                _error = _dataErrorText(context.l10n, error);
+                _error = _s3ExceptionText(context.l10n, error);
               });
             }
           },
@@ -8377,6 +8442,83 @@ String _durationLabel(int? seconds) {
   if (seconds == null) return '—';
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(seconds ~/ 60)}:${two(seconds % 60)}';
+}
+
+/// Câu lỗi ĐẦY ĐỦ cho một lượt cắm kho S3 bị từ chối.
+///
+/// Gộp hai thứ và không bỏ thứ nào: câu chỉ đường của máy chủ (`hint`), rồi
+/// TỪNG bước hỏng kèm câu nguyên văn nhà cung cấp trả về (`AccessDenied`,
+/// `NoSuchBucket`, `SignatureDoesNotMatch`…).
+///
+/// Bản trước chỉ hiện `hint`, mà `hint` chỉ có khi máy chủ nhận ra mã lỗi. Gặp
+/// mã lạ là người dùng nhận đúng một câu "Không thực hiện được, vui lòng thử
+/// lại" — họ không biết gì về chuyện vừa xảy ra trên kho của chính mình, trong
+/// khi họ mới là người có quyền sửa IAM bên đó.
+///
+/// Giữ cả những bước ĐỎ về sau chứ không chỉ bước đầu tiên: "PUT xanh, GET đỏ"
+/// là thiếu quyền đọc, còn "PUT đỏ" là sai khoá hoặc sai tên bucket — hai việc
+/// phải sửa ở hai chỗ khác nhau.
+String _s3FailureText(AppLocalizations l10n, StorageValidateDto result) {
+  final hint = result.hint?.trim() ?? '';
+  final lines = <String>[
+    if (hint.isNotEmpty) hint,
+    for (final step in result.steps)
+      if (!step.ok)
+        switch (step.detail?.trim() ?? '') {
+          '' => '• ${_probeStepName(l10n, step.step)}',
+          final detail => '• ${_probeStepName(l10n, step.step)}: $detail',
+        },
+  ];
+  return lines.isEmpty ? l10n.errorGenericRetry : lines.join('\n');
+}
+
+String _probeStepName(AppLocalizations l10n, String step) => switch (step) {
+  'put' => l10n.storageProbeStepPut,
+  'head' => l10n.storageProbeStepHead,
+  'get' => l10n.storageProbeStepGet,
+  'delete' => l10n.storageProbeStepDelete,
+  // Bước lạ từ một bản máy chủ mới hơn: hiện nguyên tên máy chủ gửi, đừng nuốt.
+  _ => step,
+};
+
+/// Như [_dataErrorText] nhưng KÈM mã lỗi thật của máy chủ.
+///
+/// Câu dịch sẵn nói được "chuyện gì với bạn", mã lỗi nói được "chuyện gì với hệ
+/// thống" — người đang dò cấu hình kho cần cả hai, và người đọc log cần cái thứ
+/// hai để lần ra.
+String _s3ExceptionText(AppLocalizations l10n, Object error) {
+  // `details` TRƯỚC câu dịch sẵn. Với một lượt 400 vì dữ liệu sai, máy chủ nói
+  // thẳng ô nào hỏng và vì sao ("Địa chỉ kho phải bắt đầu bằng https://…") —
+  // đặt câu chung "Không thực hiện được, vui lòng thử lại" lên trên nó là chôn
+  // đúng thứ người dùng cần đọc.
+  final details = _apiErrorDetails(error);
+  final head = details.isEmpty
+      ? _dataErrorText(l10n, error)
+      : details.map((d) => '• $d').join('\n');
+  final status = error is DioException ? error.response?.statusCode : null;
+  final extra = [
+    ?_apiErrorCode(error),
+    if (status != null) 'HTTP $status',
+  ].join(' · ');
+  return extra.isEmpty ? head : '$head\n${l10n.storageErrorCode(extra)}';
+}
+
+/// Danh sách lý do máy chủ đính kèm khi từ chối một request (`invalid_request`).
+///
+/// Đây là câu do chính schema sinh ra, đã viết cho người đọc chứ không phải cho
+/// máy: "Địa chỉ kho phải bắt đầu bằng https:// — http thường sẽ để lộ khoá
+/// truy cập của bạn trên đường truyền." Bỏ nó đi rồi hiện "vui lòng thử lại" là
+/// mời người dùng gõ lại y nguyên cái sai vừa rồi.
+List<String> _apiErrorDetails(Object error) {
+  if (error is! DioException) return const [];
+  final data = error.response?.data;
+  if (data is! Map) return const [];
+  final details = data['details'];
+  if (details is! List) return const [];
+  return [
+    for (final d in details)
+      if (d is String && d.trim().isNotEmpty) d.trim(),
+  ];
 }
 
 String _dataErrorText(AppLocalizations l10n, Object error) {

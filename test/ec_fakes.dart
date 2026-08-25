@@ -170,7 +170,11 @@ class FakeEcRepository implements EcRepository {
   @override
 
   @override
-  Future<void> setStorageActive(String shopId, {required bool active}) async {}
+  Future<void> setStorageActive(
+    String shopId, {
+    required bool active,
+    StorageKind? kind,
+  }) async {}
   Future<String> gdriveAuthUrl(String shopId) async =>
       'https://accounts.google.com/o/oauth2/v2/auth?fake=$shopId';
 
@@ -405,7 +409,7 @@ class FakeEcRepository implements EcRepository {
   }) async => const StorageValidateDto(ok: true);
 
   @override
-  Future<void> disconnectStorage(String shopId) async {}
+  Future<void> disconnectStorage(String shopId, {StorageKind? kind}) async {}
 
   @override
   Future<void> reportQueueDepth(

@@ -338,13 +338,32 @@ class EcApi implements EcAuthMailApi {
   ///
   /// Đây là "chọn kho khác": shop về kho hệ thống, tài khoản đã cắm nằm yên.
   /// Xoá hẳn là [deleteStorage] — hai việc khác nhau, đừng gộp.
-  Future<void> setStorageActive(String shopId, {required bool active}) =>
-      _dio.patch<void>(
-        '/api/shops/$shopId/storage/active',
-        data: {'active': active},
+  /// [kind] là loại kho muốn BẬT. Shop giữ được tài khoản của cả S3 lẫn Drive,
+  /// nên khi bật phải nói rõ bật cái nào — bỏ trống thì máy chủ bật lại cái vừa
+  /// dùng gần nhất, có thể chính là cái người dùng vừa bỏ chọn. Không có nghĩa
+  /// khi tắt: tắt là tắt hết, shop về kho hệ thống.
+  Future<void> setStorageActive(
+    String shopId, {
+    required bool active,
+    StorageKind? kind,
+  }) => _dio.patch<void>(
+    '/api/shops/$shopId/storage/active',
+    data: {
+      'active': active,
+      if (active && kind != null && kind != StorageKind.system)
+        'kind': kind.name,
+    },
+  );
+
+  /// [kind] là loại kho cần gỡ. Bỏ trống thì máy chủ gỡ kho đang dùng — tài
+  /// khoản của loại kia nằm nguyên, đó là điểm của việc tách theo loại.
+  Future<void> deleteStorage(String shopId, {StorageKind? kind}) =>
+      _dio.delete<void>(
+        '/api/shops/$shopId/storage',
+        queryParameters: {
+          if (kind != null && kind != StorageKind.system) 'kind': kind.name,
+        },
       );
-  Future<void> deleteStorage(String shopId) =>
-      _dio.delete<void>('/api/shops/$shopId/storage');
 
   /// Mail xác minh địa chỉ, do MÁY CHỦ MÌNH gửi.
   ///

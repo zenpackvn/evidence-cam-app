@@ -878,6 +878,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detailSize => 'Tamaño';
 
   @override
+  String get storageFieldEndpointHint =>
+      'Must start with https:// and be the provider public domain — plain http would leak your keys in transit.';
+
+  @override
+  String get storageProbeStepPut => 'Write a file';
+
+  @override
+  String get storageProbeStepHead => 'Read file info';
+
+  @override
+  String get storageProbeStepGet => 'Download the file';
+
+  @override
+  String get storageProbeStepDelete => 'Delete the file';
+
+  @override
+  String storageErrorCode(String code) {
+    return 'Error code: $code';
+  }
+
+  @override
   String get detailStorage => 'Storage';
 
   @override

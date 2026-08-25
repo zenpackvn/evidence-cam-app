@@ -469,6 +469,15 @@
   "detailCapturedBy": "Captured by",
   "detailDevice": "Device",
   "detailSize": "Size",
+  "storageFieldEndpointHint": "Must start with https:// and be the provider public domain — plain http would leak your keys in transit.",
+  "storageProbeStepPut": "Write a file",
+  "storageProbeStepHead": "Read file info",
+  "storageProbeStepGet": "Download the file",
+  "storageProbeStepDelete": "Delete the file",
+  "storageErrorCode": "Error code: {code}",
+  "@storageErrorCode": {
+    "placeholders": { "code": { "type": "String" } }
+  },
   "detailStorage": "Storage",
   "storageNameCloud": "ZenPack Cloud",
   "storageNameDrive": "Google Drive",
