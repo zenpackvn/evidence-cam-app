@@ -914,6 +914,38 @@ void _storageFieldsTests() {
     expect(dto.shareUrl, contains('drive.google.com/file/d/abc/view'));
   });
 
+  // Kho shop đang chọn đi kèm chi tiết đơn. Không có nó thì màn chi tiết video
+  // phải tự nhớ kho ở bộ nhớ máy — thứ trống trơn ngay sau mỗi lượt cài lại.
+  test('OrderDetailDto đọc kho shop đang chọn', () {
+    final s3 = OrderDetailDto.fromJson(const {
+      'order': {
+        'id': 'o1',
+        'shop_id': 's1',
+        'tracking_raw': 'GHN1',
+        'tracking_normalized': 'GHN1',
+        'status': 'active',
+        'created_at': 1,
+      },
+      'evidence': <Map<String, dynamic>>[],
+      'shop_storage_kind': 's3',
+    });
+    expect(s3.shopStorageKind, 's3');
+
+    // Máy chủ cũ chưa gửi trường này — bên gọi phải rơi về cách cũ, không ném.
+    final cu = OrderDetailDto.fromJson(const {
+      'order': {
+        'id': 'o1',
+        'shop_id': 's1',
+        'tracking_raw': 'GHN1',
+        'tracking_normalized': 'GHN1',
+        'status': 'active',
+        'created_at': 1,
+      },
+      'evidence': <Map<String, dynamic>>[],
+    });
+    expect(cu.shopStorageKind, isNull);
+  });
+
   // Clip đang trên đường sang kho riêng có `storage_kind` NULL y hệt clip của
   // shop dùng kho hệ thống — `relay_status` là thứ duy nhất phân biệt được.
   test('EvidenceDto đọc relay_status của chặng đẩy sang kho riêng', () {

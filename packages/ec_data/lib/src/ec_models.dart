@@ -619,17 +619,32 @@ class EvidenceDto {
 const int kClockSkewToleranceMs = 2 * 60 * 1000;
 
 class OrderDetailDto {
-  const OrderDetailDto({required this.order, required this.evidence});
+  const OrderDetailDto({
+    required this.order,
+    required this.evidence,
+    this.shopStorageKind,
+  });
 
   factory OrderDetailDto.fromJson(Map<String, dynamic> j) => OrderDetailDto(
     order: OrderDto.fromJson(j['order'] as Map<String, dynamic>),
     evidence: (j['evidence'] as List)
         .map((e) => EvidenceDto.fromJson(e as Map<String, dynamic>))
         .toList(),
+    shopStorageKind: j['shop_storage_kind'] as String?,
   );
 
   final OrderDto order;
   final List<EvidenceDto> evidence;
+
+  /// Kho riêng shop ĐANG CHỌN: `s3` · `gdrive` · `null` (kho hệ thống).
+  ///
+  /// Khác [EvidenceDto.storageKind] của từng clip: cột kia chỉ có giá trị SAU
+  /// khi clip đã sang kho riêng, nên trước đó màn hình không có gì để gọi tên
+  /// kho ngoài "Cloud ZenPack" — sai với người vừa chọn kho riêng.
+  ///
+  /// `null` cũng là câu trả lời của một máy chủ CŨ chưa gửi trường này; bên gọi
+  /// giữ nguyên cách cũ khi thiếu nó.
+  final String? shopStorageKind;
 }
 
 /// Một dòng của bảng "Dung lượng theo loại".

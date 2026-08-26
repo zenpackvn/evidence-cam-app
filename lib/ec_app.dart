@@ -4436,6 +4436,14 @@ Future<void> _rememberShopStorage(String shopId, StorageKind kind) async =>
 StorageKind? _rememberedShopStorage(String shopId) =>
     _parseStorageKind(_appMemory()?.getString(_shopStorageKey(shopId)));
 
+/// Kho shop đang chọn, dùng cho dòng thời gian của một đơn.
+///
+/// MÁY CHỦ trước, bộ nhớ máy sau. Bộ nhớ máy chỉ còn là đường lùi cho bản máy
+/// chủ cũ chưa gửi `shop_storage_kind` — và nó trống trơn ngay sau mỗi lượt cài
+/// lại app, đúng lúc người dùng mở clip đầu tiên ra xem.
+StorageKind? _shopStorageOf(String shopId, OrderDetailDto detail) =>
+    _parseStorageKind(detail.shopStorageKind) ?? _rememberedShopStorage(shopId);
+
 StorageKind? _parseStorageKind(String? raw) => switch (raw) {
   'system' => StorageKind.system,
   's3' => StorageKind.s3,
@@ -5996,7 +6004,7 @@ class _OrderRouteState extends State<_OrderRoute> {
         data.videoTypes,
         data.memberNames,
         data.previews,
-        _rememberedShopStorage(widget.shop.id),
+        _shopStorageOf(widget.shop.id, data.detail),
       ).expand((d) => d.videos).where((v) => v.id == id).firstOrNull;
       if (fresh != null) {
         _openDetail.value = _videoDetail(
@@ -6219,7 +6227,7 @@ class _OrderRouteState extends State<_OrderRoute> {
           data.videoTypes,
           data.memberNames,
           data.previews,
-          _rememberedShopStorage(widget.shop.id),
+          _shopStorageOf(widget.shop.id, data.detail),
         );
         return ListenableBuilder(
           listenable: widget.queue,
@@ -8828,49 +8836,30 @@ String _evidenceStorageLabel(
   EvidenceDto item,
   StorageKind? shopStorage,
 ) {
-  // Kho ĐANG GIỮ clip, khi máy chủ đã chốt.
+  // Kho ĐANG GIỮ clip, khi máy chủ đã chốt. Đây là sự thật lịch sử: đổi kho
+  // không kéo clip cũ đi theo, nên một đơn có thể có clip nằm ở hai kho khác
+  // nhau và mỗi clip phải nói đúng chỗ của nó.
   switch (item.storageKind) {
     case 'gdrive':
       return l10n.storageNameDrive;
     case 's3':
       return l10n.storageNameS3;
   }
-  // KẸT LẠI thì phải nói ra, kể cả khi biết kho đích.
+  // Chưa chốt: gọi tên KHO SHOP ĐANG CHỌN.
   //
-  // Gọi tên kho riêng ở đây là nói dối đúng lúc nguy hiểm nhất: clip nằm lại
-  // vùng chờ tạm, và quá bảy ngày mà kho vẫn hỏng thì nó sống nốt hạn của kho
-  // hệ thống rồi bị xoá theo lịch. Lý do hỏng nằm ở màn Kho lưu trữ.
-  if (item.relayStatus == 'failed') return l10n.storageNameRelayFailed;
-
-  // Chưa chốt xong: gọi tên KHO ĐÍCH ngay, đừng bắt người dùng chờ.
+  // Ba chặng đều rơi vào đây và đều chưa có `storage_kind`: đang tải lên, đang
+  // nung dấu giờ, đang đẩy sang kho riêng. Gọi tên "Cloud ZenPack" ở đó là nói
+  // sai với người vừa chọn kho riêng — họ mở clip ra để xác nhận kho mình có
+  // ăn không, và đọc thấy tên kho hệ thống thì tưởng hỏng.
   //
-  // Ba chặng đều rơi vào đây và đều KHÔNG có `storage_kind`: đang tải lên,
-  // đang nung dấu giờ, và đang đẩy sang kho riêng. Trước đây cả ba đọc thành
-  // "Cloud ZenPack" — người vừa cắm kho S3 mở clip ra giữa lúc nung thấy tên
-  // kho hệ thống và tưởng kho mình không ăn, rồi đi cắm lại.
-  //
-  // Điều kiện là "chưa chốt", không phải "đang nung": lúc niêm phong xong máy
-  // chủ gọi relay NGAY và relay ghi `relay_status = 'pending'` trước khi làm
-  // bất cứ việc nào có thể hỏng — nên một clip đã niêm phong xong mà vẫn không
-  // có `relay_status` nghĩa là shop này không cắm kho riêng lúc quay, và
-  // "Cloud ZenPack" mới là câu đúng cho nó.
-  final settled = item.uploadStatus == 'done' && !item.isSealing;
-  if (!settled || item.relayStatus == 'pending') {
-    switch (shopStorage) {
-      case StorageKind.s3:
-        return l10n.storageNameS3;
-      case StorageKind.gdrive:
-        return l10n.storageNameDrive;
-      case StorageKind.system:
-      case null:
-        // Chưa biết kho của shop (chưa mở màn Kho lưu trữ lần nào trên máy
-        // này) thì nói theo chặng thay vì đoán bừa.
-        return item.relayStatus == 'pending'
-            ? l10n.storageNameRelayPending
-            : l10n.storageNameCloud;
-    }
-  }
-  return l10n.storageNameCloud;
+  // Kho của shop do MÁY CHỦ gửi kèm trong chi tiết đơn, không phải app tự nhớ:
+  // bộ nhớ trong máy trống trơn sau mỗi lượt cài lại, và lúc đó nhãn lại nói
+  // sai đúng cái nó sinh ra để nói đúng.
+  return switch (shopStorage) {
+    StorageKind.s3 => l10n.storageNameS3,
+    StorageKind.gdrive => l10n.storageNameDrive,
+    StorageKind.system || null => l10n.storageNameCloud,
+  };
 }
 
 String _durationLabel(int? seconds) {
