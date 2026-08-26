@@ -1,3 +1,8 @@
+// Cả tệp này sống bằng nội tạng của camera_android_camerax: nó ghim
+// VideoCapture vào lifecycle CameraX để chữa cú ngoặt preview trên Android.
+// Các thành viên cần dùng (`recording`, `videoCapture`, `cameraSelector`, …)
+// plugin đánh @visibleForTesting, không có đường công khai thay thế.
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'package:camera_android_camerax/camera_android_camerax.dart';
 // camera_android_camerax không export CameraX bindings qua public API; ghim
 // vào video pipeline của nó buộc phải với vào src/.

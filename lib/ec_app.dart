@@ -1059,6 +1059,7 @@ Future<void> _afterSocialSignIn(
     // `GET /api/me` tự tạo hàng đó ở lượt gọi đầu, nên chỉ cần đọc một lượt.
     // Hỏng thì im lặng: đăng nhập đã xong rồi, và mọi màn phía sau vẫn tự gọi
     // lại được — chặn người dùng ở đây vì một lượt đọc hỏng là tệ hơn nhiều.
+    if (!context.mounted) return;
     await _ensureServerAccount(context, repo);
     if (!context.mounted) return;
     context.go('/shops', extra: 'forward');
@@ -1497,6 +1498,9 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
     // The screen's inline Form guarantees a non-empty name before this fires.
     final name = _name.text.trim();
     final phone = _phone.text.trim();
+    // Đọc l10n trước mọi vòng mạng: câu lỗi ảnh được dựng trong `catch`, lúc
+    // đó context có thể đã rời cây widget.
+    final l10n = context.l10n;
     try {
       var avatarPath = _avatarPath;
       if (avatarPath != null) {
@@ -1537,7 +1541,7 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
           await _forgetAvatar(widget.auth.currentUser?.uid);
         } on Object catch (error) {
           avatarUrl = null;
-          avatarError = _avatarErrorText(context.l10n, error);
+          avatarError = _avatarErrorText(l10n, error);
         }
       }
       await widget.auth.updateProfile(
@@ -3951,8 +3955,8 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
   /// đòi token trong link email (xem [_joinByInvite]), nên nạp lại màn này
   /// bao nhiêu lần cũng không làm shop được mời hiện ra.
   Future<List<EcShopSummary>> _loadShops() async {
-    final shops = await widget.repo.shops();
     final l10n = context.l10n;
+    final shops = await widget.repo.shops();
     return [for (final shop in shops) _shopFromDto(l10n, shop)];
   }
 
@@ -5825,7 +5829,7 @@ class _OrderRouteState extends State<_OrderRoute> {
   /// vận đơn thứ hai là chuyện hiếm, và khi cần thì web làm được.
   Future<void> _attachCode(BuildContext context) async {
     final code = (await widget.onScan?.call())?.trim();
-    if (code == null || code.isEmpty || !mounted) return;
+    if (code == null || code.isEmpty || !context.mounted) return;
     final l10n = context.l10n;
     try {
       await widget.repo.addOrderCode(
@@ -5834,11 +5838,11 @@ class _OrderRouteState extends State<_OrderRoute> {
         code: code,
         kind: 'return',
       );
-      if (!mounted) return;
+      if (!context.mounted) return;
       _toast(context, l10n.codeAttached);
       _retry();
     } on Object catch (error) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       // Mã đang thuộc đơn KHÁC thì máy chủ trả 409 — nói thẳng, đừng gộp vào
       // một câu "lỗi" chung. Gộp nhầm hai kiện là hỏng bằng chứng của cả hai,
       // nên người dùng cần biết đây không phải trục trặc mạng mà là từ chối có
@@ -7608,14 +7612,14 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
         ],
       ),
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !context.mounted) return;
     try {
       await widget.repo.revokeClaim(widget.shopId, claimId);
     } on Object {
-      if (mounted) _toast(context, l10n.claimRevokeFailed);
+      if (context.mounted) _toast(context, l10n.claimRevokeFailed);
       return;
     }
-    if (!mounted) return;
+    if (!context.mounted) return;
     _toast(context, l10n.claimRevoked);
     await _load();
   }
@@ -7834,7 +7838,7 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
       if (gallery != null && await gallery.requestAccess()) {
         isPhoto ? await gallery.saveImage(path) : await gallery.saveVideo(path);
         unawaited(_deleteQuietly(path));
-        if (!mounted) return;
+        if (!context.mounted) return;
         _toast(
           context,
           isPhoto
@@ -7851,17 +7855,17 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
       // nằm sẵn trong thư mục app, nhưng người dùng đọc được đúng một chữ
       // "lỗi" — trên máy nào chưa cấp quyền thư viện thì nút này luôn hỏng,
       // và đó là lỗi người bán báo.
-      if (!mounted) return;
+      if (!context.mounted) return;
       final share = _maybeGetIt<ShareService>();
       if (share != null) {
         await share.shareFiles(paths: [path]);
         return;
       }
       await Clipboard.setData(ClipboardData(text: path));
-      if (!mounted) return;
+      if (!context.mounted) return;
       _toast(context, l10n.toastVideoDownloadedCopied);
     } on Object {
-      if (!mounted) return;
+      if (!context.mounted) return;
       _toast(
         context,
         isPhoto ? l10n.toastPhotoDownloadFailed : l10n.toastVideoDownloadFailed,
