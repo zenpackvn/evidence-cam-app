@@ -6775,11 +6775,6 @@ class _VideoRouteExtra {
     required this.canDelete,
     this.tracking = '',
     this.evidenceId,
-    // Chưa lối vào nào truyền `true`: màn hồ sơ khiếu nại còn mở sheet qua
-    // đường khác. Giữ vì `build` đã đọc cờ này (tắt Người quay / Cắt / Xoá) —
-    // xoá đi là xoá luôn hành vi đã cài sẵn cho lối vào đó.
-    // ignore: unused_element_parameter
-    this.fromClaim = false,
   });
 
   /// Nguồn SỐNG, không phải ảnh chụp lúc bấm: màn đơn hàng ghi đè giá trị này
@@ -6794,11 +6789,6 @@ class _VideoRouteExtra {
   final String orderId;
   final String? evidenceId;
   final bool canDelete;
-
-  /// Sheet mở từ hồ sơ khiếu nại. Hồ sơ chỉ TRỎ tới bằng chứng của đơn, nên ba
-  /// hàng bị tắt: người quay (không phải chuyện của bên nhận), cắt đoạn (đẻ ra
-  /// tệp không thuộc hồ sơ nào) và xoá video (phá bằng chứng gốc của đơn).
-  final bool fromClaim;
 }
 
 class _VideoPlayerRouteExtra {
@@ -9950,7 +9940,7 @@ GoRouter _buildRouter(
                         uploadStatus: '—',
                       ),
                   canDelete: extra?.canDelete ?? false,
-                  showRecordedBy: !(extra?.fromClaim ?? false),
+                  showRecordedBy: true,
                   onClose: () => c.pop(),
                   onCopyLink: () {
                     // Link Drive TRƯỚC khi có: đây là thứ người bán chép rồi
@@ -10003,7 +9993,7 @@ GoRouter _buildRouter(
                       live!,
                     );
                   },
-                  onTrim: videoPlayer == null || (extra?.fromClaim ?? false)
+                  onTrim: videoPlayer == null
                       ? null
                       : () => _trimAndShareVideo(
                           pageContext,
