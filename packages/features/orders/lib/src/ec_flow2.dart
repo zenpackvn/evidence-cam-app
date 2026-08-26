@@ -202,9 +202,15 @@ class EcVideoDetail {
   /// nằm đúng trong kho Drive của chính mình, và gửi đi thì bên nhận thấy một
   /// link Drive quen thuộc chứ không phải một tên miền lạ.
   ///
-  /// KHÔNG dùng cho Phát / Tải về / Cắt đoạn: chuỗi này trỏ tới một TRANG WEB
-  /// của Drive, không phải tới byte của clip — trình phát cắm vào chỉ nhận HTML.
-  /// Ba đường đó vẫn đọc [mediaUrl]. `null` với kho hệ thống và kho S3.
+  /// Kho S3 riêng cũng có chuỗi của nó: đối tượng công khai trên chính kho của
+  /// shop. Thiếu nó thì nút Sao chép link của shop S3 chép ra đúng dáng link
+  /// của shop dùng kho hệ thống — vì `mediaUrl` của mọi kho riêng đều là đường
+  /// vòng có vé qua máy chủ.
+  ///
+  /// KHÔNG dùng cho Phát / Tải về / Cắt đoạn: với Drive chuỗi này trỏ tới một
+  /// TRANG WEB, không phải tới byte của clip — trình phát cắm vào chỉ nhận
+  /// HTML. Ba đường đó vẫn đọc [mediaUrl]. `null` với kho hệ thống, và null khi
+  /// kho S3 chặn mở công khai.
   final String? shareUrl;
 
   /// Tên kho đang GIỮ clip này, đã dịch sẵn — "Cloud ZenPack", "Google Drive",

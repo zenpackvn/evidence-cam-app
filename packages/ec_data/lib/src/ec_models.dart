@@ -452,6 +452,7 @@ class EvidenceDto {
     this.url,
     this.shareUrl,
     this.storageKind,
+    this.relayStatus,
     this.retentionExpiresAt,
     this.durationSeconds,
     this.clockSkewMs,
@@ -476,6 +477,7 @@ class EvidenceDto {
     url: j['url'] as String?,
     shareUrl: j['share_url'] as String?,
     storageKind: j['storage_kind'] as String?,
+    relayStatus: j['relay_status'] as String?,
     thumbUrl: j['thumb_url'] as String?,
     sha256: j['sha256'] as String?,
     retentionExpiresAt: _intN(j['retention_expires_at']),
@@ -522,6 +524,15 @@ class EvidenceDto {
   /// — lúc đó byte vẫn nằm ở vùng chờ của ZenPack, và nói "Google Drive" là
   /// nói sai về chỗ bằng chứng đang nằm.
   final String? storageKind;
+
+  /// Chặng đẩy clip sang kho riêng của shop: `pending` · `relayed` · `failed`,
+  /// hoặc `null` khi shop không cắm kho riêng.
+  ///
+  /// Cần đọc CÙNG [storageKind] mới ra câu đúng: máy chủ chỉ ghi [storageKind]
+  /// sau khi đẩy xong, nên một clip đang trên đường sang kho riêng có
+  /// `storageKind == null` y hệt một clip của shop dùng kho hệ thống — hai
+  /// chuyện khác hẳn nhau.
+  final String? relayStatus;
 
   /// Poster frame for this clip — a few dozen KB, so a timeline can show every
   /// entry without pulling a single video byte. Null for photos (their own

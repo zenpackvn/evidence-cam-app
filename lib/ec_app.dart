@@ -6859,7 +6859,11 @@ List<EcTimelineDay> _timelineDays(
             // Cùng luật với `mediaUrl`: hết hạn lưu trữ thì tệp ở kho cũng đã
             // bị dọn, đưa ra một link Drive trỏ vào chỗ trống là hứa suông.
             shareUrl: item.uploadStatus == 'expired' ? null : item.shareUrl,
-            storage: _evidenceStorageLabel(l10n, item.storageKind),
+            storage: _evidenceStorageLabel(
+              l10n,
+              item.storageKind,
+              item.relayStatus,
+            ),
             // Chỉ gắn khi máy chủ CHƯA phát được. Có link thật rồi mà vẫn trỏ
             // về bản tạm là cố tình phát bản không dấu trong khi bản có dấu đã
             // nằm sẵn ở kho.
@@ -8726,12 +8730,29 @@ String _sealedAtLabel(int? sealedAt) {
 /// được ghi khi clip đã đẩy sang kho riêng xong. Trước đó byte vẫn nằm ở vùng
 /// chờ của ZenPack — nói "Google Drive" lúc ấy là nói sai chỗ bằng chứng đang
 /// nằm, và người bán mở Drive ra sẽ không thấy gì.
-String _evidenceStorageLabel(AppLocalizations l10n, String? kind) =>
-    switch (kind) {
-      'gdrive' => l10n.storageNameDrive,
-      's3' => l10n.storageNameS3,
-      _ => l10n.storageNameCloud,
-    };
+/// Clip này ĐANG NẰM Ở ĐÂU, đọc từ hai trường chứ không phải một.
+///
+/// Máy chủ chỉ ghi `storage_kind` SAU KHI đẩy xong sang kho riêng (xem
+/// `relay.ts`): mọi clip đều đi qua vùng chờ tạm trước, vì không thể nung dấu
+/// và niêm phong một tệp mà hệ thống chưa từng chạm vào. Trong quãng đó
+/// `storage_kind` là null — y hệt clip của một shop dùng kho hệ thống.
+///
+/// Nên hỏi mỗi `storage_kind` là nói sai với người vừa cắm kho S3: họ quay
+/// xong, mở chi tiết video ra và đọc thấy "Cloud ZenPack", tưởng kho riêng
+/// không ăn. `relay_status` là thứ phân biệt được: `pending` = đang trên
+/// đường, `failed` = kẹt lại (màn Kho lưu trữ có cảnh báo tương ứng), `null` =
+/// shop này thật sự dùng kho hệ thống.
+String _evidenceStorageLabel(
+  AppLocalizations l10n,
+  String? kind,
+  String? relayStatus,
+) => switch ((kind, relayStatus)) {
+  ('gdrive', _) => l10n.storageNameDrive,
+  ('s3', _) => l10n.storageNameS3,
+  (_, 'pending') => l10n.storageNameRelayPending,
+  (_, 'failed') => l10n.storageNameRelayFailed,
+  _ => l10n.storageNameCloud,
+};
 
 String _durationLabel(int? seconds) {
   if (seconds == null) return '—';

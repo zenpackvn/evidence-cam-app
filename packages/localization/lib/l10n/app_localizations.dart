@@ -1701,8 +1701,20 @@ abstract class AppLocalizations {
   /// No description provided for @storageNameS3.
   ///
   /// In en, this message translates to:
-  /// **'Own storage (S3)'**
+  /// **'Your own cloud storage (S3-compatible)'**
   String get storageNameS3;
+
+  /// No description provided for @storageNameRelayPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving to your own storage'**
+  String get storageNameRelayPending;
+
+  /// No description provided for @storageNameRelayFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not move to your own storage'**
+  String get storageNameRelayFailed;
 
   /// No description provided for @detailUploadStatus.
   ///

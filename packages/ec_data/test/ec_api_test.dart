@@ -914,6 +914,33 @@ void _storageFieldsTests() {
     expect(dto.shareUrl, contains('drive.google.com/file/d/abc/view'));
   });
 
+  // Clip đang trên đường sang kho riêng có `storage_kind` NULL y hệt clip của
+  // shop dùng kho hệ thống — `relay_status` là thứ duy nhất phân biệt được.
+  test('EvidenceDto đọc relay_status của chặng đẩy sang kho riêng', () {
+    final moving = EvidenceDto.fromJson(const {
+      'id': 'e1',
+      'order_id': 'o1',
+      'kind': 'video',
+      'captured_at': 1,
+      'upload_status': 'done',
+      'relay_status': 'pending',
+    });
+    expect(moving.storageKind, isNull);
+    expect(moving.relayStatus, 'pending');
+
+    final landed = EvidenceDto.fromJson(const {
+      'id': 'e2',
+      'order_id': 'o1',
+      'kind': 'video',
+      'captured_at': 1,
+      'upload_status': 'done',
+      'storage_kind': 's3',
+      'relay_status': 'relayed',
+    });
+    expect(landed.storageKind, 's3');
+    expect(landed.relayStatus, 'relayed');
+  });
+
   test('kho hệ thống: cả hai đều null, không ném', () {
     final dto = EvidenceDto.fromJson(const {
       'id': 'e1',

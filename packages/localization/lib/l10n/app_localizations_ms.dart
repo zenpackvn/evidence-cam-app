@@ -904,7 +904,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get storageNameDrive => 'Google Drive';
 
   @override
-  String get storageNameS3 => 'Own storage (S3)';
+  String get storageNameS3 => 'Your own cloud storage (S3-compatible)';
+
+  @override
+  String get storageNameRelayPending => 'Moving to your own storage';
+
+  @override
+  String get storageNameRelayFailed => 'Could not move to your own storage';
 
   @override
   String get detailUploadStatus => 'Status muat naik';

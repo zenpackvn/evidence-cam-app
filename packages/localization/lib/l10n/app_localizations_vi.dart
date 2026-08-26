@@ -893,7 +893,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get storageNameDrive => 'Google Drive';
 
   @override
-  String get storageNameS3 => 'Kho riêng (S3)';
+  String get storageNameS3 => 'Kho đám mây riêng (chuẩn S3)';
+
+  @override
+  String get storageNameRelayPending => 'Đang chuyển sang kho riêng';
+
+  @override
+  String get storageNameRelayFailed => 'Chưa chuyển được sang kho riêng';
 
   @override
   String get detailUploadStatus => 'Trạng thái upload';
