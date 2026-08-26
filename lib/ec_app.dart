@@ -6883,12 +6883,7 @@ List<EcTimelineDay> _timelineDays(
             // Cùng luật với `mediaUrl`: hết hạn lưu trữ thì tệp ở kho cũng đã
             // bị dọn, đưa ra một link Drive trỏ vào chỗ trống là hứa suông.
             shareUrl: item.uploadStatus == 'expired' ? null : item.shareUrl,
-            storage: _evidenceStorageLabel(
-              l10n,
-              item.storageKind,
-              item.relayStatus,
-              shopStorage,
-            ),
+            storage: _evidenceStorageLabel(l10n, item, shopStorage),
             // Chỉ gắn khi máy chủ CHƯA phát được. Có link thật rồi mà vẫn trỏ
             // về bản tạm là cố tình phát bản không dấu trong khi bản có dấu đã
             // nằm sẵn ở kho.
@@ -8769,29 +8764,53 @@ String _sealedAtLabel(int? sealedAt) {
 /// shop này thật sự dùng kho hệ thống.
 String _evidenceStorageLabel(
   AppLocalizations l10n,
-  String? kind,
-  String? relayStatus,
+  EvidenceDto item,
   StorageKind? shopStorage,
-) => switch ((kind, relayStatus)) {
-  ('gdrive', _) => l10n.storageNameDrive,
-  ('s3', _) => l10n.storageNameS3,
-  // Đang trên đường: gọi tên KHO ĐÍCH, không phải chỗ byte đang tạm nằm.
+) {
+  // Kho ĐANG GIỮ clip, khi máy chủ đã chốt.
+  switch (item.storageKind) {
+    case 'gdrive':
+      return l10n.storageNameDrive;
+    case 's3':
+      return l10n.storageNameS3;
+  }
+  // KẸT LẠI thì phải nói ra, kể cả khi biết kho đích.
   //
-  // Người bán vừa quay xong mở clip ra là để xác nhận kho riêng có ăn không —
-  // và với họ "kho của tôi" là nơi clip sẽ nằm, còn vùng chờ tạm là chuyện bên
-  // trong hệ thống. Chỉ khi chưa biết kho của shop (chưa mở màn Kho lưu trữ
-  // lần nào trên máy này) mới nói theo chặng.
-  (_, 'pending') => switch (shopStorage) {
-    StorageKind.s3 => l10n.storageNameS3,
-    StorageKind.gdrive => l10n.storageNameDrive,
-    _ => l10n.storageNameRelayPending,
-  },
-  // KẸT LẠI thì phải nói ra. Ở đây gọi tên kho đích là nói dối đúng lúc nguy
-  // hiểm nhất: clip nằm ở vùng chờ tạm, và quá bảy ngày mà kho vẫn hỏng thì nó
-  // sống nốt hạn lưu trữ của kho hệ thống rồi bị xoá theo lịch.
-  (_, 'failed') => l10n.storageNameRelayFailed,
-  _ => l10n.storageNameCloud,
-};
+  // Gọi tên kho riêng ở đây là nói dối đúng lúc nguy hiểm nhất: clip nằm lại
+  // vùng chờ tạm, và quá bảy ngày mà kho vẫn hỏng thì nó sống nốt hạn của kho
+  // hệ thống rồi bị xoá theo lịch. Lý do hỏng nằm ở màn Kho lưu trữ.
+  if (item.relayStatus == 'failed') return l10n.storageNameRelayFailed;
+
+  // Chưa chốt xong: gọi tên KHO ĐÍCH ngay, đừng bắt người dùng chờ.
+  //
+  // Ba chặng đều rơi vào đây và đều KHÔNG có `storage_kind`: đang tải lên,
+  // đang nung dấu giờ, và đang đẩy sang kho riêng. Trước đây cả ba đọc thành
+  // "Cloud ZenPack" — người vừa cắm kho S3 mở clip ra giữa lúc nung thấy tên
+  // kho hệ thống và tưởng kho mình không ăn, rồi đi cắm lại.
+  //
+  // Điều kiện là "chưa chốt", không phải "đang nung": lúc niêm phong xong máy
+  // chủ gọi relay NGAY và relay ghi `relay_status = 'pending'` trước khi làm
+  // bất cứ việc nào có thể hỏng — nên một clip đã niêm phong xong mà vẫn không
+  // có `relay_status` nghĩa là shop này không cắm kho riêng lúc quay, và
+  // "Cloud ZenPack" mới là câu đúng cho nó.
+  final settled = item.uploadStatus == 'done' && !item.isSealing;
+  if (!settled || item.relayStatus == 'pending') {
+    switch (shopStorage) {
+      case StorageKind.s3:
+        return l10n.storageNameS3;
+      case StorageKind.gdrive:
+        return l10n.storageNameDrive;
+      case StorageKind.system:
+      case null:
+        // Chưa biết kho của shop (chưa mở màn Kho lưu trữ lần nào trên máy
+        // này) thì nói theo chặng thay vì đoán bừa.
+        return item.relayStatus == 'pending'
+            ? l10n.storageNameRelayPending
+            : l10n.storageNameCloud;
+    }
+  }
+  return l10n.storageNameCloud;
+}
 
 String _durationLabel(int? seconds) {
   if (seconds == null) return '—';
