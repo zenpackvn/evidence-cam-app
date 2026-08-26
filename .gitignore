@@ -194,3 +194,4 @@ flutter_*.log
 
 # Artefact bản phát hành giữ lại ngoài build/ (build/ bị dọn mỗi lần build lại).
 dist/
+.calm/
