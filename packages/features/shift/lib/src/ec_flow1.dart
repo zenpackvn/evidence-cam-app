@@ -118,8 +118,6 @@ class _Field extends StatefulWidget {
     required this.label,
     required this.hint,
     this.controller,
-    this.obscure = false,
-    this.trailing,
     this.keyboardType,
     this.validator,
   });
@@ -127,8 +125,6 @@ class _Field extends StatefulWidget {
   final String label;
   final String hint;
   final TextEditingController? controller;
-  final bool obscure;
-  final IconData? trailing;
   final TextInputType? keyboardType;
 
   /// When set, the field registers with the enclosing [Form] and shows an
@@ -140,9 +136,6 @@ class _Field extends StatefulWidget {
 }
 
 class _FieldState extends State<_Field> {
-  // Local reveal state; the [trailing] eye toggles it on obscured fields.
-  late bool _obscure = widget.obscure;
-
   @override
   Widget build(BuildContext context) {
     if (widget.validator == null) return _decorated(null);
@@ -172,14 +165,12 @@ class _FieldState extends State<_Field> {
           child: CupertinoTextField(
             controller: widget.controller,
             onChanged: state?.didChange,
-            obscureText: _obscure,
             keyboardType: widget.keyboardType,
             style: _t(14, FontWeight.w400, BrandColors.ink),
             placeholder: widget.hint,
             placeholderStyle: _t(14, FontWeight.w400, BrandColors.mut),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             decoration: const BoxDecoration(),
-            suffix: _buildSuffix(),
           ),
         ),
         if (error != null) ...[
@@ -187,30 +178,6 @@ class _FieldState extends State<_Field> {
           Text(error, style: _t(12, FontWeight.w400, BrandColors.rec)),
         ],
       ],
-    );
-  }
-
-  Widget? _buildSuffix() {
-    final trailing = widget.trailing;
-    if (trailing == null) return null;
-    // On obscured fields the eye is a live reveal toggle; otherwise decorative.
-    final icon = widget.obscure
-        ? Icon(
-            _obscure
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
-            size: 18,
-            color: BrandColors.mut,
-          )
-        : Icon(trailing, size: 18, color: BrandColors.mut);
-    return Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: widget.obscure
-          ? EcTap(
-              onTap: () => setState(() => _obscure = !_obscure),
-              child: icon,
-            )
-          : icon,
     );
   }
 }

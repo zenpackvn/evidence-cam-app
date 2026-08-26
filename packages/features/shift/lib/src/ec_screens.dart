@@ -8,9 +8,7 @@
 /// `tool/pen2dart.py`) and the goldens under `test/design/goldens/`.
 library;
 
-import 'package:app_ui/app_ui.dart';
 import 'package:ec_ui/ec_ui.dart';
-import 'package:flutter/cupertino.dart' show CupertinoTextField;
 import 'package:flutter/material.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:localization/localization.dart';
@@ -18,8 +16,6 @@ import 'package:localization/localization.dart';
 import 'ec_form_limits.dart';
 
 // Shared text styles (Inter is inherited from the CupertinoApp text theme).
-TextStyle _t(double size, FontWeight weight, Color color) =>
-    TextStyle(fontSize: size, fontWeight: weight, color: color, height: 1.3);
 
 /// Splash (`F1-01`) — logo, wordmark, sparkle rule, three-line tagline, hero
 /// art, primary "Bắt đầu" button and the version line.
@@ -314,109 +310,6 @@ class _ValidatedPrimaryButton extends StatelessWidget {
           : () {
               if (Form.of(context).validate()) onValid!();
             },
-    );
-  }
-}
-
-class _Field extends StatefulWidget {
-  const _Field({
-    required this.label,
-    required this.hint,
-    this.controller,
-    this.obscure = false,
-    this.trailing,
-    this.keyboardType,
-    this.validator,
-  });
-
-  final String label;
-  final String hint;
-  final TextEditingController? controller;
-  final bool obscure;
-  final IconData? trailing;
-  final TextInputType? keyboardType;
-
-  /// When set, the field registers with the enclosing [Form] and shows an
-  /// inline error beneath itself; null keeps the plain (unvalidated) field.
-  final String? Function(String?)? validator;
-
-  @override
-  State<_Field> createState() => _FieldState();
-}
-
-class _FieldState extends State<_Field> {
-  // Local reveal state; the [trailing] eye toggles it on obscured fields.
-  late bool _obscure = widget.obscure;
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.validator == null) return _decorated(null);
-    return FormField<String>(
-      initialValue: widget.controller?.text ?? '',
-      validator: widget.validator,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      builder: _decorated,
-    );
-  }
-
-  Widget _decorated(FormFieldState<String>? state) {
-    final error = state?.errorText;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(widget.label, style: _t(14, FontWeight.w500, BrandColors.ink)),
-        const SizedBox(height: 8),
-        DecoratedBox(
-          decoration: ecSquircleDecoration(
-            radius: 12,
-            color: BrandColors.bg,
-            side: BorderSide(
-              color: error == null ? BrandColors.line : BrandColors.rec,
-            ),
-          ),
-          child: CupertinoTextField(
-            controller: widget.controller,
-            onChanged: state?.didChange,
-            obscureText: _obscure,
-            keyboardType: widget.keyboardType,
-            style: _t(14, FontWeight.w400, BrandColors.ink),
-            placeholder: widget.hint,
-            placeholderStyle: _t(14, FontWeight.w400, BrandColors.mut),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-            // The squircle border comes from the wrapping DecoratedBox.
-            decoration: const BoxDecoration(),
-            suffix: _buildSuffix(),
-          ),
-        ),
-        if (error != null) ...[
-          const SizedBox(height: 6),
-          Text(error, style: _t(12, FontWeight.w400, BrandColors.rec)),
-        ],
-      ],
-    );
-  }
-
-  Widget? _buildSuffix() {
-    final trailing = widget.trailing;
-    if (trailing == null) return null;
-    // On obscured fields the eye is a live reveal toggle; otherwise decorative.
-    final icon = widget.obscure
-        ? Icon(
-            _obscure
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
-            size: 18,
-            color: BrandColors.mut,
-          )
-        : Icon(trailing, size: 18, color: BrandColors.mut);
-    return Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: widget.obscure
-          ? EcTap(
-              onTap: () => setState(() => _obscure = !_obscure),
-              child: icon,
-            )
-          : icon,
     );
   }
 }

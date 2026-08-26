@@ -6775,6 +6775,10 @@ class _VideoRouteExtra {
     required this.canDelete,
     this.tracking = '',
     this.evidenceId,
+    // Chưa lối vào nào truyền `true`: màn hồ sơ khiếu nại còn mở sheet qua
+    // đường khác. Giữ vì `build` đã đọc cờ này (tắt Người quay / Cắt / Xoá) —
+    // xoá đi là xoá luôn hành vi đã cài sẵn cho lối vào đó.
+    // ignore: unused_element_parameter
     this.fromClaim = false,
   });
 

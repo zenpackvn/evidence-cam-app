@@ -1467,8 +1467,8 @@ class _QuotaBreakdownRow extends StatelessWidget {
 /// The modal scrim the design paints behind every dialog (`Dim` in the `.pen`).
 const _dimFill = Color(0xA6636363);
 
-/// Dialog shell — the design's `Dialog` frame: a [width]pt card with a 14pt
-/// radius over a [_dimFill] scrim, anchored at the design's own [top] offset
+/// Dialog shell — the design's `Dialog` frame: a 314pt card with a 14pt
+/// radius over a [_dimFill] scrim, anchored at the design's own 248pt offset
 /// on the 844pt artboard. Taller-than-viewport content scrolls, and the anchor
 /// collapses toward the top edge on shorter screens so the card always fits.
 class _DialogFrame extends StatelessWidget {
@@ -1476,14 +1476,14 @@ class _DialogFrame extends StatelessWidget {
     required this.children,
     this.onDismiss,
     this.padding = const EdgeInsets.fromLTRB(20, 24, 20, 18),
-    this.width = 314,
-    this.top = 248,
   });
   final List<Widget> children;
   final VoidCallback? onDismiss;
   final EdgeInsets padding;
-  final double width;
-  final double top;
+
+  /// Số đo của khung Dialog trên artboard 844pt của bản thiết kế.
+  static const double width = 314;
+  static const double top = 248;
 
   @override
   Widget build(BuildContext context) {
@@ -1957,18 +1957,16 @@ class _EcPrimaryButton extends StatelessWidget {
   const _EcPrimaryButton({
     required this.label,
     this.onPressed,
-    this.color = PenColors.primary,
   });
   final String label;
   final VoidCallback? onPressed;
-  final Color color;
 
   @override
   Widget build(BuildContext context) => PenPrimaryButton(
     label: label,
     height: 64,
     onPressed: onPressed,
-    color: color,
+    color: PenColors.primary,
   );
 }
 
