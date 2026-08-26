@@ -348,12 +348,6 @@ class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
   /// danh sách được nạp lại (xoá bằng chứng, kéo làm mới).
   final Set<String> _picked = <String>{};
 
-  List<EcTimelineVideo> get _pickedVideos => [
-    for (final day in widget.days)
-      for (final v in day.videos)
-        if (v.id != null && _picked.contains(v.id)) v,
-  ];
-
   void _toggle(EcTimelineVideo video) {
     final id = video.id;
     if (id == null) return;
@@ -361,11 +355,6 @@ class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
       if (!_picked.remove(id)) _picked.add(id);
     });
   }
-
-  void _exitSelection() => setState(() {
-    _selecting = false;
-    _picked.clear();
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -1065,141 +1054,6 @@ class _EcUploadWarnBanner extends StatelessWidget {
   }
 }
 
-class _EcBundleSection extends StatelessWidget {
-  const _EcBundleSection({
-    required this.selecting,
-    required this.pickedCount,
-    this.onStart,
-    this.onCancel,
-    this.onCreateLink,
-  });
-
-  final bool selecting;
-  final int pickedCount;
-  final VoidCallback? onStart;
-  final VoidCallback? onCancel;
-  final VoidCallback? onCreateLink;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    if (!selecting) {
-      return EcTap(
-        onTap: onStart,
-        child: PenBox(
-          width: double.infinity,
-          height: 52,
-          fill: PenColors.card,
-          stroke: PenColors.line,
-          radius: 14,
-          axis: PenAxis.row,
-          gap: 8,
-          main: MainAxisAlignment.center,
-          cross: CrossAxisAlignment.center,
-          children: [
-            const Icon(LucideIcons.plus, size: 20, color: PenColors.ink),
-            PenText(
-              // Nói thẳng ra cái sắp nhận được. Từ khi "Đẩy lên Drive" tạm gỡ
-              // thì gộp bằng chứng chỉ còn một đường ra là link, nên "Tạo"
-              // chung chung bắt người dùng bấm vào mới biết mình được gì.
-              l10n.bundleCreateClaim,
-              size: 15,
-              color: PenColors.ink,
-              weight: FontWeight.w600,
-              softWrap: false,
-            ),
-          ],
-        ),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: PenText(
-                l10n.bundleSelected(pickedCount),
-                size: 13,
-                color: PenColors.mut,
-              ),
-            ),
-            EcTap(
-              onTap: onCancel,
-              child: PenText(
-                l10n.commonCancel,
-                size: 13,
-                color: PenColors.link,
-                weight: FontWeight.w700,
-                softWrap: false,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        // Chỉ còn đường tạo link. Nút "Đẩy lên Drive" tạm gỡ vì chưa
-        // có gì đứng sau nó — chuỗi l10n `bundleUploadDrive` vẫn giữ, dựng lại
-        // là thêm một `_BundleAction` nữa ở đây.
-        _BundleAction(
-          icon: LucideIcons.fileText,
-          label: l10n.bundleCreateClaim,
-          onTap: onCreateLink,
-          primary: true,
-        ),
-      ],
-    );
-  }
-}
-
-class _BundleAction extends StatelessWidget {
-  const _BundleAction({
-    required this.icon,
-    required this.label,
-    this.onTap,
-    this.primary = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-  final bool primary;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
-    final fg = primary
-        ? PenColors.card
-        : (enabled ? PenColors.ink : PenColors.mut);
-    return EcTap(
-      onTap: onTap,
-      child: Opacity(
-        opacity: enabled ? 1 : 0.45,
-        child: PenBox(
-          width: double.infinity,
-          height: 52,
-          fill: primary ? PenColors.primary : PenColors.card,
-          stroke: primary ? null : PenColors.line,
-          radius: 14,
-          axis: PenAxis.row,
-          gap: 8,
-          main: MainAxisAlignment.center,
-          cross: CrossAxisAlignment.center,
-          children: [
-            Icon(icon, size: 19, color: fg),
-            PenText(
-              label,
-              size: 15,
-              color: fg,
-              weight: FontWeight.w700,
-              softWrap: false,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _EcTimelineVideoRow extends StatelessWidget {
   const _EcTimelineVideoRow({
     required this.video,
@@ -1642,55 +1496,6 @@ class _EcDetailActionRow extends StatelessWidget {
               color: danger ? PenColors.danger : PenColors.mut,
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _EcDetailDeleteRow extends StatelessWidget {
-  const _EcDetailDeleteRow({this.onTap});
-
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return EcTap(
-      onTap: onTap,
-      child: Container(
-        decoration: ecSquircleDecoration(
-          radius: 10,
-          color: BrandColors.soft,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.delete_outline,
-                size: 22,
-                color: BrandColors.ink,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      context.l10n.deleteVideoAction,
-                      style: _t(16, FontWeight.w500, BrandColors.ink),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      context.l10n.deleteVideoNote,
-                      style: _t(14, FontWeight.w400, BrandColors.mut),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

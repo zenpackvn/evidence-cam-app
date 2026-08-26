@@ -384,53 +384,6 @@ class _SavedPill extends StatelessWidget {
   );
 }
 
-/// Vòng đếm ngược trước khi phiên kế tiếp bắt đầu.
-///
-class _CountdownRing extends StatelessWidget {
-  const _CountdownRing({required this.seconds, required this.totalSeconds});
-
-  final int seconds;
-  final int totalSeconds;
-
-  static const _fullSweep = -250.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final ratio = totalSeconds <= 0
-        ? 1.0
-        : (seconds.clamp(0, totalSeconds)) / totalSeconds;
-    return SizedBox(
-      width: 86,
-      height: 86,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          const PenEllipse(
-            width: 86,
-            height: 86,
-            color: Color(0x80636363),
-            ring: 0.93,
-          ),
-          PenEllipse(
-            width: 86,
-            height: 86,
-            color: PenColors.ink,
-            ring: 0.93,
-            sweep: _fullSweep * ratio,
-          ),
-          const PenEllipse(width: 74, height: 74, color: Color(0x80161616)),
-          PenText(
-            '$seconds',
-            size: 36,
-            weight: FontWeight.w800,
-            color: PenColors.card,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Thẻ "Đơn tiếp theo" — mã của đơn sắp quay, viền xanh như khung design.
 class _NextOrderCard extends StatelessWidget {
   const _NextOrderCard({
@@ -2848,51 +2801,3 @@ class _ManageRow extends StatelessWidget {
 
 // --- shared buttons (pixel specs from pencil-new.pen — C/BtnOutline /
 // C/BtnPrimary) ---
-
-class _PrimaryButton extends StatelessWidget {
-  const _PrimaryButton({required this.label, this.onPressed});
-  final String label;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onPressed != null;
-    return EcTap(
-      onTap: onPressed,
-      child: Container(
-        height: 52,
-        alignment: Alignment.center,
-        decoration: ecSquircleDecoration(
-          radius: 12,
-          color: enabled
-              ? BrandColors.dark
-              : BrandColors.dark.withValues(alpha: 0.4),
-        ),
-        child: Text(label, style: _t(16, FontWeight.w600, Colors.white)),
-      ),
-    );
-  }
-}
-
-class _OutlineButton extends StatelessWidget {
-  const _OutlineButton({required this.label, this.onPressed});
-  final String label;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return EcTap(
-      onTap: onPressed,
-      child: Container(
-        height: 52,
-        alignment: Alignment.center,
-        decoration: ecSquircleDecoration(
-          radius: 12,
-          color: BrandColors.bg,
-          side: const BorderSide(color: BrandColors.line),
-        ),
-        child: Text(label, style: _t(16, FontWeight.w500, BrandColors.ink)),
-      ),
-    );
-  }
-}

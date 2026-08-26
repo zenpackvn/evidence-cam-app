@@ -7513,23 +7513,6 @@ class _CreateClaimRoute extends StatelessWidget {
   );
 }
 
-/// Ngày và giờ của bằng chứng MỚI NHẤT trong một mã đơn, cho dòng tiêu đề của
-/// lớp con.
-///
-/// Lấy cái mới nhất chứ không cái đầu: một đơn quay nhiều lần thì mốc đáng nhớ
-/// là lần cuối. `null` khi không bằng chứng nào có mốc thời gian — hồ sơ tạo
-/// trước khi trường đó được lưu — và lúc đó dòng chỉ hiện mã, không bịa ngày.
-(String, String)? _claimOrderStamp(EcClaimOrder order) {
-  int? newest;
-  for (final e in order.evidence) {
-    final at = e.capturedAt;
-    if (at != null && (newest == null || at > newest)) newest = at;
-  }
-  if (newest == null) return null;
-  final at = DateTime.fromMillisecondsSinceEpoch(newest);
-  return (_dayLabelOf(at), _hhmm(at));
-}
-
 /// Sao chép link hồ sơ, hoặc nội dung hồ sơ khi chưa có link.
 ///
 /// Bản chữ là đường lùi cho hồ sơ tạo lúc mất mạng: dán thẳng vào khung chat
@@ -8725,15 +8708,6 @@ String _expiredLabel(AppLocalizations l10n, int? retentionExpiresAt) {
   if (retentionExpiresAt == null) return l10n.uploadStatusExpired;
   final expired = DateTime.fromMillisecondsSinceEpoch(retentionExpiresAt);
   return l10n.expiredOnDate(_dateLabel(expired));
-}
-
-/// Mã vận đơn chứa bằng chứng [evidenceId] trong hồ sơ, hoặc `null`.
-String? _trackingOf(EcClaimDossier dossier, String? evidenceId) {
-  if (evidenceId == null) return null;
-  for (final o in dossier.orders) {
-    if (o.evidence.any((e) => e.id == evidenceId)) return o.tracking;
-  }
-  return null;
 }
 
 EcVideoDetail _videoDetail(

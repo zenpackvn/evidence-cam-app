@@ -115,53 +115,6 @@ class _EcOutlineButton extends StatelessWidget {
 
 // --- shared chrome ---
 
-class _BackButton extends StatelessWidget {
-  const _BackButton({this.onTap, this.size = 22});
-  final VoidCallback? onTap;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return EcTap(
-      onTap: onTap,
-      child: Icon(Icons.arrow_back_ios_new, size: size, color: BrandColors.ink),
-    );
-  }
-}
-
-class _LangChip extends StatelessWidget {
-  const _LangChip({this.onTap});
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return EcTap(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          border: Border.all(color: BrandColors.line),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.language, size: 14, color: BrandColors.ink),
-            const SizedBox(width: 5),
-            Text('VI', style: _t(12, FontWeight.w600, BrandColors.ink)),
-            const SizedBox(width: 5),
-            const Icon(
-              Icons.keyboard_arrow_down,
-              size: 12,
-              color: BrandColors.mut,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _Field extends StatefulWidget {
   const _Field({
     required this.label,
@@ -264,133 +217,10 @@ class _FieldState extends State<_Field> {
   }
 }
 
-class _OrDivider extends StatelessWidget {
-  const _OrDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(child: Divider(color: BrandColors.line, height: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text(
-            context.l10n.authOr,
-            style: _t(12, FontWeight.w400, BrandColors.mut),
-          ),
-        ),
-        const Expanded(child: Divider(color: BrandColors.line, height: 1)),
-      ],
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  const _SocialButton({
-    required this.label,
-    required this.background,
-    required this.borderColor,
-    required this.foreground,
-    required this.icon,
-    this.onPressed,
-  });
-
-  final String label;
-  final Color background;
-  final Color borderColor;
-  final Color foreground;
-  final Widget icon;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return EcTap(
-      onTap: onPressed,
-      child: Container(
-        height: 54,
-        decoration: ecSquircleDecoration(
-          radius: 12,
-          color: background,
-          side: BorderSide(color: borderColor),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: _t(14, FontWeight.w500, foreground),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Google's 4-color "G" mark, verbatim from the `GoogleG` paths in
 /// pencil-new.pen (viewBox 48x48), replacing the single-color material glyph.
 // ponytail: duplicated from ec_screens.dart; promote to a shared file if a
 // third screen needs it.
-class _GoogleLogo extends StatelessWidget {
-  const _GoogleLogo();
-
-  @override
-  Widget build(BuildContext context) =>
-      SvgPicture.string(_googleGSvg, width: 18, height: 18);
-}
-
-const _googleGSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-<path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
-<path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
-<path fill="#FBBC05" d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/>
-<path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
-</svg>''';
-
-/// Small caps section header used inside settings-style screens (e.g.
-/// "THÀNH VIÊN", "CÀI ĐẶT SHOP").
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.label);
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(label, style: _t(12, FontWeight.w600, BrandColors.mut));
-  }
-}
-
-/// Header used by screens pushed on top of a list (back arrow + title),
-/// e.g. CreateShop, ShopMgmt, ShopDetail.
-class _SimpleHeader extends StatelessWidget {
-  const _SimpleHeader({required this.title, this.onBack});
-  final String title;
-  final VoidCallback? onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          _BackButton(onTap: onBack, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              title,
-              overflow: TextOverflow.ellipsis,
-              style: _t(16, FontWeight.w600, BrandColors.ink),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 /// Shop header (`C/ShopHeader`): back arrow + shop name, nothing else.
 ///
@@ -1019,14 +849,6 @@ class EcShopSummary {
   /// seeds the camera when clocked into this shop.
   final String resolution;
 }
-
-String _platformLabel(String platform) => switch (platform) {
-  'shopee' => 'Shopee',
-  'tiktok' => 'TikTok Shop',
-  'lazada' => 'Lazada',
-  'tiki' => 'Tiki',
-  _ => 'Khác',
-};
 
 /// ChooseShop — "Shop của bạn": chạm một shop để vào ca, một thẻ Tài khoản,
 /// rồi hai hàng ghim đáy: thêm cửa hàng và đăng xuất.
@@ -2561,12 +2383,6 @@ class _FixedSettingRow extends StatelessWidget {
     ],
   );
 }
-
-/// Amber of the design file's warn bar (F3-05) — the one warning colour the
-/// EvidenceCam DNA has; reused here so the two screens read as the same system.
-const _warnInk = Color(0xFFB6770B);
-
-String _minutes(int seconds) => '${(seconds / 60).round()}';
 
 /// A white card that opens with an icon + all-caps section label, then its
 /// rows — the shape every panel on the shop-detail screen uses.

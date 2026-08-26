@@ -2528,33 +2528,6 @@ class _SettingsGroup extends StatelessWidget {
   }
 }
 
-enum _NavTab { orders, capture, claims }
-
-class _BottomNav extends StatelessWidget {
-  const _BottomNav({required this.active, this.onOrders, this.onCapture});
-
-  final _NavTab active;
-  final VoidCallback? onOrders;
-  final VoidCallback? onCapture;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return PenTabBar(
-      activeIndex: switch (active) {
-        _NavTab.orders => 0,
-        _NavTab.capture => 1,
-        _NavTab.claims => 2,
-      },
-      tabs: [
-        (LucideIcons.package, l10n.navOrders, onOrders),
-        (LucideIcons.camera, l10n.navRecord, onCapture),
-        (LucideIcons.fileText, l10n.navClaims, null),
-      ],
-    );
-  }
-}
-
 class _AvatarPicker extends StatelessWidget {
   const _AvatarPicker({this.avatarPath, this.onChangeAvatar});
 
