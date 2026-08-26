@@ -316,6 +316,43 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    // Kho ĐANG LỖI thì nút Kiểm tra phải hiện dù chưa sửa gì.
+    //
+    // Đó đúng là lúc cần nó nhất: người dùng vừa sửa quyền bên phía nhà cung
+    // cấp và muốn biết đã ăn chưa. Luật "chưa đổi gì thì không có gì để thử"
+    // đúng với kho đang chạy, và sai hẳn với kho đang hỏng.
+    testWidgets('kho đang lỗi thì Kiểm tra hiện sẵn, không đòi sửa bừa', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(
+            kind: EcStorageKind.s3,
+            configuredKind: EcStorageKind.s3,
+            configuredKinds: {EcStorageKind.s3},
+            label: 'evidencecam/video',
+            ok: false,
+            lastError: 's3_head_403',
+            canManage: true,
+            byosAllowed: true,
+            s3Endpoint: 'https://s3-storage.example.vn',
+            s3Region: 'us-east-1',
+            s3Bucket: 'evidencecam',
+            s3Prefix: 'video',
+          ),
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+      await tester.tap(find.text('Đổi cấu hình'));
+      await tester.pumpAndSettle();
+
+      // Chưa gõ một ký tự nào.
+      expect(find.bySemanticsLabel('Kiểm tra'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     // Khoá bí mật dài mấy chục ký tự và luôn được DÁN vào. Dán hụt một ký tự
     // thì máy chủ chỉ nói `SignatureDoesNotMatch` — câu không chỉ ra ô nào sai,
     // mà một hàng chấm tròn thì không soi lại được. Con mắt là đường duy nhất

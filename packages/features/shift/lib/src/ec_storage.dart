@@ -722,7 +722,15 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                   // cái kho đang chạy.
                   // Đổi cấu hình mà chưa đổi gì thì không có gì để thử: một
                   // lượt gọi ra kho khách chỉ để xác nhận điều đã biết.
-                  if (_s3FormOpen && widget.onTestS3 != null && _s3Changed) ...[
+                  //
+                  // TRỪ khi kho đang lỗi. Lúc đó "xác nhận điều đã biết" chính
+                  // là việc cần làm: người dùng vừa sửa quyền bên phía nhà cung
+                  // cấp và muốn biết đã ăn chưa, mà cấu hình thì không có gì
+                  // phải đổi. Ẩn nút đi là bắt họ gõ bừa một ký tự rồi xoá đi
+                  // để nút hiện ra — hoặc chịu thua.
+                  if (_s3FormOpen &&
+                      widget.onTestS3 != null &&
+                      (_s3Changed || !widget.state.ok)) ...[
                     _TestButton(
                       enabled: _s3.readyWithStoredKeys && !widget.busy,
                       onTap: () {
