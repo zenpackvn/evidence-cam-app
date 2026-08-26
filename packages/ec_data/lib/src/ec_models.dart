@@ -601,6 +601,14 @@ class EvidenceDto {
   /// predates sealing and is never going to change, and the two failure states
   /// still have to play — that file is the user's only copy.
   bool get isSealing => sealStatus == 'pending' || sealStatus == 'rendering';
+
+  /// Clip đã niêm phong xong và ĐANG được đẩy sang kho riêng của shop.
+  ///
+  /// Chặng này nằm SAU chặng nung dấu và là chặng cuối đổi dữ liệu của một
+  /// clip: `storage_kind`, `object_ref` và `share_url` chỉ có mặt khi nó xong.
+  /// Màn nào bám theo `isSealing` để nạp lại mà bỏ qua nó thì dừng hỏi đúng
+  /// một nhịp trước khi những trường kia xuất hiện.
+  bool get isMovingToOwnStorage => relayStatus == 'pending';
 }
 
 /// Device-clock error we treat as normal drift rather than a wrong clock.

@@ -6007,7 +6007,16 @@ class _OrderRouteState extends State<_OrderRoute> {
       }
     }
     _sealPoll?.cancel();
-    if (!data.detail.evidence.any((e) => e.isSealing)) {
+    // Bám theo CẢ chặng đẩy sang kho riêng, không chỉ chặng nung dấu.
+    //
+    // Đẩy sang kho riêng chạy SAU khi niêm phong xong, nên dừng hỏi ngay lúc
+    // `isSealing` tắt là dừng đúng một nhịp trước khi `storage_kind`,
+    // `object_ref` và `share_url` xuất hiện. Hậu quả người dùng thấy: nhãn kho
+    // đứng ở "đang chuyển", và nút Sao chép link đưa ra link máy chủ thay vì
+    // link Drive hay link kho S3 — thứ chỉ có sau khi đẩy xong.
+    if (!data.detail.evidence.any(
+      (e) => e.isSealing || e.isMovingToOwnStorage,
+    )) {
       _sealPolls = 0;
       return;
     }
