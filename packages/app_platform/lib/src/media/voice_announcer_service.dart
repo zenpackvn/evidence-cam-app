@@ -57,7 +57,7 @@ class VoiceAnnouncerService {
     }
   }
 
-  /// Speaks [text] aloud. `flutter_tts.speak` already interrupts whatever is
+  /// Speaks `text` aloud. `flutter_tts.speak` already interrupts whatever is
   /// currently playing before starting the new utterance — an extra `stop()`
   /// round-trip first only added latency between the action (start/stop
   /// recording) and hearing its announcement. A missing or misbehaving TTS

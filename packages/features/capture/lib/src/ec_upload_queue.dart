@@ -78,7 +78,7 @@ class UploadTask {
   /// persisted tasks (and the offline path) may leave it null.
   final String? shopId;
 
-  /// Tài khoản đã quay clip. Xem [EvidenceClipEntity.ownerUid].
+  /// Tài khoản đã quay clip. Xem `EvidenceClipEntity.ownerUid`.
   final String? ownerUid;
   EcUploadState state;
   double progress;

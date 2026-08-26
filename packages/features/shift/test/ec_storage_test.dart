@@ -224,6 +224,46 @@ void main() {
       expect(_saveEnabled(tester), isFalse);
     });
 
+    // Bỏ trống cặp khoá chỉ có nghĩa khi máy chủ ĐANG giữ cặp khoá cũ để dùng
+    // lại. Chưa cắm kho nào mà vẫn cho bấm Kiểm tra là gửi một cấu hình không
+    // khoá ra mạng chỉ để nhận về đúng câu lỗi mà chính app đoán được từ trước.
+    testWidgets('cắm lần đầu: chưa gõ khoá thì Kiểm tra vẫn khoá', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(canManage: true, byosAllowed: true),
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+
+      final fields = find.byType(CupertinoTextField);
+      await tester.enterText(fields.at(0), 'https://s3.example.com');
+      await tester.enterText(fields.at(2), 'my-bucket');
+      await tester.pump();
+
+      final test = find.bySemanticsLabel('Kiểm tra');
+      expect(
+        tester.getSemantics(test).flagsCollection.isEnabled,
+        Tristate.isFalse,
+        reason: 'chưa có khoá nào trên máy chủ để dùng lại',
+      );
+
+      await tester.enterText(fields.at(4), 'AKIAXXXX');
+      await tester.enterText(fields.at(5), 'secret');
+      await tester.pump();
+
+      expect(
+        tester.getSemantics(test).flagsCollection.isEnabled,
+        Tristate.isTrue,
+      );
+    });
+
     // Luồng thật: điền ô → bấm Kiểm tra → máy chủ báo xanh → Lưu mở khoá.
     testWidgets('thử xanh rồi thì Lưu mở khoá', (tester) async {
       await _pump(

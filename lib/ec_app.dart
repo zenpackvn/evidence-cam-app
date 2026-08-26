@@ -1938,13 +1938,6 @@ class _StorageRouteState extends State<_StorageRoute>
   /// `FutureBuilder` nên không với tới `dto` được.
   String? _connectedDriveEmail;
 
-  /// Loại kho ĐÃ CẮM — kể cả khi đang tắt.
-  ///
-  /// Dùng để chọn chữ cho hộp thoại xác nhận: gỡ một tài khoản Google và gỡ
-  /// một cái bucket S3 là hai câu khác nhau, và câu sai làm người dùng tưởng
-  /// mình đang bấm việc kia.
-  StorageKind _configuredKind = StorageKind.system;
-
   @override
   void initState() {
     super.initState();
@@ -2507,7 +2500,6 @@ class _StorageRouteState extends State<_StorageRoute>
         final driveView = dto.viewFor(StorageKind.gdrive);
         final s3View = dto.viewFor(StorageKind.s3);
         _connectedDriveEmail = driveView?.email;
-        _configuredKind = dto.configuredKind ?? StorageKind.system;
         // Máy chủ vừa nói kho thật là gì; nếu nó đổi so với lần đọc trước thì
         // lựa chọn đã nhớ bám theo. Chạy ở nền, không chặn lượt dựng này.
         unawaited(
@@ -7564,7 +7556,6 @@ class _ClaimDetailRoute extends StatefulWidget {
 class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
   ClaimDetailDto? _detail;
   bool _loading = true;
-  bool _failed = false;
 
   @override
   void initState() {
@@ -7589,7 +7580,9 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
       final detail = await widget.repo.claimDetail(widget.shopId, claimId);
       if (mounted) setState(() => (_detail = detail, _loading = false));
     } on Object {
-      if (mounted) setState(() => (_failed = true, _loading = false));
+      // Không giữ cờ lỗi riêng: nhánh `detail == null` dưới build đã dựng khối
+      // thông tin địa phương và nói rõ vì sao chưa có link.
+      if (mounted) setState(() => _loading = false);
     }
   }
 

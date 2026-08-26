@@ -1784,7 +1784,7 @@ class _LangChipDeco extends StatelessWidget {
   }
 }
 
-/// The grey leaf sprig the design pins to a screen corner. [flip] mirrors it
+/// The grey leaf sprig the design pins to a screen corner. `flip` mirrors it
 /// for the left/right variants.
 class PenLeafSprig extends StatelessWidget {
   const PenLeafSprig({super.key});

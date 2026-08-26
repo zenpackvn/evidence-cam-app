@@ -900,7 +900,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     );
   }
 
-  /// One listener for every session transition worth reporting. [listenWhen]
+  /// One listener for every session transition worth reporting. `listenWhen`
   /// above decides *whether* we are called; this decides *which* edge it was,
   /// so each branch re-checks the condition that let it through.
   void _onSessionEdge(BuildContext context, RecordingSessionState state) {

@@ -1463,7 +1463,7 @@ class _QuotaBreakdownRow extends StatelessWidget {
 }
 
 /// Centered dialog chrome with tap-outside-to-dismiss (matches flow-1's
-/// dialogs). [onDismiss] fires when the area outside the card is tapped.
+/// dialogs). `onDismiss` fires when the area outside the card is tapped.
 /// The modal scrim the design paints behind every dialog (`Dim` in the `.pen`).
 const _dimFill = Color(0xA6636363);
 

@@ -773,7 +773,7 @@ class RecordingSessionBloc
     }
   }
 
-  /// Applies [idleScanMayStart] to [code].
+  /// Applies [idleScanMayStart] to `code`.
   ///
   /// Mã KHÁC luôn được nhận, ngay lập tức — kể cả mã đã quay ở clip trước đó.
   /// Thứ duy nhất bị chặn là chính mã vừa quay xong, và chỉ chừng nào nó còn

@@ -490,7 +490,7 @@ class EcRegisterScreen extends StatelessWidget {
   final bool showApple;
   final VoidCallback? onLogin;
 
-  /// Mã ngôn ngữ đang dùng — xem [EcLoginScreen.languageLabel].
+  /// Mã ngôn ngữ đang dùng — xem `EcLoginScreen.languageLabel`.
   final String languageLabel;
 
   @override
@@ -695,7 +695,7 @@ class EcForgotPasswordScreen extends StatelessWidget {
   final VoidCallback? onSend;
   final VoidCallback? onLogin;
 
-  /// Mã ngôn ngữ đang dùng — xem [EcLoginScreen.languageLabel].
+  /// Mã ngôn ngữ đang dùng — xem `EcLoginScreen.languageLabel`.
   final String languageLabel;
 
   @override
