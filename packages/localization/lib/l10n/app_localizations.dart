@@ -3782,6 +3782,24 @@ abstract class AppLocalizations {
   /// **'This storage cannot sign download links, so videos must be relayed through the server — whoever opens your link will find it slower.'**
   String get storageNoPresign;
 
+  /// No description provided for @storageErrNoRead.
+  ///
+  /// In en, this message translates to:
+  /// **'This key can write but cannot read back. The server uploads the video, then reads it back to verify — and is denied, so it will not treat the file as safely stored.\n\nGrant s3:GetObject and s3:ListBucket to this key (or open them in the bucket policy if the bucket belongs to another account).'**
+  String get storageErrNoRead;
+
+  /// No description provided for @storageErrNoWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'This key cannot write to the bucket. Grant s3:PutObject for the bucket and prefix you configured.'**
+  String get storageErrNoWrite;
+
+  /// No description provided for @storageErrSizeMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The video was written but read back short, so the server kept the temporary copy and will retry. Usually a bucket rule or a concurrent overwrite.'**
+  String get storageErrSizeMismatch;
+
   /// No description provided for @storageNoObjectLock.
   ///
   /// In en, this message translates to:

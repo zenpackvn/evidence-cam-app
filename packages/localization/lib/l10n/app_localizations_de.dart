@@ -2126,6 +2126,18 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieser Speicher kann keine Download-Links signieren, deshalb müssen Videos über den Server laufen — wer deinen Link öffnet, merkt es an der Langsamkeit.';
 
   @override
+  String get storageErrNoRead =>
+      'This key can write but cannot read back. The server uploads the video, then reads it back to verify — and is denied, so it will not treat the file as safely stored.\n\nGrant s3:GetObject and s3:ListBucket to this key (or open them in the bucket policy if the bucket belongs to another account).';
+
+  @override
+  String get storageErrNoWrite =>
+      'This key cannot write to the bucket. Grant s3:PutObject for the bucket and prefix you configured.';
+
+  @override
+  String get storageErrSizeMismatch =>
+      'The video was written but read back short, so the server kept the temporary copy and will retry. Usually a bucket rule or a concurrent overwrite.';
+
+  @override
   String get storageNoObjectLock =>
       'Dieser Speicher hat keine Objektsperre. Du kannst einer Plattform nicht zusagen, dass der Nachweis unlöschbar ist.';
 

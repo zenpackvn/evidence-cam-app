@@ -2552,7 +2552,7 @@ class _StorageRouteState extends State<_StorageRoute>
             },
             label: view?.label ?? '',
             ok: view?.ok ?? true,
-            lastError: view?.lastError,
+            lastError: _storageErrorText(context.l10n, view?.lastError),
             // Cờ thử nghiệm mở hai thẻ kho riêng để đi được vào luồng cắm kho.
             // Máy chủ vẫn chặn lượt LƯU nếu gói thật chưa mở — xem [_kForcedPlan].
             byosAllowed: dto.byosAllowed || _planOverrideOn,
@@ -8787,6 +8787,33 @@ String _sealedAtLabel(int? sealedAt) {
 /// không ăn. `relay_status` là thứ phân biệt được: `pending` = đang trên
 /// đường, `failed` = kẹt lại (màn Kho lưu trữ có cảnh báo tương ứng), `null` =
 /// shop này thật sự dùng kho hệ thống.
+/// Câu lỗi của kho, dịch sang việc PHẢI LÀM.
+///
+/// Máy chủ ghi mã kỹ thuật (`s3_head_403`, `s3_put_403`, `verify_failed`) vì đó
+/// là thứ duy nhất nói đúng chuyện đã xảy ra. Nhưng chủ shop đọc `s3_head_403`
+/// thì không biết phải làm gì, mà việc phải làm lại rất cụ thể: thêm đúng một
+/// quyền bên nhà cung cấp.
+///
+/// Giữ nguyên mã ở cuối câu: đó là thứ bộ phận hỗ trợ bám vào, và là thứ duy
+/// nhất tra ngược được về log.
+String? _storageErrorText(AppLocalizations l10n, String? raw) {
+  final error = raw?.trim();
+  if (error == null || error.isEmpty) return null;
+  final friendly = switch (error) {
+    // Ghi được, đọc lại bị từ chối. 403 ở bước đọc còn có nghĩa "thiếu
+    // ListBucket": AWS trả 403 thay 404 cho key không tồn tại, để không lộ key
+    // nào có — nên câu chỉ dẫn nhắc cả hai quyền.
+    _ when error.startsWith('s3_head_403') || error.startsWith('s3_get_403') =>
+      l10n.storageErrNoRead,
+    _ when error.startsWith('s3_put_40') => l10n.storageErrNoWrite,
+    _ when error.startsWith('verify_failed') => l10n.storageErrSizeMismatch,
+    _ => null,
+  };
+  return friendly == null
+      ? error
+      : '$friendly\n\n${l10n.storageErrorCode(error)}';
+}
+
 String _evidenceStorageLabel(
   AppLocalizations l10n,
   EvidenceDto item,

@@ -2096,6 +2096,18 @@ class AppLocalizationsId extends AppLocalizations {
       'Penyimpanan ini tidak bisa menandatangani tautan unduh, jadi video harus dilewatkan lewat server — siapa pun yang membuka tautan Anda akan merasa lebih lambat.';
 
   @override
+  String get storageErrNoRead =>
+      'This key can write but cannot read back. The server uploads the video, then reads it back to verify — and is denied, so it will not treat the file as safely stored.\n\nGrant s3:GetObject and s3:ListBucket to this key (or open them in the bucket policy if the bucket belongs to another account).';
+
+  @override
+  String get storageErrNoWrite =>
+      'This key cannot write to the bucket. Grant s3:PutObject for the bucket and prefix you configured.';
+
+  @override
+  String get storageErrSizeMismatch =>
+      'The video was written but read back short, so the server kept the temporary copy and will retry. Usually a bucket rule or a concurrent overwrite.';
+
+  @override
   String get storageNoObjectLock =>
       'Penyimpanan ini tidak punya penguncian objek. Anda tidak bisa menjanjikan ke marketplace bahwa buktinya tidak bisa dihapus.';
 

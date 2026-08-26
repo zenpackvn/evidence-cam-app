@@ -2080,6 +2080,18 @@ class AppLocalizationsVi extends AppLocalizations {
       'Kho này không ký được link tải, nên video phải đi vòng qua máy chủ — người nhận link sẽ thấy chậm hơn.';
 
   @override
+  String get storageErrNoRead =>
+      'Khoá này ghi được nhưng KHÔNG đọc lại được. Máy chủ ghi video lên kho xong, đọc lại để đối chiếu thì bị từ chối, nên không dám coi là đã cất an toàn.\n\nHãy thêm quyền s3:GetObject và s3:ListBucket cho khoá này (hoặc mở chúng trong bucket policy nếu bucket thuộc tài khoản khác).';
+
+  @override
+  String get storageErrNoWrite =>
+      'Khoá này không ghi được lên kho. Hãy thêm quyền s3:PutObject cho đúng bucket và prefix đang cắm.';
+
+  @override
+  String get storageErrSizeMismatch =>
+      'Video ghi lên kho xong nhưng đọc lại thấy thiếu byte, nên máy chủ giữ bản tạm và thử lại. Thường do bucket có quy tắc chặn hoặc ghi đè giữa chừng.';
+
+  @override
   String get storageNoObjectLock =>
       'Kho này không khoá được đối tượng. Không thể hứa với sàn rằng bằng chứng không xoá được.';
 
