@@ -1025,7 +1025,7 @@ void main() {
             platformLabel: 'Shopee',
             members: members,
             videoTypes: videoTypes,
-            clipBudget: ClipBudget(seconds: 300, planMaxSeconds: 300),
+            clipBudget: ClipBudget.fallback,
           ),
         );
         // Nhãn là `shopDetailClipLength` = "Thời lượng video" (không có gạch

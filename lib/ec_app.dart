@@ -615,13 +615,15 @@ class _LoginRouteState extends State<_LoginRoute> {
       // Tài khoản email/mật khẩu chưa bấm link xác minh thì không được vào —
       // nếu không thì email xác minh chỉ là thủ tục cho vui.
       if (!user.emailVerified) {
-        _analytics()?.trackLoginFailed(errorType: 'chua_xac_minh_email');
+        unawaited(
+          _analytics()?.trackLoginFailed(errorType: 'chua_xac_minh_email'),
+        );
         await _blockUnverified(user);
         return;
       }
       // `login` is a reserved Firebase event, so it keeps its English name and
       // goes through `logLogin` — that is what feeds the built-in funnel.
-      _analytics()?.logLogin(method: _AuthMethods.email);
+      unawaited(_analytics()?.logLogin(method: _AuthMethods.email));
       unawaited(EcAppsflyer.logLogin(_AuthMethods.email));
       await _credentials()?.save(
         email: _email.text.trim(),
@@ -629,7 +631,9 @@ class _LoginRouteState extends State<_LoginRoute> {
       );
       if (mounted) context.go('/shops', extra: 'forward');
     } on Object catch (error) {
-      _analytics()?.trackLoginFailed(errorType: error.runtimeType.toString());
+      unawaited(
+        _analytics()?.trackLoginFailed(errorType: error.runtimeType.toString()),
+      );
       if (mounted) _toast(context, _authErrorText(context.l10n, error));
     }
   }
@@ -664,7 +668,7 @@ class _LoginRouteState extends State<_LoginRoute> {
       try {
         await widget.auth.sendEmailVerification();
         resent = true;
-        _analytics()?.trackEmailVerificationSent();
+        unawaited(_analytics()?.trackEmailVerificationSent());
       } on Object catch (error) {
         resendError = error;
       }
@@ -763,13 +767,13 @@ class _RegisterRouteState extends State<_RegisterRoute> {
         name: _name.text.trim(),
       );
       // `sign_up` is reserved, same deal as `login` above.
-      _analytics()?.logSignUp(signUpMethod: _AuthMethods.email);
+      unawaited(_analytics()?.logSignUp(signUpMethod: _AuthMethods.email));
       // The mail goes out first, while the new account is signed in: the
       // profile saves below talk to the Worker and used to take the whole
       // registration down with them, leaving an account nobody could verify.
       final verificationError = await _sendVerificationEmail();
       if (verificationError == null) {
-        _analytics()?.trackEmailVerificationSent();
+        unawaited(_analytics()?.trackEmailVerificationSent());
       }
       final profileError = await _saveProfile(
         name: _name.text.trim(),
@@ -1042,7 +1046,7 @@ Future<void> _afterSocialSignIn(
 }) async {
   try {
     await signIn;
-    _analytics()?.logLogin(method: method);
+    unawaited(_analytics()?.logLogin(method: method));
     unawaited(EcAppsflyer.logLogin(method));
     // Dựng hồ sơ phía máy chủ NGAY, y như đường đăng ký bằng email vẫn làm.
     //
@@ -1062,7 +1066,9 @@ Future<void> _afterSocialSignIn(
     // User backed out of the provider sheet — nothing to report, and nothing
     // to log either: a cancel is not a failed login.
   } on Object catch (error) {
-    _analytics()?.trackLoginFailed(errorType: error.runtimeType.toString());
+    unawaited(
+      _analytics()?.trackLoginFailed(errorType: error.runtimeType.toString()),
+    );
     if (context.mounted) _toast(context, _authErrorText(context.l10n, error));
   }
 }
@@ -1257,7 +1263,7 @@ class _AccountRouteState extends State<_AccountRoute> {
   Future<void> _openPaywall() async {
     // `trackPaywallViewed` tồn tại từ đầu nhưng chưa có chỗ gọi — bảng giá là
     // mốc ý định trả tiền, thiếu nó thì phễu đứt ngay trước bước mua.
-    _analytics()?.trackPaywallViewed();
+    unawaited(_analytics()?.trackPaywallViewed());
     unawaited(EcAppsflyer.logPaywallViewed());
     final purchased = await EcPurchases.presentPaywall();
     if (!purchased || !mounted) return;
@@ -1298,7 +1304,7 @@ class _AccountRouteState extends State<_AccountRoute> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    _analytics()?.trackSignOut();
+    unawaited(_analytics()?.trackSignOut());
     await _signOutAll(widget.auth);
     // Same as signing out from the shop picker: drop the remembered shop so the
     // next session starts from a clean pick.
@@ -1733,7 +1739,7 @@ class _QuotaRouteState extends State<_QuotaRoute> {
   Future<void> _openPaywall() async {
     // `trackPaywallViewed` tồn tại từ đầu nhưng chưa có chỗ gọi — bảng giá là
     // mốc ý định trả tiền, thiếu nó thì phễu đứt ngay trước bước mua.
-    _analytics()?.trackPaywallViewed();
+    unawaited(_analytics()?.trackPaywallViewed());
     unawaited(EcAppsflyer.logPaywallViewed());
     final purchased = await EcPurchases.presentPaywall();
     if (!purchased || !mounted) return;
@@ -1844,7 +1850,7 @@ class _DeleteAccountRouteState extends State<_DeleteAccountRoute> {
       // lại được. Ngược lại thì mất hẳn đường vào.
       await widget.repo.deleteAccount(force: true);
       await widget.auth.deleteAccount();
-      _analytics()?.trackAccountDeleted();
+      unawaited(_analytics()?.trackAccountDeleted());
       // Forget the remembered credentials so the deleted account's password is
       // never prefilled on the login screen we return to.
       await _credentials()?.clear();
@@ -5431,9 +5437,11 @@ class _OrdersRouteState extends State<_OrdersRoute> {
     if (!mounted) return;
     // Reported after the reload so the count is the filtered one — which chip
     // returns nothing is the whole point of watching this event.
-    _analytics()?.trackOrdersFiltered(
-      filter: _filterLabel(filters),
-      resultCount: _page.total,
+    unawaited(
+      _analytics()?.trackOrdersFiltered(
+        filter: _filterLabel(filters),
+        resultCount: _page.total,
+      ),
     );
   }
 

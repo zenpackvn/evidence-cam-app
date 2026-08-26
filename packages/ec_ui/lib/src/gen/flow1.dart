@@ -4544,8 +4544,8 @@ class PenF110 extends StatelessWidget {
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(14),
               topRight: Radius.circular(14),
-              bottomRight: Radius.circular(0),
-              bottomLeft: Radius.circular(0),
+              bottomRight: Radius.zero,
+              bottomLeft: Radius.zero,
             ),
             axis: PenAxis.column,
             padding: EdgeInsets.fromLTRB(22, 12, 22, 20),
@@ -6788,8 +6788,8 @@ class PenF112 extends StatelessWidget {
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(14),
             topRight: Radius.circular(14),
-            bottomRight: Radius.circular(0),
-            bottomLeft: Radius.circular(0),
+            bottomRight: Radius.zero,
+            bottomLeft: Radius.zero,
           ),
           axis: PenAxis.row,
           padding: EdgeInsets.fromLTRB(10, 16, 10, 0),

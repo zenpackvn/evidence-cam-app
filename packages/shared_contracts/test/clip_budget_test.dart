@@ -4,7 +4,7 @@ import 'package:shared_contracts/shared_contracts.dart';
 void main() {
   group('ClipBudget', () {
     test('maxRecording is what Flow 3 arms its auto-close timer with', () {
-      const budget = ClipBudget(seconds: 300, planMaxSeconds: 300);
+      const budget = ClipBudget.fallback;
       expect(budget.maxRecording, const Duration(minutes: 5));
     });
 

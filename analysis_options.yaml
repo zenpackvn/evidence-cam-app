@@ -20,6 +20,10 @@ linter:
     lines_longer_than_80_chars: false
     cascade_invocations: false
     sort_pub_dependencies: false
+    # The repo builds JS source, SVG path data and SVG markup as adjacent
+    # string literals (lib/ec_app.dart, ec_ui's pen.dart/pen_kit.dart).
+    # Inserting the whitespace this lint asks for would corrupt that output.
+    missing_whitespace_between_adjacent_strings: false
 
 analyzer:
   language:
