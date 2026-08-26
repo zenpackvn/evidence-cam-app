@@ -182,6 +182,7 @@ class FakeEcRepository implements EcRepository {
     required bool active,
     StorageKind? kind,
   }) async {}
+  @override
   Future<String> gdriveAuthUrl(String shopId) async =>
       'https://accounts.google.com/o/oauth2/v2/auth?fake=$shopId';
 

@@ -27,8 +27,8 @@ class PlatformDeviceConditions implements DeviceConditionSource {
     ]);
     return (
       battery: results[0] as int?,
-      charging: results[1] as bool,
-      net: results[2] as NetKind,
+      charging: results[1]! as bool,
+      net: results[2]! as NetKind,
     );
   }
 

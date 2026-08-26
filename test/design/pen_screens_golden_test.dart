@@ -67,7 +67,7 @@ Future<void> _loadInter() async {
 /// Goldens are pixel comparisons against a specific typeface, so they only
 /// mean anything when the real Inter is loaded. Without `EC_INTER_TTF` the run
 /// would diff design pixels against the test fallback font, so skip instead.
-final _hasInter = () {
+final bool _hasInter = () {
   final path = Platform.environment['EC_INTER_TTF'];
   return path != null && File(path).existsSync();
 }();

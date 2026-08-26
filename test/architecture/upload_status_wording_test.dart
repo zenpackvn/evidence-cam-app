@@ -47,7 +47,7 @@ void main() {
   test('nhãn upload lỗi không nhắc tới máy chủ', () {
     // Những chữ chỉ về phía máy chủ, ở đúng những thứ tiếng ta có.
     final blamesServer = RegExp(
-      r'máy chủ|server|เซิร์ฟเวอร์|serveur|servidor|servidore|pelayan',
+      'máy chủ|server|เซิร์ฟเวอร์|serveur|servidor|servidore|pelayan',
       caseSensitive: false,
     );
     for (final code in _locales) {

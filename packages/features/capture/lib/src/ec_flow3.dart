@@ -455,17 +455,17 @@ class _NextOrderCard extends StatelessWidget {
     cross: CrossAxisAlignment.center,
     padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
     children: [
-      PenBox(
+      const PenBox(
         width: 46,
         height: 46,
-        fill: const Color(0x99161616),
-        stroke: const Color(0xFFE4E4E4),
+        fill: Color(0x99161616),
+        stroke: Color(0xFFE4E4E4),
         strokeWidth: 1,
         radius: 999,
         axis: PenAxis.row,
         main: MainAxisAlignment.center,
         cross: CrossAxisAlignment.center,
-        children: const [
+        children: [
           Icon(LucideIcons.package, size: 23, color: PenColors.card),
         ],
       ),
@@ -1082,16 +1082,16 @@ class _CamHeader extends StatelessWidget {
                 _Tap(
                   onTap: onBack,
                   tooltip: context.l10n.tooltipBack,
-                  child: PenBox(
+                  child: const PenBox(
                     width: 42,
                     height: 42,
-                    fill: const Color(0xBF161616),
+                    fill: Color(0xBF161616),
                     stroke: PenColors.mut,
                     radius: 999,
                     axis: PenAxis.row,
                     main: MainAxisAlignment.center,
                     cross: CrossAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(
                         LucideIcons.chevronLeft,
                         size: 22,
@@ -1301,7 +1301,7 @@ class _RecRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
       children: [
         const PenEllipse(width: 14, height: 14, color: PenColors.danger),
-        PenText(
+        const PenText(
           'REC',
           size: 18,
           color: PenColors.card,
@@ -1392,7 +1392,7 @@ class _StopButton extends StatelessWidget {
     return _Tap(
       onTap: onTap,
       tooltip: context.l10n.tooltipStopRecording,
-      child: PenBox(
+      child: const PenBox(
         width: 86,
         height: 86,
         stroke: PenColors.card,
@@ -1401,7 +1401,7 @@ class _StopButton extends StatelessWidget {
         axis: PenAxis.row,
         main: MainAxisAlignment.center,
         cross: CrossAxisAlignment.center,
-        children: const [
+        children: [
           PenBox(width: 34, height: 34, fill: PenColors.danger, radius: 8),
         ],
       ),
@@ -2263,8 +2263,9 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
             child: GestureDetector(
               // Dragging the sheet down dismisses it too.
               onVerticalDragEnd: (details) {
-                if ((details.primaryVelocity ?? 0) > 200)
+                if ((details.primaryVelocity ?? 0) > 200) {
                   widget.onCancel?.call();
+                }
               },
               // A tap on the sheet's own chrome drops the keyboard without
               // closing the sheet.

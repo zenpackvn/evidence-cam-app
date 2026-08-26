@@ -21,17 +21,14 @@ import 'package:flutter/cupertino.dart'
         CupertinoPageScaffold,
         CupertinoTextField,
         showCupertinoModalPopup;
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show MaxLengthEnforcement;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:flutter/services.dart' show MaxLengthEnforcement;
 import 'package:localization/localization.dart';
-
-import 'ec_form_limits.dart';
 import 'package:shared_contracts/shared_contracts.dart';
 
+import 'ec_form_limits.dart';
 import 'invite_contact.dart';
 
 // Shared text style (Inter is inherited from the CupertinoApp text theme).
@@ -1315,7 +1312,7 @@ class _AddShopButton extends StatelessWidget {
         axis: PenAxis.row,
         main: MainAxisAlignment.center,
         cross: CrossAxisAlignment.center,
-        children: const [
+        children: [
           Icon(LucideIcons.plus, size: 21, color: PenColors.card),
         ],
       ),
@@ -3133,7 +3130,7 @@ class EcCreateTypeScreen extends StatelessWidget {
     return i < 0 ? 0 : i;
   }
 
-  static const _iconChoices = [
+  static const List<IconData> _iconChoices = [
     LucideIcons.archive,
     LucideIcons.truck,
     LucideIcons.shoppingCart,
@@ -3144,7 +3141,7 @@ class EcCreateTypeScreen extends StatelessWidget {
 
   /// The six swatches: ink, the two greens, `--warning` amber, destructive
   /// red and muted grey — in the design file's own order.
-  static const _colorChoices = [
+  static const List<Color> _colorChoices = [
     PenColors.ink,
     PenColors.primary,
     PenColors.success,
@@ -3201,13 +3198,13 @@ class EcConfirmDeleteScreen extends StatelessWidget {
     final l10n = context.l10n;
     return PenDialog(
       children: [
-        SizedBox(
+        const SizedBox(
           width: 62,
           height: 62,
           child: Stack(
             children: [
-              const PenEllipse(width: 56, height: 56, color: PenColors.soft),
-              const Positioned(
+              PenEllipse(width: 56, height: 56, color: PenColors.soft),
+              Positioned(
                 left: 16,
                 top: 15,
                 child: Icon(
@@ -3227,7 +3224,7 @@ class EcConfirmDeleteScreen extends StatelessWidget {
                   axis: PenAxis.row,
                   main: MainAxisAlignment.center,
                   cross: CrossAxisAlignment.center,
-                  children: const [
+                  children: [
                     PenText(
                       '!',
                       size: 14,

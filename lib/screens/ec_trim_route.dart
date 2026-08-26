@@ -15,7 +15,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Material;
 import 'package:localization/localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:video_player/video_player.dart';
 
 /// Kết quả trả về cho bên gọi: đường dẫn bản đã cắt trên máy.
 typedef EcTrimResult = String;

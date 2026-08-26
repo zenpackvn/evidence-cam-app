@@ -2,13 +2,12 @@
 // specs/projects/evidencecam/design-spec/pencil-app-dna.pen — do not edit by
 // hand; re-run the generator when the design file changes.
 //
-// ignore_for_file: lines_longer_than_80_chars, prefer_const_constructors
-// ignore_for_file: prefer_const_literals_to_create_immutables, unused_import
-// ignore_for_file: public_member_api_docs, avoid_redundant_argument_values
+// ignore_for_file: prefer_const_constructors
+// ignore_for_file: prefer_const_literals_to_create_immutables
 
-import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/widgets.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../../ec_ui.dart';
 
 /// F4-01 Tài khoản — FLOW 4 — TÀI KHOẢN CÁ NHÂN.
 class PenF401 extends StatelessWidget {

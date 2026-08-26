@@ -1,6 +1,7 @@
-import 'package:ec_ui/src/pen_kit.dart';
 import 'package:flutter/widgets.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+
+import 'pen_kit.dart';
 
 /// Mã QR trên nền thẻ trắng, đúng khuôn của bộ giao diện.
 ///

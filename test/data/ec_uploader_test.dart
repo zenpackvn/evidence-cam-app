@@ -664,8 +664,9 @@ void main() {
                 '"uploadUrl":"https://r2.example/clip?sig=1"}',
               );
             }
-            if (o.path.endsWith('/complete'))
+            if (o.path.endsWith('/complete')) {
               return _json('{"status":"stored"}');
+            }
             return _json('{"id":"ord1","tracking_raw":"SPX1","created_at":0}');
           });
         final uploader = ApiEvidenceUploader(

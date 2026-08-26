@@ -105,7 +105,7 @@ class PenBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget? content = _content();
+    var content = _content();
     if (padding != EdgeInsets.zero && content != null) {
       content = Padding(padding: padding * penDensityScale, child: content);
     }
@@ -277,7 +277,7 @@ class PenPath extends StatelessWidget {
   final bool roundCap;
 
   String get _svg {
-    final vb = viewBox.map((v) => _num(v)).join(' ');
+    final vb = viewBox.map(_num).join(' ');
     final hex =
         '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
     final opacity = color.a;

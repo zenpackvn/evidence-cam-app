@@ -114,7 +114,7 @@ class EcAccountTabScreen extends StatelessWidget {
   ///
   /// Thẻ tài khoản nay nằm GỌN trong ô xanh (căn giữa), nên đáy ô xanh cũng là
   /// đáy khối cố định — không còn phải cộng thêm chiều cao thẻ như bản trước.
-  static const _headerBlockHeight = _bannerHeight;
+  static const double _headerBlockHeight = _bannerHeight;
 
   @override
   Widget build(BuildContext context) {

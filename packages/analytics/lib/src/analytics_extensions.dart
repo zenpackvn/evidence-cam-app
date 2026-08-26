@@ -73,8 +73,7 @@ extension RecordingAnalytics on AnalyticsService {
       AnalyticsEvents.clipRecorded,
       parameters: {
         AnalyticsParams.videoType: videoType,
-        if (durationSeconds != null)
-          AnalyticsParams.durationSeconds: durationSeconds,
+        AnalyticsParams.durationSeconds: ?durationSeconds,
       },
     );
   }
@@ -104,7 +103,7 @@ extension UploadAnalytics on AnalyticsService {
     return logEvent(
       AnalyticsEvents.uploadFailed,
       parameters: {
-        if (errorType != null) AnalyticsParams.errorType: errorType,
+        AnalyticsParams.errorType: ?errorType,
       },
     );
   }

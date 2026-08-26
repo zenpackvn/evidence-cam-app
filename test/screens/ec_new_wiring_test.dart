@@ -1,8 +1,8 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:ec_ui/ec_ui.dart';
 import 'package:feature_orders/feature_orders.dart'
     show EcEvidenceType, EcVideoDetail, EcVideoDetailScreen;
 import 'package:feature_shift/feature_shift.dart';
-import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';

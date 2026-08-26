@@ -152,9 +152,10 @@ void main() {
         tester,
         EcCreateClaimScreen(
           onSearch: (code) async => [
-            code == 'SPX1'
-                ? const EcClaimLookup(code: 'SPX1', items: _spx1)
-                : const EcClaimLookup(code: 'SPX2', items: _spx2),
+            if (code == 'SPX1')
+              const EcClaimLookup(code: 'SPX1', items: _spx1)
+            else
+              const EcClaimLookup(code: 'SPX2', items: _spx2),
           ],
           onCreate: (batch, title) {
             created = batch;

@@ -129,7 +129,7 @@ Future<Set<String>> ecPreviewTrackings() async {
     final dir = await _previewDir();
     return {
       for (final file in dir.listSync().whereType<File>())
-        if (_trackingOf(file.path) case final tracking?) tracking,
+        ?_trackingOf(file.path),
     };
   } on Object {
     return const {};
@@ -226,4 +226,4 @@ String _tagOf(String? tracking) {
 /// Cùng một phép chuẩn hoá cho cả lúc ghi tên tệp lẫn lúc đối chiếu với mã
 /// trên danh sách — hai bên lệch nhau là lượt đối soát không khớp được đơn nào.
 String _normalizeTracking(String tracking) =>
-    tracking.replaceAll(RegExp(r'[^A-Za-z0-9-]'), '');
+    tracking.replaceAll(RegExp('[^A-Za-z0-9-]'), '');

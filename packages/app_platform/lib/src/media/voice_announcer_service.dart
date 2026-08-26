@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:injectable/injectable.dart';

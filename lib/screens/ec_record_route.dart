@@ -33,8 +33,8 @@ import 'package:flutter/cupertino.dart'
         showCupertinoDialog;
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show EventChannel;
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
+import 'package:flutter/services.dart' show EventChannel;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
 
@@ -1079,7 +1079,7 @@ class _CoverPreviewState extends State<_CoverPreview> {
   /// bị kéo giãn phủ khung ngắm — không ai soi từng điểm ảnh của nó. Chụp ở
   /// một phần ba độ nét là bớt khoảng chín phần mười số điểm ảnh phải đọc về
   /// mỗi lượt, đổi lại một chỗ lấp hơi mềm mà mắt không kịp nhận ra.
-  static const _frozenFrameScale = 1 / 3;
+  static const double _frozenFrameScale = 1 / 3;
 
   final GlobalKey _boundaryKey = GlobalKey();
   ui.Image? _lastGoodFrame;

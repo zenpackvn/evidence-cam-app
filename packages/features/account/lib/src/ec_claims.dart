@@ -133,7 +133,7 @@ class EcClaimListScreen extends StatelessWidget {
                 if (onCreate != null)
                   EcTap(
                     onTap: onCreate,
-                    child: PenBox(
+                    child: const PenBox(
                       width: 40,
                       height: 40,
                       fill: PenColors.primary,
@@ -141,7 +141,7 @@ class EcClaimListScreen extends StatelessWidget {
                       axis: PenAxis.row,
                       main: MainAxisAlignment.center,
                       cross: CrossAxisAlignment.center,
-                      children: const [
+                      children: [
                         Icon(
                           LucideIcons.plus,
                           size: 22,
@@ -695,7 +695,7 @@ class _ClaimKv extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (lines.isEmpty)
-                PenText('—', size: 13, color: PenColors.mut)
+                const PenText('—', size: 13, color: PenColors.mut)
               else
                 for (final v in lines)
                   PenText(

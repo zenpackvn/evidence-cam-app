@@ -6,8 +6,8 @@ import 'package:flutter/cupertino.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_contracts/shared_contracts.dart';
 import 'package:localization/localization.dart';
+import 'package:shared_contracts/shared_contracts.dart';
 
 /// These screens read their copy through `context.l10n`, so the harness has to
 /// install the delegates — without them `AppLocalizations.of` returns null and
@@ -766,11 +766,11 @@ void main() {
     testWidgets('tên kho nằm dưới chữ "Kho lưu trữ"', (tester) async {
       await _pump(
         tester,
-        EcShopDetailScreen(
+        const EcShopDetailScreen(
           shopName: 'Shop ABC',
           platformLabel: 'Shopee',
-          videoTypes: const [],
-          members: const [],
+          videoTypes: [],
+          members: [],
           storageLabel: 'Kho đám mây riêng (chuẩn S3)',
           onTapStorage: _noop,
         ),
@@ -1049,7 +1049,7 @@ void main() {
     testWidgets('hai mức cố định hiện ra, không bấm được', (tester) async {
       await _pump(
         tester,
-        EcShopDetailScreen(
+        const EcShopDetailScreen(
           shopName: 'Shop ABC',
           platformLabel: 'Shopee',
           members: members,

@@ -13,7 +13,7 @@ void main() {
   late _RecordingVoice voice;
   late List<List<DeviceSample>> savedSamples;
   late List<DateTime> savedStarts;
-  DateTime? _askedAt;
+  DateTime? askedAt0;
   late bool verifyStarted;
   late bool verifyFinished;
 
@@ -108,12 +108,12 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 400));
       bloc.add(const RecordingStopRequested());
       // Giữ lại mốc ra lệnh để so ở `verify`.
-      _askedAt = askedAt;
+      askedAt0 = askedAt;
     }),
     wait: const Duration(milliseconds: 600),
     verify: (bloc) {
       expect(savedStarts, hasLength(1));
-      final lag = savedStarts.single.difference(_askedAt!);
+      final lag = savedStarts.single.difference(askedAt0!);
       // Phải trễ hơn lúc ra lệnh ít nhất bằng độ trễ phần cứng giả lập.
       expect(
         lag,

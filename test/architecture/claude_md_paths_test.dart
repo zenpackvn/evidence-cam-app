@@ -108,7 +108,7 @@ String _codeOrganizationSection(String body) {
 /// make this test fail on correct docs.
 Iterable<String> _repoPaths(String section) {
   final pattern = RegExp(
-    r'`((?:lib|packages|published|test|tool)/[A-Za-z0-9_./]*)`',
+    '`((?:lib|packages|published|test|tool)/[A-Za-z0-9_./]*)`',
   );
   return pattern
       .allMatches(section)

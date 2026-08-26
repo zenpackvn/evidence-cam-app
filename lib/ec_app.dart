@@ -11,15 +11,15 @@ import 'package:app_platform/app_platform.dart'
         AppVideoPlayerController,
         CrashReporter,
         GallerySaveService,
-        PermissionService,
-        WakelockPlus,
         ImagePicker,
         ImageSource,
+        PermissionService,
         ShareService,
         VideoPlayer,
         VideoPlayerService,
         VideoPlayerValue,
-        VoiceAnnouncerService;
+        VoiceAnnouncerService,
+        WakelockPlus;
 import 'package:app_ui/app_ui.dart';
 import 'package:config/config.dart' show EnvConfig;
 import 'package:ec_data/ec_data.dart';
@@ -62,46 +62,46 @@ import 'package:flutter/cupertino.dart'
         CupertinoThemeData,
         showCupertinoDialog,
         showCupertinoModalPopup;
+import 'package:flutter/foundation.dart'
+    show Factory, TargetPlatform, ValueListenable, defaultTargetPlatform;
+import 'package:flutter/gestures.dart' show VerticalDragGestureRecognizer;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter/foundation.dart'
-    show Factory, TargetPlatform, ValueListenable, defaultTargetPlatform;
-import 'package:flutter/gestures.dart' show VerticalDragGestureRecognizer;
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:localization/localization.dart';
+import 'package:network/network.dart' show Dio, DioException, DioExceptionType;
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_contracts/shared_contracts.dart'
+    show
+        ClipBudget,
+        EcClaimDossier,
+        EcClaimEvidence,
+        EcClaimOrder,
+        kFixedClipSeconds,
+        kFixedImageBytes;
+import 'package:storage/storage.dart';
+import 'package:sync_connectivity_plus/sync_connectivity_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 // Chỉ để bật video toàn màn hình trên Android (`setCustomWidgetCallbacks`) —
 // webview_flutter thuần không phát ra sự kiện đó.
 import 'package:webview_flutter_android/webview_flutter_android.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:localization/localization.dart';
-import 'package:network/network.dart' show Dio, DioException, DioExceptionType;
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:sync_connectivity_plus/sync_connectivity_plus.dart';
-import 'package:shared_contracts/shared_contracts.dart'
-    show
-        ClipBudget,
-        kFixedImageBytes,
-        EcClaimDossier,
-        EcClaimEvidence,
-        EcClaimOrder,
-        kFixedClipSeconds;
-import 'package:storage/storage.dart';
 
 import 'app/di/injection.dart';
-import 'core/data/ec_claim_store.dart';
 import 'app/update_gate.dart';
+import 'core/data/ec_claim_store.dart';
 import 'data/ec_appsflyer.dart';
 import 'data/ec_purchases.dart';
 import 'data/ec_uploader.dart';
 import 'data/platform_device_conditions.dart';
+import 'screens/ec_avatar_crop_route.dart';
 import 'screens/ec_record_route.dart';
 import 'screens/ec_scan_route.dart';
-import 'screens/ec_avatar_crop_route.dart';
 import 'screens/ec_trim_route.dart';
 
 const _lastShopIdKey = 'shop.last_id';
@@ -3885,7 +3885,7 @@ Future<String?> _attachPhoto(
       _toast(
         context,
         context.l10n.imageOverFixedCap(
-          '${(bytes / 1000000).toStringAsFixed(1)}',
+          (bytes / 1000000).toStringAsFixed(1),
           '${kFixedImageBytes ~/ 1000000}',
         ),
       );
@@ -4666,8 +4666,8 @@ class _CreateTypeRouteState extends State<_CreateTypeRoute> {
     text: widget.type?.name ?? '',
   );
   var _saving = false;
-  late var _icon = EcCreateTypeScreen.iconIndexOf(widget.type?.iconKey);
-  late var _color = EcCreateTypeScreen.colorIndexOf(widget.type?.colorHex);
+  late int _icon = EcCreateTypeScreen.iconIndexOf(widget.type?.iconKey);
+  late int _color = EcCreateTypeScreen.colorIndexOf(widget.type?.colorHex);
 
   @override
   void dispose() {
@@ -4929,7 +4929,7 @@ class _InviteQrSheetState extends State<_InviteQrSheet> {
   /// Neo để chụp đúng phần mã thành ảnh — lưu và chia sẻ đều cần một tấm PNG,
   /// và chụp lại chính widget đang hiện thì thứ người ta nhận được giống hệt
   /// thứ họ vừa nhìn.
-  final _qrKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _qrKey = GlobalKey();
   var _busy = false;
 
   Future<Uint8List?> _pngBytes() async {
@@ -5094,7 +5094,7 @@ Future<bool> _joinByInvite(BuildContext context, EcRepository repo) async {
 /// redirect (`.../app#/invite/<token>`), lẫn token trần — mã QR mang link
 /// đầy đủ, còn người sao chép tay từ email thì kiểu gì cũng có.
 String? ecInviteTokenOf(String raw) {
-  final match = RegExp(r'invite/([A-Za-z0-9._~-]+)').firstMatch(raw);
+  final match = RegExp('invite/([A-Za-z0-9._~-]+)').firstMatch(raw);
   if (match != null) return match.group(1);
   // Token trần: không có khoảng trắng, không phải một URL nào khác.
   if (!raw.contains(RegExp(r'[\s/]')) && raw.length >= 8) return raw;
@@ -6077,7 +6077,7 @@ class _OrderRouteState extends State<_OrderRoute> {
         .orderCodes(widget.shop.id, widget.order.id)
         .then<List<OrderCodeDto>>(
           (v) => v,
-          onError: (_, __) => <OrderCodeDto>[],
+          onError: (_, _) => <OrderCodeDto>[],
         );
     if (mounted) {
       _extraCodes = codes
@@ -6616,7 +6616,7 @@ class _VideoPlayerRouteState extends State<_VideoPlayerRoute> {
                                         List<EcFilmstripFrame>
                                       >(
                                         valueListenable: _frames,
-                                        builder: (context, _, __) {
+                                        builder: (context, _, _) {
                                           final frame = _frameAt(scrub);
                                           if (frame == null) {
                                             return const SizedBox.shrink();
@@ -7712,7 +7712,7 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
         url: detail?.url ?? '',
         // Chưa lên máy chủ và đọc hỏng đều KHÔNG được hiện nút chép/thu hồi:
         // một nút bấm vào không chạy còn tệ hơn không có nút.
-        revoked: detail == null ? true : detail.claim.revoked,
+        revoked: detail == null || detail.claim.revoked,
         onBack: widget.onBack,
         onCopy: detail == null
             ? null
@@ -8063,7 +8063,7 @@ class _TermsSheetState extends State<_TermsSheet> {
                       // không có nó thì bản điều khoản không cuộn nổi.
                       WebViewWidget(
                         controller: _controller,
-                        gestureRecognizers: {
+                        gestureRecognizers: const {
                           Factory<VerticalDragGestureRecognizer>(
                             VerticalDragGestureRecognizer.new,
                           ),
@@ -8210,7 +8210,7 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
       final raw = await _controller.runJavaScriptReturningResult(
         '(function(){'
         "function on(c){return !!c&&c!=='transparent'"
-        "&&!/^rgba\\(.*,\\s*0\\)\$/.test(c);}"
+        r'&&!/^rgba\(.*,\s*0\)$/.test(c);}'
         'var b=getComputedStyle(document.body).backgroundColor;'
         'var h=getComputedStyle(document.documentElement).backgroundColor;'
         "return on(b)?b:(on(h)?h:'');"
@@ -8336,7 +8336,7 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
                         // WebView.
                         WebViewWidget(
                           controller: _controller,
-                          gestureRecognizers: {
+                          gestureRecognizers: const {
                             Factory<VerticalDragGestureRecognizer>(
                               VerticalDragGestureRecognizer.new,
                             ),
@@ -8430,7 +8430,7 @@ class _GoogleLoginSheetState extends State<_GoogleLoginSheet> {
       final raw = await _controller.runJavaScriptReturningResult(
         '(function(){'
         "function on(c){return !!c&&c!=='transparent'"
-        "&&!/^rgba\\(.*,\\s*0\\)\$/.test(c);}"
+        r'&&!/^rgba\(.*,\s*0\)$/.test(c);}'
         'var b=getComputedStyle(document.body).backgroundColor;'
         'var h=getComputedStyle(document.documentElement).backgroundColor;'
         "return on(b)?b:(on(h)?h:'');"
@@ -8508,7 +8508,7 @@ class _GoogleLoginSheetState extends State<_GoogleLoginSheet> {
                         // [_DriveConsentScreenState].
                         WebViewWidget(
                           controller: _controller,
-                          gestureRecognizers: {
+                          gestureRecognizers: const {
                             Factory<VerticalDragGestureRecognizer>(
                               VerticalDragGestureRecognizer.new,
                             ),
@@ -9730,8 +9730,8 @@ GoRouter _buildRouter(
                       voiceAnnouncer: voice,
                       onRequestType:
                           (
-                            BuildContext sheetContext, {
-                            bool mandatory = false,
+                            sheetContext, {
+                            mandatory = false,
                           }) async {
                             final router = GoRouter.of(c);
                             final rootNavigator = Navigator.of(

@@ -11,9 +11,7 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Image;
 import 'package:flutter/services.dart' show MaxLengthEnforcement;
-import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -139,7 +137,7 @@ class PenScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget body = child;
+    var body = child;
     if (scrollable) {
       // No `IntrinsicHeight` here: it under-measures wrapped text and clips
       // the tail of a long screen. Screens that need a flexible spacer pass
@@ -262,7 +260,7 @@ class PenOutlineButton extends StatelessWidget {
         main: MainAxisAlignment.center,
         cross: CrossAxisAlignment.center,
         children: [
-          if (icon != null) icon!,
+          ?icon,
           Flexible(
             child: PenText(
               label,
@@ -634,7 +632,7 @@ class PenBrandHeader extends StatelessWidget {
           fit: BoxFit.contain,
         ),
         const SizedBox(height: 3),
-        PenText(
+        const PenText(
           'ZenPack',
           size: 18,
           color: PenColors.primary,
@@ -1655,7 +1653,7 @@ class PenHeader extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (trailing != null) trailing!,
+        ?trailing,
       ],
     );
   }

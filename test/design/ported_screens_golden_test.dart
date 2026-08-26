@@ -11,7 +11,6 @@ import 'package:feature_capture/feature_capture.dart';
 import 'package:feature_orders/feature_orders.dart';
 import 'package:feature_shift/feature_shift.dart' as shift;
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FontLoader;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
@@ -111,7 +110,7 @@ Future<void> _loadInter() async {
 /// Goldens are pixel comparisons against a specific typeface, so they only
 /// mean anything when the real Inter is loaded. Without `EC_INTER_TTF` the run
 /// would diff design pixels against the test fallback font, so skip instead.
-final _hasInter = () {
+final bool _hasInter = () {
   final path = Platform.environment['EC_INTER_TTF'];
   return path != null && File(path).existsSync();
 }();

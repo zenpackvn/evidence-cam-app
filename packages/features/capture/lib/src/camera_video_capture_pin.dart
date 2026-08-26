@@ -2,7 +2,6 @@ import 'package:camera_android_camerax/camera_android_camerax.dart';
 // ignore: implementation_imports
 import 'package:camera_android_camerax/src/camerax_library.dart';
 import 'package:camera_platform_interface/camera_platform_interface.dart';
-import 'package:cross_file/cross_file.dart';
 
 /// Bản CameraX gắn `VideoCapture` vào lifecycle NGAY LÚC DỰNG CAMERA và không
 /// gỡ ra khi dừng quay.
