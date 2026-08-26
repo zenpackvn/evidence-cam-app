@@ -6884,6 +6884,7 @@ List<EcTimelineDay> _timelineDays(
             // bị dọn, đưa ra một link Drive trỏ vào chỗ trống là hứa suông.
             shareUrl: item.uploadStatus == 'expired' ? null : item.shareUrl,
             storage: _evidenceStorageLabel(l10n, item, shopStorage),
+            onOwnS3: item.storageKind == 's3',
             // Chỉ gắn khi máy chủ CHƯA phát được. Có link thật rồi mà vẫn trỏ
             // về bản tạm là cố tình phát bản không dấu trong khi bản có dấu đã
             // nằm sẵn ở kho.
@@ -8705,6 +8706,7 @@ EcVideoDetail _videoDetail(
   mediaUrl: video.mediaUrl,
   shareUrl: video.shareUrl,
   storage: video.storage,
+  onOwnS3: video.onOwnS3,
   localPath: video.localPath,
   type: video.type,
   seal: video.seal,
@@ -9922,7 +9924,18 @@ GoRouter _buildRouter(
                       _toast(pageContext, c.l10n.toastVideoNoPlayLink);
                       return;
                     }
-                    _copyText(pageContext, url, c.l10n.assetLinkTitle);
+                    // Link kho S3 đi kèm MỘT dòng ZenPack.
+                    //
+                    // Chuỗi của kho riêng là một URL amazonaws dài ngoằng kèm
+                    // chữ ký; dán trần vào tin nhắn cho sàn thì bên nhận không
+                    // có gì để biết đó là bằng chứng đóng gói chứ không phải
+                    // một tệp ai đó gửi bừa. Link Drive tự mang tên miền quen
+                    // thuộc, link kho hệ thống mang tên miền của mình — hai
+                    // đường đó giữ nguyên, chỉ kho riêng cần dòng này.
+                    final text = live!.onOwnS3 && live.shareUrl != null
+                        ? '${c.l10n.assetLinkBrandLine}\n$url'
+                        : url;
+                    _copyText(pageContext, text, c.l10n.assetLinkTitle);
                   },
                   onPlay: () {
                     // Bản của máy chủ trước; chưa có thì rơi về bản tạm còn

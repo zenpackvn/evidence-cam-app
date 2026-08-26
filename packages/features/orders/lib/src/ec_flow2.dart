@@ -53,6 +53,7 @@ class EcTimelineVideo {
     this.mediaUrl,
     this.shareUrl,
     this.storage,
+    this.onOwnS3 = false,
     this.localPath,
     this.thumbUrl,
     this.type = EcEvidenceType.video,
@@ -71,6 +72,9 @@ class EcTimelineVideo {
   /// a second badge next to the upload badge would read as a second problem.
   final EcSealLine? seal;
   final bool timeDrift;
+
+  /// Clip nằm trong kho S3 của chính shop — xem [EcVideoDetail.onOwnS3].
+  final bool onOwnS3;
 
   final String? id;
 
@@ -151,6 +155,7 @@ class EcVideoDetail {
     this.mediaUrl,
     this.shareUrl,
     this.storage,
+    this.onOwnS3 = false,
     this.localPath,
     this.type = EcEvidenceType.video,
     this.capturedAtMs,
@@ -212,6 +217,13 @@ class EcVideoDetail {
   /// HTML. Ba đường đó vẫn đọc [mediaUrl]. `null` với kho hệ thống, và null khi
   /// kho S3 chặn mở công khai.
   final String? shareUrl;
+
+  /// Clip đang nằm trong kho S3 của CHÍNH shop.
+  ///
+  /// Chỉ để quyết định thứ nút Sao chép link chép ra: link của kho riêng đi kèm
+  /// một dòng ZenPack, để người nhận biết chuỗi lạ hoắc đó là bằng chứng đóng
+  /// gói chứ không phải một tệp ai đó gửi bừa. Drive và kho hệ thống giữ nguyên.
+  final bool onOwnS3;
 
   /// Tên kho đang GIỮ clip này, đã dịch sẵn — "Cloud ZenPack", "Google Drive",
   /// "Kho riêng (S3)".

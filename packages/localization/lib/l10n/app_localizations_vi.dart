@@ -974,6 +974,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get assetLinkTitle => 'Link bằng chứng';
 
   @override
+  String get assetLinkBrandLine => 'Bằng chứng đóng gói · ZenPack';
+
+  @override
   String get detailDownloadVideo => 'Tải video về máy';
 
   @override

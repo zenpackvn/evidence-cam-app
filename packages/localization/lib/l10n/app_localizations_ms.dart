@@ -985,6 +985,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get assetLinkTitle => 'Pautan bukti';
 
   @override
+  String get assetLinkBrandLine => 'Packing evidence · ZenPack';
+
+  @override
   String get detailDownloadVideo => 'Muat turun video';
 
   @override
