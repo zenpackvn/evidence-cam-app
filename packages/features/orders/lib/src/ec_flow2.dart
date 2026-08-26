@@ -53,7 +53,6 @@ class EcTimelineVideo {
     this.mediaUrl,
     this.shareUrl,
     this.storage,
-    this.onOwnS3 = false,
     this.localPath,
     this.thumbUrl,
     this.type = EcEvidenceType.video,
@@ -72,9 +71,6 @@ class EcTimelineVideo {
   /// a second badge next to the upload badge would read as a second problem.
   final EcSealLine? seal;
   final bool timeDrift;
-
-  /// Clip nằm trong kho S3 của chính shop — xem [EcVideoDetail.onOwnS3].
-  final bool onOwnS3;
 
   final String? id;
 
@@ -155,7 +151,6 @@ class EcVideoDetail {
     this.mediaUrl,
     this.shareUrl,
     this.storage,
-    this.onOwnS3 = false,
     this.localPath,
     this.type = EcEvidenceType.video,
     this.capturedAtMs,
@@ -207,23 +202,16 @@ class EcVideoDetail {
   /// nằm đúng trong kho Drive của chính mình, và gửi đi thì bên nhận thấy một
   /// link Drive quen thuộc chứ không phải một tên miền lạ.
   ///
-  /// Kho S3 riêng cũng có chuỗi của nó: đối tượng công khai trên chính kho của
-  /// shop. Thiếu nó thì nút Sao chép link của shop S3 chép ra đúng dáng link
-  /// của shop dùng kho hệ thống — vì `mediaUrl` của mọi kho riêng đều là đường
-  /// vòng có vé qua máy chủ.
+  /// Kho S3 riêng cũng có chuỗi của nó: đối tượng trên chính kho của shop.
+  /// Thiếu nó thì nút Sao chép link của shop S3 chép ra đúng dáng link của shop
+  /// dùng kho hệ thống — vì `mediaUrl` của mọi kho riêng đều là đường vòng có
+  /// vé qua máy chủ.
   ///
   /// KHÔNG dùng cho Phát / Tải về / Cắt đoạn: với Drive chuỗi này trỏ tới một
   /// TRANG WEB, không phải tới byte của clip — trình phát cắm vào chỉ nhận
   /// HTML. Ba đường đó vẫn đọc [mediaUrl]. `null` với kho hệ thống, và null khi
   /// kho S3 chặn mở công khai.
   final String? shareUrl;
-
-  /// Clip đang nằm trong kho S3 của CHÍNH shop.
-  ///
-  /// Chỉ để quyết định thứ nút Sao chép link chép ra: link của kho riêng đi kèm
-  /// một dòng ZenPack, để người nhận biết chuỗi lạ hoắc đó là bằng chứng đóng
-  /// gói chứ không phải một tệp ai đó gửi bừa. Drive và kho hệ thống giữ nguyên.
-  final bool onOwnS3;
 
   /// Tên kho đang GIỮ clip này, đã dịch sẵn — "Cloud ZenPack", "Google Drive",
   /// "Kho riêng (S3)".

@@ -968,9 +968,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get assetLinkTitle => 'ลิงก์หลักฐาน';
 
   @override
-  String get assetLinkBrandLine => 'Packing evidence · ZenPack';
-
-  @override
   String get detailDownloadVideo => 'ดาวน์โหลดวิดีโอ';
 
   @override

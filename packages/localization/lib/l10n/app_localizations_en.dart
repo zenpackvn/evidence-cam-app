@@ -979,9 +979,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assetLinkTitle => 'Evidence link';
 
   @override
-  String get assetLinkBrandLine => 'Packing evidence · ZenPack';
-
-  @override
   String get detailDownloadVideo => 'Download video';
 
   @override

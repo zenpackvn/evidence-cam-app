@@ -986,9 +986,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get assetLinkTitle => 'Link ng ebidensiya';
 
   @override
-  String get assetLinkBrandLine => 'Packing evidence · ZenPack';
-
-  @override
   String get detailDownloadVideo => 'I-download ang video';
 
   @override

@@ -1005,9 +1005,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get assetLinkTitle => 'Lien de la preuve';
 
   @override
-  String get assetLinkBrandLine => 'Packing evidence · ZenPack';
-
-  @override
   String get detailDownloadVideo => 'Télécharger la vidéo';
 
   @override

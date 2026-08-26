@@ -1842,12 +1842,6 @@ abstract class AppLocalizations {
   /// **'Evidence link'**
   String get assetLinkTitle;
 
-  /// No description provided for @assetLinkBrandLine.
-  ///
-  /// In en, this message translates to:
-  /// **'Packing evidence · ZenPack'**
-  String get assetLinkBrandLine;
-
   /// No description provided for @detailDownloadVideo.
   ///
   /// In en, this message translates to:
