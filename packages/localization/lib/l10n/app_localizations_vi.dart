@@ -578,6 +578,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountSectionApp => 'GÓI & ỨNG DỤNG';
 
   @override
+  String get avatarCropTitle => 'Chỉnh ảnh';
+
+  @override
+  String get avatarCropHint =>
+      'Kéo và chụm tay để chọn phần bạn muốn. Chỉ phần nằm trong vòng tròn được lưu.';
+
+  @override
+  String get avatarCropConfirm => 'Dùng ảnh này';
+
+  @override
+  String get avatarCropFailed =>
+      'Không xử lý được ảnh này. Chọn ảnh khác giúp bạn.';
+
+  @override
   String get accountLanguage => 'Ngôn ngữ';
 
   @override
@@ -847,6 +861,45 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get detailSize => 'Dung lượng';
+
+  @override
+  String get storageFieldEndpointHint =>
+      'Phải bắt đầu bằng https:// và là tên miền công khai của nhà cung cấp — http thường sẽ để lộ khoá của bạn trên đường truyền.';
+
+  @override
+  String get storageProbeStepPut => 'Ghi tệp lên kho';
+
+  @override
+  String get storageProbeStepHead => 'Đọc thông tin tệp';
+
+  @override
+  String get storageProbeStepGet => 'Tải tệp về';
+
+  @override
+  String get storageProbeStepDelete => 'Xoá tệp thử';
+
+  @override
+  String storageErrorCode(String code) {
+    return 'Mã lỗi: $code';
+  }
+
+  @override
+  String get detailStorage => 'Kho lưu trữ';
+
+  @override
+  String get storageNameCloud => 'Cloud ZenPack';
+
+  @override
+  String get storageNameDrive => 'Google Drive';
+
+  @override
+  String get storageNameS3 => 'Kho đám mây riêng (chuẩn S3)';
+
+  @override
+  String get storageNameRelayPending => 'Đang chuyển sang kho riêng';
+
+  @override
+  String get storageNameRelayFailed => 'Chưa chuyển được sang kho riêng';
 
   @override
   String get detailUploadStatus => 'Trạng thái upload';
@@ -2024,6 +2077,18 @@ class AppLocalizationsVi extends AppLocalizations {
       'Kho này không ký được link tải, nên video phải đi vòng qua máy chủ — người nhận link sẽ thấy chậm hơn.';
 
   @override
+  String get storageErrNoRead =>
+      'Khoá này ghi được nhưng KHÔNG đọc lại được. Máy chủ ghi video lên kho xong, đọc lại để đối chiếu thì bị từ chối, nên không dám coi là đã cất an toàn.\n\nHãy thêm quyền s3:GetObject và s3:ListBucket cho khoá này (hoặc mở chúng trong bucket policy nếu bucket thuộc tài khoản khác).';
+
+  @override
+  String get storageErrNoWrite =>
+      'Khoá này không ghi được lên kho. Hãy thêm quyền s3:PutObject cho đúng bucket và prefix đang cắm.';
+
+  @override
+  String get storageErrSizeMismatch =>
+      'Video ghi lên kho xong nhưng đọc lại thấy thiếu byte, nên máy chủ giữ bản tạm và thử lại. Thường do bucket có quy tắc chặn hoặc ghi đè giữa chừng.';
+
+  @override
   String get storageNoObjectLock =>
       'Kho này không khoá được đối tượng. Không thể hứa với sàn rằng bằng chứng không xoá được.';
 
@@ -2077,13 +2142,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get storageDriveSwitchAccount => 'Đổi tài khoản';
-
-  @override
-  String get storageDriveSwitchNote =>
-      'Đổi tài khoản là cấp quyền lại từ đầu — Google sẽ hỏi bạn đăng nhập. Chọn một địa chỉ đã dùng, hoặc dùng tài khoản khác.';
-
-  @override
-  String get storageDriveOtherAccount => 'Dùng tài khoản khác';
 
   @override
   String get storageDriveLogout => 'Đăng xuất khỏi Drive';
@@ -2156,6 +2214,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get storageTestOk => 'Kết nối bình thường.';
+
+  @override
+  String get storageServerOutdated =>
+      'Máy chủ chưa hỗ trợ đổi kho. Video vẫn nằm nguyên chỗ cũ — báo bên kỹ thuật cập nhật máy chủ.';
 
   @override
   String get storageOwnerOnly => 'Chỉ chủ cửa hàng đổi được kho lưu trữ.';
@@ -2332,7 +2394,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get storageValidateOk =>
-      'Cấu hình chạy được. Bấm Lưu để chuyển sang kho này.';
+      'Tài khoản này kết nối được. Bấm Lưu để dùng kho này.';
+
+  @override
+  String get storageValidateFailed => 'Tài khoản này không kết nối được.';
 
   @override
   String get storageTestOnlyCta => 'Kiểm tra';

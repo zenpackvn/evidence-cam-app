@@ -579,6 +579,20 @@ class AppLocalizationsId extends AppLocalizations {
   String get accountSectionApp => 'PAKET & APLIKASI';
 
   @override
+  String get avatarCropTitle => 'Adjust photo';
+
+  @override
+  String get avatarCropHint =>
+      'Drag and pinch to choose the part you want. Only what is inside the circle is saved.';
+
+  @override
+  String get avatarCropConfirm => 'Use this photo';
+
+  @override
+  String get avatarCropFailed =>
+      'Could not process the photo. Pick another one.';
+
+  @override
   String get accountLanguage => 'Bahasa';
 
   @override
@@ -849,6 +863,45 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get detailSize => 'Ukuran';
+
+  @override
+  String get storageFieldEndpointHint =>
+      'Must start with https:// and be the provider public domain — plain http would leak your keys in transit.';
+
+  @override
+  String get storageProbeStepPut => 'Write a file';
+
+  @override
+  String get storageProbeStepHead => 'Read file info';
+
+  @override
+  String get storageProbeStepGet => 'Download the file';
+
+  @override
+  String get storageProbeStepDelete => 'Delete the file';
+
+  @override
+  String storageErrorCode(String code) {
+    return 'Error code: $code';
+  }
+
+  @override
+  String get detailStorage => 'Storage';
+
+  @override
+  String get storageNameCloud => 'ZenPack Cloud';
+
+  @override
+  String get storageNameDrive => 'Google Drive';
+
+  @override
+  String get storageNameS3 => 'Your own cloud storage (S3-compatible)';
+
+  @override
+  String get storageNameRelayPending => 'Moving to your own storage';
+
+  @override
+  String get storageNameRelayFailed => 'Could not move to your own storage';
 
   @override
   String get detailUploadStatus => 'Status unggah';
@@ -2040,6 +2093,18 @@ class AppLocalizationsId extends AppLocalizations {
       'Penyimpanan ini tidak bisa menandatangani tautan unduh, jadi video harus dilewatkan lewat server — siapa pun yang membuka tautan Anda akan merasa lebih lambat.';
 
   @override
+  String get storageErrNoRead =>
+      'This key can write but cannot read back. The server uploads the video, then reads it back to verify — and is denied, so it will not treat the file as safely stored.\n\nGrant s3:GetObject and s3:ListBucket to this key (or open them in the bucket policy if the bucket belongs to another account).';
+
+  @override
+  String get storageErrNoWrite =>
+      'This key cannot write to the bucket. Grant s3:PutObject for the bucket and prefix you configured.';
+
+  @override
+  String get storageErrSizeMismatch =>
+      'The video was written but read back short, so the server kept the temporary copy and will retry. Usually a bucket rule or a concurrent overwrite.';
+
+  @override
   String get storageNoObjectLock =>
       'Penyimpanan ini tidak punya penguncian objek. Anda tidak bisa menjanjikan ke marketplace bahwa buktinya tidak bisa dihapus.';
 
@@ -2093,13 +2158,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get storageDriveSwitchAccount => 'Switch account';
-
-  @override
-  String get storageDriveSwitchNote =>
-      'Switching means granting access again — Google will ask you to sign in. Pick an address you have used before, or use a different one.';
-
-  @override
-  String get storageDriveOtherAccount => 'Use a different account';
 
   @override
   String get storageDriveLogout => 'Sign out of Drive';
@@ -2172,6 +2230,10 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get storageTestOk => 'Koneksi sehat.';
+
+  @override
+  String get storageServerOutdated =>
+      'The server does not support switching storage yet. Your videos stay where they are — tell your admin to update the server.';
 
   @override
   String get storageOwnerOnly =>
@@ -2351,7 +2413,10 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get storageValidateOk =>
-      'The config works. Press Save to switch to this storage.';
+      'This account can connect. Press Save to use this storage.';
+
+  @override
+  String get storageValidateFailed => 'This account cannot connect.';
 
   @override
   String get storageTestOnlyCta => 'Test';

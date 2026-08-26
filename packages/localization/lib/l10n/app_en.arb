@@ -293,6 +293,22 @@
   "accountPlanQuota": "Plan & storage",
   "accountChangePlan": "Change plan",
   "accountSectionApp": "PLAN & APP",
+  "avatarCropTitle": "Adjust photo",
+  "@avatarCropTitle": {
+    "description": "Tiêu đề màn kéo–phóng ảnh đại diện."
+  },
+  "avatarCropHint": "Drag and pinch to choose the part you want. Only what is inside the circle is saved.",
+  "@avatarCropHint": {
+    "description": "Câu hướng dẫn dưới tiêu đề màn cắt ảnh đại diện."
+  },
+  "avatarCropConfirm": "Use this photo",
+  "@avatarCropConfirm": {
+    "description": "Nút chốt vùng đã chọn ở màn cắt ảnh đại diện."
+  },
+  "avatarCropFailed": "Could not process the photo. Pick another one.",
+  "@avatarCropFailed": {
+    "description": "Giải mã hoặc mã hoá ảnh hỏng ở màn cắt."
+  },
   "accountLanguage": "Language",
   "accountSectionSecurity": "SECURITY & SIGN-IN",
   "accountLoginMethods": "Sign-in method",
@@ -453,6 +469,21 @@
   "detailCapturedBy": "Captured by",
   "detailDevice": "Device",
   "detailSize": "Size",
+  "storageFieldEndpointHint": "Must start with https:// and be the provider public domain — plain http would leak your keys in transit.",
+  "storageProbeStepPut": "Write a file",
+  "storageProbeStepHead": "Read file info",
+  "storageProbeStepGet": "Download the file",
+  "storageProbeStepDelete": "Delete the file",
+  "storageErrorCode": "Error code: {code}",
+  "@storageErrorCode": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "detailStorage": "Storage",
+  "storageNameCloud": "ZenPack Cloud",
+  "storageNameDrive": "Google Drive",
+  "storageNameS3": "Your own cloud storage (S3-compatible)",
+  "storageNameRelayPending": "Moving to your own storage",
+  "storageNameRelayFailed": "Could not move to your own storage",
   "detailUploadStatus": "Upload status",
   "detailSeal": "Seal",
   "sealSealed": "Locked · {at}",
@@ -1365,6 +1396,9 @@
   "storageSystemDesc": "Videos are kept for 30 days. Videos attached to a claim dossier are kept for 15 days longer.",
   "storageOwnDesc": "New videos go straight to your storage. Older ones stay where they are until their retention ends.",
   "storageNoPresign": "This storage cannot sign download links, so videos must be relayed through the server — whoever opens your link will find it slower.",
+  "storageErrNoRead": "This key can write but cannot read back. The server uploads the video, then reads it back to verify — and is denied, so it will not treat the file as safely stored.\n\nGrant s3:GetObject and s3:ListBucket to this key (or open them in the bucket policy if the bucket belongs to another account).",
+  "storageErrNoWrite": "This key cannot write to the bucket. Grant s3:PutObject for the bucket and prefix you configured.",
+  "storageErrSizeMismatch": "The video was written but read back short, so the server kept the temporary copy and will retry. Usually a bucket rule or a concurrent overwrite.",
   "storageNoObjectLock": "This storage has no object lock. You cannot promise a marketplace that the evidence is undeletable.",
   "storageNotInPlan": "Your plan does not include custom storage yet. Upgrade on the web to use it.",
   "storageHealthTitle": "Storage health",
@@ -1401,14 +1435,6 @@
   "storageDriveSwitchAccount": "Switch account",
   "@storageDriveSwitchAccount": {
     "description": "Nút đổi sang tài khoản Google khác cho kho Drive. Nằm ngay cạnh email đang cắm — đổi kho là việc của dòng đó, không phải của một màn khác."
-  },
-  "storageDriveSwitchNote": "Switching means granting access again — Google will ask you to sign in. Pick an address you have used before, or use a different one.",
-  "@storageDriveSwitchNote": {
-    "description": "Bảng chọn tài khoản Drive của app. Nói trước rằng chọn một dòng vẫn phải qua Google, vì máy chủ chỉ giữ một refresh token cho mỗi shop."
-  },
-  "storageDriveOtherAccount": "Use a different account",
-  "@storageDriveOtherAccount": {
-    "description": "Bảng chọn tài khoản Drive: đi tiếp mà không gợi ý địa chỉ nào."
   },
   "storageDriveLogout": "Sign out of Drive",
   "@storageDriveLogout": {
@@ -1453,6 +1479,10 @@
     "description": "Bấm Lưu khi chọn lại kho đã cắm mà đang không dùng. Không có vòng cấp quyền nào ở đây."
   },
   "storageTestOk": "Connection is healthy.",
+  "storageServerOutdated": "The server does not support switching storage yet. Your videos stay where they are — tell your admin to update the server.",
+  "@storageServerOutdated": {
+    "description": "`PATCH /storage/active` trả 404 rỗng vì bản Worker đang chạy cũ hơn app. Thử lại không bao giờ giúp được, nên câu này phải nói ra ai mới sửa được."
+  },
   "storageOwnerOnly": "Only the shop owner can change storage.",
   "dangerZone": "Danger zone",
   "shopDelete": "Delete shop",
@@ -1545,7 +1575,8 @@
   "codeBelongsToAnotherOrder": "This code already belongs to another order — cannot merge.",
   "codeAttachFailed": "Could not attach the code. Try again.",
   "storageEditCta": "Change settings",
-  "storageValidateOk": "The config works. Press Save to switch to this storage.",
+  "storageValidateOk": "This account can connect. Press Save to use this storage.",
+  "storageValidateFailed": "This account cannot connect.",
   "storageTestOnlyCta": "Test",
   "shopOwnerLine": "Shop owner: {name}",
   "@shopOwnerLine": {

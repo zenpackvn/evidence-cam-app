@@ -1140,6 +1140,30 @@ abstract class AppLocalizations {
   /// **'PLAN & APP'**
   String get accountSectionApp;
 
+  /// Tiêu đề màn kéo–phóng ảnh đại diện.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust photo'**
+  String get avatarCropTitle;
+
+  /// Câu hướng dẫn dưới tiêu đề màn cắt ảnh đại diện.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag and pinch to choose the part you want. Only what is inside the circle is saved.'**
+  String get avatarCropHint;
+
+  /// Nút chốt vùng đã chọn ở màn cắt ảnh đại diện.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this photo'**
+  String get avatarCropConfirm;
+
+  /// Giải mã hoặc mã hoá ảnh hỏng ở màn cắt.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not process the photo. Pick another one.'**
+  String get avatarCropFailed;
+
   /// No description provided for @accountLanguage.
   ///
   /// In en, this message translates to:
@@ -1619,6 +1643,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Size'**
   String get detailSize;
+
+  /// No description provided for @storageFieldEndpointHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Must start with https:// and be the provider public domain — plain http would leak your keys in transit.'**
+  String get storageFieldEndpointHint;
+
+  /// No description provided for @storageProbeStepPut.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a file'**
+  String get storageProbeStepPut;
+
+  /// No description provided for @storageProbeStepHead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read file info'**
+  String get storageProbeStepHead;
+
+  /// No description provided for @storageProbeStepGet.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the file'**
+  String get storageProbeStepGet;
+
+  /// No description provided for @storageProbeStepDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the file'**
+  String get storageProbeStepDelete;
+
+  /// No description provided for @storageErrorCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Error code: {code}'**
+  String storageErrorCode(String code);
+
+  /// No description provided for @detailStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get detailStorage;
+
+  /// No description provided for @storageNameCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'ZenPack Cloud'**
+  String get storageNameCloud;
+
+  /// No description provided for @storageNameDrive.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Drive'**
+  String get storageNameDrive;
+
+  /// No description provided for @storageNameS3.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own cloud storage (S3-compatible)'**
+  String get storageNameS3;
+
+  /// No description provided for @storageNameRelayPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving to your own storage'**
+  String get storageNameRelayPending;
+
+  /// No description provided for @storageNameRelayFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not move to your own storage'**
+  String get storageNameRelayFailed;
 
   /// No description provided for @detailUploadStatus.
   ///
@@ -3680,6 +3776,24 @@ abstract class AppLocalizations {
   /// **'This storage cannot sign download links, so videos must be relayed through the server — whoever opens your link will find it slower.'**
   String get storageNoPresign;
 
+  /// No description provided for @storageErrNoRead.
+  ///
+  /// In en, this message translates to:
+  /// **'This key can write but cannot read back. The server uploads the video, then reads it back to verify — and is denied, so it will not treat the file as safely stored.\n\nGrant s3:GetObject and s3:ListBucket to this key (or open them in the bucket policy if the bucket belongs to another account).'**
+  String get storageErrNoRead;
+
+  /// No description provided for @storageErrNoWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'This key cannot write to the bucket. Grant s3:PutObject for the bucket and prefix you configured.'**
+  String get storageErrNoWrite;
+
+  /// No description provided for @storageErrSizeMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The video was written but read back short, so the server kept the temporary copy and will retry. Usually a bucket rule or a concurrent overwrite.'**
+  String get storageErrSizeMismatch;
+
   /// No description provided for @storageNoObjectLock.
   ///
   /// In en, this message translates to:
@@ -3775,18 +3889,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch account'**
   String get storageDriveSwitchAccount;
-
-  /// Bảng chọn tài khoản Drive của app. Nói trước rằng chọn một dòng vẫn phải qua Google, vì máy chủ chỉ giữ một refresh token cho mỗi shop.
-  ///
-  /// In en, this message translates to:
-  /// **'Switching means granting access again — Google will ask you to sign in. Pick an address you have used before, or use a different one.'**
-  String get storageDriveSwitchNote;
-
-  /// Bảng chọn tài khoản Drive: đi tiếp mà không gợi ý địa chỉ nào.
-  ///
-  /// In en, this message translates to:
-  /// **'Use a different account'**
-  String get storageDriveOtherAccount;
 
   /// Gỡ tài khoản Google khỏi shop. Nói bằng việc người dùng nghĩ mình đang làm (đăng xuất khỏi Drive) chứ không bằng cơ chế (xoá cấu hình kho).
   ///
@@ -3919,6 +4021,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connection is healthy.'**
   String get storageTestOk;
+
+  /// `PATCH /storage/active` trả 404 rỗng vì bản Worker đang chạy cũ hơn app. Thử lại không bao giờ giúp được, nên câu này phải nói ra ai mới sửa được.
+  ///
+  /// In en, this message translates to:
+  /// **'The server does not support switching storage yet. Your videos stay where they are — tell your admin to update the server.'**
+  String get storageServerOutdated;
 
   /// No description provided for @storageOwnerOnly.
   ///
@@ -4229,8 +4337,14 @@ abstract class AppLocalizations {
   /// No description provided for @storageValidateOk.
   ///
   /// In en, this message translates to:
-  /// **'The config works. Press Save to switch to this storage.'**
+  /// **'This account can connect. Press Save to use this storage.'**
   String get storageValidateOk;
+
+  /// No description provided for @storageValidateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This account cannot connect.'**
+  String get storageValidateFailed;
 
   /// No description provided for @storageTestOnlyCta.
   ///

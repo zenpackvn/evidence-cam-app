@@ -37,7 +37,46 @@ Future<void> _pump(
   );
 }
 
+/// Ô Endpoint là chỗ sai nhiều nhất ở form kho S3: người ta chép tên miền từ
+/// bảng điều khiển của nhà cung cấp, mà bảng đó hiện tên miền TRẦN. Máy chủ đòi
+/// URL đầy đủ và từ chối ngay ở khâu kiểm dữ liệu, chưa hề chạm tới kho — nên
+/// câu lỗi trả về không nói được gì về kho cả.
+void _endpointTests() {
+  test('tên miền trần được thêm https://', () {
+    expect(
+      normalizeS3Endpoint('s3-storage.zenpack.vn'),
+      'https://s3-storage.zenpack.vn',
+    );
+  });
+
+  test('bỏ khoảng trắng và dấu / thừa ở cuối', () {
+    expect(
+      normalizeS3Endpoint('  https://s3.example.com///  '),
+      'https://s3.example.com',
+    );
+  });
+
+  test('đã có https thì giữ nguyên', () {
+    expect(
+      normalizeS3Endpoint('https://s3.ap-southeast-1.amazonaws.com'),
+      'https://s3.ap-southeast-1.amazonaws.com',
+    );
+  });
+
+  // KHÔNG tự nâng lên https: người gõ `http` đang nói một điều cụ thể, và máy
+  // chủ có sẵn câu giải thích vì sao không nhận. Sửa lén thì lần sau họ vẫn
+  // không biết luật đó tồn tại.
+  test('http không bị âm thầm nâng thành https', () {
+    expect(normalizeS3Endpoint('http://s3.example.com'), 'http://s3.example.com');
+  });
+
+  test('ô trống thì vẫn trống, không đẻ ra https://', () {
+    expect(normalizeS3Endpoint('   '), '');
+  });
+}
+
 void main() {
+  group('địa chỉ kho S3', _endpointTests);
   /// Hàng thành viên: tên, EMAIL ngay dưới, và nhãn trạng thái nói đúng việc.
   ///
   /// Một cửa hàng có hai người trùng tên là chuyện thường, và tên hiển thị thì

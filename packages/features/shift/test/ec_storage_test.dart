@@ -6,6 +6,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 Future<void> _pump(WidgetTester tester, Widget screen) {
   tester.view.physicalSize = const Size(390, 844);
@@ -27,8 +28,529 @@ Future<void> _pump(WidgetTester tester, Widget screen) {
   );
 }
 
+/// Màn đang cắm S3, đủ dữ liệu để bấm "Đổi cấu hình".
+EcStorageScreen _editableS3Screen() => const EcStorageScreen(
+  state: EcStorageState(
+    kind: EcStorageKind.s3,
+    configuredKind: EcStorageKind.s3,
+    configuredKinds: {EcStorageKind.s3},
+    label: 'my-bucket/evidencecam',
+    canManage: true,
+    byosAllowed: true,
+    s3Endpoint: 'https://s3.example.com',
+    s3Region: 'auto',
+    s3Bucket: 'my-bucket',
+    s3Prefix: 'evidencecam',
+  ),
+  onSaveS3: _noopS3,
+  onTestS3: _noopS3,
+);
+
+/// Điền đủ sáu ô để `_s3.ready` bật — thứ đang soi là nút Lưu, không phải form.
+Future<void> _fillS3(WidgetTester tester) async {
+  final fields = find.byType(CupertinoTextField);
+  const values = [
+    'https://s3.example.com',
+    'auto',
+    'my-bucket',
+    'evidencecam',
+    'AKIAXXXX',
+    'secret',
+  ];
+  for (
+    var i = 0;
+    i < values.length && i < tester.widgetList(fields).length;
+    i++
+  ) {
+    await tester.enterText(fields.at(i), values[i]);
+  }
+  await tester.pump();
+}
+
+/// Nút Lưu có bấm được không, đọc qua nhãn semantics của nó.
+bool _saveEnabled(WidgetTester tester) {
+  final node = tester.getSemantics(find.bySemanticsLabel('Lưu lựa chọn kho'));
+  return node.hasFlag(SemanticsFlag.isEnabled);
+}
+
+/// Không làm gì — mấy test dưới soi NÚT NÀO hiện ra và bấm được, không soi
+/// việc nút làm.
+void _noopS3({
+  required String endpoint,
+  required String bucket,
+  required String accessKeyId,
+  required String secretAccessKey,
+  required String region,
+  required String prefix,
+}) {}
+
 void main() {
   group('EcStorageScreen', () {
+    // Một shop giữ được tài khoản của CẢ HAI kho riêng. Chọn kho này không xoá
+    // kho kia — nên cả hai thẻ đều phải chạm được, và chọn lại thẻ đang có tài
+    // khoản chỉ là bật công tắc chứ không phải nhập lại từ đầu.
+    testWidgets('cắm cả hai kho: chọn kho kia là bật lại, không nhập lại', (
+      tester,
+    ) async {
+      EcStorageKind? resumed;
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(
+            kind: EcStorageKind.gdrive,
+            configuredKind: EcStorageKind.gdrive,
+            configuredKinds: {EcStorageKind.gdrive, EcStorageKind.s3},
+            label: 'ZenPack/video',
+            canManage: true,
+            byosAllowed: true,
+          ),
+          onResumeStorage: (kind) => resumed = kind,
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+
+      // Chọn thẻ S3 — đã có tài khoản nên KHÔNG mở form nhập lại.
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byType(CupertinoTextField),
+        findsNothing,
+        reason: 'đã có tài khoản mà vẫn bắt nhập lại',
+      );
+
+      await tester.tap(find.bySemanticsLabel('Lưu lựa chọn kho'));
+      await tester.pumpAndSettle();
+
+      expect(resumed, EcStorageKind.s3);
+    });
+
+    // Đổi cấu hình mà chưa đổi gì thì không có gì để thử: một lượt gọi ra kho
+    // khách chỉ để xác nhận điều đã biết.
+    testWidgets('đổi cấu hình: chưa sửa gì thì chưa có nút Kiểm tra', (
+      tester,
+    ) async {
+      await _pump(tester, _editableS3Screen());
+
+      await tester.tap(find.text('Đổi cấu hình'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CupertinoTextField), findsWidgets);
+      expect(find.bySemanticsLabel('Kiểm tra'), findsNothing);
+    });
+
+    // Sửa MỘT ô là đủ. Và không đòi gõ lại cặp khoá: khoá bí mật không bao giờ
+    // rời máy chủ, nên bắt điền lại là bắt người bán đi tìm lại khoá chỉ để sửa
+    // một chữ trong tên bucket.
+    testWidgets('đổi cấu hình: sửa một ô là hiện Kiểm tra, không đòi khoá', (
+      tester,
+    ) async {
+      await _pump(tester, _editableS3Screen());
+
+      await tester.tap(find.text('Đổi cấu hình'));
+      await tester.pumpAndSettle();
+
+      // Ô thứ ba là Bucket — thứ tự bám bản web: endpoint, region, bucket…
+      await tester.enterText(
+        find.byType(CupertinoTextField).at(2),
+        'bucket-moi',
+      );
+      await tester.pump();
+
+      final test = find.bySemanticsLabel('Kiểm tra');
+      expect(test, findsOneWidget);
+      expect(
+        tester.getSemantics(test).hasFlag(SemanticsFlag.isEnabled),
+        isTrue,
+        reason: 'còn đòi gõ lại cặp khoá',
+      );
+    });
+
+    // Drive đã có tài khoản thì chạm vào thẻ chỉ là CHỌN, không mở lại màn cấp
+    // quyền của Google — tài khoản đang nằm sẵn trên máy chủ.
+    testWidgets('Drive đã cắm: chạm thẻ không mở lại màn cấp quyền', (
+      tester,
+    ) async {
+      var consentOpened = 0;
+      await _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(
+            kind: EcStorageKind.s3,
+            configuredKind: EcStorageKind.s3,
+            configuredKinds: {EcStorageKind.s3, EcStorageKind.gdrive},
+            label: 'my-bucket/evidencecam',
+            canManage: true,
+            byosAllowed: true,
+          ),
+          onConnectDrive: () async {
+            consentOpened++;
+            return true;
+          },
+          onResumeStorage: (_) {},
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+
+      await tester.tap(find.text('Google Drive'));
+      await tester.pumpAndSettle();
+
+      expect(consentOpened, 0);
+    });
+
+    // Kiểm tra là CỬA duy nhất dẫn tới nút Lưu.
+    //
+    // Lưu là THAY cái kho đang giữ bằng chứng. Một cấu hình sai được lưu thì
+    // clip quay sau đó không có chỗ nào nhận, mà người bán chỉ biết khi mở đơn
+    // ra tìm video — bắt thử trước biến một hỏng-về-sau thành một câu-lỗi-ngay.
+    testWidgets('cắm lần đầu: có nút Kiểm tra, Lưu khoá cho tới khi thử xanh', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(canManage: true, byosAllowed: true),
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('Kiểm tra'), findsOneWidget);
+      expect(_saveEnabled(tester), isFalse);
+    });
+
+    // Luồng thật: điền ô → bấm Kiểm tra → máy chủ báo xanh → Lưu mở khoá.
+    testWidgets('thử xanh rồi thì Lưu mở khoá', (tester) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(canManage: true, byosAllowed: true),
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+      await _fillS3(tester);
+      expect(_saveEnabled(tester), isFalse, reason: 'chưa thử mà đã mở khoá');
+
+      await tester.tap(find.bySemanticsLabel('Kiểm tra'));
+      await tester.pump();
+      // Máy chủ trả lời xanh: bên gọi bật cờ và dựng lại màn.
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(canManage: true, byosAllowed: true),
+          s3TestPassed: true,
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+      await tester.pump();
+
+      expect(_saveEnabled(tester), isTrue);
+    });
+
+    // Shop đã cắm S3 rồi tạm về Cloud Zenpack: "Đổi cấu hình" vẫn phải mở
+    // được, mở ra có sẵn cấu hình cũ, và thử xanh thì lưu được — lưu ở đây
+    // đồng thời là quay lại dùng S3.
+    //
+    // Trước đây hỏng cả ba: nút không kéo dấu tích sang thẻ S3 nên bấm vào
+    // không có gì xảy ra, và `_prefillS3` bỏ qua khi kho đang dùng không phải
+    // S3 nên form ra trắng.
+    testWidgets('đang ở kho khác vẫn đổi được cấu hình S3 rồi lưu', (
+      tester,
+    ) async {
+      const parked = EcStorageState(
+        configuredKind: EcStorageKind.s3,
+        configuredKinds: {EcStorageKind.s3},
+        canManage: true,
+        byosAllowed: true,
+        s3Endpoint: 'https://s3.example.com',
+        s3Region: 'auto',
+        s3Bucket: 'my-bucket',
+        s3Prefix: 'evidencecam',
+        s3KeyMasked: '…abcd',
+      );
+      Future<void> pumpWith({bool busy = false, bool passed = false}) => _pump(
+        tester,
+        EcStorageScreen(
+          state: parked,
+          busy: busy,
+          s3TestPassed: passed,
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+
+      await pumpWith();
+      // KHÔNG chạm vào thẻ trước: bấm thẳng nút, đúng như người dùng làm.
+      await tester.tap(find.text('Đổi cấu hình'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CupertinoTextField), findsNWidgets(6));
+      final fields = find.byType(CupertinoTextField);
+      expect(
+        tester.widget<CupertinoTextField>(fields.at(0)).controller?.text,
+        'https://s3.example.com',
+      );
+      expect(
+        tester.widget<CupertinoTextField>(fields.at(2)).controller?.text,
+        'my-bucket',
+      );
+
+      // Đổi bucket rồi thử: cặp khoá cũ máy chủ vẫn giữ nên không phải dán lại.
+      await tester.enterText(fields.at(2), 'bucket-moi');
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel('Kiểm tra'));
+      await tester.pump();
+      await pumpWith(busy: true);
+      await pumpWith(passed: true);
+      await tester.pump();
+
+      expect(_saveEnabled(tester), isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Kho ĐANG LỖI thì nút Kiểm tra phải hiện dù chưa sửa gì.
+    //
+    // Đó đúng là lúc cần nó nhất: người dùng vừa sửa quyền bên phía nhà cung
+    // cấp và muốn biết đã ăn chưa. Luật "chưa đổi gì thì không có gì để thử"
+    // đúng với kho đang chạy, và sai hẳn với kho đang hỏng.
+    testWidgets('kho đang lỗi thì Kiểm tra hiện sẵn, không đòi sửa bừa', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(
+            kind: EcStorageKind.s3,
+            configuredKind: EcStorageKind.s3,
+            configuredKinds: {EcStorageKind.s3},
+            label: 'evidencecam/video',
+            ok: false,
+            lastError: 's3_head_403',
+            canManage: true,
+            byosAllowed: true,
+            s3Endpoint: 'https://s3-storage.example.vn',
+            s3Region: 'us-east-1',
+            s3Bucket: 'evidencecam',
+            s3Prefix: 'video',
+          ),
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+      await tester.tap(find.text('Đổi cấu hình'));
+      await tester.pumpAndSettle();
+
+      // Chưa gõ một ký tự nào.
+      expect(find.bySemanticsLabel('Kiểm tra'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Khoá bí mật dài mấy chục ký tự và luôn được DÁN vào. Dán hụt một ký tự
+    // thì máy chủ chỉ nói `SignatureDoesNotMatch` — câu không chỉ ra ô nào sai,
+    // mà một hàng chấm tròn thì không soi lại được. Con mắt là đường duy nhất
+    // để tự kiểm thứ vừa dán.
+    testWidgets('ô khoá bí mật có con mắt để nhìn hoặc che lại', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(canManage: true, byosAllowed: true),
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+
+      // Sáu ô theo thứ tự endpoint · region · bucket · prefix · khoá · bí mật.
+      bool secretHidden() => tester
+          .widget<CupertinoTextField>(find.byType(CupertinoTextField).at(5))
+          .obscureText;
+
+      // Hình nói trạng thái ĐANG CÓ: che thì mắt gạch, hiện thì mắt mở.
+      expect(secretHidden(), isTrue, reason: 'mở form ra là phải che sẵn');
+      // Đúng MỘT con mắt: năm ô kia không có gì để giấu.
+      expect(find.byIcon(LucideIcons.eyeOff), findsOneWidget);
+      expect(find.byIcon(LucideIcons.eye), findsNothing);
+
+      await tester.ensureVisible(find.byIcon(LucideIcons.eyeOff));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(LucideIcons.eyeOff));
+      await tester.pump();
+      expect(secretHidden(), isFalse);
+      expect(find.byIcon(LucideIcons.eye), findsOneWidget);
+
+      await tester.tap(find.byIcon(LucideIcons.eye));
+      await tester.pump();
+      expect(secretHidden(), isTrue);
+      expect(find.byIcon(LucideIcons.eyeOff), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Thử XANH mà form vẫn phải ở lại.
+    //
+    // Bộ test cũ không dựng lại được lỗi này vì nó không mô phỏng `busy`: app
+    // thật bật `busy` lúc gọi máy chủ rồi tắt khi có trả lời, và
+    // `didUpdateWidget` đọc đúng cặp bật-tắt đó thành "thao tác xong mà kho
+    // không đổi = người dùng huỷ" — nên một lượt thử THÀNH CÔNG đóng sập form
+    // và cuốn theo sáu ô vừa gõ. Hậu quả người dùng thấy: thử được đúng một
+    // lần, muốn thử lần nữa phải mở lại "Đổi cấu hình" và gõ lại từ đầu.
+    testWidgets('thử xanh thì form ở lại, và thử lại được lần nữa', (
+      tester,
+    ) async {
+      Future<void> pumpWith({bool busy = false, bool passed = false}) => _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          busy: busy,
+          s3TestPassed: passed,
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+
+      await pumpWith();
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+      await _fillS3(tester);
+
+      await tester.tap(find.bySemanticsLabel('Kiểm tra'));
+      await tester.pump();
+      // Máy chủ nhận lệnh (bận) rồi trả lời xanh (hết bận).
+      await pumpWith(busy: true);
+      await pumpWith(passed: true);
+      await tester.pump();
+
+      // Bàn phím phải thu lại: câu trả lời vẽ ngay dưới sáu ô, mà bàn phím che
+      // đúng chỗ đó — bấm Kiểm tra xong nhìn màn hình không thấy gì đổi.
+      expect(
+        FocusManager.instance.primaryFocus?.context?.widget,
+        isNot(isA<EditableText>()),
+      );
+      // Sáu ô còn nguyên, và câu trả lời nằm ngay cạnh chúng.
+      expect(find.byType(CupertinoTextField), findsNWidgets(6));
+      expect(
+        find.text('Tài khoản này kết nối được. Bấm Lưu để dùng kho này.'),
+        findsOneWidget,
+      );
+      expect(_saveEnabled(tester), isTrue);
+
+      // Sửa tiếp một ký tự: câu trả lời cũ hết hiệu lực, Lưu khoá lại, và nút
+      // Kiểm tra vẫn còn đó để thử bộ giá trị mới.
+      await tester.enterText(
+        find.byType(CupertinoTextField).at(2),
+        'bucket-khac',
+      );
+      await tester.pump();
+      expect(find.bySemanticsLabel('Kiểm tra'), findsOneWidget);
+      expect(_saveEnabled(tester), isFalse);
+      expect(
+        find.text('Tài khoản này kết nối được. Bấm Lưu để dùng kho này.'),
+        findsNothing,
+      );
+
+      await tester.tap(find.bySemanticsLabel('Kiểm tra'));
+      await tester.pump();
+      await pumpWith(busy: true);
+      await pumpWith(passed: true);
+      await tester.pump();
+      expect(find.byType(CupertinoTextField), findsNWidgets(6));
+      expect(_saveEnabled(tester), isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Thử ĐỎ thì form cũng ở lại — đã đúng từ trước, giữ lại để nhánh `_testing`
+    // không vô tình cướp mất đường này.
+    testWidgets('thử đỏ thì form ở lại cùng câu lỗi của máy chủ', (
+      tester,
+    ) async {
+      Future<void> pumpWith({bool busy = false, String? error}) => _pump(
+        tester,
+        EcStorageScreen(
+          state: const EcStorageState(canManage: true, byosAllowed: true),
+          busy: busy,
+          s3ErrorText: error,
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+
+      await pumpWith();
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+      await _fillS3(tester);
+      await tester.tap(find.bySemanticsLabel('Kiểm tra'));
+      await tester.pump();
+      await pumpWith(busy: true);
+      // Đúng chuỗi mà `_testS3` dựng: phán quyết một dòng, rồi tới lý do.
+      await pumpWith(
+        error:
+            'Tài khoản này không kết nối được.\n'
+            'AccessDenied: thiếu quyền s3:PutObject',
+      );
+      await tester.pump();
+
+      expect(find.byType(CupertinoTextField), findsNWidgets(6));
+      // Câu phán quyết đứng trước, lý do của nhà cung cấp đứng sau — bên gọi
+      // ghép hai phần rồi mới đưa xuống (xem `_testS3` trong ec_app.dart).
+      expect(
+        find.text(
+          'Tài khoản này không kết nối được.\n'
+          'AccessDenied: thiếu quyền s3:PutObject',
+        ),
+        findsOneWidget,
+      );
+      expect(_saveEnabled(tester), isFalse);
+      expect(find.bySemanticsLabel('Kiểm tra'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Thử xanh rồi đổi endpoint thì kết quả cũ không còn nói gì về bộ giá trị
+    // đang nằm trên màn.
+    testWidgets('sửa ô sau khi thử xanh thì Lưu khoá lại', (tester) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(canManage: true, byosAllowed: true),
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+      await _fillS3(tester);
+      await tester.tap(find.bySemanticsLabel('Kiểm tra'));
+      await tester.pump();
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(canManage: true, byosAllowed: true),
+          s3TestPassed: true,
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+      await tester.pump();
+      expect(_saveEnabled(tester), isTrue);
+
+      await tester.enterText(
+        find.byType(CupertinoTextField).first,
+        'https://doi-roi.example.com',
+      );
+      await tester.pump();
+
+      expect(_saveEnabled(tester), isFalse);
+    });
+
     // Nhân viên phải ĐỌC được tình trạng kho: kho hỏng là chuyện xảy ra giữa
     // ca đóng hàng và họ là người chịu đầu tiên. Nhưng không được thấy nút đổi
     // kho — máy chủ trả `owner_only` và một cái nút chắc chắn 403 chỉ khiến
@@ -787,6 +1309,65 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Đăng xuất khỏi Drive'), findsNothing);
       expect(find.text('shop@gmail.com'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Thẻ Drive nằm chờ trong lúc shop chạy S3: nó CÓ phần mở ra (tài khoản
+    // Google vẫn đang cắm), nên thẻ kẻ một đường ngăn cách — và dưới đường kẻ
+    // đó bắt buộc phải có chữ.
+    //
+    // Bản trước để trống đúng cảnh này: bảng tình trạng không vẽ cho Drive,
+    // hàng email treo vào một chuỗi rỗng vì `driveEmail` đọc từ kho ĐANG DÙNG
+    // (là S3), và hai nút thao tác chỉ hiện khi thẻ được chọn. Ba thứ cùng
+    // vắng, chủ shop nhận đúng chữ "Google Drive" trên một vệt kẻ lơ lửng.
+    testWidgets('thẻ Drive nằm chờ không để lại đường kẻ trống', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(
+            kind: EcStorageKind.s3,
+            configuredKind: EcStorageKind.s3,
+            configuredKinds: {EcStorageKind.s3, EcStorageKind.gdrive},
+            label: 'evidencecam/video',
+            canManage: true,
+            byosAllowed: true,
+          ),
+        ),
+      );
+
+      // Chưa đọc được email thì NÓI là chưa đọc được — bỏ trống đọc ra thành
+      // "chưa cắm tài khoản nào", mà kho Drive kia vẫn đang giữ video thật.
+      expect(find.text('Tài khoản Drive'), findsOneWidget);
+      expect(find.text('Chưa đọc được tài khoản Google'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Máy chủ trả email cho hàng Drive thì thẻ đọc được ngay, không đợi ai chạm
+    // và không cần Drive phải là kho đang dùng.
+    testWidgets('đang dùng S3 vẫn đọc ra tài khoản Drive nằm chờ', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(
+            kind: EcStorageKind.s3,
+            configuredKind: EcStorageKind.s3,
+            configuredKinds: {EcStorageKind.s3, EcStorageKind.gdrive},
+            driveEmail: 'shop@gmail.com',
+            label: 'evidencecam/video',
+            canManage: true,
+            byosAllowed: true,
+          ),
+        ),
+      );
+
+      expect(find.text('shop@gmail.com'), findsOneWidget);
+      expect(find.text('Chưa đọc được tài khoản Google'), findsNothing);
+      // Hai nút thao tác của Drive vẫn nằm im cho tới khi thẻ được chọn.
+      expect(find.text('Đăng xuất khỏi Drive'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

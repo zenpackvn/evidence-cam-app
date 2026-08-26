@@ -101,6 +101,7 @@ import 'data/ec_uploader.dart';
 import 'data/platform_device_conditions.dart';
 import 'screens/ec_record_route.dart';
 import 'screens/ec_scan_route.dart';
+import 'screens/ec_avatar_crop_route.dart';
 import 'screens/ec_trim_route.dart';
 
 const _lastShopIdKey = 'shop.last_id';
@@ -239,7 +240,7 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     _selectedShop,
     _recordingType,
     _recordingTypeId,
-    widget.pickAvatarPath ?? _pickImagePath,
+    widget.pickAvatarPath ?? _pickAvatarImagePath,
     shareService: widget.shareService,
     videoPlayerService: widget.videoPlayerService,
     downloadDio: widget.downloadDio,
@@ -697,13 +698,15 @@ class _LoginRouteState extends State<_LoginRoute> {
       onForgot: () => context.push('/forgot'),
       onGoogle: () => _afterSocialSignIn(
         context,
-        widget.auth.signInWithGoogle(),
+        _googleSignIn(context, widget.auth, widget.repo),
         method: _AuthMethods.google,
+        repo: widget.repo,
       ),
       onApple: () => _afterSocialSignIn(
         context,
         widget.auth.signInWithApple(),
         method: _AuthMethods.apple,
+        repo: widget.repo,
       ),
       showApple: _appleSignInAvailable,
       languageLabel: language.code.toUpperCase(),
@@ -865,13 +868,15 @@ class _RegisterRouteState extends State<_RegisterRoute> {
       onRegister: _policyAccepted && !_saving ? _register : null,
       onGoogle: () => _afterSocialSignIn(
         context,
-        widget.auth.signInWithGoogle(),
+        _googleSignIn(context, widget.auth, widget.repo),
         method: _AuthMethods.google,
+        repo: widget.repo,
       ),
       onApple: () => _afterSocialSignIn(
         context,
         widget.auth.signInWithApple(),
         method: _AuthMethods.apple,
+        repo: widget.repo,
       ),
       showApple: _appleSignInAvailable,
       languageLabel: language.code.toUpperCase(),
@@ -936,10 +941,104 @@ class _ForgotRouteState extends State<_ForgotRoute> {
 /// Email is the identity; the phone is an optional support contact only, so
 /// nothing here asks for one — it is edited from Tài khoản → Hồ sơ whenever the
 /// user feels like it, and never gates recording, uploading or anything else.
+/// Đường web đi TRƯỚC trên Android, và chỉ trên Android.
+///
+/// Hộp thoại Google gốc ở đây đi qua Credential Manager, thứ đòi chữ ký (SHA-1)
+/// của bản cài phải được đăng ký sẵn trong dự án Firebase. Lệch một chữ là Play
+/// services trả `DEVELOPER_ERROR`, plugin dịch tiếp thành `canceled`, và nút
+/// Google trở thành một nút không làm gì cả — không vào được, không một câu báo
+/// nào. Máy chưa cài Play services thì cũng không có đường nào khác.
+///
+/// iOS giữ nguyên hộp thoại gốc: ở đó nó không phụ thuộc chữ ký APK, nó đang
+/// chạy tốt, và nó là bảng chọn tài khoản người dùng đã quen.
+final bool _googleWebLoginFirst = Platform.isAndroid;
+
+/// Đăng nhập bằng Google. Cùng chữ ký với `EcAuth.signInWithGoogle` để hai nút
+/// gọi nó y như trước.
+Future<EcUser> _googleSignIn(
+  BuildContext context,
+  EcAuth auth,
+  EcRepository repo,
+) async {
+  if (_googleWebLoginFirst) {
+    final user = await _googleWebSignIn(context, auth, repo);
+    if (user != null) return user;
+  }
+  return auth.signInWithGoogle();
+}
+
+/// Đăng nhập qua trang web của Google mở trong WebView của app.
+///
+/// Cùng khuôn với việc cắm Drive (`_connectDriveInApp`): máy chủ dựng link, app
+/// mở trong tấm trượt lên từ đáy, chặn lượt chuyển hướng cuối để lấy kết quả.
+/// Khác ở thứ mang về — Drive mang về một cái kho, đây mang về một cái vé đổi
+/// lấy phiên đăng nhập.
+///
+/// `null` nghĩa là **đường này không dùng được** (máy chủ chưa deploy tuyến,
+/// chưa cấu hình, hoặc gọi hỏng) — bên gọi rơi về hộp thoại gốc. Người dùng tự
+/// đóng tấm thì KHÁC hẳn: đó là [EcAuthCancelled], và phải dừng hẳn. Rẽ tiếp
+/// sang hộp thoại gốc lúc đó là hỏi lại đúng câu họ vừa từ chối.
+///
+/// [repo] nhận qua THAM SỐ, không tra `getIt`. Bản trước tra `getIt` — mà
+/// `EcRepository` chưa bao giờ được đăng ký ở đó: cả app truyền nó xuống bằng
+/// hàm dựng. Nên `_maybeGetIt` luôn trả null, cả nhánh này chết lặng, và mọi
+/// lượt bấm Google trên Android rơi thẳng xuống hộp thoại gốc — đúng cái hộp
+/// thoại đang trả `DEVELOPER_ERROR` vì chữ ký APK chưa đăng ký. Hai lỗi che
+/// nhau: đường lùi viết ra để cứu đúng cảnh đó thì không bao giờ chạy.
+Future<EcUser?> _googleWebSignIn(
+  BuildContext context,
+  EcAuth auth,
+  EcRepository repo,
+) async {
+  final String? url;
+  try {
+    url = await repo.googleLoginUrl();
+  } on Object catch (error) {
+    // Máy chủ cũ (404), chưa cấu hình (503), hay mất mạng — cả ba đều chỉ có
+    // nghĩa "chưa đi được đường này", không có nghĩa lượt đăng nhập đã hỏng.
+    developer.log(
+      'auth: không lấy được link đăng nhập Google (${error.runtimeType})',
+      name: 'zenpack.auth',
+      level: 900,
+      error: error,
+    );
+    return null;
+  }
+  if (url == null || !context.mounted) return null;
+
+  final result = await showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: const Color(0x00000000),
+    builder: (_) => _GoogleLoginSheet(url: url!),
+  );
+
+  // `null` là bấm back của máy, `cancelled` là vuốt xuống — cả hai là họ vừa
+  // nói "không".
+  if (result == null || result == 'cancelled') throw const EcAuthCancelled();
+  if (!result.startsWith('ok:')) {
+    developer.log(
+      'auth: đăng nhập Google qua web hỏng ($result)',
+      name: 'zenpack.auth',
+      level: 1000,
+    );
+    throw const EcAuthException(
+      'Không đăng nhập được bằng Google, vui lòng thử lại.',
+    );
+  }
+
+  // Vé hạn 2 phút, nên đổi NGAY. Hỏng ở đây là hỏng thật — người dùng đã đồng ý
+  // xong rồi — nên để ngoại lệ bay lên cho [_afterSocialSignIn] báo ra.
+  final token = await repo.googleLoginSession(result.substring(3));
+  return auth.signInWithCustomToken(token);
+}
+
 Future<void> _afterSocialSignIn(
   BuildContext context,
   Future<EcUser> signIn, {
   required String method,
+  required EcRepository repo,
 }) async {
   try {
     await signIn;
@@ -956,7 +1055,7 @@ Future<void> _afterSocialSignIn(
     // `GET /api/me` tự tạo hàng đó ở lượt gọi đầu, nên chỉ cần đọc một lượt.
     // Hỏng thì im lặng: đăng nhập đã xong rồi, và mọi màn phía sau vẫn tự gọi
     // lại được — chặn người dùng ở đây vì một lượt đọc hỏng là tệ hơn nhiều.
-    await _ensureServerAccount(context);
+    await _ensureServerAccount(context, repo);
     if (!context.mounted) return;
     context.go('/shops', extra: 'forward');
   } on EcAuthCancelled {
@@ -969,9 +1068,15 @@ Future<void> _afterSocialSignIn(
 }
 
 /// Chạm `GET /api/me` một lượt để máy chủ dựng hàng `accounts` nếu chưa có.
-Future<void> _ensureServerAccount(BuildContext context) async {
-  final repo = _maybeGetIt<EcRepository>();
-  if (repo == null) return;
+///
+/// [repo] đi qua THAM SỐ vì `EcRepository` không nằm trong `getIt` — xem
+/// [_googleWebSignIn]. Bản trước tra `getIt` rồi lặng lẽ `return` khi không
+/// thấy, nên hàng `accounts` chưa bao giờ được dựng cho người đăng nhập bằng
+/// Google hay Apple: tài khoản sống trên Firebase mà máy chủ không biết mặt.
+Future<void> _ensureServerAccount(
+  BuildContext context,
+  EcRepository repo,
+) async {
   try {
     await repo.account();
   } on Object catch (error, stack) {
@@ -1111,6 +1216,16 @@ class _AccountRouteState extends State<_AccountRoute> {
       final url = await widget.repo.uploadAvatar(pending);
       await _forgetAvatar(uid);
       await widget.auth.updateProfile(photoUrl: url);
+      if (mounted) await _loadAccount();
+    } on AvatarTooLargeException {
+      // Ảnh này vĩnh viễn không tới được tài khoản: trần là cố định, còn tệp
+      // thì không tự nhỏ đi. Giữ nó lại chỉ để nó tiếp tục CHE MẤT ảnh thật
+      // của tài khoản trên mọi lượt mở màn sau. Bỏ đi, máy quay về đúng ảnh
+      // `accounts.avatar_url`.
+      //
+      // Đây là lối chữa cho những máy đã kẹt từ trước khi có bước thu nhỏ ở
+      // [_pickAvatarImagePath].
+      await _forgetAvatar(uid);
       if (mounted) await _loadAccount();
     } on Object {
       // Vẫn chưa gửi được; ảnh trên máy giữ nguyên và màn hình vẫn có ảnh.
@@ -1343,8 +1458,33 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
   }
 
   Future<void> _pickAvatar() async {
-    final path = await widget.pickAvatarPath();
-    if (path != null && mounted) setState(() => _avatarPath = path);
+    final picked = await widget.pickAvatarPath();
+    if (picked == null || !mounted) return;
+    // Không phải một TỆP trên máy thì đi thẳng, không qua màn cắt: seam này
+    // được tiêm URL trong test và trong lượt chụp màn hình, mà một URL thì
+    // không có gì để giải mã và cắt. Cùng lối lùi `_persistAvatarFile` vẫn
+    // dùng cho đúng trường hợp ấy.
+    if (!File(picked).existsSync()) {
+      setState(() => _avatarPath = picked);
+      return;
+    }
+    // Người dùng tự chọn phần ảnh, thay vì để `BoxFit.cover` cắt hộ. Cắt bằng
+    // `cover` là máy tự quyết giữ phần GIỮA — với ảnh chụp nghiêng hay ảnh có
+    // người đứng lệch thì đó đúng là phần đáng bỏ.
+    //
+    // Đẩy màn từ ĐÂY chứ không từ trong seam `pickAvatarPath`: seam đó được
+    // dựng ở gốc app, nơi `context` nằm TRÊN Navigator, nên `Navigator.of` ở
+    // đó ném "context that does not include a Navigator". Chỗ này là State của
+    // chính màn Sửa hồ sơ, tức chắc chắn nằm dưới Navigator.
+    //
+    // Thoát khỏi màn cắt = huỷ cả lượt đổi ảnh, chứ KHÔNG lặng lẽ dùng ảnh
+    // chưa cắt: ảnh chưa cắt có thể vượt trần 2 MB của `uploadAvatar`.
+    final cropped = await Navigator.of(context).push<String>(
+      CupertinoPageRoute<String>(
+        builder: (_) => EcAvatarCropRoute(sourcePath: picked),
+      ),
+    );
+    if (cropped != null && mounted) setState(() => _avatarPath = cropped);
   }
 
   Future<void> _save() async {
@@ -1373,7 +1513,19 @@ class _EditProfileRouteState extends State<_EditProfileRoute> {
       String? avatarError;
       if (avatarPath != null) {
         try {
-          avatarUrl = await widget.repo.uploadAvatar(avatarPath);
+          // Phân giải sang đường dẫn TUYỆT ĐỐI trước khi gửi đi.
+          //
+          // `_persistAvatarFile` trả về đường dẫn tương đối so với Documents —
+          // đúng cho thứ đem đi NHỚ, vì thư mục Documents đổi chỗ sau mỗi lần
+          // cài lại app. Nhưng `uploadAvatar` mở tệp bằng `File(path)`, và một
+          // đường dẫn tương đối thì phân giải theo THƯ MỤC LÀM VIỆC, không phải
+          // Documents. Gửi thẳng bản tương đối là ném `FileSystemException`
+          // trước cả lượt gọi mạng — tức lượt lưu ảnh ĐẦU TIÊN luôn hỏng, và
+          // ảnh chỉ lên được máy chủ ở lần mở tab Tài khoản sau, qua
+          // `_retryPendingAvatar` (đường đó vốn đã truyền bản tuyệt đối).
+          avatarUrl = await widget.repo.uploadAvatar(
+            _resolveAvatarPath(avatarPath) ?? avatarPath,
+          );
           // Máy chủ đã có ảnh → quên bản trên máy, nếu không nó sẽ che mất ảnh
           // mà người dùng đổi ở bên web (bản trên máy được ưu tiên khi hiện).
           await _forgetAvatar(widget.auth.currentUser?.uid);
@@ -1829,6 +1981,37 @@ class _StorageRouteState extends State<_StorageRoute>
   /// Đọc lại ở `finally` chứ không chỉ khi thành công: một lượt "kiểm tra lại"
   /// hỏng cũng đổi `last_error` phía máy chủ, và đó chính là câu người dùng
   /// cần đọc.
+  /// Máy chủ CHƯA CÓ đường đổi kho.
+  ///
+  /// `PATCH /storage/active` là route mới; bản Worker đang chạy trên prod có
+  /// thể cũ hơn app. Lúc đó Cloudflare trả 404 của một route không tồn tại —
+  /// 404 RỖNG, không kèm `{"error": "..."}` nào — nên bộ dịch lỗi chung không
+  /// có gì để bám và rơi xuống câu "Không thực hiện được, vui lòng thử lại".
+  ///
+  /// Câu đó sai ở chỗ nguy hiểm nhất: nó bảo người dùng thử lại một việc sẽ
+  /// KHÔNG BAO GIỜ chạy được cho tới khi có người deploy máy chủ. Người bán bấm
+  /// đi bấm lại, mỗi lần đều thấy màn hình đổi kho (vì lựa chọn nhớ trên máy)
+  /// rồi lại thấy lỗi, và không ai lần ra được vì sao.
+  static bool _isMissingRoute(Object error) =>
+      error is DioException &&
+      error.response?.statusCode == 404 &&
+      _apiErrorCode(error) == null;
+
+  /// Về kho hệ thống mà GIỮ NGUYÊN tài khoản đã cắm.
+  ///
+  /// `PATCH /storage/active` chỉ tắt cờ, không đụng tới cấu hình — nên đăng
+  /// nhập Drive một lần là xong, đổi kho qua lại bao nhiêu lượt cũng không phải
+  /// cấp quyền lại. Cắt đứt tài khoản là việc riêng của nút Đăng xuất.
+  ///
+  /// Từng có một nhánh lùi ở đây gọi `DELETE /storage` cho những bản máy chủ
+  /// chưa có route này. Nó đã bị gỡ cùng lượt deploy: giữ lại là để một ngày
+  /// máy chủ trục trặc, app âm thầm XOÁ tài khoản Drive của người dùng trong
+  /// khi họ chỉ định đổi kho.
+  Future<void> _switchToSystem() async {
+    await widget.repo.setStorageActive(widget.shopId, active: false);
+    await _rememberStoragePick(widget.shopId, StorageKind.system);
+  }
+
   Future<void> _run(Future<void> Function() action, String okMessage) async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -1836,7 +2019,14 @@ class _StorageRouteState extends State<_StorageRoute>
       await action();
       if (mounted) _toast(context, okMessage);
     } on Object catch (error) {
-      if (mounted) _toast(context, _dataErrorText(context.l10n, error));
+      if (mounted) {
+        _toast(
+          context,
+          _isMissingRoute(error)
+              ? context.l10n.storageServerOutdated
+              : _dataErrorText(context.l10n, error),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -1863,6 +2053,8 @@ class _StorageRouteState extends State<_StorageRoute>
     setState(() {
       _busy = true;
       _s3Error = null;
+      // Lưu xong là bắt đầu một vòng mới: muốn lưu tiếp phải thử lại từ đầu.
+      _s3TestPassed = false;
     });
     try {
       final result = await widget.repo.saveS3Storage(
@@ -1882,14 +2074,17 @@ class _StorageRouteState extends State<_StorageRoute>
       // Câu lỗi vẽ dưới form, mà form thì cao hơn một màn hình — người vừa bấm
       // Lưu đang nhìn lên đầu màn, không nhìn xuống đáy. Toast thêm một lượt để
       // biết là máy chủ ĐÃ trả lời; câu đầy đủ vẫn nằm cạnh mấy ô vừa gõ.
-      final hint = result.hint ?? context.l10n.errorLoadShopDetail;
+      final detail = _s3FailureText(context.l10n, result);
       developer.log(
-        'storage: lưu S3 bị từ chối (${result.failedStep ?? "—"}): $hint',
+        'storage: lưu S3 bị từ chối (${result.failedStep ?? "—"}): $detail',
         name: 'zenpack.storage',
         level: 900,
       );
-      _toast(context, hint);
-      setState(() => _s3Error = hint);
+      // Toast chỉ mang DÒNG ĐẦU: nó là lời báo "máy chủ đã trả lời", không phải
+      // chỗ đọc. Câu đầy đủ — kể cả lỗi nguyên văn của từng bước — nằm trong ô
+      // cảnh báo ngay cạnh mấy ô vừa gõ, nơi người ta sửa được.
+      _toast(context, detail.split('\n').first);
+      setState(() => _s3Error = detail);
     } on Object catch (error) {
       if (!mounted) return;
       developer.log(
@@ -1898,7 +2093,7 @@ class _StorageRouteState extends State<_StorageRoute>
         level: 900,
         error: error,
       );
-      final text = _dataErrorText(context.l10n, error);
+      final text = _s3ExceptionText(context.l10n, error);
       _toast(context, text);
       setState(() => _s3Error = text);
     } finally {
@@ -1914,6 +2109,13 @@ class _StorageRouteState extends State<_StorageRoute>
   /// Không gọi `_reload()` ở cuối, khác [_saveS3]: lượt này không đổi gì phía
   /// máy chủ, nên đọc lại chỉ tốn một vòng mạng — và tệ hơn, nó làm `busy` đảo
   /// trạng thái đúng kiểu từng đóng sập form.
+  /// Lượt Kiểm tra gần nhất có xanh không.
+  ///
+  /// Nút Lưu của form S3 đợi cờ này: lưu là THAY cái kho đang giữ bằng chứng,
+  /// và một cấu hình sai được lưu thì clip quay sau đó không có chỗ nào nhận —
+  /// người bán chỉ biết khi mở đơn ra tìm video.
+  bool _s3TestPassed = false;
+
   Future<void> _testS3({
     required String endpoint,
     required String bucket,
@@ -1940,33 +2142,47 @@ class _StorageRouteState extends State<_StorageRoute>
       );
       if (!mounted) return;
       if (result.ok) {
+        setState(() => _s3TestPassed = true);
         _toast(context, l10n.storageValidateOk);
         return;
       }
-      final hint = result.hint ?? l10n.errorLoadShopDetail;
+      setState(() => _s3TestPassed = false);
+      final detail = _s3FailureText(l10n, result);
       developer.log(
-        'storage: thử S3 hỏng (${result.failedStep ?? "—"}): $hint',
+        'storage: thử S3 hỏng (${result.failedStep ?? "—"}): $detail',
         name: 'zenpack.storage',
         level: 900,
       );
-      _toast(context, hint);
-      setState(() => _s3Error = hint);
+      // Câu PHÁN QUYẾT đứng trước, lý do đứng sau.
+      //
+      // Trước đây ô lỗi mở đầu bằng câu chỉ dẫn của nhà cung cấp
+      // (`AccessDenied…`, `SignatureDoesNotMatch…`) — thứ nói được PHẢI SỬA GÌ
+      // nhưng không trả lời câu người dùng vừa hỏi khi bấm Kiểm tra: bộ khoá
+      // này dùng được hay không. Giữ nguyên phần lý do vì nó là thứ duy nhất
+      // giúp họ tự sửa quyền bên phía mình.
+      _toast(context, l10n.storageValidateFailed);
+      setState(() => _s3Error = '${l10n.storageValidateFailed}\n$detail');
     } on Object catch (error) {
       if (!mounted) return;
-      final text = _dataErrorText(l10n, error);
+      final text = _s3ExceptionText(l10n, error);
       _toast(context, text);
-      setState(() => _s3Error = text);
+      setState(() {
+        _s3TestPassed = false;
+        _s3Error = text;
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _disconnect() async {
+  Future<void> _disconnect(StorageKind kind) async {
     final l10n = context.l10n;
     // Chữ theo ĐÚNG việc đang làm. Người bán vừa bấm "Đăng xuất khỏi Drive" mà
     // hộp thoại mở ra nói "Thôi dùng kho riêng" thì họ đọc ra là bấm nhầm nút, và
     // gỡ một cái bucket S3 lại là một câu khác hẳn.
-    final isDrive = _configuredKind == StorageKind.gdrive;
+    // Theo loại kho của THẺ vừa bấm, không theo kho đang dùng: shop giữ tài
+    // khoản của cả hai, và hỏi nhầm tên là người bán xác nhận gỡ nhầm kho.
+    final isDrive = kind == StorageKind.gdrive;
     final title = isDrive ? l10n.storageDriveLogout : l10n.storageDisconnect;
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
@@ -1993,7 +2209,7 @@ class _StorageRouteState extends State<_StorageRoute>
     if (confirmed != true || !mounted) return;
     await _run(
       () async {
-        await widget.repo.disconnectStorage(widget.shopId);
+        await widget.repo.disconnectStorage(widget.shopId, kind: kind);
         // Ghi thẳng lựa chọn về kho hệ thống, ngay tại đây.
         //
         // [_displayedStorageKind] ưu tiên lựa chọn đã nhớ hơn kho máy chủ báo,
@@ -2112,15 +2328,6 @@ class _StorageRouteState extends State<_StorageRoute>
       );
       if (!mounted) return false;
       if (result == 'ok') {
-        // Nhớ địa chỉ vừa cắm để lần sau chào lại. `_reload()` chạy ngay sau
-        // đây và sẽ ghi đè `_connectedDriveEmail` bằng thứ máy chủ trả về, nên
-        // ghi bằng chính gợi ý vừa dùng là đủ đúng và không phải đợi mạng.
-        unawaited(
-          _rememberDriveAccount(
-            widget.shopId,
-            loginHint ?? _connectedDriveEmail,
-          ),
-        );
         _toast(context, l10n.storageConnected);
         _reload();
         return true;
@@ -2141,68 +2348,6 @@ class _StorageRouteState extends State<_StorageRoute>
       if (mounted) _toast(context, _driveErrorText(l10n, code, error));
       return false;
     }
-  }
-
-  /// Bảng chọn tài khoản Drive CỦA APP, mở khi bấm "Đổi tài khoản".
-  ///
-  /// Google chỉ chào ra bảng của nó cho những phiên còn cookie trong WebView
-  /// này — cài lại app là mất sạch, và người bán gặp một ô email trống. Bảng
-  /// này không phụ thuộc cookie: nó đọc danh sách địa chỉ app đã ghi nhớ.
-  ///
-  /// Chọn một dòng KHÔNG phải là đăng nhập lại nó. Máy chủ chỉ giữ một refresh
-  /// token cho mỗi shop, nên đổi tài khoản luôn là một lượt cấp quyền mới —
-  /// dòng vừa chọn chỉ đi vào `login_hint` để khỏi phải gõ lại địa chỉ.
-  ///
-  /// Chỉ có đúng một địa chỉ đã nhớ thì bỏ qua bảng, đi thẳng vào Google: một
-  /// bảng chọn một dòng là bắt người dùng chạm thêm một cái không để làm gì.
-  Future<void> _switchDriveAccount() async {
-    final known = _rememberedDriveAccounts(widget.shopId);
-    if (known.length < 2) {
-      unawaited(_connectDrive());
-      return;
-    }
-    final l10n = context.l10n;
-    final picked = await showCupertinoModalPopup<String>(
-      context: context,
-      builder: (sheetContext) => PenSheet(
-        onDismiss: () => Navigator.of(sheetContext).pop(),
-        children: [
-          const SizedBox(height: 12),
-          PenText(
-            l10n.storageDriveSwitchAccount,
-            size: 20,
-            color: PenColors.ink,
-            weight: FontWeight.w800,
-          ),
-          const SizedBox(height: 6),
-          PenText(
-            l10n.storageDriveSwitchNote,
-            size: 13,
-            color: PenColors.mut,
-            lineHeight: 1.4,
-          ),
-          const SizedBox(height: 14),
-          for (final email in known) ...[
-            _DriveAccountRow(
-              email: email,
-              inUse: email == _connectedDriveEmail,
-              onTap: () => Navigator.of(sheetContext).pop(email),
-            ),
-            const SizedBox(height: 8),
-          ],
-          const SizedBox(height: 4),
-          PenOutlineButton(
-            label: l10n.storageDriveOtherAccount,
-            // Chuỗi rỗng, KHÔNG phải `null`: `null` là "người dùng vuốt đóng
-            // bảng", còn đây là "đi tiếp nhưng đừng gợi ý ai cả".
-            onPressed: () => Navigator.of(sheetContext).pop(''),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-    if (picked == null || !mounted) return;
-    unawaited(_connectDriveInApp(loginHint: picked.isEmpty ? null : picked));
   }
 
   /// Điền sẵn địa chỉ đang giữ kho vào ô email của Google.
@@ -2298,9 +2443,10 @@ class _StorageRouteState extends State<_StorageRoute>
     return auth?.serverAuthCode;
   }
 
-  static bool _userCancelled(Object error) =>
-      error is GoogleSignInException &&
-      error.code == GoogleSignInExceptionCode.canceled;
+  /// Người dùng bỏ dở hộp thoại Google — KHÔNG phải mọi mã `canceled`, xem
+  /// [isGoogleSignInCancellation]. Nhận nhầm ở đây thì một lượt cắm Drive hỏng
+  /// vì cấu hình sẽ im lặng đúng như một cú bấm ra ngoài.
+  static bool _userCancelled(Object error) => isGoogleSignInCancellation(error);
 
   @override
   Widget build(BuildContext context) {
@@ -2345,13 +2491,16 @@ class _StorageRouteState extends State<_StorageRoute>
           name: 'zenpack.storage',
         );
         _gdriveNative = dto.gdriveNative;
-        _connectedDriveEmail = view?.email;
-        // Nguồn đáng tin nhất về "đang cắm bằng ai" là máy chủ, nên mỗi lượt
-        // đọc trạng thái cũng là một lượt bổ sung danh sách — kể cả khi kho
-        // được cắm từ web chứ không phải từ máy này.
-        if (dto.configuredKind == StorageKind.gdrive) {
-          unawaited(_rememberDriveAccount(widget.shopId, view?.email));
-        }
+        unawaited(_rememberShopStorage(widget.shopId, dto.kind));
+        // Tài khoản Drive đọc từ HÀNG DRIVE, không từ kho đang dùng.
+        //
+        // `dto.storage` là kho ĐANG DÙNG, nên một shop chạy S3 mà vẫn giữ tài
+        // khoản Google sẽ có `view?.email == null` — dù tài khoản còn nguyên.
+        // Hai chỗ hỏng vì thế: `login_hint` của lượt cấp quyền mất chỗ dựa, và
+        // thẻ Drive trên màn kho không còn dòng nào để vẽ (xem [driveEmail]).
+        final driveView = dto.viewFor(StorageKind.gdrive);
+        final s3View = dto.viewFor(StorageKind.s3);
+        _connectedDriveEmail = driveView?.email;
         _configuredKind = dto.configuredKind ?? StorageKind.system;
         // Máy chủ vừa nói kho thật là gì; nếu nó đổi so với lần đọc trước thì
         // lựa chọn đã nhớ bám theo. Chạy ở nền, không chặn lượt dựng này.
@@ -2391,9 +2540,19 @@ class _StorageRouteState extends State<_StorageRoute>
               StorageKind.s3 => EcStorageKind.s3,
               StorageKind.gdrive => EcStorageKind.gdrive,
             },
+            // MỌI loại kho đang giữ tài khoản. Shop cắm cả S3 lẫn Drive thì cả
+            // hai thẻ đều phải nói "đã cắm" — chọn lại một trong hai chỉ là bật
+            // công tắc, không phải nhập lại từ đầu.
+            configuredKinds: {
+              for (final kind in dto.configuredKinds)
+                if (kind == StorageKind.s3)
+                  EcStorageKind.s3
+                else if (kind == StorageKind.gdrive)
+                  EcStorageKind.gdrive,
+            },
             label: view?.label ?? '',
             ok: view?.ok ?? true,
-            lastError: view?.lastError,
+            lastError: _storageErrorText(context.l10n, view?.lastError),
             // Cờ thử nghiệm mở hai thẻ kho riêng để đi được vào luồng cắm kho.
             // Máy chủ vẫn chặn lượt LƯU nếu gói thật chưa mở — xem [_kForcedPlan].
             byosAllowed: dto.byosAllowed || _planOverrideOn,
@@ -2403,14 +2562,22 @@ class _StorageRouteState extends State<_StorageRoute>
             canManage: widget.canManage,
             presignedDownload: view?.capabilities?.presignedDownload ?? true,
             objectLock: view?.capabilities?.objectLock ?? false,
-            driveEmail: view?.email,
+            // Theo hàng Drive, không theo kho đang dùng: đây là thứ DUY NHẤT
+            // thẻ Drive có để nói khi shop đang chạy S3, và thiếu nó thì thẻ
+            // vẽ ra một đường kẻ ngăn cách rồi bỏ trống bên dưới.
+            driveEmail: driveView?.email,
             // Cấu hình S3 đang lưu, để form điền sẵn lại lúc sửa. Cặp khoá
             // không có ở đây — máy chủ chỉ trả bốn ký tự cuối của access key.
-            s3Endpoint: view?.s3?.endpoint ?? '',
-            s3Region: view?.s3?.region ?? '',
-            s3Bucket: view?.s3?.bucket ?? '',
-            s3Prefix: view?.s3?.prefix ?? '',
-            s3KeyMasked: view?.s3?.accessKeyIdMasked ?? '',
+            //
+            // Đọc từ HÀNG S3 chứ không từ kho đang dùng, cùng lý do với
+            // [driveEmail]: shop cắm S3 rồi tạm về Cloud Zenpack thì `view` là
+            // kho hệ thống, bốn ô này rỗng, và "Đổi cấu hình" mở ra một form
+            // trắng của một cấu hình vẫn còn nguyên trên máy chủ.
+            s3Endpoint: s3View?.s3?.endpoint ?? '',
+            s3Region: s3View?.s3?.region ?? '',
+            s3Bucket: s3View?.s3?.bucket ?? '',
+            s3Prefix: s3View?.s3?.prefix ?? '',
+            s3KeyMasked: s3View?.s3?.accessKeyIdMasked ?? '',
             health: EcStorageHealth(
               total: dto.health.total,
               intact: dto.health.intact,
@@ -2420,20 +2587,33 @@ class _StorageRouteState extends State<_StorageRoute>
               lastCheckedAt: dto.health.lastCheckedAt,
             ),
           ),
-          onDisconnect: _disconnect,
+          onDisconnect: (k) => unawaited(
+            _disconnect(switch (k) {
+              EcStorageKind.s3 => StorageKind.s3,
+              EcStorageKind.gdrive => StorageKind.gdrive,
+              EcStorageKind.system => StorageKind.system,
+            }),
+          ),
           // LƯU LÀ LƯU: về kho hệ thống, giữ nguyên tài khoản đã cắm, không
           // hỏi lại và không đăng xuất. Cắt đứt tài khoản là việc của nút đăng
           // xuất riêng trong thẻ.
           onUseSystem: () => unawaited(
-            _run(
-              () => widget.repo.setStorageActive(widget.shopId, active: false),
-              context.l10n.storageSwitchedToSystem,
-            ),
+            _run(_switchToSystem, context.l10n.storageSwitchedToSystem),
           ),
           // Dùng lại kho đã cắm — một lượt gọi, không màn cấp quyền nào.
-          onResumeStorage: () => unawaited(
+          onResumeStorage: (kind) => unawaited(
             _run(
-              () => widget.repo.setStorageActive(widget.shopId, active: true),
+              () => widget.repo.setStorageActive(
+                widget.shopId,
+                active: true,
+                // Nói RÕ loại: shop giữ tài khoản của cả hai kho thì máy chủ
+                // không đoán được người dùng vừa chọn cái nào.
+                kind: switch (kind) {
+                  EcStorageKind.s3 => StorageKind.s3,
+                  EcStorageKind.gdrive => StorageKind.gdrive,
+                  EcStorageKind.system => null,
+                },
+              ),
               context.l10n.storageResumed,
             ),
           ),
@@ -2441,13 +2621,18 @@ class _StorageRouteState extends State<_StorageRoute>
           // Đổi tài khoản = chạy lại đúng luồng cắm. URL cấp quyền đã mang
           // `prompt=select_account`, nên Google hiện lại bảng chọn thay vì
           // lặng lẽ dùng tài khoản cũ.
-          onSwitchDriveAccount: () => unawaited(_switchDriveAccount()),
+          // Đi THẲNG vào màn cấp quyền của Google, đúng chỗ mà chạm vào thẻ
+          // Drive lúc chưa cắm gì cũng tới. Một cửa duy nhất cho một việc duy
+          // nhất — bảng chọn riêng của app đứng chen vào giữa chỉ thêm một
+          // nhịp, mà rốt cuộc vẫn phải đi qua đúng màn ấy.
+          onSwitchDriveAccount: () => unawaited(_connectDrive()),
           onConnectS3: () => context
               .push<bool>('/storage-connect', extra: widget.shopId)
               .then((saved) {
                 if (saved == true && mounted) _reload();
               }),
           s3ErrorText: _s3Error,
+          s3TestPassed: _s3TestPassed,
           onTestS3:
               ({
                 required endpoint,
@@ -2467,7 +2652,15 @@ class _StorageRouteState extends State<_StorageRoute>
                 ),
               ),
           onCancel: () {
-            if (_s3Error != null) setState(() => _s3Error = null);
+            // Bỏ luôn kết quả thử: form đóng lại và sáu ô bị xoá trắng, nên một
+            // lượt xanh của bộ giá trị vừa vứt đi không được phép mở khoá nút
+            // Lưu cho bộ giá trị nào khác.
+            if (_s3Error != null || _s3TestPassed) {
+              setState(() {
+                _s3Error = null;
+                _s3TestPassed = false;
+              });
+            }
           },
           onSaveS3:
               ({
@@ -2544,17 +2737,18 @@ class _StorageConnectRouteState extends State<_StorageConnectRoute> {
                 context.pop(true);
                 return;
               }
-              // `ok == false` = máy chủ CHƯA lưu gì. Hiện nguyên `hint` — đó là
-              // câu duy nhất nói được khách thiếu quyền nào bên nhà cung cấp.
+              // `ok == false` = máy chủ CHƯA lưu gì. Hiện ĐỦ: câu chỉ đường
+              // của máy chủ và từng bước hỏng kèm lỗi nguyên văn của nhà cung
+              // cấp — xem [_s3FailureText].
               setState(() {
                 _busy = false;
-                _error = result.hint ?? context.l10n.errorLoadShopDetail;
+                _error = _s3FailureText(context.l10n, result);
               });
             } on Object catch (error) {
               if (!mounted) return;
               setState(() {
                 _busy = false;
-                _error = _dataErrorText(context.l10n, error);
+                _error = _s3ExceptionText(context.l10n, error);
               });
             }
           },
@@ -3632,6 +3826,30 @@ Future<String?> _pickImagePath() async {
   return file?.path;
 }
 
+/// Chọn ảnh ĐẠI DIỆN — thu nhỏ ngay lúc chọn.
+///
+/// Tách khỏi [_pickImagePath] vì hai đường có luật ngược nhau: ảnh bằng chứng
+/// phải giữ NGUYÊN VẸN từng byte (nén là làm hỏng thứ đang dùng để đối chứng),
+/// còn ảnh đại diện thì không.
+///
+/// Đây là gốc của chuyện "ảnh không đi theo tài khoản". `uploadAvatar` chặn tại
+/// chỗ ở 2 MB và ném trước cả lượt gọi mạng, mà ảnh máy ảnh điện thoại đời nay
+/// vượt ngưỡng đó là chuyện thường. Lượt tải lên không bao giờ thành công →
+/// bản trên máy không bao giờ bị quên → nó vĩnh viễn che mất `avatar_url` của
+/// tài khoản, và ảnh chỉ sống trên đúng một máy.
+///
+/// 1024²@85 ra khoảng 150–400 KB, thừa chỗ dưới trần. Chỗ to nhất app vẽ ảnh
+/// đại diện là 124 px, nên không mất gì nhìn thấy được.
+Future<String?> _pickAvatarImagePath() async {
+  final file = await ImagePicker().pickImage(
+    source: ImageSource.gallery,
+    maxWidth: 1024,
+    maxHeight: 1024,
+    imageQuality: 85,
+  );
+  return file?.path;
+}
+
 /// Picks a photo and attaches it to [tracking]'s evidence via the upload queue
 /// (uploads once the backend is configured). Shows a confirmation, or nothing
 /// if the user cancelled.
@@ -3992,6 +4210,11 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
     final self = selfCall == null ? null : await selfCall;
     final types = await typesCall;
     final storage = await storageCall;
+    // Nhớ kho thật của shop cho những màn khác dùng làm nhãn — chi tiết video
+    // cần nó để gọi tên kho ĐÍCH của một clip còn đang trên đường.
+    if (storage != null) {
+      unawaited(_rememberShopStorage(widget.shop.id, storage.kind));
+    }
 
     return _ShopDetailData(
       shop: shop ?? _snapshotDto(),
@@ -4182,40 +4405,6 @@ class _ShopDetailData {
   final String? storageAccount;
 }
 
-/// Những tài khoản Google đã từng cắm kho cho shop này, nhớ trên máy.
-///
-/// Máy chủ chỉ giữ ĐÚNG MỘT refresh token cho mỗi shop, nên nó không biết gì về
-/// những tài khoản trước đó. Danh sách này là của riêng app, và nó tồn tại để
-/// trả lời đúng một câu: "tôi từng cắm bằng địa chỉ nào?".
-///
-/// Vì sao cần: Google chỉ vẽ được bảng "Chọn tài khoản" cho những phiên nó CÒN
-/// COOKIE trong WebView của app — mà kho cookie ấy bị xoá mỗi lần cài lại. Lúc
-/// đó người bán bấm "Đổi tài khoản" và gặp một ô email trống trơn. Danh sách
-/// này cho phép app tự chào ra các địa chỉ đã dùng, không phụ thuộc cookie.
-///
-/// Chọn một địa chỉ ở đây KHÔNG phải là đăng nhập lại nó — vẫn phải qua Google
-/// một lượt. Nó chỉ điền sẵn `login_hint`, tức tiết kiệm đúng thao tác gõ.
-String _driveAccountsKey(String shopId) => 'drive_accounts_$shopId';
-
-List<String> _rememberedDriveAccounts(String shopId) {
-  final raw = _appMemory()?.getString(_driveAccountsKey(shopId)) ?? '';
-  return raw.split('\n').where((line) => line.trim().isNotEmpty).toList();
-}
-
-/// Ghi nhớ một địa chỉ vừa cắm thành công, mới nhất lên đầu.
-///
-/// Trần 5: quá số đó thì danh sách thành một cuộn lịch sử chứ không còn là một
-/// bảng chọn, và người bán thật sự chỉ xoay quanh một hai tài khoản.
-Future<void> _rememberDriveAccount(String shopId, String? email) async {
-  final memory = _appMemory();
-  if (memory == null || email == null || email.isEmpty) return;
-  final kept = [
-    email,
-    ..._rememberedDriveAccounts(shopId).where((e) => e != email),
-  ].take(5);
-  await memory.setString(_driveAccountsKey(shopId), kept.join('\n'));
-}
-
 /// Kho người dùng vừa BẤM CHỌN trong màn Kho lưu trữ, nhớ ngay trên máy theo
 /// từng shop.
 ///
@@ -4231,6 +4420,29 @@ String _storagePickKey(String shopId) => 'storage_pick_$shopId';
 
 /// Kho máy chủ báo ở lần đọc gần nhất — để nhận ra lúc kho đổi THẬT.
 String _storageServerKey(String shopId) => 'storage_server_$shopId';
+
+/// Kho THẬT của shop, nhớ lại để những màn khác dùng làm nhãn.
+///
+/// Khoá RIÊNG, không dùng chung với [_storageServerKey]: khoá kia là mốc so
+/// sánh của [_syncStoragePick] để biết kho có đổi thật hay không, ghi đè nó từ
+/// chỗ khác là làm hỏng phép so đó — lựa chọn đã nhớ sẽ nằm lại ở một kho không
+/// còn được dùng.
+String _shopStorageKey(String shopId) => 'storage_of_$shopId';
+
+Future<void> _rememberShopStorage(String shopId, StorageKind kind) async =>
+    _appMemory()?.setString(_shopStorageKey(shopId), _storageKindName(kind));
+
+/// Kho thật của shop theo lần đọc gần nhất, hoặc `null` khi chưa đọc lần nào.
+StorageKind? _rememberedShopStorage(String shopId) =>
+    _parseStorageKind(_appMemory()?.getString(_shopStorageKey(shopId)));
+
+/// Kho shop đang chọn, dùng cho dòng thời gian của một đơn.
+///
+/// MÁY CHỦ trước, bộ nhớ máy sau. Bộ nhớ máy chỉ còn là đường lùi cho bản máy
+/// chủ cũ chưa gửi `shop_storage_kind` — và nó trống trơn ngay sau mỗi lượt cài
+/// lại app, đúng lúc người dùng mở clip đầu tiên ra xem.
+StorageKind? _shopStorageOf(String shopId, OrderDetailDto detail) =>
+    _parseStorageKind(detail.shopStorageKind) ?? _rememberedShopStorage(shopId);
 
 StorageKind? _parseStorageKind(String? raw) => switch (raw) {
   'system' => StorageKind.system,
@@ -5792,6 +6004,7 @@ class _OrderRouteState extends State<_OrderRoute> {
         data.videoTypes,
         data.memberNames,
         data.previews,
+        _shopStorageOf(widget.shop.id, data.detail),
       ).expand((d) => d.videos).where((v) => v.id == id).firstOrNull;
       if (fresh != null) {
         _openDetail.value = _videoDetail(
@@ -5802,7 +6015,16 @@ class _OrderRouteState extends State<_OrderRoute> {
       }
     }
     _sealPoll?.cancel();
-    if (!data.detail.evidence.any((e) => e.isSealing)) {
+    // Bám theo CẢ chặng đẩy sang kho riêng, không chỉ chặng nung dấu.
+    //
+    // Đẩy sang kho riêng chạy SAU khi niêm phong xong, nên dừng hỏi ngay lúc
+    // `isSealing` tắt là dừng đúng một nhịp trước khi `storage_kind`,
+    // `object_ref` và `share_url` xuất hiện. Hậu quả người dùng thấy: nhãn kho
+    // đứng ở "đang chuyển", và nút Sao chép link đưa ra link máy chủ thay vì
+    // link Drive hay link kho S3 — thứ chỉ có sau khi đẩy xong.
+    if (!data.detail.evidence.any(
+      (e) => e.isSealing || e.isMovingToOwnStorage,
+    )) {
       _sealPolls = 0;
       return;
     }
@@ -5940,7 +6162,7 @@ class _OrderRouteState extends State<_OrderRoute> {
   /// nhìn đúng màn này để xem nó đã vào chưa.
   List<EcTimelineVideo> _pendingPhotoRows(AppLocalizations l10n) => [
     for (final task in _pendingTasks)
-      if (task.type == 'Ảnh đính kèm')
+      if (task.type == _attachedPhotoType)
         EcTimelineVideo(
           time: _hhmm(DateTime.now()),
           label: task.type,
@@ -6005,6 +6227,7 @@ class _OrderRouteState extends State<_OrderRoute> {
           data.videoTypes,
           data.memberNames,
           data.previews,
+          _shopStorageOf(widget.shop.id, data.detail),
         );
         return ListenableBuilder(
           listenable: widget.queue,
@@ -6596,18 +6819,34 @@ class _MemberActionExtra {
   final EcShopMember member;
 }
 
-/// Ghép các bằng chứng CHƯA tải xong của đơn vào danh sách.
+/// Dựng dòng thời gian bằng chứng của một đơn, nhóm theo ngày, mới nhất trước.
 ///
+/// Danh sách CHỈ gồm những gì máy chủ đã thật sự giữ — clip còn nằm trong hàng
+/// đợi ở nguyên trang Hàng đợi, xem lý lẽ ở nơi gọi.
 List<EcTimelineDay> _timelineDays(
   AppLocalizations l10n,
   List<EvidenceDto> evidence,
   List<VideoTypeDto> videoTypes,
   Map<String, String> memberNames,
   Map<String, String> previews,
+  StorageKind? shopStorage,
 ) {
   final typeNames = {for (final t in videoTypes) t.id: t.name};
   final groups = <String, List<EcTimelineVideo>>{};
-  for (final item in evidence) {
+  // Mới nhất lên trên — cả thứ tự ngày lẫn thứ tự trong một ngày.
+  //
+  // `getOrderDetail` trả bằng chứng theo `captured_at` TĂNG dần, nên clip vừa
+  // quay xong rơi xuống tận đáy đơn: đúng thứ người bán vừa làm lại là thứ họ
+  // phải cuộn xa nhất mới thấy. Sắp lại ở đây chứ không đổi câu SQL, vì thứ tự
+  // tăng dần là hợp đồng của API với những bên đọc khác — web admin và trang
+  // hồ sơ công khai đều dựng dòng thời gian theo chiều đó.
+  //
+  // Nhóm ngày ăn theo luôn thứ tự này: `putIfAbsent` dựng nhóm theo lần gặp
+  // đầu tiên, nên duyệt một danh sách đã giảm dần thì ngày mới nhất cũng là
+  // nhóm được dựng trước.
+  final ordered = [...evidence]
+    ..sort((a, b) => b.capturedAt.compareTo(a.capturedAt));
+  for (final item in ordered) {
     // A deleted clip should vanish from the list entirely, not linger with a
     // "Đã xóa" badge — deletion already happened server-side (deleteEvidence);
     // showing it here was the actual bug, not a missing status label.
@@ -6681,6 +6920,10 @@ List<EcTimelineDay> _timelineDays(
             uploadStatus: _uploadStatusLabel(l10n, item.uploadStatus),
             // The R2 object is gone once expired — nothing left to play/download.
             mediaUrl: item.uploadStatus == 'expired' ? null : item.url,
+            // Cùng luật với `mediaUrl`: hết hạn lưu trữ thì tệp ở kho cũng đã
+            // bị dọn, đưa ra một link Drive trỏ vào chỗ trống là hứa suông.
+            shareUrl: item.uploadStatus == 'expired' ? null : item.shareUrl,
+            storage: _evidenceStorageLabel(l10n, item, shopStorage),
             // Chỉ gắn khi máy chủ CHƯA phát được. Có link thật rồi mà vẫn trỏ
             // về bản tạm là cố tình phát bản không dấu trong khi bản có dấu đã
             // nằm sẵn ở kho.
@@ -7872,58 +8115,6 @@ class _TermsSheetState extends State<_TermsSheet> {
   }
 }
 
-/// Một dòng tài khoản trong bảng chọn kho Drive.
-class _DriveAccountRow extends StatelessWidget {
-  const _DriveAccountRow({
-    required this.email,
-    required this.inUse,
-    required this.onTap,
-  });
-
-  final String email;
-
-  /// Tài khoản đang thật sự giữ kho. Có nhãn riêng chứ không chỉ đổi màu: hai
-  /// địa chỉ Gmail cạnh nhau trông rất giống nhau, và chọn nhầm ở đây là đổi
-  /// nơi cất bằng chứng của cả cửa hàng.
-  final bool inUse;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => EcTap(
-    onTap: onTap,
-    child: PenBox(
-      width: double.infinity,
-      fill: PenColors.card,
-      stroke: inUse ? PenColors.success : PenColors.line,
-      radius: 12,
-      axis: PenAxis.row,
-      gap: 12,
-      cross: CrossAxisAlignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-      children: [
-        const Icon(LucideIcons.userRound, size: 20, color: PenColors.ink),
-        Expanded(
-          child: PenText(
-            email,
-            size: 14,
-            color: PenColors.ink,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        if (inUse)
-          PenText(
-            context.l10n.storageInUse,
-            size: 12,
-            color: PenColors.success,
-            weight: FontWeight.w600,
-            softWrap: false,
-          ),
-      ],
-    ),
-  );
-}
-
 /// Cấp quyền Google Drive NGAY TRONG APP.
 ///
 /// Đường thứ hai của việc cắm Drive, đi khi máy chủ chưa có cặp `GOOGLE_APP_*`
@@ -8035,6 +8226,20 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
     }
   }
 
+  /// Bảo trang web đang mở nhả tiêu điểm, tức đóng bàn phím của nó.
+  ///
+  /// Nuốt lỗi: trang chưa tải xong hoặc không cho chạy JavaScript thì cùng lắm
+  /// là bàn phím ở nguyên chỗ cũ — không đáng để một cú chạm ném ra ngoại lệ.
+  void _blurWebPage() {
+    unawaited(
+      _controller
+          .runJavaScript(
+            'document.activeElement && document.activeElement.blur();',
+          )
+          .catchError((Object _) {}),
+    );
+  }
+
   void _finish(String result) {
     if (_done || !mounted) return;
     _done = true;
@@ -8071,14 +8276,27 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
                 children: [
                   // Thanh vuốt: dấu hiệu quen thuộc của một tấm kéo xuống được,
                   // và cũng là thứ tách phần của app khỏi phần của Google.
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(top: 10, bottom: 6),
-                      decoration: BoxDecoration(
-                        color: PenColors.line,
-                        borderRadius: BorderRadius.circular(999),
+                  // Chạm dải này là ẩn bàn phím của TRANG WEB.
+                  //
+                  // Bộ ẩn bàn phím ở gốc app chỉ với tới ô nhập của Flutter;
+                  // ô mật khẩu Google nằm trong trang web bên trong WebView,
+                  // nơi `FocusManager` không có quyền gì. Phải bảo chính trang
+                  // đó nhả tiêu điểm — và chỉ có JavaScript làm được.
+                  //
+                  // `behavior: opaque` để cả dải trống hai bên thanh vuốt đều
+                  // ăn chạm, chứ không riêng đúng cái gạch 40px.
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _blurWebPage,
+                    child: Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(top: 10, bottom: 6),
+                        decoration: BoxDecoration(
+                          color: PenColors.line,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                       ),
                     ),
                   ),
@@ -8144,6 +8362,178 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
   }
 }
 
+/// Đăng nhập bằng Google NGAY TRONG APP, qua trang web của Google.
+///
+/// Bản rút gọn của [_DriveConsentScreen] cho một việc khác: ở đây không có tài
+/// khoản đang giữ kho để in ra đầu tấm, và không có ô mật khẩu nào của app.
+/// Giữ riêng chứ không gộp làm một widget dùng chung — hai luồng có hai vòng
+/// đời khác nhau (một cái cắm kho, một cái mở phiên), và gộp lại là để một lượt
+/// sửa cho luồng này lặng lẽ đổi hành vi của luồng kia.
+///
+/// Kết thúc bằng CHUYỂN HƯỚNG: máy chủ 302 về một URL mang `glogin=ok&ticket=…`
+/// (hoặc `glogin=<mã lỗi>`). Chặn ngay lượt điều hướng ấy — trang đích là
+/// console web, tải nó trong app chỉ hiện một màn lạc quẻ ngay trước lúc đóng.
+///
+/// `pop` trả về: `'ok:<vé>'`, `'cancelled'`, hoặc mã lỗi của máy chủ.
+class _GoogleLoginSheet extends StatefulWidget {
+  const _GoogleLoginSheet({required this.url});
+
+  final String url;
+
+  @override
+  State<_GoogleLoginSheet> createState() => _GoogleLoginSheetState();
+}
+
+class _GoogleLoginSheetState extends State<_GoogleLoginSheet> {
+  late final WebViewController _controller;
+  bool _loading = true;
+
+  /// Màu nền THẬT của trang Google — nó đi theo chế độ sáng/tối của HỆ ĐIỀU
+  /// HÀNH, không theo giao diện app. Xem [_DriveConsentScreenState].
+  Color? _pageColor;
+
+  /// Google còn chuyển hướng thêm vài nhịp sau lượt ta bắt được, và `pop` lần
+  /// thứ hai sẽ đóng nhầm màn nằm dưới.
+  bool _done = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(BrandColors.bg)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (request) {
+            final result = _googleLoginResultOf(request.url);
+            if (result == null) return NavigationDecision.navigate;
+            _finish(result);
+            return NavigationDecision.prevent;
+          },
+          onPageFinished: (_) {
+            if (!mounted) return;
+            setState(() => _loading = false);
+            unawaited(_readPageColor());
+          },
+          // CHỈ khung chính mới tính là hỏng: trang của Google kéo theo cả đống
+          // tài nguyên phụ, và một cái 404 trong đó không phải lý do để bỏ dở.
+          onWebResourceError: (e) {
+            if (e.isForMainFrame == true) _finish('failed');
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  Future<void> _readPageColor() async {
+    try {
+      final raw = await _controller.runJavaScriptReturningResult(
+        '(function(){'
+        "function on(c){return !!c&&c!=='transparent'"
+        "&&!/^rgba\\(.*,\\s*0\\)\$/.test(c);}"
+        'var b=getComputedStyle(document.body).backgroundColor;'
+        'var h=getComputedStyle(document.documentElement).backgroundColor;'
+        "return on(b)?b:(on(h)?h:'');"
+        '})()',
+      );
+      final color = _cssColor(raw.toString());
+      if (color == null || !mounted) return;
+      setState(() => _pageColor = color);
+      await _controller.setBackgroundColor(color);
+    } on Object {
+      // Không đọc được thì giữ nền cũ — xem [_DriveConsentScreenState].
+    }
+  }
+
+  /// Bảo trang web nhả tiêu điểm, tức đóng bàn phím của nó. `FocusManager` của
+  /// Flutter không với tới ô mật khẩu nằm trong WebView.
+  void _blurWebPage() {
+    unawaited(
+      _controller
+          .runJavaScript(
+            'document.activeElement && document.activeElement.blur();',
+          )
+          .catchError((Object _) {}),
+    );
+  }
+
+  void _finish(String result) {
+    if (_done || !mounted) return;
+    _done = true;
+    Navigator.of(context).pop(result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final inset = MediaQuery.viewInsetsOf(context).bottom;
+    final surface = _pageColor ?? BrandColors.bg;
+    return Padding(
+      // Bàn phím đẩy tấm lên thay vì che ô đang gõ: trang đăng nhập của Google
+      // có ô mật khẩu, và ô đó nằm ở nửa dưới.
+      padding: EdgeInsets.only(bottom: inset),
+      child: FractionallySizedBox(
+        heightFactor: 0.92,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _blurWebPage,
+                    child: Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(top: 10, bottom: 6),
+                        decoration: BoxDecoration(
+                          color: PenColors.line,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        // Nhường cử chỉ KÉO DỌC cho WebView, nếu không trang
+                        // của Google không cuộn được — xem
+                        // [_DriveConsentScreenState].
+                        WebViewWidget(
+                          controller: _controller,
+                          gestureRecognizers: {
+                            Factory<VerticalDragGestureRecognizer>(
+                              VerticalDragGestureRecognizer.new,
+                            ),
+                          },
+                        ),
+                        if (_loading)
+                          ColoredBox(
+                            color: surface,
+                            child: const Center(
+                              child: CupertinoActivityIndicator(),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Màu Dart từ chuỗi `background-color` của CSS, hoặc `null` khi không đọc ra.
 ///
 /// Chỉ nhận `rgb()`/`rgba()` — đó là dạng DUY NHẤT `getComputedStyle` trả về,
@@ -8165,6 +8555,35 @@ Color? _cssColor(String raw) {
 /// URL máy chủ chốt lại là `…/app#/shops/<id>?gdrive=ok` — dấu `?` nằm SAU
 /// `#`, nên `Uri.queryParameters` trả về rỗng. Chỉ đọc query thì màn cấp quyền
 /// không bao giờ tự đóng: nó đứng mãi ở trang console web.
+/// Đọc kết quả lượt đăng nhập Google ở CẢ query lẫn fragment.
+///
+/// URL máy chủ chốt lại là `…/app#/login?glogin=ok&ticket=…` — dấu `?` nằm SAU
+/// `#`, nên `Uri.queryParameters` trả về rỗng. Chỉ đọc query thì tấm đăng nhập
+/// không bao giờ tự đóng. Cùng một cái bẫy với [_gdriveResultOf].
+///
+/// Trả `'ok:<vé>'` khi xong, mã lỗi của máy chủ khi hỏng, `null` khi URL này
+/// không phải lượt quay về (cứ để WebView đi tiếp).
+String? _googleLoginResultOf(String url) {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return null;
+  var params = uri.queryParameters;
+  if (!params.containsKey('glogin')) {
+    final fragment = uri.fragment;
+    if (!fragment.contains('glogin=')) return null;
+    final parsed = Uri.tryParse(fragment);
+    if (parsed == null) return null;
+    params = parsed.queryParameters;
+  }
+  final status = params['glogin'];
+  if (status == null) return null;
+  if (status != 'ok') return status;
+  // `ok` mà không có vé là một lượt quay về hỏng, không phải một lượt thành
+  // công. Đọc nó thành `ok` rồi POST một vé rỗng chỉ đổi lấy 401 và một câu
+  // báo lỗi nói sai chỗ hỏng.
+  final ticket = params['ticket'];
+  return (ticket == null || ticket.isEmpty) ? 'failed' : 'ok:$ticket';
+}
+
 String? _gdriveResultOf(String url) {
   final uri = Uri.tryParse(url);
   if (uri == null) return null;
@@ -8324,6 +8743,8 @@ EcVideoDetail _videoDetail(
   device: video.device ?? l10n.deviceUnknown,
   uploadStatus: video.uploadStatus ?? l10n.uploadStatusDone,
   mediaUrl: video.mediaUrl,
+  shareUrl: video.shareUrl,
+  storage: video.storage,
   localPath: video.localPath,
   type: video.type,
   seal: video.seal,
@@ -8363,10 +8784,173 @@ String _sealedAtLabel(int? sealedAt) {
 
 /// Formats a recorded clip length as `mm:ss`. Photos and evidence captured
 /// before this field existed have no duration — falls back to `—`.
+/// Tên kho đang GIỮ clip, để hiện trong Chi tiết video.
+///
+/// `null` là "Cloud ZenPack" chứ không phải "không rõ": cột `storage_kind` chỉ
+/// được ghi khi clip đã đẩy sang kho riêng xong. Trước đó byte vẫn nằm ở vùng
+/// chờ của ZenPack — nói "Google Drive" lúc ấy là nói sai chỗ bằng chứng đang
+/// nằm, và người bán mở Drive ra sẽ không thấy gì.
+/// Clip này ĐANG NẰM Ở ĐÂU, đọc từ hai trường chứ không phải một.
+///
+/// Máy chủ chỉ ghi `storage_kind` SAU KHI đẩy xong sang kho riêng (xem
+/// `relay.ts`): mọi clip đều đi qua vùng chờ tạm trước, vì không thể nung dấu
+/// và niêm phong một tệp mà hệ thống chưa từng chạm vào. Trong quãng đó
+/// `storage_kind` là null — y hệt clip của một shop dùng kho hệ thống.
+///
+/// Nên hỏi mỗi `storage_kind` là nói sai với người vừa cắm kho S3: họ quay
+/// xong, mở chi tiết video ra và đọc thấy "Cloud ZenPack", tưởng kho riêng
+/// không ăn. `relay_status` là thứ phân biệt được: `pending` = đang trên
+/// đường, `failed` = kẹt lại (màn Kho lưu trữ có cảnh báo tương ứng), `null` =
+/// shop này thật sự dùng kho hệ thống.
+/// Câu lỗi của kho, dịch sang việc PHẢI LÀM.
+///
+/// Máy chủ ghi mã kỹ thuật (`s3_head_403`, `s3_put_403`, `verify_failed`) vì đó
+/// là thứ duy nhất nói đúng chuyện đã xảy ra. Nhưng chủ shop đọc `s3_head_403`
+/// thì không biết phải làm gì, mà việc phải làm lại rất cụ thể: thêm đúng một
+/// quyền bên nhà cung cấp.
+///
+/// Giữ nguyên mã ở cuối câu: đó là thứ bộ phận hỗ trợ bám vào, và là thứ duy
+/// nhất tra ngược được về log.
+String? _storageErrorText(AppLocalizations l10n, String? raw) {
+  final error = raw?.trim();
+  if (error == null || error.isEmpty) return null;
+  final friendly = switch (error) {
+    // Ghi được, đọc lại bị từ chối. 403 ở bước đọc còn có nghĩa "thiếu
+    // ListBucket": AWS trả 403 thay 404 cho key không tồn tại, để không lộ key
+    // nào có — nên câu chỉ dẫn nhắc cả hai quyền.
+    _ when error.startsWith('s3_head_403') || error.startsWith('s3_get_403') =>
+      l10n.storageErrNoRead,
+    _ when error.startsWith('s3_put_40') => l10n.storageErrNoWrite,
+    _ when error.startsWith('verify_failed') => l10n.storageErrSizeMismatch,
+    _ => null,
+  };
+  return friendly == null
+      ? error
+      : '$friendly\n\n${l10n.storageErrorCode(error)}';
+}
+
+String _evidenceStorageLabel(
+  AppLocalizations l10n,
+  EvidenceDto item,
+  StorageKind? shopStorage,
+) {
+  // 1. Kho ĐANG GIỮ clip, khi máy chủ đã chốt. Đây là sự thật lịch sử: đổi kho
+  //    không kéo clip cũ đi theo, nên một đơn có thể có clip nằm ở hai kho khác
+  //    nhau và mỗi clip phải nói đúng chỗ của nó.
+  switch (item.storageKind) {
+    case 'gdrive':
+      return l10n.storageNameDrive;
+    case 's3':
+      return l10n.storageNameS3;
+  }
+
+  final ofShop = switch (shopStorage) {
+    StorageKind.s3 => l10n.storageNameS3,
+    StorageKind.gdrive => l10n.storageNameDrive,
+    StorageKind.system || null => null,
+  };
+
+  // 2. Chưa chốt xong (đang tải lên, đang nung dấu) → clip này SẼ đi vào kho
+  //    shop đang chọn, nên gọi tên kho đó ngay. Người vừa chọn kho riêng mở
+  //    clip ra chính là để xác nhận điều đó.
+  final settled = item.uploadStatus == 'done' && !item.isSealing;
+  if (!settled) return ofShop ?? l10n.storageNameCloud;
+
+  // 3. Đã chốt mà chưa sang kho riêng: chỉ clip ĐANG trong hàng đợi đẩy mới còn
+  //    đường sang. Máy chủ ghi `relay_status` ngay khi nhận việc, và cron thử
+  //    lại chỉ nhặt `pending`/`failed`.
+  if (item.relayStatus == 'pending' || item.relayStatus == 'failed') {
+    return ofShop ?? l10n.storageNameCloud;
+  }
+
+  // 4. Đã chốt, không có `relay_status` nào: lúc clip này niêm phong xong thì
+  //    shop chưa bật kho riêng, nên nó nằm lại kho hệ thống VĨNH VIỄN — không
+  //    lượt cron nào nhặt nó nữa. Gọi tên kho vừa chọn ở đây là chỉ vào một
+  //    chỗ mà clip không bao giờ tới.
+  return l10n.storageNameCloud;
+}
+
 String _durationLabel(int? seconds) {
   if (seconds == null) return '—';
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(seconds ~/ 60)}:${two(seconds % 60)}';
+}
+
+/// Câu lỗi ĐẦY ĐỦ cho một lượt cắm kho S3 bị từ chối.
+///
+/// Gộp hai thứ và không bỏ thứ nào: câu chỉ đường của máy chủ (`hint`), rồi
+/// TỪNG bước hỏng kèm câu nguyên văn nhà cung cấp trả về (`AccessDenied`,
+/// `NoSuchBucket`, `SignatureDoesNotMatch`…).
+///
+/// Bản trước chỉ hiện `hint`, mà `hint` chỉ có khi máy chủ nhận ra mã lỗi. Gặp
+/// mã lạ là người dùng nhận đúng một câu "Không thực hiện được, vui lòng thử
+/// lại" — họ không biết gì về chuyện vừa xảy ra trên kho của chính mình, trong
+/// khi họ mới là người có quyền sửa IAM bên đó.
+///
+/// Giữ cả những bước ĐỎ về sau chứ không chỉ bước đầu tiên: "PUT xanh, GET đỏ"
+/// là thiếu quyền đọc, còn "PUT đỏ" là sai khoá hoặc sai tên bucket — hai việc
+/// phải sửa ở hai chỗ khác nhau.
+String _s3FailureText(AppLocalizations l10n, StorageValidateDto result) {
+  final hint = result.hint?.trim() ?? '';
+  final lines = <String>[
+    if (hint.isNotEmpty) hint,
+    for (final step in result.steps)
+      if (!step.ok)
+        switch (step.detail?.trim() ?? '') {
+          '' => '• ${_probeStepName(l10n, step.step)}',
+          final detail => '• ${_probeStepName(l10n, step.step)}: $detail',
+        },
+  ];
+  return lines.isEmpty ? l10n.errorGenericRetry : lines.join('\n');
+}
+
+String _probeStepName(AppLocalizations l10n, String step) => switch (step) {
+  'put' => l10n.storageProbeStepPut,
+  'head' => l10n.storageProbeStepHead,
+  'get' => l10n.storageProbeStepGet,
+  'delete' => l10n.storageProbeStepDelete,
+  // Bước lạ từ một bản máy chủ mới hơn: hiện nguyên tên máy chủ gửi, đừng nuốt.
+  _ => step,
+};
+
+/// Như [_dataErrorText] nhưng KÈM mã lỗi thật của máy chủ.
+///
+/// Câu dịch sẵn nói được "chuyện gì với bạn", mã lỗi nói được "chuyện gì với hệ
+/// thống" — người đang dò cấu hình kho cần cả hai, và người đọc log cần cái thứ
+/// hai để lần ra.
+String _s3ExceptionText(AppLocalizations l10n, Object error) {
+  // `details` TRƯỚC câu dịch sẵn. Với một lượt 400 vì dữ liệu sai, máy chủ nói
+  // thẳng ô nào hỏng và vì sao ("Địa chỉ kho phải bắt đầu bằng https://…") —
+  // đặt câu chung "Không thực hiện được, vui lòng thử lại" lên trên nó là chôn
+  // đúng thứ người dùng cần đọc.
+  final details = _apiErrorDetails(error);
+  final head = details.isEmpty
+      ? _dataErrorText(l10n, error)
+      : details.map((d) => '• $d').join('\n');
+  final status = error is DioException ? error.response?.statusCode : null;
+  final extra = [
+    ?_apiErrorCode(error),
+    if (status != null) 'HTTP $status',
+  ].join(' · ');
+  return extra.isEmpty ? head : '$head\n${l10n.storageErrorCode(extra)}';
+}
+
+/// Danh sách lý do máy chủ đính kèm khi từ chối một request (`invalid_request`).
+///
+/// Đây là câu do chính schema sinh ra, đã viết cho người đọc chứ không phải cho
+/// máy: "Địa chỉ kho phải bắt đầu bằng https:// — http thường sẽ để lộ khoá
+/// truy cập của bạn trên đường truyền." Bỏ nó đi rồi hiện "vui lòng thử lại" là
+/// mời người dùng gõ lại y nguyên cái sai vừa rồi.
+List<String> _apiErrorDetails(Object error) {
+  if (error is! DioException) return const [];
+  final data = error.response?.data;
+  if (data is! Map) return const [];
+  final details = data['details'];
+  if (details is! List) return const [];
+  return [
+    for (final d in details)
+      if (d is String && d.trim().isNotEmpty) d.trim(),
+  ];
 }
 
 String _dataErrorText(AppLocalizations l10n, Object error) {
@@ -8504,11 +9088,17 @@ class _QueueRoute extends StatelessWidget {
   const _QueueRoute({
     required this.queue,
     required this.canDelete,
+    required this.repo,
+    this.player,
     this.shopId,
     this.onBack,
   });
 
   final EcUploadQueue queue;
+
+  /// Để tra link phát khi bản xem tạm trên máy đã bị dọn. Xem [_playQueuedClip].
+  final EcRepository repo;
+  final VideoPlayerService? player;
 
   /// Shop đang mở. Hàng đợi chỉ hiện việc của shop này; `null` (chưa chọn
   /// shop) thì không hiện gì, vì lúc đó không có câu hỏi nào để trả lời.
@@ -8547,6 +9137,14 @@ class _QueueRoute extends StatelessWidget {
           onDelete: canDelete
               ? (item) => _confirmDeleteQueueItem(context, queue, item)
               : null,
+          onOpen: (item) {
+            final id = item.id;
+            if (id != null) {
+              unawaited(
+                _playQueuedClip(context, queue, repo, player, shopId, id),
+              );
+            }
+          },
         );
       },
     );
@@ -8561,16 +9159,30 @@ class _QueueRoute extends StatelessWidget {
 Future<void> _showQueueSheet(
   BuildContext context,
   EcUploadQueue queue,
+  EcRepository repo,
+  VideoPlayerService? player,
   String? shopId,
 ) => showCupertinoModalPopup<void>(
   context: context,
-  builder: (sheetContext) => _QueueSheet(queue: queue, shopId: shopId),
+  builder: (sheetContext) => _QueueSheet(
+    queue: queue,
+    repo: repo,
+    player: player,
+    shopId: shopId,
+  ),
 );
 
 class _QueueSheet extends StatelessWidget {
-  const _QueueSheet({required this.queue, this.shopId});
+  const _QueueSheet({
+    required this.queue,
+    required this.repo,
+    this.player,
+    this.shopId,
+  });
 
   final EcUploadQueue queue;
+  final EcRepository repo;
+  final VideoPlayerService? player;
   final String? shopId;
 
   @override
@@ -8662,6 +9274,26 @@ class _QueueSheet extends StatelessWidget {
                   final id = item.id;
                   if (id != null) unawaited(queue.delete(id));
                 },
+                // Đóng tấm sheet TRƯỚC khi mở trình phát: để lại nó nằm dưới
+                // thì thoát trình phát ra là rơi về nửa màn hàng đợi chứ không
+                // về màn quay, và người đang đóng gói mất khung ngắm.
+                onOpen: (item) {
+                  final id = item.id;
+                  if (id == null) return;
+                  final router = GoRouter.of(context);
+                  Navigator.of(context).pop();
+                  unawaited(
+                    _playQueuedClip(
+                      router.routerDelegate.navigatorKey.currentContext ??
+                          context,
+                      queue,
+                      repo,
+                      player,
+                      shopId,
+                      id,
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -8735,8 +9367,119 @@ Future<void> _confirmDeleteQueueItem(
   if (context.mounted) _toast(context, l10n.toastQueueItemDeleted);
 }
 
+/// Nhãn loại của một ẢNH đính kèm trong hàng đợi.
+///
+/// Hàng đợi không mang cờ "đây là ảnh" — nó chỉ mang nhãn loại người dùng thấy,
+/// và ảnh đính kèm luôn vào bằng đúng nhãn này (`_attachPhoto`). Gom về một
+/// hằng để hai chỗ đang so chuỗi không lệch nhau khi nhãn đổi.
+const _attachedPhotoType = 'Ảnh đính kèm';
+
+/// Bấm vào một hàng ĐÃ TẢI XONG trong hàng đợi → xem lại clip ngay.
+///
+/// Hai nguồn, theo đúng thứ tự này:
+///   1. bản xem tạm còn trên máy — mở tức thì, không tốn một byte mạng nào, và
+///      đây là trường hợp thường gặp nhất ở màn này: người ta mở hàng đợi ngay
+///      sau khi clip vừa lên xong.
+///   2. link máy chủ — khi bản tạm đã bị dọn, tức máy chủ đã có bản đóng dấu.
+///      Bản đó mới là bằng chứng thật, nên xem nó cũng đúng hơn.
+///
+/// Không có nguồn nào thì nói thẳng, đừng mở một trình phát trắng.
+Future<void> _playQueuedClip(
+  BuildContext context,
+  EcUploadQueue queue,
+  EcRepository repo,
+  VideoPlayerService? player,
+  String? shopId,
+  String taskId,
+) async {
+  final l10n = context.l10n;
+  UploadTask? task;
+  for (final candidate in queue.tasks) {
+    if (candidate.id == taskId) task = candidate;
+  }
+  final evidenceId = task?.remoteUrl;
+  if (task == null || evidenceId == null || player == null) {
+    _toast(context, l10n.toastVideoNoPlayLink);
+    return;
+  }
+
+  final local = (await ecPreviews())[evidenceId];
+  if (!context.mounted) return;
+  if (local != null) {
+    _pushQueuePlayer(context, task.tracking, local, player, isLocalFile: true);
+    return;
+  }
+
+  try {
+    final clip = await _serverClip(repo, shopId, task.tracking, evidenceId);
+    if (!context.mounted) return;
+    final url = clip?.url;
+    if (url != null) {
+      _pushQueuePlayer(context, task.tracking, url, player);
+      return;
+    }
+    // Nói ĐÚNG lý do. "Chưa có link" cho cả hai trường hợp là bắt người dùng
+    // đoán xem nên đợi hay nên đi tìm chỗ khác.
+    final sealing =
+        clip?.sealStatus == 'pending' || clip?.sealStatus == 'rendering';
+    _toast(context, sealing ? l10n.sealWorking : l10n.toastVideoNoPlayLink);
+  } on Object {
+    if (context.mounted) _toast(context, l10n.toastVideoNoPlayLink);
+  }
+}
+
+/// Dòng bằng chứng trên máy chủ của một clip trong hàng đợi.
+///
+/// Hàng đợi chỉ giữ mã vận đơn chứ không giữ `order_id`, nên phải tìm đơn
+/// trước. Trả về cả DTO chứ không chỉ `url`: vắng link có thể là "máy chủ đang
+/// đóng dấu" (đợi một lát là xong) hoặc "clip không còn" (đợi mãi cũng không
+/// xong), và người dùng cần biết mình đang ở tình huống nào.
+///
+/// `null` = không tìm thấy dòng nào.
+Future<EvidenceDto?> _serverClip(
+  EcRepository repo,
+  String? shopId,
+  String tracking,
+  String evidenceId,
+) async {
+  if (shopId == null || shopId.isEmpty) return null;
+  for (final summary in await repo.searchOrders(shopId, tracking)) {
+    final detail = await repo.order(shopId, summary.id);
+    for (final item in detail.evidence) {
+      if (item.id == evidenceId) return item;
+    }
+  }
+  return null;
+}
+
+void _pushQueuePlayer(
+  BuildContext context,
+  String title,
+  String url,
+  VideoPlayerService player, {
+  bool isLocalFile = false,
+}) => GoRouter.of(context).push(
+  '/video-player',
+  extra: _VideoPlayerRouteExtra(
+    title: title,
+    url: url,
+    videoPlayerService: player,
+    isLocalFile: isLocalFile,
+  ),
+);
+
 EcUploadItem _taskToItem(UploadTask task) => EcUploadItem(
   id: task.id,
+  // Chỉ clip ĐÃ lên xong mới bấm xem được. Trước đó thứ duy nhất tồn tại là
+  // tệp thô trên máy, và hàng đợi cố ý không mời người dùng xem nó.
+  //
+  // `remoteUrl` mang `evidence_id` chứ không phải URL — tên trường đặt sai từ
+  // trước (`ApiEvidenceUploader.upload` trả về id, xem ghi chú ở đó). Vắng id
+  // thì không tra được bản xem tạm lẫn dòng bằng chứng trên máy chủ.
+  playable:
+      task.state == EcUploadState.done &&
+      task.remoteUrl != null &&
+      task.type != _attachedPhotoType,
   code: task.tracking,
   typeLabel: task.type,
   when: '${_dayLabelOf(task.createdAt)} ${_hhmm(task.createdAt)}',
@@ -8977,7 +9720,8 @@ GoRouter _buildRouter(
                       maxRecording: shop.clipBudget.maxRecording,
                       isActive: isRecordTabActive,
                       onBack: () => c.go('/home'),
-                      onQueueTap: () => _showQueueSheet(c, queue, shop.id),
+                      onQueueTap: () =>
+                          _showQueueSheet(c, queue, repo, videoPlayer, shop.id),
                       onRequestCode: () => c.push<String>('/manual'),
                       onConfirmManualCode: (code) =>
                           _confirmManualTracking(c, repo, shop.id, code),
@@ -9226,11 +9970,22 @@ GoRouter _buildRouter(
                   showRecordedBy: !(extra?.fromClaim ?? false),
                   onClose: () => c.pop(),
                   onCopyLink: () {
-                    final url = live?.mediaUrl;
+                    // Link Drive TRƯỚC khi có: đây là thứ người bán chép rồi
+                    // gửi đi, và với shop cắm Drive thì họ muốn thấy tệp nằm
+                    // trong kho của chính mình chứ không phải một tên miền lạ.
+                    // Phát / Tải về / Cắt đoạn vẫn đi bằng `mediaUrl` — xem
+                    // [EcVideoDetail.shareUrl] để biết vì sao không đổi cả ba.
+                    final url = live?.shareUrl ?? live?.mediaUrl;
                     if (url == null) {
                       _toast(pageContext, c.l10n.toastVideoNoPlayLink);
                       return;
                     }
+                    // ĐÚNG MỘT chuỗi URL, không chữ nào kèm theo.
+                    //
+                    // Bản trước gắn thêm một dòng "Bằng chứng đóng gói ·
+                    // ZenPack" phía trên link kho riêng. Bỏ đi vì chỗ dán đến
+                    // thường là một ô chỉ nhận URL — thêm chữ là ô đó từ chối
+                    // hoặc nuốt mất nửa chuỗi.
                     _copyText(pageContext, url, c.l10n.assetLinkTitle);
                   },
                   onPlay: () {
@@ -9503,6 +10258,8 @@ GoRouter _buildRouter(
         path: '/queue',
         builder: (c, s) => _QueueRoute(
           queue: queue,
+          repo: repo,
+          player: videoPlayer,
           // No shop resolved yet ⇒ treat as staff and hide the delete
           // affordance; evidence is easier to re-record than to un-delete.
           canDelete: (_selected(selectedShop)?.role ?? 'staff') != 'staff',

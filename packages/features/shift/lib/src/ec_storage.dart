@@ -15,6 +15,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:localization/localization.dart';
 
 /// Kho shop đang dùng. Không cấu hình gì = [system].
@@ -56,6 +57,7 @@ class EcStorageState {
   const EcStorageState({
     this.kind = EcStorageKind.system,
     this.configuredKind,
+    this.configuredKinds = const {},
     this.label = '',
     this.ok = true,
     this.lastError,
@@ -81,6 +83,25 @@ class EcStorageState {
   /// chọn kho khác mà chưa đăng xuất — và lúc ấy chọn lại kho cũ chỉ là bật lại,
   /// không phải cấp quyền từ đầu.
   final EcStorageKind? configuredKind;
+
+  /// MỌI loại kho shop đang giữ tài khoản, kể cả loại đang tắt.
+  ///
+  /// Một shop giữ được cấu hình của cả S3 lẫn Drive cùng lúc, nên câu hỏi "thẻ
+  /// này đã có tài khoản chưa" phải hỏi tập hợp này chứ không hỏi
+  /// [configuredKind] — cái đó chỉ là loại đang dùng (hoặc dùng gần nhất).
+  ///
+  /// Rỗng với bản máy chủ cũ; lúc đó rơi về [configuredKind] một mình.
+  final Set<EcStorageKind> configuredKinds;
+
+  /// Loại kho [k] đã có tài khoản trên máy chủ chưa.
+  bool hasAccountFor(EcStorageKind k) => configuredKinds.isEmpty
+      ? configuredKind == k
+      : configuredKinds.contains(k);
+
+  /// Có tài khoản kho riêng nào không.
+  bool get hasAnyAccount => configuredKinds.isEmpty
+      ? configuredKind != null
+      : configuredKinds.isNotEmpty;
 
   /// Kho riêng đã cắm nhưng đang KHÔNG dùng.
   bool get parked => configuredKind != null && configuredKind != kind;
@@ -130,6 +151,7 @@ class EcStorageScreen extends StatefulWidget {
     this.onSaveS3,
     this.s3ErrorText,
     this.onTestS3,
+    this.s3TestPassed = false,
     this.onCancel,
     this.onDisconnect,
     this.onUseSystem,
@@ -162,7 +184,11 @@ class EcStorageScreen extends StatefulWidget {
   /// Tách khỏi [onConnectDrive] vì đường kia tự chặn khi kho hiện tại đã là
   /// Drive — mà đó đúng là lúc người ta muốn đổi tài khoản.
   final VoidCallback? onSwitchDriveAccount;
-  final VoidCallback? onDisconnect;
+
+  /// Gỡ tài khoản của MỘT loại kho. Nhận loại vì shop giữ được tài khoản của
+  /// cả hai — không nói rõ thì lượt gỡ rơi vào kho đang dùng, tức bấm "Đăng
+  /// xuất Drive" lúc S3 đang bật sẽ xoá mất S3.
+  final ValueChanged<EcStorageKind>? onDisconnect;
 
   /// Về kho hệ thống, GIỮ nguyên cấu hình đã cắm. Đây là việc của nút Lưu khi
   /// người dùng chọn thẻ Cloud Zenpack — LƯU LÀ LƯU, không hỏi lại, không đăng
@@ -170,7 +196,9 @@ class EcStorageScreen extends StatefulWidget {
   final VoidCallback? onUseSystem;
 
   /// Dùng lại kho đã cắm mà chưa đăng xuất. Không mở màn cấp quyền nào.
-  final VoidCallback? onResumeStorage;
+  /// Dùng lại kho ĐÃ CẮM: chỉ bật công tắc, không mở màn cấp quyền nào. Nhận
+  /// loại kho vì shop có thể đang giữ tài khoản của cả hai.
+  final ValueChanged<EcStorageKind>? onResumeStorage;
 
   /// Bấm Lưu khi đang chọn S3: gửi sáu ô của form trong thẻ đi.
   ///
@@ -202,6 +230,14 @@ class EcStorageScreen extends StatefulWidget {
     required String prefix,
   })?
   onTestS3;
+
+  /// Lượt Kiểm tra gần nhất có xanh không. Bên gọi giữ, vì chỉ nó thấy kết quả
+  /// máy chủ trả về.
+  ///
+  /// Nút Lưu của form S3 đợi cờ này: lưu là THAY cái kho đang giữ bằng chứng,
+  /// và một cấu hình sai được lưu thì clip quay sau đó không có chỗ nào nhận —
+  /// người bán chỉ biết khi mở đơn ra tìm video.
+  final bool s3TestPassed;
 
   /// Bấm Huỷ — bên gọi dọn [s3ErrorText] của lượt lưu trước.
   ///
@@ -241,6 +277,40 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// đổi — kho đang dùng là S3 và người dùng vẫn chọn S3.
   bool _editingS3 = false;
 
+  /// Có ô nào bị sửa KỂ TỪ lượt Kiểm tra gần nhất không.
+  ///
+  /// Thử xanh rồi đổi endpoint thì kết quả cũ không còn nói gì về bộ giá trị
+  /// đang nằm trên màn — mở khoá nút Lưu bằng một lượt thử của cấu hình khác
+  /// là đúng cái bẫy mà việc bắt thử trước sinh ra để tránh.
+  bool _editedSinceTest = true;
+
+  /// Sáu ô lúc vừa mở "Đổi cấu hình". `null` = đang cắm lần đầu.
+  ///
+  /// Dùng để trả lời "đã đổi gì chưa": chỉ khi đổi rồi thì nút Kiểm tra mới có
+  /// việc để làm — thử lại y nguyên cấu hình đang chạy là một lượt gọi ra kho
+  /// khách để xác nhận điều đã biết.
+  List<String>? _s3Prefilled;
+
+  /// Lượt Kiểm tra do chính màn này bắn đi và đang chờ máy chủ trả lời.
+  ///
+  /// [didUpdateWidget] đọc "vừa bận xong mà kho không đổi" thành "người dùng
+  /// huỷ giữa chừng" và đóng form lại. Một lượt Kiểm tra XANH khớp đúng mô tả
+  /// đó — nó cố ý KHÔNG đổi kho — nên không tách ra thì thử thành công là form
+  /// đóng sập, mang theo sáu ô vừa gõ. Người dùng thử được đúng một lần, và
+  /// muốn thử lần nữa thì phải mở lại "Đổi cấu hình" rồi gõ lại từ đầu.
+  bool _testing = false;
+
+  /// Form đang khác so với lúc mở ra.
+  bool get _s3Changed {
+    final before = _s3Prefilled;
+    if (before == null) return true;
+    final now = _s3.snapshot;
+    for (var i = 0; i < before.length; i++) {
+      if (before[i] != now[i]) return true;
+    }
+    return false;
+  }
+
   @override
   void dispose() {
     _s3.dispose();
@@ -265,9 +335,17 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     // vừa gõ NGAY LÚC câu lỗi hiện ra — người dùng thấy thẻ đóng lại, không
     // thấy gì khác, và kết luận nút Lưu hỏng. Có lỗi thì form phải ở lại cùng
     // thứ vừa gõ và lý do hỏng.
-    if (oldWidget.busy && !widget.busy && widget.s3ErrorText == null) {
-      _picked = widget.state.kind;
-      _editingS3 = false;
+    if (oldWidget.busy && !widget.busy) {
+      // Lượt Kiểm tra không phải một thao tác bỏ dở: chạy xong thì mọi thứ phải
+      // nằm y nguyên chỗ cũ để người dùng đọc kết quả rồi sửa tiếp.
+      if (_testing) {
+        _testing = false;
+        return;
+      }
+      if (widget.s3ErrorText == null) {
+        _picked = widget.state.kind;
+        _editingS3 = false;
+      }
     }
   }
 
@@ -286,7 +364,7 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   bool _canPick(EcStorageKind kind) {
     final state = widget.state;
     if (kind == EcStorageKind.system) return true;
-    if (state.kind == kind || state.configuredKind == kind) return true;
+    if (state.kind == kind || state.hasAccountFor(kind)) return true;
     return state.byosAllowed;
   }
 
@@ -324,7 +402,12 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     if (!state.canManage ||
         !state.byosAllowed ||
         widget.busy ||
-        state.configuredKind == EcStorageKind.gdrive) {
+        // ĐÃ CÓ tài khoản Drive thì chạm chỉ là chọn thẻ, không mở lại màn cấp
+        // quyền. Hỏi "kho đang dùng có phải Drive không" là sai kể từ khi shop
+        // giữ được tài khoản của cả hai kho: đang dùng S3 mà Drive vẫn còn tài
+        // khoản là chuyện thường, và lúc đó chạm vào Drive lại bị đẩy đi cấp
+        // quyền lần nữa cho một tài khoản đang nằm sẵn trên máy chủ.
+        state.hasAccountFor(EcStorageKind.gdrive)) {
       return;
     }
     final connect = widget.onConnectDrive;
@@ -358,7 +441,12 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// nhận ra mình đã dán khoá nào.
   void _prefillS3() {
     final state = widget.state;
-    if (state.kind != EcStorageKind.s3) return;
+    // Điền theo CẤU HÌNH ĐANG GIỮ, không theo kho đang dùng.
+    //
+    // Hỏi "kho đang dùng có phải S3 không" là bỏ trắng form đúng lúc cần nó
+    // nhất: shop đã cắm S3 rồi tạm về Cloud Zenpack thì bấm "Đổi cấu hình" ra
+    // một form rỗng, và họ phải đi tìm lại endpoint với tên bucket chỉ để sửa
+    // một chữ. Cấu hình đó máy chủ vẫn giữ và vẫn trả về.
     _s3.endpoint.text = state.s3Endpoint;
     _s3.region.text = state.s3Region;
     _s3.bucket.text = state.s3Bucket;
@@ -367,7 +455,11 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
 
   bool get _s3FormOpen =>
       _picked == EcStorageKind.s3 &&
-      (widget.state.kind != EcStorageKind.s3 || _editingS3) &&
+      // Hỏi "S3 ĐÃ CÓ TÀI KHOẢN CHƯA", không hỏi "kho đang dùng có phải S3
+      // không". Shop giữ được tài khoản của cả hai kho, nên đang dùng Drive mà
+      // S3 vẫn còn tài khoản là chuyện thường — chạm vào thẻ S3 lúc đó phải là
+      // "bật lại", không phải "nhập lại từ đầu".
+      (!widget.state.hasAccountFor(EcStorageKind.s3) || _editingS3) &&
       widget.state.canManage &&
       widget.state.byosAllowed &&
       widget.onSaveS3 != null;
@@ -378,7 +470,18 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// endpoint đi chỉ để nhận về một câu lỗi mà chính app đoán được từ trước.
   bool get _canSave {
     if (!_dirty || widget.busy || !widget.state.canManage) return false;
-    return _s3FormOpen ? _s3.ready : true;
+    if (!_s3FormOpen) return true;
+    // Không có nút Kiểm tra thì không có cửa nào để qua — gác lúc đó là khoá
+    // nút Lưu vĩnh viễn.
+    if (widget.onTestS3 == null) return _s3.readyWithStoredKeys;
+    // Đủ sáu ô là CHƯA đủ. Phải có một lượt Kiểm tra xanh trên đúng bộ giá trị
+    // đang nằm trên màn.
+    //
+    // Vì sao bắt buộc: lưu là THAY kho đang giữ bằng chứng. Một cấu hình sai
+    // được lưu thì clip quay sau đó không có chỗ nào nhận, mà người bán chỉ
+    // biết khi mở đơn ra tìm video. Bắt thử trước biến một hỏng-về-sau thành
+    // một câu-lỗi-ngay-bây-giờ, lúc họ còn đang nhìn đúng mấy ô vừa gõ.
+    return _s3.readyWithStoredKeys && widget.s3TestPassed && !_editedSinceTest;
   }
 
   /// Bấm huỷ: trả mọi thứ về đúng trạng thái trước khi người dùng đụng vào.
@@ -391,6 +494,8 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     setState(() {
       _picked = widget.state.kind;
       _editingS3 = false;
+      _editedSinceTest = true;
+      _s3Prefilled = null;
       _s3.clear();
     });
     widget.onCancel?.call();
@@ -403,10 +508,13 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// nằm ở một kho chưa hề được cắm.
   void _save() {
     if (!_dirty) return;
+    // Cùng lý do với nút Kiểm tra: lưu hỏng thì câu lỗi nằm dưới form, và bàn
+    // phím đang che nó.
+    FocusManager.instance.primaryFocus?.unfocus();
     // S3 cắm mới: giá trị đã nằm sẵn trong form, gửi thẳng đi thay vì đẩy người
     // dùng sang một màn nữa để gõ lại đúng sáu ô vừa gõ.
     if (_s3FormOpen) {
-      if (!_s3.ready) return;
+      if (!_s3.readyWithStoredKeys) return;
       widget.onPick?.call(_picked);
       _s3.submit(widget.onSaveS3!);
       return;
@@ -423,15 +531,17 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     // Chọn lại đúng cái kho ĐÃ CẮM mà đang không dùng: chỉ bật lại, không mở
     // màn cấp quyền nào. Đây là điểm của cả tính năng — tài khoản vẫn nằm trên
     // máy chủ, nên "dùng lại" phải rẻ như bật một công tắc.
-    if (kind != EcStorageKind.system && kind == state.configuredKind) {
-      return widget.onResumeStorage;
+    if (kind != EcStorageKind.system && state.hasAccountFor(kind)) {
+      // Bật đúng LOẠI vừa chọn. Không truyền loại thì máy chủ bật lại cái vừa
+      // dùng gần nhất — với shop đã cắm cả hai, đó có thể là cái người dùng
+      // vừa bỏ chọn.
+      return () => widget.onResumeStorage?.call(kind);
     }
     return switch (kind) {
       // Về kho hệ thống mà GIỮ tài khoản đã cắm. Không phải `onDisconnect`:
       // Lưu là lưu, không hỏi lại và không cắt đứt tài khoản nào. Muốn cắt đứt
       // thì đã có nút đăng xuất riêng trong thẻ.
-      EcStorageKind.system =>
-        state.configuredKind != null ? widget.onUseSystem : null,
+      EcStorageKind.system => state.hasAnyAccount ? widget.onUseSystem : null,
       EcStorageKind.s3 => state.byosAllowed ? widget.onConnectS3 : null,
       // Drive chưa cắm bao giờ thì chạm là chạy luôn (xem [_startDrive]), nên
       // tới nút Lưu không còn việc gì — bấm nữa là mở hộp thoại Google lần hai.
@@ -469,9 +579,15 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
       // nên chủ shop đang ở Cloud Zenpack phải chạm một lần để đọc được tài
       // khoản Drive, rồi chạm thêm lần nữa mới ra nút. Mà "đang cắm tài khoản
       // nào" chính là câu người ta vào màn này để hỏi, nên nó phải trả lời sẵn.
-      if (state.kind == kind || state.configuredKind == kind) {
+      if (state.kind == kind || state.hasAccountFor(kind)) {
         return _StatusDetail(
           state: state,
+          // Bảng này nằm TRONG thẻ của một loại kho, nên nó phải nói bằng chữ
+          // của CHÍNH loại đó. Suy từ "kho đang dùng" là sai kể từ khi một shop
+          // giữ được tài khoản của cả hai: đang dùng S3 thì thẻ Drive mất hàng
+          // email, mất nút đổi tài khoản, và nút "Đăng xuất Drive" đổi thành
+          // "Gỡ kho".
+          kind: kind,
           busy: widget.busy,
           // Hai nút "đổi tài khoản" và "đăng xuất" của Drive chỉ hiện khi thẻ
           // Drive ĐANG ĐƯỢC CHỌN.
@@ -489,8 +605,15 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
           onSwitchDriveAccount: widget.onSwitchDriveAccount,
           onEdit: kind == EcStorageKind.s3
               ? () => setState(() {
+                  _picked = EcStorageKind.s3;
+                  // Bấm nút này là đang nói "tôi muốn dùng S3 với cấu hình
+                  // mới", nên dấu tích phải sang theo. Thiếu dòng này thì với
+                  // shop đang ở kho khác, [_s3FormOpen] vẫn false và cái nút
+                  // bấm vào không có gì xảy ra — một nút chết nằm giữa màn.
                   _editingS3 = true;
+                  _editedSinceTest = true;
                   _prefillS3();
+                  _s3Prefilled = _s3.snapshot;
                 })
               : null,
         );
@@ -510,8 +633,16 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
       return _S3Form(
         fields: _s3,
         errorText: widget.s3ErrorText,
+        // Lượt thử xanh phải để lại một câu ĐỌC ĐƯỢC ngay cạnh mấy ô vừa gõ:
+        // toast trôi mất sau vài giây, mà "bộ khoá này có kết nối được không"
+        // là thứ người dùng còn phải nhìn trong lúc quyết định bấm Lưu. Sửa
+        // một ký tự là câu này biến mất — nó nói về bộ giá trị ĐÃ THỬ, không
+        // nói về bộ đang nằm trên màn.
+        okText: widget.s3TestPassed && !_editedSinceTest
+            ? context.l10n.storageValidateOk
+            : null,
         keyHint: widget.state.s3KeyMasked,
-        onChanged: () => setState(() {}),
+        onChanged: () => setState(() => _editedSinceTest = true),
       );
     }
     final lines = _previewLines(kind);
@@ -583,14 +714,37 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                     onTap: _cancel,
                   ),
                   const SizedBox(width: 8),
-                  // Nút Kiểm tra chỉ có nghĩa khi form S3 đang mở, nên chỉ hiện
-                  // ở đó — giống bản web. Nó thử cấu hình mà KHÔNG lưu: dò
-                  // quyền bên nhà cung cấp thường mất vài lượt, và mỗi lượt thử
-                  // không được phép thay cái kho đang chạy.
-                  if (_s3FormOpen && widget.onTestS3 != null) ...[
+                  // Kiểm tra là CỬA duy nhất dẫn tới nút Lưu, nên nó hiện
+                  // suốt lúc form S3 mở — cả cắm lần đầu lẫn đổi cấu hình.
+                  //
+                  // Nó thử cấu hình mà KHÔNG lưu: dò quyền bên nhà cung cấp
+                  // thường mất vài lượt, và mỗi lượt thử không được phép thay
+                  // cái kho đang chạy.
+                  // Đổi cấu hình mà chưa đổi gì thì không có gì để thử: một
+                  // lượt gọi ra kho khách chỉ để xác nhận điều đã biết.
+                  //
+                  // TRỪ khi kho đang lỗi. Lúc đó "xác nhận điều đã biết" chính
+                  // là việc cần làm: người dùng vừa sửa quyền bên phía nhà cung
+                  // cấp và muốn biết đã ăn chưa, mà cấu hình thì không có gì
+                  // phải đổi. Ẩn nút đi là bắt họ gõ bừa một ký tự rồi xoá đi
+                  // để nút hiện ra — hoặc chịu thua.
+                  if (_s3FormOpen &&
+                      widget.onTestS3 != null &&
+                      (_s3Changed || !widget.state.ok)) ...[
                     _TestButton(
-                      enabled: _s3.ready && !widget.busy,
-                      onTap: () => _s3.submit(widget.onTestS3!),
+                      enabled: _s3.readyWithStoredKeys && !widget.busy,
+                      onTap: () {
+                        // Thu bàn phím trước đã: câu trả lời của lượt thử vẽ
+                        // NGAY DƯỚI sáu ô, mà bàn phím thì che đúng chỗ đó —
+                        // người dùng bấm Kiểm tra rồi ngồi nhìn một màn hình
+                        // không có gì đổi.
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        setState(() {
+                          _editedSinceTest = false;
+                          _testing = true;
+                        });
+                        _s3.submit(widget.onTestS3!);
+                      },
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -658,7 +812,14 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                     ),
                     const SizedBox(height: 10),
                     _StorageOption(
-                      icon: LucideIcons.hardDrive,
+                      // Logo Drive thật, không dùng chung ổ cứng với thẻ S3
+                      // ngay trên: hai thẻ cùng một hình thì mắt phải đọc chữ
+                      // mới phân biệt được, mà chữ là thứ người ta lướt qua.
+                      iconBuilder: (ink) => FaIcon(
+                        FontAwesomeIcons.googleDrive,
+                        size: 20,
+                        color: ink,
+                      ),
                       title: l10n.storageDriveTitle,
                       // Không có dòng mô tả: thẻ này mở ra là tài khoản đang
                       // cắm, và đó mới là thứ người ta vào đây để đọc.
@@ -694,7 +855,6 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
 /// liệu thấy có tính năng rồi đi tìm mãi không ra.
 class _StorageOption extends StatelessWidget {
   const _StorageOption({
-    required this.icon,
     required this.title,
     required this.description,
     required this.selected,
@@ -703,9 +863,21 @@ class _StorageOption extends StatelessWidget {
     this.lockNote,
     this.detail,
     this.onTap,
-  });
+    this.icon,
+    this.iconBuilder,
+  }) : assert(
+         icon != null || iconBuilder != null,
+         'thẻ kho phải có một hình để nhận ra nó',
+       );
 
-  final IconData icon;
+  final IconData? icon;
+
+  /// Hình vẽ tay khi bộ icon chung không có cái cần dùng — logo Google Drive
+  /// nằm ở bộ thương hiệu của Font Awesome, và bộ đó dùng widget riêng
+  /// (`FaIcon`) chứ không cắm được vào `Icon`.
+  ///
+  /// Nhận màu chữ của thẻ để hình mờ đi cùng lúc với chữ khi thẻ bị khoá.
+  final Widget Function(Color ink)? iconBuilder;
   final String title;
 
   /// Dòng mô tả dưới tên kho. `null` = thẻ chỉ có tên, và phần mở ra bên dưới
@@ -750,7 +922,7 @@ class _StorageOption extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: Icon(icon, size: 20, color: ink),
+            child: iconBuilder?.call(ink) ?? Icon(icon, size: 20, color: ink),
           ),
           Expanded(
             child: Column(
@@ -866,6 +1038,33 @@ class _S3Controllers {
       keyId.text.trim().isNotEmpty &&
       secret.text.trim().isNotEmpty;
 
+  /// Đủ để GỬI ĐI khi kho này đã có khoá lưu trên máy chủ.
+  ///
+  /// Khoá bí mật không bao giờ rời máy chủ, nên form "đổi cấu hình" mở ra với
+  /// hai ô khoá trống. Đòi gõ lại là bắt người bán đi tìm lại cặp khoá trong
+  /// bảng điều khiển của nhà cung cấp chỉ để sửa một chữ trong tên bucket —
+  /// máy chủ tự dùng lại khoá cũ khi hai ô này trống.
+  ///
+  /// Gõ MỘT trong hai thì phải gõ nốt: nửa cặp khoá không mở được kho nào.
+  bool get readyWithStoredKeys {
+    if (endpoint.text.trim().isEmpty || bucket.text.trim().isEmpty) {
+      return false;
+    }
+    final hasId = keyId.text.trim().isNotEmpty;
+    final hasSecret = secret.text.trim().isNotEmpty;
+    return hasId == hasSecret;
+  }
+
+  /// Ảnh chụp sáu ô, để so xem người dùng đã đổi gì chưa.
+  List<String> get snapshot => [
+    endpoint.text,
+    region.text,
+    bucket.text,
+    prefix.text,
+    keyId.text,
+    secret.text,
+  ];
+
   /// Gọi [sink] với giá trị đã chuẩn hoá. Region để trống quay về `auto` —
   /// nhiều nhà cung cấp không có khái niệm region và bỏ trống là hợp lệ, nhưng
   /// SDK phía máy chủ vẫn cần một chuỗi.
@@ -881,8 +1080,13 @@ class _S3Controllers {
     sink,
   ) {
     final trimmedRegion = region.text.trim();
+    // Ghi NGƯỢC lại vào ô: thứ gửi đi phải đúng bằng thứ đang hiện trên màn.
+    // Chuẩn hoá ngầm rồi để ô giữ nguyên chữ cũ là lúc máy chủ từ chối, người
+    // dùng soi lại ô và không hiểu vì sao cái mình đang nhìn lại sai.
+    final cleanEndpoint = normalizeS3Endpoint(endpoint.text);
+    if (cleanEndpoint != endpoint.text) endpoint.text = cleanEndpoint;
     sink(
-      endpoint: endpoint.text.trim(),
+      endpoint: cleanEndpoint,
       bucket: bucket.text.trim(),
       accessKeyId: keyId.text.trim(),
       secretAccessKey: secret.text.trim(),
@@ -910,11 +1114,32 @@ class _S3Controllers {
 ///
 /// Không có nút gửi: nơi dùng nó tự quyết định nút nằm ở đâu — trong thẻ thì nút
 /// Lưu ở đầu màn, ở màn riêng thì nút nằm cuối form.
+/// Dọn ô Endpoint về đúng dạng máy chủ đòi: một URL đầy đủ, không đuôi `/`.
+///
+/// Gõ thiếu `https://` là cái sai phổ biến nhất ở form này — người ta chép tên
+/// miền từ bảng điều khiển của nhà cung cấp, mà bảng đó hiện tên miền trần. Máy
+/// chủ từ chối ngay ở khâu kiểm dữ liệu (`invalid_request`), chưa hề chạm tới
+/// kho, nên câu lỗi không nói được gì về kho cả.
+///
+/// KHÔNG tự nâng `http://` thành `https://`. Người gõ `http` là đang nói một
+/// điều cụ thể, và máy chủ có sẵn câu giải thích vì sao không nhận — sửa lén ý
+/// định của họ thì lần sau họ vẫn không biết luật đó tồn tại.
+String normalizeS3Endpoint(String raw) {
+  var text = raw.trim();
+  if (text.isEmpty) return text;
+  while (text.endsWith('/')) {
+    text = text.substring(0, text.length - 1);
+  }
+  if (!text.contains('://')) text = 'https://$text';
+  return text;
+}
+
 class _S3Form extends StatelessWidget {
   const _S3Form({
     required this.fields,
     required this.onChanged,
     this.errorText,
+    this.okText,
     this.keyHint = '',
   });
 
@@ -926,6 +1151,9 @@ class _S3Form extends StatelessWidget {
 
   /// Câu `hint` nguyên văn từ máy chủ: thiếu quyền gì, sửa thế nào.
   final String? errorText;
+
+  /// Câu báo lượt thử ĐÃ XANH, cho đúng bộ giá trị đang hiện trên màn.
+  final String? okText;
 
   /// Đuôi access key đang lưu (`…abcd`), làm chữ mờ cho ô khoá.
   final String keyHint;
@@ -947,12 +1175,17 @@ class _S3Form extends StatelessWidget {
             controller: fields.endpoint,
             placeholder: 'https://s3.ap-southeast-1.amazonaws.com',
             keyboardType: TextInputType.url,
+            // Ô này là chỗ sai nhiều nhất: gõ thiếu `https://` thì máy chủ từ
+            // chối ngay ở khâu kiểm dữ liệu, chưa hề chạm tới kho — và chữ mờ
+            // gợi ý thì biến mất ngay khi người ta bắt đầu gõ.
+            hint: l10n.storageFieldEndpointHint,
             onChanged: onChanged,
           ),
           _Field(
             label: l10n.storageFieldRegion,
             controller: fields.region,
             placeholder: 'auto',
+            onChanged: onChanged,
           ),
           _Field(
             label: l10n.storageFieldBucket,
@@ -965,6 +1198,7 @@ class _S3Form extends StatelessWidget {
             controller: fields.prefix,
             placeholder: 'evidencecam',
             hint: l10n.storageFieldPrefixHint,
+            onChanged: onChanged,
           ),
           _Field(
             label: l10n.storageFieldAccessKey,
@@ -984,6 +1218,9 @@ class _S3Form extends StatelessWidget {
           if (errorText?.isNotEmpty ?? false) ...[
             const SizedBox(height: 8),
             _NoteBox(text: errorText!, danger: true),
+          ] else if (okText?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 8),
+            _NoteBox(text: okText!),
           ],
         ],
       ),
@@ -1022,6 +1259,7 @@ class _PickPreview extends StatelessWidget {
 class _StatusDetail extends StatelessWidget {
   const _StatusDetail({
     required this.state,
+    required this.kind,
     required this.busy,
     this.actionsOpen = true,
     this.onDisconnect,
@@ -1035,13 +1273,19 @@ class _StatusDetail extends StatelessWidget {
   /// Đã lộ phần thao tác (đổi tài khoản, đăng xuất) chưa. `false` = bảng này
   /// chỉ để đọc.
   final bool actionsOpen;
-  final VoidCallback? onDisconnect;
+
+  /// Gỡ tài khoản của [kind] — loại kho của chính thẻ này, không phải loại
+  /// đang được dùng.
+  final ValueChanged<EcStorageKind>? onDisconnect;
 
   /// Đổi sang tài khoản Google khác. Chỉ Drive; `null` = không hiện nút.
   final VoidCallback? onSwitchDriveAccount;
 
   /// Sửa cấu hình — chỉ S3. Drive không có gì để sửa ngoài cắm lại.
   final VoidCallback? onEdit;
+
+  /// Loại kho của THẺ chứa bảng này — không phải loại kho đang được dùng.
+  final EcStorageKind kind;
 
   /// `dd/MM/yyyy HH:mm` theo giờ máy. Tự dựng thay vì kéo `intl` vào package
   /// này: đúng một chuỗi cần định dạng, và nó không đổi theo ngôn ngữ.
@@ -1055,8 +1299,8 @@ class _StatusDetail extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final health = state.health;
-    final isDrive =
-        (state.configuredKind ?? state.kind) == EcStorageKind.gdrive;
+    final isDrive = kind == EcStorageKind.gdrive;
+    final email = state.driveEmail ?? '';
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Column(
@@ -1135,7 +1379,19 @@ class _StatusDetail extends StatelessWidget {
               color: PenColors.mut,
             ),
           ],
-          if (state.driveEmail?.isNotEmpty ?? false) ...[
+          // Thẻ Drive LUÔN nói ra hàng tài khoản, kể cả khi chưa đọc được
+          // email — nó là dòng duy nhất thẻ này có. Và CHỈ thẻ Drive: hỏi theo
+          // `driveEmail` có rỗng hay không là gắn hàng "Tài khoản Drive" vào cả
+          // thẻ S3, vì một shop giữ được tài khoản của cả hai kho cùng lúc.
+          //
+          // Bảng tình trạng chỉ vẽ cho kho khác Drive, và hai nút thao tác chỉ
+          // vẽ khi thẻ đang được chọn. Treo hàng email vào một chuỗi rỗng nữa
+          // thì cả ba điều kiện cùng sai là chuyện thường ngày — đang dùng S3,
+          // tài khoản Drive nằm chờ, chưa ai chạm vào thẻ — và `Column` này
+          // rỗng. Thẻ thì đã kẻ đường ngăn từ lúc thấy `detail != null`, nên
+          // người dùng nhận đúng chữ "Google Drive" trên một đường kẻ treo lơ
+          // lửng, không một lời giải thích.
+          if (isDrive) ...[
             const SizedBox(height: 8),
             PenText(l10n.storageDriveAccount, size: 12, color: PenColors.mut),
             const SizedBox(height: 2),
@@ -1146,9 +1402,12 @@ class _StatusDetail extends StatelessWidget {
               children: [
                 Expanded(
                   child: PenText(
-                    state.driveEmail!,
+                    // Chưa đọc được thì NÓI là chưa đọc được. Bỏ trống hàng
+                    // này đọc ra thành "chưa cắm tài khoản nào", mà đó là câu
+                    // sai: kho vẫn đang nhận video bằng một tài khoản có thật.
+                    email.isEmpty ? l10n.storageDriveAccountUnknown : email,
                     size: 13,
-                    color: PenColors.ink,
+                    color: email.isEmpty ? PenColors.mut : PenColors.ink,
                     softWrap: false,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1195,11 +1454,8 @@ class _StatusDetail extends StatelessWidget {
               // được cả khi tài khoản Drive đang nằm chờ, và lúc đó `kind` là
               // `system` — nút sẽ hiện "Thôi dùng kho riêng" cho một thao tác
               // thật ra là gỡ tài khoản Google.
-              label:
-                  (state.configuredKind ?? state.kind) == EcStorageKind.gdrive
-                  ? l10n.storageDriveLogout
-                  : l10n.storageDisconnect,
-              onPressed: busy ? null : onDisconnect,
+              label: isDrive ? l10n.storageDriveLogout : l10n.storageDisconnect,
+              onPressed: busy ? null : () => onDisconnect?.call(kind),
             ),
           ],
         ],
@@ -1347,7 +1603,7 @@ class _EcStorageConnectScreenState extends State<EcStorageConnectScreen> {
   }
 }
 
-class _Field extends StatelessWidget {
+class _Field extends StatefulWidget {
   const _Field({
     required this.label,
     required this.controller,
@@ -1367,6 +1623,20 @@ class _Field extends StatelessWidget {
   final VoidCallback? onChanged;
 
   @override
+  State<_Field> createState() => _FieldState();
+}
+
+class _FieldState extends State<_Field> {
+  /// Ô khoá đang che hay đang hiện. Chỉ đổi thứ MẮT nhìn thấy — thứ gửi đi vẫn
+  /// là nguyên chuỗi trong controller.
+  ///
+  /// Khoá bí mật dài mấy chục ký tự và luôn được dán từ bảng điều khiển của nhà
+  /// cung cấp. Dán hụt một ký tự thì máy chủ trả về `SignatureDoesNotMatch` —
+  /// câu đó không chỉ ra ô nào sai, và một hàng chấm tròn thì không soi lại
+  /// được. Con mắt là đường DUY NHẤT để tự kiểm tra thứ mình vừa dán.
+  late bool _obscure = widget.obscure;
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1374,17 +1644,17 @@ class _Field extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PenText(
-            label,
+            widget.label,
             size: 13,
             color: PenColors.mut,
             weight: FontWeight.w600,
           ),
           const SizedBox(height: 6),
           CupertinoTextField(
-            controller: controller,
-            placeholder: placeholder,
-            obscureText: obscure,
-            keyboardType: keyboardType,
+            controller: widget.controller,
+            placeholder: widget.placeholder,
+            obscureText: _obscure,
+            keyboardType: widget.keyboardType,
             // Endpoint và khoá phân biệt hoa thường; bàn phím tự viết hoa chữ
             // đầu là hỏng ngay ô đầu tiên và lỗi trả về không nói được vì sao.
             autocorrect: false,
@@ -1397,11 +1667,29 @@ class _Field extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: PenColors.soft),
             ),
-            onChanged: (_) => onChanged?.call(),
+            onChanged: (_) => widget.onChanged?.call(),
+            suffix: widget.obscure
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: EcTap(
+                      onTap: () => setState(() => _obscure = !_obscure),
+                      // Hình nói TRẠNG THÁI ĐANG CÓ, không nói việc sắp làm:
+                      // mắt gạch = chữ đang bị che, mắt mở = chữ đang hiện.
+                      // Lối kia (mắt mở = "bấm để hiện") đọc ngược với thứ
+                      // đang thấy trên màn, và ở một ô toàn chấm tròn thì
+                      // không có gì để đối chiếu cho ra lẽ.
+                      child: Icon(
+                        _obscure ? LucideIcons.eyeOff : LucideIcons.eye,
+                        size: 18,
+                        color: PenColors.mut,
+                      ),
+                    ),
+                  )
+                : null,
           ),
-          if (hint != null) ...[
+          if (widget.hint != null) ...[
             const SizedBox(height: 4),
-            PenText(hint!, size: 12, color: PenColors.mut),
+            PenText(widget.hint!, size: 12, color: PenColors.mut),
           ],
         ],
       ),

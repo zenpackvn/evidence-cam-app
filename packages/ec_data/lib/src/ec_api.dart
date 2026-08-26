@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:network/network.dart' show Dio, Headers, Options, Response;
 
+import 'ec_auth.dart';
 import 'ec_models.dart';
 
 /// Typed client for the EvidenceCam Workers API. Paths mirror
@@ -15,12 +16,15 @@ import 'ec_models.dart';
 String _avatarContentTypeOf(String path) {
   final lower = path.toLowerCase();
   if (lower.endsWith('.png')) return 'image/png';
-  if (lower.endsWith('.heic')) return 'image/heic';
   if (lower.endsWith('.webp')) return 'image/webp';
+  // KHÔNG khai `image/heic`: máy chủ chỉ nhận jpeg/png/webp và trả 400
+  // `unsupported_image_type`. Khai một kiểu máy chủ từ chối là tự hứa một thứ
+  // không có thật; rơi về jpeg thì ít nhất phần lớn ảnh iOS đi lọt, vì bước
+  // thu nhỏ lúc chọn đã chuyển chúng sang JPEG.
   return 'image/jpeg';
 }
 
-class EcApi {
+class EcApi implements EcAuthMailApi {
   const EcApi(this._dio);
 
   final Dio _dio;
@@ -334,13 +338,86 @@ class EcApi {
   ///
   /// Đây là "chọn kho khác": shop về kho hệ thống, tài khoản đã cắm nằm yên.
   /// Xoá hẳn là [deleteStorage] — hai việc khác nhau, đừng gộp.
-  Future<void> setStorageActive(String shopId, {required bool active}) =>
-      _dio.patch<void>(
-        '/api/shops/$shopId/storage/active',
-        data: {'active': active},
+  /// [kind] là loại kho muốn BẬT. Shop giữ được tài khoản của cả S3 lẫn Drive,
+  /// nên khi bật phải nói rõ bật cái nào — bỏ trống thì máy chủ bật lại cái vừa
+  /// dùng gần nhất, có thể chính là cái người dùng vừa bỏ chọn. Không có nghĩa
+  /// khi tắt: tắt là tắt hết, shop về kho hệ thống.
+  Future<void> setStorageActive(
+    String shopId, {
+    required bool active,
+    StorageKind? kind,
+  }) => _dio.patch<void>(
+    '/api/shops/$shopId/storage/active',
+    data: {
+      'active': active,
+      if (active && kind != null && kind != StorageKind.system)
+        'kind': kind.name,
+    },
+  );
+
+  /// [kind] là loại kho cần gỡ. Bỏ trống thì máy chủ gỡ kho đang dùng — tài
+  /// khoản của loại kia nằm nguyên, đó là điểm của việc tách theo loại.
+  Future<void> deleteStorage(String shopId, {StorageKind? kind}) =>
+      _dio.delete<void>(
+        '/api/shops/$shopId/storage',
+        queryParameters: {
+          if (kind != null && kind != StorageKind.system) 'kind': kind.name,
+        },
       );
-  Future<void> deleteStorage(String shopId) =>
-      _dio.delete<void>('/api/shops/$shopId/storage');
+
+  /// Mail xác minh địa chỉ, do MÁY CHỦ MÌNH gửi.
+  ///
+  /// Firebase đã khoá phần thân của mẫu xác thực trong Console, nên để nó gửi là
+  /// gửi chữ mẫu của Google — và người dùng app sẽ nhận một lá thư khác hẳn thứ
+  /// người dùng web nhận. Tuyến này lấy link từ chính Firebase rồi bọc vào mẫu
+  /// đã duyệt của ZenPack.
+  ///
+  /// Địa chỉ lấy từ token, không gửi lên: nhận từ thân request là cho người ta
+  /// tự chọn nạn nhân.
+  @override
+  Future<void> sendVerifyEmail() =>
+      _dio.post<void>('/api/auth/verify-email');
+
+  /// Mail đặt lại mật khẩu. KHÔNG cần đăng nhập.
+  ///
+  /// Máy chủ luôn trả `{sent:true}` kể cả khi địa chỉ chưa có tài khoản — trả
+  /// lời khác nhau sẽ biến tuyến công khai này thành máy dò xem ai có tài khoản.
+  @override
+  Future<void> sendPasswordReset(String email) =>
+      _dio.post<void>('/auth/password-reset', data: {'email': email});
+
+  /// Link ĐĂNG NHẬP bằng Google để mở trong WebView của chính app, hoặc `null`
+  /// khi máy chủ chưa cấu hình đường này.
+  ///
+  /// Cùng khuôn với [gdriveAuthUrl] — mở trang của Google trong app, chặn lượt
+  /// chuyển hướng cuối để lấy kết quả — nhưng là một luồng RIÊNG: khác
+  /// `redirect_uri`, khác scope, và trả về một vé đăng nhập chứ không cắm kho
+  /// nào cả. Không lời gọi nào ở đây chạm vào Drive.
+  ///
+  /// `null` (máy chủ trả 503) là câu trả lời QUAN TRỌNG: bên gọi phải giữ
+  /// nguyên hộp thoại Google gốc thay vì mở một WebView chắc chắn hỏng. Nhờ nó,
+  /// bản app này cài lên một máy chủ chưa deploy tuyến kia vẫn chạy y như cũ.
+  Future<String?> googleLoginUrl() async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/auth/google/url',
+      options: Options(validateStatus: (code) => code == 200 || code == 503),
+    );
+    if (res.statusCode == 503) return null;
+    return res.data!['url']! as String;
+  }
+
+  /// Vé từ lượt chuyển hướng cuối → custom token của Firebase.
+  ///
+  /// POST chứ không GET, và vé nằm trong THÂN: vé không được rơi vào lịch sử
+  /// WebView hay log truy cập. Hạn của nó là 2 phút, nên gọi ngay khi WebView
+  /// đóng chứ đừng giữ lại.
+  Future<String> googleLoginSession(String ticket) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/auth/google/session',
+      data: {'ticket': ticket},
+    );
+    return res.data!['token']! as String;
+  }
 
   /// Cắm Drive bằng mã uỷ quyền lấy từ hộp thoại Google của hệ điều hành.
   ///
@@ -644,15 +721,21 @@ class EcApi {
   /// R2 rồi trả account có `avatar_url` mới. Không có bước presign nào cả —
   /// `POST /api/account/avatar/presign` mà bản trước gọi không tồn tại, nên
   /// mọi lần đổi ảnh trên app ăn 404 và không bao giờ tới máy chủ.
+  /// Gửi thẳng `Uint8List`, KHÔNG bọc trong `Stream`.
+  ///
+  /// `Stream.fromIterable` chỉ nghe được MỘT lần. `RetryInterceptor` thử lại
+  /// bằng chính `RequestOptions` cũ, nên lượt thử thứ hai đọc lại một luồng đã
+  /// tiêu thụ và chết với `Bad state: Stream has already been listened to` —
+  /// tức một lỗi mạng tạm thời (429/5xx) biến thành lỗi vĩnh viễn, và ảnh đại
+  /// diện kẹt lại trên máy thay vì lên tài khoản.
+  ///
+  /// Dio dựng lại luồng gửi từ `Uint8List` ở MỖI lượt fetch, và tự đặt
+  /// `Content-Length` — nên không cần khai tay header đó nữa.
   Future<AccountDto> uploadAvatar(File file) async {
-    final bytes = await file.readAsBytes();
     final res = await _dio.put<Map<String, dynamic>>(
       '/api/me/avatar',
-      data: Stream.fromIterable([bytes]),
-      options: Options(
-        headers: {Headers.contentLengthHeader: bytes.length},
-        contentType: _avatarContentTypeOf(file.path),
-      ),
+      data: await file.readAsBytes(),
+      options: Options(contentType: _avatarContentTypeOf(file.path)),
     );
     return AccountDto.fromJson(res.data!);
   }

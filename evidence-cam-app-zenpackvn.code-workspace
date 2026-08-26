@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../evidence-cam-backend"
+		},
+		{
+			"path": "../evidence-cam-web"
+		}
+	],
+	"settings": {}
+}

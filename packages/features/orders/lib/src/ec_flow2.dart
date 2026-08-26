@@ -51,6 +51,8 @@ class EcTimelineVideo {
     this.device,
     this.uploadStatus,
     this.mediaUrl,
+    this.shareUrl,
+    this.storage,
     this.localPath,
     this.thumbUrl,
     this.type = EcEvidenceType.video,
@@ -87,6 +89,12 @@ class EcTimelineVideo {
   final String? device;
   final String? uploadStatus;
   final String? mediaUrl;
+
+  /// Trang tệp trên kho Drive của shop. Xem [EcVideoDetail.shareUrl].
+  final String? shareUrl;
+
+  /// Tên kho đang giữ clip. Xem [EcVideoDetail.storage].
+  final String? storage;
 
   /// Đường dẫn bản tạm còn trên máy. Xem [EcVideoDetail.localPath].
   final String? localPath;
@@ -141,6 +149,8 @@ class EcVideoDetail {
     required this.uploadStatus,
     this.fileSize,
     this.mediaUrl,
+    this.shareUrl,
+    this.storage,
     this.localPath,
     this.type = EcEvidenceType.video,
     this.capturedAtMs,
@@ -185,6 +195,31 @@ class EcVideoDetail {
   /// Public, authenticated-safe media URL exposed by the API for playback and
   /// sharing once upload is complete.
   final String? mediaUrl;
+
+  /// Trang tệp trên Google Drive của shop, khi shop cắm kho Drive.
+  ///
+  /// Đây là thứ nút "Sao chép link" đưa ra khi có: người bán mở lên thấy clip
+  /// nằm đúng trong kho Drive của chính mình, và gửi đi thì bên nhận thấy một
+  /// link Drive quen thuộc chứ không phải một tên miền lạ.
+  ///
+  /// Kho S3 riêng cũng có chuỗi của nó: đối tượng trên chính kho của shop.
+  /// Thiếu nó thì nút Sao chép link của shop S3 chép ra đúng dáng link của shop
+  /// dùng kho hệ thống — vì `mediaUrl` của mọi kho riêng đều là đường vòng có
+  /// vé qua máy chủ.
+  ///
+  /// KHÔNG dùng cho Phát / Tải về / Cắt đoạn: với Drive chuỗi này trỏ tới một
+  /// TRANG WEB, không phải tới byte của clip — trình phát cắm vào chỉ nhận
+  /// HTML. Ba đường đó vẫn đọc [mediaUrl]. `null` với kho hệ thống, và null khi
+  /// kho S3 chặn mở công khai.
+  final String? shareUrl;
+
+  /// Tên kho đang GIỮ clip này, đã dịch sẵn — "Cloud ZenPack", "Google Drive",
+  /// "Kho riêng (S3)".
+  ///
+  /// Hiện theo TỪNG clip chứ không theo shop: đổi kho không kéo clip cũ đi
+  /// theo, nên một đơn có thể có clip nằm ở hai kho khác nhau, và người bán
+  /// cần biết đúng clip nào đang nằm ở đâu.
+  final String? storage;
 
   /// Bản clip còn nằm trên máy này, giữ lại trong đúng khoảng máy chủ còn đóng
   /// dấu. Cho người bán xem lại NGAY thay vì ngồi nhìn "đang đóng dấu".
@@ -540,13 +575,35 @@ class EcVideoDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
+            // Thời lượng nằm RIÊNG, không nối chuỗi với tên loại.
+            //
+            // Ô này rộng tối đa 170. Nối `'$title · $duration'` thành một chuỗi
+            // rồi cắt bằng ellipsis thì thứ bị cắt luôn là phần ĐUÔI — tức là
+            // đúng con số thời lượng. Với loại tên ngắn ("Đóng hàng") thì vừa
+            // nên không ai thấy; với "Đơn vị vận chuyển" thì clip nào cũng mất
+            // sạch thời lượng, và nhìn như app quên ghi.
+            //
+            // Tách làm hai: tên loại co lại, thời lượng luôn được vẽ.
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 170),
-              child: PenText(
-                '${video.title} · ${video.duration}',
-                size: 16,
-                color: PenColors.mut,
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: PenText(
+                      video.title,
+                      size: 16,
+                      color: PenColors.mut,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  PenText(
+                    ' · ${video.duration}',
+                    size: 16,
+                    color: PenColors.mut,
+                  ),
+                ],
               ),
             ),
           ],
@@ -565,6 +622,13 @@ class EcVideoDetailScreen extends StatelessWidget {
         ],
         const _EcDetailDivider(),
         _EcDetailInfoRow(label: l10n.detailDevice, value: video.device),
+        // Kho nào đang giữ CLIP NÀY. Đổi kho không kéo clip cũ đi theo, nên
+        // một đơn có thể có clip nằm ở hai kho — hỏi "clip này nằm ở đâu" mà
+        // phải mở màn Cài đặt kho ra đoán là câu trả lời sai chỗ.
+        if (video.storage != null) ...[
+          const _EcDetailDivider(),
+          _EcDetailInfoRow(label: l10n.detailStorage, value: video.storage!),
+        ],
         const _EcDetailDivider(),
         // MỘT hàng cho cả hai giai đoạn, không phải hai hàng chồng nhau.
         //

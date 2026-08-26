@@ -11,7 +11,7 @@ import 'dart:io';
 import 'package:app_ui/app_ui.dart';
 import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart'
-    show CupertinoPageScaffold, CupertinoTextField;
+    show CupertinoActivityIndicator, CupertinoPageScaffold, CupertinoTextField;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -350,17 +350,26 @@ class EcEditProfileScreen extends StatelessWidget {
           bottom: false,
           child: Column(
             children: [
+              // Tiêu đề và mũi tên NGOÀI vùng cuộn, sát góc trên bên trái.
+              //
+              // Trước đây chúng nằm trong `SingleChildScrollView` và thụt vào
+              // 26/28 — nên vừa xa góc, vừa TRÔI MẤT khi cuộn xuống. Màn này có
+              // form dài hơn một màn hình, và người đang gõ ở ô cuối không còn
+              // thấy đường lui nào.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 2, 14, 0),
+                child: _SimpleHeader(
+                  title: context.l10n.accountInfoTitle,
+                  onBack: onBack,
+                ),
+              ),
               Expanded(
                 child: SingleChildScrollView(
                   // Design `Body`: padding [28, 26, 0, 26].
-                  padding: const EdgeInsets.fromLTRB(26, 28, 26, 0),
+                  padding: const EdgeInsets.fromLTRB(26, 18, 26, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _SimpleHeader(
-                        title: context.l10n.accountInfoTitle,
-                        onBack: onBack,
-                      ),
                       Center(
                         child: _AvatarPicker(
                           avatarPath: avatarPath,
@@ -2006,7 +2015,23 @@ Widget? _avatarImage(String? path, {required double size}) {
       child: Image.network(
         path,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        // Hỏng thì trả `null` cho bên gọi để nó vẽ icon người mặc định, KHÔNG
+        // trả một ô rỗng. Ô rỗng đọc thành "tài khoản này không có ảnh", trong
+        // khi sự thật là "có ảnh nhưng chưa tải về được" — và trên máy mới,
+        // đúng lúc mạng chập chờn, đó là lúc người dùng kết luận ảnh của mình
+        // không đi theo tài khoản.
+        errorBuilder: (_, _, _) =>
+            Icon(LucideIcons.user, size: size * 0.5, color: PenColors.mut),
+        // Vẽ chỗ giữ trong lúc tải, thay vì để ô nhấp nháy từ trống sang ảnh.
+        loadingBuilder: (context, child, progress) => progress == null
+            ? child
+            : Center(
+                child: SizedBox(
+                  width: size * 0.3,
+                  height: size * 0.3,
+                  child: const CupertinoActivityIndicator(),
+                ),
+              ),
       ),
     );
   }

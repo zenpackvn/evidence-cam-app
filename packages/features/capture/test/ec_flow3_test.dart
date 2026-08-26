@@ -299,6 +299,78 @@ void main() {
       expect(retried?.status, EcUploadStatus.error);
     });
 
+    // Clip đã lên xong thì bấm thẳng vào hàng là xem lại được — không phải
+    // thoát ra, vào Vận đơn, tìm đúng mã rồi mới mở.
+    testWidgets('bấm vào hàng đã upload thì gọi onOpen', (tester) async {
+      EcUploadItem? opened;
+      await _pump(
+        tester,
+        EcUploadQueueScreen(
+          items: const [
+            EcUploadItem(
+              code: 'SPXVN011122233',
+              typeLabel: 'Đơn vị vận chuyển',
+              when: '17/08/2026 10:40',
+              status: EcUploadStatus.done,
+              playable: true,
+            ),
+          ],
+          onOpen: (item) => opened = item,
+        ),
+      );
+
+      await tester.tap(find.text('SPXVN011122233'));
+      expect(opened?.code, 'SPXVN011122233');
+    });
+
+    // Không có dấu hiệu nào thì không ai đoán được hàng này bấm vào được, và
+    // tính năng coi như không tồn tại.
+    testWidgets('hàng xem được có dấu phát, hàng chưa lên thì không', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        EcUploadQueueScreen(
+          items: const [
+            EcUploadItem(
+              code: 'DA-LEN',
+              typeLabel: 'Đóng hàng đi',
+              when: '17/08/2026 10:40',
+              status: EcUploadStatus.done,
+              playable: true,
+            ),
+            EcUploadItem(
+              code: 'DANG-LEN',
+              typeLabel: 'Đóng hàng đi',
+              when: '17/08/2026 10:41',
+              status: EcUploadStatus.uploading,
+              progressPercent: 30,
+            ),
+          ],
+          onOpen: (_) {},
+        ),
+      );
+
+      expect(find.byIcon(LucideIcons.circlePlay), findsOneWidget);
+    });
+
+    // Chưa lên xong thì thứ duy nhất tồn tại là tệp thô trên máy. Hàng đợi cố ý
+    // không mời người dùng xem nó.
+    testWidgets('hàng chưa upload xong bấm vào không mở gì', (tester) async {
+      var opened = 0;
+      await _pump(
+        tester,
+        EcUploadQueueScreen(
+          items: _sampleUploadItems,
+          onOpen: (_) => opened++,
+        ),
+      );
+
+      await tester.tap(find.text('SPXVN024567890'));
+      await tester.tap(find.text('SPXVN011122233'));
+      expect(opened, 0);
+    });
+
     // Người cầm máy thường không phải người trả tiền, và quy tắc chống dẫn dắt
     // của Apple (App Review 3.1) cấm mọi lối chỉ sang trang thanh toán trong
     // app. Hàng rào: thêm lại link "Nâng gói" vào băng hạn mức là test đỏ.

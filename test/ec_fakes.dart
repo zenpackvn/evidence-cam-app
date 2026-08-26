@@ -73,6 +73,14 @@ class FakeEcAuth implements EcAuth {
     return _user.value = _signedIn(providers: const ['apple.com']);
   }
 
+  /// Đường Google qua WebView về đây với một custom token đã đúc sẵn — cùng
+  /// đích đến với [signInWithGoogle], nên cùng bộ provider.
+  @override
+  Future<EcUser> signInWithCustomToken(String token) async {
+    _password = null;
+    return _user.value = _signedIn(providers: const ['google.com']);
+  }
+
   @override
   Future<void> sendPasswordReset(String email) async {}
 
@@ -170,9 +178,21 @@ class FakeEcRepository implements EcRepository {
   @override
 
   @override
-  Future<void> setStorageActive(String shopId, {required bool active}) async {}
+  Future<void> setStorageActive(
+    String shopId, {
+    required bool active,
+    StorageKind? kind,
+  }) async {}
   Future<String> gdriveAuthUrl(String shopId) async =>
       'https://accounts.google.com/o/oauth2/v2/auth?fake=$shopId';
+
+  /// `null` = máy chủ chưa cấu hình đường web. Mặc định của fake là KHÔNG có,
+  /// nên mọi ca sẵn có giữ nguyên đường hộp thoại gốc.
+  @override
+  Future<String?> googleLoginUrl() async => null;
+
+  @override
+  Future<String> googleLoginSession(String ticket) async => 'fake-token';
 
   // Hồ sơ rỗng: đủ để màn chi tiết dựng được mà không cần máy chủ.
   @override
@@ -405,7 +425,7 @@ class FakeEcRepository implements EcRepository {
   }) async => const StorageValidateDto(ok: true);
 
   @override
-  Future<void> disconnectStorage(String shopId) async {}
+  Future<void> disconnectStorage(String shopId, {StorageKind? kind}) async {}
 
   @override
   Future<void> reportQueueDepth(

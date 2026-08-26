@@ -10,6 +10,11 @@
 .pub-cache/
 .pub/
 build/
+# `build/` chỉ khớp THƯ MỤC. Trên máy dùng ổ ngoài exFAT, `build` là một
+# symlink trỏ sang ổ APFS (exFAT sinh file `._*` phá Gradle), và symlink thì
+# luật trên không bắt — nên nó lọt vào `git status` và chờ ai đó `git add .`
+# rồi commit một đường dẫn chỉ đúng trên đúng một máy.
+build
 
 # -------------------------------------------------------------------------
 # build_runner-generated Dart code. Regenerated on demand

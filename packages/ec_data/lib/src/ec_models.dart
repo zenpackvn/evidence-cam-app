@@ -450,6 +450,9 @@ class EvidenceDto {
     this.thumbUrl,
     this.sha256,
     this.url,
+    this.shareUrl,
+    this.storageKind,
+    this.relayStatus,
     this.retentionExpiresAt,
     this.durationSeconds,
     this.clockSkewMs,
@@ -472,6 +475,9 @@ class EvidenceDto {
     device: j['device'] as String?,
     r2Key: j['r2_key'] as String?,
     url: j['url'] as String?,
+    shareUrl: j['share_url'] as String?,
+    storageKind: j['storage_kind'] as String?,
+    relayStatus: j['relay_status'] as String?,
     thumbUrl: j['thumb_url'] as String?,
     sha256: j['sha256'] as String?,
     retentionExpiresAt: _intN(j['retention_expires_at']),
@@ -506,6 +512,27 @@ class EvidenceDto {
   final int? retentionExpiresAt;
   final String? r2Key;
   final String? url;
+
+  /// Trang tệp trên Google Drive của shop, để NGƯỜI ĐỌC mở.
+  ///
+  /// Khác [url] — thứ trình phát dùng. `null` với kho hệ thống và kho S3.
+  final String? shareUrl;
+
+  /// Kho đang GIỮ clip này: `gdrive`, `s3`, hoặc `null` = Cloud ZenPack.
+  ///
+  /// `null` cũng đúng với clip của shop cắm kho riêng nhưng CHƯA đẩy sang được
+  /// — lúc đó byte vẫn nằm ở vùng chờ của ZenPack, và nói "Google Drive" là
+  /// nói sai về chỗ bằng chứng đang nằm.
+  final String? storageKind;
+
+  /// Chặng đẩy clip sang kho riêng của shop: `pending` · `relayed` · `failed`,
+  /// hoặc `null` khi shop không cắm kho riêng.
+  ///
+  /// Cần đọc CÙNG [storageKind] mới ra câu đúng: máy chủ chỉ ghi [storageKind]
+  /// sau khi đẩy xong, nên một clip đang trên đường sang kho riêng có
+  /// `storageKind == null` y hệt một clip của shop dùng kho hệ thống — hai
+  /// chuyện khác hẳn nhau.
+  final String? relayStatus;
 
   /// Poster frame for this clip — a few dozen KB, so a timeline can show every
   /// entry without pulling a single video byte. Null for photos (their own
@@ -574,6 +601,14 @@ class EvidenceDto {
   /// predates sealing and is never going to change, and the two failure states
   /// still have to play — that file is the user's only copy.
   bool get isSealing => sealStatus == 'pending' || sealStatus == 'rendering';
+
+  /// Clip đã niêm phong xong và ĐANG được đẩy sang kho riêng của shop.
+  ///
+  /// Chặng này nằm SAU chặng nung dấu và là chặng cuối đổi dữ liệu của một
+  /// clip: `storage_kind`, `object_ref` và `share_url` chỉ có mặt khi nó xong.
+  /// Màn nào bám theo `isSealing` để nạp lại mà bỏ qua nó thì dừng hỏi đúng
+  /// một nhịp trước khi những trường kia xuất hiện.
+  bool get isMovingToOwnStorage => relayStatus == 'pending';
 }
 
 /// Device-clock error we treat as normal drift rather than a wrong clock.
@@ -584,17 +619,32 @@ class EvidenceDto {
 const int kClockSkewToleranceMs = 2 * 60 * 1000;
 
 class OrderDetailDto {
-  const OrderDetailDto({required this.order, required this.evidence});
+  const OrderDetailDto({
+    required this.order,
+    required this.evidence,
+    this.shopStorageKind,
+  });
 
   factory OrderDetailDto.fromJson(Map<String, dynamic> j) => OrderDetailDto(
     order: OrderDto.fromJson(j['order'] as Map<String, dynamic>),
     evidence: (j['evidence'] as List)
         .map((e) => EvidenceDto.fromJson(e as Map<String, dynamic>))
         .toList(),
+    shopStorageKind: j['shop_storage_kind'] as String?,
   );
 
   final OrderDto order;
   final List<EvidenceDto> evidence;
+
+  /// Kho riêng shop ĐANG CHỌN: `s3` · `gdrive` · `null` (kho hệ thống).
+  ///
+  /// Khác [EvidenceDto.storageKind] của từng clip: cột kia chỉ có giá trị SAU
+  /// khi clip đã sang kho riêng, nên trước đó màn hình không có gì để gọi tên
+  /// kho ngoài "Cloud ZenPack" — sai với người vừa chọn kho riêng.
+  ///
+  /// `null` cũng là câu trả lời của một máy chủ CŨ chưa gửi trường này; bên gọi
+  /// giữ nguyên cách cũ khi thiếu nó.
+  final String? shopStorageKind;
 }
 
 /// Một dòng của bảng "Dung lượng theo loại".
@@ -938,6 +988,7 @@ class StorageHealthDto {
 class StorageStateDto {
   const StorageStateDto({
     this.storage,
+    this.storages = const [],
     this.health = const StorageHealthDto(),
     this.storageActive = true,
     this.byosAllowed = false,
@@ -948,14 +999,19 @@ class StorageStateDto {
     storage: j['storage'] is Map<String, dynamic>
         ? StorageViewDto.fromJson(j['storage'] as Map<String, dynamic>)
         : null,
+    storages: [
+      if (j['storages'] case final List<dynamic> raw)
+        for (final item in raw)
+          if (item is Map<String, dynamic>) StorageViewDto.fromJson(item),
+    ],
     health: j['health'] is Map<String, dynamic>
         ? StorageHealthDto.fromJson(j['health'] as Map<String, dynamic>)
         : const StorageHealthDto(),
     // Mặc định TRUE: backend cũ không có cờ này, và ở đó hễ có `storage` là kho
     // đang được dùng. Đoán "false" sẽ làm mọi shop đang chạy kho riêng đột ngột
     // hiện thành Cloud Zenpack.
-    storageActive: (j["storage_active"] as bool?) ?? true,
-    byosAllowed: (j["byos_allowed"] as bool?) ?? false,
+    storageActive: (j['storage_active'] as bool?) ?? true,
+    byosAllowed: (j['byos_allowed'] as bool?) ?? false,
     // Mặc định FALSE khi máy chủ chưa trả trường này: bản backend cũ không có
     // cặp client native, nên đoán "có" là đẩy người dùng vào đúng cái ngõ cụt
     // mà cờ này sinh ra để tránh.
@@ -964,6 +1020,12 @@ class StorageStateDto {
 
   /// Null = đang dùng Cloud Zenpack (mặc định).
   final StorageViewDto? storage;
+
+  /// MỌI kho shop đang giữ cấu hình, kể cả cái đang tắt — một phần tử mỗi loại.
+  ///
+  /// Rỗng với bản máy chủ cũ chưa trả trường này; lúc đó [storage] một mình là
+  /// tất cả những gì biết được, và màn hình rơi về đúng hành vi trước đây.
+  final List<StorageViewDto> storages;
   final StorageHealthDto health;
 
   /// Kho riêng có ĐANG được dùng không. `storage != null` mà cờ này `false` =
@@ -990,6 +1052,30 @@ class StorageStateDto {
   /// Loại kho đã cắm — dùng để chọn chữ cho hộp thoại gỡ kho, vì gỡ một tài
   /// khoản Google và gỡ một cái bucket S3 là hai câu khác nhau.
   StorageKind? get configuredKind => storage?.kind;
+
+  /// MỌI loại kho shop đang giữ cấu hình.
+  ///
+  /// Rơi về [configuredKind] khi máy chủ chưa trả `storages` — bản cũ chỉ giữ
+  /// được một cấu hình nên tập hợp đó cũng chỉ có một phần tử, và màn hình vẽ ra
+  /// đúng như trước.
+  Set<StorageKind> get configuredKinds => storages.isEmpty
+      ? {?configuredKind}
+      : {for (final view in storages) view.kind};
+
+  /// Cấu hình của MỘT loại kho, kể cả khi shop đang dùng loại khác.
+  ///
+  /// Đọc tài khoản Drive từ [storage] là đọc đúng một nửa sự thật: [storage] là
+  /// kho ĐANG DÙNG, nên shop chạy S3 mà vẫn giữ tài khoản Drive thì nó là hàng
+  /// S3 và `email` ở đó luôn null — trong khi tài khoản Google vẫn còn nguyên
+  /// trong cơ sở dữ liệu, và [storages] đang mang nó.
+  StorageViewDto? viewFor(StorageKind kind) {
+    for (final view in storages) {
+      if (view.kind == kind) return view;
+    }
+    // Backend cũ chưa trả `storages`, và ở đó một shop chỉ giữ được một cấu
+    // hình — [storage] một mình là tất cả những gì biết được.
+    return storage?.kind == kind ? storage : null;
+  }
 }
 
 /// Cấu hình S3 máy chủ trả về — đã che bí mật.
@@ -1025,24 +1111,52 @@ class S3ConfigViewDto {
 }
 
 /// Kết quả vòng kiểm tra PUT→HEAD→GET→DELETE.
+/// Một bước trong vòng thử kho: PUT → HEAD → GET → DELETE.
+///
+/// [detail] là câu lỗi NGUYÊN VĂN nhà cung cấp trả về (`AccessDenied`,
+/// `NoSuchBucket`, `SignatureDoesNotMatch`…). Đây là thứ duy nhất nói đúng
+/// chuyện gì đã xảy ra, nên nó phải đi tới tận mắt người đang điền form — họ là
+/// người có quyền sửa IAM bên phía họ, không phải mình.
+class StorageProbeStepDto {
+  const StorageProbeStepDto({
+    required this.step,
+    required this.ok,
+    this.detail,
+  });
+
+  factory StorageProbeStepDto.fromJson(Map<String, dynamic> j) =>
+      StorageProbeStepDto(
+        step: (j['step'] as String?) ?? '',
+        ok: (j['ok'] as bool?) ?? false,
+        detail: j['detail'] as String?,
+      );
+
+  /// `put` | `head` | `get` | `delete`.
+  final String step;
+  final bool ok;
+  final String? detail;
+}
+
 class StorageValidateDto {
-  const StorageValidateDto({required this.ok, this.hint, this.failedStep});
+  const StorageValidateDto({
+    required this.ok,
+    this.hint,
+    this.failedStep,
+    this.steps = const [],
+  });
 
   factory StorageValidateDto.fromJson(Map<String, dynamic> j) {
-    final steps = j['steps'];
-    String? failed;
-    if (steps is List) {
-      for (final s in steps) {
-        if (s is Map<String, dynamic> && (s['ok'] as bool?) == false) {
-          failed = s['step'] as String?;
-          break;
-        }
-      }
-    }
+    final raw = j['steps'];
+    final steps = <StorageProbeStepDto>[
+      if (raw is List)
+        for (final s in raw)
+          if (s is Map<String, dynamic>) StorageProbeStepDto.fromJson(s),
+    ];
     return StorageValidateDto(
       ok: (j['ok'] as bool?) ?? false,
       hint: j['hint'] as String?,
-      failedStep: failed,
+      failedStep: steps.where((s) => !s.ok).firstOrNull?.step,
+      steps: steps,
     );
   }
 
@@ -1055,6 +1169,14 @@ class StorageValidateDto {
 
   /// Bước đầu tiên hỏng (`put`/`head`/`get`/`delete`), để chỉ đúng quyền thiếu.
   final String? failedStep;
+
+  /// CẢ vòng thử, kể cả những bước xanh.
+  ///
+  /// Giữ nguyên chứ không rút gọn còn mỗi bước hỏng đầu tiên: "PUT xanh, GET
+  /// đỏ" và "PUT đỏ" là hai vấn đề khác hẳn nhau — cái đầu là thiếu quyền đọc,
+  /// cái sau là sai khoá hoặc sai tên bucket — và bản trước gộp cả hai thành
+  /// một câu duy nhất không nói gì.
+  final List<StorageProbeStepDto> steps;
 }
 
 /// Số hiện trên màn xác nhận xoá cửa hàng.

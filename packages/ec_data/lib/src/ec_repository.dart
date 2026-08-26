@@ -140,16 +140,30 @@ abstract interface class EcRepository {
     String region,
     String prefix,
   });
-  Future<void> disconnectStorage(String shopId);
+  Future<void> disconnectStorage(String shopId, {StorageKind? kind});
 
   /// Thôi dùng / dùng lại kho riêng, giữ nguyên cấu hình đã cắm.
-  Future<void> setStorageActive(String shopId, {required bool active});
+  Future<void> setStorageActive(
+    String shopId, {
+    required bool active,
+    StorageKind? kind,
+  });
 
   /// Cắm Drive bằng mã uỷ quyền từ hộp thoại gốc, không qua trình duyệt.
   Future<void> connectGdriveCode(String shopId, String code);
 
   /// Link cấp quyền Drive, mở trong WebView của app (xem [EcApi.gdriveAuthUrl]).
   Future<String> gdriveAuthUrl(String shopId);
+
+  /// Link ĐĂNG NHẬP bằng Google mở trong WebView của app, hoặc `null` khi máy
+  /// chủ chưa cấu hình đường này (xem [EcApi.googleLoginUrl]).
+  ///
+  /// `null` không phải lỗi: bên gọi giữ nguyên hộp thoại Google gốc.
+  Future<String?> googleLoginUrl();
+
+  /// Vé từ lượt chuyển hướng cuối → custom token Firebase (xem
+  /// [EcApi.googleLoginSession]).
+  Future<String> googleLoginSession(String ticket);
 
   /// Khai số clip chưa upload được đang nằm trên máy này (xem
   /// [EcApi.reportQueueDepth]). Nuốt lỗi ở tầng hiện thực: đây là báo cáo phụ
@@ -402,7 +416,8 @@ class RemoteEcRepository implements EcRepository {
   );
 
   @override
-  Future<void> disconnectStorage(String shopId) => _api.deleteStorage(shopId);
+  Future<void> disconnectStorage(String shopId, {StorageKind? kind}) =>
+      _api.deleteStorage(shopId, kind: kind);
 
   @override
   Future<void> connectGdriveCode(String shopId, String code) =>
@@ -412,8 +427,18 @@ class RemoteEcRepository implements EcRepository {
   Future<String> gdriveAuthUrl(String shopId) => _api.gdriveAuthUrl(shopId);
 
   @override
-  Future<void> setStorageActive(String shopId, {required bool active}) =>
-      _api.setStorageActive(shopId, active: active);
+  Future<String?> googleLoginUrl() => _api.googleLoginUrl();
+
+  @override
+  Future<String> googleLoginSession(String ticket) =>
+      _api.googleLoginSession(ticket);
+
+  @override
+  Future<void> setStorageActive(
+    String shopId, {
+    required bool active,
+    StorageKind? kind,
+  }) => _api.setStorageActive(shopId, active: active, kind: kind);
 
   @override
   @override

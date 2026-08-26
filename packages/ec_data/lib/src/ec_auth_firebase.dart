@@ -1,9 +1,12 @@
+import 'dart:developer' as developer;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'ec_auth.dart';
+
 import 'ec_google_signin.dart';
 
 /// Real Firebase implementation of [EcAuth] (FR-15) — email/password, Google and
@@ -23,6 +26,18 @@ class FirebaseEcAuth implements EcAuth {
   }
 
   final FirebaseAuth _auth;
+
+  /// Gửi mail xác thực qua máy chủ mình thay vì để Firebase gửi.
+  ///
+  /// Firebase đã khoá phần thân của mẫu xác thực trong Console, nên để nó gửi là
+  /// gửi chữ mẫu của Google — người dùng app sẽ nhận một lá thư khác hẳn thứ
+  /// người dùng web nhận, dù cả hai cùng một hệ thống.
+  ///
+  /// GÁN SAU khi dựng, không nhận qua hàm dựng: `EcApi` cần chính đối tượng này
+  /// để gắn `Authorization`, nên hai bên phụ thuộc vòng. Vắng nó thì lớp này rơi
+  /// hẳn về Firebase — đúng hành vi cũ, và là mặc định trong test.
+  EcAuthMailApi? mailApi;
+
   late final ValueNotifier<EcUser?> _user;
 
   EcUser? _map(User? u) => u == null
@@ -100,6 +115,19 @@ class FirebaseEcAuth implements EcAuth {
     }
   }
 
+  /// Không đi qua [_socialException]: lượt này không mở hộp thoại nào, nên
+  /// không có "người dùng bấm Huỷ" để mà nhận nhầm. Mọi thứ hỏng ở đây là hỏng
+  /// thật, và [_authException] đã dịch đúng các mã của Firebase.
+  @override
+  Future<EcUser> signInWithCustomToken(String token) async {
+    try {
+      final cred = await _auth.signInWithCustomToken(token);
+      return _map(cred.user)!;
+    } on FirebaseAuthException catch (error) {
+      throw _authException(error);
+    }
+  }
+
   Future<AuthCredential> _googleCredential() async {
     // Qua [ensureGoogleSignInReady] chứ không tự gọi `initialize()`: singleton
     // này chỉ chịu được đúng một lượt khởi tạo, và lượt cắm Google Drive cũng
@@ -129,8 +157,21 @@ class FirebaseEcAuth implements EcAuth {
       ? _googleCredential()
       : _appleCredential();
 
+  /// Máy chủ mình trước, Firebase là ĐƯỜNG LÙI.
+  ///
+  /// Rơi về khi máy chủ chưa cấu hình (503) hoặc gọi hỏng: mail chữ Google vẫn
+  /// hơn hẳn không có mail nào, vì người quên mật khẩu là người đang không vào
+  /// được tài khoản.
   @override
   Future<void> sendPasswordReset(String email) async {
+    if (mailApi != null) {
+      try {
+        await mailApi!.sendPasswordReset(email);
+        return;
+      } on Object {
+        // Đường lùi.
+      }
+    }
     try {
       await _auth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (error) {
@@ -139,10 +180,20 @@ class FirebaseEcAuth implements EcAuth {
   }
 
   @override
+  /// Máy chủ mình trước, Firebase là ĐƯỜNG LÙI — cùng lẽ với
+  /// [sendPasswordReset].
   Future<void> sendEmailVerification() async {
+    final user = _requireUser();
+    if (user.emailVerified) return;
+    if (mailApi != null) {
+      try {
+        await mailApi!.sendVerifyEmail();
+        return;
+      } on Object {
+        // Đường lùi.
+      }
+    }
     try {
-      final user = _requireUser();
-      if (user.emailVerified) return;
       await user.sendEmailVerification();
     } on FirebaseAuthException catch (error) {
       throw _authException(error);
@@ -282,17 +333,81 @@ EcAuthException _authException(FirebaseAuthException error) {
 /// Normalizes a federated (Google/Apple) sign-in/link failure: Firebase errors
 /// map by code, a user cancellation becomes [EcAuthCancelled] (silent), an
 /// already-friendly [EcAuthException] passes through, and anything else gets a
-/// clean generic line instead of a raw provider-exception string.
+/// clean line that at least says WHICH kind of thing went wrong.
+///
+/// Mọi lượt hỏng không phải "người dùng bấm Huỷ" đều được ghi log kèm mã và
+/// mô tả gốc. Trước đây tất cả đổ chung vào một câu "vui lòng thử lại" và
+/// không ghi lại gì: một máy ký bằng keystore chưa đăng ký SHA-1 trên Firebase
+/// hỏng y hệt một máy mất mạng, nhìn từ ngoài không tài nào phân biệt được.
 Exception _socialException(Object error) {
   if (error is EcAuthException) return error;
   if (error is FirebaseAuthException) return _authException(error);
   if (_isSignInCancellation(error)) return const EcAuthCancelled();
+  _logSocialFailure(error);
+  if (error is GoogleSignInException) return _googleException(error);
   return const EcAuthException('Không thực hiện được, vui lòng thử lại.');
 }
 
+void _logSocialFailure(Object error) {
+  final detail = error is GoogleSignInException
+      ? '${error.code.name}: ${error.description}'
+      : '$error';
+  developer.log(
+    'auth: lượt đăng nhập mạng xã hội hỏng — $detail',
+    name: 'zenpack.auth',
+    level: 1000,
+    error: error,
+  );
+}
+
+/// Câu tiếng Việt cho một lượt Google hỏng, tách theo mã để người dùng biết
+/// việc cần làm thay vì chỉ biết "hỏng rồi".
+EcAuthException _googleException(GoogleSignInException error) {
+  // Trên Android, "không tìm được thông tin đăng nhập nào" là mã `unknownError`
+  // kèm mô tả bắt đầu bằng 'No credential available' — xem
+  // `google_sign_in_android`, nhánh `GetCredentialFailureType.noCredential`.
+  // Máy chưa thêm tài khoản Google rơi vào đúng đây.
+  if (error.code == GoogleSignInExceptionCode.unknownError &&
+      (error.description ?? '').startsWith('No credential available')) {
+    return const EcAuthException(
+      'Máy chưa có tài khoản Google nào dùng được. Hãy thêm tài khoản Google '
+      'trong Cài đặt rồi thử lại.',
+    );
+  }
+  // Lượt hỏng của Play services đội lốt `canceled` — xem
+  // [_isSignInCancellation]. Kèm luôn mã trạng thái GMS vào câu báo: đó là thứ
+  // DUY NHẤT bộ phận hỗ trợ bám được để biết máy này hỏng vì gì, mà người dùng
+  // thì không có cách nào đọc log ra để đọc cho họ nghe.
+  final gmsStatus = googleServicesStatusCode(error);
+  if (error.code == GoogleSignInExceptionCode.canceled && gmsStatus != null) {
+    return EcAuthException(
+      'Google chưa cấp được quyền đăng nhập cho ứng dụng (mã $gmsStatus). Vui '
+      'lòng thử lại; nếu vẫn vậy, báo bộ phận hỗ trợ kèm mã này.',
+    );
+  }
+  return switch (error.code) {
+    // Sai cấu hình phía bản cài: SHA-1 của keystore chưa đăng ký trên Firebase,
+    // thiếu `serverClientId`, hoặc máy không có Play services dùng được. Không
+    // có thao tác nào của người dùng cứu được, nên nói thẳng là báo hỗ trợ.
+    GoogleSignInExceptionCode.clientConfigurationError ||
+    GoogleSignInExceptionCode.providerConfigurationError =>
+      const EcAuthException(
+        'Đăng nhập bằng Google chưa dùng được trên bản cài này. Vui lòng cập '
+        'nhật ứng dụng và Google Play services, hoặc báo bộ phận hỗ trợ.',
+      ),
+    GoogleSignInExceptionCode.interrupted ||
+    GoogleSignInExceptionCode.uiUnavailable => const EcAuthException(
+      'Không mở được hộp thoại Google, vui lòng thử lại.',
+    ),
+    _ => const EcAuthException('Không thực hiện được, vui lòng thử lại.'),
+  };
+}
+
 bool _isSignInCancellation(Object error) {
+  // Một mã `canceled` từ Google KHÔNG chắc là người dùng bấm huỷ — xem
+  // [isGoogleSignInCancellation].
   if (error is GoogleSignInException) {
-    return error.code == GoogleSignInExceptionCode.canceled;
+    return isGoogleSignInCancellation(error);
   }
   if (error is SignInWithAppleAuthorizationException) {
     return error.code == AuthorizationErrorCode.canceled;

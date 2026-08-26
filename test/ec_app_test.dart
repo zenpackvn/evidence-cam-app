@@ -1265,6 +1265,42 @@ void main() {
       // bắt được lỗi gì.
     },
   );
+  // API trả bằng chứng theo `captured_at` TĂNG dần (`orders.ts`: ORDER BY
+  // e.captured_at), nên nếu app giữ nguyên thứ tự đó thì clip vừa quay xong
+  // nằm tận đáy đơn — đúng thứ người bán vừa làm lại là thứ họ phải cuộn xa
+  // nhất mới thấy.
+  //
+  // Đo TOẠ ĐỘ thật chứ không đếm thứ tự trong cây widget: thứ người dùng phàn
+  // nàn là cái gì nằm trên cái gì trên màn hình.
+  testWidgets('trong một mã vận đơn, clip mới nhất nằm trên cùng', (
+    tester,
+  ) async {
+    await pumpPhoneSizedApp(
+      tester,
+      EcApp(auth: FakeEcAuth(), repo: _TimelineOrderRepository()),
+    );
+    await signInWithGoogle(tester);
+
+    await tester.tap(find.textContaining('SPXVN').first);
+    await tester.pump();
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    // Ngày mới đứng trên ngày cũ.
+    final newerDay = tester.getTopLeft(find.text('25/08/2026')).dy;
+    final olderDay = tester.getTopLeft(find.text('24/08/2026')).dy;
+    expect(newerDay, lessThan(olderDay));
+
+    // Và trong cùng một ngày, giờ muộn hơn cũng đứng trên.
+    final later = tester.getTopLeft(find.text('14:30')).dy;
+    final earlier = tester.getTopLeft(find.text('10:00')).dy;
+    expect(later, lessThan(earlier));
+
+    // Clip mới nhất của cả đơn đứng trên mọi clip của ngày hôm trước.
+    expect(tester.getTopLeft(find.text('09:15')).dy, lessThan(later));
+  });
+
 }
 
 /// Một clip đi từ "đang đóng dấu" sang "đã niêm phong" giữa hai lần gọi API —
@@ -1765,4 +1801,38 @@ class _ClaimListFailingRepository extends _DemoRepository {
   @override
   Future<List<ClaimDto>> listClaims(String shopId) async =>
       throw Exception('mạng hỏng');
+}
+
+/// Một đơn có ba clip trải hai ngày, trả về theo ĐÚNG chiều API thật: tăng dần
+/// theo `captured_at`. Sắp xếp là việc của app.
+class _TimelineOrderRepository extends _DemoRepository {
+  static final _older = DateTime(2026, 8, 24, 10);
+  static final _olderLater = DateTime(2026, 8, 24, 14, 30);
+  static final _newest = DateTime(2026, 8, 25, 9, 15);
+
+  EvidenceDto _clip(String id, DateTime at) => EvidenceDto(
+    id: id,
+    kind: 'video',
+    capturedAt: at.millisecondsSinceEpoch,
+    uploadStatus: 'done',
+    videoTypeId: 'default-pack',
+    sealStatus: 'sealed',
+    sealedAt: at.millisecondsSinceEpoch,
+    url: 'https://example.test/$id.mp4',
+  );
+
+  @override
+  Future<OrderDetailDto> order(String shopId, String orderId) async =>
+      OrderDetailDto(
+        order: const OrderDto(
+          id: 'o1',
+          tracking: 'SPXVN024567890',
+          createdAt: 3,
+        ),
+        evidence: [
+          _clip('e-cu', _older),
+          _clip('e-cu-muon', _olderLater),
+          _clip('e-moi', _newest),
+        ],
+      );
 }
