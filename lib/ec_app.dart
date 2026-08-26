@@ -2468,6 +2468,7 @@ class _StorageRouteState extends State<_StorageRoute>
           name: 'zenpack.storage',
         );
         _gdriveNative = dto.gdriveNative;
+        unawaited(_rememberShopStorage(widget.shopId, dto.kind));
         // Tài khoản Drive đọc từ HÀNG DRIVE, không từ kho đang dùng.
         //
         // `dto.storage` là kho ĐANG DÙNG, nên một shop chạy S3 mà vẫn giữ tài
@@ -4186,6 +4187,11 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
     final self = selfCall == null ? null : await selfCall;
     final types = await typesCall;
     final storage = await storageCall;
+    // Nhớ kho thật của shop cho những màn khác dùng làm nhãn — chi tiết video
+    // cần nó để gọi tên kho ĐÍCH của một clip còn đang trên đường.
+    if (storage != null) {
+      unawaited(_rememberShopStorage(widget.shop.id, storage.kind));
+    }
 
     return _ShopDetailData(
       shop: shop ?? _snapshotDto(),
@@ -4391,6 +4397,21 @@ String _storagePickKey(String shopId) => 'storage_pick_$shopId';
 
 /// Kho máy chủ báo ở lần đọc gần nhất — để nhận ra lúc kho đổi THẬT.
 String _storageServerKey(String shopId) => 'storage_server_$shopId';
+
+/// Kho THẬT của shop, nhớ lại để những màn khác dùng làm nhãn.
+///
+/// Khoá RIÊNG, không dùng chung với [_storageServerKey]: khoá kia là mốc so
+/// sánh của [_syncStoragePick] để biết kho có đổi thật hay không, ghi đè nó từ
+/// chỗ khác là làm hỏng phép so đó — lựa chọn đã nhớ sẽ nằm lại ở một kho không
+/// còn được dùng.
+String _shopStorageKey(String shopId) => 'storage_of_$shopId';
+
+Future<void> _rememberShopStorage(String shopId, StorageKind kind) async =>
+    _appMemory()?.setString(_shopStorageKey(shopId), _storageKindName(kind));
+
+/// Kho thật của shop theo lần đọc gần nhất, hoặc `null` khi chưa đọc lần nào.
+StorageKind? _rememberedShopStorage(String shopId) =>
+    _parseStorageKind(_appMemory()?.getString(_shopStorageKey(shopId)));
 
 StorageKind? _parseStorageKind(String? raw) => switch (raw) {
   'system' => StorageKind.system,
@@ -5952,6 +5973,7 @@ class _OrderRouteState extends State<_OrderRoute> {
         data.videoTypes,
         data.memberNames,
         data.previews,
+        _rememberedShopStorage(widget.shop.id),
       ).expand((d) => d.videos).where((v) => v.id == id).firstOrNull;
       if (fresh != null) {
         _openDetail.value = _videoDetail(
@@ -6165,6 +6187,7 @@ class _OrderRouteState extends State<_OrderRoute> {
           data.videoTypes,
           data.memberNames,
           data.previews,
+          _rememberedShopStorage(widget.shop.id),
         );
         return ListenableBuilder(
           listenable: widget.queue,
@@ -6766,6 +6789,7 @@ List<EcTimelineDay> _timelineDays(
   List<VideoTypeDto> videoTypes,
   Map<String, String> memberNames,
   Map<String, String> previews,
+  StorageKind? shopStorage,
 ) {
   final typeNames = {for (final t in videoTypes) t.id: t.name};
   final groups = <String, List<EcTimelineVideo>>{};
@@ -6863,6 +6887,7 @@ List<EcTimelineDay> _timelineDays(
               l10n,
               item.storageKind,
               item.relayStatus,
+              shopStorage,
             ),
             // Chỉ gắn khi máy chủ CHƯA phát được. Có link thật rồi mà vẫn trỏ
             // về bản tạm là cố tình phát bản không dấu trong khi bản có dấu đã
@@ -8746,10 +8771,24 @@ String _evidenceStorageLabel(
   AppLocalizations l10n,
   String? kind,
   String? relayStatus,
+  StorageKind? shopStorage,
 ) => switch ((kind, relayStatus)) {
   ('gdrive', _) => l10n.storageNameDrive,
   ('s3', _) => l10n.storageNameS3,
-  (_, 'pending') => l10n.storageNameRelayPending,
+  // Đang trên đường: gọi tên KHO ĐÍCH, không phải chỗ byte đang tạm nằm.
+  //
+  // Người bán vừa quay xong mở clip ra là để xác nhận kho riêng có ăn không —
+  // và với họ "kho của tôi" là nơi clip sẽ nằm, còn vùng chờ tạm là chuyện bên
+  // trong hệ thống. Chỉ khi chưa biết kho của shop (chưa mở màn Kho lưu trữ
+  // lần nào trên máy này) mới nói theo chặng.
+  (_, 'pending') => switch (shopStorage) {
+    StorageKind.s3 => l10n.storageNameS3,
+    StorageKind.gdrive => l10n.storageNameDrive,
+    _ => l10n.storageNameRelayPending,
+  },
+  // KẸT LẠI thì phải nói ra. Ở đây gọi tên kho đích là nói dối đúng lúc nguy
+  // hiểm nhất: clip nằm ở vùng chờ tạm, và quá bảy ngày mà kho vẫn hỏng thì nó
+  // sống nốt hạn lưu trữ của kho hệ thống rồi bị xoá theo lịch.
   (_, 'failed') => l10n.storageNameRelayFailed,
   _ => l10n.storageNameCloud,
 };
