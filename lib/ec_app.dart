@@ -8836,30 +8836,40 @@ String _evidenceStorageLabel(
   EvidenceDto item,
   StorageKind? shopStorage,
 ) {
-  // Kho ĐANG GIỮ clip, khi máy chủ đã chốt. Đây là sự thật lịch sử: đổi kho
-  // không kéo clip cũ đi theo, nên một đơn có thể có clip nằm ở hai kho khác
-  // nhau và mỗi clip phải nói đúng chỗ của nó.
+  // 1. Kho ĐANG GIỮ clip, khi máy chủ đã chốt. Đây là sự thật lịch sử: đổi kho
+  //    không kéo clip cũ đi theo, nên một đơn có thể có clip nằm ở hai kho khác
+  //    nhau và mỗi clip phải nói đúng chỗ của nó.
   switch (item.storageKind) {
     case 'gdrive':
       return l10n.storageNameDrive;
     case 's3':
       return l10n.storageNameS3;
   }
-  // Chưa chốt: gọi tên KHO SHOP ĐANG CHỌN.
-  //
-  // Ba chặng đều rơi vào đây và đều chưa có `storage_kind`: đang tải lên, đang
-  // nung dấu giờ, đang đẩy sang kho riêng. Gọi tên "Cloud ZenPack" ở đó là nói
-  // sai với người vừa chọn kho riêng — họ mở clip ra để xác nhận kho mình có
-  // ăn không, và đọc thấy tên kho hệ thống thì tưởng hỏng.
-  //
-  // Kho của shop do MÁY CHỦ gửi kèm trong chi tiết đơn, không phải app tự nhớ:
-  // bộ nhớ trong máy trống trơn sau mỗi lượt cài lại, và lúc đó nhãn lại nói
-  // sai đúng cái nó sinh ra để nói đúng.
-  return switch (shopStorage) {
+
+  final ofShop = switch (shopStorage) {
     StorageKind.s3 => l10n.storageNameS3,
     StorageKind.gdrive => l10n.storageNameDrive,
-    StorageKind.system || null => l10n.storageNameCloud,
+    StorageKind.system || null => null,
   };
+
+  // 2. Chưa chốt xong (đang tải lên, đang nung dấu) → clip này SẼ đi vào kho
+  //    shop đang chọn, nên gọi tên kho đó ngay. Người vừa chọn kho riêng mở
+  //    clip ra chính là để xác nhận điều đó.
+  final settled = item.uploadStatus == 'done' && !item.isSealing;
+  if (!settled) return ofShop ?? l10n.storageNameCloud;
+
+  // 3. Đã chốt mà chưa sang kho riêng: chỉ clip ĐANG trong hàng đợi đẩy mới còn
+  //    đường sang. Máy chủ ghi `relay_status` ngay khi nhận việc, và cron thử
+  //    lại chỉ nhặt `pending`/`failed`.
+  if (item.relayStatus == 'pending' || item.relayStatus == 'failed') {
+    return ofShop ?? l10n.storageNameCloud;
+  }
+
+  // 4. Đã chốt, không có `relay_status` nào: lúc clip này niêm phong xong thì
+  //    shop chưa bật kho riêng, nên nó nằm lại kho hệ thống VĨNH VIỄN — không
+  //    lượt cron nào nhặt nó nữa. Gọi tên kho vừa chọn ở đây là chỉ vào một
+  //    chỗ mà clip không bao giờ tới.
+  return l10n.storageNameCloud;
 }
 
 String _durationLabel(int? seconds) {
