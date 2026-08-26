@@ -4307,8 +4307,14 @@ abstract class AppLocalizations {
   /// No description provided for @storageValidateOk.
   ///
   /// In en, this message translates to:
-  /// **'The config works. Press Save to switch to this storage.'**
+  /// **'This account can connect. Press Save to use this storage.'**
   String get storageValidateOk;
+
+  /// No description provided for @storageValidateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This account cannot connect.'**
+  String get storageValidateFailed;
 
   /// No description provided for @storageTestOnlyCta.
   ///

@@ -2376,7 +2376,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get storageValidateOk =>
-      'Cấu hình chạy được. Bấm Lưu để chuyển sang kho này.';
+      'Tài khoản này kết nối được. Bấm Lưu để dùng kho này.';
+
+  @override
+  String get storageValidateFailed => 'Tài khoản này không kết nối được.';
 
   @override
   String get storageTestOnlyCta => 'Kiểm tra';

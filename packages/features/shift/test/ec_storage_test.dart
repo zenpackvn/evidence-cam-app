@@ -393,10 +393,16 @@ void main() {
       await pumpWith(passed: true);
       await tester.pump();
 
+      // Bàn phím phải thu lại: câu trả lời vẽ ngay dưới sáu ô, mà bàn phím che
+      // đúng chỗ đó — bấm Kiểm tra xong nhìn màn hình không thấy gì đổi.
+      expect(
+        FocusManager.instance.primaryFocus?.context?.widget,
+        isNot(isA<EditableText>()),
+      );
       // Sáu ô còn nguyên, và câu trả lời nằm ngay cạnh chúng.
       expect(find.byType(CupertinoTextField), findsNWidgets(6));
       expect(
-        find.text('Cấu hình chạy được. Bấm Lưu để chuyển sang kho này.'),
+        find.text('Tài khoản này kết nối được. Bấm Lưu để dùng kho này.'),
         findsOneWidget,
       );
       expect(_saveEnabled(tester), isTrue);
@@ -411,7 +417,7 @@ void main() {
       expect(find.bySemanticsLabel('Kiểm tra'), findsOneWidget);
       expect(_saveEnabled(tester), isFalse);
       expect(
-        find.text('Cấu hình chạy được. Bấm Lưu để chuyển sang kho này.'),
+        find.text('Tài khoản này kết nối được. Bấm Lưu để dùng kho này.'),
         findsNothing,
       );
 
@@ -448,12 +454,22 @@ void main() {
       await tester.tap(find.bySemanticsLabel('Kiểm tra'));
       await tester.pump();
       await pumpWith(busy: true);
-      await pumpWith(error: 'AccessDenied: thiếu quyền s3:PutObject');
+      // Đúng chuỗi mà `_testS3` dựng: phán quyết một dòng, rồi tới lý do.
+      await pumpWith(
+        error:
+            'Tài khoản này không kết nối được.\n'
+            'AccessDenied: thiếu quyền s3:PutObject',
+      );
       await tester.pump();
 
       expect(find.byType(CupertinoTextField), findsNWidgets(6));
+      // Câu phán quyết đứng trước, lý do của nhà cung cấp đứng sau — bên gọi
+      // ghép hai phần rồi mới đưa xuống (xem `_testS3` trong ec_app.dart).
       expect(
-        find.text('AccessDenied: thiếu quyền s3:PutObject'),
+        find.text(
+          'Tài khoản này không kết nối được.\n'
+          'AccessDenied: thiếu quyền s3:PutObject',
+        ),
         findsOneWidget,
       );
       expect(_saveEnabled(tester), isFalse);

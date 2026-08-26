@@ -1570,7 +1570,8 @@
   "codeBelongsToAnotherOrder": "This code already belongs to another order — cannot merge.",
   "codeAttachFailed": "Could not attach the code. Try again.",
   "storageEditCta": "Change settings",
-  "storageValidateOk": "The config works. Press Save to switch to this storage.",
+  "storageValidateOk": "This account can connect. Press Save to use this storage.",
+  "storageValidateFailed": "This account cannot connect.",
   "storageTestOnlyCta": "Test",
   "shopOwnerLine": "Shop owner: {name}",
   "@shopOwnerLine": {

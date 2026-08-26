@@ -2427,7 +2427,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get storageValidateOk =>
-      'The config works. Press Save to switch to this storage.';
+      'This account can connect. Press Save to use this storage.';
+
+  @override
+  String get storageValidateFailed => 'This account cannot connect.';
 
   @override
   String get storageTestOnlyCta => 'Test';

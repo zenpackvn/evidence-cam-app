@@ -508,6 +508,9 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
   /// nằm ở một kho chưa hề được cắm.
   void _save() {
     if (!_dirty) return;
+    // Cùng lý do với nút Kiểm tra: lưu hỏng thì câu lỗi nằm dưới form, và bàn
+    // phím đang che nó.
+    FocusManager.instance.primaryFocus?.unfocus();
     // S3 cắm mới: giá trị đã nằm sẵn trong form, gửi thẳng đi thay vì đẩy người
     // dùng sang một màn nữa để gõ lại đúng sáu ô vừa gõ.
     if (_s3FormOpen) {
@@ -723,6 +726,11 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                     _TestButton(
                       enabled: _s3.readyWithStoredKeys && !widget.busy,
                       onTap: () {
+                        // Thu bàn phím trước đã: câu trả lời của lượt thử vẽ
+                        // NGAY DƯỚI sáu ô, mà bàn phím thì che đúng chỗ đó —
+                        // người dùng bấm Kiểm tra rồi ngồi nhìn một màn hình
+                        // không có gì đổi.
+                        FocusManager.instance.primaryFocus?.unfocus();
                         setState(() {
                           _editedSinceTest = false;
                           _testing = true;

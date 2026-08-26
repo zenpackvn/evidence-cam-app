@@ -2130,8 +2130,15 @@ class _StorageRouteState extends State<_StorageRoute>
         name: 'zenpack.storage',
         level: 900,
       );
-      _toast(context, detail.split('\n').first);
-      setState(() => _s3Error = detail);
+      // Câu PHÁN QUYẾT đứng trước, lý do đứng sau.
+      //
+      // Trước đây ô lỗi mở đầu bằng câu chỉ dẫn của nhà cung cấp
+      // (`AccessDenied…`, `SignatureDoesNotMatch…`) — thứ nói được PHẢI SỬA GÌ
+      // nhưng không trả lời câu người dùng vừa hỏi khi bấm Kiểm tra: bộ khoá
+      // này dùng được hay không. Giữ nguyên phần lý do vì nó là thứ duy nhất
+      // giúp họ tự sửa quyền bên phía mình.
+      _toast(context, l10n.storageValidateFailed);
+      setState(() => _s3Error = '${l10n.storageValidateFailed}\n$detail');
     } on Object catch (error) {
       if (!mounted) return;
       final text = _s3ExceptionText(l10n, error);
