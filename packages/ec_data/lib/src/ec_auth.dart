@@ -103,6 +103,13 @@ abstract interface class EcAuth {
   });
   Future<EcUser> signInWithGoogle();
   Future<EcUser> signInWithApple();
+
+  /// Vào phiên bằng custom token do MÁY CHỦ MÌNH đúc.
+  ///
+  /// Dùng cho đường đăng nhập Google qua WebView: ở đó Google nói chuyện với
+  /// máy chủ chứ không với thiết bị, nên thứ về tới đây không phải credential
+  /// của Google mà là một token Firebase đã ký sẵn cho đúng uid.
+  Future<EcUser> signInWithCustomToken(String token);
   Future<void> sendPasswordReset(String email);
 
   /// Send the address-verification email to the signed-in user. Called right

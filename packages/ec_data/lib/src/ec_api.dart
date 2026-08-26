@@ -386,6 +386,39 @@ class EcApi implements EcAuthMailApi {
   Future<void> sendPasswordReset(String email) =>
       _dio.post<void>('/auth/password-reset', data: {'email': email});
 
+  /// Link ĐĂNG NHẬP bằng Google để mở trong WebView của chính app, hoặc `null`
+  /// khi máy chủ chưa cấu hình đường này.
+  ///
+  /// Cùng khuôn với [gdriveAuthUrl] — mở trang của Google trong app, chặn lượt
+  /// chuyển hướng cuối để lấy kết quả — nhưng là một luồng RIÊNG: khác
+  /// `redirect_uri`, khác scope, và trả về một vé đăng nhập chứ không cắm kho
+  /// nào cả. Không lời gọi nào ở đây chạm vào Drive.
+  ///
+  /// `null` (máy chủ trả 503) là câu trả lời QUAN TRỌNG: bên gọi phải giữ
+  /// nguyên hộp thoại Google gốc thay vì mở một WebView chắc chắn hỏng. Nhờ nó,
+  /// bản app này cài lên một máy chủ chưa deploy tuyến kia vẫn chạy y như cũ.
+  Future<String?> googleLoginUrl() async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/auth/google/url',
+      options: Options(validateStatus: (code) => code == 200 || code == 503),
+    );
+    if (res.statusCode == 503) return null;
+    return res.data!['url']! as String;
+  }
+
+  /// Vé từ lượt chuyển hướng cuối → custom token của Firebase.
+  ///
+  /// POST chứ không GET, và vé nằm trong THÂN: vé không được rơi vào lịch sử
+  /// WebView hay log truy cập. Hạn của nó là 2 phút, nên gọi ngay khi WebView
+  /// đóng chứ đừng giữ lại.
+  Future<String> googleLoginSession(String ticket) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/auth/google/session',
+      data: {'ticket': ticket},
+    );
+    return res.data!['token']! as String;
+  }
+
   /// Cắm Drive bằng mã uỷ quyền lấy từ hộp thoại Google của hệ điều hành.
   ///
   /// Chỉ gửi MÃ, không gửi token: máy chủ vẫn là nơi duy nhất đổi nó lấy refresh

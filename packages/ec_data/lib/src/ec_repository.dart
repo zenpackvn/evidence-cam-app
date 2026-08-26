@@ -155,6 +155,16 @@ abstract interface class EcRepository {
   /// Link cấp quyền Drive, mở trong WebView của app (xem [EcApi.gdriveAuthUrl]).
   Future<String> gdriveAuthUrl(String shopId);
 
+  /// Link ĐĂNG NHẬP bằng Google mở trong WebView của app, hoặc `null` khi máy
+  /// chủ chưa cấu hình đường này (xem [EcApi.googleLoginUrl]).
+  ///
+  /// `null` không phải lỗi: bên gọi giữ nguyên hộp thoại Google gốc.
+  Future<String?> googleLoginUrl();
+
+  /// Vé từ lượt chuyển hướng cuối → custom token Firebase (xem
+  /// [EcApi.googleLoginSession]).
+  Future<String> googleLoginSession(String ticket);
+
   /// Khai số clip chưa upload được đang nằm trên máy này (xem
   /// [EcApi.reportQueueDepth]). Nuốt lỗi ở tầng hiện thực: đây là báo cáo phụ
   /// trợ, hỏng thì không được làm gì khác hỏng theo.
@@ -415,6 +425,13 @@ class RemoteEcRepository implements EcRepository {
 
   @override
   Future<String> gdriveAuthUrl(String shopId) => _api.gdriveAuthUrl(shopId);
+
+  @override
+  Future<String?> googleLoginUrl() => _api.googleLoginUrl();
+
+  @override
+  Future<String> googleLoginSession(String ticket) =>
+      _api.googleLoginSession(ticket);
 
   @override
   Future<void> setStorageActive(

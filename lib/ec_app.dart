@@ -698,7 +698,7 @@ class _LoginRouteState extends State<_LoginRoute> {
       onForgot: () => context.push('/forgot'),
       onGoogle: () => _afterSocialSignIn(
         context,
-        widget.auth.signInWithGoogle(),
+        _googleSignIn(context, widget.auth),
         method: _AuthMethods.google,
       ),
       onApple: () => _afterSocialSignIn(
@@ -866,7 +866,7 @@ class _RegisterRouteState extends State<_RegisterRoute> {
       onRegister: _policyAccepted && !_saving ? _register : null,
       onGoogle: () => _afterSocialSignIn(
         context,
-        widget.auth.signInWithGoogle(),
+        _googleSignIn(context, widget.auth),
         method: _AuthMethods.google,
       ),
       onApple: () => _afterSocialSignIn(
@@ -937,6 +937,87 @@ class _ForgotRouteState extends State<_ForgotRoute> {
 /// Email is the identity; the phone is an optional support contact only, so
 /// nothing here asks for one — it is edited from Tài khoản → Hồ sơ whenever the
 /// user feels like it, and never gates recording, uploading or anything else.
+/// Đường web đi TRƯỚC trên Android, và chỉ trên Android.
+///
+/// Hộp thoại Google gốc ở đây đi qua Credential Manager, thứ đòi chữ ký (SHA-1)
+/// của bản cài phải được đăng ký sẵn trong dự án Firebase. Lệch một chữ là Play
+/// services trả `DEVELOPER_ERROR`, plugin dịch tiếp thành `canceled`, và nút
+/// Google trở thành một nút không làm gì cả — không vào được, không một câu báo
+/// nào. Máy chưa cài Play services thì cũng không có đường nào khác.
+///
+/// iOS giữ nguyên hộp thoại gốc: ở đó nó không phụ thuộc chữ ký APK, nó đang
+/// chạy tốt, và nó là bảng chọn tài khoản người dùng đã quen.
+final bool _googleWebLoginFirst = Platform.isAndroid;
+
+/// Đăng nhập bằng Google. Cùng chữ ký với `EcAuth.signInWithGoogle` để hai nút
+/// gọi nó y như trước.
+Future<EcUser> _googleSignIn(BuildContext context, EcAuth auth) async {
+  if (_googleWebLoginFirst) {
+    final user = await _googleWebSignIn(context, auth);
+    if (user != null) return user;
+  }
+  return auth.signInWithGoogle();
+}
+
+/// Đăng nhập qua trang web của Google mở trong WebView của app.
+///
+/// Cùng khuôn với việc cắm Drive (`_connectDriveInApp`): máy chủ dựng link, app
+/// mở trong tấm trượt lên từ đáy, chặn lượt chuyển hướng cuối để lấy kết quả.
+/// Khác ở thứ mang về — Drive mang về một cái kho, đây mang về một cái vé đổi
+/// lấy phiên đăng nhập.
+///
+/// `null` nghĩa là **đường này không dùng được** (máy chủ chưa deploy tuyến,
+/// chưa cấu hình, hoặc gọi hỏng) — bên gọi rơi về hộp thoại gốc. Người dùng tự
+/// đóng tấm thì KHÁC hẳn: đó là [EcAuthCancelled], và phải dừng hẳn. Rẽ tiếp
+/// sang hộp thoại gốc lúc đó là hỏi lại đúng câu họ vừa từ chối.
+Future<EcUser?> _googleWebSignIn(BuildContext context, EcAuth auth) async {
+  final repo = _maybeGetIt<EcRepository>();
+  if (repo == null) return null;
+
+  final String? url;
+  try {
+    url = await repo.googleLoginUrl();
+  } on Object catch (error) {
+    // Máy chủ cũ (404), chưa cấu hình (503), hay mất mạng — cả ba đều chỉ có
+    // nghĩa "chưa đi được đường này", không có nghĩa lượt đăng nhập đã hỏng.
+    developer.log(
+      'auth: không lấy được link đăng nhập Google (${error.runtimeType})',
+      name: 'zenpack.auth',
+      level: 900,
+      error: error,
+    );
+    return null;
+  }
+  if (url == null || !context.mounted) return null;
+
+  final result = await showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: const Color(0x00000000),
+    builder: (_) => _GoogleLoginSheet(url: url!),
+  );
+
+  // `null` là bấm back của máy, `cancelled` là vuốt xuống — cả hai là họ vừa
+  // nói "không".
+  if (result == null || result == 'cancelled') throw const EcAuthCancelled();
+  if (!result.startsWith('ok:')) {
+    developer.log(
+      'auth: đăng nhập Google qua web hỏng ($result)',
+      name: 'zenpack.auth',
+      level: 1000,
+    );
+    throw const EcAuthException(
+      'Không đăng nhập được bằng Google, vui lòng thử lại.',
+    );
+  }
+
+  // Vé hạn 2 phút, nên đổi NGAY. Hỏng ở đây là hỏng thật — người dùng đã đồng ý
+  // xong rồi — nên để ngoại lệ bay lên cho [_afterSocialSignIn] báo ra.
+  final token = await repo.googleLoginSession(result.substring(3));
+  return auth.signInWithCustomToken(token);
+}
+
 Future<void> _afterSocialSignIn(
   BuildContext context,
   Future<EcUser> signIn, {
@@ -8210,6 +8291,178 @@ class _DriveConsentScreenState extends State<_DriveConsentScreen> {
   }
 }
 
+/// Đăng nhập bằng Google NGAY TRONG APP, qua trang web của Google.
+///
+/// Bản rút gọn của [_DriveConsentScreen] cho một việc khác: ở đây không có tài
+/// khoản đang giữ kho để in ra đầu tấm, và không có ô mật khẩu nào của app.
+/// Giữ riêng chứ không gộp làm một widget dùng chung — hai luồng có hai vòng
+/// đời khác nhau (một cái cắm kho, một cái mở phiên), và gộp lại là để một lượt
+/// sửa cho luồng này lặng lẽ đổi hành vi của luồng kia.
+///
+/// Kết thúc bằng CHUYỂN HƯỚNG: máy chủ 302 về một URL mang `glogin=ok&ticket=…`
+/// (hoặc `glogin=<mã lỗi>`). Chặn ngay lượt điều hướng ấy — trang đích là
+/// console web, tải nó trong app chỉ hiện một màn lạc quẻ ngay trước lúc đóng.
+///
+/// `pop` trả về: `'ok:<vé>'`, `'cancelled'`, hoặc mã lỗi của máy chủ.
+class _GoogleLoginSheet extends StatefulWidget {
+  const _GoogleLoginSheet({required this.url});
+
+  final String url;
+
+  @override
+  State<_GoogleLoginSheet> createState() => _GoogleLoginSheetState();
+}
+
+class _GoogleLoginSheetState extends State<_GoogleLoginSheet> {
+  late final WebViewController _controller;
+  bool _loading = true;
+
+  /// Màu nền THẬT của trang Google — nó đi theo chế độ sáng/tối của HỆ ĐIỀU
+  /// HÀNH, không theo giao diện app. Xem [_DriveConsentScreenState].
+  Color? _pageColor;
+
+  /// Google còn chuyển hướng thêm vài nhịp sau lượt ta bắt được, và `pop` lần
+  /// thứ hai sẽ đóng nhầm màn nằm dưới.
+  bool _done = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(BrandColors.bg)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (request) {
+            final result = _googleLoginResultOf(request.url);
+            if (result == null) return NavigationDecision.navigate;
+            _finish(result);
+            return NavigationDecision.prevent;
+          },
+          onPageFinished: (_) {
+            if (!mounted) return;
+            setState(() => _loading = false);
+            unawaited(_readPageColor());
+          },
+          // CHỈ khung chính mới tính là hỏng: trang của Google kéo theo cả đống
+          // tài nguyên phụ, và một cái 404 trong đó không phải lý do để bỏ dở.
+          onWebResourceError: (e) {
+            if (e.isForMainFrame == true) _finish('failed');
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  Future<void> _readPageColor() async {
+    try {
+      final raw = await _controller.runJavaScriptReturningResult(
+        '(function(){'
+        "function on(c){return !!c&&c!=='transparent'"
+        "&&!/^rgba\\(.*,\\s*0\\)\$/.test(c);}"
+        'var b=getComputedStyle(document.body).backgroundColor;'
+        'var h=getComputedStyle(document.documentElement).backgroundColor;'
+        "return on(b)?b:(on(h)?h:'');"
+        '})()',
+      );
+      final color = _cssColor(raw.toString());
+      if (color == null || !mounted) return;
+      setState(() => _pageColor = color);
+      await _controller.setBackgroundColor(color);
+    } on Object {
+      // Không đọc được thì giữ nền cũ — xem [_DriveConsentScreenState].
+    }
+  }
+
+  /// Bảo trang web nhả tiêu điểm, tức đóng bàn phím của nó. `FocusManager` của
+  /// Flutter không với tới ô mật khẩu nằm trong WebView.
+  void _blurWebPage() {
+    unawaited(
+      _controller
+          .runJavaScript(
+            'document.activeElement && document.activeElement.blur();',
+          )
+          .catchError((Object _) {}),
+    );
+  }
+
+  void _finish(String result) {
+    if (_done || !mounted) return;
+    _done = true;
+    Navigator.of(context).pop(result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final inset = MediaQuery.viewInsetsOf(context).bottom;
+    final surface = _pageColor ?? BrandColors.bg;
+    return Padding(
+      // Bàn phím đẩy tấm lên thay vì che ô đang gõ: trang đăng nhập của Google
+      // có ô mật khẩu, và ô đó nằm ở nửa dưới.
+      padding: EdgeInsets.only(bottom: inset),
+      child: FractionallySizedBox(
+        heightFactor: 0.92,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _blurWebPage,
+                    child: Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(top: 10, bottom: 6),
+                        decoration: BoxDecoration(
+                          color: PenColors.line,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        // Nhường cử chỉ KÉO DỌC cho WebView, nếu không trang
+                        // của Google không cuộn được — xem
+                        // [_DriveConsentScreenState].
+                        WebViewWidget(
+                          controller: _controller,
+                          gestureRecognizers: {
+                            Factory<VerticalDragGestureRecognizer>(
+                              VerticalDragGestureRecognizer.new,
+                            ),
+                          },
+                        ),
+                        if (_loading)
+                          ColoredBox(
+                            color: surface,
+                            child: const Center(
+                              child: CupertinoActivityIndicator(),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Màu Dart từ chuỗi `background-color` của CSS, hoặc `null` khi không đọc ra.
 ///
 /// Chỉ nhận `rgb()`/`rgba()` — đó là dạng DUY NHẤT `getComputedStyle` trả về,
@@ -8231,6 +8484,35 @@ Color? _cssColor(String raw) {
 /// URL máy chủ chốt lại là `…/app#/shops/<id>?gdrive=ok` — dấu `?` nằm SAU
 /// `#`, nên `Uri.queryParameters` trả về rỗng. Chỉ đọc query thì màn cấp quyền
 /// không bao giờ tự đóng: nó đứng mãi ở trang console web.
+/// Đọc kết quả lượt đăng nhập Google ở CẢ query lẫn fragment.
+///
+/// URL máy chủ chốt lại là `…/app#/login?glogin=ok&ticket=…` — dấu `?` nằm SAU
+/// `#`, nên `Uri.queryParameters` trả về rỗng. Chỉ đọc query thì tấm đăng nhập
+/// không bao giờ tự đóng. Cùng một cái bẫy với [_gdriveResultOf].
+///
+/// Trả `'ok:<vé>'` khi xong, mã lỗi của máy chủ khi hỏng, `null` khi URL này
+/// không phải lượt quay về (cứ để WebView đi tiếp).
+String? _googleLoginResultOf(String url) {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return null;
+  var params = uri.queryParameters;
+  if (!params.containsKey('glogin')) {
+    final fragment = uri.fragment;
+    if (!fragment.contains('glogin=')) return null;
+    final parsed = Uri.tryParse(fragment);
+    if (parsed == null) return null;
+    params = parsed.queryParameters;
+  }
+  final status = params['glogin'];
+  if (status == null) return null;
+  if (status != 'ok') return status;
+  // `ok` mà không có vé là một lượt quay về hỏng, không phải một lượt thành
+  // công. Đọc nó thành `ok` rồi POST một vé rỗng chỉ đổi lấy 401 và một câu
+  // báo lỗi nói sai chỗ hỏng.
+  final ticket = params['ticket'];
+  return (ticket == null || ticket.isEmpty) ? 'failed' : 'ok:$ticket';
+}
+
 String? _gdriveResultOf(String url) {
   final uri = Uri.tryParse(url);
   if (uri == null) return null;

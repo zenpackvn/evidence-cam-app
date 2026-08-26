@@ -115,6 +115,19 @@ class FirebaseEcAuth implements EcAuth {
     }
   }
 
+  /// Không đi qua [_socialException]: lượt này không mở hộp thoại nào, nên
+  /// không có "người dùng bấm Huỷ" để mà nhận nhầm. Mọi thứ hỏng ở đây là hỏng
+  /// thật, và [_authException] đã dịch đúng các mã của Firebase.
+  @override
+  Future<EcUser> signInWithCustomToken(String token) async {
+    try {
+      final cred = await _auth.signInWithCustomToken(token);
+      return _map(cred.user)!;
+    } on FirebaseAuthException catch (error) {
+      throw _authException(error);
+    }
+  }
+
   Future<AuthCredential> _googleCredential() async {
     // Qua [ensureGoogleSignInReady] chứ không tự gọi `initialize()`: singleton
     // này chỉ chịu được đúng một lượt khởi tạo, và lượt cắm Google Drive cũng
