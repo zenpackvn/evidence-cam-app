@@ -698,13 +698,15 @@ class _LoginRouteState extends State<_LoginRoute> {
       onForgot: () => context.push('/forgot'),
       onGoogle: () => _afterSocialSignIn(
         context,
-        _googleSignIn(context, widget.auth),
+        _googleSignIn(context, widget.auth, widget.repo),
         method: _AuthMethods.google,
+        repo: widget.repo,
       ),
       onApple: () => _afterSocialSignIn(
         context,
         widget.auth.signInWithApple(),
         method: _AuthMethods.apple,
+        repo: widget.repo,
       ),
       showApple: _appleSignInAvailable,
       languageLabel: language.code.toUpperCase(),
@@ -866,13 +868,15 @@ class _RegisterRouteState extends State<_RegisterRoute> {
       onRegister: _policyAccepted && !_saving ? _register : null,
       onGoogle: () => _afterSocialSignIn(
         context,
-        _googleSignIn(context, widget.auth),
+        _googleSignIn(context, widget.auth, widget.repo),
         method: _AuthMethods.google,
+        repo: widget.repo,
       ),
       onApple: () => _afterSocialSignIn(
         context,
         widget.auth.signInWithApple(),
         method: _AuthMethods.apple,
+        repo: widget.repo,
       ),
       showApple: _appleSignInAvailable,
       languageLabel: language.code.toUpperCase(),
@@ -951,9 +955,13 @@ final bool _googleWebLoginFirst = Platform.isAndroid;
 
 /// Đăng nhập bằng Google. Cùng chữ ký với `EcAuth.signInWithGoogle` để hai nút
 /// gọi nó y như trước.
-Future<EcUser> _googleSignIn(BuildContext context, EcAuth auth) async {
+Future<EcUser> _googleSignIn(
+  BuildContext context,
+  EcAuth auth,
+  EcRepository repo,
+) async {
   if (_googleWebLoginFirst) {
-    final user = await _googleWebSignIn(context, auth);
+    final user = await _googleWebSignIn(context, auth, repo);
     if (user != null) return user;
   }
   return auth.signInWithGoogle();
@@ -970,10 +978,18 @@ Future<EcUser> _googleSignIn(BuildContext context, EcAuth auth) async {
 /// chưa cấu hình, hoặc gọi hỏng) — bên gọi rơi về hộp thoại gốc. Người dùng tự
 /// đóng tấm thì KHÁC hẳn: đó là [EcAuthCancelled], và phải dừng hẳn. Rẽ tiếp
 /// sang hộp thoại gốc lúc đó là hỏi lại đúng câu họ vừa từ chối.
-Future<EcUser?> _googleWebSignIn(BuildContext context, EcAuth auth) async {
-  final repo = _maybeGetIt<EcRepository>();
-  if (repo == null) return null;
-
+///
+/// [repo] nhận qua THAM SỐ, không tra `getIt`. Bản trước tra `getIt` — mà
+/// `EcRepository` chưa bao giờ được đăng ký ở đó: cả app truyền nó xuống bằng
+/// hàm dựng. Nên `_maybeGetIt` luôn trả null, cả nhánh này chết lặng, và mọi
+/// lượt bấm Google trên Android rơi thẳng xuống hộp thoại gốc — đúng cái hộp
+/// thoại đang trả `DEVELOPER_ERROR` vì chữ ký APK chưa đăng ký. Hai lỗi che
+/// nhau: đường lùi viết ra để cứu đúng cảnh đó thì không bao giờ chạy.
+Future<EcUser?> _googleWebSignIn(
+  BuildContext context,
+  EcAuth auth,
+  EcRepository repo,
+) async {
   final String? url;
   try {
     url = await repo.googleLoginUrl();
@@ -1022,6 +1038,7 @@ Future<void> _afterSocialSignIn(
   BuildContext context,
   Future<EcUser> signIn, {
   required String method,
+  required EcRepository repo,
 }) async {
   try {
     await signIn;
@@ -1038,7 +1055,7 @@ Future<void> _afterSocialSignIn(
     // `GET /api/me` tự tạo hàng đó ở lượt gọi đầu, nên chỉ cần đọc một lượt.
     // Hỏng thì im lặng: đăng nhập đã xong rồi, và mọi màn phía sau vẫn tự gọi
     // lại được — chặn người dùng ở đây vì một lượt đọc hỏng là tệ hơn nhiều.
-    await _ensureServerAccount(context);
+    await _ensureServerAccount(context, repo);
     if (!context.mounted) return;
     context.go('/shops', extra: 'forward');
   } on EcAuthCancelled {
@@ -1051,9 +1068,15 @@ Future<void> _afterSocialSignIn(
 }
 
 /// Chạm `GET /api/me` một lượt để máy chủ dựng hàng `accounts` nếu chưa có.
-Future<void> _ensureServerAccount(BuildContext context) async {
-  final repo = _maybeGetIt<EcRepository>();
-  if (repo == null) return;
+///
+/// [repo] đi qua THAM SỐ vì `EcRepository` không nằm trong `getIt` — xem
+/// [_googleWebSignIn]. Bản trước tra `getIt` rồi lặng lẽ `return` khi không
+/// thấy, nên hàng `accounts` chưa bao giờ được dựng cho người đăng nhập bằng
+/// Google hay Apple: tài khoản sống trên Firebase mà máy chủ không biết mặt.
+Future<void> _ensureServerAccount(
+  BuildContext context,
+  EcRepository repo,
+) async {
   try {
     await repo.account();
   } on Object catch (error, stack) {
