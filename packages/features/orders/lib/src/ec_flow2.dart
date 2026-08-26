@@ -342,7 +342,7 @@ class EcOrderTimelineScreen extends StatefulWidget {
 class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
   /// Đang ở chế độ tick chọn bằng chứng để gộp. Mặc định TẮT, nên chạm một
   /// hàng vẫn là mở chi tiết như thường.
-  bool _selecting = false;
+  final bool _selecting = false;
 
   /// Id các bằng chứng đã tick. Dùng id thay vì object để tick không mất khi
   /// danh sách được nạp lại (xoá bằng chứng, kéo làm mới).

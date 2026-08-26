@@ -473,7 +473,11 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     if (!_s3FormOpen) return true;
     // Không có nút Kiểm tra thì không có cửa nào để qua — gác lúc đó là khoá
     // nút Lưu vĩnh viễn.
-    if (widget.onTestS3 == null) return _s3.readyWithStoredKeys;
+    if (widget.onTestS3 == null) {
+      return _s3.readyToSubmit(
+        hasStoredKeys: widget.state.hasAccountFor(EcStorageKind.s3),
+      );
+    }
     // Đủ sáu ô là CHƯA đủ. Phải có một lượt Kiểm tra xanh trên đúng bộ giá trị
     // đang nằm trên màn.
     //
@@ -481,7 +485,11 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     // được lưu thì clip quay sau đó không có chỗ nào nhận, mà người bán chỉ
     // biết khi mở đơn ra tìm video. Bắt thử trước biến một hỏng-về-sau thành
     // một câu-lỗi-ngay-bây-giờ, lúc họ còn đang nhìn đúng mấy ô vừa gõ.
-    return _s3.readyWithStoredKeys && widget.s3TestPassed && !_editedSinceTest;
+    return _s3.readyToSubmit(
+          hasStoredKeys: widget.state.hasAccountFor(EcStorageKind.s3),
+        ) &&
+        widget.s3TestPassed &&
+        !_editedSinceTest;
   }
 
   /// Bấm huỷ: trả mọi thứ về đúng trạng thái trước khi người dùng đụng vào.
@@ -514,7 +522,11 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
     // S3 cắm mới: giá trị đã nằm sẵn trong form, gửi thẳng đi thay vì đẩy người
     // dùng sang một màn nữa để gõ lại đúng sáu ô vừa gõ.
     if (_s3FormOpen) {
-      if (!_s3.readyWithStoredKeys) return;
+      if (!_s3.readyToSubmit(
+        hasStoredKeys: widget.state.hasAccountFor(EcStorageKind.s3),
+      )) {
+        return;
+      }
       widget.onPick?.call(_picked);
       _s3.submit(widget.onSaveS3!);
       return;
@@ -732,7 +744,13 @@ class _EcStorageScreenState extends State<EcStorageScreen> {
                       widget.onTestS3 != null &&
                       (_s3Changed || !widget.state.ok)) ...[
                     _TestButton(
-                      enabled: _s3.readyWithStoredKeys && !widget.busy,
+                      enabled:
+                          _s3.readyToSubmit(
+                            hasStoredKeys: state.hasAccountFor(
+                              EcStorageKind.s3,
+                            ),
+                          ) &&
+                          !widget.busy,
                       onTap: () {
                         // Thu bàn phím trước đã: câu trả lời của lượt thử vẽ
                         // NGAY DƯỚI sáu ô, mà bàn phím thì che đúng chỗ đó —
@@ -1038,21 +1056,28 @@ class _S3Controllers {
       keyId.text.trim().isNotEmpty &&
       secret.text.trim().isNotEmpty;
 
-  /// Đủ để GỬI ĐI khi kho này đã có khoá lưu trên máy chủ.
+  /// Đủ để GỬI ĐI. [hasStoredKeys] = máy chủ ĐANG giữ cặp khoá của kho S3 này.
   ///
   /// Khoá bí mật không bao giờ rời máy chủ, nên form "đổi cấu hình" mở ra với
   /// hai ô khoá trống. Đòi gõ lại là bắt người bán đi tìm lại cặp khoá trong
   /// bảng điều khiển của nhà cung cấp chỉ để sửa một chữ trong tên bucket —
   /// máy chủ tự dùng lại khoá cũ khi hai ô này trống.
   ///
-  /// Gõ MỘT trong hai thì phải gõ nốt: nửa cặp khoá không mở được kho nào.
-  bool get readyWithStoredKeys {
+  /// Nhưng chỉ khi máy chủ THẬT SỰ có khoá cũ để dùng lại. Chưa cắm kho nào mà
+  /// vẫn mở cửa cho gửi đi là gửi một cấu hình không khoá ra mạng chỉ để nhận
+  /// về đúng câu lỗi mà chính app đoán được từ trước.
+  ///
+  /// Gõ MỘT trong hai thì phải gõ nốt: nửa cặp khoá không mở được kho nào, và
+  /// ghép nửa vừa gõ với nửa cũ thì kho trả về `SignatureDoesNotMatch` — câu đó
+  /// không chỉ ra được rằng lỗi nằm ở chỗ trộn hai bộ khoá vào nhau.
+  bool readyToSubmit({required bool hasStoredKeys}) {
     if (endpoint.text.trim().isEmpty || bucket.text.trim().isEmpty) {
       return false;
     }
     final hasId = keyId.text.trim().isNotEmpty;
     final hasSecret = secret.text.trim().isNotEmpty;
-    return hasId == hasSecret;
+    if (hasId != hasSecret) return false;
+    return hasId || hasStoredKeys;
   }
 
   /// Ảnh chụp sáu ô, để so xem người dùng đã đổi gì chưa.

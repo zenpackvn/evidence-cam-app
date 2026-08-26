@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:network/network.dart' show Dio, Headers, Options, Response;
+import 'package:network/network.dart' show Dio, Options, Response;
 
 import 'ec_auth.dart';
 import 'ec_models.dart';

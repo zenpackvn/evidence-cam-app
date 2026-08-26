@@ -12,7 +12,7 @@ class _MockDio extends Mock implements Dio {}
 /// endpoint, nhưng `_get(..., live: true)` (getOrder, listOrders) truyền
 /// `_liveOptions` để đi thẳng máy chủ thay vì lấy bản trong bộ đệm. Ba test đó
 /// thành ra không khớp stub nào, mock trả `null`, và lỗi hiện ra ở tận chỗ ép
-/// kiểu: "type 'Null' is not a subtype of type 'Future<Response<…>>'" — không
+/// kiểu: "type 'Null' is not a subtype of type `Future<Response<…>>`" — không
 /// nhắc gì tới `options`, nên rất tốn thời gian để lần ra.
 
 Response<T> _res<T>(String path, T data) => Response<T>(

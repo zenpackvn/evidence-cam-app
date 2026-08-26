@@ -1,8 +1,9 @@
+import 'dart:ui' show Tristate;
+
 import 'package:app_ui/app_ui.dart';
 import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/cupertino.dart' show CupertinoTextField;
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
@@ -70,7 +71,7 @@ Future<void> _fillS3(WidgetTester tester) async {
 /// Nút Lưu có bấm được không, đọc qua nhãn semantics của nó.
 bool _saveEnabled(WidgetTester tester) {
   final node = tester.getSemantics(find.bySemanticsLabel('Lưu lựa chọn kho'));
-  return node.hasFlag(SemanticsFlag.isEnabled);
+  return node.flagsCollection.isEnabled == Tristate.isTrue;
 }
 
 /// Không làm gì — mấy test dưới soi NÚT NÀO hiện ra và bấm được, không soi
@@ -160,8 +161,8 @@ void main() {
       final test = find.bySemanticsLabel('Kiểm tra');
       expect(test, findsOneWidget);
       expect(
-        tester.getSemantics(test).hasFlag(SemanticsFlag.isEnabled),
-        isTrue,
+        tester.getSemantics(test).flagsCollection.isEnabled,
+        Tristate.isTrue,
         reason: 'còn đòi gõ lại cặp khoá',
       );
     });
@@ -738,8 +739,9 @@ void main() {
       expect(
         tester
             .getSemantics(find.bySemanticsLabel('Lưu lựa chọn kho'))
-            .hasFlag(SemanticsFlag.isEnabled),
-        isFalse,
+            .flagsCollection
+            .isEnabled,
+        Tristate.isFalse,
       );
     });
 

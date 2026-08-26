@@ -79,6 +79,9 @@ class DeviceSample {
 /// Đọc pin + loại mạng. Cài đặt thật nằm ở composition root (`lib/`) — feature
 /// package không import plugin trực tiếp (wrapper rule, có
 /// `test/architecture/wrapper_rule_test.dart` canh).
+// Một hàm là đủ, nhưng wrapper rule cần một KIỂU để feature phụ thuộc vào
+// thay vì phụ thuộc plugin.
+// ignore: one_member_abstracts
 abstract class DeviceConditionSource {
   Future<({int? battery, bool charging, NetKind net})> read();
 }

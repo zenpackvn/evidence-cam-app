@@ -63,6 +63,9 @@ void main() {
   /// Nếu ai đó đổi tên hàm hoặc bỏ `implements`, `main.dart` sẽ không biên dịch
   /// được — nhưng ca này nói ra lý do, còn lỗi biên dịch thì không.
   test('EcApi hiện thực đúng giao diện mà lớp xác thực cần', () {
+    // Đúng là hằng true khi biên dịch được — đó CHÍNH LÀ điều ca này canh:
+    // nếu EcApi rơi khỏi giao diện, dòng này thành lỗi biên dịch.
+    // ignore: unnecessary_type_check
     expect(buildApi(url: 'https://x.test') is EcAuthMailApi, isTrue);
   });
 }

@@ -1,4 +1,6 @@
 import 'package:camera_android_camerax/camera_android_camerax.dart';
+// camera_android_camerax không export CameraX bindings qua public API; ghim
+// vào video pipeline của nó buộc phải với vào src/.
 // ignore: implementation_imports
 import 'package:camera_android_camerax/src/camerax_library.dart';
 import 'package:camera_platform_interface/camera_platform_interface.dart';

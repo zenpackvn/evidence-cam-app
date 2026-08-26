@@ -7,7 +7,7 @@ library;
 
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' show Offset, Rect, Size;
+import 'dart:ui' show Rect, Size;
 
 import 'package:app_platform/app_platform.dart';
 import 'package:flutter/services.dart' show DeviceOrientation;

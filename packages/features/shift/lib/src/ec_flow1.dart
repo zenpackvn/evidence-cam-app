@@ -14,7 +14,6 @@ import 'package:flutter/cupertino.dart'
     show
         CupertinoActionSheet,
         CupertinoActionSheetAction,
-        CupertinoActivityIndicator,
         CupertinoButton,
         CupertinoDatePicker,
         CupertinoDatePickerMode,
@@ -23,7 +22,6 @@ import 'package:flutter/cupertino.dart'
         showCupertinoModalPopup;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show MaxLengthEnforcement;
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:localization/localization.dart';
 import 'package:shared_contracts/shared_contracts.dart';
@@ -2852,6 +2850,8 @@ class EcCreateTypeScreen extends StatelessWidget {
                   // 44pt nhưng co theo ô để không máy nào tràn.
                   child: LayoutBuilder(
                     builder: (context, constraints) {
+                      // 44 (int) khiến math.min suy ra num, gán vào double là lỗi biên dịch.
+                      // ignore: prefer_int_literals
                       final diameter = math.min(44.0, constraints.maxWidth);
                       final size = i == selectedColor ? diameter - 8 : diameter;
                       return PenBox(

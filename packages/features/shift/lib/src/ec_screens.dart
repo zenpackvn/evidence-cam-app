@@ -10,10 +10,8 @@ library;
 
 import 'package:app_ui/app_ui.dart';
 import 'package:ec_ui/ec_ui.dart';
-import 'package:flutter/cupertino.dart'
-    show CupertinoPageScaffold, CupertinoTextField;
+import 'package:flutter/cupertino.dart' show CupertinoTextField;
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:localization/localization.dart';
 

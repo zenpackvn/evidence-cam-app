@@ -199,6 +199,8 @@ class _CropViewport extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final side = math.max(
+        // 0 (int) khiến math.max suy ra num, gán vào double là lỗi biên dịch.
+        // ignore: prefer_int_literals
         0.0,
         math.min(constraints.maxWidth, constraints.maxHeight) - 40,
       );
