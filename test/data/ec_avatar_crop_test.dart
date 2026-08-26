@@ -28,7 +28,10 @@ void main() {
     });
 
     test('ảnh vuông thì vừa khít, không thừa chiều nào', () {
-      expect(ecAvatarCoverSize(const Size(800, 800), 400), const Size(400, 400));
+      expect(
+        ecAvatarCoverSize(const Size(800, 800), 400),
+        const Size(400, 400),
+      );
     });
   });
 

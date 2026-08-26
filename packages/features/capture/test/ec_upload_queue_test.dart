@@ -71,24 +71,27 @@ void main() {
   //
   // Ba test dưới đây từng khẳng định điều ngược lại — chúng có trước lúc lịch
   // sử "đã xong" được giữ lại, và đỏ kể từ đó.
-  test('upload xong thì hàng ở lại làm lịch sử, nhưng hết việc phải làm', () async {
-    final queue = EcUploadQueue(
-      uploader: _FakeUploader(['https://cdn/x.mp4']),
-      directory: dir,
-    );
+  test(
+    'upload xong thì hàng ở lại làm lịch sử, nhưng hết việc phải làm',
+    () async {
+      final queue = EcUploadQueue(
+        uploader: _FakeUploader(['https://cdn/x.mp4']),
+        directory: dir,
+      );
 
-    await queue.enqueue(
-      tracking: 'SPX1',
-      type: 'Đóng hàng',
-      filePath: clip.path,
-    );
-    // Let the async processor run to completion.
-    await Future<void>.delayed(const Duration(milliseconds: 10));
+      await queue.enqueue(
+        tracking: 'SPX1',
+        type: 'Đóng hàng',
+        filePath: clip.path,
+      );
+      // Let the async processor run to completion.
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(queue.tasks.single.state, EcUploadState.done);
-    expect(queue.tasks.single.remoteUrl, 'https://cdn/x.mp4');
-    expect(queue.pendingCount, 0);
-  });
+      expect(queue.tasks.single.state, EcUploadState.done);
+      expect(queue.tasks.single.remoteUrl, 'https://cdn/x.mp4');
+      expect(queue.pendingCount, 0);
+    },
+  );
 
   // Máy dùng chung ca: A quay rồi đăng xuất, B đăng nhập. Clip của A phải BIẾN
   // KHỎI MÀN của B — nhưng vẫn còn nguyên trên máy, và A đăng nhập lại là thấy

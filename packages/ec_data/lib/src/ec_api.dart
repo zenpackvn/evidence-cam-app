@@ -375,8 +375,7 @@ class EcApi implements EcAuthMailApi {
   /// Địa chỉ lấy từ token, không gửi lên: nhận từ thân request là cho người ta
   /// tự chọn nạn nhân.
   @override
-  Future<void> sendVerifyEmail() =>
-      _dio.post<void>('/api/auth/verify-email');
+  Future<void> sendVerifyEmail() => _dio.post<void>('/api/auth/verify-email');
 
   /// Mail đặt lại mật khẩu. KHÔNG cần đăng nhập.
   ///

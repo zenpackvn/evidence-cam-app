@@ -67,7 +67,10 @@ void _endpointTests() {
   // chủ có sẵn câu giải thích vì sao không nhận. Sửa lén thì lần sau họ vẫn
   // không biết luật đó tồn tại.
   test('http không bị âm thầm nâng thành https', () {
-    expect(normalizeS3Endpoint('http://s3.example.com'), 'http://s3.example.com');
+    expect(
+      normalizeS3Endpoint('http://s3.example.com'),
+      'http://s3.example.com',
+    );
   });
 
   test('ô trống thì vẫn trống, không đẻ ra https://', () {
@@ -77,6 +80,7 @@ void _endpointTests() {
 
 void main() {
   group('địa chỉ kho S3', _endpointTests);
+
   /// Hàng thành viên: tên, EMAIL ngay dưới, và nhãn trạng thái nói đúng việc.
   ///
   /// Một cửa hàng có hai người trùng tên là chuyện thường, và tên hiển thị thì

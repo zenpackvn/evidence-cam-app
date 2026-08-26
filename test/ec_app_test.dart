@@ -1300,7 +1300,6 @@ void main() {
     // Clip mới nhất của cả đơn đứng trên mọi clip của ngày hôm trước.
     expect(tester.getTopLeft(find.text('09:15')).dy, lessThan(later));
   });
-
 }
 
 /// Một clip đi từ "đang đóng dấu" sang "đã niêm phong" giữa hai lần gọi API —

@@ -176,7 +176,6 @@ class FakeEcRepository implements EcRepository {
   Future<void> connectGdriveCode(String shopId, String code) async {}
 
   @override
-
   @override
   Future<void> setStorageActive(
     String shopId, {
