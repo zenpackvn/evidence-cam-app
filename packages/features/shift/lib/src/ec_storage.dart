@@ -1225,12 +1225,20 @@ class _S3Form extends StatelessWidget {
             hint: l10n.storageFieldPrefixHint,
             onChanged: onChanged,
           ),
+          // Cặp khoá đi qua bàn phím MẬT KHẨU, không phải bàn phím chữ.
+          //
+          // Bàn phím tiếng Việt gõ Telex nuốt `w` để dựng `ư`, nên gõ tay một
+          // khoá có chữ `W` là gửi đi một chuỗi khác thứ đang nhìn thấy. Kiểu
+          // `visiblePassword` bảo hệ điều hành đưa bàn phím ASCII, không bộ gõ;
+          // [_Field.ascii] chặn nốt phần bộ gõ hệ thống vẫn lọt qua.
           _Field(
             label: l10n.storageFieldAccessKey,
             controller: fields.keyId,
             // Đuôi khoá đang lưu làm chữ mờ: khách nhận ra mình đã dán khoá
             // nào mà không có gì bí mật lọt ra.
             placeholder: keyHint.isEmpty ? 'AKIA…' : keyHint,
+            keyboardType: TextInputType.visiblePassword,
+            ascii: true,
             onChanged: onChanged,
           ),
           _Field(
@@ -1238,6 +1246,8 @@ class _S3Form extends StatelessWidget {
             controller: fields.secret,
             placeholder: '••••••••',
             obscure: true,
+            keyboardType: TextInputType.visiblePassword,
+            ascii: true,
             onChanged: onChanged,
           ),
           if (errorText?.isNotEmpty ?? false) ...[
@@ -1637,6 +1647,7 @@ class _Field extends StatefulWidget {
     this.obscure = false,
     this.keyboardType,
     this.onChanged,
+    this.ascii = false,
   });
 
   final String label;
@@ -1646,6 +1657,14 @@ class _Field extends StatefulWidget {
   final bool obscure;
   final TextInputType? keyboardType;
   final VoidCallback? onChanged;
+
+  /// Chỉ nhận ký tự ASCII in được. Dành cho ô mà MỘT ký tự sai là hỏng cả chữ
+  /// ký, mà lỗi trả về thì không chỉ ra được ký tự nào.
+  ///
+  /// Bàn phím tiếng Việt gõ Telex biến `w` đứng một mình thành `ư`: dán thì
+  /// không sao, nhưng gõ tay một khoá có chữ `W` là ra `Ư` — trông gần giống,
+  /// và kho trả về `SignatureDoesNotMatch`, câu không hề nhắc tới bàn phím.
+  final bool ascii;
 
   @override
   State<_Field> createState() => _FieldState();
@@ -1685,7 +1704,12 @@ class _FieldState extends State<_Field> {
             autocorrect: false,
             enableSuggestions: false,
             textCapitalization: TextCapitalization.none,
-            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
+            inputFormatters: [
+              if (widget.ascii)
+                FilteringTextInputFormatter.allow(RegExp(r'[\x21-\x7E]'))
+              else
+                FilteringTextInputFormatter.deny(RegExp(r'\s')),
+            ],
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
               color: PenColors.card,

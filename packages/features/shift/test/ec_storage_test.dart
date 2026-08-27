@@ -398,6 +398,33 @@ void main() {
     // thì máy chủ chỉ nói `SignatureDoesNotMatch` — câu không chỉ ra ô nào sai,
     // mà một hàng chấm tròn thì không soi lại được. Con mắt là đường duy nhất
     // để tự kiểm thứ vừa dán.
+    // Bàn phím tiếng Việt gõ Telex biến `w` đứng một mình thành `ư`. Gõ tay
+    // một khoá có chữ `W` là gửi đi một chuỗi khác thứ đang nhìn thấy, và kho
+    // trả về `SignatureDoesNotMatch` — câu không hề nhắc tới bàn phím.
+    testWidgets('ô khoá không nhận ký tự tiếng Việt', (tester) async {
+      await _pump(
+        tester,
+        const EcStorageScreen(
+          state: EcStorageState(canManage: true, byosAllowed: true),
+          onSaveS3: _noopS3,
+          onTestS3: _noopS3,
+        ),
+      );
+
+      await tester.tap(find.text('Kho đám mây riêng (chuẩn S3)'));
+      await tester.pumpAndSettle();
+
+      final secret = find.byType(CupertinoTextField).at(5);
+      await tester.enterText(secret, 'JIgkadGzR9PBaoIc9hƯMMQZLBw9Hd7dM');
+      await tester.pump();
+
+      expect(
+        tester.widget<CupertinoTextField>(secret).controller!.text,
+        'JIgkadGzR9PBaoIc9hMMQZLBw9Hd7dM',
+        reason: 'ký tự có dấu phải bị chặn ngay ở ô, không đi ra máy chủ',
+      );
+    });
+
     testWidgets('ô khoá bí mật có con mắt để nhìn hoặc che lại', (
       tester,
     ) async {
