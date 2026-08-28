@@ -8743,8 +8743,13 @@ EcSealLine? _sealLine(AppLocalizations l10n, EvidenceDto item) {
       label: l10n.sealWorking,
       inProgress: true,
     ),
-    'render_failed' => EcSealLine(label: l10n.sealFailed),
-    'hash_mismatch' => EcSealLine(label: l10n.sealMismatch),
+    'render_failed' => EcSealLine(label: l10n.sealFailed, mustSay: true),
+    'hash_mismatch' => EcSealLine(label: l10n.sealMismatch, mustSay: true),
+    // Dấu MUỘN, KHÔNG phải sai dấu. `sealMismatch` bảo người bán "hãy quay lại
+    // clip này" — với nhóm này thì câu đó vừa sai vừa không làm được: kiện hàng
+    // đã đi từ mấy tuần trước, và tệp không hề có lỗi. Bản gốc mất là do hệ
+    // thống tự ghi đè lên nó trước 24/08. Xem services/late_seal.ts.
+    'sealed_late' => EcSealLine(label: l10n.sealLate, mustSay: true),
     _ => EcSealLine(label: l10n.sealNone),
   };
 }

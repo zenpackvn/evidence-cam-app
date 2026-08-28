@@ -1770,6 +1770,12 @@ abstract class AppLocalizations {
   /// **'Fingerprint mismatch — re-record this clip'**
   String get sealMismatch;
 
+  /// No description provided for @sealLate.
+  ///
+  /// In en, this message translates to:
+  /// **'Late seal — the video is intact; the fault was ours'**
+  String get sealLate;
+
   /// No description provided for @sealTimeDrift.
   ///
   /// In en, this message translates to:

@@ -347,6 +347,7 @@
   "sealNone": "Quay trước khi có niêm phong",
   "sealFailed": "Chưa đóng được dấu thời gian · video vẫn xem và tải được",
   "sealMismatch": "Vân tay không khớp — hãy quay lại clip này",
+  "sealLate": "Dấu muộn — video còn nguyên, lỗi thuộc về hệ thống",
   "sealTimeDrift": "Đồng hồ máy quay lệch so với máy chủ, nên dấu nung ghi thêm giờ máy chủ nhận clip.",
   "detailSealAnchor": "Chứng thực độc lập",
   "sealAnchorConfirmed": "Đã có · mục #{block}",

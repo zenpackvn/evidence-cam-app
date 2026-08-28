@@ -950,6 +950,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'La huella no coincide — vuelve a grabar este clip';
 
   @override
+  String get sealLate =>
+      'Sello tardío — el vídeo está intacto; el fallo fue nuestro';
+
+  @override
   String get sealTimeDrift =>
       'El reloj de la cámara se desvió del servidor, por eso el sello grabado lleva también la hora en que el servidor recibió el clip.';
 

@@ -961,6 +961,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Fingerabdruck stimmt nicht — nimm diesen Clip neu auf';
 
   @override
+  String get sealLate =>
+      'Nachträgliches Siegel — das Video ist intakt; der Fehler lag bei uns';
+
+  @override
   String get sealTimeDrift =>
       'Die Kamerauhr wich vom Server ab, deshalb trägt der eingebrannte Stempel auch die Empfangszeit des Servers.';
 

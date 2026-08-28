@@ -260,6 +260,7 @@
   "sealNone": "Grabado antes de que existiera el sellado",
   "sealFailed": "Aún sin marca de hora · el vídeo se reproduce y se descarga igualmente",
   "sealMismatch": "La huella no coincide — vuelve a grabar este clip",
+  "sealLate": "Sello tardío — el vídeo está intacto; el fallo fue nuestro",
   "sealTimeDrift": "El reloj de la cámara se desvió del servidor, por eso el sello grabado lleva también la hora en que el servidor recibió el clip.",
   "detailSealAnchor": "Prueba independiente",
   "sealAnchorConfirmed": "Sí · entrada n.º {block}",

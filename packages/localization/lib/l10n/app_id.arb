@@ -260,6 +260,7 @@
   "sealNone": "Direkam sebelum fitur segel ada",
   "sealFailed": "Stempel waktu belum tersemat · video tetap bisa diputar dan diunduh",
   "sealMismatch": "Sidik jari tidak cocok — rekam ulang klip ini",
+  "sealLate": "Segel susulan — videonya utuh; kesalahan ada pada kami",
   "sealTimeDrift": "Jam kamera meleset dari server, jadi stempel yang disematkan juga memuat waktu server menerima klip.",
   "detailSealAnchor": "Bukti independen",
   "sealAnchorConfirmed": "Ya · entri #{block}",

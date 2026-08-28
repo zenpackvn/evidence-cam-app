@@ -260,6 +260,7 @@
   "sealNone": "Aufgenommen, bevor es die Versiegelung gab",
   "sealFailed": "Noch kein Zeitstempel eingebrannt · das Video lässt sich weiterhin abspielen und herunterladen",
   "sealMismatch": "Fingerabdruck stimmt nicht — nimm diesen Clip neu auf",
+  "sealLate": "Nachträgliches Siegel — das Video ist intakt; der Fehler lag bei uns",
   "sealTimeDrift": "Die Kamerauhr wich vom Server ab, deshalb trägt der eingebrannte Stempel auch die Empfangszeit des Servers.",
   "detailSealAnchor": "Unabhängiger Nachweis",
   "sealAnchorConfirmed": "Ja · Eintrag #{block}",

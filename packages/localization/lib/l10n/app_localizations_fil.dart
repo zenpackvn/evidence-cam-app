@@ -945,6 +945,9 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi tugma ang fingerprint — i-record ulit ang clip na ito';
 
   @override
+  String get sealLate => 'Huling selyo — buo pa ang video; sa amin ang depekto';
+
+  @override
   String get sealTimeDrift =>
       'Lumihis ang orasan ng camera sa server, kaya dala rin ng nakasunog na selyo ang oras ng pagtanggap ng server sa clip.';
 

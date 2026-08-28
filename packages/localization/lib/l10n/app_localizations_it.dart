@@ -953,6 +953,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impronta non corrispondente — registra di nuovo questa clip';
 
   @override
+  String get sealLate =>
+      'Sigillo tardivo — il video è integro; l\'errore è stato nostro';
+
+  @override
   String get sealTimeDrift =>
       'L\'orologio della fotocamera si è scostato dal server, perciò il timbro impresso riporta anche l\'ora in cui il server ha ricevuto la clip.';
 

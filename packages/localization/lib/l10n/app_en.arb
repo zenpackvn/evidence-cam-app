@@ -501,6 +501,7 @@
   "sealNone": "Recorded before sealing existed",
   "sealFailed": "No timestamp stamped yet · the video still plays and downloads",
   "sealMismatch": "Fingerprint mismatch — re-record this clip",
+  "sealLate": "Late seal — the video is intact; the fault was ours",
   "sealTimeDrift": "The camera clock drifted from the server, so the burned-in stamp also carries the time the server received the clip.",
   "detailSealAnchor": "Independent proof",
   "sealAnchorConfirmed": "Yes · entry #{block}",

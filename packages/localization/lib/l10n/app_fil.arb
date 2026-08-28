@@ -260,6 +260,7 @@
   "sealNone": "Ni-record bago pa umiral ang pag-seselyo",
   "sealFailed": "Wala pang nakasunog na timestamp · nape-play at nada-download pa rin ang video",
   "sealMismatch": "Hindi tugma ang fingerprint — i-record ulit ang clip na ito",
+  "sealLate": "Huling selyo — buo pa ang video; sa amin ang depekto",
   "sealTimeDrift": "Lumihis ang orasan ng camera sa server, kaya dala rin ng nakasunog na selyo ang oras ng pagtanggap ng server sa clip.",
   "detailSealAnchor": "Malayang patunay",
   "sealAnchorConfirmed": "Oo · entry #{block}",

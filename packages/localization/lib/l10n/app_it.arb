@@ -260,6 +260,7 @@
   "sealNone": "Registrato prima che esistesse il sigillo",
   "sealFailed": "Marca temporale non ancora impressa · il video si riproduce e si scarica lo stesso",
   "sealMismatch": "Impronta non corrispondente — registra di nuovo questa clip",
+  "sealLate": "Sigillo tardivo — il video è integro; l'errore è stato nostro",
   "sealTimeDrift": "L'orologio della fotocamera si è scostato dal server, perciò il timbro impresso riporta anche l'ora in cui il server ha ricevuto la clip.",
   "detailSealAnchor": "Prova indipendente",
   "sealAnchorConfirmed": "Sì · voce n. {block}",

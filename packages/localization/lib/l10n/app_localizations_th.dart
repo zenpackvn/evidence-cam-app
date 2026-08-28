@@ -928,6 +928,10 @@ class AppLocalizationsTh extends AppLocalizations {
   String get sealMismatch => 'ลายนิ้วมือไม่ตรงกัน — ถ่ายคลิปนี้ใหม่';
 
   @override
+  String get sealLate =>
+      'ตราประทับย้อนหลัง — วิดีโอยังอยู่ครบ ความผิดพลาดเป็นของเรา';
+
+  @override
   String get sealTimeDrift =>
       'นาฬิกากล้องคลาดจากเซิร์ฟเวอร์ ตราประทับจึงมีเวลาที่เซิร์ฟเวอร์รับคลิปกำกับไว้ด้วย';
 

@@ -945,6 +945,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get sealMismatch => 'Cap jari tidak sepadan — rakam semula klip ini';
 
   @override
+  String get sealLate =>
+      'Meterai lewat — video masih utuh; kesilapan pada pihak kami';
+
+  @override
   String get sealTimeDrift =>
       'Jam kamera terpesong daripada pelayan, jadi cap yang diterapkan turut membawa masa pelayan menerima klip.';
 

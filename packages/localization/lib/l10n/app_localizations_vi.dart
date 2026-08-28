@@ -934,6 +934,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get sealMismatch => 'Vân tay không khớp — hãy quay lại clip này';
 
   @override
+  String get sealLate => 'Dấu muộn — video còn nguyên, lỗi thuộc về hệ thống';
+
+  @override
   String get sealTimeDrift =>
       'Đồng hồ máy quay lệch so với máy chủ, nên dấu nung ghi thêm giờ máy chủ nhận clip.';
 

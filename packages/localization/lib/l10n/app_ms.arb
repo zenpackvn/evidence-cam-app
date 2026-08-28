@@ -260,6 +260,7 @@
   "sealNone": "Dirakam sebelum ciri meterai wujud",
   "sealFailed": "Cap masa belum diterapkan · video masih boleh dimainkan dan dimuat turun",
   "sealMismatch": "Cap jari tidak sepadan — rakam semula klip ini",
+  "sealLate": "Meterai lewat — video masih utuh; kesilapan pada pihak kami",
   "sealTimeDrift": "Jam kamera terpesong daripada pelayan, jadi cap yang diterapkan turut membawa masa pelayan menerima klip.",
   "detailSealAnchor": "Bukti bebas",
   "sealAnchorConfirmed": "Ya · entri #{block}",

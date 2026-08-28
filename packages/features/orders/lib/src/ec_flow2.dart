@@ -256,6 +256,7 @@ class EcSealLine {
     this.inProgress = false,
     this.anchor,
     this.canVerify = false,
+    this.mustSay = false,
   });
 
   final String label;
@@ -274,6 +275,20 @@ class EcSealLine {
   /// clips recorded before sealing existed — opening the page for one of those
   /// serves a 404, the fastest way to lose a seller's trust in the feature.
   final bool canVerify;
+
+  /// Say this line even though the clip is no longer being worked on.
+  ///
+  /// [label] used to reach the screen ONLY while [inProgress] was true, so every
+  /// terminal state that had something to say said nothing: a clip flagged
+  /// `hash_mismatch` rendered as "Uploaded" with a check mark. Measured on the
+  /// real sheet 2026-08-28 — the mismatch string existed in ten languages and
+  /// had never once been drawn.
+  ///
+  /// Not simply "always show the line": for a clip that sealed cleanly the
+  /// upload row with its check mark IS the right answer, and adding a second
+  /// row saying the same thing twice is noise. This flag marks the states where
+  /// silence is the wrong answer.
+  final bool mustSay;
 }
 
 /// Order timeline — evidence videos for one order, grouped by day, with
@@ -630,12 +645,23 @@ class EcVideoDetailScreen extends StatelessWidget {
             label: l10n.detailSeal,
             value: video.seal!.label,
           )
-        else
+        else ...[
           _EcDetailInfoRow(
             label: l10n.detailUploadStatus,
             value: video.uploadStatus,
             trailing: LucideIcons.check,
           ),
+          // Trạng thái cuối cũng có thứ phải nói. Trước đây hàng này chỉ hiện
+          // khi còn ĐANG chạy, nên một clip mang cờ hỏng hiện ra đúng chữ "Đã
+          // tải lên" kèm dấu tích — người bán đọc thành mọi thứ đều ổn.
+          if (video.seal?.mustSay ?? false) ...[
+            const _EcDetailDivider(),
+            _EcDetailInfoRow(
+              label: l10n.detailSeal,
+              value: video.seal!.label,
+            ),
+          ],
+        ],
         if (video.fileSize != null) ...[
           const _EcDetailDivider(),
           _EcDetailInfoRow(

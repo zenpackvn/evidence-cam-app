@@ -938,6 +938,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sealMismatch => 'Fingerprint mismatch — re-record this clip';
 
   @override
+  String get sealLate => 'Late seal — the video is intact; the fault was ours';
+
+  @override
   String get sealTimeDrift =>
       'The camera clock drifted from the server, so the burned-in stamp also carries the time the server received the clip.';
 

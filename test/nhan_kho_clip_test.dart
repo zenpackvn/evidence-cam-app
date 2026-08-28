@@ -123,9 +123,12 @@ void main() {
   PathProviderPlatform.instance = _FakePathProviderPlatform();
   debugPreviewDir = Directory.systemTemp.createTempSync('nhan_kho_preview');
 
-  /// Mở sheet Chi tiết video của clip duy nhất, rồi trả về chữ ở hàng
-  /// "Kho lưu trữ".
-  Future<String> nhanKho(WidgetTester tester, _Repo repo) async {
+  /// Mở sheet Chi tiết video của clip duy nhất, rồi trả về MỌI chuỗi trên đó.
+  ///
+  /// Tách ra khỏi [nhanKho] để ca "dấu muộn" dùng lại đúng đường đi này: cùng
+  /// một JSON máy chủ, cùng một màn thật. Dựng riêng một lối tắt cho ca mới là
+  /// tự bỏ mất chỗ đã trả giá để biết — bước đọc JSON.
+  Future<List<String?>> chuTrenSheet(WidgetTester tester, _Repo repo) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
     tester.platformDispatcher.localeTestValue = const Locale('vi');
@@ -153,10 +156,15 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
     }
 
-    final texts = tester
+    return tester
         .widgetList<Text>(find.byType(Text))
         .map((t) => t.data)
         .toList();
+  }
+
+  /// Chữ ở hàng "Kho lưu trữ".
+  Future<String> nhanKho(WidgetTester tester, _Repo repo) async {
+    final texts = await chuTrenSheet(tester, repo);
     final i = texts.indexOf('Kho lưu trữ');
     expect(i, isNonNegative, reason: 'sheet Chi tiết video không có hàng Kho lưu trữ');
     return texts[i + 1]!;
@@ -270,6 +278,53 @@ void main() {
         ),
         'Google Drive',
       );
+    },
+  );
+
+  // Dấu MUỘN — và điều quan trọng nhất là câu KHÔNG được hiện.
+  //
+  // `sealMismatch` bảo người bán "hãy quay lại clip này". Với 25 clip trên
+  // production mang cờ đó, câu ấy vừa sai vừa không làm được: kiện hàng đã đi
+  // từ mấy tuần trước, và tệp không hề hỏng — bản gốc mất vì chính hệ thống ghi
+  // đè lên nó trước 24/08 (backend `services/late_seal.ts`).
+  //
+  // Nên ca này canh cả hai chiều: nhãn mới phải hiện, VÀ lời buộc tội cũ phải
+  // biến mất. Chỉ canh chiều đầu thì một ngày nào đó cả hai cùng hiện, và người
+  // bán vẫn đọc phải câu bảo họ đi quay lại một kiện hàng đã giao.
+  testWidgets(
+    'dấu muộn: nói lỗi thuộc về hệ thống, KHÔNG bảo người bán quay lại clip',
+    experimentalLeakTesting: khongRoRi,
+    (tester) async {
+      final texts = await chuTrenSheet(
+        tester,
+        const _Repo(sealStatus: 'sealed_late'),
+      );
+      expect(
+        texts,
+        contains('Dấu muộn — video còn nguyên, lỗi thuộc về hệ thống'),
+      );
+      expect(
+        texts,
+        isNot(contains('Vân tay không khớp — hãy quay lại clip này')),
+      );
+    },
+  );
+
+  // Đo được trên chính sheet này ngày 28/08: clip mang cờ `hash_mismatch` hiện
+  // ra "Trạng thái upload · Đã tải lên" kèm dấu tích, KHÔNG một chữ nào về việc
+  // dấu hỏng. Chuỗi `sealMismatch` có đủ trong mười thứ tiếng và chưa bao giờ
+  // được vẽ lên màn — vì hàng niêm phong chỉ hiện khi clip còn ĐANG chạy.
+  //
+  // Người bán đọc dấu tích ấy thành "mọi thứ đều ổn", rồi cầm clip đi khiếu nại.
+  testWidgets(
+    'trạng thái cuối không được câm: cờ hỏng phải nói ra',
+    experimentalLeakTesting: khongRoRi,
+    (tester) async {
+      final texts = await chuTrenSheet(
+        tester,
+        const _Repo(sealStatus: 'hash_mismatch'),
+      );
+      expect(texts, contains('Vân tay không khớp — hãy quay lại clip này'));
     },
   );
 }

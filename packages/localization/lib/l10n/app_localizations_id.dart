@@ -936,6 +936,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get sealMismatch => 'Sidik jari tidak cocok — rekam ulang klip ini';
 
   @override
+  String get sealLate =>
+      'Segel susulan — videonya utuh; kesalahan ada pada kami';
+
+  @override
   String get sealTimeDrift =>
       'Jam kamera meleset dari server, jadi stempel yang disematkan juga memuat waktu server menerima klip.';
 

@@ -963,6 +963,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Empreinte non concordante — réenregistrez ce clip';
 
   @override
+  String get sealLate =>
+      'Sceau tardif — la vidéo est intacte ; l\'erreur vient de nous';
+
+  @override
   String get sealTimeDrift =>
       'L\'horloge de la caméra s\'est décalée du serveur, le tampon incrusté porte donc aussi l\'heure de réception par le serveur.';
 
