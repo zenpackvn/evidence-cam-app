@@ -8823,23 +8823,33 @@ String _evidenceStorageLabel(
     StorageKind.system || null => null,
   };
 
-  // 2. Chưa chốt xong (đang tải lên, đang nung dấu) → clip này SẼ đi vào kho
-  //    shop đang chọn, nên gọi tên kho đó ngay. Người vừa chọn kho riêng mở
-  //    clip ra chính là để xác nhận điều đó.
-  final settled = item.uploadStatus == 'done' && !item.isSealing;
-  if (!settled) return ofShop ?? l10n.storageNameCloud;
+  // 2. Byte còn ở VÙNG CHỜ TẠM của ZenPack, và còn đường đi tiếp: đang tải
+  //    lên, đang nung dấu, hoặc đã niêm phong và đang chờ lượt đẩy. Cả ba đều
+  //    kết thúc ở kho shop đang chọn, nên gọi tên kho đó ngay — người vừa cắm
+  //    kho riêng mở clip ra chính là để xác nhận điều đó.
+  //
+  //    Hỏi bằng `r2_key`, không bằng `relay_status`. `r2_key` được ghi ngay ở
+  //    câu INSERT của lượt tải lên và chỉ về NULL ở đúng hai chỗ: đẩy sang kho
+  //    riêng xong (`relay.ts`), và retention dọn. Nên "còn r2_key" đọc thẳng ra
+  //    là "còn nằm ở đây và chưa đi đâu cả" — ĐÚNG vị từ `retryPendingRelays`
+  //    lọc theo (`seal_status='sealed' AND r2_key IS NOT NULL`, JOIN kho đang
+  //    bật), chép lại chứ không suy luận song song.
+  //
+  //    Bản trước bám `relay_status` và tin rằng hàng NULL nghĩa là "clip niêm
+  //    phong xong lúc shop chưa bật kho riêng, nằm lại kho hệ thống VĨNH VIỄN".
+  //    Đo trên chính máy chủ thì lời ấy SAI: cron nhặt hàng NULL TRƯỚC TIÊN —
+  //    câu SQL có ghi chú gọi đó là "phần quan trọng nhất", thêm vào vì prod
+  //    từng có 160 hàng như thế ở một shop. Mà NULL lại đúng là chỗ clip rơi
+  //    vào nhiều nhất: lượt đẩy ngay sau niêm phong chết trước cả câu ghi
+  //    'pending', và mọi clip đã niêm phong từ TRƯỚC lúc shop bật kho riêng
+  //    cũng nằm ở đó. Hậu quả: shop vừa cắm S3 mở clip ra đọc "Cloud ZenPack"
+  //    tới tận lượt rà kho hôm sau — đây là lần báo thứ ba của cùng lời than.
+  if (item.r2Key != null) return ofShop ?? l10n.storageNameCloud;
 
-  // 3. Đã chốt mà chưa sang kho riêng: chỉ clip ĐANG trong hàng đợi đẩy mới còn
-  //    đường sang. Máy chủ ghi `relay_status` ngay khi nhận việc, và cron thử
-  //    lại chỉ nhặt `pending`/`failed`.
-  if (item.relayStatus == 'pending' || item.relayStatus == 'failed') {
-    return ofShop ?? l10n.storageNameCloud;
-  }
-
-  // 4. Đã chốt, không có `relay_status` nào: lúc clip này niêm phong xong thì
-  //    shop chưa bật kho riêng, nên nó nằm lại kho hệ thống VĨNH VIỄN — không
-  //    lượt cron nào nhặt nó nữa. Gọi tên kho vừa chọn ở đây là chỉ vào một
-  //    chỗ mà clip không bao giờ tới.
+  // 3. Không còn `r2_key` mà cũng chưa từng có `storage_kind`: byte đã bị dọn
+  //    khỏi vùng chờ tạm — hết hạn lưu trữ, hoặc người dùng tự xoá (cả hai đều
+  //    ghi `r2_key = NULL` cùng lượt). Không còn gì để chuyển đi đâu nữa, nên
+  //    gọi tên kho riêng ở đây là chỉ vào một chỗ clip không bao giờ tới.
   return l10n.storageNameCloud;
 }
 
