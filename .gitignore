@@ -167,6 +167,14 @@ ios/fastlane/build/
 !android/fastlane/.env
 !android/fastlane/*.json
 
+# Đường CI GHI KHOÁ PLAY SỐNG RA, và nó nằm NGOÀI thư mục fastlane nên ngoại lệ
+# ở trên không phủ tới — `release.yml` đổ `secrets.PLAY_STORE_JSON_KEY` vào đây
+# rồi trỏ `PLAY_STORE_JSON_KEY_PATH` vào nó. Trên CI thì cây bị vứt đi sau mỗi
+# lượt chạy nên không sao; nguy là lúc ai đó chạy lane ấy trên MÁY MÌNH rồi
+# `git add -A`. Khác hẳn ngoại lệ phía trên: đó là một quyết định đã cân nhắc,
+# còn đây chỉ là một đường chưa ai rào.
+android/play-store-key.json
+
 # -------------------------------------------------------------------------
 # Firebase
 # -------------------------------------------------------------------------
