@@ -208,3 +208,16 @@ flutter_*.log
 # Artefact bản phát hành giữ lại ngoài build/ (build/ bị dọn mỗi lần build lại).
 dist/
 .calm/
+
+# Thông tin đăng nhập của fastlane Android — S-01, S-06.
+#
+# Luật cho `ios/fastlane/.env` đã có từ trước; không ai áp luật tương đương sang
+# android, và đó là lý do một khoá service account Google CÒN SỐNG cùng client
+# secret OAuth production đang nằm trong lịch sử kho này.
+#
+# Mấy dòng dưới chỉ chặn tệp MỚI — chúng KHÔNG gỡ tệp đã bị theo dõi. Phần đó do
+# tool/canh-bi-mat.sh canh, và việc dọn thật thì xem tool/bi-mat-da-biet.txt.
+android/fastlane/.env
+android/fastlane/*service-account*.json
+android/fastlane/*service_account*.json
+android/fastlane/client_secret*.json

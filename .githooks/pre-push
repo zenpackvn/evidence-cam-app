@@ -11,6 +11,12 @@
 #
 set -euo pipefail
 
+# Bí mật trong git — chặn rò rỉ MỚI trước khi nó rời máy. Rò rỉ đã biết (S-01,
+# S-06) chỉ kêu chứ không chặn, xem tool/bi-mat-da-biet.txt.
+if [ -z "${CANH_BI_MAT_BO_QUA:-}" ]; then
+  bash "$(git rev-parse --show-toplevel)/tool/canh-bi-mat.sh" || exit 1
+fi
+
 # Prefer the FVM-pinned SDK (this repo pins Flutter via .fvmrc); fall back to a
 # plain toolchain if FVM is not installed.
 if command -v fvm >/dev/null 2>&1; then

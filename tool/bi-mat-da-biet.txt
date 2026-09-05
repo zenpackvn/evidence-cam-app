@@ -1,0 +1,14 @@
+# Bí mật ĐÃ BIẾT là đang nằm trong git — thẻ S-01 và S-06 trong sổ lỗi.
+#
+# Danh sách này KHÔNG phải lời tha. Nó tồn tại để chốt chặn bắt được rò rỉ MỚI
+# ngay hôm nay, thay vì phải đợi tới lúc dọn xong mới bật được chốt — mà đợi
+# thì trong khoảng đó không có gì canh cả.
+#
+# Mỗi dòng ở đây làm chốt kêu to mỗi lượt chạy nhưng không chặn. Xoá dòng nào là
+# chốt chặn cứng lại dòng ấy. Xoá hết là xoá luôn được tệp này.
+#
+# Thứ tự dọn, KHÔNG được đảo: xoay/thu hồi khoá ở nơi cấp nó TRƯỚC → nạp khoá
+# mới vào CI dưới dạng secret → rồi mới gỡ khỏi git và khỏi lịch sử.
+android/fastlane/play-service-account.json
+android/fastlane/client_secret_72935841643-b3tg2rkgdm3fochafref0661ddupve8j.apps.googleusercontent.com.json
+android/fastlane/.env

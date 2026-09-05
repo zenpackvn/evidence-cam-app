@@ -156,6 +156,9 @@ jobs:
             exit 1
           fi
 
+      - name: Bí mật trong git
+        run: bash tool/canh-bi-mat.sh
+
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
 
