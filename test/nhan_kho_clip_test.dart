@@ -166,7 +166,11 @@ void main() {
   Future<String> nhanKho(WidgetTester tester, _Repo repo) async {
     final texts = await chuTrenSheet(tester, repo);
     final i = texts.indexOf('Kho lưu trữ');
-    expect(i, isNonNegative, reason: 'sheet Chi tiết video không có hàng Kho lưu trữ');
+    expect(
+      i,
+      isNonNegative,
+      reason: 'sheet Chi tiết video không có hàng Kho lưu trữ',
+    );
     return texts[i + 1]!;
   }
 
@@ -257,7 +261,10 @@ void main() {
     'shop dùng kho hệ thống: Cloud ZenPack',
     experimentalLeakTesting: khongRoRi,
     (tester) async {
-      expect(await nhanKho(tester, const _Repo(shopStorageKind: null)), zenpack);
+      expect(
+        await nhanKho(tester, const _Repo(shopStorageKind: null)),
+        zenpack,
+      );
     },
   );
 

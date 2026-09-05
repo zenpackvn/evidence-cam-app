@@ -9,6 +9,14 @@
 /// so the test loads a local copy when `EC_INTER_TTF` points at one. Without
 /// it the goldens render in the test fallback face and only geometry — not
 /// glyphs — is meaningful.
+// Gắn tag `golden` — đúng quy ước sẵn có của kho này.
+//
+// Trước đây tệp này KHÔNG mang tag nào, nên nó không bị `--exclude-tags golden`
+// loại ra; nó tự bỏ qua vì một lý do khác hẳn (thiếu biến môi trường
+// EC_INTER_TTF). Nay lý do đó đã gỡ, nếu không gắn tag thì 62 ca chạy trong job
+// CI trên Ubuntu — mà ảnh gốc sinh trên macOS, tức đỏ vì SAI NỀN TẢNG chứ không
+// vì thiết kế trôi. Xem thẻ D-07.
+@Tags(['golden'])
 library;
 
 import 'dart:async';
@@ -16,9 +24,10 @@ import 'dart:io';
 
 import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show FontLoader;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
+
+import 'inter_font.dart';
 
 const _designSize = Size(390, 844);
 
@@ -57,23 +66,8 @@ Future<void> _warmDesignArtwork() async {
   }
 }
 
-Future<void> _loadInter() async {
-  final path = Platform.environment['EC_INTER_TTF'];
-  if (path == null || !File(path).existsSync()) return;
-  final bytes = File(path).readAsBytesSync().buffer.asByteData();
-  await (FontLoader('Inter')..addFont(Future.value(bytes))).load();
-}
-
-/// Goldens are pixel comparisons against a specific typeface, so they only
-/// mean anything when the real Inter is loaded. Without `EC_INTER_TTF` the run
-/// would diff design pixels against the test fallback font, so skip instead.
-final bool _hasInter = () {
-  final path = Platform.environment['EC_INTER_TTF'];
-  return path != null && File(path).existsSync();
-}();
-
 void main() {
-  setUpAll(_loadInter);
+  setUpAll(napInter);
 
   final screens = <String, Widget>{
     'f1_01_splash': const PenF101(),
@@ -114,7 +108,7 @@ void main() {
       'design $name',
       // Decoded artwork is cached by the image cache for the whole run, which
       // the leak tracker reads as a leak; these tests only render.
-      skip: !_hasInter,
+      skip: !coInter,
       experimentalLeakTesting: LeakTesting.settings.withIgnoredAll(),
       (tester) async {
         final artboard = Size(

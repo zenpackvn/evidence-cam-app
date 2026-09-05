@@ -581,6 +581,19 @@ jobs:
         working-directory: packages/app_ui
         run: flutter test --tags golden
 
+      # Golden THIẾT KẾ (62 màn) nằm ở test/design của kho gốc, KHÔNG ở
+      # packages/app_ui — job trên chạy sai thư mục nên chúng chưa từng được
+      # chạy ở đâu. Xem thẻ D-07.
+      #
+      # `continue-on-error` là CÓ CHỦ ĐÍCH, không phải để làm ngơ: 62 màn hiện
+      # đang trôi thật (trung vị 22,4% điểm ảnh, không màn nào dưới 1%). Chặn
+      # cứng ngay bây giờ là khoá cả nhóm vì một khoản nợ có sẵn. Bước này để
+      # khoản nợ đó HIỆN RA mỗi lượt build thay vì nằm im như trước.
+      # Gỡ dòng đó đi khi 62 màn đã được soi và quyết xong.
+      - name: Golden thiết kế (báo cáo, chưa chặn)
+        continue-on-error: true
+        run: flutter test test/design --tags golden
+
       # On mismatch, the golden harness writes actual/diff PNGs under a
       # `failures/` directory next to the baselines. Upload them so a reviewer
       # can see exactly what changed.

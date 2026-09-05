@@ -1,6 +1,14 @@
 /// Goldens for the *live* screens, at the design file's artboard size, so each
 /// port can be diffed against its `design_*` counterpart rendered straight from
 /// `pencil-app-dna.pen`.
+// Gắn tag `golden` — đúng quy ước sẵn có của kho này.
+//
+// Trước đây tệp này KHÔNG mang tag nào, nên nó không bị `--exclude-tags golden`
+// loại ra; nó tự bỏ qua vì một lý do khác hẳn (thiếu biến môi trường
+// EC_INTER_TTF). Nay lý do đó đã gỡ, nếu không gắn tag thì 62 ca chạy trong job
+// CI trên Ubuntu — mà ảnh gốc sinh trên macOS, tức đỏ vì SAI NỀN TẢNG chứ không
+// vì thiết kế trôi. Xem thẻ D-07.
+@Tags(['golden'])
 library;
 
 import 'dart:async';
@@ -11,11 +19,12 @@ import 'package:feature_capture/feature_capture.dart';
 import 'package:feature_orders/feature_orders.dart';
 import 'package:feature_shift/feature_shift.dart' as shift;
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart' show FontLoader;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 import 'package:localization/localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import 'inter_font.dart';
 
 const _designSize = Size(390, 844);
 
@@ -99,21 +108,6 @@ Future<void> _warmDesignArtwork() async {
     await done.future;
   }
 }
-
-Future<void> _loadInter() async {
-  final path = Platform.environment['EC_INTER_TTF'];
-  if (path == null || !File(path).existsSync()) return;
-  final bytes = File(path).readAsBytesSync().buffer.asByteData();
-  await (FontLoader('Inter')..addFont(Future.value(bytes))).load();
-}
-
-/// Goldens are pixel comparisons against a specific typeface, so they only
-/// mean anything when the real Inter is loaded. Without `EC_INTER_TTF` the run
-/// would diff design pixels against the test fallback font, so skip instead.
-final bool _hasInter = () {
-  final path = Platform.environment['EC_INTER_TTF'];
-  return path != null && File(path).existsSync();
-}();
 
 /// Screens the app presents as a transparent modal route stack them over the
 /// screen behind, and the design frame draws that backdrop too. Rendering the
@@ -204,7 +198,7 @@ const _shopDetailBackdrop = shift.EcShopDetailScreen(
 );
 
 void main() {
-  setUpAll(_loadInter);
+  setUpAll(napInter);
 
   final screens = <String, Widget>{
     'ported_f1_01_splash': shift.EcSplashScreen(onStart: () {}),
@@ -420,7 +414,7 @@ void main() {
   screens.forEach((name, screen) {
     testWidgets(
       name,
-      skip: !_hasInter,
+      skip: !coInter,
       experimentalLeakTesting: LeakTesting.settings.withIgnoredAll(),
       (tester) async {
         tester.view
