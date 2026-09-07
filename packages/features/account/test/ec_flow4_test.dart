@@ -175,6 +175,45 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    /// Mỗi hàng có CỜ của thứ tiếng đó.
+    ///
+    /// Người đang mắc kẹt trong một thứ tiếng họ không đọc được quét danh sách
+    /// bằng HÌNH, không bằng chữ — `ไทย` thì không quét được nếu bạn không biết
+    /// tiếng Thái. Đó là toàn bộ lý do cờ có mặt.
+    testWidgets('mỗi ngôn ngữ hiện cờ của nó', (tester) async {
+      await _pump(tester, const EcLanguageScreen());
+      for (final language in EcAppLanguage.values) {
+        expect(
+          find.text(language.flag),
+          findsOneWidget,
+          reason: 'thiếu cờ của ${language.nativeName}',
+        );
+      }
+    });
+
+    /// Hàng đang chọn phải có một tín hiệu KHÔNG PHẢI MÀU.
+    ///
+    /// Bản nhẹ đi tô nền nhạt cho hàng đang chọn. Nếu chỉ có thế thì người nhìn
+    /// màn dưới nắng, hoặc người khó phân biệt sắc độ, không thấy mình đang ở
+    /// đâu — nên dấu tích phải ở lại, và chỉ ở hàng đang chọn.
+    testWidgets('đúng MỘT dấu tích, ở hàng đang chọn', (tester) async {
+      await _pump(
+        tester,
+        const EcLanguageScreen(selected: EcAppLanguage.th),
+      );
+      expect(find.byIcon(LucideIcons.check), findsOneWidget);
+      // Và nó nằm ở hàng tiếng Thái, không phải hàng nào khác.
+      final hang = find.ancestor(
+        of: find.byIcon(LucideIcons.check),
+        matching: find.byType(PenCard),
+      );
+      expect(
+        find.descendant(of: hang, matching: find.text('ไทย')),
+        findsOneWidget,
+        reason: 'dấu tích nằm ở hàng khác với hàng đang chọn',
+      );
+    });
+
     testWidgets('tapping English fires onSelect with EcAppLanguage.en', (
       tester,
     ) async {

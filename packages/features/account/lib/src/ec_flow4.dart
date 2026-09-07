@@ -437,18 +437,24 @@ class EcEditProfileScreen extends StatelessWidget {
 /// hai thứ này KHÁC nhau: `Locale('vi')` là đủ để chọn bản dịch, còn engine đọc
 /// cần biết cả vùng (`vi-VN`) mới chọn đúng giọng.
 enum EcAppLanguage {
-  vi('vi', 'vi-VN', 'Tiếng Việt', 'Vietnamese'),
-  en('en', 'en-US', 'English', 'English'),
-  id('id', 'id-ID', 'Bahasa Indonesia', 'Indonesian'),
-  fil('fil', 'fil-PH', 'Filipino', 'Filipino'),
-  th('th', 'th-TH', 'ไทย', 'Thai'),
-  ms('ms', 'ms-MY', 'Bahasa Melayu', 'Malay'),
-  de('de', 'de-DE', 'Deutsch', 'German'),
-  fr('fr', 'fr-FR', 'Français', 'French'),
-  it('it', 'it-IT', 'Italiano', 'Italian'),
-  es('es', 'es-ES', 'Español', 'Spanish');
+  vi('vi', 'vi-VN', 'Tiếng Việt', 'Vietnamese', '🇻🇳'),
+  en('en', 'en-US', 'English', 'English', '🇬🇧'),
+  id('id', 'id-ID', 'Bahasa Indonesia', 'Indonesian', '🇮🇩'),
+  fil('fil', 'fil-PH', 'Filipino', 'Filipino', '🇵🇭'),
+  th('th', 'th-TH', 'ไทย', 'Thai', '🇹🇭'),
+  ms('ms', 'ms-MY', 'Bahasa Melayu', 'Malay', '🇲🇾'),
+  de('de', 'de-DE', 'Deutsch', 'German', '🇩🇪'),
+  fr('fr', 'fr-FR', 'Français', 'French', '🇫🇷'),
+  it('it', 'it-IT', 'Italiano', 'Italian', '🇮🇹'),
+  es('es', 'es-ES', 'Español', 'Spanish', '🇪🇸');
 
-  const EcAppLanguage(this.code, this.voiceTag, this.nativeName, this.enName);
+  const EcAppLanguage(
+    this.code,
+    this.voiceTag,
+    this.nativeName,
+    this.enName,
+    this.flag,
+  );
 
   /// Mã cho `Locale` — thứ quyết định lấy bản dịch nào.
   final String code;
@@ -462,6 +468,17 @@ enum EcAppLanguage {
 
   /// Tên tiếng Anh, làm dòng phụ.
   final String enName;
+
+  /// Cờ để nhận ra bằng MẮT trước khi đọc chữ.
+  ///
+  /// Người đang mắc kẹt trong một thứ tiếng họ không đọc được quét danh sách
+  /// bằng hình, không bằng chữ — và `ไทย` thì không quét được nếu bạn không
+  /// biết tiếng Thái.
+  ///
+  /// Cờ theo THỊ TRƯỜNG CHÍNH của thứ tiếng, không phải theo nước duy nhất nói
+  /// nó: `en` lấy cờ Anh dù Mỹ đông người nói hơn, vì đó là quy ước quen nhất
+  /// trong danh sách ngôn ngữ.
+  final String flag;
 
   /// Ngôn ngữ ứng với [code], `null` nếu không có.
   static EcAppLanguage? byCode(String code) {
@@ -516,6 +533,7 @@ class EcLanguageScreen extends StatelessWidget {
                     children: [
                       for (final language in EcAppLanguage.values) ...[
                         _LanguageOption(
+                          flag: language.flag,
                           // Tên bản xứ đứng trên, tên tiếng Anh đứng dưới:
                           // người đi tìm thứ tiếng của mình tìm theo tên bản
                           // xứ, không phải theo tên tiếng Anh của nó.
@@ -529,7 +547,9 @@ class EcLanguageScreen extends StatelessWidget {
                           selected: selected == language,
                           onTap: () => onSelect?.call(language),
                         ),
-                        const SizedBox(height: 14),
+                        // 14 → 6: hàng đã nhẹ đi thì khoảng cách cũng phải
+                        // theo, nếu không danh sách rời rạc thành mười mảnh.
+                        const SizedBox(height: 6),
                       ],
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -2770,11 +2790,15 @@ class _LockedField extends StatelessWidget {
 
 class _LanguageOption extends StatelessWidget {
   const _LanguageOption({
+    required this.flag,
     required this.title,
     required this.subtitle,
     required this.selected,
     this.onTap,
   });
+
+  /// Cờ của thứ tiếng — đứng trước tên để mắt chạm hình trước khi chạm chữ.
+  final String flag;
 
   final String title;
 
@@ -2785,16 +2809,26 @@ class _LanguageOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // NHẸ ĐI, có chủ đích. Bản trước: mỗi hàng một thẻ có viền, chữ 20px đậm
+    // w700, và một chấm tròn ĐẶC 32px cho hàng đang chọn — mười hàng như thế
+    // đọc thành mười cái nút, và màn hình rung mắt.
+    //
+    // Nay: hàng chưa chọn không có viền, chỉ nền thẻ; hàng đang chọn tô nền nhạt
+    // và một dấu tích nhỏ. Cùng lượng thông tin, ít mực hơn hẳn.
+    //
+    // Vẫn GIỮ một tín hiệu KHÔNG PHẢI MÀU cho hàng đang chọn (dấu tích): nền
+    // nhạt một mình thì người nhìn màn dưới nắng, hoặc người khó phân biệt sắc
+    // độ, không thấy mình đang ở đâu.
     return PenCard(
-      fill: selected ? PenColors.soft : PenColors.card,
-      stroke: PenColors.line,
-      // The design both tints the chosen language and doubles its border —
-      // selection reads as ink, never as brand.
-      strokeWidth: selected ? 2 : 1,
-      gap: 12,
-      padding: const EdgeInsets.all(20),
+      fill: selected ? PenColors.selected : PenColors.card,
+      stroke: selected ? PenColors.line : PenColors.card,
+      strokeWidth: 1,
+      gap: 14,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       onTap: onTap,
       children: [
+        // Cờ đứng trước tên: mắt chạm hình trước khi chạm chữ.
+        PenText(flag, size: 24, color: PenColors.ink),
         Expanded(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -2802,16 +2836,16 @@ class _LanguageOption extends StatelessWidget {
             children: [
               PenText(
                 title,
-                size: 20,
+                size: 17,
                 color: PenColors.ink,
-                weight: FontWeight.w700,
+                weight: FontWeight.w600,
                 overflow: TextOverflow.ellipsis,
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 PenText(
                   subtitle!,
-                  size: 14,
+                  size: 13,
                   color: PenColors.mut,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -2820,25 +2854,7 @@ class _LanguageOption extends StatelessWidget {
           ),
         ),
         if (selected)
-          const PenBox(
-            width: 32,
-            height: 32,
-            fill: PenColors.ink,
-            radius: 999,
-            axis: PenAxis.row,
-            main: MainAxisAlignment.center,
-            cross: CrossAxisAlignment.center,
-            children: [
-              Icon(LucideIcons.check, size: 18, color: PenColors.card),
-            ],
-          )
-        else
-          const PenEllipse(
-            width: 32,
-            height: 32,
-            color: PenColors.mut,
-            ring: 0.88,
-          ),
+          const Icon(LucideIcons.check, size: 20, color: PenColors.ink),
       ],
     );
   }
