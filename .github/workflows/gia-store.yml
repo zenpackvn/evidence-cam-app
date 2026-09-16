@@ -1,0 +1,58 @@
+# Đồng bộ GIÁ + MÔ TẢ 6 gói thuê bao lên App Store Connect và Google Play, từ
+# bảng gốc tool/ec_plans.mjs. Chạy tay ở tab Actions (workflow_dispatch).
+#
+# Vì sao là một workflow chứ không chạy ở máy dev: khoá App Store Connect và
+# service account Play chỉ còn nằm trong Secrets của repo (S-01/S-06 đã dọn
+# chúng khỏi máy). Ở đây khoá không rời khỏi runner, và mỗi lượt chạy có log.
+#
+# Mặc định là DRY-RUN: chỉ in ra chỗ lệch bảng. Bật "ghi" mới ghi thật. Thứ tự
+# cố định Apple → Google: play_subs.mjs đọc điểm giá USA mà asc_subs.mjs vừa
+# chọn (tool/gia-store.json) để hai cửa hàng cùng giá.
+name: Giá cửa hàng
+
+on:
+  workflow_dispatch:
+    inputs:
+      ghi:
+        description: 'Ghi thật lên hai cửa hàng (tắt = dry-run, chỉ in ra chỗ lệch)'
+        type: boolean
+        default: false
+      rate:
+        description: 'Tỷ giá VND/USD để quy giá USA'
+        type: string
+        default: '26300'
+
+permissions:
+  contents: read
+
+jobs:
+  gia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: App Store Connect (level · mô tả · giá VNM + USA · vùng bán)
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          IOS_BUNDLE_ID_BASE: ${{ vars.IOS_BUNDLE_ID_BASE }}
+        run: node tool/asc_subs.mjs --rate "${{ inputs.rate }}" ${{ inputs.ghi && '--apply' || '' }}
+
+      - name: Google Play (giá VN · 172 vùng · listing)
+        env:
+          ANDROID_PACKAGE_NAME_BASE: ${{ vars.ANDROID_PACKAGE_NAME_BASE }}
+          PLAY_JSON: ${{ secrets.PLAY_STORE_JSON_KEY }}
+          PLAY_STORE_JSON_KEY_PATH: ${{ runner.temp }}/play-store-key.json
+        run: |
+          umask 077
+          printf '%s' "$PLAY_JSON" > "$PLAY_STORE_JSON_KEY_PATH"
+          trap 'rm -f "$PLAY_STORE_JSON_KEY_PATH"' EXIT
+          node tool/play_subs.mjs ${{ inputs.ghi && '--apply' || '' }}
+
+      - name: Ghi lại điểm giá đã chọn
+        run: cat tool/gia-store.json

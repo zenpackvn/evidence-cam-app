@@ -14,22 +14,32 @@
 //      mức CAO NHẤT, và hai thời hạn của cùng một gói phải CÙNG level, nếu không
 //      Apple coi đổi tháng↔năm là nâng/hạ gói.
 //   2. localization vi + en-US theo ec_plans.mjs (PATCH cái đang có).
-//   3. giá USA = giá VND quy đổi, chọn điểm giá gần nhất Apple có.
+//   3. giá VNM theo bảng gốc (từ Bản 5, 2026-09-16 — trước đó chỉ đọc đối chiếu),
+//      và giá USA = giá VND quy đổi; cả hai chọn điểm giá gần nhất Apple có.
+//      Lệch quá ±1% so với bảng thì BÁO và KHÔNG ghi — cam kết "giá app = giá
+//      web" là của người quyết, không phải của script.
 //   4. availability — vùng được bán. GIÁ KHÁC VÙNG BÁN: từ đợt Apple đổi mô hình
 //      giá 2023 chúng là hai resource riêng, và có giá đủ 175 vùng vẫn không có
 //      nghĩa là bán ở vùng nào. Thiếu nó thì subscription kẹt MISSING_METADATA
 //      dù localization, giá và screenshot đều đủ — đo được ngày 2026-08-10:
 //      đặt availability xong là state nhảy sang READY_TO_SUBMIT ngay.
 //
-// KHÔNG đụng tới giá VNM: đó là giá gốc, đã khớp bảng, sửa nhầm là hỏng cam kết
-// "giá app = giá web". Script chỉ ĐỌC và đối chiếu VNM rồi báo lệch.
+// Giá VNM là giá gốc. Bản 4 script chỉ đọc nó, vì lúc ấy nó đã khớp bảng và
+// sửa nhầm là hỏng cam kết "giá app = giá web". Bản 5 HẠ giá cả 6 mã, nên giữ
+// nguyên VNM mới là thứ phá cam kết đó — script đặt VNM theo bảng, nhưng vẫn
+// dừng lại hỏi nếu Apple không có điểm giá trong ±1%. Hạ giá tự động áp cho cả
+// người đang thuê bao (Apple không đòi họ đồng ý khi giá GIẢM), đúng ý bảng gói.
+//
+// Kèm theo, mỗi lần chạy script ghi `tool/gia-store.json`: điểm giá USA đã
+// chọn cho từng mã. `play_subs.mjs` đọc file đó để ép giá US bên Google bằng
+// đúng giá Apple — hai cửa hàng cùng giá là cam kết sản phẩm, không phải tình cờ.
 //
 // Cần trong ios/fastlane/.env (hoặc môi trường):
 //   APP_STORE_CONNECT_API_KEY_ID · APP_STORE_CONNECT_API_ISSUER_ID
 //   APP_STORE_CONNECT_API_KEY_CONTENT (base64 của .p8) · IOS_BUNDLE_ID_BASE
 
 import { createSign } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { products } from './ec_plans.mjs';
 
 const APPLY = process.argv.includes('--apply');
@@ -41,15 +51,9 @@ const ENV_FILE = 'ios/fastlane/.env';
 // chờ hết kỳ, không hoàn phần dư.
 const LEVEL = { enterprise: 1, pro: 2, basic: 3 };
 
-// Giá VND mong muốn, để đối chiếu (KHÔNG ghi). Nguồn: bảng gốc §2.
-const TARGET_VND = {
-  zenpack_sub_basic_1m: 249_000,
-  zenpack_sub_basic_12m: 2_490_000,
-  zenpack_sub_pro_1m: 549_000,
-  zenpack_sub_pro_12m: 5_490_000,
-  zenpack_sub_enterprise_1m: 1_190_000,
-  zenpack_sub_enterprise_12m: 11_900_000,
-};
+// Giá VND lấy thẳng từ `products[].priceVnd` (ec_plans.mjs) — một bảng, không
+// chép lại ở đây nữa: bản trước có hai bảng và Bản 5 phải sửa cả hai.
+const usdPicked = {};
 
 // ---- auth ------------------------------------------------------------------
 
@@ -201,7 +205,7 @@ for (const want of products) {
     }
   }
 
-  // 4. giá — VNM chỉ đọc để đối chiếu, USA thì đặt theo quy đổi
+  // 4. giá — VNM theo bảng, USA theo quy đổi; mỗi bên chọn điểm giá gần nhất.
   const prices = await getAll(
     `/subscriptions/${sub.id}/prices?include=subscriptionPricePoint,territory&limit=200`,
   );
@@ -216,47 +220,63 @@ for (const want of products) {
     // included đi, nên tra lại giá qua endpoint điểm giá thay vì đoán.
     return id ?? null;
   };
+  const nearestPoint = async (territory, target) => {
+    const pts = (await getAll(`/subscriptions/${sub.id}/pricePoints?filter[territory]=${territory}&limit=200`))
+      .map((p) => ({ id: p.id, price: Number(p.attributes.customerPrice) }))
+      .sort((a, b) => Math.abs(a.price - target) - Math.abs(b.price - target) || a.price - b.price);
+    return pts[0];
+  };
+  const setPrice = async (pointId) => {
+    await call('POST', '/subscriptionPrices', {
+      data: {
+        type: 'subscriptionPrices',
+        attributes: { startDate: null, preserveCurrentPrice: false },
+        relationships: {
+          subscription: { data: { type: 'subscriptions', id: sub.id } },
+          subscriptionPricePoint: { data: { type: 'subscriptionPricePoints', id: pointId } },
+        },
+      },
+    });
+  };
+  const fmtVnd = (n) => `${Number(n).toLocaleString('vi')}đ`;
 
-  const vndNow = byTerritory.VNM ? await pricePointPrice(pointOf(byTerritory.VNM)) : null;
-  const vndWant = TARGET_VND[want.productId];
-  if (vndNow != null && Number(vndNow) !== vndWant) {
-    const off = Math.abs(Number(vndNow) - vndWant) / vndWant;
+  // 4a. VNM — giá gốc.
+  const vndWant = want.priceVnd;
+  const vndNow = byTerritory.VNM ? Number(await pricePointPrice(pointOf(byTerritory.VNM))) : null;
+  const vndPick = await nearestPoint('VNM', vndWant);
+  const vndOff = Math.abs(vndPick.price - vndWant) / vndWant;
+  if (vndOff > 0.01) {
     note(
-      off <= 0.01 ? 'vnd-ok' : 'VND-LỆCH',
+      'VND-LỆCH',
       want.productId,
-      `đang ${Number(vndNow).toLocaleString('vi')}đ, bảng ghi ${vndWant.toLocaleString('vi')}đ (lệch ${(off * 100).toFixed(2)}%)${
-        off <= 0.01 ? ' — trong ±1%, Apple không có điểm giá khớp, giữ nguyên' : ' — VƯỢT ±1%, dừng lại hỏi'
-      }`,
+      `bảng ghi ${fmtVnd(vndWant)}, điểm giá gần nhất Apple có là ${fmtVnd(vndPick.price)} (lệch ${(vndOff * 100).toFixed(2)}%) — VƯỢT ±1%, KHÔNG ghi, dừng lại hỏi`,
     );
+  } else if (vndNow !== vndPick.price) {
+    note(
+      'vnd',
+      want.productId,
+      `${vndNow == null ? '—' : fmtVnd(vndNow)} → ${fmtVnd(vndPick.price)}${vndPick.price !== vndWant ? ` (bảng ${fmtVnd(vndWant)}, lệch ${(vndOff * 100).toFixed(2)}%)` : ''}`,
+    );
+    if (APPLY) await setPrice(vndPick.id);
   }
+  // Giá VNM sắp có hiệu lực (đã chọn) — USD quy từ nó, không quy từ giá cũ.
+  const vndEffective = vndOff > 0.01 ? (vndNow ?? vndWant) : vndPick.price;
 
-  const usdTarget = (vndNow != null ? Number(vndNow) : vndWant) / RATE;
-  const usPoints = (await getAll(`/subscriptions/${sub.id}/pricePoints?filter[territory]=USA&limit=200`))
-    .map((p) => ({ id: p.id, price: Number(p.attributes.customerPrice) }))
-    .sort((a, b) => Math.abs(a.price - usdTarget) - Math.abs(b.price - usdTarget) || a.price - b.price);
-  const pick = usPoints[0];
+  // 4b. USA — quy đổi từ VND.
+  const usdTarget = vndEffective / RATE;
+  const pick = await nearestPoint('USA', usdTarget);
   const usdNow = byTerritory.USA ? Number(await pricePointPrice(pointOf(byTerritory.USA))) : null;
+  usdPicked[want.productId] = pick.price;
 
   if (usdNow !== pick.price) {
     note(
       'usd',
       want.productId,
-      `$${usdNow ?? '—'} → $${pick.price}  (quy đổi ${Number(vndNow ?? vndWant).toLocaleString('vi')}đ = $${usdTarget.toFixed(2)}, lệch ${(
+      `$${usdNow ?? '—'} → $${pick.price}  (quy đổi ${fmtVnd(vndEffective)} = $${usdTarget.toFixed(2)}, lệch ${(
         (Math.abs(pick.price - usdTarget) / usdTarget) * 100
       ).toFixed(2)}%)`,
     );
-    if (APPLY) {
-      await call('POST', '/subscriptionPrices', {
-        data: {
-          type: 'subscriptionPrices',
-          attributes: { startDate: null, preserveCurrentPrice: false },
-          relationships: {
-            subscription: { data: { type: 'subscriptions', id: sub.id } },
-            subscriptionPricePoint: { data: { type: 'subscriptionPricePoints', id: pick.id } },
-          },
-        },
-      });
-    }
+    if (APPLY) await setPrice(pick.id);
   }
 }
 
@@ -267,6 +287,13 @@ async function pricePointPrice(id) {
 }
 
 // ---- report ----------------------------------------------------------------
+
+// Điểm giá USA đã chọn — đầu vào cho play_subs.mjs. Ghi cả ở dry-run: hai script
+// chạy nối nhau trong cùng một lượt, và dry-run của Play cũng phải in đúng số.
+writeFileSync(
+  'tool/gia-store.json',
+  JSON.stringify({ rate: RATE, at: new Date().toISOString(), usd: usdPicked }, null, 2) + '\n',
+);
 
 // `vnd-ok` là dòng báo cáo, không phải việc phải làm — đếm nó vào số thay đổi
 // thì lần chạy nào cũng "còn 1 thay đổi" và người đọc sẽ thôi tin con số đó.
