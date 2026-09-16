@@ -154,7 +154,12 @@ function envVar(name) {
   throw new Error(`Thiếu ${name} (môi trường hoặc android/fastlane/.env)`);
 }
 
-const key = JSON.parse(readFileSync(envVar('PLAY_STORE_JSON_KEY_PATH'), 'utf8'));
+// Nhận NỘI DUNG JSON qua biến môi trường (PLAY_STORE_JSON_KEY) hoặc ĐƯỜNG DẪN
+// file (PLAY_STORE_JSON_KEY_PATH). Vế đầu để chạy từ CI hay từ stdin mà không
+// phải đặt khoá xuống đĩa — khoá Play đã rò một lần (S-01), không tạo thêm bản.
+const key = JSON.parse(
+  process.env.PLAY_STORE_JSON_KEY || readFileSync(envVar('PLAY_STORE_JSON_KEY_PATH'), 'utf8'),
+);
 const b64u = (o) => Buffer.from(typeof o === 'string' ? o : JSON.stringify(o)).toString('base64url');
 const iat = Math.floor(Date.now() / 1000);
 const head = b64u({ alg: 'RS256', typ: 'JWT' });

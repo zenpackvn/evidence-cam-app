@@ -35,6 +35,31 @@ jobs:
         with:
           node-version: 22
 
+      # Đo trước khi chạy: thiếu secret thì script chỉ nói "ENOENT ios/fastlane/.env"
+      # (nó rơi về file .env của máy dev) — người đọc log không biết phải thêm gì.
+      # Lần chạy đầu 2026-09-16 đã đỏ đúng kiểu đó: repo chưa có secret/variable nào.
+      - name: Kiểm đủ secrets & variables
+        env:
+          A1: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          A2: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          A3: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          A4: ${{ vars.IOS_BUNDLE_ID_BASE }}
+          G1: ${{ secrets.PLAY_STORE_JSON_KEY }}
+          G2: ${{ vars.ANDROID_PACKAGE_NAME_BASE }}
+        run: |
+          thieu=""
+          [ -n "$A1" ] || thieu="$thieu secrets.APP_STORE_CONNECT_API_KEY_ID"
+          [ -n "$A2" ] || thieu="$thieu secrets.APP_STORE_CONNECT_API_ISSUER_ID"
+          [ -n "$A3" ] || thieu="$thieu secrets.APP_STORE_CONNECT_API_KEY_CONTENT(base64 .p8)"
+          [ -n "$A4" ] || thieu="$thieu vars.IOS_BUNDLE_ID_BASE"
+          [ -n "$G1" ] || thieu="$thieu secrets.PLAY_STORE_JSON_KEY(nội dung JSON)"
+          [ -n "$G2" ] || thieu="$thieu vars.ANDROID_PACKAGE_NAME_BASE"
+          if [ -n "$thieu" ]; then
+            echo "::error::Thiếu trong Settings → Secrets and variables → Actions:$thieu"
+            exit 1
+          fi
+          echo "Đủ 4 secret + 2 variable."
+
       - name: App Store Connect (level · mô tả · giá VNM + USA · vùng bán)
         env:
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
@@ -46,13 +71,9 @@ jobs:
       - name: Google Play (giá VN · 172 vùng · listing)
         env:
           ANDROID_PACKAGE_NAME_BASE: ${{ vars.ANDROID_PACKAGE_NAME_BASE }}
-          PLAY_JSON: ${{ secrets.PLAY_STORE_JSON_KEY }}
-          PLAY_STORE_JSON_KEY_PATH: ${{ runner.temp }}/play-store-key.json
-        run: |
-          umask 077
-          printf '%s' "$PLAY_JSON" > "$PLAY_STORE_JSON_KEY_PATH"
-          trap 'rm -f "$PLAY_STORE_JSON_KEY_PATH"' EXIT
-          node tool/play_subs.mjs ${{ inputs.ghi && '--apply' || '' }}
+          # Nội dung JSON đi thẳng vào script, không đặt xuống đĩa runner.
+          PLAY_STORE_JSON_KEY: ${{ secrets.PLAY_STORE_JSON_KEY }}
+        run: node tool/play_subs.mjs ${{ inputs.ghi && '--apply' || '' }}
 
       - name: Ghi lại điểm giá đã chọn
         run: cat tool/gia-store.json
