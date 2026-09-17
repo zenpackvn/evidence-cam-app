@@ -13,5 +13,9 @@
 # 17/09: client_secret_*.json (S-06) đã gỡ khỏi HEAD — không mã nào đọc nó, gỡ
 # không gãy gì — nên không còn trong danh sách: thêm lại là chốt chặn cứng. Nó
 # VẪN nằm trong lịch sử cho tới khi xoay secret xong rồi mới filter-repo.
-android/fastlane/play-service-account.json
-android/fastlane/.env
+#
+# 17/09 chiều: play-service-account.json và .env (S-01) cũng đã gỡ khỏi HEAD —
+# tệp vẫn trên đĩa, fastlane đọc qua PLAY_STORE_JSON_KEY_PATH nên phát hành tại
+# máy không đổi; CI chưa từng dùng. Danh sách nay RỖNG: mọi tệp bí mật thêm lại
+# đều bị chặn cứng. Khoá Play vẫn SỐNG trong Console và trong lịch sử git cho
+# tới khi chủ dự án xoay (thẻ S-01) — rồi mới git-filter-repo.
