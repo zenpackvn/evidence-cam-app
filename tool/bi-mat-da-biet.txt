@@ -9,6 +9,9 @@
 #
 # Thứ tự dọn, KHÔNG được đảo: xoay/thu hồi khoá ở nơi cấp nó TRƯỚC → nạp khoá
 # mới vào CI dưới dạng secret → rồi mới gỡ khỏi git và khỏi lịch sử.
+#
+# 17/09: client_secret_*.json (S-06) đã gỡ khỏi HEAD — không mã nào đọc nó, gỡ
+# không gãy gì — nên không còn trong danh sách: thêm lại là chốt chặn cứng. Nó
+# VẪN nằm trong lịch sử cho tới khi xoay secret xong rồi mới filter-repo.
 android/fastlane/play-service-account.json
-android/fastlane/client_secret_72935841643-b3tg2rkgdm3fochafref0661ddupve8j.apps.googleusercontent.com.json
 android/fastlane/.env
