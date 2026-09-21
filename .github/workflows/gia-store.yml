@@ -1,0 +1,79 @@
+# Đồng bộ GIÁ + MÔ TẢ 6 gói thuê bao lên App Store Connect và Google Play, từ
+# bảng gốc tool/ec_plans.mjs. Chạy tay ở tab Actions (workflow_dispatch).
+#
+# Vì sao là một workflow chứ không chạy ở máy dev: khoá App Store Connect và
+# service account Play chỉ còn nằm trong Secrets của repo (S-01/S-06 đã dọn
+# chúng khỏi máy). Ở đây khoá không rời khỏi runner, và mỗi lượt chạy có log.
+#
+# Mặc định là DRY-RUN: chỉ in ra chỗ lệch bảng. Bật "ghi" mới ghi thật. Thứ tự
+# cố định Apple → Google: play_subs.mjs đọc điểm giá USA mà asc_subs.mjs vừa
+# chọn (tool/gia-store.json) để hai cửa hàng cùng giá.
+name: Giá cửa hàng
+
+on:
+  workflow_dispatch:
+    inputs:
+      ghi:
+        description: 'Ghi thật lên hai cửa hàng (tắt = dry-run, chỉ in ra chỗ lệch)'
+        type: boolean
+        default: false
+      rate:
+        description: 'Tỷ giá VND/USD để quy giá USA'
+        type: string
+        default: '26300'
+
+permissions:
+  contents: read
+
+jobs:
+  gia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Đo trước khi chạy: thiếu secret thì script chỉ nói "ENOENT ios/fastlane/.env"
+      # (nó rơi về file .env của máy dev) — người đọc log không biết phải thêm gì.
+      # Lần chạy đầu 2026-09-16 đã đỏ đúng kiểu đó: repo chưa có secret/variable nào.
+      - name: Kiểm đủ secrets & variables
+        env:
+          A1: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          A2: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          A3: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          A4: ${{ vars.IOS_BUNDLE_ID_BASE }}
+          G1: ${{ secrets.PLAY_STORE_JSON_KEY }}
+          G2: ${{ vars.ANDROID_PACKAGE_NAME_BASE }}
+        run: |
+          thieu=""
+          [ -n "$A1" ] || thieu="$thieu secrets.APP_STORE_CONNECT_API_KEY_ID"
+          [ -n "$A2" ] || thieu="$thieu secrets.APP_STORE_CONNECT_API_ISSUER_ID"
+          [ -n "$A3" ] || thieu="$thieu secrets.APP_STORE_CONNECT_API_KEY_CONTENT(base64 .p8)"
+          [ -n "$A4" ] || thieu="$thieu vars.IOS_BUNDLE_ID_BASE"
+          [ -n "$G1" ] || thieu="$thieu secrets.PLAY_STORE_JSON_KEY(nội dung JSON)"
+          [ -n "$G2" ] || thieu="$thieu vars.ANDROID_PACKAGE_NAME_BASE"
+          if [ -n "$thieu" ]; then
+            echo "::error::Thiếu trong Settings → Secrets and variables → Actions:$thieu"
+            exit 1
+          fi
+          echo "Đủ 4 secret + 2 variable."
+
+      - name: App Store Connect (level · mô tả · giá VNM + USA · vùng bán)
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          IOS_BUNDLE_ID_BASE: ${{ vars.IOS_BUNDLE_ID_BASE }}
+        run: node tool/asc_subs.mjs --rate "${{ inputs.rate }}" ${{ inputs.ghi && '--apply' || '' }}
+
+      - name: Google Play (giá VN · 172 vùng · listing)
+        env:
+          ANDROID_PACKAGE_NAME_BASE: ${{ vars.ANDROID_PACKAGE_NAME_BASE }}
+          # Nội dung JSON đi thẳng vào script, không đặt xuống đĩa runner.
+          PLAY_STORE_JSON_KEY: ${{ secrets.PLAY_STORE_JSON_KEY }}
+        run: node tool/play_subs.mjs ${{ inputs.ghi && '--apply' || '' }}
+
+      - name: Ghi lại điểm giá đã chọn
+        run: cat tool/gia-store.json

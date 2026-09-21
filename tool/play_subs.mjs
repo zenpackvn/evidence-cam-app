@@ -10,6 +10,8 @@
 //   2. giá 172 vùng còn lại — để Google tự quy bằng `pricing:convertRegionPrices`,
 //      RIÊNG US ép bằng đúng giá đã đặt bên Apple. Google quy ra mức đuôi .99
 //      lệch Apple tới 1,1%, mà cam kết sản phẩm là hai cửa hàng cùng giá.
+//      Giá US đọc từ `tool/gia-store.json` do asc_subs.mjs ghi ra — chạy
+//      asc_subs TRƯỚC (dry-run cũng được), không gõ tay con số Apple vào đây.
 //   3. listing vi + en-US: title, ĐỦ 4 benefit, description.
 //
 // Cần `PLAY_STORE_JSON_KEY_PATH` (trong môi trường hoặc android/fastlane/.env)
@@ -38,67 +40,104 @@ let regionsVersion = null;
 // Vùng phải bỏ vì giá vượt TRẦN của Google. Trần là theo vùng và Google không
 // công bố bảng; đây là thứ học được từ lỗi 400 thật, giữ lại để lần chạy sau
 // không đề nghị thêm vào rồi lại bị đá ra (dry-run phải sạch mới đáng tin).
-// Gói Doanh nghiệp 12 tháng = 11.9tr₫ ≈ ₩710.000, trần Hàn Quốc là ₩600.000.
-const CAP_SKIP = { zenpack_sub_enterprise: { p1y: ['KR'] } };
+// Bản 4: Doanh nghiệp 12 tháng = 11.9tr₫ ≈ ₩710.000 vượt trần Hàn Quốc
+// ₩600.000 nên bỏ KR. Bản 5 hạ còn 1,49tr₫ ≈ ₩85.000, dưới trần xa — mở lại.
+// Gặp 400 vì trần ở vùng nào thì thêm vùng đó vào đây, đừng sửa giá.
+const CAP_SKIP = {};
 
 // VND = bảng gốc §2. USD = đúng giá đã đặt bên App Store (00 §2 "Giá USD").
+// VND = bảng gốc Bản 5 (= WEB_PRICES backend, production 2026-09-16). USD =
+// điểm giá Apple đã chọn, đọc từ gia-store.json (khoá là productId bên Apple).
+const usdFile = (() => {
+  try {
+    return JSON.parse(readFileSync('tool/gia-store.json', 'utf8'));
+  } catch {
+    throw new Error('Thiếu tool/gia-store.json — chạy `node tool/asc_subs.mjs` (dry-run là đủ) trước để lấy giá USA Apple đã chọn.');
+  }
+})();
+const usdOf = (appleId) => {
+  const v = usdFile.usd?.[appleId];
+  if (typeof v !== 'number') throw new Error(`gia-store.json không có giá USA cho ${appleId} — asc_subs.mjs chưa chạy tới mã này?`);
+  return v;
+};
 const PLANS = {
-  zenpack_sub_basic: { p1m: { vnd: 249_000, usd: 9.49 }, p1y: { vnd: 2_490_000, usd: 94.9 } },
-  zenpack_sub_pro: { p1m: { vnd: 549_000, usd: 20.9 }, p1y: { vnd: 5_490_000, usd: 209 } },
-  zenpack_sub_enterprise: { p1m: { vnd: 1_190_000, usd: 45.49 }, p1y: { vnd: 11_900_000, usd: 450 } },
+  zenpack_sub_basic: {
+    p1m: { vnd: 49_000, usd: usdOf('zenpack_sub_basic_1m') },
+    p1y: { vnd: 490_000, usd: usdOf('zenpack_sub_basic_12m') },
+  },
+  zenpack_sub_pro: {
+    p1m: { vnd: 99_000, usd: usdOf('zenpack_sub_pro_1m') },
+    p1y: { vnd: 990_000, usd: usdOf('zenpack_sub_pro_12m') },
+  },
+  zenpack_sub_enterprise: {
+    p1m: { vnd: 149_000, usd: usdOf('zenpack_sub_enterprise_1m') },
+    p1y: { vnd: 1_490_000, usd: usdOf('zenpack_sub_enterprise_12m') },
+  },
 };
 
 // Bốn benefit = đúng bốn gạch đầu dòng của website, cùng thứ tự (01 §1.3).
+// Bốn benefit = bốn cột của bảng gói Bản 5: kho kèm sẵn (≈ video), người dùng +
+// cửa hàng, thời gian giữ, tính năng bậc cao. Google giới hạn mỗi benefit 40 ký tự.
 const LISTINGS = {
   zenpack_sub_basic: [
     {
       languageCode: 'vi',
       title: 'ZenPack Cơ bản',
-      benefits: ['1.000 video/tháng', '5 người dùng/shop', 'Tối đa 5 phút/video', 'Giữ video 30 ngày'],
+      benefits: ['Kho 10 GB, ≈450 video/tháng', '5 người dùng/shop, 3 cửa hàng', 'Giữ video 30 ngày', 'Mua thêm kho khi cần'],
       description:
-        'Gói Cơ bản cho shop khoảng 30 đơn/ngày: 1.000 video mỗi tháng, 5 người dùng mỗi shop, tối đa 5 phút/video, giữ video 30 ngày.',
+        'Gói Cơ bản cho shop nhỏ: kho kèm sẵn 10 GB (≈450 video mỗi tháng), 5 người dùng mỗi shop, 3 cửa hàng, giữ video 30 ngày, mua thêm kho khi cần.',
     },
     {
       languageCode: 'en-US',
       title: 'ZenPack Basic',
-      benefits: ['1,000 videos/month', '5 users/shop', 'Up to 5 minutes/video', 'Videos kept 30 days'],
+      benefits: ['10 GB storage, ≈450 videos/month', '5 users/shop, 3 stores', 'Videos kept 30 days', 'Add storage anytime'],
       description:
-        'Basic plan for shops around 30 orders/day: 1,000 videos per month, 5 users per shop, up to 5 minutes per video, videos kept 30 days.',
+        'Basic plan for small shops: 10 GB included (≈450 videos per month), 5 users per shop, 3 stores, videos kept 30 days, add storage anytime.',
     },
   ],
   zenpack_sub_pro: [
     {
       languageCode: 'vi',
       title: 'ZenPack Chuyên nghiệp',
-      benefits: ['3.000 video/tháng', '15 người dùng/shop', 'Tối đa 5 phút/video', 'Cắm được kho lưu trữ riêng'],
+      benefits: ['Kho 30 GB, ≈1.350 video/tháng', '15 người dùng/shop, 10 cửa hàng', 'Giữ video 30/60/90 ngày', 'Bản máy tính, camera IP, kho riêng'],
       description:
-        'Gói Chuyên nghiệp cho shop khoảng 100 đơn/ngày: 3.000 video mỗi tháng, 15 người dùng mỗi shop, tối đa 5 phút/video, cắm được kho lưu trữ riêng.',
+        'Gói Chuyên nghiệp cho shop lớn: kho kèm sẵn 30 GB (≈1.350 video mỗi tháng), 15 người dùng mỗi shop, 10 cửa hàng, giữ video 30/60/90 ngày, bản cài máy tính + camera IP, kho riêng.',
     },
     {
       languageCode: 'en-US',
       title: 'ZenPack Pro',
-      benefits: ['3,000 videos/month', '15 users/shop', 'Up to 5 minutes/video', 'Bring your own storage'],
+      benefits: ['30 GB storage, ≈1,350 videos/month', '15 users/shop, 10 stores', 'Videos kept 30/60/90 days', 'Desktop app, IP camera, own storage'],
       description:
-        'Pro plan for shops around 100 orders/day: 3,000 videos per month, 15 users per shop, up to 5 minutes per video, bring your own storage.',
+        'Pro plan for larger shops: 30 GB included (≈1,350 videos per month), 15 users per shop, 10 stores, videos kept 30/60/90 days, desktop app with IP cameras, bring your own storage.',
     },
   ],
   zenpack_sub_enterprise: [
     {
       languageCode: 'vi',
       title: 'ZenPack Doanh nghiệp',
-      benefits: ['8.000 video/tháng', 'Không giới hạn người dùng', 'Kho hệ thống + kho riêng', 'Giữ video 30 ngày'],
+      benefits: ['Kho 80 GB, ≈3.600 video/tháng', 'Không giới hạn người dùng, cửa hàng', 'Giữ video 30 → 180 ngày', 'Bản máy tính, camera IP, kho riêng'],
       description:
-        'Gói Doanh nghiệp cho kho vận khoảng 250 đơn/ngày: 8.000 video mỗi tháng, không giới hạn người dùng, dùng được cả kho hệ thống lẫn kho riêng, giữ video 30 ngày.',
+        'Gói Doanh nghiệp cho kho vận: kho kèm sẵn 80 GB (≈3.600 video mỗi tháng), không giới hạn người dùng lẫn cửa hàng, giữ video 30 → 180 ngày, bản cài máy tính + camera IP, kho riêng.',
     },
     {
       languageCode: 'en-US',
       title: 'ZenPack Enterprise',
-      benefits: ['8,000 videos/month', 'Unlimited users', 'System + private storage', 'Videos kept 30 days'],
+      benefits: ['80 GB storage, ≈3,600 videos/month', 'Unlimited users and stores', 'Videos kept 30 to 180 days', 'Desktop app, IP camera, own storage'],
       description:
-        'Enterprise plan for warehouses around 250 orders/day: 8,000 videos per month, unlimited users, both system and private storage, videos kept 30 days.',
+        'Enterprise plan for warehouses: 80 GB included (≈3,600 videos per month), unlimited users and stores, videos kept 30 to 180 days, desktop app with IP cameras, bring your own storage.',
     },
   ],
 };
+// Hàng rào: benefit ≤ 40, description ≤ 200 ký tự (runbook 01 §1.3) — Google
+// chặn lúc ghi, mà lúc ấy đã đi nửa đường.
+for (const [id, ls] of Object.entries(LISTINGS)) {
+  for (const l of ls) {
+    for (const b of l.benefits) {
+      if (b.normalize('NFC').length > 40) throw new Error(`${id} (${l.languageCode}): benefit "${b}" dài ${b.length}/40`);
+    }
+    if (l.description.normalize('NFC').length > 200) throw new Error(`${id} (${l.languageCode}): description dài ${l.description.length}/200`);
+  }
+}
 
 // ---- auth ------------------------------------------------------------------
 
@@ -115,7 +154,12 @@ function envVar(name) {
   throw new Error(`Thiếu ${name} (môi trường hoặc android/fastlane/.env)`);
 }
 
-const key = JSON.parse(readFileSync(envVar('PLAY_STORE_JSON_KEY_PATH'), 'utf8'));
+// Nhận NỘI DUNG JSON qua biến môi trường (PLAY_STORE_JSON_KEY) hoặc ĐƯỜNG DẪN
+// file (PLAY_STORE_JSON_KEY_PATH). Vế đầu để chạy từ CI hay từ stdin mà không
+// phải đặt khoá xuống đĩa — khoá Play đã rò một lần (S-01), không tạo thêm bản.
+const key = JSON.parse(
+  process.env.PLAY_STORE_JSON_KEY || readFileSync(envVar('PLAY_STORE_JSON_KEY_PATH'), 'utf8'),
+);
 const b64u = (o) => Buffer.from(typeof o === 'string' ? o : JSON.stringify(o)).toString('base64url');
 const iat = Math.floor(Date.now() / 1000);
 const head = b64u({ alg: 'RS256', typ: 'JWT' });

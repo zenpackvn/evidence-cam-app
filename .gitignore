@@ -221,3 +221,4 @@ android/fastlane/.env
 android/fastlane/*service-account*.json
 android/fastlane/*service_account*.json
 android/fastlane/client_secret*.json
+tool/gia-store.json

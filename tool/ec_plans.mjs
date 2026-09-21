@@ -2,8 +2,10 @@
 // (tạo bên Apple) và rc_products.mjs (tạo bên RevenueCat). Hai script tự giữ
 // bảng riêng thì sớm muộn cũng lệch mã hoặc lệch giá.
 //
-// Bản 4 (2026-08-10): 3 gói × 2 thời hạn = 6 sản phẩm. Trục tính tiền là SỐ
-// VIDEO mỗi tháng chứ không phải GB, và kỳ 6 tháng đã ngừng bán.
+// Bản 5 (2026-09-15, "3.1 Bảng gói"): vẫn 3 gói × 2 thời hạn = 6 sản phẩm, CÙNG
+// MÃ với Bản 4 — chỉ đổi giá và mô tả, nên không tạo SKU mới. Bảng gói nói bằng
+// KHO KÈM SẴN (10/30/80 GB) và số video quy đổi (≈45 video/GB); mô tả 45 ký tự
+// của Apple giữ trục video/tháng + người dùng vì đó là hai thứ khách so gói.
 //
 // 9 SKU của Bản 3 (`zenpack_{basic,saver,premium}_{1m,6m,12m}`) vẫn tồn tại
 // trên App Store — mã store không xoá được. Chúng chỉ cần gỡ khỏi bán; backend
@@ -20,9 +22,9 @@
 // không có số để định dạng. Đây là trục phân gói thứ hai sau số video, và là
 // thứ duy nhất ngoài số video nhét vừa 45 ký tự mô tả của Apple.
 export const PLANS = [
-  { code: 'basic', videos: 1_000, vi: 'Cơ bản', en: 'Basic', seatsVi: '5 người dùng/shop', seatsEn: '5 users/shop' },
-  { code: 'pro', videos: 3_000, vi: 'Chuyên nghiệp', en: 'Pro', seatsVi: '15 người dùng/shop', seatsEn: '15 users/shop' },
-  { code: 'enterprise', videos: 8_000, vi: 'Doanh nghiệp', en: 'Enterprise', seatsVi: 'không giới hạn người dùng', seatsEn: 'unlimited users' },
+  { code: 'basic', videos: 450, gb: 10, vi: 'Cơ bản', en: 'Basic', seatsVi: '5 người dùng/shop', seatsEn: '5 users/shop' },
+  { code: 'pro', videos: 1_350, gb: 30, vi: 'Chuyên nghiệp', en: 'Pro', seatsVi: '15 người dùng/shop', seatsEn: '15 users/shop' },
+  { code: 'enterprise', videos: 3_600, gb: 80, vi: 'Doanh nghiệp', en: 'Enterprise', seatsVi: 'không giới hạn người dùng', seatsEn: 'unlimited users' },
 ];
 
 // `google` = base plan ID bên Play. Hai cửa hàng mô hình hoá khác nhau nên mã
@@ -36,7 +38,7 @@ export const TERMS = [
 ];
 
 // Giá trong app = ĐÚNG BẰNG giá web (chốt 2026-08-10) — chép từ backend
-// `services/pricing.ts` WEB_PRICES. Mức +15% bù hoa hồng của bản trước đã bỏ:
+// `services/pricing.ts` WEB_PRICES (Bản 5 đã lên production 2026-09-16). Mức +15% bù hoa hồng của bản trước đã bỏ:
 // khách so giá hai kênh phải thấy cùng một con số, hoa hồng cửa hàng trừ vào
 // biên chứ không cộng vào giá bán.
 //
@@ -44,9 +46,9 @@ export const TERMS = [
 // price point có sẵn. Chọn điểm gần nhất, lệch quá ±1% thì dừng lại hỏi chứ
 // đừng tự nắn: cam kết là "hai kênh cùng giá".
 const PRICES = {
-  basic: { '1m': 249_000, '12m': 2_490_000 },
-  pro: { '1m': 549_000, '12m': 5_490_000 },
-  enterprise: { '1m': 1_190_000, '12m': 11_900_000 },
+  basic: { '1m': 49_000, '12m': 490_000 },
+  pro: { '1m': 99_000, '12m': 990_000 },
+  enterprise: { '1m': 149_000, '12m': 1_490_000 },
 };
 
 // Apple: displayName ≤30 ký tự, description ≤45.
