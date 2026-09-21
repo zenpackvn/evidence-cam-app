@@ -19,6 +19,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_contracts/shared_contracts.dart';
 
 import 'device_samples.dart';
 import 'ec_bill_scanner.dart';
@@ -97,11 +98,21 @@ RecordingFrameAction recordingFrameAction(
   String? code,
   String current, {
   String endQr = kEndSessionQr,
+  EcCaiDatQuay caiDat = const EcCaiDatQuay(),
 }) {
   if (code == null || code.isEmpty) return RecordingFrameAction.ignore;
+  // "Tắt tự động kết thúc quay video": không mã nào dừng được clip, kể cả mã
+  // kết thúc. Đứng TRƯỚC mọi luật khác vì nó phủ định tất cả — để sau thì mã
+  // kết thúc vẫn dừng được và cài đặt chỉ đúng một nửa.
+  if (caiDat.chiDungBangNut) return RecordingFrameAction.ignore;
   if (code == endQr) return RecordingFrameAction.endSession;
   if (normalizeTrackingCode(code) != normalizeTrackingCode(current)) {
-    return RecordingFrameAction.cutover;
+    // "Kết thúc video bằng QR khác" tắt: thấy mã đơn khác thì lờ đi, người quay
+    // tự bấm dừng. Có bàn đóng để nhiều bill cạnh nhau, và ở đó cắt tự động là
+    // cắt nhầm giữa chừng.
+    return caiDat.ketThucBangMaKhac
+        ? RecordingFrameAction.cutover
+        : RecordingFrameAction.ignore;
   }
   return RecordingFrameAction.ignore;
 }
@@ -376,7 +387,9 @@ class RecordingSessionBloc
     String initialResolution = '720p',
     String endQr = kEndSessionQr,
     Duration maxRecording = const Duration(minutes: 2),
+    EcCaiDatQuay caiDat = const EcCaiDatQuay(),
   }) : _camera = camera,
+       _caiDat = caiDat,
        _scanner = scanner,
        _onClipSaved = onClipSaved,
        _deviceConditions = deviceConditions,
@@ -475,6 +488,25 @@ class RecordingSessionBloc
   final String _endQr;
   final Duration _maxRecording;
 
+  /// Cài đặt quay của CỬA HÀNG đang mở. Không phải của người cầm máy — xem
+  /// [EcCaiDatQuay].
+  final EcCaiDatQuay _caiDat;
+
+  /// Đọc một câu trạng thái, nếu cửa hàng còn bật âm thanh trạng thái.
+  ///
+  /// MỘT cổng cho mọi câu nói và mọi tiếng bíp. Gác ở từng chỗ gọi thì thêm một
+  /// câu mới là quên một chỗ, và cửa hàng đã tắt tiếng vẫn nghe đúng câu đó —
+  /// giữa kho, giữa ca.
+  Future<void> _noi(String cau) async {
+    if (!_caiDat.amThanhTrangThai) return;
+    await _voice.speak(cau);
+  }
+
+  Future<void> _bip() async {
+    if (!_caiDat.amThanhTrangThai) return;
+    await _tone.beep();
+  }
+
   List<CameraDescription> _cameras = const [];
   int _cameraIndex = 0;
   bool _liveScan = true;
@@ -530,7 +562,13 @@ class RecordingSessionBloc
   ///
   /// Quãng này camera vừa mở ghi hình xong, còn khung hình thì vẫn đang là cái
   /// bill vừa quét — không có gì mới để tìm, mà lại là đúng lúc máy bận nhất.
-  static const _recScanWarmup = Duration(milliseconds: 900);
+
+  /// Quãng đầu clip không nhận dạng gì. Cửa hàng đặt được ("Chờ trước khi kết
+  /// thúc video") vì độ dài đúng phụ thuộc thao tác của từng bàn đóng: có nơi
+  /// nhấc bill ra ngay, có nơi để nguyên tới lúc dán xong.
+  Duration get _recScanWarmup => Duration(
+    milliseconds: _caiDat.choTruocKhiKetThucMs,
+  );
 
   /// Khoảng nghỉ giữa hai lần nhận dạng lúc NGHỈ, tức lúc chờ bill vào khung.
   ///
@@ -544,7 +582,16 @@ class RecordingSessionBloc
   /// mở — mà màn này là chỗ người ta để máy đứng chờ hàng, có khi hàng giờ.
   /// 150ms là dưới ngưỡng người dùng cảm nhận được (đọc ra là "vào khung là
   /// nhận") mà vẫn cắt phần lớn số lượt giải mã thừa.
-  static const _idleScanCooldown = Duration(milliseconds: 150);
+  static const _idleScanCooldownMacDinh = Duration(milliseconds: 150);
+
+  /// Giãn ra khi cửa hàng bật "Tiết kiệm pin".
+  ///
+  /// 600ms chứ không tắt hẳn nhận dạng: tắt là mất luồng rảnh tay, thứ duy nhất
+  /// làm màn này đáng dùng. Giãn gấp bốn cắt phần lớn số lượt giải mã mà đưa
+  /// bill vào khung vẫn nhận trong khoảng người ta còn chờ được.
+  Duration get _idleScanCooldown => _caiDat.tietKiemPin
+      ? const Duration(milliseconds: 600)
+      : _idleScanCooldownMacDinh;
 
   // Async mutex chaining all camera-mutating ops. ponytail: a single global
   // lock — fine here because there's exactly one camera; nothing to parallelize.
@@ -586,7 +633,11 @@ class RecordingSessionBloc
   /// [_onIdleFrame]): nhấc kiện ra là quay lại được luôn, đưa bill đơn khác vào
   /// cũng vậy. Con số dưới đây chỉ còn là trần chót cho trường hợp không nhịp
   /// quét nào nói được gì — không phải quãng bắt người quay phải chờ.
-  static const _reArmDelay = Duration(seconds: 5);
+
+  /// Cửa hàng đặt được ("Chờ trước khi quét mã mới").
+  Duration get _reArmDelay => Duration(
+    milliseconds: _caiDat.choTruocKhiQuetMoiMs,
+  );
 
   /// The live controller for the preview widget. The bloc can't hide it — a
   /// `CameraPreview` needs the actual controller — so the view reads it here and
@@ -612,6 +663,28 @@ class RecordingSessionBloc
     '480p' => ResolutionPreset.medium,
     _ => ResolutionPreset.high,
   };
+
+  /// Ngưỡng dung lượng trống để "Auto cấu hình video" hạ độ nét, tính bằng MB.
+  ///
+  /// 1500 MB chứ không phải một con số nhỏ: một clip 720p dài hai phút nặng
+  /// khoảng 150 MB, nên dưới mức này là chỉ còn chỗ cho chưa tới mười đơn. Hạ
+  /// độ nét ở đó vẫn còn kịp; đợi tới lúc còn vài trăm MB thì clip hỏng giữa
+  /// chừng vì hết chỗ, và cái mất là bằng chứng của một đơn có thật.
+  static const _nguongHaCauHinhMb = 1500.0;
+
+  /// Độ nét thật sự dùng, sau khi tính "Auto cấu hình video".
+  ///
+  /// Chỉ HẠ, không bao giờ nâng: cửa hàng đặt 480p mà máy còn nhiều chỗ trống
+  /// thì vẫn quay 480p — cài đặt của chủ shop là trần, không phải gợi ý.
+  String _doNetThatSu(String daChon, double? freeMb) {
+    if (!_caiDat.tuCauHinhVideo) return daChon;
+    if (freeMb == null || freeMb >= _nguongHaCauHinhMb) return daChon;
+    return switch (daChon) {
+      '720p' => '480p',
+      '480p' => '240p',
+      _ => daChon,
+    };
+  }
 
   Future<void> _onInit(
     RecordingInitRequested event,
@@ -654,9 +727,13 @@ class RecordingSessionBloc
           freeMb = null;
         }
         if (isClosed) return;
+        // Hạ độ nét TRƯỚC khi dựng camera bên dưới: dựng xong rồi mới hạ là
+        // dựng camera hai lần mỗi lần mở màn.
+        final doNet = _doNetThatSu(state.resolutionLabel, freeMb);
         emit(
           state.copyWith(
             status: RecordingStatus.idle,
+            resolutionLabel: doNet,
             cameraCount: cameras.length,
             cameraGeneration: state.cameraGeneration + 1,
             zoom: minZoom,
@@ -694,7 +771,11 @@ class RecordingSessionBloc
       // và câu chuyện riêng của nhân viên. Tắt từ gốc thì clip không có luồng
       // âm thanh nào — xem lại trong app, tải về máy hay gửi qua hồ sơ đều im,
       // khỏi phải tắt tiếng ở từng chỗ. Cũng bớt dung lượng mỗi clip.
-      enableAudio: false,
+      // Cửa hàng bật thì quay kèm tiếng. Mặc định TẮT vì bàn đóng hàng là nơi
+      // có người nói chuyện, và ghi tiếng người mà họ không biết là chuyện
+      // riêng tư chứ không phải một tính năng.
+      enableAudio: _caiDat.quayCoAmThanh,
+      fps: _caiDat.fps,
     );
     try {
       // The phone sits propped up looking down at the packing table for this
@@ -794,7 +875,7 @@ class RecordingSessionBloc
   /// duy nhất cho cú quét, và nó phải ra trước mọi thứ khác.
   Future<void> _beepStart() async {
     try {
-      await _tone.beep().timeout(const Duration(seconds: 2));
+      await _bip().timeout(const Duration(seconds: 2));
     } on Object {
       // Kệ — quay quan trọng hơn thông báo.
     }
@@ -885,7 +966,7 @@ class RecordingSessionBloc
         return;
       }
       _lastRejectedReturnCode = code;
-      unawaited(_voice.speak(voiceLines.wrongCode));
+      unawaited(_noi(voiceLines.wrongCode));
     } on Object {
       // Kệ — clip quan trọng hơn việc đối chiếu.
     }
@@ -1032,14 +1113,33 @@ class RecordingSessionBloc
   ) async {
     if (scanSuspended) return;
     if (state.status != RecordingStatus.recording) return;
-    switch (recordingFrameAction(event.code, state.code, endQr: _endQr)) {
+    switch (recordingFrameAction(
+      event.code,
+      state.code,
+      endQr: _endQr,
+      caiDat: _caiDat,
+    )) {
       case RecordingFrameAction.endSession:
+        await _quayThem();
         await _finalize(emit, next: null);
       case RecordingFrameAction.cutover:
+        // KHÔNG quay thêm ở nhánh này: đuôi ở đây là quay thêm cảnh của đơn
+        // SAU vào clip của đơn TRƯỚC — người quay đã giơ bill mới lên rồi.
         await _finalize(emit, next: event.code.trim());
       case RecordingFrameAction.ignore:
         break;
     }
+  }
+
+  /// "Quay thêm khi kết thúc": giữ máy quay thêm vài giây sau khi đã quét mã
+  /// kết thúc, để cảnh dán tem hoặc đặt kiện lên cân vào được clip.
+  ///
+  /// Chỉ ở nhánh QUÉT MÃ KẾT THÚC. Người bấm nút dừng là đã chủ động dừng —
+  /// bắt họ chờ thêm mấy giây nữa là cái nút đọc ra như bị treo.
+  Future<void> _quayThem() async {
+    final giay = _caiDat.quayThemGiay;
+    if (giay <= 0) return;
+    await Future<void>.delayed(Duration(seconds: giay));
   }
 
   Future<void> _onStopRequested(
@@ -1097,12 +1197,12 @@ class RecordingSessionBloc
             // mili giây chết giữa hai clip, đúng cái khựng người quay thấy khi
             // chuyển đơn. Tút lọt sang đầu clip mới cũng không sao — 2.5 giây
             // đầu mỗi clip đã được làm câm lúc remux.
-            unawaited(_tone.beep());
+            unawaited(_bip());
             await _startVideoWithScan();
             _markClipStart();
           } else {
             // Về nghỉ thì không còn gì đang ghi, nên khỏi chờ câu nói.
-            unawaited(_voice.speak(voiceLines.recordingStopped));
+            unawaited(_noi(voiceLines.recordingStopped));
           }
         } finally {
           previewTransitioning.value = false;
@@ -1182,7 +1282,7 @@ class RecordingSessionBloc
     // looking at the countdown the view now shows, so the cap is spoken too.
     if (!_nearLimitWarned && elapsed >= nearLimitAt) {
       _nearLimitWarned = true;
-      unawaited(_voice.speak(_nearLimitSpeech));
+      unawaited(_noi(_nearLimitSpeech));
     }
     // Hard cap: auto-close the clip at 15' so a forgotten session finalizes.
     if (!_capRequested && elapsed >= _maxRecording) {
@@ -1265,7 +1365,7 @@ class RecordingSessionBloc
   ///
   /// Gọi lúc app ĐÃ trở lại, không phải lúc bị đẩy xuống nền: dưới nền thì loa
   /// không phát được, câu nói rơi vào hư không đúng lúc cần nhất.
-  Future<void> announceInterrupted() => _voice.speak(_interruptedSpeech);
+  Future<void> announceInterrupted() => _noi(_interruptedSpeech);
 
   /// Câu nói khi việc quay bị cắt ngang.
   String get _interruptedSpeech => voiceLines.interrupted;

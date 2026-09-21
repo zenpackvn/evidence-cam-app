@@ -137,6 +137,23 @@ abstract interface class EcAuth {
   Future<EcUser> unlinkProvider(EcAuthProvider provider);
 
   /// Permanently delete the current account.
+  /// Xác thực lại người đang đăng nhập.
+  ///
+  /// Firebase CHỈ cho xoá tài khoản khi phiên vừa được xác thực gần đây (vài
+  /// phút). Phiên cũ hơn thì `delete()` ném `requires-recent-login`.
+  ///
+  /// Gọi hàm này TRƯỚC mọi thao tác phá huỷ. Trước đây màn xoá gọi thẳng
+  /// [deleteAccount] sau khi đã xoá sạch dữ liệu ở máy chủ — nên phiên cũ dẫn
+  /// tới trạng thái tệ nhất: dữ liệu mất thật mà tài khoản vẫn còn, người dùng
+  /// đăng nhập lại được vào một tài khoản rỗng.
+  ///
+  /// [password] chỉ cần cho tài khoản đăng nhập bằng mật khẩu. Tài khoản
+  /// Google/Apple xác thực lại qua chính nhà cung cấp, không cần nhập gì.
+  ///
+  /// Ném [EcAuthCanMatKhau] khi tài khoản dùng mật khẩu mà bên gọi chưa đưa
+  /// vào — để màn hình biết phải hỏi, thay vì đoán.
+  Future<void> reauthenticate({String? password});
+
   Future<void> deleteAccount();
 
   /// Fresh bearer token for the API (network's AuthTokenProvider binds to this).
@@ -150,4 +167,16 @@ abstract interface class EcAuth {
 abstract class EcAuthMailApi {
   Future<void> sendVerifyEmail();
   Future<void> sendPasswordReset(String email);
+}
+
+/// Tài khoản dùng mật khẩu và cần nhập lại mật khẩu để xác thực.
+///
+/// Lớp riêng chứ không phải một [EcAuthException] mang chuỗi: màn hình phải
+/// PHÂN BIỆT được "cần hỏi mật khẩu" với "xác thực hỏng", vì một cái là mở hộp
+/// nhập, cái kia là báo lỗi.
+class EcAuthCanMatKhau implements Exception {
+  const EcAuthCanMatKhau();
+
+  @override
+  String toString() => 'EcAuthCanMatKhau';
 }

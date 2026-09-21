@@ -299,6 +299,59 @@ void _detailTests() {
     url: 'https://zenpack.vn/c/abc123',
   );
 
+  // "5/7 video đã ký" phải nói TRƯỚC nút chia sẻ (2026-09-17): gửi hồ sơ có
+  // clip chưa ký mà không biết là bị sàn từ chối oan. Thiếu số từ máy chủ cũ
+  // thì hàng ẨN — "0/3" là nói sai.
+  testWidgets('đã ký: đếm và nhắc số clip chưa dấu; đủ thì không nhắc', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      EcClaimDetailScreen(
+        title: detail.title,
+        shopName: detail.shopName,
+        channel: detail.channel,
+        trackings: detail.trackings,
+        orderDateLabel: detail.orderDateLabel,
+        videos: 3,
+        photos: 1,
+        sealed: 2,
+        anchored: 2,
+        createdAtLabel: detail.createdAtLabel,
+        url: detail.url,
+      ),
+    );
+    expect(find.text('Đã ký'), findsOneWidget);
+    expect(find.text('2/3 video · 2 có chứng thực độc lập'), findsOneWidget);
+    expect(find.textContaining('1 video chưa có dấu'), findsOneWidget);
+
+    await _pump(
+      tester,
+      EcClaimDetailScreen(
+        title: detail.title,
+        shopName: detail.shopName,
+        channel: detail.channel,
+        trackings: detail.trackings,
+        orderDateLabel: detail.orderDateLabel,
+        videos: 3,
+        photos: 1,
+        sealed: 3,
+        anchored: 1,
+        createdAtLabel: detail.createdAtLabel,
+        url: detail.url,
+      ),
+    );
+    expect(find.text('3/3 video · 1 có chứng thực độc lập'), findsOneWidget);
+    expect(find.textContaining('chưa có dấu'), findsNothing);
+  });
+
+  testWidgets('máy chủ cũ không trả số đã ký thì không có hàng Đã ký', (
+    tester,
+  ) async {
+    await _pump(tester, detail);
+    expect(find.text('Đã ký'), findsNothing);
+  });
+
   testWidgets('hiện đủ sáu dòng thông tin như bên web', (tester) async {
     await _pump(tester, detail);
 

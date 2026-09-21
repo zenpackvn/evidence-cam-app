@@ -193,6 +193,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # `withClock` ghim giờ cho golden màn quay (test/design).
+  clock: ^1.1.1
   path_provider_platform_interface: ^2.1.0
 
   # End-to-end testing harness. Drives the assembled app (via the testable

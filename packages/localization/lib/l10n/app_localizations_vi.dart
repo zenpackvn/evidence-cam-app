@@ -1091,6 +1091,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get tooltipEnterTracking => 'Nhập mã vận đơn';
 
   @override
+  String get scanPickImage => 'Chọn ảnh';
+
+  @override
+  String get scanNoCodeInImage => 'Ảnh này không có mã vận đơn';
+
+  @override
   String get tooltipZoomIn => 'Phóng to';
 
   @override
@@ -1951,15 +1957,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountRateAppNote => 'Hỗ trợ phát triển ZenPack';
 
   @override
-  String get supportFacebook => 'Nhắn Facebook';
-
-  @override
-  String get supportZalo => 'Nhắn Zalo';
-
-  @override
-  String get supportCall => 'Gọi hỗ trợ';
-
-  @override
   String sheetCustomMin(String min, String unit) {
     return 'Nhập từ $min $unit trở lên';
   }
@@ -2436,4 +2433,746 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get storageDriveRejected =>
       'Google từ chối lượt cấp quyền. Thử lại; vẫn vậy thì báo quản trị viên.';
+
+  @override
+  String get authSignInPhone => 'Đăng nhập bằng số điện thoại';
+
+  @override
+  String get phoneLoginTitle => 'Đăng nhập bằng số điện thoại';
+
+  @override
+  String get phoneLoginSubtitle =>
+      'Nhập số điện thoại, chúng tôi gửi mã 6 số để xác nhận.';
+
+  @override
+  String get phoneLoginNumberLabel => 'Số điện thoại';
+
+  @override
+  String get phoneLoginNumberHint => '09xx xxx xxx';
+
+  @override
+  String get phoneLoginInvalid => 'Số điện thoại không hợp lệ';
+
+  @override
+  String get phoneLoginViaZalo => 'Gửi mã qua Zalo';
+
+  @override
+  String get phoneLoginViaSms => 'Gửi mã qua SMS';
+
+  @override
+  String get otpTitle => 'Nhập mã xác nhận';
+
+  @override
+  String otpSentTo(String phone) {
+    return 'Đã gửi mã 6 số tới $phone.';
+  }
+
+  @override
+  String get otpLabel => 'Mã xác nhận';
+
+  @override
+  String get otpConfirm => 'Xác nhận';
+
+  @override
+  String get otpResend => 'Gửi lại mã';
+
+  @override
+  String otpResendIn(int seconds) {
+    return 'Gửi lại sau $seconds giây';
+  }
+
+  @override
+  String get otpChangePhone => 'Đổi số khác';
+
+  @override
+  String get otpWrong => 'Mã không đúng. Kiểm tra lại tin nhắn.';
+
+  @override
+  String get otpExpired => 'Mã đã hết hạn. Xin mã mới.';
+
+  @override
+  String get otpUsedUp => 'Mã không dùng được nữa. Xin mã mới.';
+
+  @override
+  String get otpTooSoon => 'Vừa gửi rồi. Chờ một chút rồi thử lại.';
+
+  @override
+  String get otpRateLimited => 'Xin mã quá nhiều lần. Thử lại sau ít phút.';
+
+  @override
+  String get otpSendFailed => 'Không gửi được mã. Thử kênh còn lại xem sao.';
+
+  @override
+  String get otpNotConfigured =>
+      'Hệ thống chưa sẵn sàng gửi mã. Vui lòng dùng cách khác.';
+
+  @override
+  String otpFromOa(String oa) {
+    return 'Tin nhắn gửi từ Zalo Official Account $oa — tìm đúng tên này.';
+  }
+
+  @override
+  String get hdDaHieu => 'Đã hiểu';
+
+  @override
+  String get hdDong => 'Đóng hướng dẫn';
+
+  @override
+  String get hdXemLai => 'Xem lại hướng dẫn';
+
+  @override
+  String get hdDaMoLai => 'Hướng dẫn sẽ hiện lại khi bạn vào từng màn.';
+
+  @override
+  String get hdHomeTitle => 'Màn Tổng quan';
+
+  @override
+  String get hdHome1 =>
+      'Xem nhanh số đơn, dung lượng đã dùng và việc cần xử lý hôm nay.';
+
+  @override
+  String get hdHome2 =>
+      'Thẻ trạng thái đưa thẳng tới danh sách vận đơn đang ở trạng thái đó.';
+
+  @override
+  String get hdHome3 =>
+      'Mở lại hướng dẫn bất cứ lúc nào ở nút hỗ trợ góc màn hình.';
+
+  @override
+  String get hdRecordTitle => 'Màn ghi hình';
+
+  @override
+  String get hdRecord1 =>
+      'Chọn cam quay hàng và cam quay bill trong phần Cài đặt trước khi quay.';
+
+  @override
+  String get hdRecord2 =>
+      'Quét mã vận đơn rồi bấm quay — video tự gắn vào đúng đơn.';
+
+  @override
+  String get hdRecord3 =>
+      'Camera IP chỉ dùng để quay hàng, không dùng cho cam quay bill.';
+
+  @override
+  String get hdOrderTitle => 'Chi tiết vận đơn';
+
+  @override
+  String get hdOrder1 =>
+      'Toàn bộ clip và ảnh của một mã vận đơn, mới nhất nằm trên cùng.';
+
+  @override
+  String get hdOrder2 =>
+      'Clip đã niêm phong là bản chốt — dùng được để khiếu nại với sàn.';
+
+  @override
+  String get hdOrder3 =>
+      'Xoá ở đây chỉ ẩn khỏi danh sách của bạn; bản gốc vẫn được giữ.';
+
+  @override
+  String get hdClaimsTitle => 'Hồ sơ khiếu nại';
+
+  @override
+  String get hdClaims1 =>
+      'Gom bằng chứng của nhiều vận đơn vào một hồ sơ để gửi cho sàn.';
+
+  @override
+  String get hdClaims2 =>
+      'Mỗi hồ sơ có một đường dẫn riêng, người nhận không cần tài khoản.';
+
+  @override
+  String get hdClaims3 =>
+      'Video trong hồ sơ được giữ thêm 15 ngày sau khi hồ sơ đóng.';
+
+  @override
+  String get hdClaimDetailTitle => 'Chi tiết hồ sơ';
+
+  @override
+  String get hdClaimDetail1 =>
+      'Thêm hoặc bớt vận đơn trong hồ sơ trước khi gửi đi.';
+
+  @override
+  String get hdClaimDetail2 =>
+      'Copy đường dẫn hồ sơ để dán vào khiếu nại trên sàn.';
+
+  @override
+  String get hdClaimDetail3 =>
+      'Đóng hồ sơ khi đã xong — video vẫn còn thêm 15 ngày.';
+
+  @override
+  String get hdShopsTitle => 'Cửa hàng';
+
+  @override
+  String get hdShops1 =>
+      'Mỗi cửa hàng có kho video, gói cước và nhân viên riêng.';
+
+  @override
+  String get hdShops2 =>
+      'Mời nhân viên vào cửa hàng và đặt quyền cho từng người.';
+
+  @override
+  String get hdShops3 => 'Đổi cửa hàng đang làm việc ở đầu trang.';
+
+  @override
+  String get hdQuotaTitle => 'Gói cước';
+
+  @override
+  String get hdQuota1 =>
+      'Gói quyết định dung lượng kho và số ngày video được giữ.';
+
+  @override
+  String get hdQuota2 =>
+      'Dung lượng tính theo cửa hàng, không theo từng người dùng.';
+
+  @override
+  String get hdQuota3 =>
+      'Sắp đầy kho thì hệ thống báo trước, không xoá lặng lẽ.';
+
+  @override
+  String get hdQueueTitle => 'Hàng chờ tải';
+
+  @override
+  String get hdQueue1 => 'Clip đã quay xong nhưng chưa lên kho nằm ở đây.';
+
+  @override
+  String get hdQueue2 => 'Mạng yếu thì cứ để đó — app tự tải lại khi có sóng.';
+
+  @override
+  String get hdQueue3 =>
+      'Đừng gỡ app khi còn clip đang chờ, chúng chỉ nằm trên máy này.';
+
+  @override
+  String get gtBoQua => 'Bỏ qua';
+
+  @override
+  String get gtTiep => 'Tiếp';
+
+  @override
+  String get gtBatDau => 'Bắt đầu ngay';
+
+  @override
+  String get gt1Title => 'Quay lúc đóng gói';
+
+  @override
+  String get gt1Body =>
+      'Mỗi đơn một video: hàng gì, đóng thế nào, dán mã nào. Quay xong là xong, không phải làm gì thêm.';
+
+  @override
+  String get gt2Title => 'Gắn đúng vào mã vận đơn';
+
+  @override
+  String get gt2Body =>
+      'Quét mã trên tem, video tự vào đúng đơn. Sau này tra một mã là ra hết clip của nó.';
+
+  @override
+  String get gt3Title => 'Có bằng chứng khi bị khiếu nại';
+
+  @override
+  String get gt3Body =>
+      'Gom clip của nhiều đơn thành một hồ sơ rồi gửi link cho sàn. Người nhận mở xem được, không cần tài khoản.';
+
+  @override
+  String get deletePwTitle => 'Nhập mật khẩu để xác nhận';
+
+  @override
+  String get deletePwBody =>
+      'Vì đây là thao tác không thể hoàn tác, hãy nhập lại mật khẩu trước khi xoá tài khoản.';
+
+  @override
+  String get deletePwOk => 'Xác nhận';
+
+  @override
+  String get hdNoShopTitle => 'Bắt đầu từ cửa hàng';
+
+  @override
+  String get hdNoShop1 =>
+      'Mọi video và bằng chứng đều thuộc về một cửa hàng, nên hãy tạo cửa hàng trước.';
+
+  @override
+  String get hdNoShop2 =>
+      'Tạo xong, bạn chọn sàn đang bán và mời nhân viên vào cùng làm.';
+
+  @override
+  String get hdNoShop3 =>
+      'Được người khác mời thì bấm \"Tham gia bằng lời mời\", không cần tạo mới.';
+
+  @override
+  String get cdNoShopTaoTitle => 'Tạo cửa hàng trước';
+
+  @override
+  String get cdNoShopTaoBody =>
+      'Mọi video và bằng chứng đều thuộc về một cửa hàng. Bấm đây để tạo, chọn sàn bạn đang bán.';
+
+  @override
+  String get cdNoShopMoiTitle => 'Được mời thì vào đây';
+
+  @override
+  String get cdNoShopMoiBody =>
+      'Chủ shop mời bạn thì bấm đây và nhập mã lời mời — không cần tạo cửa hàng mới.';
+
+  @override
+  String get cdNoShopTkTitle => 'Hồ sơ của bạn';
+
+  @override
+  String get cdNoShopTkBody =>
+      'Đổi tên, ngôn ngữ, phương thức đăng nhập và xoá tài khoản đều ở đây.';
+
+  @override
+  String get cdTaoShopTenTitle => 'Đặt tên cửa hàng';
+
+  @override
+  String get cdTaoShopTenBody =>
+      'Tên này chỉ bạn và nhân viên thấy, dùng để phân biệt khi có nhiều cửa hàng. Đổi lại được sau.';
+
+  @override
+  String get cdTaoShopNutTitle => 'Chọn sàn rồi tạo';
+
+  @override
+  String get cdTaoShopNutBody =>
+      'Chọn sàn bạn đang bán ở phía trên, rồi bấm đây. Cửa hàng tạo xong là quay video được ngay.';
+
+  @override
+  String get cdHome1T => 'Tìm nhanh một đơn';
+
+  @override
+  String get cdHome1B =>
+      'Gõ mã vận đơn vào đây để mở thẳng bằng chứng của đơn đó.';
+
+  @override
+  String get cdHome2T => 'Lọc theo trạng thái';
+
+  @override
+  String get cdHome2B =>
+      'Xem riêng đơn còn chờ tải, đơn đã xong hay đơn có lỗi.';
+
+  @override
+  String get cdQueue1T => 'Clip chờ lên kho';
+
+  @override
+  String get cdQueue1B =>
+      'Quay xong mà mạng yếu thì clip nằm đây, app tự tải lại khi có sóng.';
+
+  @override
+  String get cdQueue2T => 'Xoá hết hàng chờ';
+
+  @override
+  String get cdQueue2B =>
+      'Chỉ xoá clip chưa lên kho. Cân nhắc: xoá là mất, máy chủ chưa có bản nào.';
+
+  @override
+  String get cdClaims1T => 'Gom bằng chứng gửi sàn';
+
+  @override
+  String get cdClaims1B =>
+      'Nhiều đơn gộp thành một hồ sơ, gửi một đường dẫn cho sàn xem.';
+
+  @override
+  String get cdRec1T => 'Quét mã vận đơn';
+
+  @override
+  String get cdRec1B =>
+      'Đưa mã trên tem vào khung. App tự nhận và gắn video sắp quay vào đúng đơn đó.';
+
+  @override
+  String get cdOrder1T => 'Bằng chứng của đơn';
+
+  @override
+  String get cdOrder1B =>
+      'Toàn bộ clip và ảnh của mã vận đơn này, mới nhất nằm trên.';
+
+  @override
+  String get cdClaimD1T => 'Đường dẫn gửi sàn';
+
+  @override
+  String get cdClaimD1B =>
+      'Copy đường dẫn này dán vào khiếu nại. Người nhận mở xem được, không cần tài khoản.';
+
+  @override
+  String get cdShops1T => 'Đổi cửa hàng';
+
+  @override
+  String get cdShops1B =>
+      'Mỗi cửa hàng có kho video, gói cước và nhân viên riêng. Bấm để chuyển.';
+
+  @override
+  String get cdQuota1T => 'Dung lượng đã dùng';
+
+  @override
+  String get cdQuota1B =>
+      'Gói quyết định số video và số ngày giữ. Sắp đầy thì báo trước, không xoá lặng lẽ.';
+
+  @override
+  String get cdAcc1T => 'Gói cước của bạn';
+
+  @override
+  String get cdAcc1B =>
+      'Xem còn bao nhiêu video, video giữ được bao lâu, và nâng gói ở đây.';
+
+  @override
+  String get cdAcc2T => 'Cách đăng nhập';
+
+  @override
+  String get cdAcc2B =>
+      'Thêm Google hay Apple để lần sau vào nhanh, không phải nhớ mật khẩu.';
+
+  @override
+  String get cdShopD1T => 'Loại video';
+
+  @override
+  String get cdShopD1B =>
+      'Đặt tên các loại video shop hay quay — đóng gói, hoàn hàng — để tra lại cho dễ.';
+
+  @override
+  String get cdShopD2T => 'Mời nhân viên';
+
+  @override
+  String get cdShopD2B => 'Mời người cùng làm và đặt quyền cho từng người.';
+
+  @override
+  String get cdRec2T => 'Mã mờ thì gõ tay';
+
+  @override
+  String get cdRec2B =>
+      'Tem nhoè hoặc rách không quét được thì bấm đây nhập mã.';
+
+  @override
+  String get notifRow => 'Thông báo';
+
+  @override
+  String get notifOn => 'Đang bật';
+
+  @override
+  String get notifOff => 'Đang tắt';
+
+  @override
+  String get notifAskTitle => 'Bật thông báo?';
+
+  @override
+  String get notifAskBody =>
+      'ZenPack sẽ báo khi gói sắp hết hạn, khi video sắp hết hạn lưu, khi có người vào cửa hàng — và nhắc bạn quay video lúc đóng hàng.';
+
+  @override
+  String get notifAskYes => 'Bật thông báo';
+
+  @override
+  String get notifAskNo => 'Để sau';
+
+  @override
+  String get notifDenied =>
+      'Bạn đã từ chối trước đó. Mở Cài đặt của máy để bật lại.';
+
+  @override
+  String get themeRow => 'Giao diện';
+
+  @override
+  String get themeSystem => 'Theo máy';
+
+  @override
+  String get themeLight => 'Sáng';
+
+  @override
+  String get themeDark => 'Tối';
+
+  @override
+  String get tzRow => 'Múi giờ';
+
+  @override
+  String get tzAuto => 'Theo máy';
+
+  @override
+  String get tzNote => 'Chỉ đổi giờ hiển thị trên màn hình.';
+
+  @override
+  String get capTitle => 'Cài đặt quay';
+
+  @override
+  String get capHint =>
+      'Áp dụng cho MỌI máy đang quay cho cửa hàng này, không riêng máy bạn.';
+
+  @override
+  String get capFps => 'Tốc độ khung hình';
+
+  @override
+  String get capFpsHint =>
+      'Máy không hỗ trợ mức này thì tự lùi về mức gần nhất.';
+
+  @override
+  String get capAuto => 'Tự động';
+
+  @override
+  String get capScanKind => 'Thể loại quét';
+
+  @override
+  String get capScanHint => 'Máy quét nhận loại mã nào.';
+
+  @override
+  String get capScanQr => 'Chỉ mã QR';
+
+  @override
+  String get capScanBar => 'Chỉ mã vạch';
+
+  @override
+  String get capScanBoth => 'Cả hai';
+
+  @override
+  String get capEndDelay => 'Chờ trước khi kết thúc video';
+
+  @override
+  String get capEndDelayHint =>
+      'Sau khi mở clip, chờ bấy nhiêu rồi mới cho mã kết thúc nó.';
+
+  @override
+  String get capRearm => 'Chờ trước khi quét mã mới';
+
+  @override
+  String get capRearmHint =>
+      'Chặn bill vừa quay xong còn trong khung mở lại clip cho cùng đơn.';
+
+  @override
+  String get capTail => 'Quay thêm khi kết thúc';
+
+  @override
+  String get capTailHint =>
+      'Sau khi quét mã kết thúc, quay thêm bấy nhiêu giây.';
+
+  @override
+  String get capAudio => 'Quay video có âm thanh';
+
+  @override
+  String get capAudioHint =>
+      'Bàn đóng hàng có tiếng người nói — bật là ghi lại cả tiếng đó.';
+
+  @override
+  String get capStatusSound => 'Âm thanh trạng thái';
+
+  @override
+  String get capStatusSoundHint =>
+      'Đọc và kêu báo khi quay, để người quay không phải nhìn màn.';
+
+  @override
+  String get capAutoConfig => 'Auto cấu hình video';
+
+  @override
+  String get capAutoConfigHint =>
+      'Máy còn ít chỗ trống thì tự hạ độ nét một bậc.';
+
+  @override
+  String get capBattery => 'Tiết kiệm pin';
+
+  @override
+  String get capBatteryHint =>
+      'Giãn nhịp nhận dạng. Đổi lấy: đưa bill vào khung nhận chậm hơn.';
+
+  @override
+  String get capWifi => 'Tải lên bằng Wi-Fi';
+
+  @override
+  String get capWifiHint =>
+      'Máy đang dùng 4G sẽ NGỪNG tải; clip dồn lại tới khi có Wi-Fi.';
+
+  @override
+  String get capEndOther => 'Kết thúc video bằng QR khác';
+
+  @override
+  String get capEndOtherHint =>
+      'Thấy bill đơn khác thì đóng clip này và mở clip mới.';
+
+  @override
+  String get capManualStop => 'Tắt tự động kết thúc quay video';
+
+  @override
+  String get capManualStopHint =>
+      'Không mã nào dừng được clip; chỉ dừng bằng nút. Bật cái này thì mục trên mất tác dụng.';
+
+  @override
+  String get capSecond => 'giây';
+
+  @override
+  String get capMs => 'mili giây';
+
+  @override
+  String get capOwnerOnly => 'Chỉ chủ cửa hàng đổi được các mục này.';
+
+  @override
+  String get capCustom => 'Số khác…';
+
+  @override
+  String get capCustomTitle => 'Nhập giá trị';
+
+  @override
+  String get capOff => 'Tắt';
+
+  @override
+  String get capDefaultSuffix => '(mặc định)';
+
+  @override
+  String get invTitle => 'Thông tin xuất hoá đơn';
+
+  @override
+  String get invHint =>
+      'Điền một lần, đội ngũ ZenPack dùng khi xuất hoá đơn cho các lần thanh toán của bạn.';
+
+  @override
+  String get invKind => 'Loại đối tượng';
+
+  @override
+  String get invKindCompany => 'Công ty/ Hộ kinh doanh';
+
+  @override
+  String get invKindPerson => 'Cá nhân';
+
+  @override
+  String get invName => 'Tên đơn vị';
+
+  @override
+  String get invNamePerson => 'Họ và tên';
+
+  @override
+  String get invNamePh => 'VD: Công ty TNHH ABC';
+
+  @override
+  String get invNamePersonPh => 'VD: Nguyễn Văn A';
+
+  @override
+  String get invTax => 'Mã số thuế';
+
+  @override
+  String get invTaxPh => 'VD: 0312345678';
+
+  @override
+  String get invTaxOptional => 'Mã số thuế (nếu có)';
+
+  @override
+  String get invAddress => 'Địa chỉ';
+
+  @override
+  String get invAddressPh => 'VD: 123 Lê Lợi, Q.1, TP.HCM';
+
+  @override
+  String get invEmail => 'Email nhận hoá đơn';
+
+  @override
+  String get invEmailPh => 'VD: hoadon@congty.com';
+
+  @override
+  String get invNote => 'Ghi chú';
+
+  @override
+  String get invNotePh => 'Ghi chú thêm (nếu có)';
+
+  @override
+  String get invSave => 'Lưu thông tin';
+
+  @override
+  String get invNameRequired => 'Vui lòng nhập tên.';
+
+  @override
+  String get invTaxRequired => 'Công ty/hộ kinh doanh phải có mã số thuế.';
+
+  @override
+  String get invTaxInvalid =>
+      'Mã số thuế phải là 10 chữ số, hoặc 10 chữ số kèm đuôi 3 số.';
+
+  @override
+  String get invEmailInvalid => 'Email không hợp lệ.';
+
+  @override
+  String get invNotSet => 'Chưa khai';
+
+  @override
+  String get detailSignature => 'Chữ ký số';
+
+  @override
+  String sealSignature(String key) {
+    return 'Chữ ký ZenPack · khoá $key';
+  }
+
+  @override
+  String get sealCopyVerifyLink => 'Sao chép link kiểm chứng';
+
+  @override
+  String get sealVerifyLinkTitle => 'Link kiểm chứng';
+
+  @override
+  String get claimSignedLabel => 'Đã ký';
+
+  @override
+  String claimSignedCount(int sealed, int videos, int anchored) {
+    return '$sealed/$videos video · $anchored có chứng thực độc lập';
+  }
+
+  @override
+  String claimUnsignedHint(int n) {
+    return '$n video chưa có dấu — sàn có thể không nhận. Hồ sơ vẫn gửi được; video có dấu vẫn tự chứng minh.';
+  }
+
+  @override
+  String get claimsSubtitle => 'Theo dõi và xử lý các hồ sơ khiếu nại đơn hàng';
+
+  @override
+  String get claimsEmptyTitle => 'Chưa có hồ sơ nào';
+
+  @override
+  String get claimsEmptyBody =>
+      'Bấm dấu cộng ở góc trên, chọn bằng chứng của đơn cần khiếu nại để tạo hồ sơ.';
+
+  @override
+  String get claimsEmptyTip =>
+      'Mẹo nhỏ: ảnh, video rõ ràng giúp sàn xử lý nhanh hơn.';
+
+  @override
+  String get timelineEnd => 'Không có thêm hoạt động';
+
+  @override
+  String timelineEntryCount(int n) {
+    return '$n hoạt động';
+  }
+
+  @override
+  String get attachCodeToOrderHint =>
+      'Gắn mã trả hàng hay mã vận đơn thứ hai vào cùng đơn';
+
+  @override
+  String get attachPhotoToOrderHint => 'Chọn ảnh từ máy để lưu cùng đơn này';
+
+  @override
+  String get shopDetailClipLengthHint => 'Thời gian quay tối đa mỗi video';
+
+  @override
+  String get shopDetailImageSizeHint => 'Dung lượng tối đa mỗi ảnh';
+
+  @override
+  String get storageRowHint => 'Nơi lưu video và hình ảnh';
+
+  @override
+  String get capRowHint => 'Tuỳ chỉnh camera và hiển thị';
+
+  @override
+  String get inviteQrLabel => 'Tạo mã mời';
+
+  @override
+  String get orderStatusRecorded => 'Đã quay';
+
+  @override
+  String get orderStatusNone => 'Chưa quay';
+
+  @override
+  String get accountTagline =>
+      'Quản lý dễ dàng, bán hàng hiệu quả cùng ZenPack';
+
+  @override
+  String get videoTypeHintPacking => 'Quay quá trình đóng hàng';
+
+  @override
+  String get videoTypeHintCarrier => 'Quay khi bàn giao cho đơn vị vận chuyển';
+
+  @override
+  String get videoTypeHintReturn => 'Quay khi nhận hàng trả';
+
+  @override
+  String get statPendingSub => 'Trong hàng đợi';
+
+  @override
+  String shopPulseToday(int orders, int videos) {
+    return 'Hôm nay · $orders đơn · $videos video';
+  }
 }

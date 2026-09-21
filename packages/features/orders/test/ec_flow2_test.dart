@@ -183,7 +183,8 @@ void main() {
       expect(find.text('Dung lượng'), findsOneWidget);
       expect(find.text('48,2 MB'), findsOneWidget);
       expect(find.text('Trạng thái upload'), findsOneWidget);
-      expect(find.text('Đã upload ✓'), findsOneWidget);
+      // Hai lần: viên trạng thái trên đầu sheet và hàng "Trạng thái upload".
+      expect(find.text('Đã upload ✓'), findsNWidgets(2));
       expect(find.text('Phát video'), findsOneWidget);
       expect(find.text('Sao chép link'), findsOneWidget);
       expect(find.text('Tải video về máy'), findsOneWidget);
@@ -250,6 +251,82 @@ void main() {
       expect(find.text('Kho lưu trữ'), findsNothing);
     });
 
+    // CHỮ KÝ SỐ (2026-09-17). Ba tầng chi tiết — màn này là tầng giữa: kết
+    // quả ("Đã khoá") + danh tính ("Chữ ký ZenPack · khoá k2", sổ công khai)
+    // + hai lối ra cùng một link kiểm chứng (mở / chép). Tên thuật toán,
+    // vân tay KHÔNG được lọt vào đây. Xem design-spec/chu-ky-so-man-hinh.md.
+    testWidgets('đã ký: hàng Chữ ký số, Chứng thực độc lập, mở + chép link', (
+      tester,
+    ) async {
+      var opened = false;
+      var copied = false;
+      await _pump(
+        tester,
+        EcVideoDetailScreen(
+          video: const EcVideoDetail(
+            title: 'Đóng hàng đi',
+            duration: '02:45',
+            recordedAt: '23/07/2026 · 10:23',
+            recordedBy: 'Trần Thị B (Nhân viên)',
+            device: 'iPhone 12 · app 1.0',
+            uploadStatus: 'Đã tải lên',
+            mediaUrl: 'https://cdn.example.com/evidence/video-1.mp4',
+            seal: EcSealLine(
+              label: 'Đã khoá · 23/07/2026 · 10:24',
+              signature: 'Chữ ký ZenPack · khoá k2',
+              anchor: 'Đã có · mục #912.345',
+              canVerify: true,
+            ),
+          ),
+          onVerify: () => opened = true,
+          onCopyVerifyLink: () => copied = true,
+        ),
+      );
+
+      expect(find.text('Chữ ký số'), findsOneWidget);
+      expect(find.text('Chữ ký ZenPack · khoá k2'), findsOneWidget);
+      expect(find.text('Chứng thực độc lập'), findsOneWidget);
+      expect(find.text('Đã có · mục #912.345'), findsOneWidget);
+      expect(find.textContaining('ECDSA'), findsNothing);
+
+      await tester.ensureVisible(find.text('Xem trang kiểm chứng'));
+      await tester.tap(find.text('Xem trang kiểm chứng'));
+      await tester.ensureVisible(find.text('Sao chép link kiểm chứng'));
+      await tester.tap(find.text('Sao chép link kiểm chứng'));
+      expect(opened, isTrue);
+      expect(copied, isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
+    // Chưa ký thì không có gì để kiểm chứng — hàng chữ ký và hai nút phải
+    // vắng mặt, không phải hiện ra rồi mở một trang 404.
+    testWidgets('chưa ký: không hàng Chữ ký số, không nút kiểm chứng', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        EcVideoDetailScreen(
+          video: const EcVideoDetail(
+            title: 'Đóng hàng đi',
+            duration: '02:45',
+            recordedAt: '23/07/2026 · 10:23',
+            recordedBy: 'Trần Thị B (Nhân viên)',
+            device: 'iPhone 12 · app 1.0',
+            uploadStatus: 'Đã tải lên',
+            seal: EcSealLine(
+              label: 'Đang đóng dấu thời gian…',
+              inProgress: true,
+            ),
+          ),
+          onVerify: () {},
+          onCopyVerifyLink: () {},
+        ),
+      );
+      expect(find.text('Chữ ký số'), findsNothing);
+      expect(find.text('Xem trang kiểm chứng'), findsNothing);
+      expect(find.text('Sao chép link kiểm chứng'), findsNothing);
+    });
+
     testWidgets('play, download, delete and close callbacks fire', (
       tester,
     ) async {
@@ -272,9 +349,13 @@ void main() {
 
       await tester.tap(find.text('Phát video'));
       await tester.tap(find.text('Sao chép link'));
+      await tester.ensureVisible(find.text('Tải video về máy'));
       await tester.tap(find.text('Tải video về máy'));
+      // Mỗi hành động nay là một thẻ rời nên sheet dài hơn 78% màn và cuộn;
+      // hàng xoá nằm dưới nếp gấp.
+      await tester.ensureVisible(find.text('Xóa video'));
       await tester.tap(find.text('Xóa video'));
-      await tester.tapAt(const Offset(195, 100));
+      await tester.tapAt(const Offset(195, 60));
 
       expect(played, isTrue);
       expect(copiedLink, isTrue);

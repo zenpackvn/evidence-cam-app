@@ -287,6 +287,65 @@ class FirebaseEcAuth implements EcAuth {
     }
   }
 
+  /// Cửa sổ Firebase còn coi phiên là "vừa xác thực" là khoảng 5 phút. Lấy 2
+  /// phút cho chắc: khoảng đệm 3 phút đủ để lượt xoá chạy xong kể cả khi mạng
+  /// chậm, mà vẫn cắt được phần lớn lượt hỏi thừa.
+  ///
+  /// Đoán non ở đây tốn một hộp hỏi thừa. Đoán già thì `delete()` ném lỗi SAU
+  /// khi dữ liệu đã bị xoá — nên chỗ này cố ý nghiêng về phía hỏi thừa.
+  static const _conMoi = Duration(minutes: 2);
+
+  @override
+  Future<void> reauthenticate({String? password}) async {
+    final u = _requireUser();
+
+    // Vừa đăng nhập xong thì KHÔNG hỏi lại.
+    //
+    // Firebase chỉ đòi xác thực lại khi phiên đã cũ. Hỏi mọi lượt là bắt người
+    // vừa đăng nhập hai phút trước phải đi qua hộp chọn tài khoản của Google
+    // thêm một lần nữa, mà không được thêm chút an toàn nào.
+    final lanCuoi = u.metadata.lastSignInTime;
+    if (lanCuoi != null &&
+        DateTime.now().toUtc().difference(lanCuoi.toUtc()) < _conMoi) {
+      return;
+    }
+
+    final ids = u.providerData.map((p) => p.providerId).toSet();
+    try {
+      // Nhà cung cấp trước: xác thực lại qua họ không cần người dùng gõ gì,
+      // nên nếu tài khoản có cả hai thì đi đường đỡ phiền hơn.
+      if (ids.contains('google.com')) {
+        await u.reauthenticateWithProvider(GoogleAuthProvider());
+        return;
+      }
+      if (ids.contains('apple.com')) {
+        await u.reauthenticateWithProvider(AppleAuthProvider());
+        return;
+      }
+      if (ids.contains('password')) {
+        final email = u.email;
+        if (email == null) {
+          throw const EcAuthException('Tài khoản không có email để xác thực');
+        }
+        if (password == null || password.isEmpty) {
+          throw const EcAuthCanMatKhau();
+        }
+        await u.reauthenticateWithCredential(
+          EmailAuthProvider.credential(email: email, password: password),
+        );
+        return;
+      }
+      // Không nhận ra nhà cung cấp nào: để `delete()` tự quyết. Nó có thể vẫn
+      // chạy được (phiên vừa tạo), và chặn ở đây là chặn nhầm người.
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'wrong-password' ||
+          error.code == 'invalid-credential') {
+        throw const EcAuthException('Mật khẩu không đúng.');
+      }
+      throw _authException(error);
+    }
+  }
+
   @override
   Future<void> deleteAccount() async {
     try {

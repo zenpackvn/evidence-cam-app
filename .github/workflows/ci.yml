@@ -585,12 +585,12 @@ jobs:
       # packages/app_ui — job trên chạy sai thư mục nên chúng chưa từng được
       # chạy ở đâu. Xem thẻ D-07.
       #
-      # `continue-on-error` là CÓ CHỦ ĐÍCH, không phải để làm ngơ: 62 màn hiện
-      # đang trôi thật (trung vị 22,4% điểm ảnh, không màn nào dưới 1%). Chặn
-      # cứng ngay bây giờ là khoá cả nhóm vì một khoản nợ có sẵn. Bước này để
-      # khoản nợ đó HIỆN RA mỗi lượt build thay vì nằm im như trước.
-      # Gỡ dòng đó đi khi 62 màn đã được soi và quyết xong.
-      - name: Golden thiết kế (báo cáo, chưa chặn)
+      # 17/09: 62/62 xanh tại máy (macOS 15, Flutter 3.44) sau khi sửa harness —
+      # "trôi 22%" hoá ra là harness so artboard với bản đã nén 0,72/0,85 và chỉ
+      # nạp Inter Regular (xem thẻ D-07). Vẫn giữ `continue-on-error` MỘT vòng:
+      # ảnh gốc sinh trên máy dev, runner macOS của CI chưa từng chạy bộ này —
+      # lệch rasterizer nếu có thì phải thấy ở đây trước, rồi mới chặn cứng.
+      - name: Golden thiết kế (báo cáo — chặn cứng sau vòng CI đầu xanh)
         continue-on-error: true
         run: flutter test test/design --tags golden
 

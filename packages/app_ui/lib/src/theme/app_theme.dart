@@ -66,7 +66,7 @@ class AppTheme {
   /// The light theme variant — EvidenceCam navy palette from `pencil-new.pen`.
   static ThemeData light({FlexScheme scheme = FlexScheme.blue}) {
     final base = FlexThemeData.light(
-      colors: const FlexSchemeColor(
+      colors: FlexSchemeColor(
         primary: BrandColors.dark,
         primaryContainer: BrandColors.soft,
         secondary: BrandColors.ink,

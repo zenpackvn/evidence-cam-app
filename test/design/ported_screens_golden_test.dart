@@ -14,6 +14,7 @@ library;
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:feature_account/feature_account.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:feature_orders/feature_orders.dart';
@@ -127,6 +128,7 @@ const _accountBackdrop = EcAccountTabScreen(
 
 const _evidenceBackdrop = EcOrderTimelineScreen(
   orderCode: 'SPXVN024567890',
+  subtitle: 'Shop ABC · Shopee',
   pendingUploadCount: 4,
   days: [
     EcTimelineDay(
@@ -137,6 +139,7 @@ const _evidenceBackdrop = EcOrderTimelineScreen(
           label: 'Đóng hàng',
           statusText: 'Đã upload',
           statusTone: EcStatusTone.done,
+          durationSeconds: 165,
         ),
         EcTimelineVideo(
           time: '10:35',
@@ -183,15 +186,29 @@ Widget _viewfinder(String name) => Image.asset(
 const _shopDetailBackdrop = shift.EcShopDetailScreen(
   shopName: 'Shop ABC',
   platformLabel: 'shopee',
+  roleLabel: 'Chủ shop',
+  storageLabel: 'Cloud ZenPack',
   members: [
     shift.EcShopMember(name: 'Nguyễn Văn A', role: 'Chủ shop'),
     shift.EcShopMember(name: 'Trần Thị B', role: 'Nhân viên'),
     shift.EcShopMember(name: 'Lê Văn C', role: 'Quản lý'),
   ],
   videoTypes: [
-    shift.EcVideoType(name: 'Đóng hàng', locked: true),
-    shift.EcVideoType(name: 'Đơn vị vận chuyển', locked: true),
-    shift.EcVideoType(name: 'Trả hàng', locked: true),
+    shift.EcVideoType(
+      name: 'Đóng hàng',
+      locked: true,
+      hint: 'Quay quá trình đóng hàng',
+    ),
+    shift.EcVideoType(
+      name: 'Đơn vị vận chuyển',
+      locked: true,
+      hint: 'Quay khi bàn giao cho đơn vị vận chuyển',
+    ),
+    shift.EcVideoType(
+      name: 'Trả hàng',
+      locked: true,
+      hint: 'Quay khi nhận hàng trả',
+    ),
     shift.EcVideoType(name: 'Cân hàng'),
     shift.EcVideoType(name: 'Kiểm đếm sản phẩm'),
   ],
@@ -216,6 +233,7 @@ void main() {
           name: 'Shop XYZ',
           platform: 'lazada',
           meta: 'Lazada · ID: 780012',
+          role: 'staff',
         ),
         shift.EcShopSummary(
           name: 'Shop 247',
@@ -270,12 +288,14 @@ void main() {
     // nên cùng một widget phải khớp cả hai.
     'ported_f2_01_orders': const shift.EcHomeOrdersScreen(
       shopName: 'Shop ABC',
+      shopSubtitle: 'Shopee · Chủ shop',
       stats: _sampleStats,
       orders: _sampleOrders,
       pageInfo: _ordersPage,
       onPageChanged: _noopPage,
     ),
     'ported_f2_02_evidence': _evidenceBackdrop,
+    'ported_f2_04_claims_empty': const EcClaimListScreen(),
     'ported_f2_03_video_detail': _over(
       _evidenceBackdrop,
       const EcVideoDetailScreen(
@@ -423,19 +443,24 @@ void main() {
         addTearDown(tester.view.reset);
         await tester.runAsync(_warmDesignArtwork);
 
-        await tester.pumpWidget(
-          CupertinoApp(
-            debugShowCheckedModeBanner: false,
-            locale: const Locale('vi'),
-            supportedLocales: const [Locale('vi'), Locale('en')],
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            theme: const CupertinoThemeData(
-              brightness: Brightness.light,
-              textTheme: CupertinoTextThemeData(
-                textStyle: TextStyle(fontFamily: 'Inter', fontSize: 14),
+        // Ghim đồng hồ: dấu giờ trên màn quay đọc `clock.now()`. Không ghim thì
+        // ba màn quay đổi theo giây và golden không bao giờ xanh hai lần liền.
+        await withClock(
+          Clock.fixed(DateTime(2026, 9, 17, 9)),
+          () => tester.pumpWidget(
+            CupertinoApp(
+              debugShowCheckedModeBanner: false,
+              locale: const Locale('vi'),
+              supportedLocales: const [Locale('vi'), Locale('en')],
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              theme: const CupertinoThemeData(
+                brightness: Brightness.light,
+                textTheme: CupertinoTextThemeData(
+                  textStyle: TextStyle(fontFamily: 'Inter', fontSize: 14),
+                ),
               ),
+              home: RepaintBoundary(key: const Key('artboard'), child: screen),
             ),
-            home: RepaintBoundary(key: const Key('artboard'), child: screen),
           ),
         );
         await tester.pump();

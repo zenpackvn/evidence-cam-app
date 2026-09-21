@@ -29,10 +29,36 @@ enum PenAxis { row, column, stack }
 /// 12 and shrink hairlines and glyph boxes with it.
 ///
 /// Set [penTypeCompress] and [penDensityScale] to `1` to render the artboard
-/// pixel-true again.
+/// pixel-true again — that is what [PenScale.pixelTrue] does for the design
+/// golden tests, which compare against the artboard, not against the app.
 const double penTypePivot = 14;
-const double penTypeCompress = 0.72;
-const double penDensityScale = 0.85;
+double get penTypeCompress => PenScale.typeCompress;
+double get penDensityScale => PenScale.densityScale;
+
+/// Hai núm vặn kể trên, đặt được lúc chạy (chỉ dành cho test).
+///
+/// Từng là `const`, nên harness golden THIẾT KẾ không tắt được chúng và so ảnh
+/// gốc (artboard pixel-true, sinh 31/07 — một ngày TRƯỚC khi hai núm này vào
+/// mã) với bản đã nén 0,72/0,85. Đó là nguồn của "58 màn trôi, trung vị 22%"
+/// ở thẻ D-07 — không phải thiết kế trôi. Đo lại 17/09.
+abstract final class PenScale {
+  static double typeCompress = 0.72;
+  static double densityScale = 0.85;
+
+  /// Tắt nén để vẽ đúng artboard. Gọi trong `setUpAll` của golden thiết kế.
+  @visibleForTesting
+  static void pixelTrue() {
+    typeCompress = 1;
+    densityScale = 1;
+  }
+
+  /// Trả về mức app đang dùng.
+  @visibleForTesting
+  static void appScale() {
+    typeCompress = 0.72;
+    densityScale = 0.85;
+  }
+}
 
 /// Compresses the top of the type scale toward the iOS ramp, leaving every
 /// size at or below [penTypePivot] exactly as the designer set it.

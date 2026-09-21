@@ -25,6 +25,7 @@ import 'package:ec_ui/ec_ui.dart'
         PenScreen,
         PenText;
 import 'package:feature_capture/feature_capture.dart';
+import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/cupertino.dart'
     show
         CupertinoActivityIndicator,
@@ -37,6 +38,7 @@ import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart' show EventChannel;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
+import 'package:shared_contracts/shared_contracts.dart';
 
 import '../app/di/injection.dart';
 import '../ec_app.dart' show ecPendingRecordCode, ecRememberPendingRecord;
@@ -46,11 +48,13 @@ import '../ec_app.dart' show ecPendingRecordCode, ecRememberPendingRecord;
 /// user entered (or `null` if they cancelled).
 class EcRecordRoute extends StatefulWidget {
   const EcRecordRoute({
+    this.kho,
     this.onBack,
     this.onQueueTap,
     this.onRequestCode,
     this.onConfirmManualCode,
     this.onRequestType,
+    this.daChonLoaiTruoc,
     this.onNavOrders,
     this.onNavClaims,
     this.onSettings,
@@ -64,10 +68,17 @@ class EcRecordRoute extends StatefulWidget {
     this.queueCount = 0,
     this.initialResolution = '720p',
     this.maxRecording = const Duration(minutes: 2),
+    this.caiDatQuay = const EcCaiDatQuay(),
     this.camera,
     this.isActive,
     super.key,
   });
+
+  /// Nơi nhớ đã xem hướng dẫn màn nào.
+  ///
+  /// Tuỳ chọn vì đây là widget công khai với nhiều chỗ dựng sẵn trong test;
+  /// vắng thì nhớ trong bộ nhớ — hướng dẫn vẫn chỉ hiện một lần mỗi phiên.
+  final EcHuongDanKho? kho;
 
   /// Tầng quyền của hệ điều hành. Null (test, nền tảng không có quyền) nghĩa là
   /// coi như đã được cấp và dựng camera thẳng.
@@ -108,6 +119,13 @@ class EcRecordRoute extends StatefulWidget {
   /// lúc đó chọn loại là bắt buộc nên sheet không cho vuốt xuống hay chạm nền
   /// để bỏ qua — chỉ chọn, hoặc bấm back để sang tab Vận đơn.
   final Future<String?> Function(BuildContext, {bool mandatory})? onRequestType;
+
+  /// Loại video đã được chọn ở popup NGAY TRƯỚC khi vào màn này chưa?
+  ///
+  /// Đọc MỘT LƯỢT rồi tắt (bên gọi tự xoá cờ), nên vào màn bằng đường khác —
+  /// khôi phục phiên, deep link — vẫn rơi về lượt hỏi tự động như cũ. Đổi loại
+  /// giữa chừng thì vẫn dùng ô chọn loại ở thanh dưới, cờ này không đụng tới.
+  final bool Function()? daChonLoaiTruoc;
 
   /// Called when the settings icon is tapped.
   final VoidCallback? onSettings;
@@ -167,6 +185,10 @@ class EcRecordRoute extends StatefulWidget {
   /// Chạm trần thì phiên tự chốt và nhân viên được báo.
   final Duration maxRecording;
 
+  /// Cài đặt quay của cửa hàng đang mở — đã ánh xạ sang kiểu của máy quay ở bên
+  /// gọi, vì gói `feature_capture` cố ý không phụ thuộc tầng API.
+  final EcCaiDatQuay caiDatQuay;
+
   /// Camera wrapper. Injectable so tests can drive recording and lifecycle
   /// without real hardware; production leaves it null and uses [CameraService].
   @visibleForTesting
@@ -189,6 +211,10 @@ class EcRecordRoute extends StatefulWidget {
 
 class _EcRecordRouteState extends State<EcRecordRoute>
     with WidgetsBindingObserver {
+  /// Vắng kho thì TẮT hẳn, không phải "chưa xem" — cùng luật với router.
+  /// Bản thật luôn truyền kho vào; chỗ bỏ trống chỉ có trong bộ kiểm thử.
+  static const _khoTam = EcHuongDanKhoTat();
+
   // Tuned so a full pinch (roughly 0.5x-2x scale) sweeps a comfortable
   // fraction of the camera's zoom range rather than snapping to the limits.
   static const _pinchZoomSensitivity = 6.0;
@@ -198,7 +224,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
   late final RecordingSessionBloc _bloc = RecordingSessionBloc(
     camera: widget.camera ?? CameraService(),
-    scanner: BillScanner(),
+    scanner: BillScanner(kieuQuet: widget.caiDatQuay.kieuQuet),
     onClipSaved: (path, tracking, type, durationSeconds, samples, startedAt) =>
         widget.onSaved?.call(
           path,
@@ -215,6 +241,7 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     initialType: widget.initialType,
     initialResolution: widget.initialResolution,
     maxRecording: widget.maxRecording,
+    caiDat: widget.caiDatQuay,
   );
 
   @override
@@ -280,6 +307,12 @@ class _EcRecordRouteState extends State<EcRecordRoute>
     // An toàn vì máy quét vẫn câm suốt lúc sheet mở (`scanSuspended` bật trong
     // `_pickType`) và chỉ mở lại khi đã chọn loại thật — camera sống sớm hơn
     // KHÔNG kéo theo chuyện tự mở clip cho một bill lọt vào khung.
+    // Đã chọn loại ở popup trước khi vào màn: coi như lượt hỏi xong xuôi, và
+    // dựng camera NGAY chứ không chờ hoạt ảnh của một cái sheet không mở.
+    if (!_typeAsked && (widget.daChonLoaiTruoc?.call() ?? false)) {
+      _typeAsked = true;
+      _typePicked = true;
+    }
     final sheetShown = !_typeAsked;
     if (sheetShown) {
       final chosen = _ensureTypeChosen();
@@ -650,6 +683,61 @@ class _EcRecordRouteState extends State<EcRecordRoute>
   }
 
   /// Manual fallback: ask for a code (opens the sheet), then record it.
+  /// Chọn một ảnh có sẵn rồi đọc mã trong đó — đường thứ ba, cạnh camera và
+  /// bàn phím.
+  ///
+  /// Đi ĐÚNG đường mà mã nhập tay đang đi: cũng qua `onConfirmManualCode` rồi
+  /// cũng bắn `RecordingManualCodeSubmitted`. Một mã đọc từ ảnh không đáng tin
+  /// hơn một mã gõ tay — nó vẫn có thể là tem của đơn khác nằm cạnh trên bàn,
+  /// nên phải qua đúng cửa xác nhận ấy.
+  ///
+  /// Bộ đọc dựng RIÊNG và đóng ngay sau đó, không mượn bộ đọc mà bloc đang cho
+  /// camera dùng: mượn là hai nguồn tranh nhau một tài nguyên, mà nguồn kia
+  /// đang chạy ở nhịp ba mươi khung một giây.
+  Future<void> _chonAnhQuet() async {
+    final scanner = BillScanner(kieuQuet: widget.caiDatQuay.kieuQuet);
+    try {
+      final ket = await ecChonAnhVaQuet(scanner: scanner);
+      if (!mounted) return;
+      switch (ket.ketQua) {
+        case EcKetQuaChonAnh.thayMa:
+          final allowed =
+              await widget.onConfirmManualCode?.call(ket.ma!) ?? true;
+          if (!allowed || !mounted) return;
+          _bloc.add(RecordingManualCodeSubmitted(ket.ma!));
+        case EcKetQuaChonAnh.khongThayMa:
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(content: Text(context.l10n.scanNoCodeInImage)),
+          );
+        case EcKetQuaChonAnh.huy:
+          break;
+      }
+    } finally {
+      unawaited(scanner.dispose());
+    }
+  }
+
+  /// `null` khi máy không zoom được, hoặc khi hướng ấy đã cạn.
+  ///
+  /// Trả `null` thay vì một nút bấm được mà không đổi gì: nút xám nói được "hết
+  /// đường này", còn nút bấm không phản ứng thì người dùng bấm thêm năm lần
+  /// nữa rồi kết luận màn hình treo.
+  VoidCallback? _zoomVao(RecordingSessionState state) {
+    if (!ecZoomDuoc(state.minZoom, state.maxZoom)) return null;
+    if (state.zoom >= state.maxZoom) return null;
+    return () => _bloc.add(
+      RecordingZoomAdjusted(ecBuocZoom(state.minZoom, state.maxZoom)),
+    );
+  }
+
+  VoidCallback? _zoomRa(RecordingSessionState state) {
+    if (!ecZoomDuoc(state.minZoom, state.maxZoom)) return null;
+    if (state.zoom <= state.minZoom) return null;
+    return () => _bloc.add(
+      RecordingZoomAdjusted(-ecBuocZoom(state.minZoom, state.maxZoom)),
+    );
+  }
+
   Future<void> _manualEntry() async {
     final code = (await widget.onRequestCode?.call())?.trim();
     if (code != null && code.isNotEmpty) {
@@ -848,6 +936,32 @@ class _EcRecordRouteState extends State<EcRecordRoute>
 
   @override
   Widget build(BuildContext context) {
+    return EcChiDan(
+      kho: widget.kho ?? _khoTam,
+      man: EcMan.record,
+      buoc: () {
+        final c = context;
+        return [
+          // Neo vào nhãn CÓ NGAY khi vừa vào màn. Trước đây neo vào "Đơn tiếp
+          // theo" — nhãn ấy chỉ hiện SAU khi quay xong một đơn, nên tour im
+          // lặng không bao giờ chạy ở lần vào đầu, đúng lúc cần nó nhất.
+          EcChiDanBuoc(
+            chu: c.l10n.captureFramePrompt,
+            tieuDe: c.l10n.cdRec1T,
+            than: c.l10n.cdRec1B,
+          ),
+          EcChiDanBuoc(
+            chu: c.l10n.tooltipEnterTracking,
+            tieuDe: c.l10n.cdRec2T,
+            than: c.l10n.cdRec2B,
+          ),
+        ];
+      },
+      child: _noiDungHuongDan(context),
+    );
+  }
+
+  Widget _noiDungHuongDan(BuildContext context) {
     // Ô ngắm vẽ trên màn quay, quy về toạ độ màn để máy quét chỉ nhận mã nằm
     // TRONG khung. Số ở đây phải khớp với `_FramingCorners` trong `ec_flow3`:
     // khung rộng 222 điểm căn giữa, mép trên ở 25.3% và mép dưới cách đáy
@@ -945,6 +1059,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         preview: preview,
         onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
         onQueueTap: widget.onQueueTap,
+        onZoomIn: _zoomVao(state),
+        onZoomOut: _zoomRa(state),
+        zoomLabel: ecZoomDuoc(state.minZoom, state.maxZoom)
+            ? ecNhanZoom(state.zoom)
+            : null,
         onStop: () => _bloc.add(const RecordingStopRequested()),
       );
     }
@@ -967,6 +1086,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           preview: preview,
           onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
           onQueueTap: widget.onQueueTap,
+          onZoomIn: _zoomVao(state),
+          onZoomOut: _zoomRa(state),
+          zoomLabel: ecZoomDuoc(state.minZoom, state.maxZoom)
+              ? ecNhanZoom(state.zoom)
+              : null,
           onPickType: null,
           onSettings: null,
           onNavOrders: () =>
@@ -986,6 +1110,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
           preview: preview,
           onBack: () => unawaited(_leaveAfterFinalizing(widget.onBack)),
           onQueueTap: widget.onQueueTap,
+          onZoomIn: _zoomVao(state),
+          onZoomOut: _zoomRa(state),
+          zoomLabel: ecZoomDuoc(state.minZoom, state.maxZoom)
+              ? ecNhanZoom(state.zoom)
+              : null,
           onStop: () => _bloc.add(const RecordingStopRequested()),
         );
       }
@@ -1002,6 +1131,11 @@ class _EcRecordRouteState extends State<EcRecordRoute>
         onSettings: null,
         onNavOrders: () => unawaited(_leaveAfterFinalizing(widget.onNavOrders)),
         onNavClaims: () => unawaited(_leaveAfterFinalizing(widget.onNavClaims)),
+        onZoomIn: _zoomVao(state),
+        onZoomOut: _zoomRa(state),
+        zoomLabel: ecZoomDuoc(state.minZoom, state.maxZoom)
+            ? ecNhanZoom(state.zoom)
+            : null,
         onStop: () => _bloc.add(const RecordingStopRequested()),
       );
     }
@@ -1019,7 +1153,15 @@ class _EcRecordRouteState extends State<EcRecordRoute>
       onFlipCamera: state.hasMultipleCameras
           ? () => _bloc.add(const RecordingCameraFlipped())
           : null,
+      onZoomIn: _zoomVao(state),
+      onZoomOut: _zoomRa(state),
+      // Chỉ hiện mức khi máy THẬT SỰ zoom được: máy một mức thì "1x" là một
+      // con số không nói gì và không bao giờ đổi.
+      zoomLabel: ecZoomDuoc(state.minZoom, state.maxZoom)
+          ? ecNhanZoom(state.zoom)
+          : null,
       onManualEntry: _manualEntry,
+      onChonAnh: _chonAnhQuet,
       onNavOrders: widget.onNavOrders,
       onNavClaims: widget.onNavClaims,
     );

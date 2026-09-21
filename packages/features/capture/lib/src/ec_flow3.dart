@@ -13,6 +13,7 @@ library;
 import 'dart:async';
 
 import 'package:app_ui/app_ui.dart';
+import 'package:clock/clock.dart';
 import 'package:ec_ui/ec_ui.dart';
 import 'package:flutter/cupertino.dart'
     show CupertinoPageScaffold, CupertinoTextField;
@@ -37,7 +38,11 @@ class EcWaitBill2Screen extends StatelessWidget {
     this.onPickType,
     this.onSettings,
     this.onFlipCamera,
+    this.onZoomIn,
+    this.onZoomOut,
+    this.zoomLabel,
     this.onManualEntry,
+    this.onChonAnh,
     this.onResolution,
     this.onNavOrders,
     this.onNavClaims,
@@ -56,7 +61,23 @@ class EcWaitBill2Screen extends StatelessWidget {
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
   final VoidCallback? onFlipCamera;
+
+  /// Phóng to / thu nhỏ khung ngắm. `null` cho hướng đã cạn; cả hai `null` =
+  /// máy không zoom được và cột nút không hiện. Xem `_CamScaffold`.
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
+  final String? zoomLabel;
   final VoidCallback? onManualEntry;
+
+  /// Chọn một ảnh có sẵn rồi đọc mã trong đó.
+  ///
+  /// Đường thứ ba vào cùng một việc, cạnh camera và bàn phím. Người đóng gói
+  /// thường đã có ảnh tem trong máy — giơ camera vào một tấm ảnh đang hiện trên
+  /// màn hình máy khác thì lóa và vân sọc, gần như không ra mã.
+  ///
+  /// `null` thì mục này KHÔNG hiện: chỗ gọi nào chưa nối được vẫn dùng bình
+  /// thường, không vỡ và không bày một nút bấm vào không có gì xảy ra.
+  final VoidCallback? onChonAnh;
   final VoidCallback? onResolution;
   final VoidCallback? onNavOrders;
   final VoidCallback? onNavClaims;
@@ -73,6 +94,9 @@ class EcWaitBill2Screen extends StatelessWidget {
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
+      onZoomIn: onZoomIn,
+      onZoomOut: onZoomOut,
+      zoomLabel: zoomLabel,
       onManualEntry: onManualEntry,
       onResolution: onResolution,
       showScanFrame: true,
@@ -119,47 +143,82 @@ class EcWaitBill2Screen extends StatelessWidget {
                 right: 0,
                 top: frameBottom + 24,
                 child: Center(
-                  // Tooltip doubles as the accessible name for the pill — it
-                  // is the only way into manual entry now that the rail is
-                  // gone.
-                  child: Tooltip(
-                    message: context.l10n.tooltipEnterTracking,
-                    child: EcTap(
-                      onTap: onManualEntry,
-                      child: PenBox(
-                        width: 214,
-                        height: 42,
-                        fill: const Color(0xCC050505),
-                        stroke: const Color(0x1AFFFFFF),
-                        radius: 999,
-                        axis: PenAxis.row,
-                        gap: 9,
-                        main: MainAxisAlignment.center,
-                        cross: CrossAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            LucideIcons.keyboard,
-                            size: 18,
-                            color: PenColors.card,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Tooltip doubles as the accessible name for the pill — it
+                      // is the only way into manual entry now that the rail is
+                      // gone.
+                      Tooltip(
+                        message: context.l10n.tooltipEnterTracking,
+                        child: EcTap(
+                          onTap: onManualEntry,
+                          child: PenBox(
+                            width: 214,
+                            height: 42,
+                            fill: const Color(0xCC050505),
+                            stroke: const Color(0x1AFFFFFF),
+                            radius: 999,
+                            axis: PenAxis.row,
+                            gap: 9,
+                            main: MainAxisAlignment.center,
+                            cross: CrossAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.keyboard,
+                                size: 18,
+                                color: PenColors.card,
+                              ),
+                              Flexible(
+                                child: PenText(
+                                  context.l10n.tooltipEnterTracking,
+                                  size: 14,
+                                  color: PenColors.card,
+                                  weight: FontWeight.w700,
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const Icon(
+                                LucideIcons.chevronRight,
+                                size: 16,
+                                color: Color(0x99FFFFFF),
+                              ),
+                            ],
                           ),
-                          Flexible(
-                            child: PenText(
-                              context.l10n.tooltipEnterTracking,
-                              size: 14,
-                              color: PenColors.card,
-                              weight: FontWeight.w700,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (onChonAnh != null) ...[
+                        const SizedBox(width: 8),
+                        // Nút TRÒN, hẹp hơn hẳn viên bên cạnh: nhập tay là
+                        // đường thoát chính khi camera chịu thua, còn chọn ảnh
+                        // là đường cho một cảnh hẹp hơn. Hai viên bằng nhau sẽ
+                        // đọc như hai lựa chọn ngang giá, và người vội sẽ phải
+                        // đọc cả hai mỗi lần.
+                        Tooltip(
+                          message: context.l10n.scanPickImage,
+                          child: EcTap(
+                            onTap: onChonAnh,
+                            child: PenBox(
+                              width: 42,
+                              height: 42,
+                              fill: const Color(0xCC050505),
+                              stroke: const Color(0x1AFFFFFF),
+                              radius: 999,
+                              main: MainAxisAlignment.center,
+                              cross: CrossAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LucideIcons.image,
+                                  size: 18,
+                                  color: PenColors.card,
+                                ),
+                              ],
                             ),
                           ),
-                          const Icon(
-                            LucideIcons.chevronRight,
-                            size: 16,
-                            color: Color(0x99FFFFFF),
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
@@ -189,6 +248,9 @@ class EcRecording2Screen extends StatelessWidget {
     this.onPickType,
     this.onSettings,
     this.onFlipCamera,
+    this.onZoomIn,
+    this.onZoomOut,
+    this.zoomLabel,
     this.onManualEntry,
     this.onResolution,
     this.onNavOrders,
@@ -213,6 +275,12 @@ class EcRecording2Screen extends StatelessWidget {
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
   final VoidCallback? onFlipCamera;
+
+  /// Phóng to / thu nhỏ khung ngắm. `null` cho hướng đã cạn; cả hai `null` =
+  /// máy không zoom được và cột nút không hiện. Xem `_CamScaffold`.
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
+  final String? zoomLabel;
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
   final VoidCallback? onNavOrders;
@@ -231,6 +299,9 @@ class EcRecording2Screen extends StatelessWidget {
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
+      onZoomIn: onZoomIn,
+      onZoomOut: onZoomOut,
+      zoomLabel: zoomLabel,
       onManualEntry: onManualEntry,
       onResolution: onResolution,
       showStopButton: true,
@@ -269,6 +340,9 @@ class EcCutoverBScreen extends StatelessWidget {
     this.onPickType,
     this.onSettings,
     this.onFlipCamera,
+    this.onZoomIn,
+    this.onZoomOut,
+    this.zoomLabel,
     this.onManualEntry,
     this.onStop,
     super.key,
@@ -297,6 +371,12 @@ class EcCutoverBScreen extends StatelessWidget {
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
   final VoidCallback? onFlipCamera;
+
+  /// Phóng to / thu nhỏ khung ngắm. `null` cho hướng đã cạn; cả hai `null` =
+  /// máy không zoom được và cột nút không hiện. Xem `_CamScaffold`.
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
+  final String? zoomLabel;
   final VoidCallback? onManualEntry;
   final VoidCallback? onStop;
 
@@ -312,6 +392,9 @@ class EcCutoverBScreen extends StatelessWidget {
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
+      onZoomIn: onZoomIn,
+      onZoomOut: onZoomOut,
+      zoomLabel: zoomLabel,
       onManualEntry: onManualEntry,
       showStopButton: true,
       onStop: onStop,
@@ -361,7 +444,7 @@ class _SavedPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) => PenBox(
     fill: const Color(0xCC161616),
-    stroke: const Color(0xFF636363),
+    stroke: PenColors.mut,
     strokeWidth: 1,
     radius: 999,
     axis: PenAxis.row,
@@ -371,7 +454,7 @@ class _SavedPill extends StatelessWidget {
     hugMain: true,
     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 18),
     children: [
-      const Icon(LucideIcons.check, size: 18, color: Color(0xFF67BB75)),
+      Icon(LucideIcons.check, size: 18, color: PenColors.success),
       Flexible(
         child: PenText(
           text,
@@ -400,7 +483,7 @@ class _NextOrderCard extends StatelessWidget {
   Widget build(BuildContext context) => PenBox(
     width: double.infinity,
     fill: const Color(0xCC161616),
-    stroke: const Color(0xFF1F9047),
+    stroke: PenColors.success,
     strokeWidth: 1,
     radius: 14,
     axis: PenAxis.row,
@@ -408,11 +491,11 @@ class _NextOrderCard extends StatelessWidget {
     cross: CrossAxisAlignment.center,
     padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
     children: [
-      const PenBox(
+      PenBox(
         width: 46,
         height: 46,
-        fill: Color(0x99161616),
-        stroke: Color(0xFFE4E4E4),
+        fill: const Color(0x99161616),
+        stroke: PenColors.line,
         strokeWidth: 1,
         radius: 999,
         axis: PenAxis.row,
@@ -463,6 +546,9 @@ class EcNearLimitScreen extends StatelessWidget {
     this.onPickType,
     this.onSettings,
     this.onFlipCamera,
+    this.onZoomIn,
+    this.onZoomOut,
+    this.zoomLabel,
     this.onManualEntry,
     this.onResolution,
     this.onNavOrders,
@@ -487,6 +573,12 @@ class EcNearLimitScreen extends StatelessWidget {
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
   final VoidCallback? onFlipCamera;
+
+  /// Phóng to / thu nhỏ khung ngắm. `null` cho hướng đã cạn; cả hai `null` =
+  /// máy không zoom được và cột nút không hiện. Xem `_CamScaffold`.
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
+  final String? zoomLabel;
   final VoidCallback? onManualEntry;
   final VoidCallback? onResolution;
   final VoidCallback? onNavOrders;
@@ -505,6 +597,9 @@ class EcNearLimitScreen extends StatelessWidget {
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
+      onZoomIn: onZoomIn,
+      onZoomOut: onZoomOut,
+      zoomLabel: zoomLabel,
       onManualEntry: onManualEntry,
       onResolution: onResolution,
       showStopButton: true,
@@ -614,6 +709,9 @@ class EcReturnRecScreen extends StatelessWidget {
     this.onPickType,
     this.onSettings,
     this.onFlipCamera,
+    this.onZoomIn,
+    this.onZoomOut,
+    this.zoomLabel,
     this.onManualEntry,
     this.onStop,
     super.key,
@@ -631,6 +729,12 @@ class EcReturnRecScreen extends StatelessWidget {
   final VoidCallback? onPickType;
   final VoidCallback? onSettings;
   final VoidCallback? onFlipCamera;
+
+  /// Phóng to / thu nhỏ khung ngắm. `null` cho hướng đã cạn; cả hai `null` =
+  /// máy không zoom được và cột nút không hiện. Xem `_CamScaffold`.
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
+  final String? zoomLabel;
   final VoidCallback? onManualEntry;
   final VoidCallback? onStop;
 
@@ -646,6 +750,9 @@ class EcReturnRecScreen extends StatelessWidget {
       onPickType: onPickType,
       onSettings: onSettings,
       onFlipCamera: onFlipCamera,
+      onZoomIn: onZoomIn,
+      onZoomOut: onZoomOut,
+      zoomLabel: zoomLabel,
       onManualEntry: onManualEntry,
       showStopButton: true,
       onStop: onStop,
@@ -698,6 +805,9 @@ class _CamScaffold extends StatelessWidget {
     this.showScanFrame = false,
     this.showStopButton = false,
     this.onStop,
+    this.onZoomIn,
+    this.onZoomOut,
+    this.zoomLabel,
     this.stampCode,
   });
 
@@ -726,6 +836,19 @@ class _CamScaffold extends StatelessWidget {
   final bool showStopButton;
   final VoidCallback? onStop;
 
+  /// Phóng to / thu nhỏ. `null` cho HƯỚNG ĐÃ CẠN — cùng lối với [onFlipCamera]
+  /// khi máy chỉ có một camera: nút xám nói được "đã hết đường này", còn một
+  /// nút bấm được mà không đổi gì thì không nói được gì.
+  ///
+  /// Cả hai `null` = máy không zoom được, và cột nút KHÔNG hiện. Bày một cặp
+  /// nút xám vĩnh viễn trên khung ngắm là chiếm chỗ để nói một câu vô ích.
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
+
+  /// Mức hiện tại, ví dụ `1.8x`. Không có mức thì người dùng bấm mà không biết
+  /// mình đang ở đâu trong dải — và không biết còn bấm được nữa hay không.
+  final String? zoomLabel;
+
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
@@ -733,7 +856,7 @@ class _CamScaffold extends StatelessWidget {
       child: Stack(
         children: [
           Positioned.fill(
-            child: preview ?? const ColoredBox(color: PenColors.ink),
+            child: preview ?? ColoredBox(color: PenColors.ink),
           ),
           // The design darkens the whole viewfinder so white chrome stays
           // legible over any scene.
@@ -756,6 +879,19 @@ class _CamScaffold extends StatelessWidget {
               ),
             ),
           ),
+          // Cột zoom ở rìa PHẢI, không nhét vào thanh dưới: thanh ấy đã có
+          // độ phân giải, loại video và nút đổi camera. Rìa phải cũng là chỗ
+          // ngón tay với tới khi một tay cầm máy một tay giữ hàng.
+          if (onZoomIn != null || onZoomOut != null)
+            Positioned(
+              right: 12,
+              bottom: 200,
+              child: _ZoomCot(
+                onZoomIn: onZoomIn,
+                onZoomOut: onZoomOut,
+                label: zoomLabel,
+              ),
+            ),
           // Shutter floats clear of the footer panel.
           if (showStopButton)
             Positioned(
@@ -941,6 +1077,61 @@ class _Corner extends StatelessWidget {
 
 /// The dark footer panel: resolution, video-type selector and flip camera,
 /// all in one row.
+/// Cột `+` / mức / `−` phủ trên khung ngắm.
+///
+/// Dọc chứ không ngang: cầm điện thoại dọc thì ngón cái quét theo trục dọc ở
+/// rìa, và hai nút nằm ngang sẽ có một cái rơi vào giữa màn — đúng chỗ người
+/// dùng đang nhìn hàng.
+class _ZoomCot extends StatelessWidget {
+  const _ZoomCot({this.onZoomIn, this.onZoomOut, this.label});
+
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _RailIconButton(
+          icon: LucideIcons.plus,
+          tooltip: context.l10n.tooltipZoomIn,
+          onTap: onZoomIn,
+        ),
+        if (label != null) ...[
+          const SizedBox(height: 6),
+          // Nền tối riêng cho nhãn: khung ngắm có thể là một thùng hàng trắng,
+          // và chữ trắng trần trên đó thì mất hẳn.
+          PenBox(
+            fill: const Color(0xCC050505),
+            stroke: const Color(0x1AFFFFFF),
+            radius: 999,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            main: MainAxisAlignment.center,
+            cross: CrossAxisAlignment.center,
+            children: [
+              PenText(
+                label!,
+                size: 12,
+                color: PenColors.card,
+                weight: FontWeight.w700,
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+        ] else
+          const SizedBox(height: 10),
+        _RailIconButton(
+          icon: LucideIcons.minus,
+          tooltip: context.l10n.tooltipZoomOut,
+          onTap: onZoomOut,
+        ),
+      ],
+    );
+  }
+}
+
 class _CamFooter extends StatelessWidget {
   const _CamFooter({
     required this.typeLabel,
@@ -1035,10 +1226,10 @@ class _CamHeader extends StatelessWidget {
                 _Tap(
                   onTap: onBack,
                   tooltip: context.l10n.tooltipBack,
-                  child: const PenBox(
+                  child: PenBox(
                     width: 42,
                     height: 42,
-                    fill: Color(0xBF161616),
+                    fill: const Color(0xBF161616),
                     stroke: PenColors.mut,
                     radius: 999,
                     axis: PenAxis.row,
@@ -1113,7 +1304,9 @@ class _RecStampState extends State<_RecStamp> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    // `clock.now()` chứ không `DateTime.now()`: giá trị y hệt lúc chạy thật,
+    // nhưng golden ghim được bằng `withClock` — không thì ảnh đổi theo giây.
+    final now = clock.now();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
@@ -1175,7 +1368,7 @@ class _QueueChip extends StatelessWidget {
       hugMain: true,
       padding: const EdgeInsets.symmetric(horizontal: 15),
       children: [
-        const Icon(
+        Icon(
           LucideIcons.cloudUpload,
           size: 19,
           color: PenColors.card,
@@ -1208,7 +1401,7 @@ class _CamCodeBadge extends StatelessWidget {
       hugMain: true,
       padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 15),
       children: [
-        const PenBox(
+        PenBox(
           width: 22,
           height: 22,
           fill: PenColors.soft,
@@ -1253,8 +1446,8 @@ class _RecRow extends StatelessWidget {
       hugMain: true,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
       children: [
-        const PenEllipse(width: 14, height: 14, color: PenColors.danger),
-        const PenText(
+        PenEllipse(width: 14, height: 14, color: PenColors.danger),
+        PenText(
           'REC',
           size: 18,
           color: PenColors.card,
@@ -1345,7 +1538,7 @@ class _StopButton extends StatelessWidget {
     return _Tap(
       onTap: onTap,
       tooltip: context.l10n.tooltipStopRecording,
-      child: const PenBox(
+      child: PenBox(
         width: 86,
         height: 86,
         stroke: PenColors.card,
@@ -1404,7 +1597,7 @@ class _TypeChipRow extends StatelessWidget {
                     child: PenText(
                       typeLabel,
                       size: 15,
-                      color: const Color(0xFF67BB75),
+                      color: PenColors.success,
                       weight: FontWeight.w800,
                       softWrap: false,
                       overflow: TextOverflow.ellipsis,
@@ -1546,6 +1739,7 @@ class EcUploadItem {
 /// The upload queue list — quota banner and one status per video.
 class EcUploadQueueScreen extends StatelessWidget {
   const EcUploadQueueScreen({
+    this.huongDan,
     this.items = const [],
     this.onBack,
     this.onSettings,
@@ -1557,6 +1751,10 @@ class EcUploadQueueScreen extends StatelessWidget {
     this.onOpen,
     super.key,
   });
+
+  /// Thẻ hướng dẫn của màn này, đặt ngay dưới phần đầu màn.
+  /// `null` = không hiện (đã xem, hoặc bên gọi không muốn).
+  final Widget? huongDan;
 
   final List<EcUploadItem> items;
   final VoidCallback? onBack;
@@ -1598,7 +1796,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                 children: [
                   _Tap(
                     onTap: onBack,
-                    child: const Icon(
+                    child: Icon(
                       LucideIcons.chevronLeft,
                       size: 26,
                       color: BrandColors.ink,
@@ -1629,7 +1827,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                   if (onSettings != null)
                     _Tap(
                       onTap: onSettings,
-                      child: const Icon(
+                      child: Icon(
                         LucideIcons.settings,
                         size: 25,
                         color: BrandColors.ink,
@@ -1643,6 +1841,7 @@ class EcUploadQueueScreen extends StatelessWidget {
                 ],
               ),
             ),
+            ?huongDan,
             Expanded(
               child: EcUploadQueueList(
                 items: items,
@@ -1791,7 +1990,7 @@ class _QuotaBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             LucideIcons.circleAlert,
             size: 20,
             color: BrandColors.warning,
@@ -1882,11 +2081,11 @@ class _UploadRow extends StatelessWidget {
               child: Container(
                 width: 22,
                 height: 22,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: BrandColors.ring,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   LucideIcons.check,
                   size: 13,
                   color: BrandColors.onRec,
@@ -1922,7 +2121,7 @@ class _UploadRow extends StatelessWidget {
                       // này bấm vào được, và tính năng coi như không tồn tại.
                       if (canOpen) ...[
                         const SizedBox(width: 8),
-                        const Icon(
+                        Icon(
                           LucideIcons.circlePlay,
                           size: 16,
                           color: BrandColors.mut,
@@ -2086,12 +2285,12 @@ class _UploadStatusTrailing extends StatelessWidget {
             decoration: ecSquircleDecoration(
               radius: 999,
               color: BrandColors.card,
-              side: const BorderSide(color: BrandColors.line),
+              side: BorderSide(color: BrandColors.line),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   LucideIcons.refreshCw,
                   size: 14,
                   color: BrandColors.rec,
@@ -2236,7 +2435,7 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
                   hugMain: true,
                   padding: const EdgeInsets.fromLTRB(22, 12, 22, 20),
                   children: [
-                    const Center(
+                    Center(
                       child: PenBox(
                         width: 46,
                         height: 5,
@@ -2284,12 +2483,12 @@ class _EcManualEntryScreenState extends State<EcManualEntryScreen> {
                                 }
                               },
                               onSubmitted: (_) => _submit(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w500,
                                 color: PenColors.ink,
                               ),
-                              placeholderStyle: const TextStyle(
+                              placeholderStyle: TextStyle(
                                 fontSize: 18,
                                 color: PenColors.mut,
                               ),
@@ -2476,7 +2675,7 @@ class _MismatchBadge extends StatelessWidget {
             top: 6,
             child: PenEllipse(width: 96, height: 96, color: Color(0xFFF8E7E7)),
           ),
-          const Positioned(
+          Positioned(
             left: 40,
             top: 32,
             child: Icon(
@@ -2635,8 +2834,8 @@ class EcTypeSheetScreen extends StatelessWidget {
                   if (onBack != null) ...[
                     EcTap(
                       onTap: onBack,
-                      child: const Padding(
-                        padding: EdgeInsets.only(top: 4, right: 10),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4, right: 10),
                         child: Icon(
                           LucideIcons.chevronLeft,
                           size: 26,
@@ -2708,7 +2907,7 @@ class _TypeSheetRow extends StatelessWidget {
           shape: SmoothRectangleBorder(
             smoothness: ecCornerSmoothing,
             borderRadius: BorderRadius.circular(14),
-            side: const BorderSide(color: BrandColors.line),
+            side: BorderSide(color: BrandColors.line),
           ),
         ),
         child: Padding(
@@ -2736,7 +2935,7 @@ class _TypeSheetRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (selected) ...[
-                    const Icon(
+                    Icon(
                       LucideIcons.check,
                       size: 16,
                       color: BrandColors.ink,
@@ -2744,7 +2943,7 @@ class _TypeSheetRow extends StatelessWidget {
                     const SizedBox(width: 10),
                   ],
                   if (type.locked)
-                    const Icon(
+                    Icon(
                       LucideIcons.lock,
                       size: 14,
                       color: BrandColors.mut,
@@ -2773,7 +2972,7 @@ class _ManageRow extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(4, 14, 4, 4),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.settings_outlined,
                 size: 16,
                 color: BrandColors.ink,
@@ -2786,7 +2985,7 @@ class _ManageRow extends StatelessWidget {
                   style: _t(14, FontWeight.w500, BrandColors.ink),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right,
                 size: 16,
                 color: BrandColors.mut,

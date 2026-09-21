@@ -79,10 +79,12 @@ void main() {
   // về 12 giờ, và không có AM/PM nào được ghép vào.
   test('giờ hiển thị theo đồng hồ 24 tiếng', () {
     final source = File('lib/ec_app.dart').readAsStringSync();
-    final start = source.indexOf('String _hhmm(DateTime d) {');
+    // Bám TÊN HÀM, không bám chữ ký đầy đủ: đổi tên tham số là chuyện vô hại,
+    // mà bài này đã đỏ đúng vì thế — một lượt đỏ không nói gì về đồng hồ.
+    final start = source.indexOf('String _hhmm(');
     expect(start, greaterThan(-1));
-    final body = source.substring(start, start + 200);
-    expect(body.contains('d.hour'), isTrue);
+    final body = source.substring(start, start + 260);
+    expect(body.contains('.hour'), isTrue);
     expect(body.contains('AM'), isFalse);
     expect(body.contains('PM'), isFalse);
   });

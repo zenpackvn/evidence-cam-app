@@ -36,7 +36,10 @@ const _designSize = Size(390, 844);
 /// ảnh tham chiếu chỉ còn vạch tràn vàng-đen đè lên phần cần đối chiếu.
 /// Nới ràng buộc cho mọi màn thì không được: chiều cao vô hạn làm vỡ
 /// `Expanded`/`Spacer` ở 27 màn còn lại.
-const _designHeightOverrides = <String, double>{'f1_09_shop_detail': 1037};
+/// 1037 → 1120 (17/09): ngày 01/08 thiết kế thêm hàng "Dung lượng/tệp" + dòng
+/// ghi chú dưới nó, khung cao thêm ~60pt và tràn khỏi 1037 (ảnh gốc từ đó chỉ
+/// còn vạch vàng-đen ở đáy). Đo nội dung thật: dòng cuối ở 1095pt.
+const _designHeightOverrides = <String, double>{'f1_09_shop_detail': 1120};
 
 /// Decodes every artwork the design file uses so the first paint has it.
 Future<void> _warmDesignArtwork() async {
@@ -67,7 +70,13 @@ Future<void> _warmDesignArtwork() async {
 }
 
 void main() {
-  setUpAll(napInter);
+  setUpAll(() async {
+    // Ảnh gốc là ARTBOARD (390×844, pixel-true). App vẽ qua hai núm nén
+    // 0,72/0,85 — với golden thiết kế thì phải tắt chúng, nếu không là so
+    // thiết kế với một bản đã nén và kết luận nhầm "thiết kế trôi" (D-07).
+    PenScale.pixelTrue();
+    await napInter();
+  });
 
   final screens = <String, Widget>{
     'f1_01_splash': const PenF101(),

@@ -18,6 +18,7 @@ import 'package:storage/storage.dart';
 import 'app/bootstrap_error_app.dart';
 import 'app/di/injection.dart';
 import 'app/firebase.dart';
+import 'core/huong_dan/kho_shared_prefs.dart';
 import 'core/platform/firebase/firebase_service.dart';
 import 'data/ec_appsflyer.dart';
 import 'data/ec_purchases.dart';
@@ -60,7 +61,7 @@ Future<void> main() async {
 
         // Drop any Keychain data that survived a previous install (iOS keeps it
         // across uninstalls) before session restore reads secure storage.
-        await getIt<KeychainResetOnReinstall>().run();
+        final laLanCaiMoi = await getIt<KeychainResetOnReinstall>().run();
 
         // Local notifications are not a Firebase service — always initialise.
         await getIt<NotificationsService>().init();
@@ -107,6 +108,26 @@ Future<void> main() async {
         // here instead of signing a demo user in. The repository comes from
         // EC_API_URL/API_BASE_URL, which must name a real origin.
         final ecAuth = FirebaseEcAuth();
+        // Cài lại app phải ra màn đăng nhập, không phải vào thẳng phiên cũ.
+        //
+        // Trên iOS, Firebase Auth giữ phiên trong Keychain — thứ SỐNG SÓT qua
+        // lượt gỡ app. `KeychainResetOnReinstall` chỉ dọn được mục của
+        // `flutter_secure_storage`, không với tới mục của Firebase. Nên phải
+        // đăng xuất tường minh ở đây, đúng một lần, ngay sau lượt cài mới.
+        //
+        // Nuốt lỗi: hỏng ở bước này (mất mạng, Keychain khoá) mà kéo đổ cả
+        // lượt khởi động là đổi một phiền toái nhỏ lấy một app không mở được.
+        if (laLanCaiMoi) {
+          try {
+            await ecAuth.signOut();
+          } on Object catch (e) {
+            developer.log(
+              'bootstrap: dang xuat sau cai moi hong ($e)',
+              name: 'zenpack.auth',
+              level: 900,
+            );
+          }
+        }
         // Mail xác thực đi qua MÁY CHỦ MÌNH thay vì để Firebase gửi: Console đã
         // khoá phần thân của mẫu xác thực, nên để nó gửi là gửi chữ mẫu của
         // Google — người dùng app sẽ nhận một lá thư khác hẳn thứ người dùng web
@@ -142,6 +163,14 @@ Future<void> main() async {
             auth: ecAuth,
             repo: buildRepository(auth: ecAuth),
             evidenceStore: ObjectBoxEvidenceClipStore(getIt<Store>()),
+            // Hướng dẫn từng màn, nhớ THEO TỪNG NGƯỜI. uid đọc lúc gọi chứ
+            // không chụp một lần: người đăng nhập đổi trong đời một phiên
+            // (đăng xuất rồi người khác vào), mà chụp cứng thì người sau vẫn
+            // mang dấu đã-xem của người trước.
+            huongDan: EcHuongDanKhoPrefs(
+              getIt<SharedPreferences>(),
+              () => ecAuth.currentUser?.uid ?? '',
+            ),
           ),
         );
 

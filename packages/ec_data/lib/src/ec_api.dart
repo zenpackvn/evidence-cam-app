@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:network/network.dart' show Dio, Options, Response;
+import 'package:network/network.dart' show Dio, DioException, Options, Response;
 
 import 'ec_auth.dart';
 import 'ec_models.dart';
@@ -71,16 +71,52 @@ class EcApi implements EcAuthMailApi {
   // --- account / quota (FR-15, FR-08) ---
   Future<AccountDto> getMe() => _get('/api/me', AccountDto.fromJson);
 
+  /// [timezone] có ba trạng thái, không phải hai: bỏ qua = không đụng tới,
+  /// chuỗi rỗng = bỏ chọn và đọc giờ theo máy, tên vùng = dùng vùng đó. Truyền
+  /// `null` là "không đụng tới", nên KHÔNG dùng nó để bỏ chọn được.
   Future<AccountDto> updateProfile({
     String? name,
     String? phone,
     String? avatarUrl,
+    String? theme,
+    String? timezone,
+    Map<String, Object?>? hoaDon,
   }) async {
     final res = await _dio.put<Map<String, dynamic>>(
       '/api/me',
-      data: {'name': ?name, 'phone': ?phone, 'avatar_url': ?avatarUrl},
+      data: {
+        'name': ?name,
+        'phone': ?phone,
+        'avatar_url': ?avatarUrl,
+        'theme': ?theme,
+        'timezone': ?timezone,
+        // Gửi cả cụm: sáu ô hợp thành MỘT hồ sơ, và máy chủ kiểm chúng cùng
+        // nhau (công ty phải có mã số thuế). Gửi lẻ từng ô là để nó thấy một
+        // trạng thái nửa vời chưa bao giờ tồn tại trên màn.
+        ...?hoaDon,
+      },
     );
     return AccountDto.fromJson(res.data!);
+  }
+
+  /// Khai máy này nhận thông báo đẩy.
+  ///
+  /// Gọi sau khi người dùng đã ĐỒNG Ý cho phép, và gọi lại mỗi lần token đổi
+  /// (cài lại app, khôi phục máy, Google xoay vòng). Gửi lại token cũ là vô hại.
+  Future<void> dangKyMayNhanThongBao(String token, String platform) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/api/me/devices',
+      data: {'token': token, 'platform': platform},
+    );
+  }
+
+  /// Thôi nhận trên máy này. Gọi lúc đăng xuất — nếu không, người đăng nhập sau
+  /// trên cùng máy vẫn nhận thông báo của người trước cho tới khi token đổi.
+  Future<void> goMayNhanThongBao(String token) async {
+    await _dio.delete<Map<String, dynamic>>(
+      '/api/me/devices',
+      data: {'token': token},
+    );
   }
 
   /// Có [shopId] → backend trả gói của CHỦ shop đó kèm `can_manage_plan=false`
@@ -168,6 +204,7 @@ class EcApi implements EcAuthMailApi {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    Map<String, Object?>? caiDatQuay,
   }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/api/shops/$shopId',
@@ -178,6 +215,10 @@ class EcApi implements EcAuthMailApi {
         // Trần thời lượng là thứ DUY NHẤT còn đặt được. Mọi trần dung lượng
         // đã bỏ 2026-08-07 — gói cước tính theo số video.
         'max_clip_seconds': ?maxClipSeconds,
+        // Gửi cả cụm, không tách từng trường: bên gọi đã cầm nguyên bộ cài đặt
+        // và chỉ đổi một ô, nên gửi cả cụm là một lượt ghi nguyên vẹn thay vì
+        // 12 tham số mà quên một là mất một cài đặt.
+        ...?caiDatQuay,
       },
     );
     return ShopDto.fromJson(res.data!);
@@ -403,6 +444,49 @@ class EcApi implements EcAuthMailApi {
     );
     if (res.statusCode == 503) return null;
     return res.data!['url']! as String;
+  }
+
+  /// Xin mã OTP về số điện thoại, qua Zalo ZNS hoặc SMS brandname.
+  ///
+  /// `channel` là `'zalo'` hoặc `'sms'`. Máy chủ trả lời NHƯ NHAU dù số đã có
+  /// tài khoản hay chưa — nên không đọc gì từ đây để đoán ra điều đó.
+  ///
+  /// Ném [EcOtpException] mang mã lỗi của máy chủ để màn hình nói đúng câu:
+  /// `too_soon` (vừa gửi), `rate_limited` (quá nhiều), `invalid_phone`,
+  /// `send_failed` (Zalo/SMS không nhận), `not_configured` (máy chủ thiếu cấu
+  /// hình). Gộp hết thành một câu "có lỗi" là bắt người dùng đoán.
+  Future<void> phoneOtpStart(String phone, String channel) async {
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/auth/phone/start',
+        data: {'phone': phone, 'channel': channel},
+      );
+    } on DioException catch (e) {
+      throw EcOtpException(_maLoiOtp(e));
+    }
+  }
+
+  /// Mã đúng → custom token của Firebase.
+  ///
+  /// Số chưa có tài khoản thì tài khoản được tạo ngay tại máy chủ, nên bên gọi
+  /// không cần phân biệt đăng nhập với đăng ký.
+  Future<String> phoneOtpVerify(String phone, String code) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+        '/auth/phone/verify',
+        data: {'phone': phone, 'code': code},
+      );
+      return res.data!['token']! as String;
+    } on DioException catch (e) {
+      throw EcOtpException(_maLoiOtp(e));
+    }
+  }
+
+  /// Mã lỗi trong thân trả về, hoặc `khong_ro` khi không đọc được.
+  static String _maLoiOtp(DioException e) {
+    final data = e.response?.data;
+    if (data is Map && data['error'] is String) return data['error'] as String;
+    return 'khong_ro';
   }
 
   /// Vé từ lượt chuyển hướng cuối → custom token của Firebase.
@@ -884,4 +968,17 @@ class EcApi implements EcAuthMailApi {
         '/api/me',
         queryParameters: {'force': force, 'dry_run': dryRun},
       );
+}
+
+/// Lỗi của luồng OTP, mang MÃ máy chủ trả về thay vì một câu đã dịch sẵn.
+///
+/// Giữ mã chứ không giữ câu: câu phải dịch theo ngôn ngữ đang chọn, mà tầng dữ
+/// liệu không biết ngôn ngữ — nó là việc của màn hình.
+class EcOtpException implements Exception {
+  const EcOtpException(this.ma);
+
+  final String ma;
+
+  @override
+  String toString() => 'EcOtpException($ma)';
 }

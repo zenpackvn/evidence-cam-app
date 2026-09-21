@@ -14,5 +14,6 @@ export 'src/gen/flow2.dart';
 export 'src/gen/flow3.dart';
 export 'src/gen/flow4.dart';
 export 'src/pen.dart';
+export 'src/pen_deco.dart';
 export 'src/pen_kit.dart';
 export 'src/pen_qr.dart';

@@ -1104,6 +1104,12 @@ class AppLocalizationsFil extends AppLocalizations {
   String get tooltipEnterTracking => 'Ilagay ang tracking code';
 
   @override
+  String get scanPickImage => 'Pumili ng larawan';
+
+  @override
+  String get scanNoCodeInImage => 'Walang tracking code sa larawang ito';
+
+  @override
   String get tooltipZoomIn => 'Mag-zoom in';
 
   @override
@@ -1976,15 +1982,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get accountRateAppNote => 'Suportahan ang pagbuo ng ZenPack';
 
   @override
-  String get supportFacebook => 'Mag-message sa Facebook';
-
-  @override
-  String get supportZalo => 'Mag-message sa Zalo';
-
-  @override
-  String get supportCall => 'Tumawag sa suporta';
-
-  @override
   String sheetCustomMin(String min, String unit) {
     return 'Maglagay ng $min $unit o higit pa';
   }
@@ -2468,4 +2465,762 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get storageDriveRejected =>
       'Google refused the grant. Try again; if it keeps failing, tell your admin.';
+
+  @override
+  String get authSignInPhone => 'Mag-sign in gamit ang numero ng telepono';
+
+  @override
+  String get phoneLoginTitle => 'Mag-sign in gamit ang numero ng telepono';
+
+  @override
+  String get phoneLoginSubtitle =>
+      'Ilagay ang numero, padadalhan ka namin ng 6-digit na code.';
+
+  @override
+  String get phoneLoginNumberLabel => 'Numero ng telepono';
+
+  @override
+  String get phoneLoginNumberHint => '09xx xxx xxxx';
+
+  @override
+  String get phoneLoginInvalid => 'Hindi wastong numero ng telepono';
+
+  @override
+  String get phoneLoginViaZalo => 'Ipadala ang code sa Zalo';
+
+  @override
+  String get phoneLoginViaSms => 'Ipadala ang code sa SMS';
+
+  @override
+  String get otpTitle => 'Ilagay ang code';
+
+  @override
+  String otpSentTo(String phone) {
+    return 'Naipadala ang 6-digit na code sa $phone.';
+  }
+
+  @override
+  String get otpLabel => 'Verification code';
+
+  @override
+  String get otpConfirm => 'Kumpirmahin';
+
+  @override
+  String get otpResend => 'Ipadala ulit ang code';
+
+  @override
+  String otpResendIn(int seconds) {
+    return 'Ipadala ulit sa $seconds segundo';
+  }
+
+  @override
+  String get otpChangePhone => 'Gumamit ng ibang numero';
+
+  @override
+  String get otpWrong => 'Maling code. Tingnan ulit ang mensahe.';
+
+  @override
+  String get otpExpired => 'Nag-expire na ang code. Humingi ng bago.';
+
+  @override
+  String get otpUsedUp =>
+      'Hindi na magagamit ang code na ito. Humingi ng bago.';
+
+  @override
+  String get otpTooSoon => 'Kakapadala lang. Maghintay sandali.';
+
+  @override
+  String get otpRateLimited =>
+      'Masyadong madalas humingi ng code. Subukan ulit maya-maya.';
+
+  @override
+  String get otpSendFailed =>
+      'Hindi naipadala ang code. Subukan ang isa pang paraan.';
+
+  @override
+  String get otpNotConfigured =>
+      'Hindi pa available ang pagpapadala ng code. Gumamit ng ibang paraan.';
+
+  @override
+  String otpFromOa(String oa) {
+    return 'Galing ang mensahe sa Zalo Official Account $oa — hanapin ang pangalang iyon.';
+  }
+
+  @override
+  String get hdDaHieu => 'Naiintindihan';
+
+  @override
+  String get hdDong => 'Isara ang tips';
+
+  @override
+  String get hdXemLai => 'Ipakita ulit ang tips';
+
+  @override
+  String get hdDaMoLai =>
+      'Lilitaw ulit ang tips kapag binuksan mo ang bawat screen.';
+
+  @override
+  String get hdHomeTitle => 'Overview screen';
+
+  @override
+  String get hdHome1 =>
+      'Mabilis na tingin sa bilang ng order, nagamit na storage, at kailangang asikasuhin ngayon.';
+
+  @override
+  String get hdHome2 =>
+      'Ang bawat status card ay diretso sa mga order na nasa status na iyon.';
+
+  @override
+  String get hdHome3 => 'Buksan ulit ang tips anumang oras sa support button.';
+
+  @override
+  String get hdRecordTitle => 'Recording screen';
+
+  @override
+  String get hdRecord1 =>
+      'Piliin ang camera ng paninda at camera ng resibo sa Settings bago mag-record.';
+
+  @override
+  String get hdRecord2 =>
+      'I-scan ang tracking code tapos mag-record, awtomatikong nakakabit ang video.';
+
+  @override
+  String get hdRecord3 =>
+      'Ang IP camera ay para sa paninda lamang, hindi para sa camera ng resibo.';
+
+  @override
+  String get hdOrderTitle => 'Detalye ng order';
+
+  @override
+  String get hdOrder1 =>
+      'Lahat ng clip at larawan para sa isang tracking code, pinakabago sa itaas.';
+
+  @override
+  String get hdOrder2 =>
+      'Ang sealed na clip ay pinal na bersyon, magagamit sa claim sa marketplace.';
+
+  @override
+  String get hdOrder3 =>
+      'Ang pagbura dito ay itinatago lang sa listahan mo; nananatili ang orihinal.';
+
+  @override
+  String get hdClaimsTitle => 'Mga claim dossier';
+
+  @override
+  String get hdClaims1 =>
+      'Pagsamahin ang ebidensya ng ilang order sa isang dossier para sa marketplace.';
+
+  @override
+  String get hdClaims2 =>
+      'Bawat dossier ay may sariling link; hindi kailangan ng account ng tatanggap.';
+
+  @override
+  String get hdClaims3 =>
+      'Ang video sa dossier ay itinatago ng dagdag na 15 araw pagkasara nito.';
+
+  @override
+  String get hdClaimDetailTitle => 'Detalye ng dossier';
+
+  @override
+  String get hdClaimDetail1 =>
+      'Magdagdag o mag-alis ng order bago ipadala ang dossier.';
+
+  @override
+  String get hdClaimDetail2 =>
+      'Kopyahin ang link ng dossier para i-paste sa claim sa marketplace.';
+
+  @override
+  String get hdClaimDetail3 => 'Isara kapag tapos na, 15 araw pa ang video.';
+
+  @override
+  String get hdShopsTitle => 'Mga tindahan';
+
+  @override
+  String get hdShops1 =>
+      'Bawat tindahan ay may sariling storage, plano, at tauhan.';
+
+  @override
+  String get hdShops2 =>
+      'Mag-imbita ng tauhan at itakda ang pahintulot ng bawat isa.';
+
+  @override
+  String get hdShops3 =>
+      'Palitan ang tindahang pinagtatrabahuhan sa itaas ng pahina.';
+
+  @override
+  String get hdQuotaTitle => 'Plano';
+
+  @override
+  String get hdQuota1 =>
+      'Tinutukoy ng plano ang laki ng storage at haba ng pag-iimbak ng video.';
+
+  @override
+  String get hdQuota2 =>
+      'Binibilang ang storage kada tindahan, hindi kada user.';
+
+  @override
+  String get hdQuota3 =>
+      'Babalaan ka bago mapuno ang storage, walang tahimik na binubura.';
+
+  @override
+  String get hdQueueTitle => 'Upload queue';
+
+  @override
+  String get hdQueue1 =>
+      'Naghihintay dito ang mga clip na na-record na pero wala pa sa storage.';
+
+  @override
+  String get hdQueue2 =>
+      'Kung mahina ang signal, hayaan lang — uulitin ng app pagbalik ng signal.';
+
+  @override
+  String get hdQueue3 =>
+      'Huwag i-uninstall habang may naghihintay na clip; nasa telepono lang ito.';
+
+  @override
+  String get gtBoQua => 'Laktawan';
+
+  @override
+  String get gtTiep => 'Susunod';
+
+  @override
+  String get gtBatDau => 'Simulan na';
+
+  @override
+  String get gt1Title => 'Mag-video habang nagpa-pack';
+
+  @override
+  String get gt1Body =>
+      'Isang video kada order: ano ang laman, paano binalot, anong label. Mag-record, tapos na.';
+
+  @override
+  String get gt2Title => 'Nakakabit sa tracking code';
+
+  @override
+  String get gt2Body =>
+      'I-scan ang label at kusang nakakabit ang video sa order. Sa susunod, isang code lang ay lalabas lahat ng clip.';
+
+  @override
+  String get gt3Title => 'May ebidensya kapag may reklamo';
+
+  @override
+  String get gt3Body =>
+      'Pagsamahin ang clip ng ilang order sa isang dossier at ipadala ang link sa marketplace. Walang kailangang account.';
+
+  @override
+  String get deletePwTitle => 'Ilagay ang password';
+
+  @override
+  String get deletePwBody =>
+      'Hindi na ito maibabalik, kaya ilagay ulit ang password bago burahin ang account.';
+
+  @override
+  String get deletePwOk => 'Kumpirmahin';
+
+  @override
+  String get hdNoShopTitle => 'Magsimula sa tindahan';
+
+  @override
+  String get hdNoShop1 =>
+      'Lahat ng video at ebidensya ay pag-aari ng isang tindahan, kaya gumawa muna.';
+
+  @override
+  String get hdNoShop2 =>
+      'Pagkatapos ay piliin ang marketplace na binebentahan at mag-imbita ng tauhan.';
+
+  @override
+  String get hdNoShop3 =>
+      'Kung inimbitahan ka, gamitin ang “Sumali gamit ang imbitasyon”.';
+
+  @override
+  String get cdNoShopTaoTitle => 'Gumawa muna ng tindahan';
+
+  @override
+  String get cdNoShopTaoBody =>
+      'Lahat ng video at ebidensya ay pag-aari ng tindahan. I-tap dito para gumawa at pumili ng marketplace.';
+
+  @override
+  String get cdNoShopMoiTitle => 'Inimbitahan? Dito magsimula';
+
+  @override
+  String get cdNoShopMoiBody =>
+      'Kung may nag-imbita sa iyo, i-tap dito at ilagay ang invite code.';
+
+  @override
+  String get cdNoShopTkTitle => 'Ang profile mo';
+
+  @override
+  String get cdNoShopTkBody =>
+      'Pangalan, wika, paraan ng pag-sign in at pagbura ng account ay nandito.';
+
+  @override
+  String get cdTaoShopTenTitle => 'Pangalanan ang tindahan';
+
+  @override
+  String get cdTaoShopTenBody =>
+      'Ikaw at ang tauhan mo lang ang nakakakita nito; pantukoy kapag maraming tindahan. Mapapalitan mamaya.';
+
+  @override
+  String get cdTaoShopNutTitle => 'Pumili ng marketplace, tapos gumawa';
+
+  @override
+  String get cdTaoShopNutBody =>
+      'Piliin sa itaas kung saan ka nagbebenta, tapos i-tap dito. Pag may tindahan na, puwede nang mag-record.';
+
+  @override
+  String get cdHome1T => 'Mabilis maghanap ng order';
+
+  @override
+  String get cdHome1B =>
+      'I-type ang tracking code dito para diretso sa ebidensya nito.';
+
+  @override
+  String get cdHome2T => 'I-filter ayon sa status';
+
+  @override
+  String get cdHome2B =>
+      'Tingnan lang ang mga order na nag-a-upload, tapos na, o may error.';
+
+  @override
+  String get cdQueue1T => 'Mga clip na naghihintay';
+
+  @override
+  String get cdQueue1B =>
+      'Mahina ang signal? Naghihintay dito ang clip at uulitin pagbalik ng signal.';
+
+  @override
+  String get cdQueue2T => 'Linisin ang queue';
+
+  @override
+  String get cdQueue2B =>
+      'Ang hindi pa na-upload lang ang mabubura. Tuluyan nang mawawala.';
+
+  @override
+  String get cdClaims1T => 'Pagsamahin ang ebidensya';
+
+  @override
+  String get cdClaims1B =>
+      'Ilang order ay nagiging isang dossier na ipapadala bilang isang link.';
+
+  @override
+  String get cdRec1T => 'I-scan ang tracking code';
+
+  @override
+  String get cdRec1B =>
+      'Ilagay ang label sa frame. Babasahin ito ng app at ikakabit ang video sa order.';
+
+  @override
+  String get cdOrder1T => 'Ebidensya ng order na ito';
+
+  @override
+  String get cdOrder1B =>
+      'Lahat ng clip at larawan para sa tracking code na ito.';
+
+  @override
+  String get cdClaimD1T => 'Link para sa marketplace';
+
+  @override
+  String get cdClaimD1B =>
+      'Kopyahin ang link na ito sa reklamo. Hindi kailangan ng account para tingnan.';
+
+  @override
+  String get cdShops1T => 'Magpalit ng tindahan';
+
+  @override
+  String get cdShops1B =>
+      'Bawat tindahan ay may sariling storage, plano at tauhan. I-tap para magpalit.';
+
+  @override
+  String get cdQuota1T => 'Nagamit na storage';
+
+  @override
+  String get cdQuota1B =>
+      'Tinutukoy ng plano ang bilang ng video at haba ng imbak. Babalaan ka bago mapuno.';
+
+  @override
+  String get cdAcc1T => 'Ang plano mo';
+
+  @override
+  String get cdAcc1B =>
+      'Tingnan ang natitirang video, haba ng imbak, at mag-upgrade dito.';
+
+  @override
+  String get cdAcc2T => 'Paraan ng pag-sign in';
+
+  @override
+  String get cdAcc2B =>
+      'Magdagdag ng Google o Apple para mas mabilis, walang password na tatandaan.';
+
+  @override
+  String get cdShopD1T => 'Uri ng video';
+
+  @override
+  String get cdShopD1B =>
+      'Pangalanan ang mga uri ng video para madaling hanapin mamaya.';
+
+  @override
+  String get cdShopD2T => 'Mag-imbita ng tauhan';
+
+  @override
+  String get cdShopD2B =>
+      'Mag-imbita ng katrabaho at itakda ang pahintulot ng bawat isa.';
+
+  @override
+  String get cdRec2T => 'Malabo ang label? I-type';
+
+  @override
+  String get cdRec2B =>
+      'Kung gusgusin o punit ang label, i-tap dito para i-type ang code.';
+
+  @override
+  String get notifRow => 'Mga abiso';
+
+  @override
+  String get notifOn => 'Naka-on';
+
+  @override
+  String get notifOff => 'Naka-off';
+
+  @override
+  String get notifAskTitle => 'I-on ang mga abiso?';
+
+  @override
+  String get notifAskBody =>
+      'Sasabihan ka ng ZenPack kapag malapit nang mag-expire ang plano, kapag malapit nang burahin ang mga video, kapag may sumali sa tindahan — at paaalalahanan kang mag-record habang nagpi-pack.';
+
+  @override
+  String get notifAskYes => 'I-on';
+
+  @override
+  String get notifAskNo => 'Mamaya na';
+
+  @override
+  String get notifDenied =>
+      'Tumanggi ka noon. Buksan ang Settings ng device para i-on ulit.';
+
+  @override
+  String get themeRow => 'Hitsura';
+
+  @override
+  String get themeSystem => 'Sundin ang device';
+
+  @override
+  String get themeLight => 'Maliwanag';
+
+  @override
+  String get themeDark => 'Madilim';
+
+  @override
+  String get tzRow => 'Time zone';
+
+  @override
+  String get tzAuto => 'Sundin ang device';
+
+  @override
+  String get tzNote => 'Binabago lang ang oras na lumalabas sa screen.';
+
+  @override
+  String get capTitle => 'Recording settings';
+
+  @override
+  String get capHint =>
+      'Applies to EVERY device recording for this shop, not just yours.';
+
+  @override
+  String get capFps => 'Frame rate';
+
+  @override
+  String get capFpsHint =>
+      'Devices that cannot hit this fall back to the nearest supported rate.';
+
+  @override
+  String get capAuto => 'Automatic';
+
+  @override
+  String get capScanKind => 'Code types';
+
+  @override
+  String get capScanHint => 'Which codes the scanner accepts.';
+
+  @override
+  String get capScanQr => 'QR only';
+
+  @override
+  String get capScanBar => 'Barcodes only';
+
+  @override
+  String get capScanBoth => 'Both';
+
+  @override
+  String get capEndDelay => 'Wait before a code can end the clip';
+
+  @override
+  String get capEndDelayHint =>
+      'After a clip opens, wait this long before a code may end it.';
+
+  @override
+  String get capRearm => 'Wait before scanning a new code';
+
+  @override
+  String get capRearmHint =>
+      'Stops the bill still lying in frame from reopening a clip for the same order.';
+
+  @override
+  String get capTail => 'Keep recording after the end code';
+
+  @override
+  String get capTailHint =>
+      'After the end code is scanned, record this many more seconds.';
+
+  @override
+  String get capAudio => 'Record audio';
+
+  @override
+  String get capAudioHint =>
+      'Packing tables have people talking — turning this on records that too.';
+
+  @override
+  String get capStatusSound => 'Status sounds';
+
+  @override
+  String get capStatusSoundHint =>
+      'Spoken and beeped status, so the operator need not watch the screen.';
+
+  @override
+  String get capAutoConfig => 'Auto video config';
+
+  @override
+  String get capAutoConfigHint =>
+      'Drops one resolution step when the device is low on space.';
+
+  @override
+  String get capBattery => 'Battery saver';
+
+  @override
+  String get capBatteryHint =>
+      'Slows scanning. Trade-off: bills take longer to be picked up.';
+
+  @override
+  String get capWifi => 'Upload on Wi-Fi only';
+
+  @override
+  String get capWifiHint =>
+      'Devices on mobile data STOP uploading; clips pile up until Wi-Fi is back.';
+
+  @override
+  String get capEndOther => 'End the clip with another QR';
+
+  @override
+  String get capEndOtherHint =>
+      'Seeing another order\'s bill closes this clip and opens a new one.';
+
+  @override
+  String get capManualStop => 'Never stop automatically';
+
+  @override
+  String get capManualStopHint =>
+      'No code can stop a clip; only the button does. This overrides the row above.';
+
+  @override
+  String get capSecond => 'seconds';
+
+  @override
+  String get capMs => 'ms';
+
+  @override
+  String get capOwnerOnly => 'Only the shop owner can change these.';
+
+  @override
+  String get capCustom => 'Other number…';
+
+  @override
+  String get capCustomTitle => 'Enter a value';
+
+  @override
+  String get capOff => 'Off';
+
+  @override
+  String get capDefaultSuffix => '(default)';
+
+  @override
+  String get invTitle => 'Invoice details';
+
+  @override
+  String get invHint =>
+      'Fill this in once; the ZenPack team uses it when issuing invoices for your payments.';
+
+  @override
+  String get invKind => 'Buyer type';
+
+  @override
+  String get invKindCompany => 'Company / Household business';
+
+  @override
+  String get invKindPerson => 'Individual';
+
+  @override
+  String get invName => 'Company name';
+
+  @override
+  String get invNamePerson => 'Full name';
+
+  @override
+  String get invNamePh => 'e.g. ABC Co., Ltd';
+
+  @override
+  String get invNamePersonPh => 'e.g. Nguyen Van A';
+
+  @override
+  String get invTax => 'Tax code';
+
+  @override
+  String get invTaxPh => 'e.g. 0312345678';
+
+  @override
+  String get invTaxOptional => 'Tax code (if any)';
+
+  @override
+  String get invAddress => 'Address';
+
+  @override
+  String get invAddressPh => 'e.g. 123 Le Loi, D.1, HCMC';
+
+  @override
+  String get invEmail => 'Email for invoices';
+
+  @override
+  String get invEmailPh => 'e.g. billing@company.com';
+
+  @override
+  String get invNote => 'Note';
+
+  @override
+  String get invNotePh => 'Anything else (optional)';
+
+  @override
+  String get invSave => 'Save details';
+
+  @override
+  String get invNameRequired => 'Please enter a name.';
+
+  @override
+  String get invTaxRequired =>
+      'A company or household business needs a tax code.';
+
+  @override
+  String get invTaxInvalid =>
+      'A tax code is 10 digits, optionally with a 3-digit branch suffix.';
+
+  @override
+  String get invEmailInvalid => 'That email is not valid.';
+
+  @override
+  String get invNotSet => 'Not set';
+
+  @override
+  String get detailSignature => 'Digital signature';
+
+  @override
+  String sealSignature(String key) {
+    return 'ZenPack signature · key $key';
+  }
+
+  @override
+  String get sealCopyVerifyLink => 'Kopyahin ang verification link';
+
+  @override
+  String get sealVerifyLinkTitle => 'Verification link';
+
+  @override
+  String get claimSignedLabel => 'Naka-sign';
+
+  @override
+  String claimSignedCount(int sealed, int videos, int anchored) {
+    return '$sealed/$videos video · $anchored may independent proof';
+  }
+
+  @override
+  String claimUnsignedHint(int n) {
+    return '$n video ang walang stamp — maaaring tanggihan ng marketplace. Maipapadala pa rin ang dossier; ang may stamp ay patuloy na nagpapatunay.';
+  }
+
+  @override
+  String get claimsSubtitle =>
+      'Subaybayan at asikasuhin ang mga dossier ng reklamo sa order';
+
+  @override
+  String get claimsEmptyTitle => 'Wala pang dossier';
+
+  @override
+  String get claimsEmptyBody =>
+      'I-tap ang plus sa sulok at piliin ang ebidensya ng order na inirereklamo para gumawa ng dossier.';
+
+  @override
+  String get claimsEmptyTip =>
+      'Tip: malinaw na larawan at video ang nagpapabilis ng desisyon ng marketplace.';
+
+  @override
+  String get timelineEnd => 'Wala nang iba pang aktibidad';
+
+  @override
+  String timelineEntryCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n entry',
+      one: '1 entry',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get attachCodeToOrderHint =>
+      'Ikabit ang return code o pangalawang tracking code sa order na ito';
+
+  @override
+  String get attachPhotoToOrderHint =>
+      'Pumili ng larawan mula sa device para itabi sa order na ito';
+
+  @override
+  String get shopDetailClipLengthHint =>
+      'Pinakamahabang oras ng pag-record bawat video';
+
+  @override
+  String get shopDetailImageSizeHint => 'Pinakamalaking laki bawat larawan';
+
+  @override
+  String get storageRowHint => 'Kung saan nakatabi ang mga video at larawan';
+
+  @override
+  String get capRowHint => 'Mga opsyon ng camera at display';
+
+  @override
+  String get inviteQrLabel => 'Invite code';
+
+  @override
+  String get orderStatusRecorded => 'Na-record na';
+
+  @override
+  String get orderStatusNone => 'Hindi pa na-record';
+
+  @override
+  String get accountTagline =>
+      'Madaling pamahalaan, kumpiyansang magbenta — ZenPack';
+
+  @override
+  String get videoTypeHintPacking => 'I-record ang pag-iimpake';
+
+  @override
+  String get videoTypeHintCarrier => 'I-record ang pag-abot sa courier';
+
+  @override
+  String get videoTypeHintReturn => 'I-record ang pagdating ng ibinalik';
+
+  @override
+  String get statPendingSub => 'Nasa pila';
+
+  @override
+  String shopPulseToday(int orders, int videos) {
+    return 'Ngayon · $orders order · $videos video';
+  }
 }

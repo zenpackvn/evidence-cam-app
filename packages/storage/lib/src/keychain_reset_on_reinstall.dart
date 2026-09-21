@@ -30,9 +30,21 @@ class KeychainResetOnReinstall {
   /// behind. Safe on every platform: where an uninstall clears prefs and
   /// secure storage together (Android), the wipe is a harmless no-op on empty
   /// storage.
-  Future<void> run() async {
-    if (_store.getBool(_installedFlagKey) ?? false) return;
+  /// `true` khi đây là LẦN CHẠY ĐẦU sau một lượt cài mới.
+  ///
+  /// Trả về `bool` chứ không phải `void` vì bên gọi còn việc phải làm mà gói
+  /// này không làm hộ được: Firebase Auth cất phiên đăng nhập trong mục
+  /// Keychain RIÊNG của nó, mà [FlutterSecureStorage.deleteAll] không với tới.
+  /// Nên xoá xong ở đây mà không đăng xuất Firebase thì app cài lại vẫn mở ra
+  /// ở trạng thái đã đăng nhập — đúng lỗi người dùng gặp ngày 08/09/2026.
+  ///
+  /// Gói này KHÔNG tự gọi Firebase: nó là gói lưu trữ, kéo `firebase_auth` vào
+  /// đây là buộc mọi thứ dùng nó phải mang theo cả Firebase. Bên gọi
+  /// (`main.dart`) có sẵn cả hai thứ và là chỗ đúng để nối chúng lại.
+  Future<bool> run() async {
+    if (_store.getBool(_installedFlagKey) ?? false) return false;
     await _secureStorage.deleteAll();
     await _store.setBool(_installedFlagKey, true);
+    return true;
   }
 }

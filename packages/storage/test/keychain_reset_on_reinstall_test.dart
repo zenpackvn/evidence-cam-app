@@ -29,6 +29,25 @@ void main() {
       verify(() => store.setBool(installedFlagKey, true)).called(1);
     });
 
+    /// Bên gọi dựa vào giá trị trả về để biết có phải đăng xuất Firebase hay
+    /// không — Firebase cất phiên ở mục Keychain riêng mà `deleteAll` ở đây
+    /// không với tới. Trả sai là app cài lại vẫn mở ra ở phiên cũ.
+    test(
+      'trả true ở lần chạy đầu sau khi cài, false ở những lần sau',
+      () async {
+        when(() => store.getBool(installedFlagKey)).thenReturn(null);
+        when(secureStorage.deleteAll).thenAnswer((_) async {});
+        when(
+          () => store.setBool(installedFlagKey, true),
+        ).thenAnswer((_) async {});
+
+        expect(await reset.run(), isTrue);
+
+        when(() => store.getBool(installedFlagKey)).thenReturn(true);
+        expect(await reset.run(), isFalse);
+      },
+    );
+
     test('does nothing when the flag is already set', () async {
       when(() => store.getBool(installedFlagKey)).thenReturn(true);
 

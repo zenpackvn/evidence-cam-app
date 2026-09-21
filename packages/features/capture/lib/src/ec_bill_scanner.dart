@@ -32,7 +32,32 @@ class EcScanWindow {
 }
 
 class BillScanner {
-  BillScanner() : _scanner = BarcodeScanner();
+  /// [kieuQuet] là 'qr' | 'barcode' | 'both' — cài đặt của CỬA HÀNG.
+  ///
+  /// Thu hẹp có ích thật: bàn nào chỉ dán mã QR thì bỏ hẳn nhóm mã vạch 1D cắt
+  /// được số lượt nhận nhầm từ chữ số in trên tem. Nhưng thu hẹp cũng là cách
+  /// nhanh nhất biến một máy đang chạy tốt thành máy "quét không ra mã", nên
+  /// mặc định là NHẬN CẢ HAI.
+  BillScanner({String kieuQuet = 'both'})
+    : _scanner = BarcodeScanner(formats: _dinhDang(kieuQuet));
+
+  static List<BarcodeFormat> _dinhDang(String kieuQuet) => switch (kieuQuet) {
+    'qr' => const [BarcodeFormat.qrCode],
+    // Nhóm 1D các sàn dùng trên tem vận đơn. `BarcodeFormat.all` cho nhánh
+    // 'both' vì đó cũng là mặc định của ML Kit khi không truyền gì.
+    'barcode' => const [
+      BarcodeFormat.code128,
+      BarcodeFormat.code39,
+      BarcodeFormat.code93,
+      BarcodeFormat.ean13,
+      BarcodeFormat.ean8,
+      BarcodeFormat.itf,
+      BarcodeFormat.upca,
+      BarcodeFormat.upce,
+      BarcodeFormat.codabar,
+    ],
+    _ => const [BarcodeFormat.all],
+  };
 
   final BarcodeScanner _scanner;
   bool _busy = false;
@@ -80,6 +105,38 @@ class BillScanner {
       return null;
     } finally {
       _busy = false;
+    }
+  }
+
+  /// Đọc mã từ một tệp ẢNH đã có sẵn trên máy.
+  ///
+  /// Dùng khi người đóng gói chụp sẵn tem, hoặc nhận ảnh tem qua chat của sàn:
+  /// giơ điện thoại vào một tấm ảnh trên màn hình máy khác thì lóa, mờ và gần
+  /// như không ra mã. Đọc thẳng từ tệp bỏ hẳn chặng đó.
+  ///
+  /// KHÔNG có ô ngắm ở đây, và đó là chủ ý. Ô ngắm tồn tại vì camera nhìn thấy
+  /// cả bàn làm việc nên phải hỏi người dùng "mã nào" — còn một tấm ảnh người
+  /// ta chọn tay thì chính nó đã là câu trả lời. Áp ô ngắm vào giữa ảnh sẽ loại
+  /// đúng những tấm chụp tem lệch góc, thứ chiếm phần lớn ảnh chụp vội.
+  ///
+  /// KHÔNG dùng chốt [_busy]: chốt ấy để bỏ bớt khung hình khi luồng camera bắn
+  /// nhanh hơn sức xử lý. Một lượt người dùng chọn ảnh thì không có gì để bỏ —
+  /// bỏ nó đi là bấm xong không thấy gì xảy ra.
+  Future<String?> quetTuAnh(String duongTep) async {
+    try {
+      final barcodes = await _scanner.processImage(
+        InputImage.fromFilePath(duongTep),
+      );
+      for (final barcode in barcodes) {
+        final raw = barcode.rawValue?.trim();
+        if (raw == null || raw.isEmpty) continue;
+        return raw;
+      }
+      return null;
+    } on Object {
+      // Ảnh hỏng, định dạng lạ, hoặc MLKit từ chối — với người dùng thì cả ba
+      // đều là "ảnh này không có mã", và đó là câu màn hình sẽ nói.
+      return null;
     }
   }
 

@@ -10,6 +10,7 @@ typedef CameraControllerFactory =
       required ResolutionPreset resolutionPreset,
       bool enableAudio,
       ImageFormatGroup? imageFormatGroup,
+      int? fps,
     });
 
 /// Exception thrown when a camera operation is attempted before the camera is initialized.
@@ -36,11 +37,16 @@ class CameraService {
           required resolutionPreset,
           enableAudio = false,
           imageFormatGroup,
+          fps,
         }) => CameraController(
           description,
           resolutionPreset,
           enableAudio: enableAudio,
           imageFormatGroup: imageFormatGroup,
+          // `null` = để nền tảng tự chọn. Truyền một mức máy không nhận thì
+          // plugin tự lùi về mức gần nhất — nên đây là ĐỀ NGHỊ, và con số hiện
+          // trên màn cài đặt có thể không phải con số máy chạy thật.
+          fps: fps,
         ),
       );
 
@@ -108,6 +114,7 @@ class CameraService {
     ResolutionPreset resolutionPreset = ResolutionPreset.medium,
     bool enableAudio = false,
     ImageFormatGroup? imageFormatGroup,
+    int? fps,
   }) async {
     await dispose();
 
@@ -116,6 +123,7 @@ class CameraService {
       resolutionPreset: resolutionPreset,
       enableAudio: enableAudio,
       imageFormatGroup: imageFormatGroup,
+      fps: fps,
     );
 
     _controller = controller;

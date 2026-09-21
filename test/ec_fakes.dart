@@ -148,8 +148,21 @@ class FakeEcAuth implements EcAuth {
     return _user.value = u.copyWith(providers: rest);
   }
 
+  /// Ghi lại thứ tự các bước xoá, để test soi được cái gì chạy TRƯỚC cái gì.
+  final buocXoa = <String>[];
+
+  /// Đặt khác `null` để [reauthenticate] ném ra lỗi đó — dựng đường phiên cũ.
+  Exception? loiXacThucLai;
+
+  @override
+  Future<void> reauthenticate({String? password}) async {
+    buocXoa.add('xac-thuc-lai');
+    if (loiXacThucLai != null) throw loiXacThucLai!;
+  }
+
   @override
   Future<void> deleteAccount() async {
+    buocXoa.add('xoa-firebase');
     _password = null;
     _user.value = null;
   }
@@ -193,6 +206,16 @@ class FakeEcRepository implements EcRepository {
 
   @override
   Future<String> googleLoginSession(String ticket) async => 'fake-token';
+
+  // Luồng OTP: bản giả chung KHÔNG giữ trạng thái — lớp này có hàm dựng `const`
+  // và bốn lớp con trong bộ test dựa vào đó. Test nào cần soi "đã gửi kênh nào"
+  // thì phủ định hai hàm này trong lớp con của chính nó.
+  @override
+  Future<void> phoneOtpStart(String phone, String channel) async {}
+
+  @override
+  Future<String> phoneOtpVerify(String phone, String code) async =>
+      'fake-token';
 
   // Hồ sơ rỗng: đủ để màn chi tiết dựng được mà không cần máy chủ.
   @override
@@ -256,13 +279,27 @@ class FakeEcRepository implements EcRepository {
     String? name,
     String? phone,
     String? avatarUrl,
+    String? theme,
+    String? timezone,
+    Map<String, Object?>? hoaDon,
   }) async => AccountDto(
     uid: 'fake-uid',
     email: 'demo@evidencecam.app',
     name: name,
     phone: phone,
     avatarUrl: avatarUrl,
+    theme: theme ?? 'system',
+    timezone: timezone,
   );
+
+  /// Máy giả không đăng ký gì lên đâu cả. Bản giả này KHÔNG ném: một bài test
+  /// đi qua màn đăng nhập sẽ chạm vào đây, và ném ở đó là bài đỏ vì một chuyện
+  /// không liên quan gì tới thứ nó đang đo.
+  @override
+  Future<void> dangKyMayNhanThongBao(String token, String platform) async {}
+
+  @override
+  Future<void> goMayNhanThongBao(String token) async {}
 
   @override
   Future<ShopDto> createShop({
@@ -284,6 +321,7 @@ class FakeEcRepository implements EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    Map<String, Object?>? caiDatQuay,
   }) async => ShopDto(
     id: shopId,
     name: name ?? 'Shop',

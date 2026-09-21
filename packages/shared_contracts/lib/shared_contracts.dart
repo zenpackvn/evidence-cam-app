@@ -11,5 +11,6 @@ export 'src/claim_dossier.dart';
 export 'src/clip_budget.dart';
 export 'src/collections.dart';
 export 'src/di.module.dart' show SharedContractsPackageModule;
+export 'src/ec_cai_dat_quay.dart';
 export 'src/password_policy.dart';
 export 'src/session.dart';

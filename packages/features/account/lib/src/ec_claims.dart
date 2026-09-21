@@ -74,6 +74,7 @@ class EcClaimEntry {
 /// Lớp cha: danh sách hồ sơ đã tạo, mới nhất trước.
 class EcClaimListScreen extends StatelessWidget {
   const EcClaimListScreen({
+    this.huongDan,
     this.entries = const [],
     this.offline = false,
     this.onOpen,
@@ -84,6 +85,10 @@ class EcClaimListScreen extends StatelessWidget {
     this.onNavRecord,
     super.key,
   });
+
+  /// Thẻ hướng dẫn của màn này, đặt ngay dưới phần đầu màn.
+  /// `null` = không hiện (đã xem, hoặc bên gọi không muốn).
+  final Widget? huongDan;
 
   final List<EcClaimEntry> entries;
 
@@ -114,45 +119,67 @@ class EcClaimListScreen extends StatelessWidget {
     final l10n = context.l10n;
     return PenScreen(
       scrollable: false,
+      // Nền phẳng, một vệt ấm ở đầu màn (18/09).
+      decorations: const [PenWarmTop(height: 220)],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 24, 18, 0),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: PenText(
-                    l10n.claimsTitle,
-                    size: 23,
-                    color: PenColors.ink,
-                    weight: FontWeight.w800,
-                    softWrap: false,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      PenText(
+                        l10n.claimsTitle,
+                        size: 30,
+                        color: PenColors.ink,
+                        weight: FontWeight.w800,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      PenText(
+                        l10n.claimsSubtitle,
+                        size: 14,
+                        color: PenColors.mut,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-                if (onCreate != null)
+                if (onCreate != null) ...[
+                  const SizedBox(width: 12),
                   EcTap(
                     onTap: onCreate,
-                    child: const PenBox(
-                      width: 40,
-                      height: 40,
+                    child: PenBox(
+                      width: 50,
+                      height: 50,
                       fill: PenColors.primary,
                       radius: 999,
+                      shadows: const [penBrandCardShadow],
                       axis: PenAxis.row,
                       main: MainAxisAlignment.center,
                       cross: CrossAxisAlignment.center,
                       children: [
                         Icon(
                           LucideIcons.plus,
-                          size: 22,
+                          size: 28,
                           color: PenColors.card,
                         ),
                       ],
                     ),
                   ),
+                ],
               ],
             ),
           ),
+          ?huongDan,
           // Dòng "lưu trên máy này" đứng NGAY dưới tiêu đề, không nhét xuống
           // đáy: người bán phải biết bằng chứng khiếu nại của mình chưa ở chỗ
           // nào an toàn TRƯỚC khi họ dựa vào nó, không phải sau khi đổi máy.
@@ -187,23 +214,79 @@ class EcClaimListScreen extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                LucideIcons.fileText,
-                size: 44,
-                color: PenColors.soft,
-              ),
-              const SizedBox(height: 12),
-              PenText(
-                l10n.claimsEmpty,
-                size: 14,
-                color: PenColors.mut,
-                align: TextAlign.center,
-                lineHeight: 1.5,
-              ),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Trạng thái trống kiểu app thật (Shopee/Grab trên Mobbin,
+                // 18/09): một icon xám trong vòng tròn nhạt, tiêu đề, một câu
+                // chỉ đường. Không minh hoạ ghép, không thẻ "mẹo nhỏ".
+                // Vòng cam nhạt, tờ hồ sơ mực, một chấm cam nhỏ ở góc — minh
+                // hoạ kiểu Shopee/Grab: có sắc thương hiệu, không kể chuyện.
+                SizedBox(
+                  width: 96,
+                  height: 96,
+                  child: Stack(
+                    children: [
+                      PenBox(
+                        width: 96,
+                        height: 96,
+                        fill: PenColors.selected,
+                        radius: 999,
+                        axis: PenAxis.row,
+                        main: MainAxisAlignment.center,
+                        cross: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.fileText,
+                            size: 40,
+                            color: PenColors.ink,
+                          ),
+                        ],
+                      ),
+                      Positioned(
+                        right: 4,
+                        top: 6,
+                        child: PenBox(
+                          width: 22,
+                          height: 22,
+                          fill: PenColors.primary,
+                          stroke: PenColors.bg,
+                          strokeWidth: 3,
+                          radius: 999,
+                          axis: PenAxis.row,
+                          main: MainAxisAlignment.center,
+                          cross: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              LucideIcons.plus,
+                              size: 12,
+                              color: PenColors.card,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                PenText(
+                  l10n.claimsEmptyTitle,
+                  size: 18,
+                  color: PenColors.ink,
+                  weight: FontWeight.w700,
+                  align: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                PenText(
+                  l10n.claimsEmptyBody,
+                  size: 14,
+                  color: PenColors.mut,
+                  align: TextAlign.center,
+                  lineHeight: 1.5,
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -258,7 +341,7 @@ class _LocalOnlyNote extends StatelessWidget {
     gap: 10,
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     children: [
-      const Icon(LucideIcons.info, size: 17, color: PenColors.mut),
+      Icon(LucideIcons.info, size: 17, color: PenColors.mut),
       Expanded(
         child: PenText(text, size: 12, color: PenColors.mut, lineHeight: 1.45),
       ),
@@ -370,8 +453,8 @@ class _ClaimRow extends StatelessWidget {
           if (!entry.revoked)
             EcTap(
               onTap: onCopy,
-              child: const Padding(
-                padding: EdgeInsets.all(8),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
                 child: Icon(
                   LucideIcons.copy,
                   size: 20,
@@ -440,6 +523,7 @@ class EcClaimItem {
 /// `onRemoveItem`, giống hệt bản web.
 class EcClaimDetailScreen extends StatelessWidget {
   const EcClaimDetailScreen({
+    this.huongDan,
     required this.title,
     required this.shopName,
     required this.channel,
@@ -447,6 +531,8 @@ class EcClaimDetailScreen extends StatelessWidget {
     required this.orderDateLabel,
     required this.videos,
     required this.photos,
+    this.sealed,
+    this.anchored,
     required this.createdAtLabel,
     required this.url,
     this.revoked = false,
@@ -455,6 +541,10 @@ class EcClaimDetailScreen extends StatelessWidget {
     this.onRevoke,
     super.key,
   });
+
+  /// Thẻ hướng dẫn của màn này, đặt ngay dưới phần đầu màn.
+  /// `null` = không hiện (đã xem, hoặc bên gọi không muốn).
+  final Widget? huongDan;
 
   /// Tên hồ sơ. Rỗng thì hiện "Hồ sơ không đặt tên" — hồ sơ cũ tạo trước khi
   /// tên là bắt buộc vẫn phải mở được.
@@ -471,6 +561,12 @@ class EcClaimDetailScreen extends StatelessWidget {
   final String orderDateLabel;
   final int videos;
   final int photos;
+
+  /// Trong số [videos]: đã ký, và đã có chứng thực độc lập — để nói "5/7 video
+  /// đã ký" TRƯỚC khi người bán bấm chia sẻ. `null` = máy chủ cũ chưa trả,
+  /// hàng ẩn (hiện "0/7" là nói sai).
+  final int? sealed;
+  final int? anchored;
   final String createdAtLabel;
   final String url;
   final bool revoked;
@@ -504,6 +600,11 @@ class EcClaimDetailScreen extends StatelessWidget {
               ],
             ),
           ),
+          if (huongDan != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+              child: huongDan,
+            ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
@@ -541,6 +642,36 @@ class EcClaimDetailScreen extends StatelessWidget {
                       label: l10n.claimEvidenceLabel,
                       valueLines: [l10n.claimEvidenceCount(videos, photos)],
                     ),
+                    // "5/7 video đã ký · 5 có chứng thực độc lập" + lời nhắc
+                    // khi còn clip chưa dấu. Nói ở ĐÂY, trước khối link chia
+                    // sẻ bên dưới: gửi hồ sơ có clip chưa ký mà không biết là
+                    // bị sàn từ chối oan. Vàng "chú ý", không đỏ — clip chưa
+                    // dấu không sai, chỉ yếu hơn.
+                    if (sealed != null && videos > 0) ...[
+                      _ClaimKv(
+                        label: l10n.claimSignedLabel,
+                        valueLines: [
+                          l10n.claimSignedCount(sealed!, videos, anchored ?? 0),
+                        ],
+                      ),
+                      if (sealed! < videos)
+                        PenBox(
+                          fill: PenColors.warning.withValues(alpha: 0.10),
+                          stroke: PenColors.warning.withValues(alpha: 0.35),
+                          radius: 10,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          children: [
+                            PenText(
+                              l10n.claimUnsignedHint(videos - sealed!),
+                              size: 12.5,
+                              color: PenColors.ink,
+                            ),
+                          ],
+                        ),
+                    ],
                     _ClaimKv(
                       label: l10n.claimCreatedAtLabel,
                       valueLines: [createdAtLabel],
@@ -613,8 +744,8 @@ class EcClaimDetailScreen extends StatelessWidget {
                           ),
                           EcTap(
                             onTap: onCopy,
-                            child: const Padding(
-                              padding: EdgeInsets.all(8),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
                               child: Icon(
                                 LucideIcons.copy,
                                 size: 20,
@@ -641,7 +772,7 @@ class EcClaimDetailScreen extends StatelessWidget {
                             cross: CrossAxisAlignment.center,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             children: [
-                              const Icon(
+                              Icon(
                                 LucideIcons.trash2,
                                 size: 18,
                                 color: PenColors.danger,
@@ -695,7 +826,7 @@ class _ClaimKv extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (lines.isEmpty)
-                const PenText('—', size: 13, color: PenColors.mut)
+                PenText('—', size: 13, color: PenColors.mut)
               else
                 for (final v in lines)
                   PenText(
@@ -1192,7 +1323,7 @@ class _ClaimNameField extends StatelessWidget {
           children: [
             PenText(label, size: 13, color: PenColors.mut),
             const SizedBox(width: 4),
-            const PenText('*', size: 13, color: PenColors.danger),
+            PenText('*', size: 13, color: PenColors.danger),
           ],
         ),
       ),
@@ -1210,7 +1341,7 @@ class _ClaimNameField extends StatelessWidget {
     cross: CrossAxisAlignment.center,
     padding: const EdgeInsets.symmetric(horizontal: 16),
     children: [
-      const Icon(LucideIcons.tag, size: 20, color: PenColors.mut),
+      Icon(LucideIcons.tag, size: 20, color: PenColors.mut),
       Expanded(
         child: CupertinoTextField(
           controller: controller,
@@ -1224,7 +1355,7 @@ class _ClaimNameField extends StatelessWidget {
           // Bộ đếm ký tự của Cupertino không có sẵn; giới hạn 120 khớp với
           // trần của máy chủ nên chữ bị cắt ở đây thay vì bị từ chối sau khi
           // người dùng đã bấm tạo.
-          style: const TextStyle(fontSize: 15, color: PenColors.ink),
+          style: TextStyle(fontSize: 15, color: PenColors.ink),
         ),
       ),
     ],
@@ -1262,7 +1393,7 @@ class _SearchScanBar extends StatelessWidget {
       // tìm kiếm khác trên đời đều làm — thì màn hình đứng im, không báo gì.
       EcTap(
         onTap: () => onSubmit(controller.text),
-        child: const SizedBox(
+        child: SizedBox(
           width: 34,
           height: 44,
           child: Align(
@@ -1279,14 +1410,14 @@ class _SearchScanBar extends StatelessWidget {
           placeholder: hint,
           textInputAction: TextInputAction.search,
           onSubmitted: onSubmit,
-          style: const TextStyle(fontSize: 15, color: PenColors.ink),
+          style: TextStyle(fontSize: 15, color: PenColors.ink),
         ),
       ),
       if (onScan != null) ...[
-        const PenBox(width: 1, height: 26, fill: PenColors.line),
+        PenBox(width: 1, height: 26, fill: PenColors.line),
         EcTap(
           onTap: onScan,
-          child: const PenBox(
+          child: PenBox(
             width: 40,
             height: 40,
             fill: PenColors.bg,
@@ -1330,7 +1461,7 @@ class _PickRow extends StatelessWidget {
         width: 46,
         child: PenText(item.time, size: 14, color: PenColors.mut),
       ),
-      const SizedBox(
+      SizedBox(
         width: 22,
         height: 58,
         child: Center(
@@ -1436,7 +1567,7 @@ class _CreateClaimButton extends StatelessWidget {
       main: MainAxisAlignment.center,
       cross: CrossAxisAlignment.center,
       children: [
-        const Icon(LucideIcons.fileText, size: 20, color: PenColors.card),
+        Icon(LucideIcons.fileText, size: 20, color: PenColors.card),
         // Nhãn co được, SỐ ĐẾM thì không. Trên màn hẹp cả cụm tràn khỏi nút;
         // để nguyên một chuỗi thì thứ bị cắt lại đúng là con số — thông tin
         // duy nhất thay đổi theo thao tác của người dùng.

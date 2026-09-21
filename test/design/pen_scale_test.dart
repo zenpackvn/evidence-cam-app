@@ -27,4 +27,28 @@ void main() {
       expect(penTextSize(56), greaterThan(penTypePivot));
     });
   });
+
+  // Hai núm nén phải TẮT được cho golden thiết kế (D-07, 17/09): ảnh gốc là
+  // artboard pixel-true, app thì vẽ qua 0,72/0,85. Từng là `const`, nên harness
+  // không tắt được và 31 màn "trôi 22%" chỉ vì so thiết kế với bản đã nén.
+  group('PenScale', () {
+    tearDown(PenScale.appScale);
+
+    test('mặc định là mức app: 0,72 / 0,85', () {
+      expect(penTypeCompress, 0.72);
+      expect(penDensityScale, 0.85);
+    });
+
+    test('pixelTrue tắt nén — chữ và khoảng cách đúng như artboard', () {
+      PenScale.pixelTrue();
+      expect(penTextSize(26), 26);
+      expect(penDensityScale, 1);
+    });
+
+    test('appScale trả về mức app sau khi một test khác đã tắt', () {
+      PenScale.pixelTrue();
+      PenScale.appScale();
+      expect(penTextSize(26), closeTo(22.6, 0.05));
+    });
+  });
 }

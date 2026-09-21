@@ -57,7 +57,7 @@ class EcSplashScreen extends StatelessWidget {
               ),
             ),
           ),
-          const Positioned(
+          Positioned(
             left: 0,
             right: 0,
             top: 178,
@@ -158,6 +158,7 @@ class EcLoginScreen extends StatelessWidget {
     this.onForgot,
     this.onGoogle,
     this.onApple,
+    this.onPhone,
     this.showApple = true,
     this.onRegister,
     this.onLanguage,
@@ -171,6 +172,12 @@ class EcLoginScreen extends StatelessWidget {
   final VoidCallback? onForgot;
   final VoidCallback? onGoogle;
   final VoidCallback? onApple;
+
+  /// Mở màn đăng nhập bằng số điện thoại (OTP qua Zalo/SMS).
+  ///
+  /// Sang màn riêng chứ không mở ngay tại đây: luồng OTP có hai bước và một
+  /// đồng hồ đếm ngược, nhét vào màn này là hai trạng thái tranh nhau chỗ.
+  final VoidCallback? onPhone;
 
   /// Whether to offer Apple sign-in at all. False on platforms with no native
   /// Apple ID sheet, where the button could only ever fail.
@@ -256,6 +263,18 @@ class EcLoginScreen extends StatelessWidget {
                       label: l10n.authSignInApple,
                       icon: const PenAppleMark(),
                       onPressed: onApple,
+                    ),
+                  ],
+                  if (onPhone != null) ...[
+                    const SizedBox(height: 12),
+                    PenOutlineButton(
+                      label: l10n.authSignInPhone,
+                      icon: Icon(
+                        LucideIcons.phone,
+                        size: 20,
+                        color: PenColors.ink,
+                      ),
+                      onPressed: onPhone,
                     ),
                   ],
                   const SizedBox(height: 25),

@@ -108,15 +108,26 @@ class EcUploadQueue extends ChangeNotifier {
     AnalyticsService? analytics,
     CrashReporter? crashReporter,
     String? Function()? currentUid,
+    Future<bool> Function()? choPhepTai,
     @visibleForTesting Directory? directory,
     @visibleForTesting Directory? temporaryDirectory,
   }) : _currentUid = currentUid,
+       _choPhepTai = choPhepTai,
        _uploader = uploader,
        _store = store ?? InMemoryEvidenceClipStore(),
        _analytics = analytics,
        _crashReporter = crashReporter,
        _dir = directory,
        _temp = temporaryDirectory;
+
+  /// Bây giờ có được phép tải lên không.
+  ///
+  /// Một VỊ TỪ tiêm vào chứ không phải gói `connectivity_plus` gọi thẳng ở đây:
+  /// gói này cố ý không phụ thuộc plugin nền tảng nào (xem `pubspec.yaml`), và
+  /// một hàm trả `bool` thì bài test dựng được, còn một plugin thì không.
+  ///
+  /// `null` = luôn cho phép, đúng như trước khi có cài đặt "Tải lên bằng Wi-Fi".
+  final Future<bool> Function()? _choPhepTai;
 
   final EcEvidenceUploader? _uploader;
   final EvidenceClipStore _store;
@@ -535,6 +546,14 @@ class EcUploadQueue extends ChangeNotifier {
     try {
       while (true) {
         if (hitQuotaWall) break;
+        // Hỏi TRƯỚC mỗi tệp, không phải một lần đầu vòng: một hàng đợi dài chạy
+        // qua lúc người quay rời khỏi vùng Wi-Fi, và hỏi một lần là phần còn
+        // lại vẫn đi bằng 4G — đúng thứ cài đặt này sinh ra để chặn.
+        //
+        // `break` chứ không phải bỏ tệp: việc còn nguyên trong hàng đợi, chạy
+        // lại khi có mạng cho phép.
+        final duocTai = await _choPhepTai?.call() ?? true;
+        if (!duocTai) break;
         final task = _firstWaiting();
         if (task == null) break;
         task

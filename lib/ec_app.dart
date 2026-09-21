@@ -10,6 +10,7 @@ import 'package:app_platform/app_platform.dart'
     show
         AppVideoPlayerController,
         CrashReporter,
+        FirebaseMessagingService,
         GallerySaveService,
         ImagePicker,
         ImageSource,
@@ -79,6 +80,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_contracts/shared_contracts.dart'
     show
         ClipBudget,
+        EcCaiDatQuay,
         EcClaimDossier,
         EcClaimEvidence,
         EcClaimOrder,
@@ -95,6 +97,7 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'app/di/injection.dart';
 import 'app/update_gate.dart';
 import 'core/data/ec_claim_store.dart';
+import 'core/thong_bao/dang_ky_thong_bao.dart';
 import 'data/ec_appsflyer.dart';
 import 'data/ec_purchases.dart';
 import 'data/ec_uploader.dart';
@@ -124,6 +127,7 @@ class EcApp extends StatefulWidget {
     this.shareService,
     this.videoPlayerService,
     this.downloadDio,
+    this.huongDan,
     super.key,
   });
 
@@ -133,6 +137,10 @@ class EcApp extends StatefulWidget {
 
   /// Auth — `FirebaseEcAuth` in the app (FR-15); tests pass their own double.
   final EcAuth auth;
+
+  /// Nơi nhớ "đã xem hướng dẫn màn nào". App gắn bản SharedPreferences khoá
+  /// theo uid; test để null và nhận bản nhớ trong bộ nhớ.
+  final EcHuongDanKho? huongDan;
 
   /// Upload-queue persistence. The app binds the ObjectBox store (single source
   /// of truth, FR-08/FR-09); tests leave it null and get an in-memory store.
@@ -152,6 +160,22 @@ class EcApp extends StatefulWidget {
 
 class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
   late final EcAuth _auth = widget.auth;
+
+  /// Giao diện đã chọn: `'system'` | `'light'` | `'dark'`.
+  ///
+  /// Nguồn là hồ sơ trên MÁY CHỦ (đọc lúc đăng nhập), nên đổi ở web thì mở app
+  /// cũng thấy. Giá trị ở đây chỉ là bản sao để vẽ.
+  final ValueNotifier<String> _theme = ValueNotifier('system');
+
+  /// Múi giờ để ĐỌC giờ trên màn hình. `null` = theo máy.
+  final ValueNotifier<String?> _muiGio = ValueNotifier(null);
+
+  /// Nối token thông báo của máy này lên máy chủ. `null` khi chạy không có
+  /// Firebase (test, bản dựng tắt Firebase) — lớp bên trong tự chịu được.
+  late final EcDangKyThongBao _thongBao = EcDangKyThongBao(
+    widget.repo,
+    _maybeGetIt<FirebaseMessagingService>(),
+  );
   // Single source of truth for the selected interface language. The account tab
   // and language screen read/write this; `CupertinoApp.locale` follows it and
   // `AppLocalizations` renders `context.l10n.*` in the chosen language.
@@ -204,7 +228,30 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     analytics: _analytics(),
     crashReporter: _crashReporter(),
     currentUid: () => _auth.currentUser?.uid,
+    choPhepTai: _choPhepTaiLen,
   );
+
+  /// "Tải lên bằng Wi-Fi" của CỬA HÀNG đang mở.
+  ///
+  /// Đọc cửa hàng đang chọn chứ không nhớ một cờ riêng: người quay đổi shop
+  /// giữa ca thì luật đổi theo ngay, không phải khởi động lại app.
+  ///
+  /// Chưa chọn shop nào thì cho tải — hàng đợi lúc đó chỉ còn clip cũ, và giữ
+  /// chúng lại vì một cài đặt không đọc được là mất dữ liệu vì một chuyện không
+  /// liên quan.
+  Future<bool> _choPhepTaiLen() async {
+    final shop = _selectedShop.value;
+    if (shop == null || !shop.caiDatQuay.chiTaiKhiWifi) return true;
+    try {
+      final ket = await Connectivity().checkConnectivity();
+      return ket.contains(ConnectivityResult.wifi) ||
+          ket.contains(ConnectivityResult.ethernet);
+    } on Object {
+      // Không đọc được trạng thái mạng thì CHO tải: chặn ở đây là clip nằm lại
+      // trên máy vô thời hạn, và người dùng không có cách nào biết vì sao.
+      return true;
+    }
+  }
 
   // Built once for the app's lifetime rather than per record-screen visit —
   // see the doc comment on EcRecordRoute.voiceAnnouncer.
@@ -241,12 +288,16 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     _recordingType,
     _recordingTypeId,
     widget.pickAvatarPath ?? _pickAvatarImagePath,
+    theme: _theme,
+    muiGio: _muiGio,
+    thongBao: _thongBao,
     shareService: widget.shareService,
     videoPlayerService: widget.videoPlayerService,
     downloadDio: widget.downloadDio,
     voiceAnnouncer: _voiceAnnouncer,
     isRecordTabActive: _isRecordTabActive,
     evidenceCountOverrides: _evidenceCountOverrides,
+    huongDan: widget.huongDan,
   );
 
   @override
@@ -263,6 +314,13 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     // được cộng ngày cho tài khoản trước — RevenueCat vẫn giữ app_user_id cũ.
     _auth.user.addListener(_syncPurchaseIdentity);
     _syncPurchaseIdentity();
+    // Cùng một lẽ với dòng trên, và cùng một chỗ: có sáu lối đăng nhập (email,
+    // Google, Apple, SĐT, custom token, khôi phục phiên) và vá từng lối là sớm
+    // muộn sót một lối — người đăng nhập bằng lối đó không bao giờ nhận được
+    // thông báo, mà không có gì trên màn hình nói vì sao.
+    _auth.user.addListener(_syncThongBao);
+    _syncThongBao();
+    _muiGio.addListener(_apMuiGio);
     // Paywall của RevenueCat đọc ngôn ngữ MÁY chứ không đọc ngôn ngữ app. Nghe
     // ở một chỗ vì cùng lý do với dòng trên: có hai lối đổi ngôn ngữ (nút gạt ở
     // màn tài khoản và màn /language), vá từng lối là sớm muộn sót một lối.
@@ -306,6 +364,27 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
   /// `app_user_id` phải bằng Firebase uid — backend tra tài khoản bằng đúng giá
   /// trị đó khi webhook tới, và uid lạ thì event bị bỏ qua, tức người dùng trả
   /// tiền mà không ai được cộng ngày.
+  void _syncThongBao() {
+    if (_auth.currentUser == null) return;
+    unawaited(_thongBao.noiKhiDangNhap());
+    unawaited(_docCaiDatTaiKhoan());
+  }
+
+  /// Kéo giao diện và múi giờ từ hồ sơ trên máy chủ.
+  ///
+  /// Nuốt lỗi: mạng hỏng thì app vẫn chạy với giao diện mặc định. Chặn đăng
+  /// nhập vì một lượt đọc cài đặt hỏng là đổi một phiền toái thành một app
+  /// không vào được.
+  Future<void> _docCaiDatTaiKhoan() async {
+    try {
+      final me = await widget.repo.account();
+      _theme.value = me.theme;
+      _muiGio.value = me.timezone;
+    } on Object catch (error) {
+      debugPrint('doc_cai_dat_that_bai: $error');
+    }
+  }
+
   void _syncPurchaseIdentity() {
     final uid = _auth.user.value?.uid;
     unawaited(
@@ -376,6 +455,7 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _queue.removeListener(_onQueueChangedForReporting);
     _auth.user.removeListener(_syncPurchaseIdentity);
+    _auth.user.removeListener(_syncThongBao);
     unawaited(WakelockPlus.disable().catchError((_) {}));
     _router.dispose();
     _language
@@ -386,6 +466,10 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
     _selectedShop.dispose();
     _recordingType.dispose();
     _recordingTypeId.dispose();
+    _theme.dispose();
+    _muiGio
+      ..removeListener(_apMuiGio)
+      ..dispose();
     super.dispose();
   }
 
@@ -400,8 +484,43 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
   // thẳng shop gần nhất rồi ra tab Vận đơn, chưa đăng nhập thì về màn đăng
   // nhập. Xem route '/' và '/shops'.
 
+  /// Bảng màu phải đặt TRƯỚC khi cây widget đọc `BrandColors.*`.
+  ///
+  /// `BrandColors` là cờ tĩnh chứ không phải thứ đọc từ context (xem ghi chú ở
+  /// đó), nên nó phải đúng ngay tại thời điểm `build` chạy — đặt trong một
+  /// callback sau khung hình là cả màn đầu tiên vẽ bằng bảng màu cũ.
+  void _apMuiGio() {
+    final ten = _muiGio.value;
+    _lechMuiGioPhut = ten == null
+        ? null
+        : _muiGioChon.where((e) => e.$1 == ten).firstOrNull?.$3;
+    if (mounted) setState(() {});
+  }
+
+  bool _laToi(String theme, BuildContext context) => switch (theme) {
+    'dark' => true,
+    'light' => false,
+    _ => MediaQuery.platformBrightnessOf(context) == Brightness.dark,
+  };
+
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<String>(
+      valueListenable: _theme,
+      builder: (context, theme, _) {
+        final toi = _laToi(theme, context);
+        // CẢ HAI bảng màu. `PenColors` (ec_ui) dùng ở 638 chỗ, `BrandColors`
+        // (app_ui) ở 166 — quên một bên là một nửa app sáng, một nửa tối, và
+        // nửa nào thì tuỳ màn. Đúng lỗi đã suýt lọt: bản đầu chỉ đổi
+        // `BrandColors`, nên chế độ tối hỏng trên phần lớn màn.
+        BrandColors.datBanToi(toi: toi);
+        PenColors.datBanToi(toi: toi);
+        return _dungApp(toi: toi);
+      },
+    );
+  }
+
+  Widget _dungApp({required bool toi}) {
     return ValueListenableBuilder<EcAppLanguage>(
       valueListenable: _language,
       builder: (context, language, _) => CupertinoApp.router(
@@ -418,7 +537,7 @@ class _EcAppState extends State<EcApp> with WidgetsBindingObserver {
           GlobalCupertinoLocalizations.delegate,
         ],
         theme: CupertinoThemeData(
-          brightness: Brightness.light,
+          brightness: toi ? Brightness.dark : Brightness.light,
           primaryColor: BrandColors.dark,
           scaffoldBackgroundColor: BrandColors.bg,
           applyThemeToAll: true,
@@ -713,6 +832,7 @@ class _LoginRouteState extends State<_LoginRoute> {
         repo: widget.repo,
       ),
       showApple: _appleSignInAvailable,
+      onPhone: () => context.push('/phone-login'),
       languageLabel: language.code.toUpperCase(),
       onLanguage: () => unawaited(_pickLanguage(context, widget.language)),
     ),
@@ -1104,6 +1224,7 @@ abstract final class _AuthMethods {
   static const email = 'email';
   static const google = 'google';
   static const apple = 'apple';
+  static const phone = 'phone';
 }
 
 /// Turns an auth/backend failure into a user-facing line. [EcAuthException]
@@ -1166,7 +1287,20 @@ class _AccountRoute extends StatefulWidget {
     required this.language,
     required this.selectedShop,
     required this.queue,
+    required this.kho,
+    this.theme,
+    this.muiGio,
+    this.thongBao,
   });
+
+  /// Nơi nhớ đã xem hướng dẫn màn nào.
+  final EcHuongDanKho kho;
+
+  /// Giao diện và múi giờ của tài khoản. `null` khi bên gọi không truyền —
+  /// lúc đó ba hàng cài đặt tương ứng không hiện.
+  final ValueNotifier<String>? theme;
+  final ValueNotifier<String?>? muiGio;
+  final EcDangKyThongBao? thongBao;
 
   final EcAuth auth;
   final EcRepository repo;
@@ -1178,7 +1312,50 @@ class _AccountRoute extends StatefulWidget {
   State<_AccountRoute> createState() => _AccountRouteState();
 }
 
+/// Múi giờ mở ra trong bảng chọn.
+///
+/// Danh sách NGẮN và đóng, đúng các thị trường app đang bán (xem bộ ngôn ngữ):
+/// một bộ chọn 400 vùng IANA trên điện thoại là thứ không ai cuộn hết, và
+/// người bán hàng Việt Nam không cần `America/Argentina/Ushuaia`.
+/// Vùng, nhãn, và độ lệch so với UTC tính bằng PHÚT.
+///
+/// Độ lệch cố định được vì cả tám vùng này đều **không có giờ mùa hè**: Việt
+/// Nam, Thái Lan, Indonesia, Malaysia, Singapore, Philippines và Đài Loan bỏ
+/// từ lâu, Brazil bỏ năm 2019. Nhờ vậy không phải kéo cả cơ sở dữ liệu IANA
+/// (gói `timezone` nặng ~1 MB) chỉ để đọc giờ trên màn.
+///
+/// **Thêm vùng CÓ giờ mùa hè vào đây là sai** — nửa năm sẽ lệch một tiếng, và
+/// lệch im lặng. Lúc đó phải đổi sang gói `timezone` chứ đừng thêm một dòng.
+const _muiGioChon = <(String, String, int)>[
+  ('Asia/Ho_Chi_Minh', 'Việt Nam (GMT+7)', 420),
+  ('Asia/Bangkok', 'Thái Lan (GMT+7)', 420),
+  ('Asia/Jakarta', 'Indonesia — Jakarta (GMT+7)', 420),
+  ('Asia/Kuala_Lumpur', 'Malaysia (GMT+8)', 480),
+  ('Asia/Singapore', 'Singapore (GMT+8)', 480),
+  ('Asia/Manila', 'Philippines (GMT+8)', 480),
+  ('Asia/Taipei', 'Đài Loan (GMT+8)', 480),
+  ('America/Sao_Paulo', 'Brazil — São Paulo (GMT-3)', -180),
+];
+
+/// Độ lệch đang dùng để ĐỌC giờ trên màn. `null` = theo máy.
+///
+/// Cờ tĩnh vì cùng lý do với [BrandColors]: giờ được định dạng ở hàng chục chỗ
+/// gọi thẳng `_hhmm(...)`, và luồn một tham số qua tất cả là sửa hàng chục chỗ
+/// cho một giá trị không bao giờ khác nhau giữa hai chỗ.
+int? _lechMuiGioPhut;
+
+/// Đưa một mốc về múi giờ đang chọn.
+///
+/// Không đụng tới dữ liệu: mốc gốc vẫn là epoch, đây chỉ là kính lúp để đọc.
+DateTime _theoMuiGio(DateTime d) {
+  final lech = _lechMuiGioPhut;
+  if (lech == null) return d.isUtc ? d.toLocal() : d;
+  return d.toUtc().add(Duration(minutes: lech));
+}
+
 class _AccountRouteState extends State<_AccountRoute> {
+  /// Người dùng đã cho phép thông báo chưa. `null` = chưa đọc xong.
+  bool? _choPhepTB;
   // Hỏi lại khi: quay về từ trang quota (gói có thể vừa đổi) HOẶC vừa có clip
   // lên máy chủ xong (số video đã dùng vừa tăng).
   //
@@ -1277,6 +1454,7 @@ class _AccountRouteState extends State<_AccountRoute> {
     super.initState();
     widget.queue.uploadsCompleted.addListener(_refreshQuota);
     unawaited(_loadAccount());
+    unawaited(_docQuyenTB());
   }
 
   @override
@@ -1306,15 +1484,148 @@ class _AccountRouteState extends State<_AccountRoute> {
     );
     if (confirmed != true || !mounted) return;
     unawaited(_analytics()?.trackSignOut());
-    await _signOutAll(widget.auth);
+    await _signOutAll(widget.auth, widget.repo);
     // Same as signing out from the shop picker: drop the remembered shop so the
     // next session starts from a clean pick.
     await _forgetRememberedShop();
     if (mounted) context.go('/login', extra: 'back');
   }
 
+  Future<void> _docQuyenTB() async {
+    final co = await widget.thongBao?.daChoPhep();
+    if (mounted) setState(() => _choPhepTB = co);
+  }
+
+  /// Hỏi quyền thông báo — sau khi đã nói vì sao.
+  ///
+  /// iOS chỉ cho hỏi MỘT lần trong đời cài đặt: từ chối rồi thì hộp thoại hệ
+  /// thống không bật ra nữa, dù gọi bao nhiêu lần. Nên phải giải thích TRƯỚC,
+  /// và khi đã bị từ chối thì nói thẳng là phải vào Cài đặt của máy.
+  Future<void> _batThongBao() async {
+    final tb = widget.thongBao;
+    if (tb == null) return;
+    if (_choPhepTB == true) return;
+    final dong = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (c) => CupertinoAlertDialog(
+        title: Text(c.l10n.notifAskTitle),
+        content: Text(c.l10n.notifAskBody),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(c).pop(false),
+            child: Text(c.l10n.notifAskNo),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(c).pop(true),
+            child: Text(c.l10n.notifAskYes),
+          ),
+        ],
+      ),
+    );
+    if (dong != true || !mounted) return;
+    final duoc = await tb.xinPhepVaDangKy();
+    if (!mounted) return;
+    setState(() => _choPhepTB = duoc);
+    if (!duoc) _toast(context, context.l10n.notifDenied);
+  }
+
+  Future<void> _chonGiaoDien() async {
+    final n = widget.theme;
+    if (n == null) return;
+    final chon = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (c) => CupertinoActionSheet(
+        title: Text(c.l10n.themeRow),
+        actions: [
+          for (final (ma, nhan) in [
+            ('system', c.l10n.themeSystem),
+            ('light', c.l10n.themeLight),
+            ('dark', c.l10n.themeDark),
+          ])
+            CupertinoActionSheetAction(
+              onPressed: () => Navigator.of(c).pop(ma),
+              child: Text(nhan),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(c).pop(),
+          child: Text(c.l10n.commonCancel),
+        ),
+      ),
+    );
+    if (chon == null || !mounted) return;
+    // Vẽ lại NGAY rồi mới ghi lên máy chủ: đợi mạng xong mới đổi màu thì cú
+    // bấm trông như không ăn, và mạng hỏng thì không bao giờ đổi.
+    n.value = chon;
+    try {
+      await widget.repo.updateProfile(theme: chon);
+    } on Object catch (error) {
+      debugPrint('luu_theme_that_bai: $error');
+    }
+  }
+
+  Future<void> _chonMuiGio() async {
+    final n = widget.muiGio;
+    if (n == null) return;
+    final chon = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (c) => CupertinoActionSheet(
+        title: Text(c.l10n.tzRow),
+        message: Text(c.l10n.tzNote),
+        actions: [
+          CupertinoActionSheetAction(
+            // Chuỗi rỗng chứ không phải null: null qua `updateProfile` nghĩa là
+            // "không đụng tới", nên không bỏ chọn được bằng nó.
+            onPressed: () => Navigator.of(c).pop(''),
+            child: Text(c.l10n.tzAuto),
+          ),
+          for (final (ma, nhan, _) in _muiGioChon)
+            CupertinoActionSheetAction(
+              onPressed: () => Navigator.of(c).pop(ma),
+              child: Text(nhan),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(c).pop(),
+          child: Text(c.l10n.commonCancel),
+        ),
+      ),
+    );
+    if (chon == null || !mounted) return;
+    n.value = chon.isEmpty ? null : chon;
+    try {
+      await widget.repo.updateProfile(timezone: chon);
+    } on Object catch (error) {
+      debugPrint('luu_mui_gio_that_bai: $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    return EcChiDan(
+      kho: widget.kho,
+      man: EcMan.account,
+      buoc: () {
+        final c = context;
+        return [
+          EcChiDanBuoc(
+            chu: c.l10n.accountPlanQuota,
+            tieuDe: c.l10n.cdAcc1T,
+            than: c.l10n.cdAcc1B,
+          ),
+          EcChiDanBuoc(
+            chu: c.l10n.accountLoginMethods,
+            tieuDe: c.l10n.cdAcc2T,
+            than: c.l10n.cdAcc2B,
+          ),
+        ];
+      },
+      child: _noiDungChiDan(context),
+    );
+  }
+
+  Widget _noiDungChiDan(BuildContext context) {
     return ListenableBuilder(
       listenable: Listenable.merge([
         widget.auth.user,
@@ -1355,9 +1666,6 @@ class _AccountRouteState extends State<_AccountRoute> {
                 _account?.avatarUrl ??
                 user?.photoUrl,
             onBack: () => _back(context, '/shops'),
-            onFacebook: () => _openSupport(context, _kSupportFacebook),
-            onZalo: () => _openSupport(context, _kSupportZalo),
-            onCall: () => _openSupport(context, _kSupportPhone),
             onFeedback: () => _showFeedbackSheet(context),
             onRateApp: () => _openSupport(context, _kStoreListing),
             onProfileTap: () async {
@@ -1376,6 +1684,40 @@ class _AccountRouteState extends State<_AccountRoute> {
             // hơn là không có nút.
             onChangePlanTap: EcPurchases.isAvailable ? _openPaywall : null,
             onLanguageTap: () => context.push('/language'),
+            // Ẩn cả ba hàng khi bên gọi không truyền: một hàng bấm vào không
+            // mở được gì còn tệ hơn là không có hàng.
+            notifValue: widget.thongBao == null
+                ? null
+                : _choPhepTB == true
+                ? context.l10n.notifOn
+                : context.l10n.notifOff,
+            onNotifTap: widget.thongBao == null ? null : _batThongBao,
+            themeValue: switch (widget.theme?.value) {
+              'light' => context.l10n.themeLight,
+              'dark' => context.l10n.themeDark,
+              'system' => context.l10n.themeSystem,
+              _ => null,
+            },
+            onThemeTap: widget.theme == null ? null : _chonGiaoDien,
+            timezoneValue: widget.muiGio == null
+                ? null
+                : widget.muiGio!.value == null
+                ? context.l10n.tzAuto
+                : (_muiGioChon
+                          .where((e) => e.$1 == widget.muiGio!.value)
+                          .firstOrNull
+                          ?.$2 ??
+                      widget.muiGio!.value!),
+            onTimezoneTap: widget.muiGio == null ? null : _chonMuiGio,
+            // Nhãn là tên đơn vị đã khai — người mở màn này muốn kiểm lại xem
+            // mình đã điền chưa, chứ không muốn đọc lại tiêu đề màn.
+            invoiceValue: (_account?.invoiceName?.trim().isNotEmpty ?? false)
+                ? _account!.invoiceName
+                : context.l10n.invNotSet,
+            onInvoiceTap: () async {
+              await context.push('/hoa-don');
+              if (mounted) await _loadAccount();
+            },
             onEndQrTap: () => _showEndSessionQr(
               context,
               share: _maybeGetIt<ShareService>(),
@@ -1688,6 +2030,37 @@ class _LoginMethodsRoute extends StatelessWidget {
   }
 }
 
+/// Đăng nhập bằng số điện thoại — OTP qua Zalo hoặc SMS.
+///
+/// Máy chủ trả **custom token** ở bước xác minh, nên đường vào giống hệt đăng
+/// nhập Google qua web (xem `_googleSignIn`): đổi token lấy phiên rồi để
+/// [_afterSocialSignIn] lo phần còn lại — hồ sơ, shop, báo lỗi.
+///
+/// Số chưa có tài khoản thì máy chủ tạo ngay, nên màn này không phân biệt đăng
+/// nhập với đăng ký — người dùng cũng không cần biết mình đang làm cái nào.
+class _PhoneLoginRoute extends StatelessWidget {
+  const _PhoneLoginRoute({required this.auth, required this.repo});
+
+  final EcAuth auth;
+  final EcRepository repo;
+
+  @override
+  Widget build(BuildContext context) => EcPhoneLoginScreen(
+    onBack: () => _back(context, '/login'),
+    onSendCode: repo.phoneOtpStart,
+    onVerify: (phone, code) async {
+      final token = await repo.phoneOtpVerify(phone, code);
+      if (!context.mounted) return;
+      await _afterSocialSignIn(
+        context,
+        auth.signInWithCustomToken(token),
+        method: _AuthMethods.phone,
+        repo: repo,
+      );
+    },
+  );
+}
+
 /// Quota — reads the plan's cap/retention from the repository, but computes
 /// usage (bytes used, video counts, per-type breakdown) from the clips
 /// actually sitting in [queue] so the numbers on screen can never disagree
@@ -1704,7 +2077,15 @@ class _LoginMethodsRoute extends StatelessWidget {
 /// Mua xong màn này KHÔNG tự bật gói — nó hỏi lại backend. Biên nhận trên máy
 /// có thể bị giả hoặc phát lại; hạn dùng do webhook RevenueCat → backend chốt.
 class _QuotaRoute extends StatefulWidget {
-  const _QuotaRoute({required this.repo, required this.queue, this.shopId});
+  const _QuotaRoute({
+    required this.repo,
+    required this.queue,
+    required this.kho,
+    this.shopId,
+  });
+
+  /// Nơi nhớ đã xem hướng dẫn màn nào.
+  final EcHuongDanKho kho;
 
   final EcRepository repo;
   final EcUploadQueue queue;
@@ -1774,13 +2155,31 @@ class _QuotaRouteState extends State<_QuotaRoute> {
 
   @override
   Widget build(BuildContext context) {
+    return EcChiDan(
+      kho: widget.kho,
+      man: EcMan.quota,
+      buoc: () {
+        final c = context;
+        return [
+          EcChiDanBuoc(
+            chu: c.l10n.quotaScreenTitle,
+            tieuDe: c.l10n.cdQuota1T,
+            than: c.l10n.cdQuota1B,
+          ),
+        ];
+      },
+      child: _noiDungChiDan(context),
+    );
+  }
+
+  Widget _noiDungChiDan(BuildContext context) {
     return FutureBuilder<QuotaDto>(
       future: _quota,
       builder: (context, snap) {
         if (!snap.hasData) {
-          return const CupertinoPageScaffold(
+          return CupertinoPageScaffold(
             backgroundColor: BrandColors.bg,
-            child: Center(child: CupertinoActivityIndicator()),
+            child: const Center(child: CupertinoActivityIndicator()),
           );
         }
         final quota = snap.data!;
@@ -1835,6 +2234,64 @@ class _DeleteAccountRouteState extends State<_DeleteAccountRoute> {
   var _screenKey = 0;
   var _deleting = false;
 
+  /// Xác thực lại; hỏi mật khẩu nếu tài khoản dùng mật khẩu.
+  ///
+  /// Ném [EcAuthCancelled] khi người dùng đóng hộp hỏi — bên gọi coi đó là
+  /// "thôi không xoá nữa", không phải lỗi, nên không báo đỏ.
+  Future<void> _xacThucLai() async {
+    try {
+      await widget.auth.reauthenticate();
+    } on EcAuthCanMatKhau {
+      if (!mounted) throw const EcAuthCancelled();
+      final matKhau = await _hoiMatKhau();
+      if (matKhau == null) throw const EcAuthCancelled();
+      await widget.auth.reauthenticate(password: matKhau);
+    }
+  }
+
+  /// `null` = người dùng bấm Hủy.
+  Future<String?> _hoiMatKhau() async {
+    final o = TextEditingController();
+    final l10n = context.l10n;
+    try {
+      return await showDialog<String>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: Text(l10n.deletePwTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.deletePwBody),
+              const SizedBox(height: 12),
+              TextField(
+                controller: o,
+                obscureText: true,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: l10n.authPassword,
+                  hintText: l10n.authPasswordPlaceholder,
+                ),
+                onSubmitted: (v) => Navigator.of(c).pop(v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(c).pop(),
+              child: Text(l10n.commonCancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(c).pop(o.text),
+              child: Text(l10n.deletePwOk),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      o.dispose();
+    }
+  }
+
   Future<void> _confirmDelete() async {
     if (_deleting) return;
     setState(() => _deleting = true);
@@ -1843,6 +2300,18 @@ class _DeleteAccountRouteState extends State<_DeleteAccountRoute> {
         force: _openDossierWarningShown,
         dryRun: true,
       );
+
+      // XÁC THỰC LẠI TRƯỚC KHI PHÁ BẤT CỨ THỨ GÌ.
+      //
+      // Firebase chỉ cho xoá tài khoản khi phiên vừa xác thực gần đây. Trước
+      // đây bước này không có, nên phiên cũ dẫn tới kết cục tệ nhất: dòng dưới
+      // đã xoá SẠCH dữ liệu ở máy chủ rồi `auth.deleteAccount()` mới ném
+      // `requires-recent-login` — dữ liệu mất thật mà tài khoản vẫn còn, người
+      // dùng đăng nhập lại được vào một tài khoản rỗng.
+      //
+      // Đặt ở đây thì hỏng xác thực là dừng, chưa mất gì.
+      await _xacThucLai();
+
       // Xoá DỮ LIỆU trước, tài khoản đăng nhập sau.
       //
       // Thứ tự cũ xoá Firebase trước, nên lời gọi dọn dữ liệu ngay sau đó
@@ -1860,6 +2329,9 @@ class _DeleteAccountRouteState extends State<_DeleteAccountRoute> {
       await _credentials()?.clear();
       if (mounted) context.go('/login', extra: 'back');
     } on Object catch (error) {
+      // Người dùng bấm Hủy ở hộp hỏi mật khẩu: đó là quyết định của họ, không
+      // phải sự cố. Báo đỏ ở đây là nói với họ rằng có gì đó hỏng.
+      if (error is EcAuthCancelled) return;
       if (_isOpenDossierConflict(error)) {
         if (!mounted) return;
         setState(() {
@@ -2464,9 +2936,9 @@ class _StorageRouteState extends State<_StorageRoute>
           );
         }
         if (!snap.hasData) {
-          return const CupertinoPageScaffold(
+          return CupertinoPageScaffold(
             backgroundColor: BrandColors.bg,
-            child: Center(child: CupertinoActivityIndicator()),
+            child: const Center(child: CupertinoActivityIndicator()),
           );
         }
         final dto = snap.data!;
@@ -2758,13 +3230,12 @@ class _StorageConnectRouteState extends State<_StorageConnectRoute> {
   }
 }
 
-// Kênh hỗ trợ hiện ở góc trái dưới trang Tài khoản.
+// Ba kênh liên hệ (Facebook, Zalo, gọi điện) đã GỠ khỏi app 09/09 và chỉ còn
+// trên web — cụm bong bóng nổi ở góc màn Tài khoản đi cùng chúng. Hằng số cũng
+// đi theo: giữ lại một địa chỉ không ai đọc là để nó lỗi thời trong im lặng,
+// rồi một ngày có người dùng lại nó với số điện thoại đã đổi.
 //
-// ponytail: hằng số tạm — chuyển sang Remote Config hoặc endpoint cấu hình khi
-// cần đổi số/trang mà không phải phát hành lại app.
-const _kSupportFacebook = 'https://facebook.com/zenpack.vn';
-const _kSupportZalo = 'https://zalo.me/0383539856';
-const _kSupportPhone = 'tel:0383539856';
+// Trong app, đường liên hệ còn lại là hàng "Góp ý" ở mục Giới thiệu.
 
 /// Trang app trên store, mở bằng lược đồ riêng của từng nền tảng để nhảy thẳng
 /// vào mục đánh giá thay vì mở trình duyệt.
@@ -2898,7 +3369,7 @@ Future<Uint8List> _endQrPngWithBrand() async {
     text: const TextSpan(
       text: kEndSessionBrand,
       style: TextStyle(
-        color: Color(0xFF161616),
+        color: Color(0xFF1B1412),
         fontSize: 96,
         fontWeight: FontWeight.w700,
       ),
@@ -3001,14 +3472,14 @@ void _showEndSessionQr(
                   width: 220,
                   height: 220,
                   filterQuality: FilterQuality.none,
-                  errorBuilder: (_, _, _) => const Icon(
+                  errorBuilder: (_, _, _) => Icon(
                     LucideIcons.qrCode,
                     size: 96,
                     color: PenColors.mut,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const PenText(
+                PenText(
                   kEndSessionBrand,
                   size: 18,
                   color: PenColors.ink,
@@ -3036,7 +3507,7 @@ void _showEndSessionQr(
               label: l10n.accountEndQrShare,
               onTap: () => unawaited(_shareEndSessionQr(sheetContext, share)),
             ),
-            const PenBox(
+            PenBox(
               width: double.infinity,
               height: 1,
               fill: PenColors.line,
@@ -3099,8 +3570,20 @@ class _EndQrActionRow extends StatelessWidget {
 ///     cần vì app bỏ cửa hàng; app đã bán lại bằng IAP nên nó cần trở lại.
 ///   * bộ nhớ đệm ảnh đại diện trong tiến trình — bản trên đĩa vẫn khoá theo
 ///     uid nên không lẫn, nhưng bản trong RAM sống qua lượt đổi tài khoản.
-Future<void> _signOutAll(EcAuth auth) async {
+/// Có [repo] thì gỡ máy khỏi danh sách nhận thông báo TRƯỚC khi ký thoát: lời
+/// gọi gỡ cần một token còn hiệu lực, mà `signOut()` thu hồi nó ngay. Gỡ sau là
+/// gỡ hụt, và người đăng nhập sau trên cùng máy nhận thông báo của người trước.
+///
+/// Bỏ trống ở các lối đăng xuất TRƯỚC khi đăng nhập (dọn phiên hỏng ở màn đăng
+/// nhập/đăng ký): ở đó chưa có máy nào được đăng ký để mà gỡ.
+Future<void> _signOutAll(EcAuth auth, [EcRepository? repo]) async {
   _avatarCache.clear();
+  if (repo != null) {
+    await EcDangKyThongBao(
+      repo,
+      _maybeGetIt<FirebaseMessagingService>(),
+    ).goKhiDangXuat();
+  }
   if (EcPurchases.isAvailable) {
     // `logOut` tự nuốt lỗi của SDK (xem ec_purchases.dart) — người dùng bấm
     // đăng xuất thì phải được đăng xuất, không phụ thuộc cửa hàng.
@@ -3460,6 +3943,90 @@ Future<capture.EcVideoType?> _showTypeSheet(
   );
 }
 
+/// Hỏi loại video và chốt lựa chọn vào [recordingType]/[recordingTypeId].
+///
+/// Dùng chung cho HAI lối: popup bật ra lúc bấm tab Ghi hình (trước khi vào
+/// màn quay) và ô chọn loại ở thanh dưới của chính màn quay. Một bản mã cho cả
+/// hai vì phần khó nằm ở vòng lặp: người dùng có thể rẽ sang màn quản lý loại
+/// giữa chừng, và lúc quay ra phải được hỏi LẠI — thoát ra với `null` ở đó là
+/// khoá luôn loại cũ mà không hỏi gì thêm.
+///
+/// Trả nhãn loại vừa chọn, hoặc `null` khi người dùng bấm back / bỏ qua.
+/// [onBack] chạy khi họ bấm back trong sheet — hai lối gọi xử lý khác nhau:
+/// từ màn quay thì lùi về tab Vận đơn, còn popup trước khi vào thì đứng yên.
+Future<String?> _hoiLoaiVideo(
+  BuildContext c, {
+  required BuildContext sheetContext,
+  required EcRepository repo,
+  required EcShopSummary shop,
+  required EcHuongDanKho kho,
+  required ValueNotifier<String> recordingType,
+  required ValueNotifier<String?> recordingTypeId,
+  required VoidCallback onBack,
+  bool mandatory = false,
+}) async {
+  final router = GoRouter.of(c);
+  final rootNavigator = Navigator.of(c, rootNavigator: true);
+  while (true) {
+    final selected = await _showTypeSheet(
+      sheetContext,
+      repo: repo,
+      shopId: shop.id,
+      selectedType: recordingType.value,
+      mandatory: mandatory,
+    );
+    if (selected == _typeSheetBackResult) {
+      onBack();
+      return null;
+    }
+    if (selected == _manageVideoTypesResult) {
+      await rootNavigator.push<void>(
+        // Cupertino chứ không Material: app chạy trong `CupertinoApp`, nên mọi
+        // route khác trượt ngang kiểu iOS. `MaterialPageRoute` không có
+        // Material theme để tra, nên nó rơi về mặc định của TỪNG NỀN — trượt
+        // ngang trên iOS, phóng to trên Android. Đúng một đường vào màn này
+        // lại mở kiểu khác hẳn, và chỉ trên một nền.
+        CupertinoPageRoute(
+          builder: (_) => _ShopDetailRoute(
+            kho: kho,
+            repo: repo,
+            shop: shop,
+            onBack: rootNavigator.maybePop,
+            onMemberMore: (member) => router
+                .push(
+                  '/member-actions',
+                  extra: _MemberActionExtra(shopId: shop.id, member: member),
+                )
+                .then((_) {}),
+            onInviteMember: () =>
+                router.push('/invite-member', extra: shop.id).then((_) {}),
+            onShopQr: () => _showShopJoinQr(c, repo, shop.id),
+            onEditType: (type) => router
+                .push('/create-type', extra: (shop.id, type))
+                .then((_) {}),
+            onDeleteType: (type) => router
+                .push('/confirm-delete', extra: (shop.id, type))
+                .then((_) {}),
+            onAddType: () => router
+                .push('/create-type', extra: (shop.id, null))
+                .then((_) {}),
+          ),
+        ),
+      );
+      if (!c.mounted) return null;
+      continue;
+    }
+    if (selected != null && selected.label.isNotEmpty) {
+      // Nhãn và id chốt CÙNG một lúc, từ cùng một dòng người dùng vừa bấm.
+      // Tách hai lượt đọc là mở lại đúng khe hở đã sửa: loại đổi tên giữa
+      // chừng thì clip mang id của loại khác.
+      recordingType.value = selected.label;
+      recordingTypeId.value = selected.id;
+    }
+    return selected?.label;
+  }
+}
+
 /// Người dùng bấm "Quản lý loại video" chứ không chọn loại nào.
 const _manageVideoTypesResult = capture.EcVideoType(
   label: '__manage_video_types__',
@@ -3763,6 +4330,7 @@ EcShopSummary _shopFromDto(AppLocalizations l10n, ShopDto shop) =>
       role: shop.role,
       resolution: shop.resolution,
       clipBudget: _budgetFromDto(shop),
+      caiDatQuay: EcCaiDatQuay.fromJson(shop.caiDatQuayJson),
     );
 
 /// Nhân viên chỉ được XEM cửa hàng.
@@ -3909,6 +4477,7 @@ Future<String?> _attachPhoto(
 /// backend shop id before Flow 2 loads orders for that shop.
 class _ChooseShopRoute extends StatefulWidget {
   const _ChooseShopRoute({
+    required this.kho,
     required this.repo,
     this.onSelect,
     this.onAccount,
@@ -3916,6 +4485,9 @@ class _ChooseShopRoute extends StatefulWidget {
     this.onLogout,
     this.autoEnter = true,
   });
+
+  /// Nơi nhớ đã xem hướng dẫn màn nào.
+  final EcHuongDanKho kho;
 
   final EcRepository repo;
   final ValueChanged<EcShopSummary>? onSelect;
@@ -3936,6 +4508,12 @@ class _ChooseShopRoute extends StatefulWidget {
 }
 
 class _ChooseShopRouteState extends State<_ChooseShopRoute> {
+  /// Khoá neo cho tour chỉ-vào-từng-nút ở màn chưa-có-shop. Là trường của
+  /// State nên giữ nguyên qua các lượt vẽ — tạo mới mỗi lần build thì tour
+  /// không bao giờ tìm được đích.
+  final GlobalKey _neoTao = GlobalKey();
+  final GlobalKey _neoTaiKhoan = GlobalKey();
+
   late Future<List<EcShopSummary>> _shops = _loadShops();
   var _autoSelected = false;
 
@@ -3957,7 +4535,54 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
   Future<List<EcShopSummary>> _loadShops() async {
     final l10n = context.l10n;
     final shops = await widget.repo.shops();
-    return [for (final shop in shops) _shopFromDto(l10n, shop)];
+    final list = [for (final shop in shops) _shopFromDto(l10n, shop)];
+    // Nhịp hôm nay nạp SAU, không chặn danh sách: màn hiện ngay với tên
+    // shop, con số điền vào khi tới.
+    unawaited(_loadPulse(list));
+    return list;
+  }
+
+  /// Nhịp hôm nay của từng shop, theo `shop.id`.
+  final Map<String, EcShopPulse> _pulse = {};
+
+  /// Hai lượt gọi nhẹ cho mỗi shop, chạy song song: trang 1 của đơn kể từ
+  /// 0h hôm nay (máy chủ đếm `total` / `total_videos` trên cả tập, không chỉ
+  /// trang) và trang 1 không lọc để lấy ảnh clip mới nhất. Dùng đúng những
+  /// tuyến đã có trên bản thật, không đợi máy chủ thêm gì.
+  ///
+  /// Hỏng thì im: shop nào không đọc được thì thẻ ấy chỉ thiếu dòng nhịp,
+  /// không thiếu cửa hàng — và không có toast nào cho một dòng phụ.
+  Future<void> _loadPulse(List<EcShopSummary> shops) async {
+    final now = DateTime.now();
+    final startOfToday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).millisecondsSinceEpoch;
+    await Future.wait([
+      for (final shop in shops)
+        if (shop.id.isNotEmpty)
+          () async {
+            try {
+              final (today, latest) = await (
+                widget.repo.orders(shop.id, page: 1, fromTs: startOfToday),
+                widget.repo.orders(shop.id, page: 1),
+              ).wait;
+              if (!mounted) return;
+              setState(() {
+                _pulse[shop.id] = EcShopPulse(
+                  ordersToday: today.total,
+                  videosToday: today.totalVideos,
+                  thumbUrl: latest.items.isEmpty
+                      ? null
+                      : latest.items.first.latestThumbUrl,
+                );
+              });
+            } on Object {
+              // Xem ghi chú trên: thiếu dòng nhịp, không thiếu shop.
+            }
+          }(),
+    ]);
   }
 
   void _retry() => setState(() {
@@ -4002,12 +4627,34 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
 
   @override
   Widget build(BuildContext context) {
+    return EcChiDan(
+      kho: widget.kho,
+      man: EcMan.shops,
+      // Chưa có shop nào thì màn dựng ra là `EcNoShopScreen` — không có tiêu
+      // đề "Chọn cửa hàng" để neo vào, và nó có tour riêng (`EcMan.noShop`).
+      // Trả về rỗng thay vì để tour này dò hụt trong im lặng.
+      buoc: () {
+        final c = context;
+        if (_last?.isEmpty ?? true) return const [];
+        return [
+          EcChiDanBuoc(
+            chu: c.l10n.shopChooseTitle,
+            tieuDe: c.l10n.cdShops1T,
+            than: c.l10n.cdShops1B,
+          ),
+        ];
+      },
+      child: _noiDungChiDan(context),
+    );
+  }
+
+  Widget _noiDungChiDan(BuildContext context) {
     return _RefreshingFuture<List<EcShopSummary>>(
       future: _shops,
       last: _last,
-      loading: const CupertinoPageScaffold(
+      loading: CupertinoPageScaffold(
         backgroundColor: BrandColors.bg,
-        child: Center(child: CupertinoActivityIndicator()),
+        child: const Center(child: CupertinoActivityIndicator()),
       ),
       error: (error) => _RouteLoadError(
         title: context.l10n.errorLoadShopList,
@@ -4017,20 +4664,41 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
       builder: (context, shops) {
         _last = shops;
         if (shops.isEmpty) {
-          return EcNoShopScreen(
-            onCreate: widget.onCreateShop,
-            // Cùng đích với nút Tài khoản ở màn chọn shop ngay dưới: tài khoản
-            // chưa có shop vẫn phải vào được hồ sơ của chính mình.
-            onAccountTap: widget.onAccount,
-            onJoinByInvite: () async {
-              if (await _joinByInvite(context, widget.repo)) _retry();
-            },
-            onLogout: widget.onLogout,
+          return EcChiDan(
+            kho: widget.kho,
+            man: EcMan.noShop,
+            // Dựng lại mỗi lượt vẽ nên chuỗi luôn đúng thứ tiếng đang chọn.
+            buoc: () => [
+              EcChiDanBuoc(
+                neo: _neoTao,
+                tieuDe: context.l10n.cdNoShopTaoTitle,
+                than: context.l10n.cdNoShopTaoBody,
+              ),
+              EcChiDanBuoc(
+                neo: _neoTaiKhoan,
+                tieuDe: context.l10n.cdNoShopTkTitle,
+                than: context.l10n.cdNoShopTkBody,
+              ),
+            ],
+            child: EcNoShopScreen(
+              neoTao: _neoTao,
+              neoTaiKhoan: _neoTaiKhoan,
+              onCreate: widget.onCreateShop,
+              // Cùng đích với nút Tài khoản ở màn chọn shop ngay dưới: tài khoản
+              // chưa có shop vẫn phải vào được hồ sơ của chính mình.
+              onAccountTap: widget.onAccount,
+              onJoinByInvite: () async {
+                if (await _joinByInvite(context, widget.repo)) _retry();
+              },
+              onLogout: widget.onLogout,
+            ),
           );
         }
         _autoSelectIfNeeded(shops);
         return EcChooseShopScreen(
-          shops: shops,
+          shops: [
+            for (final shop in shops) shop.copyWith(pulse: _pulse[shop.id]),
+          ],
           onAccountTap: widget.onAccount,
           onSelect: widget.onSelect,
           // Cùng đích với nút "Tạo shop" ở màn chưa-có-shop.
@@ -4046,7 +4714,15 @@ class _ChooseShopRouteState extends State<_ChooseShopRoute> {
 }
 
 class _CreateShopRoute extends StatefulWidget {
-  const _CreateShopRoute({required this.repo, this.onBack, this.onCreated});
+  const _CreateShopRoute({
+    required this.repo,
+    required this.kho,
+    this.onBack,
+    this.onCreated,
+  });
+
+  /// Nơi nhớ đã xem hướng dẫn màn nào.
+  final EcHuongDanKho kho;
 
   final EcRepository repo;
   final VoidCallback? onBack;
@@ -4057,6 +4733,9 @@ class _CreateShopRoute extends StatefulWidget {
 }
 
 class _CreateShopRouteState extends State<_CreateShopRoute> {
+  final GlobalKey _neoTen = GlobalKey();
+  final GlobalKey _neoTao = GlobalKey();
+
   final _name = TextEditingController();
   var _platform = 'shopee';
   var _saving = false;
@@ -4090,12 +4769,30 @@ class _CreateShopRouteState extends State<_CreateShopRoute> {
 
   @override
   Widget build(BuildContext context) {
-    return EcCreateShopScreen(
-      nameController: _name,
-      selectedPlatform: _platform,
-      onBack: widget.onBack,
-      onPlatformSelected: (platform) => setState(() => _platform = platform),
-      onCreate: _saving ? null : _create,
+    return EcChiDan(
+      kho: widget.kho,
+      man: EcMan.createShop,
+      buoc: () => [
+        EcChiDanBuoc(
+          neo: _neoTen,
+          tieuDe: context.l10n.cdTaoShopTenTitle,
+          than: context.l10n.cdTaoShopTenBody,
+        ),
+        EcChiDanBuoc(
+          neo: _neoTao,
+          tieuDe: context.l10n.cdTaoShopNutTitle,
+          than: context.l10n.cdTaoShopNutBody,
+        ),
+      ],
+      child: EcCreateShopScreen(
+        neoTen: _neoTen,
+        neoTao: _neoTao,
+        nameController: _name,
+        selectedPlatform: _platform,
+        onBack: widget.onBack,
+        onPlatformSelected: (platform) => setState(() => _platform = platform),
+        onCreate: _saving ? null : _create,
+      ),
     );
   }
 }
@@ -4104,6 +4801,7 @@ class _ShopDetailRoute extends StatefulWidget {
   const _ShopDetailRoute({
     required this.repo,
     required this.shop,
+    required this.kho,
     this.onBack,
     this.onMemberMore,
     this.onInviteMember,
@@ -4112,10 +4810,14 @@ class _ShopDetailRoute extends StatefulWidget {
     this.onDeleteType,
     this.onAddType,
     this.onTapStorage,
+    this.onTapCaiDatQuay,
     this.onDeleteShop,
     this.onRenameShop,
     this.readOnly = false,
   });
+
+  /// Nơi nhớ đã xem hướng dẫn màn nào.
+  final EcHuongDanKho kho;
 
   final EcRepository repo;
   final EcShopSummary shop;
@@ -4139,6 +4841,9 @@ class _ShopDetailRoute extends StatefulWidget {
 
   /// Kho lưu trữ. Mở cho mọi vai trò, khác các callback quản trị khác.
   final Future<void> Function()? onTapStorage;
+
+  /// Mở màn Cài đặt quay của cửa hàng.
+  final Future<void> Function()? onTapCaiDatQuay;
 
   /// Xoá hẳn cửa hàng. Rào chắn "phải gỡ hết người trước" nằm ở router, nơi
   /// biết danh sách thành viên vừa đọc về.
@@ -4277,12 +4982,35 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
 
   @override
   Widget build(BuildContext context) {
+    return EcChiDan(
+      kho: widget.kho,
+      man: EcMan.shopDetail,
+      buoc: () {
+        final c = context;
+        return [
+          EcChiDanBuoc(
+            chu: c.l10n.sectionVideoTypes,
+            tieuDe: c.l10n.cdShopD1T,
+            than: c.l10n.cdShopD1B,
+          ),
+          EcChiDanBuoc(
+            chu: c.l10n.sectionMembers,
+            tieuDe: c.l10n.cdShopD2T,
+            than: c.l10n.cdShopD2B,
+          ),
+        ];
+      },
+      child: _noiDungChiDan(context),
+    );
+  }
+
+  Widget _noiDungChiDan(BuildContext context) {
     return _RefreshingFuture<_ShopDetailData>(
       future: _detail,
       last: _last,
-      loading: const CupertinoPageScaffold(
+      loading: CupertinoPageScaffold(
         backgroundColor: BrandColors.bg,
-        child: Center(child: CupertinoActivityIndicator()),
+        child: const Center(child: CupertinoActivityIndicator()),
       ),
       error: (error) => _RouteLoadError(
         title: context.l10n.errorLoadShopDetail,
@@ -4294,6 +5022,7 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
         final locked = widget.isReadOnly || detail.shop.role == 'staff';
         return EcShopDetailScreen(
           readOnly: locked,
+          roleLabel: _roleDisplayName(context.l10n, detail.shop.role),
           membersError: detail.membersFailed,
           membersUnavailable: detail.membersRestricted,
           onRetryMembers: _retry,
@@ -4335,6 +5064,13 @@ class _ShopDetailRouteState extends State<_ShopDetailRoute> {
           onTapStorage: widget.onTapStorage == null
               ? null
               : () => widget.onTapStorage!().then((_) {
+                  if (mounted) _retry();
+                }),
+          // Đọc lại sau khi đóng màn: cài đặt vừa đổi phải hiện đúng ở lần mở
+          // sau, và bản shop trong bộ nhớ vừa cũ đi.
+          onTapCaiDatQuay: widget.onTapCaiDatQuay == null
+              ? null
+              : () => widget.onTapCaiDatQuay!().then((_) {
                   if (mounted) _retry();
                 }),
           // Hiện thứ chủ shop đã CHỌN trong màn Kho lưu trữ. Xem
@@ -4643,6 +5379,16 @@ EcVideoType _videoTypeFromDto(VideoTypeDto type, AppLocalizations l10n) {
           'Trả hàng' => Icons.assignment_return_outlined,
           _ => Icons.videocam_outlined,
         },
+    // Dòng phụ chỉ ba loại mặc định có — tên chúng là tên hệ thống nên biết
+    // trước nó dùng để làm gì; loại tự đặt thì tên đã là của người tạo.
+    hint: type.isDefault
+        ? switch (type.name) {
+            'Đóng hàng' => l10n.videoTypeHintPacking,
+            'Đơn vị vận chuyển' => l10n.videoTypeHintCarrier,
+            'Trả hàng' => l10n.videoTypeHintReturn,
+            _ => null,
+          }
+        : null,
   );
 }
 
@@ -5023,7 +5769,7 @@ class _InviteQrSheetState extends State<_InviteQrSheet> {
               label: l10n.accountEndQrShare,
               onTap: _busy ? null : () => unawaited(_share()),
             ),
-            const PenBox(
+            PenBox(
               width: double.infinity,
               height: 1,
               fill: PenColors.line,
@@ -5281,11 +6027,13 @@ String _inviteErrorText(AppLocalizations l10n, Object error) =>
 /// header. First page shows a full-screen spinner; later pages a trailing one.
 class _OrdersRoute extends StatefulWidget {
   const _OrdersRoute({
+    required this.kho,
     required this.repo,
     required this.queue,
     required this.shopId,
     required this.shopName,
     this.shopPlatform,
+    this.shopMeta,
     this.evidenceCountOverrides,
     this.onBack,
     this.onShopTap,
@@ -5297,6 +6045,9 @@ class _OrdersRoute extends StatefulWidget {
     this.onScan,
   });
 
+  /// Nơi nhớ đã xem hướng dẫn màn nào.
+  final EcHuongDanKho kho;
+
   final EcRepository repo;
   final EcUploadQueue queue;
   final String shopId;
@@ -5304,6 +6055,9 @@ class _OrdersRoute extends StatefulWidget {
 
   /// Sàn của shop — badge góc ảnh overview mỗi dòng đơn.
   final String? shopPlatform;
+
+  /// Dòng "Shopee · Chủ shop" dưới tên shop trên header.
+  final String? shopMeta;
   final _EvidenceCountOverrides? evidenceCountOverrides;
   final VoidCallback? onBack;
   final VoidCallback? onShopTap;
@@ -5695,6 +6449,9 @@ class _OrdersRouteState extends State<_OrdersRoute> {
         icon: LucideIcons.cloudUpload,
         accent: PenColors.warning,
         tintValue: true,
+        // Đếm hàng đợi trên máy, không đổi theo viên "Thời gian".
+        sublabel: context.l10n.statPendingSub,
+        followsTimeFilter: false,
         // Header không còn chip mây (design không vẽ), nên thẻ này là lối vào
         // màn hàng đợi upload.
         onTap: widget.onQueueTap,
@@ -5704,10 +6461,33 @@ class _OrdersRouteState extends State<_OrdersRoute> {
 
   @override
   Widget build(BuildContext context) {
+    return EcChiDan(
+      kho: widget.kho,
+      man: EcMan.home,
+      buoc: () {
+        final c = context;
+        return [
+          EcChiDanBuoc(
+            chu: c.l10n.ordersSearchHint,
+            tieuDe: c.l10n.cdHome1T,
+            than: c.l10n.cdHome1B,
+          ),
+          EcChiDanBuoc(
+            chu: c.l10n.filterStatusLabel,
+            tieuDe: c.l10n.cdHome2T,
+            than: c.l10n.cdHome2B,
+          ),
+        ];
+      },
+      child: _noiDungChiDan(context),
+    );
+  }
+
+  Widget _noiDungChiDan(BuildContext context) {
     if (_loading) {
-      return const CupertinoPageScaffold(
+      return CupertinoPageScaffold(
         backgroundColor: BrandColors.bg,
-        child: Center(child: CupertinoActivityIndicator()),
+        child: const Center(child: CupertinoActivityIndicator()),
       );
     }
     final loadError = _loadError;
@@ -5736,6 +6516,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
       ]),
       builder: (context, _) => EcHomeOrdersScreen(
         shopName: widget.shopName,
+        shopSubtitle: widget.shopMeta,
         platform: widget.shopPlatform,
         orders: rows,
         stats: _stats(widget.queue),
@@ -5783,6 +6564,7 @@ class _OrdersRouteState extends State<_OrdersRoute> {
 
 class _OrderRoute extends StatefulWidget {
   const _OrderRoute({
+    required this.kho,
     required this.repo,
     required this.queue,
     required this.shop,
@@ -5793,6 +6575,9 @@ class _OrderRoute extends StatefulWidget {
     this.onOpenVideo,
     this.onScan,
   });
+
+  /// Nơi nhớ đã xem hướng dẫn màn nào.
+  final EcHuongDanKho kho;
 
   final EcRepository repo;
   final EcUploadQueue queue;
@@ -5817,6 +6602,9 @@ class _OrderRoute extends StatefulWidget {
 }
 
 class _OrderRouteState extends State<_OrderRoute> {
+  /// Neo cho tour: vùng danh sách bằng chứng của đơn.
+  final GlobalKey _neoBangChung = GlobalKey();
+
   late Future<_OrderDetailData> _detail = _load();
 
   /// Mã đã gắn thêm vào đơn, ngoài mã chính. Nạp cùng chi tiết đơn.
@@ -6203,12 +6991,30 @@ class _OrderRouteState extends State<_OrderRoute> {
 
   @override
   Widget build(BuildContext context) {
+    return EcChiDan(
+      kho: widget.kho,
+      man: EcMan.order,
+      buoc: () {
+        final c = context;
+        return [
+          EcChiDanBuoc(
+            neo: _neoBangChung,
+            tieuDe: c.l10n.cdOrder1T,
+            than: c.l10n.cdOrder1B,
+          ),
+        ];
+      },
+      child: _noiDungChiDan(context),
+    );
+  }
+
+  Widget _noiDungChiDan(BuildContext context) {
     return _RefreshingFuture<_OrderDetailData>(
       future: _detail,
       last: _last,
-      loading: const CupertinoPageScaffold(
+      loading: CupertinoPageScaffold(
         backgroundColor: BrandColors.bg,
-        child: Center(child: CupertinoActivityIndicator()),
+        child: const Center(child: CupertinoActivityIndicator()),
       ),
       error: (error) => _RouteLoadError(
         title: context.l10n.errorLoadOrderDetail,
@@ -6257,7 +7063,11 @@ class _OrderRouteState extends State<_OrderRoute> {
                     ...days,
                   ];
             return EcOrderTimelineScreen(
+              neoBangChung: _neoBangChung,
               orderCode: data.detail.order.tracking,
+              subtitle:
+                  '${widget.shop.name} · '
+                  '${_platformDisplayName(widget.shop.platform)}',
               days: shownDays,
               pendingUploadCount: _pendingCount + _failedCount(data.detail),
               onBack: widget.onBack,
@@ -6936,13 +7746,15 @@ List<EcTimelineDay> _timelineDays(
   ];
 }
 
-String _dateLabel(DateTime d) {
+String _dateLabel(DateTime d0) {
+  final d = _theoMuiGio(d0);
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(d.day)}/${two(d.month)}/${d.year}';
 }
 
 /// `06/08/2026` — ngày tạo hồ sơ, dạng ngắn nhất mà vẫn không nhập nhằng.
-String _dayLabelOf(DateTime d) {
+String _dayLabelOf(DateTime d0) {
+  final d = _theoMuiGio(d0);
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(d.day)}/${two(d.month)}/${d.year}';
 }
@@ -6960,12 +7772,16 @@ String _dayLabelOf(DateTime d) {
 /// động lại app.
 class _ClaimListRoute extends StatefulWidget {
   const _ClaimListRoute({
+    required this.kho,
     required this.repo,
     required this.shopId,
     this.onNavOrders,
     this.onNavRecord,
     this.onCreate,
   });
+
+  /// Nơi nhớ đã xem hướng dẫn màn nào.
+  final EcHuongDanKho kho;
 
   final EcRepository repo;
   final String shopId;
@@ -7120,7 +7936,25 @@ class _ClaimListRouteState extends State<_ClaimListRoute> {
   }
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
+  Widget build(BuildContext context) {
+    return EcChiDan(
+      kho: widget.kho,
+      man: EcMan.claims,
+      buoc: () {
+        final c = context;
+        return [
+          EcChiDanBuoc(
+            chu: c.l10n.claimsTitle,
+            tieuDe: c.l10n.cdClaims1T,
+            than: c.l10n.cdClaims1B,
+          ),
+        ];
+      },
+      child: _noiDungChiDan(context),
+    );
+  }
+
+  Widget _noiDungChiDan(BuildContext context) => ListenableBuilder(
     listenable: _claimStore,
     builder: (context, _) => EcClaimListScreen(
       onNavOrders: widget.onNavOrders,
@@ -7536,11 +8370,15 @@ void _copyClaimSummary(BuildContext context, EcClaimDossier dossier) {
 /// Muốn xem clip thì vào chi tiết đơn, nơi việc đó thuộc về.
 class _ClaimDetailRoute extends StatefulWidget {
   const _ClaimDetailRoute({
+    required this.kho,
     required this.repo,
     required this.shopId,
     required this.dossierId,
     this.onBack,
   });
+
+  /// Nơi nhớ đã xem hướng dẫn màn nào.
+  final EcHuongDanKho kho;
 
   final EcRepository repo;
   final String shopId;
@@ -7619,23 +8457,41 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
   }
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
+  Widget build(BuildContext context) {
+    return EcChiDan(
+      kho: widget.kho,
+      man: EcMan.claimDetail,
+      buoc: () {
+        final c = context;
+        return [
+          EcChiDanBuoc(
+            chu: c.l10n.claimLinkLabel,
+            tieuDe: c.l10n.cdClaimD1T,
+            than: c.l10n.cdClaimD1B,
+          ),
+        ];
+      },
+      child: _noiDungChiDan(context),
+    );
+  }
+
+  Widget _noiDungChiDan(BuildContext context) => ListenableBuilder(
     listenable: _claimStore,
     builder: (context, _) {
       final dossier = _claimStore.byId(widget.shopId, widget.dossierId);
       // Hồ sơ vừa bị xoá ở màn này: khung rỗng chỉ tồn tại một nhịp trước khi
       // `onBack` đưa đi, nên không dựng màn báo lỗi cho nó.
       if (dossier == null) {
-        return const CupertinoPageScaffold(
+        return CupertinoPageScaffold(
           backgroundColor: BrandColors.bg,
-          child: SizedBox.shrink(),
+          child: const SizedBox.shrink(),
         );
       }
       final l10n = context.l10n;
       if (_loading) {
-        return const CupertinoPageScaffold(
+        return CupertinoPageScaffold(
           backgroundColor: BrandColors.bg,
-          child: Center(child: CupertinoActivityIndicator()),
+          child: const Center(child: CupertinoActivityIndicator()),
         );
       }
 
@@ -7681,6 +8537,8 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
           : DateTime.fromMillisecondsSinceEpoch(detail.claim.createdAt);
 
       return EcClaimDetailScreen(
+        sealed: detail?.sealed,
+        anchored: detail?.anchored,
         title: detail?.claim.title ?? '',
         shopName: detail?.shopName ?? '',
         channel: detail == null ? '' : _platformDisplayName(detail.platform),
@@ -7724,6 +8582,64 @@ class _ClaimDetailRouteState extends State<_ClaimDetailRoute> {
 ///
 /// Hai việc của người quản lý — chép link và thu hồi — nằm ở thanh dưới, vì
 /// trang công khai không có và không được có chúng.
+/// Đường mà trang hồ sơ được phép nhờ app tải hộ.
+///
+/// Kênh `EcSave` nhận DỮ LIỆU TỪ MỘT TRANG WEB. Bản trước chỉ kiểm hình dạng
+/// JSON rồi đưa thẳng chuỗi cho Dio: không kiểm scheme, không kiểm host. Nghĩa
+/// là bất kỳ đoạn JS nào chạy được trong khung ấy cũng sai khiến được app tải
+/// một URL bất kỳ — kể cả địa chỉ trong mạng nội bộ của người dùng — rồi ném
+/// kết quả vào thư viện ảnh hoặc khay chia sẻ của họ.
+///
+/// Chốt được CHẶT vì đường hợp lệ chỉ có một dạng: máy chủ luôn dựng
+/// `<API_PUBLIC_URL>/d/<token>/v|p/<id>` và `<API_PUBLIC_URL>/c/<token>/cat/<id>`
+/// (xem `publicStreamUrl` và `claims.ts` ở backend). Nên đòi đủ ba thứ: https,
+/// đúng host của API, và đường dẫn mở đầu bằng `/d/` hoặc `/c/`.
+///
+/// Trả `null` = không tải. Im lặng, không báo gì: nếu nhánh này chạy thì bên
+/// kia không phải trang của ta, và nói cho kẻ dò biết nó bị chặn vì lý do gì
+/// là tặng không một manh mối.
+String? ecUrlTaiDuoc(String? raw, {required String gocApi}) {
+  if (raw == null || raw.isEmpty) return null;
+  final dich = Uri.tryParse(raw);
+  final goc = Uri.tryParse(gocApi);
+  if (dich == null || goc == null) return null;
+  // `https` chứ không phải "khác http": `file:`, `content:` và `data:` đều
+  // không phải http, và không cái nào được phép tới đây.
+  if (dich.scheme != 'https') return null;
+  if (dich.host.isEmpty || dich.host.toLowerCase() != goc.host.toLowerCase()) {
+    return null;
+  }
+  // `Uri.port` tự điền cổng mặc định theo scheme, nên so trực tiếp là đủ.
+  if (dich.port != goc.port) return null;
+  if (!dich.path.startsWith('/d/') && !dich.path.startsWith('/c/')) return null;
+  return dich.toString();
+}
+
+/// Khung hồ sơ có được phép đi tới [dich] không.
+///
+/// Khung này mang kênh `EcSave`, nên mọi trang nó mở ra đều cầm được cầu nối
+/// vào app. Giữ nó ở lại đúng hai nơi: chính trang hồ sơ ([trang]) và host API.
+///
+/// Đây là lớp thứ HAI, không thay cho [ecUrlTaiDuoc]. Một lớp thì an toàn phụ
+/// thuộc vào câu "khung không bao giờ rời origin" — đúng cho tới lần ai đó
+/// thêm một link ra ngoài.
+bool ecDieuHuongDuoc(
+  String dich, {
+  required String trang,
+  required String gocApi,
+}) {
+  final d = Uri.tryParse(dich);
+  if (d == null || d.host.isEmpty || d.scheme != 'https') return false;
+  for (final cho in [trang, gocApi]) {
+    final c = Uri.tryParse(cho);
+    if (c == null) continue;
+    if (d.host.toLowerCase() == c.host.toLowerCase() && d.port == c.port) {
+      return true;
+    }
+  }
+  return false;
+}
+
 class _ClaimPageScreen extends StatefulWidget {
   const _ClaimPageScreen({
     required this.title,
@@ -7775,6 +8691,16 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
       )
       ..setNavigationDelegate(
         NavigationDelegate(
+          // Khung này mang kênh `EcSave`, nên trang nào nó mở ra cũng cầm được
+          // cầu nối vào app. Giữ nó ở lại trang hồ sơ và host API.
+          onNavigationRequest: (request) =>
+              ecDieuHuongDuoc(
+                request.url,
+                trang: widget.url,
+                gocApi: const EnvConfig().apiBaseUrl,
+              )
+              ? NavigationDecision.navigate
+              : NavigationDecision.prevent,
           onPageFinished: (_) {
             if (mounted) setState(() => _loading = false);
           },
@@ -7815,8 +8741,10 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
   Future<void> _save(BuildContext context, String payload) async {
     if (_saving) return;
     final data = _decodeSaveRequest(payload);
-    final url = data?.$1;
-    if (url == null || url.isEmpty) return;
+    // Hình dạng JSON đúng KHÔNG có nghĩa là đường dẫn tin được — xem
+    // [ecUrlTaiDuoc]. Chốt ngay đây, trước khi Dio chạm vào nó.
+    final url = ecUrlTaiDuoc(data?.$1, gocApi: const EnvConfig().apiBaseUrl);
+    if (url == null) return;
     final isPhoto = data!.$2;
     final l10n = context.l10n;
     setState(() => _saving = true);
@@ -7937,9 +8865,11 @@ class _ClaimPageScreenState extends State<_ClaimPageScreen> {
                       children: [
                         WebViewWidget(controller: _controller),
                         if (_loading)
-                          const ColoredBox(
+                          ColoredBox(
                             color: BrandColors.bg,
-                            child: Center(child: CupertinoActivityIndicator()),
+                            child: const Center(
+                              child: CupertinoActivityIndicator(),
+                            ),
                           ),
                       ],
                     ),
@@ -8007,9 +8937,9 @@ class _TermsSheetState extends State<_TermsSheet> {
     return FractionallySizedBox(
       heightFactor: 0.92,
       child: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: BrandColors.bg,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -8652,7 +9582,7 @@ class _ClaimPageActions extends StatelessWidget {
           cross: CrossAxisAlignment.center,
           padding: const EdgeInsets.symmetric(vertical: 12),
           children: [
-            const Icon(LucideIcons.copy, size: 18, color: PenColors.card),
+            Icon(LucideIcons.copy, size: 18, color: PenColors.card),
             PenText(
               l10n.claimCopyLink,
               size: 14,
@@ -8736,8 +9666,16 @@ EcSealLine? _sealLine(AppLocalizations l10n, EvidenceDto item) {
   return switch (item.sealStatus) {
     // `sealed` ⇒ renderer đã ghi đè bản thô ở R2 bằng bản có dấu giờ + mã vận
     // đơn nung vào khung hình (services/render.ts ký PUT lên đúng `r2_key`).
+    //
+    // Ba trường phụ (2026-09-17) — `anchor`, `signature`, `canVerify` — từng có
+    // chỗ VẼ trong màn chi tiết video từ 08/2026 nhưng chưa bao giờ được ĐỔ:
+    // hàng "Chứng thực độc lập" và nút "Xem trang kiểm chứng" tồn tại trong
+    // mười thứ tiếng mà không màn thật nào hiện. Đổ ở đây, cho cả dấu muộn.
     'sealed' => EcSealLine(
       label: l10n.sealSealed(_sealedAtLabel(item.sealedAt)),
+      anchor: _sealAnchor(l10n, item),
+      signature: _sealSignature(l10n, item),
+      canVerify: item.keyId != null,
     ),
     'pending' || 'rendering' => EcSealLine(
       label: l10n.sealWorking,
@@ -8749,9 +9687,48 @@ EcSealLine? _sealLine(AppLocalizations l10n, EvidenceDto item) {
     // clip này" — với nhóm này thì câu đó vừa sai vừa không làm được: kiện hàng
     // đã đi từ mấy tuần trước, và tệp không hề có lỗi. Bản gốc mất là do hệ
     // thống tự ghi đè lên nó trước 24/08. Xem services/late_seal.ts.
-    'sealed_late' => EcSealLine(label: l10n.sealLate, mustSay: true),
+    'sealed_late' => EcSealLine(
+      label: l10n.sealLate,
+      mustSay: true,
+      anchor: _sealAnchor(l10n, item),
+      signature: _sealSignature(l10n, item),
+      canVerify: item.keyId != null,
+    ),
     _ => EcSealLine(label: l10n.sealNone),
   };
+}
+
+/// "Chữ ký ZenPack · khoá k2" — chỉ khi hồ sơ đã ký (có mã khoá).
+String? _sealSignature(AppLocalizations l10n, EvidenceDto item) {
+  final key = item.keyId;
+  if (key == null || key.isEmpty) return null;
+  return l10n.sealSignature(key);
+}
+
+/// Tình trạng sổ ghi giờ công khai. `null` = không có gì để nói (clip chưa
+/// ký, hoặc máy chủ cũ không trả `ots_status`) — hàng ẩn, không hiện "Không có"
+/// cho một clip vừa ký xong đang chờ vào sổ.
+String? _sealAnchor(AppLocalizations l10n, EvidenceDto item) {
+  return switch (item.otsStatus) {
+    'confirmed' =>
+      item.otsBlockHeight == null
+          ? l10n.sealAnchorConfirmedNoBlock
+          : l10n.sealAnchorConfirmed(_nhomNghin(item.otsBlockHeight!)),
+    'pending' => l10n.sealAnchorPending,
+    'none' => l10n.sealAnchorNone,
+    _ => null,
+  };
+}
+
+/// 912345 → "912.345" — số mục sổ công khai, để người đối chiếu dò từng nhóm.
+String _nhomNghin(int n) {
+  final s = n.toString();
+  final b = StringBuffer();
+  for (var i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) b.write('.');
+    b.write(s[i]);
+  }
+  return b.toString();
 }
 
 String _sealedAtLabel(int? sealedAt) {
@@ -9031,7 +10008,7 @@ class _RouteLoadError extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.error_outline,
                   size: 42,
                   color: BrandColors.rec,
@@ -9040,7 +10017,7 @@ class _RouteLoadError extends StatelessWidget {
                 Text(
                   title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: BrandColors.ink,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -9050,7 +10027,7 @@ class _RouteLoadError extends StatelessWidget {
                 Text(
                   detail,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: BrandColors.mut,
                     fontSize: 13,
                     height: 1.4,
@@ -9074,6 +10051,7 @@ class _RouteLoadError extends StatelessWidget {
 /// the real recorded clips with their upload status and retry.
 class _QueueRoute extends StatelessWidget {
   const _QueueRoute({
+    required this.kho,
     required this.queue,
     required this.canDelete,
     required this.repo,
@@ -9081,6 +10059,9 @@ class _QueueRoute extends StatelessWidget {
     this.shopId,
     this.onBack,
   });
+
+  /// Nơi nhớ đã xem hướng dẫn màn nào.
+  final EcHuongDanKho kho;
 
   final EcUploadQueue queue;
 
@@ -9100,6 +10081,29 @@ class _QueueRoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return EcChiDan(
+      kho: kho,
+      man: EcMan.queue,
+      buoc: () {
+        final c = context;
+        return [
+          EcChiDanBuoc(
+            chu: c.l10n.uploadQueueTitle,
+            tieuDe: c.l10n.cdQueue1T,
+            than: c.l10n.cdQueue1B,
+          ),
+          EcChiDanBuoc(
+            chu: c.l10n.queueClearAction,
+            tieuDe: c.l10n.cdQueue2T,
+            than: c.l10n.cdQueue2B,
+          ),
+        ];
+      },
+      child: _noiDungChiDan(context),
+    );
+  }
+
+  Widget _noiDungChiDan(BuildContext context) {
     return ListenableBuilder(
       listenable: queue,
       builder: (context, _) {
@@ -9178,9 +10182,9 @@ class _QueueSheet extends StatelessWidget {
     final l10n = context.l10n;
     return Container(
       height: MediaQuery.sizeOf(context).height * 0.5,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: BrandColors.bg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
       ),
       child: Column(
         children: [
@@ -9194,7 +10198,7 @@ class _QueueSheet extends StatelessWidget {
                   child: Text(
                     l10n.uploadQueueTitle,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: BrandColors.ink,
@@ -9222,7 +10226,7 @@ class _QueueSheet extends StatelessWidget {
                   onPressed: () => _confirmClearQueue(context, queue, shopId),
                   child: Text(
                     l10n.queueClearAction,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: BrandColors.rec,
@@ -9484,9 +10488,107 @@ EcUploadItem _taskToItem(UploadTask task) => EcUploadItem(
   errorMessage: task.errorMessage,
 );
 
-String _hhmm(DateTime d) {
+String _hhmm(DateTime d0) {
+  final d = _theoMuiGio(d0);
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(d.hour)}:${two(d.minute)}';
+}
+
+/// Điểm đến sau màn chào (và sau ba màn giới thiệu).
+///
+/// Đã đăng nhập thì vào thẳng shop gần nhất rồi ra tab Vận đơn; `/shops` tự
+/// chọn hộ nhờ `_resumedSession`. Chưa đăng nhập mới đi từ màn đăng nhập.
+///
+/// Tách ra vì có HAI lối vào: nút Bắt đầu ở màn chào, và nút kết thúc ba màn
+/// giới thiệu. Chép đôi thì hai lối lệch nhau ở lần sửa sau.
+void _diTiep(BuildContext c, EcAuth auth) {
+  if (auth.currentUser != null) {
+    c.go('/shops', extra: _resumedSession);
+  } else {
+    c.go('/login');
+  }
+}
+
+/// Màn Thông tin xuất hoá đơn: tự đọc hồ sơ, tự lưu.
+///
+/// Route riêng chứ không nhét vào `_AccountRoute`: hồ sơ hoá đơn phải đọc lại
+/// từ máy chủ lúc mở (người dùng có thể vừa sửa ở web), và trộn lượt đọc đó vào
+/// màn Tài khoản là làm cả màn ấy chờ một thứ nó không dùng tới.
+class _HoaDonRoute extends StatefulWidget {
+  const _HoaDonRoute({required this.repo, this.onBack});
+
+  final EcRepository repo;
+  final VoidCallback? onBack;
+
+  @override
+  State<_HoaDonRoute> createState() => _HoaDonRouteState();
+}
+
+class _HoaDonRouteState extends State<_HoaDonRoute> {
+  late Future<AccountDto> _me = widget.repo.account();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<AccountDto>(
+      future: _me,
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return _RouteLoadError(
+            title: context.l10n.errorGenericRetry,
+            detail: _dataErrorText(context.l10n, snap.error!),
+            onRetry: () => setState(() => _me = widget.repo.account()),
+          );
+        }
+        if (!snap.hasData) {
+          return CupertinoPageScaffold(
+            backgroundColor: PenColors.bg,
+            child: const Center(child: CupertinoActivityIndicator()),
+          );
+        }
+        final me = snap.data!;
+        return EcHoaDonScreen(
+          onBack: widget.onBack,
+          banDau: EcHoaDon(
+            loai: me.invoiceKind,
+            ten: me.invoiceName ?? '',
+            maSoThue: me.invoiceTaxCode ?? '',
+            diaChi: me.invoiceAddress ?? '',
+            email: me.invoiceEmail ?? '',
+            ghiChu: me.invoiceNote ?? '',
+          ),
+          onLuu: (v) async {
+            // Chụp `l10n` và context của MÀN trước khi `await`: sau quãng chờ,
+            // `context` của closure này là context lúc dựng, và cái `mounted`
+            // gần nhất là của State — hai thứ khác nhau, đúng thứ lint cảnh báo.
+            final l10n = context.l10n;
+            final man = context;
+            try {
+              await widget.repo.updateProfile(
+                hoaDon: {
+                  'invoice_kind': v.loai,
+                  'invoice_name': v.ten,
+                  'invoice_tax_code': v.maSoThue,
+                  'invoice_address': v.diaChi,
+                  'invoice_email': v.email,
+                  'invoice_note': v.ghiChu,
+                },
+              );
+              // Kiểm `man.mounted`, không phải `mounted` của State: lint đòi
+              // đúng cái context sắp dùng, và ở đây hai thứ đó khác nhau.
+              if (!man.mounted) return null;
+              _toast(man, l10n.toastInfoSaved);
+              widget.onBack?.call();
+              return null;
+            } on Object catch (error) {
+              // Trả câu lỗi cho MÀN hiện, không nuốt: máy chủ kiểm lại một lượt
+              // nữa và có thể từ chối vì lý do client chưa biết.
+              return _dataErrorText(l10n, error);
+            }
+          },
+        );
+      },
+    );
+  }
 }
 
 GoRouter _buildRouter(
@@ -9498,13 +10600,29 @@ GoRouter _buildRouter(
   ValueNotifier<String> recordingType,
   ValueNotifier<String?> recordingTypeId,
   PickAvatarPath pickAvatarPath, {
+  ValueNotifier<String>? theme,
+  ValueNotifier<String?>? muiGio,
+  EcDangKyThongBao? thongBao,
   ShareService? shareService,
   VideoPlayerService? videoPlayerService,
   Dio? downloadDio,
   VoiceAnnouncerService? voiceAnnouncer,
   ValueNotifier<bool>? isRecordTabActive,
   _EvidenceCountOverrides? evidenceCountOverrides,
+  EcHuongDanKho? huongDan,
 }) {
+  // Loại video đã chọn ở popup NGAY TRƯỚC khi vào màn quay.
+  //
+  // Một lượt thôi: màn quay đọc xong là cờ tắt. Vào `/record` bằng đường khác
+  // (khôi phục phiên, deep link) thì cờ tắt sẵn nên màn quay vẫn tự hỏi như
+  // trước — popup mới là lối chính, không phải lối duy nhất.
+  var daChonLoaiTruocKhiQuay = false;
+  bool nhanCoDaChonLoai() {
+    final co = daChonLoaiTruocKhiQuay;
+    daChonLoaiTruocKhiQuay = false;
+    return co;
+  }
+
   final share = shareService ?? _maybeGetIt<ShareService>();
   final videoPlayer = videoPlayerService ?? _maybeGetIt<VideoPlayerService>();
   final downloader = downloadDio ?? Dio();
@@ -9518,6 +10636,13 @@ GoRouter _buildRouter(
   // biết người dùng đi tới màn nào hay rơi ở bước nào. Null khi DI chưa dựng
   // (widget test) — lúc đó danh sách rỗng, router vẫn chạy.
   final analyticsObserver = _maybeGetIt<AnalyticsRouteObserver>();
+  // Vắng kho thì TẮT hẳn hướng dẫn, không phải "chưa xem".
+  //
+  // Bản thật luôn đưa kho vào (xem `main.dart`). Chỗ duy nhất bỏ trống là bộ
+  // kiểm thử — và ở đó tấm hướng dẫn bật lên sẽ che mất thứ bài test đang tìm,
+  // làm hàng chục bài không liên quan cùng đỏ một lúc.
+  final kho = huongDan ?? const EcHuongDanKhoTat();
+
   return GoRouter(
     observers: [?analyticsObserver],
     // Override the start route for screenshot/QA via --dart-define=EC_START=/home.
@@ -9533,12 +10658,26 @@ GoRouter _buildRouter(
         // routing to /login. A still-signed-in user goes straight to shop
         // selection, same destination a fresh login lands on.
         builder: (c, s) => EcSplashScreen(
-          // Đã đăng nhập thì vào thẳng shop gần nhất rồi ra tab Vận đơn;
-          // `/shops` tự chọn hộ nhờ `_resumedSession` (xem route '/shops').
-          // Chưa đăng nhập mới đi từ màn đăng nhập.
-          onStart: () => auth.currentUser != null
-              ? c.go('/shops', extra: _resumedSession)
-              : c.go('/login'),
+          // Lần đầu mở app trên máy này thì xem ba màn giới thiệu trước.
+          //
+          // Đặt SAU nút Bắt đầu chứ không phải trước màn chào: màn chào đã là
+          // thứ đầu tiên người dùng thấy, chèn thêm một tầng trước nó là bắt
+          // họ bấm qua hai lớp mới tới được app.
+          onStart: () =>
+              kho.daXemGioiThieu() ? _diTiep(c, auth) : c.go('/gioi-thieu'),
+        ),
+      ),
+      GoRoute(
+        path: '/gioi-thieu',
+        builder: (c, s) => EcGioiThieuScreen(
+          // "Bắt đầu" và "Bỏ qua" đi chung một lối: cả hai đều nghĩa là đừng
+          // hiện lại nữa. Đánh dấu rồi mới đi tiếp — đi trước thì một lượt
+          // thoát app giữa chừng để lại dấu chưa ghi, và ba màn kia bật lên
+          // lại ở lần mở sau.
+          onXong: () async {
+            await kho.danhDauGioiThieu();
+            if (c.mounted) _diTiep(c, auth);
+          },
         ),
       ),
       GoRoute(
@@ -9558,12 +10697,17 @@ GoRouter _buildRouter(
         builder: (c, s) => _ForgotRoute(auth: auth, language: language),
       ),
       GoRoute(
+        path: '/phone-login',
+        builder: (c, s) => _PhoneLoginRoute(auth: auth, repo: repo),
+      ),
+      GoRoute(
         path: '/shops',
         // /shops is entered forward from login and backward from the app; its
         // slide direction comes from the navigation's `extra` hint.
         pageBuilder: (c, s) => _directionalPage(
           s,
           _ChooseShopRoute(
+            kho: kho,
             repo: repo,
             // Chỉ phiên còn sống mở lại app mới vào thẳng shop gần nhất (đúng
             // ghi chú trên màn này). Đăng nhập là hành động có chủ đích nên
@@ -9579,7 +10723,7 @@ GoRouter _buildRouter(
             onCreateShop: () => c.push('/create-shop'),
             onLogout: () {
               _analytics()?.trackSignOut();
-              _signOutAll(auth).then((_) async {
+              _signOutAll(auth, repo).then((_) async {
                 await _forgetRememberedShop();
                 if (c.mounted) c.go('/login', extra: 'back');
               });
@@ -9590,6 +10734,7 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/create-shop',
         builder: (c, s) => _CreateShopRoute(
+          kho: kho,
           repo: repo,
           onBack: () => _back(c, '/shops'),
           onCreated: (shop) {
@@ -9621,11 +10766,18 @@ GoRouter _buildRouter(
           // of a stale one from before the switch.
           final onRecordTab =
               navigationShell.currentIndex == _recordBranchIndex;
-          // Bước vào tab ghi hình thì loại video về mặc định, để sheet mà
-          // EcRecordRoute mở ngay sau đó tick sẵn "Đóng hàng" chứ không phải
-          // loại của lượt quay trước. Không ai lắng nghe notifier này nên gán
-          // trong build là an toàn (chỉ đọc lúc dựng route và lúc mở sheet).
-          if (onRecordTab && !(isRecordTabActive?.value ?? false)) {
+          // Bước vào tab ghi hình thì loại video về mặc định, để lượt hỏi
+          // loại ngay sau đó tick sẵn "Đóng hàng" chứ không phải loại của lượt
+          // quay trước. Không ai lắng nghe notifier này nên gán trong build là
+          // an toàn (chỉ đọc lúc dựng route và lúc mở sheet).
+          //
+          // TRỪ khi loại vừa được chọn ở popup trước cửa màn quay: lúc đó
+          // `recordingType` chính là thứ người dùng vừa bấm cách đây một nhịp,
+          // và reset nó là xoá đúng lựa chọn vừa hỏi — màn quay mở ra mang
+          // "Đóng hàng" bất kể họ chọn gì.
+          if (onRecordTab &&
+              !(isRecordTabActive?.value ?? false) &&
+              !daChonLoaiTruocKhiQuay) {
             recordingType.value = kEcDefaultVideoType;
             // Id phải về null cùng lúc, nếu không loại mặc định "Đóng hàng"
             // của lượt này mang id của loại đã chọn ở lượt quay trước.
@@ -9651,11 +10803,13 @@ GoRouter _buildRouter(
                     );
                   }
                   return _OrdersRoute(
+                    kho: kho,
                     repo: repo,
                     queue: queue,
                     shopId: shop.id,
                     shopName: shop.name,
                     shopPlatform: shop.platform,
+                    shopMeta: shop.meta,
                     evidenceCountOverrides: evidenceCountOverrides,
                     onBack: () => c.go('/shops', extra: 'back'),
                     // Tên shop trên header là lối vào Chi tiết cửa hàng —
@@ -9668,7 +10822,24 @@ GoRouter _buildRouter(
                     // mà người dùng đã ở trong đúng một shop rồi: bắt họ chọn
                     // lại chính cái đang mở là một bước thừa. Màn đó đã bỏ.
                     onSettings: () => c.push('/shop-detail', extra: shop),
-                    onNavRecord: () => c.go('/record'),
+                    // Hỏi loại video TRƯỚC, chọn xong mới vào màn quay —
+                    // xem `_hoiLoaiVideo`. Không chọn thì đứng nguyên đây.
+                    onNavRecord: () async {
+                      final loai = await _hoiLoaiVideo(
+                        c,
+                        sheetContext: c,
+                        repo: repo,
+                        shop: shop,
+                        kho: kho,
+                        recordingType: recordingType,
+                        recordingTypeId: recordingTypeId,
+                        mandatory: true,
+                        onBack: () {},
+                      );
+                      if (loai == null || loai.isEmpty) return;
+                      daChonLoaiTruocKhiQuay = true;
+                      if (c.mounted) c.go('/record');
+                    },
                     onNavClaims: () => c.go('/claims'),
                     // Vận đơn giữ màn hàng đợi ĐẦY ĐỦ: ở đây người dùng
                     // đang ngồi rà soát, không phải đang cầm máy quay.
@@ -9701,11 +10872,14 @@ GoRouter _buildRouter(
                       );
                     }
                     return EcRecordRoute(
+                      kho: kho,
+                      daChonLoaiTruoc: nhanCoDaChonLoai,
                       permissions: _maybeGetIt<PermissionService>(),
                       queueCount: _pendingUploads(queue, shop.id),
                       initialType: recordingType.value,
                       initialResolution: shop.resolution,
                       maxRecording: shop.clipBudget.maxRecording,
+                      caiDatQuay: shop.caiDatQuay,
                       isActive: isRecordTabActive,
                       onBack: () => c.go('/home'),
                       onQueueTap: () =>
@@ -9716,107 +10890,25 @@ GoRouter _buildRouter(
                       verifyReturnCode: (code) =>
                           _verifyReturnCode(c, repo, shop.id, code),
                       voiceAnnouncer: voice,
-                      onRequestType:
-                          (
-                            sheetContext, {
-                            mandatory = false,
-                          }) async {
-                            final router = GoRouter.of(c);
-                            final rootNavigator = Navigator.of(
-                              c,
-                              rootNavigator: true,
-                            );
-                            // Vòng lặp chứ không thoát sau khi quản lý loại: màn
-                            // quay hiểu `null` là "bỏ qua, quay với loại mặc
-                            // định", nên trả null lúc vừa đi sửa danh sách sẽ
-                            // khoá luôn loại cũ mà không hỏi lại.
-                            while (true) {
-                              final selected = await _showTypeSheet(
-                                sheetContext,
-                                repo: repo,
-                                shopId: shop.id,
-                                selectedType: recordingType.value,
-                                mandatory: mandatory,
-                              );
-                              // Bấm back trong sheet: không quay nữa, sang thẳng
-                              // tab Vận đơn. Trả `null` để màn quay hiểu là chưa
-                              // chọn loại nên đừng dựng camera.
-                              //
-                              // Tab Vận đơn nằm ở `/home`, KHÔNG phải `/orders` —
-                              // `/orders` không tồn tại nên `go` im lặng không đi
-                              // đâu cả, đúng triệu chứng "bấm back không ra gì".
-                              if (selected == _typeSheetBackResult) {
-                                if (c.mounted) c.go('/home');
-                                return null;
-                              }
-                              if (selected == _manageVideoTypesResult) {
-                                await rootNavigator.push<void>(
-                                  // Cupertino chứ không Material: app chạy
-                                  // trong `CupertinoApp`, nên mọi route khác
-                                  // trượt ngang kiểu iOS. `MaterialPageRoute`
-                                  // không có Material theme để tra, nên nó rơi
-                                  // về mặc định của TỪNG NỀN — trượt ngang
-                                  // trên iOS, phóng to trên Android. Đúng một
-                                  // đường vào màn này lại mở kiểu khác hẳn,
-                                  // và chỉ trên một nền.
-                                  CupertinoPageRoute(
-                                    builder: (_) => _ShopDetailRoute(
-                                      repo: repo,
-                                      shop: shop,
-                                      onBack: rootNavigator.maybePop,
-                                      onMemberMore: (member) => router
-                                          .push(
-                                            '/member-actions',
-                                            extra: _MemberActionExtra(
-                                              shopId: shop.id,
-                                              member: member,
-                                            ),
-                                          )
-                                          .then((_) {}),
-                                      onInviteMember: () => router
-                                          .push(
-                                            '/invite-member',
-                                            extra: shop.id,
-                                          )
-                                          .then((_) {}),
-                                      onShopQr: () =>
-                                          _showShopJoinQr(c, repo, shop.id),
-                                      onEditType: (type) => router
-                                          .push(
-                                            '/create-type',
-                                            extra: (shop.id, type),
-                                          )
-                                          .then((_) {}),
-                                      onDeleteType: (type) => router
-                                          .push(
-                                            '/confirm-delete',
-                                            extra: (shop.id, type),
-                                          )
-                                          .then((_) {}),
-                                      onAddType: () => router
-                                          .push(
-                                            '/create-type',
-                                            extra: (shop.id, null),
-                                          )
-                                          .then((_) {}),
-                                    ),
-                                  ),
-                                );
-                                if (!c.mounted) return null;
-                                continue;
-                              }
-                              if (selected != null &&
-                                  selected.label.isNotEmpty) {
-                                // Nhãn và id chốt CÙNG một lúc, từ cùng một
-                                // dòng người dùng vừa bấm. Tách hai lượt đọc là
-                                // mở lại đúng khe hở đã sửa: loại đổi tên giữa
-                                // chừng thì clip mang id của loại khác.
-                                recordingType.value = selected.label;
-                                recordingTypeId.value = selected.id;
-                              }
-                              return selected?.label;
-                            }
-                          },
+                      onRequestType: (sheetContext, {mandatory = false}) =>
+                          _hoiLoaiVideo(
+                            c,
+                            sheetContext: sheetContext,
+                            repo: repo,
+                            shop: shop,
+                            kho: kho,
+                            recordingType: recordingType,
+                            recordingTypeId: recordingTypeId,
+                            mandatory: mandatory,
+                            // Bấm back trong sheet khi ĐANG ở màn quay: không
+                            // quay nữa, sang thẳng tab Vận đơn. Tab đó nằm ở
+                            // `/home`, KHÔNG phải `/orders` — `/orders` không
+                            // tồn tại nên `go` im lặng không đi đâu cả, đúng
+                            // triệu chứng "bấm back không ra gì".
+                            onBack: () {
+                              if (c.mounted) c.go('/home');
+                            },
+                          ),
                       onNavOrders: () => c.go('/home'),
                       onNavClaims: () => c.go('/claims'),
                       onSettings: () => c.push('/type-sheet'),
@@ -9868,13 +10960,37 @@ GoRouter _buildRouter(
             routes: [
               GoRoute(
                 path: '/claims',
-                builder: (c, s) => _ClaimListRoute(
-                  repo: repo,
-                  shopId: _selected(selectedShop)?.id ?? '',
-                  onNavOrders: () => c.go('/home'),
-                  onNavRecord: () => c.go('/record'),
-                  onCreate: () => c.push('/create-claim'),
-                ),
+                builder: (c, s) {
+                  final shop = _selected(selectedShop);
+                  return _ClaimListRoute(
+                    kho: kho,
+                    repo: repo,
+                    shopId: shop?.id ?? '',
+                    onNavOrders: () => c.go('/home'),
+                    // Cùng lối với tab Ghi hình bên Vận đơn: hỏi loại trước,
+                    // chọn xong mới vào màn quay. Chưa chọn shop thì không có
+                    // danh sách loại để hỏi — vào thẳng, màn quay tự xử.
+                    onNavRecord: shop == null
+                        ? () => c.go('/record')
+                        : () async {
+                            final loai = await _hoiLoaiVideo(
+                              c,
+                              sheetContext: c,
+                              repo: repo,
+                              shop: shop,
+                              kho: kho,
+                              recordingType: recordingType,
+                              recordingTypeId: recordingTypeId,
+                              mandatory: true,
+                              onBack: () {},
+                            );
+                            if (loai == null || loai.isEmpty) return;
+                            daChonLoaiTruocKhiQuay = true;
+                            if (c.mounted) c.go('/record');
+                          },
+                    onCreate: () => c.push('/create-claim'),
+                  );
+                },
               ),
             ],
           ),
@@ -9883,6 +10999,10 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/account',
         builder: (c, s) => _AccountRoute(
+          kho: kho,
+          theme: theme,
+          muiGio: muiGio,
+          thongBao: thongBao,
           auth: auth,
           repo: repo,
           language: language,
@@ -9906,6 +11026,7 @@ GoRouter _buildRouter(
             );
           }
           return _OrderRoute(
+            kho: kho,
             repo: repo,
             queue: queue,
             share: share,
@@ -10018,6 +11139,21 @@ GoRouter _buildRouter(
                           videoPlayer,
                           live,
                           extra?.tracking ?? live?.tracking ?? '',
+                        ),
+                  // Trang kiểm chứng công khai của CLIP NÀY — id nằm ở extra,
+                  // không ở EcVideoDetail (màn không cần biết id để vẽ).
+                  onVerify: extra?.evidenceId == null
+                      ? null
+                      : () => _openSupport(
+                          pageContext,
+                          repo.verifyUrl(extra!.evidenceId!),
+                        ),
+                  onCopyVerifyLink: extra?.evidenceId == null
+                      ? null
+                      : () => _copyText(
+                          pageContext,
+                          repo.verifyUrl(extra!.evidenceId!),
+                          c.l10n.sealVerifyLinkTitle,
                         ),
                   onDelete: () async {
                     final evidenceId = extra?.evidenceId;
@@ -10245,6 +11381,7 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/queue',
         builder: (c, s) => _QueueRoute(
+          kho: kho,
           queue: queue,
           repo: repo,
           player: videoPlayer,
@@ -10316,7 +11453,7 @@ GoRouter _buildRouter(
           onAccountTap: () => c.push('/account'),
           onLogout: () {
             _analytics()?.trackSignOut();
-            _signOutAll(auth).then((_) async {
+            _signOutAll(auth, repo).then((_) async {
               await _forgetRememberedShop();
               if (c.mounted) c.go('/login', extra: 'back');
             });
@@ -10342,6 +11479,7 @@ GoRouter _buildRouter(
           // bấm xong mới ăn lỗi, và không hiểu vì sao.
           final readOnly = _shopDetailIsReadOnly(shop);
           return _ShopDetailRoute(
+            kho: kho,
             repo: repo,
             shop: shop,
             readOnly: readOnly,
@@ -10368,6 +11506,8 @@ GoRouter _buildRouter(
             onTapStorage: () => c
                 .push<void>('/storage', extra: (shop.id, shop.role == 'owner'))
                 .then((_) {}),
+            onTapCaiDatQuay: () =>
+                c.push<void>('/cai-dat-quay', extra: shop).then((_) {}),
             onDeleteShop: readOnly
                 ? null
                 : () => _confirmDeleteShop(c, repo, shop),
@@ -10524,6 +11664,46 @@ GoRouter _buildRouter(
         ),
       ),
       GoRoute(
+        path: '/hoa-don',
+        builder: (c, s) =>
+            _HoaDonRoute(repo: repo, onBack: () => _back(c, '/account')),
+      ),
+      GoRoute(
+        path: '/cai-dat-quay',
+        builder: (c, s) {
+          final shop = s.extra is EcShopSummary
+              ? s.extra! as EcShopSummary
+              : _selected(selectedShop);
+          if (shop == null) {
+            return _RouteLoadError(
+              title: c.l10n.accountNoShop,
+              detail: c.l10n.noShopSelectedRecordDetail,
+              onRetry: () => c.go('/shops'),
+            );
+          }
+          return EcCaiDatQuayScreen(
+            caiDat: shop.caiDatQuay,
+            // Nhân viên XEM được nhưng không sửa: máy của họ chạy theo các cài
+            // đặt này. Giấu hẳn màn đi là họ không có cách nào biết vì sao máy
+            // mình quay khác máy người bên cạnh.
+            readOnly: shop.role == 'staff',
+            onBack: () => _back(c, '/shop-detail'),
+            onDoi: (moi) async {
+              // Cập nhật bản trong bộ nhớ NGAY: màn quay đọc từ đây, nên đợi
+              // máy chủ trả lời xong mới đổi là người dùng gạt công tắc rồi
+              // sang màn quay thấy cài đặt cũ.
+              selectedShop.value = shop.copyWith(caiDatQuay: moi);
+              try {
+                await repo.updateShop(shop.id, caiDatQuay: moi.toJson());
+              } on Object catch (error) {
+                debugPrint('luu_cai_dat_quay_that_bai: $error');
+                if (c.mounted) _toast(c, c.l10n.errorGenericRetry);
+              }
+            },
+          );
+        },
+      ),
+      GoRoute(
         path: '/storage',
         builder: (c, s) {
           // `(shopId, canManage)`: vai trò đi kèm chứ không đọc lại — màn này
@@ -10554,6 +11734,7 @@ GoRouter _buildRouter(
       GoRoute(
         path: '/quota',
         builder: (c, s) => _QuotaRoute(
+          kho: kho,
           repo: repo,
           queue: queue,
           shopId: _selected(selectedShop)?.id,
@@ -10584,6 +11765,7 @@ GoRouter _buildRouter(
               ? extra
               : (_selected(selectedShop)?.id ?? '', '');
           return _ClaimDetailRoute(
+            kho: kho,
             repo: repo,
             shopId: shopId,
             dossierId: dossierId,

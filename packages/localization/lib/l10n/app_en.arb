@@ -332,7 +332,7 @@
   "accountFullNameRequired": "Please enter your full name",
   "phoneOptionalLabel": "Phone number (optional)",
   "phoneOptionalHint": "Optional — for account support only",
-  "phoneInvalid": "Invalid phone number",
+  "phoneInvalid": "Phone number must be 8-15 digits.",
   "accountSaveChanges": "Save changes",
   "accountEmailLockedHint": "Email used to sign in — cannot be changed",
   "commonContinue": "Continue",
@@ -476,7 +476,11 @@
   "storageProbeStepDelete": "Delete the file",
   "storageErrorCode": "Error code: {code}",
   "@storageErrorCode": {
-    "placeholders": { "code": { "type": "String" } }
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
   },
   "detailStorage": "Storage",
   "storageNameCloud": "ZenPack Cloud",
@@ -596,6 +600,8 @@
   "tooltipBack": "Back",
   "tooltipSwitchCamera": "Switch camera",
   "tooltipEnterTracking": "Enter tracking code",
+  "scanPickImage": "Pick a photo",
+  "scanNoCodeInImage": "No tracking code in this photo",
   "tooltipZoomIn": "Zoom in",
   "tooltipZoomOut": "Zoom out",
   "captureResolution": "Resolution",
@@ -919,7 +925,6 @@
   "@phonePlaceholder": {
     "description": "Placeholder for the optional phone field."
   },
-  "phoneInvalid": "Phone number must be 8-15 digits.",
   "@phoneInvalid": {
     "description": "The optional phone field holds something that is not a plausible phone number. Only checked when the field is non-empty."
   },
@@ -1298,9 +1303,6 @@
   "accountFeedbackNote": "Share your thoughts to make ZenPack better",
   "accountRateApp": "Rate the app",
   "accountRateAppNote": "Support ZenPack development",
-  "supportFacebook": "Message on Facebook",
-  "supportZalo": "Message on Zalo",
-  "supportCall": "Call support",
   "sheetCustomMin": "Enter {min} {unit} or more",
   "@sheetCustomMin": {
     "placeholders": {
@@ -1430,7 +1432,11 @@
   "storageDriveCurrentAccount": "Currently connected: {email}. Sign in with that address to keep the same Drive, or pick another to switch.",
   "@storageDriveCurrentAccount": {
     "description": "Đầu tấm cấp quyền Drive. Google chỉ chào bảng chọn tài khoản khi WebView còn cookie phiên — cài lại app là mất, và người dùng đứng trước một ô email trống không biết gõ gì.",
-    "placeholders": { "email": { "type": "String" } }
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
   },
   "storageDriveAccount": "Drive account",
   "storageDriveSwitchAccount": "Switch account",
@@ -1588,7 +1594,7 @@
       }
     }
   },
-  "storageConnectNote": "We write\u2013read\u2013delete a tiny test object before saving. Note: periodic audits download ~1% of videos weekly to verify them \u2014 some providers charge egress. If your storage loses data, the video cannot be recovered from anywhere.",
+  "storageConnectNote": "We write–read–delete a tiny test object before saving. Note: periodic audits download ~1% of videos weekly to verify them — some providers charge egress. If your storage loses data, the video cannot be recovered from anywhere.",
   "@storageConnectNote": {
     "description": "Dưới form S3, đúng câu bản web dùng — nói cả chuyện phí egress của lượt rà định kỳ."
   },
@@ -1609,5 +1615,292 @@
   "storageDriveRejected": "Google refused the grant. Try again; if it keeps failing, tell your admin.",
   "@storageDriveRejected": {
     "description": "Máy chủ trả `code_exchange_failed` / `folder_create_failed` / `probe_failed` — hỏng ở phía Google hoặc lúc tạo thư mục, không phải thiếu cấu hình."
+  },
+  "authSignInPhone": "Sign in with phone number",
+  "phoneLoginTitle": "Sign in with phone number",
+  "phoneLoginSubtitle": "Enter your phone number and we will send a 6-digit code.",
+  "phoneLoginNumberLabel": "Phone number",
+  "phoneLoginNumberHint": "09xx xxx xxx",
+  "phoneLoginInvalid": "Invalid phone number",
+  "phoneLoginViaZalo": "Send code via Zalo",
+  "phoneLoginViaSms": "Send code via SMS",
+  "otpTitle": "Enter the code",
+  "otpSentTo": "We sent a 6-digit code to {phone}.",
+  "otpLabel": "Verification code",
+  "otpConfirm": "Confirm",
+  "otpResend": "Resend code",
+  "otpResendIn": "Resend in {seconds}s",
+  "otpChangePhone": "Use another number",
+  "otpWrong": "Wrong code. Check the message again.",
+  "otpExpired": "The code expired. Request a new one.",
+  "otpUsedUp": "That code can no longer be used. Request a new one.",
+  "otpTooSoon": "Just sent. Wait a moment before trying again.",
+  "otpRateLimited": "Too many requests. Try again in a few minutes.",
+  "otpSendFailed": "Could not send the code. Try the other channel.",
+  "otpNotConfigured": "Code delivery is not available right now. Please use another method.",
+  "@otpSentTo": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "@otpResendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "otpFromOa": "The message comes from the Zalo Official Account {oa} — look for that name.",
+  "@otpFromOa": {
+    "placeholders": {
+      "oa": {
+        "type": "String"
+      }
+    }
+  },
+  "hdDaHieu": "Got it",
+  "hdDong": "Close tips",
+  "hdXemLai": "Show tips again",
+  "hdDaMoLai": "Tips will show again as you visit each screen.",
+  "hdHomeTitle": "Overview screen",
+  "hdHome1": "A quick read on orders, storage used and what needs attention today.",
+  "hdHome2": "Each status card jumps straight to the orders in that state.",
+  "hdHome3": "Reopen these tips any time from the support button.",
+  "hdRecordTitle": "Recording screen",
+  "hdRecord1": "Pick the goods camera and the receipt camera in Settings before recording.",
+  "hdRecord2": "Scan the tracking code, then record — the video attaches to that order.",
+  "hdRecord3": "IP cameras are for filming goods only, never for the receipt camera.",
+  "hdOrderTitle": "Order detail",
+  "hdOrder1": "Every clip and photo for one tracking code, newest first.",
+  "hdOrder2": "A sealed clip is the final version — usable in a marketplace claim.",
+  "hdOrder3": "Deleting here only hides it from your list; the original is kept.",
+  "hdClaimsTitle": "Claim dossiers",
+  "hdClaims1": "Bundle evidence from several orders into one dossier for the marketplace.",
+  "hdClaims2": "Each dossier gets its own link; the recipient needs no account.",
+  "hdClaims3": "Videos in a dossier are kept 15 extra days after it closes.",
+  "hdClaimDetailTitle": "Dossier detail",
+  "hdClaimDetail1": "Add or remove orders before you send the dossier.",
+  "hdClaimDetail2": "Copy the dossier link to paste into the marketplace claim.",
+  "hdClaimDetail3": "Close it when done — the videos still last another 15 days.",
+  "hdShopsTitle": "Shops",
+  "hdShops1": "Each shop has its own storage, plan and staff.",
+  "hdShops2": "Invite staff into a shop and set what each person may do.",
+  "hdShops3": "Switch the shop you are working in at the top of the page.",
+  "hdQuotaTitle": "Plan",
+  "hdQuota1": "The plan sets your storage size and how long videos are kept.",
+  "hdQuota2": "Storage is counted per shop, not per user.",
+  "hdQuota3": "You are warned before storage fills up — nothing is deleted silently.",
+  "hdQueueTitle": "Upload queue",
+  "hdQueue1": "Clips already recorded but not yet in storage wait here.",
+  "hdQueue2": "On a weak connection just leave them — the app retries when signal returns.",
+  "hdQueue3": "Do not uninstall while clips are waiting; they exist only on this phone.",
+  "gtBoQua": "Skip",
+  "gtTiep": "Next",
+  "gtBatDau": "Start now",
+  "gt1Title": "Film while you pack",
+  "gt1Body": "One video per order: what went in, how it was packed, which label went on. Record and you are done.",
+  "gt2Title": "Tied to the tracking code",
+  "gt2Body": "Scan the label and the video attaches itself to that order. Later, one code brings up every clip for it.",
+  "gt3Title": "Proof when a claim arrives",
+  "gt3Body": "Bundle clips from several orders into one dossier and send the link to the marketplace. No account needed to view it.",
+  "deletePwTitle": "Enter your password",
+  "deletePwBody": "This cannot be undone, so please re-enter your password before the account is deleted.",
+  "deletePwOk": "Confirm",
+  "hdNoShopTitle": "Start with a shop",
+  "hdNoShop1": "Every video and piece of evidence belongs to a shop, so create one first.",
+  "hdNoShop2": "Then pick the marketplaces you sell on and invite your staff.",
+  "hdNoShop3": "If someone invited you, use “Join with an invite” instead of creating one.",
+  "cdNoShopTaoTitle": "Create a shop first",
+  "cdNoShopTaoBody": "Every video and piece of evidence belongs to a shop. Tap here to create one and pick your marketplaces.",
+  "cdNoShopMoiTitle": "Invited? Start here",
+  "cdNoShopMoiBody": "If an owner invited you, tap here and enter the invite code — no need to create a shop.",
+  "cdNoShopTkTitle": "Your profile",
+  "cdNoShopTkBody": "Name, language, sign-in methods and account deletion all live here.",
+  "cdTaoShopTenTitle": "Name your shop",
+  "cdTaoShopTenBody": "Only you and your staff see this name; it tells shops apart when you have several. You can change it later.",
+  "cdTaoShopNutTitle": "Pick a marketplace, then create",
+  "cdTaoShopNutBody": "Choose where you sell above, then tap here. Once the shop exists you can start recording.",
+  "cdHome1T": "Find one order fast",
+  "cdHome1B": "Type a tracking code here to jump straight to its evidence.",
+  "cdHome2T": "Filter by state",
+  "cdHome2B": "See only orders still uploading, already done, or failed.",
+  "cdQueue1T": "Clips waiting to upload",
+  "cdQueue1B": "Weak signal? Clips wait here and retry when the connection returns.",
+  "cdQueue2T": "Clear the queue",
+  "cdQueue2B": "Only removes clips not yet uploaded. They are gone for good — the server has no copy.",
+  "cdClaims1T": "Bundle evidence for the marketplace",
+  "cdClaims1B": "Several orders become one dossier you send as a single link.",
+  "cdRec1T": "Scan the tracking code",
+  "cdRec1B": "Hold the label in the frame. The app reads it and attaches the video to that order.",
+  "cdOrder1T": "Evidence for this order",
+  "cdOrder1B": "Every clip and photo for this tracking code, newest on top.",
+  "cdClaimD1T": "Link to send the marketplace",
+  "cdClaimD1B": "Copy this link into your claim. The recipient needs no account to view it.",
+  "cdShops1T": "Switch shop",
+  "cdShops1B": "Each shop has its own storage, plan and staff. Tap to change.",
+  "cdQuota1T": "Storage used",
+  "cdQuota1B": "Your plan sets video count and retention. You are warned before it fills — nothing is deleted silently.",
+  "cdAcc1T": "Your plan",
+  "cdAcc1B": "See videos left, how long they are kept, and upgrade here.",
+  "cdAcc2T": "Sign-in methods",
+  "cdAcc2B": "Add Google or Apple for faster sign-in — no password to remember.",
+  "cdShopD1T": "Video types",
+  "cdShopD1B": "Name the kinds of video you record — packing, returns — so they are easy to find later.",
+  "cdShopD2T": "Invite staff",
+  "cdShopD2B": "Invite people to work with you and set what each may do.",
+  "cdRec2T": "Blurred label? Type it",
+  "cdRec2B": "If the label is smudged or torn, tap here to enter the code by hand.",
+  "notifRow": "Notifications",
+  "notifOn": "On",
+  "notifOff": "Off",
+  "notifAskTitle": "Turn on notifications?",
+  "notifAskBody": "ZenPack will tell you when your plan is about to expire, when videos are about to be deleted, when someone joins your shop — and remind you to record while packing.",
+  "notifAskYes": "Turn on",
+  "notifAskNo": "Not now",
+  "notifDenied": "You declined earlier. Open your device Settings to turn it back on.",
+  "themeRow": "Appearance",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "tzRow": "Time zone",
+  "tzAuto": "Device",
+  "tzNote": "Only changes the times shown on screen.",
+  "capTitle": "Recording settings",
+  "capHint": "Applies to EVERY device recording for this shop, not just yours.",
+  "capFps": "Frame rate",
+  "capFpsHint": "Devices that cannot hit this fall back to the nearest supported rate.",
+  "capAuto": "Automatic",
+  "capScanKind": "Code types",
+  "capScanHint": "Which codes the scanner accepts.",
+  "capScanQr": "QR only",
+  "capScanBar": "Barcodes only",
+  "capScanBoth": "Both",
+  "capEndDelay": "Wait before a code can end the clip",
+  "capEndDelayHint": "After a clip opens, wait this long before a code may end it.",
+  "capRearm": "Wait before scanning a new code",
+  "capRearmHint": "Stops the bill still lying in frame from reopening a clip for the same order.",
+  "capTail": "Keep recording after the end code",
+  "capTailHint": "After the end code is scanned, record this many more seconds.",
+  "capAudio": "Record audio",
+  "capAudioHint": "Packing tables have people talking — turning this on records that too.",
+  "capStatusSound": "Status sounds",
+  "capStatusSoundHint": "Spoken and beeped status, so the operator need not watch the screen.",
+  "capAutoConfig": "Auto video config",
+  "capAutoConfigHint": "Drops one resolution step when the device is low on space.",
+  "capBattery": "Battery saver",
+  "capBatteryHint": "Slows scanning. Trade-off: bills take longer to be picked up.",
+  "capWifi": "Upload on Wi-Fi only",
+  "capWifiHint": "Devices on mobile data STOP uploading; clips pile up until Wi-Fi is back.",
+  "capEndOther": "End the clip with another QR",
+  "capEndOtherHint": "Seeing another order's bill closes this clip and opens a new one.",
+  "capManualStop": "Never stop automatically",
+  "capManualStopHint": "No code can stop a clip; only the button does. This overrides the row above.",
+  "capSecond": "seconds",
+  "capMs": "ms",
+  "capOwnerOnly": "Only the shop owner can change these.",
+  "capCustom": "Other number…",
+  "capCustomTitle": "Enter a value",
+  "capOff": "Off",
+  "capDefaultSuffix": "(default)",
+  "invTitle": "Invoice details",
+  "invHint": "Fill this in once; the ZenPack team uses it when issuing invoices for your payments.",
+  "invKind": "Buyer type",
+  "invKindCompany": "Company / Household business",
+  "invKindPerson": "Individual",
+  "invName": "Company name",
+  "invNamePerson": "Full name",
+  "invNamePh": "e.g. ABC Co., Ltd",
+  "invNamePersonPh": "e.g. Nguyen Van A",
+  "invTax": "Tax code",
+  "invTaxPh": "e.g. 0312345678",
+  "invTaxOptional": "Tax code (if any)",
+  "invAddress": "Address",
+  "invAddressPh": "e.g. 123 Le Loi, D.1, HCMC",
+  "invEmail": "Email for invoices",
+  "invEmailPh": "e.g. billing@company.com",
+  "invNote": "Note",
+  "invNotePh": "Anything else (optional)",
+  "invSave": "Save details",
+  "invNameRequired": "Please enter a name.",
+  "invTaxRequired": "A company or household business needs a tax code.",
+  "invTaxInvalid": "A tax code is 10 digits, optionally with a 3-digit branch suffix.",
+  "invEmailInvalid": "That email is not valid.",
+  "invNotSet": "Not set",
+  "detailSignature": "Digital signature",
+  "sealSignature": "ZenPack signature · key {key}",
+  "@sealSignature": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      }
+    },
+    "description": "Danh tính chữ ký, hiện ở Chi tiết video. Chỉ mã khoá — không tên thuật toán (thuật ngữ chỉ ở trang Kiểm chứng)."
+  },
+  "sealCopyVerifyLink": "Copy verification link",
+  "sealVerifyLinkTitle": "Verification link",
+  "claimSignedLabel": "Signed",
+  "claimSignedCount": "{sealed}/{videos} videos · {anchored} with independent proof",
+  "@claimSignedCount": {
+    "placeholders": {
+      "sealed": {
+        "type": "int"
+      },
+      "videos": {
+        "type": "int"
+      },
+      "anchored": {
+        "type": "int"
+      }
+    }
+  },
+  "claimUnsignedHint": "{n} videos have no stamp — the marketplace may reject them. The dossier can still be sent; stamped videos still prove themselves.",
+  "@claimUnsignedHint": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "claimsSubtitle": "Track and handle order dispute dossiers",
+  "claimsEmptyTitle": "No dossiers yet",
+  "claimsEmptyBody": "Tap the plus in the corner and pick the evidence of the order in dispute to create a dossier.",
+  "claimsEmptyTip": "Tip: clear photos and videos help the marketplace decide faster.",
+  "timelineEnd": "No more activity",
+  "timelineEntryCount": "{n, plural, =1{1 entry} other{{n} entries}}",
+  "@timelineEntryCount": {
+    "description": "Order timeline: how many evidence entries the day header counts.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "attachCodeToOrderHint": "Attach a return code or a second tracking code to this order",
+  "attachPhotoToOrderHint": "Pick a photo from this device to keep with this order",
+  "shopDetailClipLengthHint": "Maximum recording time per video",
+  "shopDetailImageSizeHint": "Maximum size per photo",
+  "storageRowHint": "Where videos and photos are kept",
+  "capRowHint": "Camera and display options",
+  "inviteQrLabel": "Invite code",
+  "orderStatusRecorded": "Recorded",
+  "orderStatusNone": "Not recorded",
+  "accountTagline": "Manage with ease, sell with confidence — ZenPack",
+  "videoTypeHintPacking": "Film the packing process",
+  "videoTypeHintCarrier": "Film the hand-over to the carrier",
+  "videoTypeHintReturn": "Film the return as it arrives",
+  "statPendingSub": "In the queue",
+  "shopPulseToday": "Today · {orders, plural, =1{1 order} other{{orders} orders}} · {videos, plural, =1{1 video} other{{videos} videos}}",
+  "@shopPulseToday": {
+    "description": "Shop picker: today's activity line under a shop's name.",
+    "placeholders": {
+      "orders": {
+        "type": "int"
+      },
+      "videos": {
+        "type": "int"
+      }
+    }
   }
 }

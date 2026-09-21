@@ -23,9 +23,13 @@ dependencies:
   ec_ui: ^0.1.0
   localization: ^0.1.0
   database: ^0.1.0
+  shared_contracts: ^0.1.0
 
   # Third-party.
   flutter_bloc: ^9.1.1
+  # `clock.now()` thay `DateTime.now()` ở dấu giờ trên màn quay, để golden
+  # ghim được giờ (`withClock`) — bản chụp trước đó đổi theo từng giây (D-07).
+  clock: ^1.1.1
   bloc_concurrency: ^0.3.0
   google_mlkit_barcode_scanning: ^0.14.0
   path_provider: ^2.1.0

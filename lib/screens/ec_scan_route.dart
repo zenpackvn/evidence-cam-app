@@ -11,12 +11,14 @@ import 'package:app_platform/app_platform.dart';
 import 'package:feature_capture/feature_capture.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show DeviceOrientation;
+import 'package:localization/localization.dart';
 
 class EcBarcodeScanRoute extends StatefulWidget {
   const EcBarcodeScanRoute({
     required this.onDetected,
     this.onCancel,
     this.camera,
+    this.picker,
     super.key,
   });
 
@@ -29,6 +31,12 @@ class EcBarcodeScanRoute extends StatefulWidget {
   /// Injectable camera wrapper for tests; production uses [CameraService].
   @visibleForTesting
   final CameraService? camera;
+
+  /// Chỗ nối cho bộ đo: mở thư viện ảnh là việc của hệ điều hành, và trong bộ
+  /// đo lời gọi ấy KHÔNG BAO GIỜ trả lời — nút sẽ khoá vĩnh viễn và ca đo đứng
+  /// im. Tiêm vào, đừng tráo một thứ toàn cục.
+  @visibleForTesting
+  final ImagePickerService? picker;
 
   @override
   State<EcBarcodeScanRoute> createState() => _EcBarcodeScanRouteState();
@@ -145,6 +153,79 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
     widget.onDetected(code);
   }
 
+  /// Đang mở thư viện ảnh. Khoá nút để một cú bấm đúp không mở hai lượt chọn —
+  /// lượt thứ hai trả về sau sẽ ghi đè kết quả của lượt đầu.
+  bool _dangChonAnh = false;
+
+  /// Chọn một ảnh có sẵn rồi đọc mã trong đó.
+  ///
+  /// DỪNG luồng khung hình trước: cả hai đường đều đi vào cùng một bộ đọc MLKit,
+  /// và để camera bắn khung vào nó trong lúc nó đang đọc một tấm ảnh là hai
+  /// nguồn tranh nhau một tài nguyên — khung hình thì bị bỏ, còn tấm ảnh thì
+  /// chậm đi vì phải xếp hàng.
+  ///
+  /// Chọn xong mà không ra mã thì BẬT LẠI luồng: người dùng vẫn đang đứng trong
+  /// màn quét, và một màn quét không quét nữa sau một lượt thử hỏng là một màn
+  /// hình chết mà không nói lý do.
+  Future<void> _chonAnh() async {
+    if (_dangChonAnh || _done || !mounted) return;
+    // Lấy sẵn mọi câu chữ trước khi rời khung dựng: từ đây trở đi toàn `await`.
+    final khongThayMa = context.l10n.scanNoCodeInImage;
+    setState(() => _dangChonAnh = true);
+    await _dungLuong();
+
+    final ket = await ecChonAnhVaQuet(scanner: _scanner, picker: widget.picker);
+    if (!mounted) return;
+
+    switch (ket.ketQua) {
+      case EcKetQuaChonAnh.thayMa:
+        _done = true;
+        widget.onDetected(ket.ma!);
+        return;
+      case EcKetQuaChonAnh.khongThayMa:
+        _noi(khongThayMa);
+      case EcKetQuaChonAnh.huy:
+        // Im lặng: họ vừa chủ động bấm Huỷ, báo lỗi ở đây là đổ cho họ một việc
+        // họ không làm.
+        break;
+    }
+    if (!mounted) return;
+    setState(() => _dangChonAnh = false);
+    await _batLaiLuong(khongThayMa);
+  }
+
+  Future<void> _dungLuong() async {
+    try {
+      if (_camera.controller?.value.isStreamingImages ?? false) {
+        await _camera.controller?.stopImageStream();
+      }
+    } on Object {
+      // Dừng không được thì thôi: tệ nhất là bộ đọc bận thêm một nhịp, còn ném
+      // ở đây sẽ nuốt mất cả lượt chọn ảnh người dùng vừa bấm.
+    }
+  }
+
+  /// [cauKhiHong] lấy sẵn TRƯỚC khi chờ: đọc `context` sau một `await` là đọc
+  /// một khung đã có thể rời cây widget. Lấy trước thì câu chữ vẫn đúng ngôn
+  /// ngữ đang chọn mà không phải giữ `context` qua ranh giới bất đồng bộ.
+  Future<void> _batLaiLuong(String cauKhiHong) async {
+    try {
+      if (!(_camera.controller?.value.isStreamingImages ?? true)) {
+        await _camera.controller?.startImageStream(_onFrame);
+      }
+    } on Object {
+      // Bật lại không được thì phải NÓI: camera không quét nữa mà màn hình vẫn
+      // vẽ ô ngắm là mời người dùng đứng chờ một thứ không bao giờ tới.
+      _fail(cauKhiHong);
+    }
+  }
+
+  void _noi(String cau) {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(content: Text(cau), duration: const Duration(seconds: 3)),
+    );
+  }
+
   void _fail(String message) {
     if (mounted) {
       setState(() {
@@ -222,11 +303,38 @@ class _EcBarcodeScanRouteState extends State<EcBarcodeScanRoute> {
             const Positioned(
               left: 0,
               right: 0,
-              bottom: 64,
+              bottom: 108,
               child: Center(
                 child: Text(
                   'Đưa mã vận đơn vào khung',
                   style: TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ),
+            ),
+            // Đường thứ hai vào cùng một việc: người đóng gói thường ĐÃ có ảnh
+            // tem trong máy. Giơ camera vào một tấm ảnh trên màn hình máy khác
+            // thì lóa và vân sọc, gần như không ra mã.
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 48,
+              child: Center(
+                child: TextButton.icon(
+                  onPressed: _dangChonAnh ? null : _chonAnh,
+                  icon: const Icon(Icons.photo_library_outlined, size: 18),
+                  label: Text(context.l10n.scanPickImage),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    disabledForegroundColor: Colors.white38,
+                    backgroundColor: const Color(0xCC050505),
+                    shape: const StadiumBorder(
+                      side: BorderSide(color: Color(0x33FFFFFF)),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 12,
+                    ),
+                  ),
                 ),
               ),
             ),

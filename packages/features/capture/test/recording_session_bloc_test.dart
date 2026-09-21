@@ -499,6 +499,7 @@ class _FakeCamera extends CameraService {
           required resolutionPreset,
           enableAudio = true,
           imageFormatGroup,
+          fps,
         }) => throw UnimplementedError(),
       );
 
@@ -528,6 +529,7 @@ class _FakeCamera extends CameraService {
     ResolutionPreset resolutionPreset = ResolutionPreset.medium,
     bool enableAudio = true,
     ImageFormatGroup? imageFormatGroup,
+    int? fps,
   }) async {
     _initialized = true;
     disposed = false;

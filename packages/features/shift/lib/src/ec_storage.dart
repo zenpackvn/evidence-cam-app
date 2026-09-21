@@ -961,7 +961,7 @@ class _StorageOption extends StatelessWidget {
                     ),
                     if (selected) ...[
                       const SizedBox(width: 8),
-                      const Icon(
+                      Icon(
                         LucideIcons.check,
                         size: 18,
                         color: PenColors.success,

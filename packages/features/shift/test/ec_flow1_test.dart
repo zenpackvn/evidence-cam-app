@@ -530,6 +530,34 @@ void main() {
       ),
     ];
 
+    // Dòng nhịp hôm nay chỉ hiện khi CÓ đủ hai con số — thẻ chưa nạp xong
+    // hay đọc hỏng thì im, không in "0 đơn" giả.
+    testWidgets('dòng hoạt động hôm nay hiện khi có số, im khi chưa có', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const EcChooseShopScreen(
+          shops: [
+            EcShopSummary(
+              name: 'Shop ABC',
+              platform: 'shopee',
+              meta: 'Shopee · Chủ shop',
+              pulse: EcShopPulse(ordersToday: 12, videosToday: 8),
+            ),
+            EcShopSummary(
+              name: 'Shop XYZ',
+              platform: 'lazada',
+              meta: 'Lazada · Nhân viên',
+            ),
+          ],
+        ),
+      );
+      expect(find.text('Hôm nay · 12 đơn · 8 video'), findsOneWidget);
+      expect(find.textContaining('Hôm nay'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('renders shop list and management row without overflow', (
       tester,
     ) async {
@@ -688,7 +716,8 @@ void main() {
     });
   });
 
-  /// Hàng cài đặt: chữ "mặc định" và mũi tên đều phải chạm mép phải.
+  /// Hàng cài đặt: mọi giá trị (và chữ "mặc định" dưới chúng) kết thúc ở cùng
+  /// một đường dọc, mũi tên đứng bên phải đường đó ở hàng bấm được.
   ///
   /// Ba hàng này nằm cạnh nhau trong một thẻ — hai hàng cố định và một hàng mở
   /// sang màn Kho lưu trữ. Lệch nhau vài pixel là nhìn ra ngay, và trước đây
@@ -696,7 +725,9 @@ void main() {
   /// con nhỏ hơn phần được chia chứ không trả lại chỗ thừa — chỗ thừa rơi
   /// xuống cuối hàng nên thứ đứng cuối không bao giờ chạm mép.
   group('hàng cài đặt của chi tiết cửa hàng', () {
-    testWidgets('"mặc định" và mũi tên cùng dồn sát mép phải', (tester) async {
+    testWidgets('giá trị và "mặc định" cùng dồn sát một mép phải', (
+      tester,
+    ) async {
       await _pump(
         tester,
         const EcShopDetailScreen(
@@ -711,23 +742,23 @@ void main() {
 
       final defaults = find.text('mặc định');
       expect(defaults, findsWidgets, reason: 'không còn hàng cố định nào');
-      final arrow = find.byIcon(LucideIcons.chevronRight);
 
-      // Mọi hàng cố định phải kết thúc ở cùng một đường dọc.
+      // Mọi giá trị và mọi chữ "mặc định" phải kết thúc ở cùng một đường dọc.
       final rights = <double>{
         for (var i = 0; i < defaults.evaluate().length; i++)
           tester.getRect(defaults.at(i)).right,
+        tester.getRect(find.text('5 phút')).right,
+        tester.getRect(find.text('Cloud Zenpack')).right,
       };
-      expect(rights.length, 1, reason: 'các chữ "mặc định" lệch nhau: $rights');
+      expect(rights.length, 1, reason: 'cột giá trị lệch nhau: $rights');
 
-      // Và mũi tên của hàng Kho lưu trữ kết thúc đúng ở đường đó.
-      final arrowRight = tester.getRect(arrow.first).right;
+      // Mũi tên của hàng Kho lưu trữ nằm BÊN PHẢI đường đó — trong ô riêng
+      // được giữ chỗ ở mọi hàng, nên nó không xô cột giá trị lệch đi.
+      final arrowRect = tester.getRect(find.byIcon(LucideIcons.chevronRight));
       expect(
-        (arrowRight - rights.first).abs() < 0.5,
-        isTrue,
-        reason:
-            'mũi tên lệch khỏi mép của "mặc định": '
-            '$arrowRight vs ${rights.first}',
+        arrowRect.left,
+        greaterThan(rights.first - 0.5),
+        reason: 'mũi tên đè lên cột giá trị: $arrowRect vs ${rights.first}',
       );
     });
   });
@@ -760,10 +791,11 @@ void main() {
       expect(find.text('Google Drive'), findsOneWidget);
     });
 
-    // Tên kho nằm ở DÒNG DƯỚI nhãn, không dồn phải cùng dòng: nó là giá trị dài
-    // nhất trong ba hàng cài đặt ("Kho đám mây riêng (chuẩn S3)"), và nhét
-    // chung một dòng thì hoặc nhãn hoặc giá trị phải cắt ba chấm.
-    testWidgets('tên kho nằm dưới chữ "Kho lưu trữ"', (tester) async {
+    // Tên kho nằm ở CỘT GIÁ TRỊ bên phải như mọi hàng khác, và được xuống
+    // hai dòng: nó là giá trị dài nhất trong ba hàng cài đặt ("Kho đám mây
+    // riêng (chuẩn S3)"), nhét vào một dòng thì phải cắt ba chấm, mà cắt tên
+    // kho là mất nghĩa.
+    testWidgets('tên kho dài ở cột giá trị, không tràn hàng', (tester) async {
       await _pump(
         tester,
         const EcShopDetailScreen(
@@ -778,17 +810,20 @@ void main() {
 
       final label = tester.getRect(find.text('Kho lưu trữ'));
       final value = tester.getRect(find.text('Kho đám mây riêng (chuẩn S3)'));
+      final other = tester.getRect(find.text('5 phút'));
+      // Cùng cột với các giá trị khác: kết thúc ở cùng đường dọc.
       expect(
-        value.top,
-        greaterThan(label.bottom - 1),
-        reason: 'tên kho vẫn nằm cùng dòng với nhãn: $label / $value',
-      );
-      // Và nó bắt đầu thẳng hàng với nhãn, không thụt vào.
-      expect(
-        (value.left - label.left).abs() < 0.5,
+        (value.right - other.right).abs() < 0.5,
         isTrue,
-        reason: 'tên kho lệch trái so với nhãn',
+        reason: 'tên kho lệch khỏi cột giá trị: $value / $other',
       );
+      // Nằm bên phải nhãn, không đè lên nhãn.
+      expect(
+        value.left,
+        greaterThan(label.left),
+        reason: 'tên kho đè lên nhãn: $label / $value',
+      );
+      expect(tester.takeException(), isNull);
     });
 
     // Thêm loại video mở cho MỌI vai trò, khác các nút quản trị khác. Người

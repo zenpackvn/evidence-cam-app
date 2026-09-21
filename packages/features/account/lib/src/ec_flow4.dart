@@ -43,15 +43,20 @@ class EcAccountTabScreen extends StatelessWidget {
     this.onQuotaTap,
     this.onChangePlanTap,
     this.onLanguageTap,
+    this.notifValue,
+    this.onNotifTap,
+    this.themeValue,
+    this.onThemeTap,
+    this.timezoneValue,
+    this.onTimezoneTap,
+    this.invoiceValue,
+    this.onInvoiceTap,
     this.onEndQrTap,
     this.onChangePasswordTap,
     this.onLoginMethodsTap,
     this.onLogout,
     this.onDeleteAccount,
     this.onBack,
-    this.onFacebook,
-    this.onZalo,
-    this.onCall,
     this.onFeedback,
     this.onRateApp,
     super.key,
@@ -81,6 +86,19 @@ class EcAccountTabScreen extends StatelessWidget {
   final VoidCallback? onChangePlanTap;
   final VoidCallback? onLanguageTap;
 
+  /// Ba hàng dưới đây ẩn khi nhãn là `null` — cùng luật với "Đổi gói": một
+  /// hàng bấm vào không mở được gì còn tệ hơn là không có hàng.
+  final String? notifValue;
+  final VoidCallback? onNotifTap;
+  final String? themeValue;
+  final VoidCallback? onThemeTap;
+  final String? timezoneValue;
+  final VoidCallback? onTimezoneTap;
+
+  /// Thông tin xuất hoá đơn. Nhãn là tên đơn vị đã khai, hoặc "Chưa khai".
+  final String? invoiceValue;
+  final VoidCallback? onInvoiceTap;
+
   /// Mở tờ QR "kết thúc phiên" để in. Mã dùng chung cho mọi máy, nên nó thuộc
   /// nhóm cài đặt app chứ không phải của riêng shop nào.
   final VoidCallback? onEndQrTap;
@@ -95,9 +113,6 @@ class EcAccountTabScreen extends StatelessWidget {
   final VoidCallback? onBack;
 
   /// Ba kênh hỗ trợ nổi ở góc trái dưới.
-  final VoidCallback? onFacebook;
-  final VoidCallback? onZalo;
-  final VoidCallback? onCall;
 
   /// Mục "Giới thiệu": góp ý và đánh giá app trên store.
   final VoidCallback? onFeedback;
@@ -108,7 +123,7 @@ class EcAccountTabScreen extends StatelessWidget {
   /// hai chỗ lệch nhau là sinh ra khe hở hoặc phần xanh bị đè.
   ///
   /// Thẻ tài khoản nằm gọn bên trong ô này, căn giữa theo chiều dọc.
-  static const _bannerHeight = 166.0;
+  static const _bannerHeight = 204.0;
 
   /// Vùng cuộn lấy đúng đáy ô xanh làm lề trên.
   ///
@@ -122,6 +137,12 @@ class EcAccountTabScreen extends StatelessWidget {
       backgroundColor: BrandColors.bg,
       child: Stack(
         children: [
+          // Vệt ấm dưới dải cam (18/09) — vẽ ĐẦU TIÊN vì nó là nền; đặt sau
+          // vùng cuộn là nó phủ mờ lên hàng đầu tiên.
+          PenWarmTop(
+            top: MediaQuery.paddingOf(context).top + _bannerHeight,
+            height: 150,
+          ),
           // Vùng cuộn chiếm toàn màn và vẽ TRƯỚC, nên nội dung trượt lên là
           // chui xuống dưới dải xanh lẫn thẻ tài khoản. Lề trên đúng bằng đáy
           // thẻ nên lúc chưa cuộn không có gì bị che.
@@ -136,7 +157,7 @@ class EcAccountTabScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _SectionHeader(context.l10n.accountSectionApp, top: 38),
+                  _SectionHeader(context.l10n.accountSectionApp, top: 26),
                   _SettingsGroup(
                     rows: [
                       _SettingsRow(
@@ -157,6 +178,37 @@ class EcAccountTabScreen extends StatelessWidget {
                         value: languageLabel,
                         onTap: onLanguageTap,
                       ),
+                      if (notifValue != null)
+                        _SettingsRow(
+                          icon: LucideIcons.bell,
+                          label: context.l10n.notifRow,
+                          value: notifValue,
+                          onTap: onNotifTap,
+                        ),
+                      if (themeValue != null)
+                        _SettingsRow(
+                          icon: LucideIcons.sunMoon,
+                          label: context.l10n.themeRow,
+                          value: themeValue,
+                          onTap: onThemeTap,
+                        ),
+                      if (timezoneValue != null)
+                        _SettingsRow(
+                          icon: LucideIcons.clock,
+                          label: context.l10n.tzRow,
+                          value: timezoneValue,
+                          onTap: onTimezoneTap,
+                        ),
+                      // Hoá đơn ở nhóm "Ứng dụng" cùng gói cước: cả hai đều là
+                      // chuyện tiền nong của TÀI KHOẢN, không phải của một cửa
+                      // hàng nào.
+                      if (invoiceValue != null)
+                        _SettingsRow(
+                          icon: LucideIcons.receipt,
+                          label: context.l10n.invTitle,
+                          value: invoiceValue,
+                          onTap: onInvoiceTap,
+                        ),
                       _SettingsRow(
                         icon: LucideIcons.qrCode,
                         label: context.l10n.accountEndQr,
@@ -208,25 +260,22 @@ class EcAccountTabScreen extends StatelessWidget {
                     ],
                   ),
                   _AppFooter(version: appVersion),
-                  // Chừa chỗ cho cụm liên hệ nổi ở góc phải dưới.
-                  const SizedBox(height: 96),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
-          // Dải xanh khoá, vẽ SAU vùng cuộn nên nội dung chui xuống dưới nó.
+          // Dải cam khoá, vẽ SAU vùng cuộn nên nội dung chui xuống dưới nó.
           const Align(
             alignment: Alignment.topCenter,
-            child: PenBrandBanner(height: _bannerHeight),
+            child: PenBrandBanner(height: _bannerHeight, watermark: true),
           ),
-          // Thẻ tài khoản căn GIỮA ô xanh; nút back nổi ở góc trái trên, không
-          // chiếm chỗ của thẻ.
+          // Hồ sơ nằm THẲNG trên dải cam (bộ mock 18/09), không còn thẻ trắng:
+          // ảnh đại diện có vòng trắng và nút bút, tên và email chữ trắng, một
+          // câu khẩu hiệu ở đáy dải. Nút back nổi ở góc trái trên.
           //
-          // Chiều cao ô xanh là con số suy ra, không phải chọn bừa: thẻ cao 94
-          // căn giữa trong H thì mép trên thẻ ở (H-94)/2, mà nút back (icon
-          // 26pt, đặt cách mép 2) kết thúc ở 28 — muốn chừa 8 khoảng thở thì
-          // (H-94)/2 >= 36, tức H >= 166. Hạ H xuống nữa là hai thứ đè lên
-          // nhau, đúng lỗi của hai bản trước.
+          // Chiều cao dải: back 2+26=28, hàng hồ sơ bắt đầu ở 44 cao 84 → 128,
+          // khẩu hiệu 156–172, đáy chừa 32 → 204.
           SafeArea(
             bottom: false,
             child: SizedBox(
@@ -242,33 +291,44 @@ class EcAccountTabScreen extends StatelessWidget {
                         color: PenColors.card,
                       ),
                     ),
-                  Align(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                      child: _UserRow(
-                        name: userName,
-                        email: userEmail,
-                        avatarPath: avatarPath,
-                        onTap: onProfileTap,
-                      ),
+                  Positioned(
+                    left: 18,
+                    right: 18,
+                    top: 44,
+                    child: _UserRow(
+                      name: userName,
+                      email: userEmail,
+                      avatarPath: avatarPath,
+                      onTap: onProfileTap,
+                    ),
+                  ),
+                  Positioned(
+                    left: 18,
+                    right: 18,
+                    bottom: 30,
+                    child: Row(
+                      children: [
+                        PenBox(
+                          width: 22,
+                          height: 2,
+                          fill: PenColors.card.withValues(alpha: 0.6),
+                          radius: 1,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: PenText(
+                            context.l10n.accountTagline,
+                            size: 13,
+                            color: PenColors.card.withValues(alpha: 0.85),
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
-          // Cụm liên hệ nổi ở góc phải dưới. Nằm trong Stack nên nó không cuộn
-          // theo nội dung — người cần hỗ trợ thường đang bí, bắt họ cuộn tìm
-          // là thêm một rào nữa.
-          //
-          // Màn này không còn thanh tab nên chỉ cần né vùng an toàn đáy.
-          Positioned(
-            right: 16,
-            bottom: MediaQuery.paddingOf(context).bottom + 16,
-            child: _SupportContactColumn(
-              onFacebook: onFacebook,
-              onZalo: onZalo,
-              onCall: onCall,
             ),
           ),
         ],
@@ -297,7 +357,7 @@ class _AppFooter extends StatelessWidget {
             fit: BoxFit.contain,
           ),
           const SizedBox(height: 4),
-          const PenText(
+          PenText(
             'ZenPack',
             size: 15,
             color: PenColors.primary,
@@ -616,7 +676,7 @@ class EcLoginMethodsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _LoginMethodRow(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.mail_outline,
                         size: 24,
                         color: BrandColors.ink,
@@ -630,7 +690,7 @@ class EcLoginMethodsScreen extends StatelessWidget {
                     _LoginMethodRow(
                       // `Icons.g_mobiledata` chỉ vẽ chữ "G" trần, nhìn như
                       // thiếu icon chứ không phải logo Google.
-                      icon: const FaIcon(
+                      icon: FaIcon(
                         FontAwesomeIcons.google,
                         size: 20,
                         color: BrandColors.ink,
@@ -645,7 +705,7 @@ class EcLoginMethodsScreen extends StatelessWidget {
                     if (showApple || appleLinked) ...[
                       const SizedBox(height: 10),
                       _LoginMethodRow(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.apple,
                           size: 24,
                           color: BrandColors.ink,
@@ -770,7 +830,7 @@ class EcQuotaTypeUsage {
 /// The breakdown ramp, straight from the design: two greens, then amber and
 /// red — `--chart-1/2` plus `--warning` and `--destructive`. Largest slice
 /// first, so rank 0 is the darkest green.
-const _quotaTypeColors = <Color>[
+List<Color> get _quotaTypeColors => <Color>[
   PenColors.primary,
   PenColors.success,
   _warning,
@@ -795,6 +855,7 @@ IconData _quotaTypeIcon(int rank) =>
 /// a by-type storage breakdown and an upgrade CTA.
 class EcQuotaScreen extends StatelessWidget {
   const EcQuotaScreen({
+    this.huongDan,
     this.planLabel = 'Cơ bản',
     this.planCode = 'P1',
     this.usedVideos = 0,
@@ -810,6 +871,10 @@ class EcQuotaScreen extends StatelessWidget {
     this.onUpgrade,
     super.key,
   });
+
+  /// Thẻ hướng dẫn của màn này, đặt ngay dưới phần đầu màn.
+  /// `null` = không hiện (đã xem, hoặc bên gọi không muốn).
+  final Widget? huongDan;
 
   final String planLabel;
 
@@ -936,6 +1001,7 @@ class EcQuotaScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                    ?huongDan,
                     const SizedBox(height: 12),
                     _QuotaSummaryCard(
                       planLabel: planLabel,
@@ -978,9 +1044,9 @@ class EcQuotaScreen extends StatelessWidget {
   }
 }
 
-/// `--warning` / `--chart-4` — the amber the design uses for plan and
-/// renewal accents (design-dna-app.md §1).
-const _warning = Color(0xFFB6770B);
+/// `--state-attention` — the amber the design uses for plan and renewal
+/// accents. Read from the palette so dark mode and the 09/2026 recolour follow.
+Color get _warning => PenColors.warning;
 
 /// `CardUsageSummary` — plan, remaining headline, usage bar and the two
 /// stored/retention stats.
@@ -1240,7 +1306,7 @@ class _QuotaSummaryCard extends StatelessWidget {
             height: 10,
             child: Stack(
               children: [
-                const Positioned.fill(child: ColoredBox(color: _track)),
+                Positioned.fill(child: ColoredBox(color: _track)),
                 // `Positioned.fill`, not a bare child: a `Stack` hands
                 // non-positioned children *loose* constraints, so the fill
                 // would collapse to zero height and never paint.
@@ -1250,7 +1316,7 @@ class _QuotaSummaryCard extends StatelessWidget {
                     widthFactor: usedFraction.clamp(0.0, 1.0),
                     // Rounded on its own, so the fill ends in a cap the way
                     // the design draws it instead of a square edge.
-                    child: const PenBox(
+                    child: PenBox(
                       fill: PenColors.success,
                       radius: 999,
                     ),
@@ -1272,7 +1338,7 @@ class _QuotaSummaryCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              const SizedBox(
+              SizedBox(
                 width: 1,
                 height: 34,
                 child: ColoredBox(
@@ -1291,14 +1357,14 @@ class _QuotaSummaryCard extends StatelessWidget {
         ),
         PenBox(
           width: double.infinity,
-          fill: const Color(0xFFF7F7F7),
+          fill: PenColors.soft,
           radius: 10,
           axis: PenAxis.row,
           gap: 8,
           cross: CrossAxisAlignment.center,
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
           children: [
-            const Icon(LucideIcons.refreshCw, size: 16, color: _warning),
+            Icon(LucideIcons.refreshCw, size: 16, color: _warning),
             Expanded(
               child: PenText(
                 l10n.quotaRefundNote(retentionTotalDays),
@@ -1313,8 +1379,8 @@ class _QuotaSummaryCard extends StatelessWidget {
   }
 }
 
-/// `#EDEDED` — the unfilled part of every progress/stack bar in this design.
-const _track = Color(0xFFEDEDED);
+/// `--muted` — the unfilled part of every progress/stack bar in this design.
+Color get _track => PenColors.soft;
 
 class _QuotaStat extends StatelessWidget {
   const _QuotaStat({required this.value, required this.label});
@@ -1415,7 +1481,7 @@ class _BreakdownRows extends StatelessWidget {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       for (var i = 0; i < typeUsage.length; i++) ...[
-        if (i > 0) const SizedBox(height: 1, child: ColoredBox(color: _track)),
+        if (i > 0) SizedBox(height: 1, child: ColoredBox(color: _track)),
         _QuotaBreakdownRow(usage: typeUsage[i], rank: i),
       ],
     ],
@@ -1438,7 +1504,7 @@ class _QuotaBreakdownRow extends StatelessWidget {
           PenBox(
             width: 30,
             height: 30,
-            fill: const Color(0xFFF7F7F7),
+            fill: PenColors.soft,
             radius: 999,
             axis: PenAxis.row,
             main: MainAxisAlignment.center,
@@ -1561,14 +1627,17 @@ class _DialogButtons extends StatelessWidget {
     required this.confirmLabel,
     this.onCancel,
     this.onConfirm,
-    this.confirmColor = PenColors.primary,
+    this.confirmColor,
   });
 
   final String cancelLabel;
   final String confirmLabel;
   final VoidCallback? onCancel;
   final VoidCallback? onConfirm;
-  final Color confirmColor;
+
+  /// `null` = `PenColors.primary` lúc vẽ — token nay là getter đổi theo chế độ
+  /// sáng/tối, mà mặc định của tham số phải là hằng biên dịch.
+  final Color? confirmColor;
 
   @override
   Widget build(BuildContext context) {
@@ -1690,7 +1759,7 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
     return _DialogFrame(
       onDismiss: _handleCancel,
       children: [
-        const PenBox(
+        PenBox(
           width: 82,
           height: 82,
           fill: BrandColors.recTint,
@@ -1733,7 +1802,7 @@ class _EcDeleteAccountScreenState extends State<EcDeleteAccountScreen> {
             cross: CrossAxisAlignment.center,
             padding: const EdgeInsets.all(14),
             children: [
-              const Icon(LucideIcons.info, size: 22, color: PenColors.success),
+              Icon(LucideIcons.info, size: 22, color: PenColors.success),
               Expanded(
                 child: PenText(
                   context.l10n.deletePendingProfilesWarning(
@@ -1935,7 +2004,7 @@ class _DialogPasswordFieldState extends State<_DialogPasswordField> {
                     padding: EdgeInsets.zero,
                     decoration: const BoxDecoration(),
                     placeholder: widget.hint,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: PenColors.ink,
@@ -1943,7 +2012,7 @@ class _DialogPasswordFieldState extends State<_DialogPasswordField> {
                     // The weight has to be spelled out: `placeholderStyle`
                     // inherits from `style` above, so the hint would come out
                     // bold like the value.
-                    placeholderStyle: const TextStyle(
+                    placeholderStyle: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                       color: PenColors.mut,
@@ -2082,56 +2151,90 @@ class _UserRow extends StatelessWidget {
   final String? avatarPath;
   final VoidCallback? onTap;
 
+  static const _avatar = 84.0;
+
   @override
   Widget build(BuildContext context) {
-    final image = _avatarImage(avatarPath, size: 62);
-    return PenCard(
-      stroke: null,
-      gap: 16,
-      padding: const EdgeInsets.all(16),
+    final image = _avatarImage(avatarPath, size: _avatar);
+    final white = PenColors.card;
+    return EcTap(
       onTap: onTap,
-      children: [
-        PenBox(
-          width: 62,
-          height: 62,
-          fill: PenColors.soft,
-          // Vòng trắng 2pt tách ảnh khỏi thẻ khi thẻ đè lên dải xanh.
-          stroke: PenColors.card,
-          strokeWidth: 2,
-          radius: 999,
-          clip: true,
-          axis: PenAxis.row,
-          main: MainAxisAlignment.center,
-          cross: CrossAxisAlignment.center,
-          children: [
-            image ??
-                const Icon(LucideIcons.user, size: 34, color: PenColors.ink),
-          ],
-        ),
-        Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              PenText(
-                name,
-                size: 20,
-                color: PenColors.ink,
-                weight: FontWeight.w700,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 5),
-              PenText(
-                email,
-                size: 14,
-                color: PenColors.mut,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+      child: Row(
+        children: [
+          SizedBox(
+            width: _avatar,
+            height: _avatar,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                PenBox(
+                  width: _avatar,
+                  height: _avatar,
+                  fill: PenColors.soft,
+                  // Vòng trắng 3pt tách ảnh khỏi dải cam.
+                  stroke: white,
+                  strokeWidth: 3,
+                  radius: 999,
+                  clip: true,
+                  axis: PenAxis.row,
+                  main: MainAxisAlignment.center,
+                  cross: CrossAxisAlignment.center,
+                  children: [
+                    image ??
+                        Icon(LucideIcons.user, size: 44, color: PenColors.ink),
+                  ],
+                ),
+                // Nút bút ở góc ảnh nói "chạm để sửa hồ sơ" — cả hàng đều mở
+                // hồ sơ, nút này chỉ là chỗ nói rõ điều đó.
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: PenBox(
+                    width: 28,
+                    height: 28,
+                    fill: PenColors.primary,
+                    stroke: white,
+                    strokeWidth: 2,
+                    radius: 999,
+                    axis: PenAxis.row,
+                    main: MainAxisAlignment.center,
+                    cross: CrossAxisAlignment.center,
+                    children: [
+                      Icon(LucideIcons.pencil, size: 13, color: white),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const Icon(LucideIcons.chevronRight, size: 22, color: PenColors.mut),
-      ],
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                PenText(
+                  name,
+                  size: 22,
+                  color: white,
+                  weight: FontWeight.w800,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                PenText(
+                  email,
+                  size: 14,
+                  color: white.withValues(alpha: 0.85),
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          Icon(LucideIcons.chevronRight, size: 24, color: white),
+        ],
+      ),
     );
   }
 }
@@ -2198,7 +2301,7 @@ class _EcFeedbackSheetState extends State<EcFeedbackSheet> {
             const SizedBox(width: 12),
             EcTap(
               onTap: widget.onClose,
-              child: const Icon(
+              child: Icon(
                 LucideIcons.x,
                 size: 22,
                 color: PenColors.mut,
@@ -2227,8 +2330,8 @@ class _EcFeedbackSheetState extends State<EcFeedbackSheet> {
                 expands: true,
                 textAlignVertical: TextAlignVertical.top,
                 keyboardType: TextInputType.multiline,
-                style: const TextStyle(fontSize: 16, color: PenColors.ink),
-                placeholderStyle: const TextStyle(
+                style: TextStyle(fontSize: 16, color: PenColors.ink),
+                placeholderStyle: TextStyle(
                   fontSize: 16,
                   color: PenColors.mut,
                 ),
@@ -2294,12 +2397,12 @@ class EcFeedbackThanksSheet extends StatelessWidget {
           child: Container(
             width: 72,
             height: 72,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: PenColors.primary,
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
-            child: const Icon(
+            child: Icon(
               LucideIcons.check,
               size: 38,
               color: PenColors.card,
@@ -2351,100 +2454,6 @@ class EcFeedbackThanksSheet extends StatelessWidget {
   }
 }
 
-class _SupportContactColumn extends StatelessWidget {
-  const _SupportContactColumn({this.onFacebook, this.onZalo, this.onCall});
-
-  final VoidCallback? onFacebook;
-  final VoidCallback? onZalo;
-  final VoidCallback? onCall;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _SupportBubble(
-          onTap: onFacebook,
-          fill: const Color(0xFF1877F2),
-          semanticLabel: l10n.supportFacebook,
-          child: const FaIcon(
-            FontAwesomeIcons.facebookF,
-            size: 20,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _SupportBubble(
-          onTap: onZalo,
-          // Xanh thương hiệu Zalo, chữ trắng — đồng bộ với hai nút kia (nền
-          // màu, hình trắng). Bản trước để nền trắng chữ xanh nên nó chìm hẳn
-          // giữa Facebook và nút gọi.
-          fill: const Color(0xFF0068FF),
-          semanticLabel: l10n.supportZalo,
-          // Zalo không có trong bộ icon nào sẵn có; chữ trong vòng tròn là
-          // cách nhận diện chính thức của họ nên vẽ thẳng bằng text.
-          child: const Text(
-            'Zalo',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _SupportBubble(
-          onTap: onCall,
-          fill: const Color(0xFF5CA872),
-          semanticLabel: l10n.supportCall,
-          child: const Icon(LucideIcons.phone, size: 20, color: Colors.white),
-        ),
-      ],
-    );
-  }
-}
-
-class _SupportBubble extends StatelessWidget {
-  const _SupportBubble({
-    required this.child,
-    required this.fill,
-    required this.semanticLabel,
-    this.onTap,
-  });
-
-  final Widget child;
-  final Color fill;
-  final String semanticLabel;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: semanticLabel,
-    child: EcTap(
-      onTap: onTap,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: fill,
-          shape: BoxShape.circle,
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x33161616),
-              offset: Offset(0, 2),
-              blurRadius: 8,
-            ),
-          ],
-        ),
-        alignment: Alignment.center,
-        child: child,
-      ),
-    ),
-  );
-}
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader(this.label, {this.top = 22});
 
@@ -2455,15 +2464,10 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    // Vạch cam + nhãn in hoa đậm (bộ mock 18/09) thay cho nhãn xám nhạt.
+    return PenSectionTitle(
+      label,
       padding: EdgeInsets.fromLTRB(4, top, 4, 10),
-      child: PenText(
-        label.toUpperCase(),
-        size: 14,
-        color: PenColors.mut,
-        weight: FontWeight.w600,
-        letterSpacing: 0.7,
-      ),
     );
   }
 }
@@ -2493,17 +2497,31 @@ class _SettingsRow extends StatelessWidget {
       child: PenBox(
         width: double.infinity,
         axis: PenAxis.row,
-        gap: 16,
+        gap: 14,
         cross: CrossAxisAlignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         children: [
-          Icon(icon, size: 25, color: PenColors.ink),
+          // Icon đen/trắng (mực) trên ô xám nhạt — theo yêu cầu 18/09 không
+          // tô màu, nhưng ô nhạt cho hàng có nhịp thay vì trơ.
+          PenIconTile(
+            icon,
+            size: 36,
+            iconSize: 20,
+            radius: 9,
+            fill: PenColors.soft,
+            color: PenColors.ink,
+          ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                PenText(label, size: 16, color: PenColors.ink),
+                PenText(
+                  label,
+                  size: 16,
+                  color: PenColors.ink,
+                  weight: FontWeight.w500,
+                ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 3),
                   PenText(subtitle!, size: 13, color: PenColors.mut),
@@ -2512,8 +2530,8 @@ class _SettingsRow extends StatelessWidget {
             ),
           ),
           if (value != null)
-            PenText(value!, size: 14, color: PenColors.ink, softWrap: false),
-          const Icon(LucideIcons.chevronRight, size: 20, color: PenColors.mut),
+            PenText(value!, size: 14.5, color: PenColors.mut, softWrap: false),
+          Icon(LucideIcons.chevronRight, size: 20, color: PenColors.mut),
         ],
       ),
     );
@@ -2532,13 +2550,14 @@ class _SettingsGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return PenCard(
       axis: PenAxis.column,
-      stroke: null,
+      stroke: PenColors.line,
+      radius: 12,
+      lifted: false,
       clip: true,
-      padding: const EdgeInsets.symmetric(horizontal: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       children: [
         for (var i = 0; i < rows.length; i++) ...[
-          if (i > 0)
-            const Divider(height: 1, thickness: 1, color: PenColors.line),
+          if (i > 0) Divider(height: 1, thickness: 1, color: PenColors.line),
           rows[i],
         ],
       ],
@@ -2606,7 +2625,7 @@ class _AvatarPicker extends StatelessWidget {
                   cross: CrossAxisAlignment.center,
                   children: [
                     image ??
-                        const Icon(
+                        Icon(
                           LucideIcons.user,
                           size: 56,
                           color: PenColors.ink,
@@ -2619,7 +2638,7 @@ class _AvatarPicker extends StatelessWidget {
                 top: 84,
                 child: EcTap(
                   onTap: onChangeAvatar,
-                  child: const PenBox(
+                  child: PenBox(
                     width: 42,
                     height: 42,
                     fill: PenColors.ink,
@@ -2709,8 +2728,8 @@ class _Field extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 decoration: const BoxDecoration(),
                 placeholder: hint,
-                style: const TextStyle(fontSize: 16, color: PenColors.ink),
-                placeholderStyle: const TextStyle(
+                style: TextStyle(fontSize: 16, color: PenColors.ink),
+                placeholderStyle: TextStyle(
                   fontSize: 16,
                   color: PenColors.mut,
                 ),
@@ -2762,7 +2781,7 @@ class _LockedField extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const Icon(LucideIcons.lock, size: 21, color: PenColors.ink),
+            Icon(LucideIcons.lock, size: 21, color: PenColors.ink),
           ],
         ),
         if (hint != null) ...[
@@ -2776,7 +2795,7 @@ class _LockedField extends StatelessWidget {
             cross: CrossAxisAlignment.center,
             padding: const EdgeInsets.fromLTRB(2, 4, 2, 0),
             children: [
-              const Icon(LucideIcons.info, size: 16, color: PenColors.mut),
+              Icon(LucideIcons.info, size: 16, color: PenColors.mut),
               Expanded(
                 child: PenText(hint!, size: 12, color: PenColors.mut),
               ),
@@ -2853,8 +2872,7 @@ class _LanguageOption extends StatelessWidget {
             ],
           ),
         ),
-        if (selected)
-          const Icon(LucideIcons.check, size: 20, color: PenColors.ink),
+        if (selected) Icon(LucideIcons.check, size: 20, color: PenColors.ink),
       ],
     );
   }

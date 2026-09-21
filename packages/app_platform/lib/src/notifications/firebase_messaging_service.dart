@@ -30,13 +30,50 @@ class FirebaseMessagingService {
 
   Stream<String?> get onTokenRefresh => _tokenStream.stream;
 
+  /// Dựng các đường lắng nghe. **Không hỏi quyền.**
+  ///
+  /// Bản trước hỏi quyền ngay trong này, mà `init` thì gọi từ `main` — nên hộp
+  /// thoại của hệ điều hành bật ra ở giây thứ hai của lần mở app đầu tiên,
+  /// trước cả màn đăng nhập. Người dùng chưa biết app làm gì thì câu trả lời
+  /// gần như luôn là "Không", và trên iOS **hỏi lại là không được nữa**: một
+  /// lần từ chối là mất kênh thông báo của tài khoản đó vĩnh viễn, chỉ mở lại
+  /// được bằng cách tự vào Cài đặt của máy.
+  ///
+  /// Nay việc hỏi nằm ở [xinQuyen], gọi từ chỗ người dùng đang hiểu vì sao.
   Future<void> init() async {
     // Don't request permission on web — handled by browser APIs.
     if (kIsWeb) return;
 
-    final notificationsAllowed = await _localNotifications.requestPermissions();
-    if (!notificationsAllowed) return;
+    // Đã cho phép từ lượt chạy trước thì nối lại ngay, không hỏi gì.
+    if (await _localNotifications.daChoPhep()) await _batDauLuongToken();
 
+    // Handle messages while app is in the foreground.
+    FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+
+    // Handle when user taps a notification that brings the app from background.
+    FirebaseMessaging.onMessageOpenedApp.listen(_onNotificationOpened);
+
+    // Handle when user taps a notification that launched the app from terminated state.
+    final initialMessage = await _messaging.getInitialMessage();
+    if (initialMessage != null) {
+      _handleNotificationTap(initialMessage.data);
+    }
+  }
+
+  /// Hỏi quyền thông báo. Trả `true` nếu người dùng đồng ý.
+  ///
+  /// Gọi từ chỗ đã giải thích xong vì sao cần — xem ghi chú ở [init].
+  Future<bool> xinQuyen() async {
+    if (kIsWeb) return false;
+    final duoc = await _localNotifications.requestPermissions();
+    if (duoc) await _batDauLuongToken();
+    return duoc;
+  }
+
+  /// Người dùng đã cho phép chưa. Không hỏi, chỉ đọc.
+  Future<bool> daChoPhep() => _localNotifications.daChoPhep();
+
+  Future<void> _batDauLuongToken() async {
     if (Platform.isIOS || Platform.isMacOS) {
       // APNs token registration — required for iOS push delivery.
       await _messaging.setForegroundNotificationPresentationOptions(
@@ -51,20 +88,15 @@ class FirebaseMessagingService {
     // it — the token is delivered through `_tokenStream` once it's ready.
     _saveInitialToken().fire();
 
-    _messaging.onTokenRefresh.listen(_onTokenRefresh);
-
-    // Handle messages while app is in the foreground.
-    FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-
-    // Handle when user taps a notification that brings the app from background.
-    FirebaseMessaging.onMessageOpenedApp.listen(_onNotificationOpened);
-
-    // Handle when user taps a notification that launched the app from terminated state.
-    final initialMessage = await _messaging.getInitialMessage();
-    if (initialMessage != null) {
-      _handleNotificationTap(initialMessage.data);
+    // Một lần thôi: `init` rồi `xinQuyen` đều gọi vào đây, mà đăng ký hai lần
+    // thì mỗi lần token đổi là hai lượt gửi lên máy chủ.
+    if (!_dangNgheToken) {
+      _dangNgheToken = true;
+      _messaging.onTokenRefresh.listen(_onTokenRefresh);
     }
   }
+
+  bool _dangNgheToken = false;
 
   Future<String?> getToken() => _messaging.getToken();
 

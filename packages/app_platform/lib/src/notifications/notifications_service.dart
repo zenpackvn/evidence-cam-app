@@ -55,6 +55,12 @@ class NotificationsService {
   Future<bool> requestPermissions() =>
       _permissions.requestNotificationPermission();
 
+  /// Người dùng đã cho phép chưa — ĐỌC thôi, không bật hộp thoại nào.
+  ///
+  /// Cần tách khỏi [requestPermissions] vì trên iOS hỏi là hỏi một lần: gọi
+  /// nhầm hàm hỏi ở chỗ chỉ định kiểm tra là đốt mất lượt hỏi duy nhất.
+  Future<bool> daChoPhep() => _permissions.hasNotificationPermission();
+
   /// Shows a one-off notification on the default channel.
   Future<void> show({
     required int id,

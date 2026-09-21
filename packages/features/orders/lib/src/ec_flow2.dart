@@ -255,11 +255,18 @@ class EcSealLine {
     required this.label,
     this.inProgress = false,
     this.anchor,
+    this.signature,
     this.canVerify = false,
     this.mustSay = false,
   });
 
   final String label;
+
+  /// Dòng "Chữ ký ZenPack · khoá k2" — danh tính của chữ ký, cho người bán nói
+  /// với sàn "khoá k2" là bên kiểm biết lấy khoá công khai nào đối chiếu.
+  /// `null` = chưa ký. Không mang tên thuật toán: thuật ngữ chỉ ở trang Kiểm
+  /// chứng (design-spec/chu-ky-so-man-hinh.md).
+  final String? signature;
 
   /// While true the API withholds the media URL by design: the stored file is
   /// still the raw upload, with no timestamp burned into it.
@@ -295,7 +302,10 @@ class EcSealLine {
 /// upload status and an attach-photo action.
 class EcOrderTimelineScreen extends StatefulWidget {
   const EcOrderTimelineScreen({
+    this.huongDan,
+    this.neoBangChung,
     required this.orderCode,
+    this.subtitle,
     required this.days,
     this.pendingUploadCount = 0,
     this.onBack,
@@ -310,8 +320,23 @@ class EcOrderTimelineScreen extends StatefulWidget {
     super.key,
   });
 
+  /// Thẻ hướng dẫn của màn này, đặt ngay dưới phần đầu màn.
+  /// `null` = không hiện (đã xem, hoặc bên gọi không muốn).
+  final Widget? huongDan;
+
+  /// Khoá neo cho tour chỉ-vào-từng-nút, đặt quanh danh sách bằng chứng.
+  ///
+  /// Màn này không có nhãn chữ cố định nào để tour dò theo — phần đầu chỉ có
+  /// mã vận đơn, thân màn là danh sách theo ngày. Neo bằng khoá thì đúng vùng
+  /// tour đang nói tới, và không hỏng khi đổi chữ hay đổi thứ tiếng.
+  final GlobalKey? neoBangChung;
+
   /// Shipment/tracking code shown in the header.
   final String orderCode;
+
+  /// Dòng nhỏ dưới mã đơn — cửa hàng và sàn ("Nhà Lam · Shopee"). `null` =
+  /// chỉ có mã.
+  final String? subtitle;
 
   /// Evidence entries grouped by day, in display order.
   final List<EcTimelineDay> days;
@@ -374,22 +399,82 @@ class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return PenScreen(
-      scrollable: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    // Dải cam với mã đơn trắng; thân màn là một tấm trắng bo góc đè lên mép
+    // dưới dải (bộ mock 18/09). Hai hàng "thêm vào đơn" vẫn ghim đáy màn.
+    return PenBannerPage(
+      bannerHeight: 104,
+      overlap: 26,
+      header: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
+        child: _EcOrderTimelineHeader(
+          orderCode: widget.orderCode,
+          subtitle: widget.subtitle,
+          onBack: widget.onBack,
+          onCopyCode: widget.onCopyCode,
+        ),
+      ),
+      // Ghim đáy màn, NGOÀI vùng cuộn: đơn có năm chục clip thì nút nằm
+      // trong danh sách đồng nghĩa phải cuộn hết mới bấm được. Đây là hành
+      // động áp lên cả đơn, không thuộc về một hàng nào.
+      //
+      // Cả hai hàng ghim nằm TRONG vùng an toàn. Trước đó chúng nằm ngoài, nên
+      // hàng dưới cùng bị đẩy xuống dưới thanh điều hướng của máy — không tràn
+      // khung, không báo lỗi, chỉ là không ai nhìn thấy nó.
+      //
+      // Chỉ vẽ khi bên gọi thật sự có việc đính kèm. Hồ sơ khiếu nại dùng
+      // chung màn này nhưng không đính ảnh — vẽ vô điều kiện là chào một nút
+      // bấm vào không làm gì.
+      bottom: SafeArea(
+        top: false,
+        child: PenBox(
+          width: double.infinity,
+          fill: PenColors.card,
+          axis: PenAxis.column,
+          cross: CrossAxisAlignment.stretch,
+          children: [
+            // Mã đã gắn thêm hiện NGAY DƯỚI dòng thời gian, không nhét vào
+            // tiêu đề: tiêu đề chỉ có chỗ cho một mã, và mã thứ hai bị cắt
+            // cụt ở đó thì người dùng không biết nó đã gắn được hay chưa.
+            if (widget.extraCodes.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+                child: _EcExtraCodes(codes: widget.extraCodes),
+              ),
+            if (widget.onAttachCode != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+                child: _EcAttachRow(
+                  icon: LucideIcons.scanLine,
+                  title: l10n.attachCodeToOrder,
+                  subtitle: l10n.attachCodeToOrderHint,
+                  onTap: widget.onAttachCode,
+                ),
+              ),
+            if (widget.onAttachPhoto != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+                child: _EcAttachRow(
+                  icon: LucideIcons.plus,
+                  title: l10n.attachPhotoToOrder,
+                  subtitle: l10n.attachPhotoToOrderHint,
+                  onTap: widget.onAttachPhoto,
+                ),
+              ),
+          ],
+        ),
+      ),
+      child: PenBox(
+        width: double.infinity,
+        fill: PenColors.bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        axis: PenAxis.column,
+        cross: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
-            child: _EcOrderTimelineHeader(
-              orderCode: widget.orderCode,
-              onBack: widget.onBack,
-              onCopyCode: widget.onCopyCode,
-            ),
-          ),
+          ?widget.huongDan,
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+              key: widget.neoBangChung,
+              padding: const EdgeInsets.fromLTRB(18, 22, 18, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -403,22 +488,38 @@ class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
                   if (widget.days.isEmpty)
                     _EcTimelineEmpty(text: l10n.timelineEmpty),
                   for (var d = 0; d < widget.days.length; d++) ...[
-                    if (d > 0) const SizedBox(height: 16),
+                    if (d > 0) const SizedBox(height: 20),
+                    // Ngày đậm, số mục nhỏ ngay dưới: đơn có ba ngày quay thì
+                    // nhìn tiêu đề là biết ngày nào có mấy clip.
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 9),
-                      child: PenText(
-                        widget.days[d].date,
-                        size: 16,
-                        color: PenColors.ink,
-                        weight: FontWeight.w700,
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          PenText(
+                            widget.days[d].date,
+                            size: 20,
+                            color: PenColors.ink,
+                            weight: FontWeight.w800,
+                          ),
+                          PenText(
+                            l10n.timelineEntryCount(
+                              widget.days[d].videos.length,
+                            ),
+                            size: 13,
+                            color: PenColors.mut,
+                          ),
+                        ],
                       ),
                     ),
                     for (var v = 0; v < widget.days[d].videos.length; v++) ...[
-                      if (v > 0) const SizedBox(height: 9),
+                      if (v > 0) const SizedBox(height: 10),
                       _EcTimelineVideoRow(
                         video: widget.days[d].videos[v],
                         selecting: _selecting,
                         picked: _picked.contains(widget.days[d].videos[v].id),
+                        // Vạch dọc nối xuống mục sau; mục cuối ngày thì thôi.
+                        last: v == widget.days[d].videos.length - 1,
                         onPlay: _selecting
                             ? () => _toggle(widget.days[d].videos[v])
                             : _bind(
@@ -434,56 +535,15 @@ class _EcOrderTimelineScreenState extends State<EcOrderTimelineScreen> {
                       ),
                     ],
                   ],
+                  if (widget.days.isNotEmpty) ...[
+                    const SizedBox(height: 22),
+                    // Dấu chấm hết của dòng thời gian: người cuộn tới đây biết
+                    // là đã xem hết, không phải danh sách còn đang tải.
+                    _EcTimelineEnd(text: l10n.timelineEnd),
+                  ],
                   const SizedBox(height: 16),
                 ],
               ),
-            ),
-          ),
-          // Ghim đáy màn, NGOÀI vùng cuộn: đơn có năm chục clip thì nút nằm
-          // trong danh sách đồng nghĩa phải cuộn hết mới bấm được. Đây là hành
-          // động áp lên cả đơn, không thuộc về một hàng nào.
-          // Đính kèm ảnh GHIM cùng chỗ với nút gộp, ngoài vùng cuộn.
-          //
-          // Trước đây nó nằm cuối danh sách bằng chứng: đơn có vài chục clip
-          // thì phải cuộn hết mới bấm được, trong khi đính ảnh là việc làm bất
-          // cứ lúc nào chứ không phải sau khi xem xong.
-          // Cả hai hàng ghim nằm TRONG vùng an toàn.
-          //
-          // Trước đó chúng nằm ngoài, nên hàng dưới cùng ("Tạo link") bị đẩy
-          // xuống dưới thanh điều hướng của máy — không tràn khung, không báo
-          // lỗi, chỉ là không ai nhìn thấy nó.
-          SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Chỉ còn "Đính kèm ảnh", ghim đúng chỗ "Tạo link" từng đứng.
-                //
-                // Bỏ khối gộp bằng chứng: nút đó chưa nối được endpoint nên
-                // bấm vào chỉ báo "đang chờ backend" — một nút ghim sát đáy màn
-                // mà không làm gì thì tốn chỗ hơn là giúp.
-                // Chỉ vẽ khi bên gọi thật sự có việc đính kèm. Hồ sơ khiếu
-                // nại dùng chung màn này nhưng không đính ảnh — vẽ vô điều
-                // kiện là chào một nút bấm vào không làm gì.
-                // Mã đã gắn thêm hiện NGAY DƯỚI dòng thời gian, không nhét vào
-                // tiêu đề: tiêu đề chỉ có chỗ cho một mã, và mã thứ hai bị cắt
-                // cụt ở đó thì người dùng không biết nó đã gắn được hay chưa.
-                if (widget.extraCodes.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
-                    child: _EcExtraCodes(codes: widget.extraCodes),
-                  ),
-                if (widget.onAttachCode != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
-                    child: _EcAttachCodeRow(onTap: widget.onAttachCode),
-                  ),
-                if (widget.onAttachPhoto != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
-                    child: _EcAttachPhotoRow(onTap: widget.onAttachPhoto),
-                  ),
-              ],
             ),
           ),
         ],
@@ -505,6 +565,7 @@ class EcVideoDetailScreen extends StatelessWidget {
     this.onTrim,
     this.onDelete,
     this.onVerify,
+    this.onCopyVerifyLink,
     this.canDelete = true,
     this.showRecordedBy = true,
     super.key,
@@ -536,6 +597,10 @@ class EcVideoDetailScreen extends StatelessWidget {
   /// seller can hand to a marketplace.
   final VoidCallback? onVerify;
 
+  /// Chép link trang kiểm chứng — thứ người bán dán vào Zalo/form khiếu nại
+  /// của sàn. Tách khỏi [onVerify] (mở trang) vì gửi đi mới là việc chính.
+  final VoidCallback? onCopyVerifyLink;
+
   /// Whether the current user may delete this clip. False for Nhân viên
   /// (staff) — hides the delete row.
   final bool canDelete;
@@ -545,9 +610,24 @@ class EcVideoDetailScreen extends StatelessWidget {
   /// nhận.
   final bool showRecordedBy;
 
+  /// Viên trạng thái trên đầu sheet: đang niêm phong (xanh dương), niêm phong
+  /// có chuyện phải nói (vàng), hoặc đã tải lên (xanh lá).
+  (String, Color, IconData) _headline(AppLocalizations l10n) {
+    final seal = video.seal;
+    if (seal?.inProgress ?? false) {
+      return (seal!.label, PenColors.progress, LucideIcons.lock);
+    }
+    if (seal?.mustSay ?? false) {
+      return (seal!.label, PenColors.warning, LucideIcons.lockOpen);
+    }
+    return (video.uploadStatus, PenColors.success, LucideIcons.circleCheck);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final (stateLabel, stateInk, stateIcon) = _headline(l10n);
+    final sealing = video.seal?.inProgress ?? false;
     return PenSheet(
       onDismiss: onClose,
       // Design `Sheet`: padding [12, 20, 20, 20], over an ink `Dim`.
@@ -557,125 +637,162 @@ class EcVideoDetailScreen extends StatelessWidget {
         const SizedBox(height: 18),
         Row(
           children: [
-            PenBox(
-              width: 48,
-              height: 48,
-              fill: PenColors.line,
-              radius: 14,
-              axis: PenAxis.row,
-              main: MainAxisAlignment.center,
-              cross: CrossAxisAlignment.center,
-              children: [
-                Icon(video.type.icon, size: 24, color: PenColors.ink),
-              ],
+            PenIconTile(
+              video.type.icon,
+              size: 48,
+              iconSize: 24,
+              radius: 12,
+              fill: PenColors.soft,
+              color: PenColors.ink,
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: PenText(
-                l10n.videoDetailSheetTitle,
-                size: 24,
-                color: PenColors.ink,
-                weight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Thời lượng nằm RIÊNG, không nối chuỗi với tên loại.
-            //
-            // Ô này rộng tối đa 170. Nối `'$title · $duration'` thành một chuỗi
-            // rồi cắt bằng ellipsis thì thứ bị cắt luôn là phần ĐUÔI — tức là
-            // đúng con số thời lượng. Với loại tên ngắn ("Đóng hàng") thì vừa
-            // nên không ai thấy; với "Đơn vị vận chuyển" thì clip nào cũng mất
-            // sạch thời lượng, và nhìn như app quên ghi.
-            //
-            // Tách làm hai: tên loại co lại, thời lượng luôn được vẽ.
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 170),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Flexible(
-                    child: PenText(
-                      video.title,
-                      size: 16,
-                      color: PenColors.mut,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
                   PenText(
-                    ' · ${video.duration}',
-                    size: 16,
-                    color: PenColors.mut,
+                    l10n.videoDetailSheetTitle,
+                    size: 24,
+                    color: PenColors.ink,
+                    weight: FontWeight.w800,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  // Tên loại và thời lượng là HAI ô, không nối chuỗi: tên
+                  // loại co lại (cắt ba chấm) còn thời lượng luôn được vẽ
+                  // trọn — mất con số đó nhìn như app quên ghi.
+                  Row(
+                    children: [
+                      Flexible(
+                        child: PenText(
+                          video.title,
+                          size: 14,
+                          color: PenColors.mut,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      PenText(
+                        ' · ${video.duration}',
+                        size: 14,
+                        color: PenColors.mut,
+                        softWrap: false,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  // Viên trạng thái ở dòng riêng: đứng cùng dòng với tên loại
+                  // thì ở bề ngang điện thoại cả hai cùng bị cắt.
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: PenPill(
+                      label: stateLabel,
+                      ink: stateInk,
+                      icon: stateIcon,
+                    ),
                   ),
                 ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 18),
-        _EcDetailInfoRow(
-          label: l10n.detailRecordedTime,
-          value: video.recordedAt,
-        ),
-        if (showRecordedBy) ...[
-          const _EcDetailDivider(),
-          _EcDetailInfoRow(
-            label: l10n.detailRecordedBy,
-            value: video.recordedBy,
-          ),
-        ],
-        const _EcDetailDivider(),
-        _EcDetailInfoRow(label: l10n.detailDevice, value: video.device),
-        // Kho nào đang giữ CLIP NÀY. Đổi kho không kéo clip cũ đi theo, nên
-        // một đơn có thể có clip nằm ở hai kho — hỏi "clip này nằm ở đâu" mà
-        // phải mở màn Cài đặt kho ra đoán là câu trả lời sai chỗ.
-        if (video.storage != null) ...[
-          const _EcDetailDivider(),
-          _EcDetailInfoRow(label: l10n.detailStorage, value: video.storage!),
-        ],
-        const _EcDetailDivider(),
-        // MỘT hàng cho cả hai giai đoạn, không phải hai hàng chồng nhau.
-        //
-        // Tải lên xong chưa phải là xong: máy chủ còn nung dấu giờ lên hình.
-        // Suốt quãng đó hàng này nói "đang niêm phong"; nung xong nó mới đổi
-        // thành "Đã tải lên" kèm dấu tích. Nói "Đã tải lên" từ sớm là mời
-        // người bán cầm một clip chưa có dấu đi khiếu nại.
-        if (video.seal?.inProgress ?? false)
-          _EcDetailInfoRow(
-            label: l10n.detailSeal,
-            value: video.seal!.label,
-          )
-        else ...[
-          _EcDetailInfoRow(
-            label: l10n.detailUploadStatus,
-            value: video.uploadStatus,
-            trailing: LucideIcons.check,
-          ),
-          // Trạng thái cuối cũng có thứ phải nói. Trước đây hàng này chỉ hiện
-          // khi còn ĐANG chạy, nên một clip mang cờ hỏng hiện ra đúng chữ "Đã
-          // tải lên" kèm dấu tích — người bán đọc thành mọi thứ đều ổn.
-          if (video.seal?.mustSay ?? false) ...[
+        const SizedBox(height: 16),
+        // Các dòng thông tin nằm trong MỘT thẻ trắng, mỗi dòng mở đầu bằng
+        // một ô biểu tượng cam nhạt (bộ mock 18/09).
+        PenCard(
+          axis: PenAxis.column,
+          stroke: PenColors.line,
+          radius: 12,
+          lifted: false,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          children: [
+            _EcDetailInfoRow(
+              label: l10n.detailRecordedTime,
+              value: video.recordedAt,
+            ),
+            if (showRecordedBy) ...[
+              const _EcDetailDivider(),
+              _EcDetailInfoRow(
+                label: l10n.detailRecordedBy,
+                value: video.recordedBy,
+              ),
+            ],
             const _EcDetailDivider(),
             _EcDetailInfoRow(
-              label: l10n.detailSeal,
-              value: video.seal!.label,
+              label: l10n.detailDevice,
+              value: video.device,
             ),
+            // Kho nào đang giữ CLIP NÀY. Đổi kho không kéo clip cũ đi theo,
+            // nên một đơn có thể có clip nằm ở hai kho — hỏi "clip này nằm ở
+            // đâu" mà phải mở màn Cài đặt kho ra đoán là câu trả lời sai chỗ.
+            if (video.storage != null) ...[
+              const _EcDetailDivider(),
+              _EcDetailInfoRow(
+                label: l10n.detailStorage,
+                value: video.storage!,
+              ),
+            ],
+            const _EcDetailDivider(),
+            // MỘT hàng cho cả hai giai đoạn, không phải hai hàng chồng nhau.
+            //
+            // Tải lên xong chưa phải là xong: máy chủ còn nung dấu giờ lên
+            // hình. Suốt quãng đó hàng này nói "đang niêm phong"; nung xong
+            // nó mới đổi thành "Đã tải lên" kèm dấu tích. Nói "Đã tải lên" từ
+            // sớm là mời người bán cầm một clip chưa có dấu đi khiếu nại.
+            if (sealing)
+              _EcDetailInfoRow(
+                label: l10n.detailSeal,
+                value: video.seal!.label,
+                pill: true,
+                pillIcon: LucideIcons.lock,
+              )
+            else ...[
+              _EcDetailInfoRow(
+                label: l10n.detailUploadStatus,
+                value: video.uploadStatus,
+                trailing: LucideIcons.check,
+              ),
+              // Trạng thái cuối cũng có thứ phải nói. Trước đây hàng này chỉ
+              // hiện khi còn ĐANG chạy, nên một clip mang cờ hỏng hiện ra đúng
+              // chữ "Đã tải lên" kèm dấu tích — người bán đọc thành mọi thứ
+              // đều ổn.
+              if (video.seal?.mustSay ?? false) ...[
+                const _EcDetailDivider(),
+                _EcDetailInfoRow(
+                  label: l10n.detailSeal,
+                  value: video.seal!.label,
+                  pill: true,
+                  pillIcon: LucideIcons.lock,
+                ),
+              ],
+            ],
+            // CHỮ KÝ SỐ — tầng "danh tính" giữa "Đã khoá" (kết quả) và trang
+            // Kiểm chứng (kỹ thuật). Một hàng, đúng một câu: khoá nào đã ký.
+            if (video.seal?.signature != null) ...[
+              const _EcDetailDivider(),
+              _EcDetailInfoRow(
+                label: l10n.detailSignature,
+                value: video.seal!.signature!,
+              ),
+            ],
+            if (video.fileSize != null) ...[
+              const _EcDetailDivider(),
+              _EcDetailInfoRow(
+                label: l10n.detailSize,
+                value: video.fileSize!,
+              ),
+            ],
+            if (video.seal?.anchor != null) ...[
+              const _EcDetailDivider(),
+              _EcDetailInfoRow(
+                label: l10n.detailSealAnchor,
+                value: video.seal!.anchor!,
+              ),
+            ],
           ],
-        ],
-        if (video.fileSize != null) ...[
-          const _EcDetailDivider(),
-          _EcDetailInfoRow(
-            label: l10n.detailSize,
-            value: video.fileSize!,
-          ),
-        ],
-        if (video.seal?.anchor != null) ...[
-          const _EcDetailDivider(),
-          _EcDetailInfoRow(
-            label: l10n.detailSealAnchor,
-            value: video.seal!.anchor!,
-          ),
-        ],
+        ),
         if (video.timeDrift) ...[
           const SizedBox(height: 10),
           PenText(
@@ -684,22 +801,21 @@ class EcVideoDetailScreen extends StatelessWidget {
             color: PenColors.mut,
           ),
         ],
-        const SizedBox(height: 18),
-        PenCard(
-          axis: PenAxis.column,
-          clip: true,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+        const SizedBox(height: 14),
+        // Mỗi hành động một thẻ rời (bộ mock 18/09), cách nhau 10.
+        //
+        // Đang niêm phong thì API cố tình không trả link, vì bản đang nằm ở
+        // kho là bản THÔ — chưa có dấu giờ, chưa có mã vận đơn trên hình.
+        // Cầm về đúng cái file đó rồi gửi cho sàn là hỏng, nên Sao chép
+        // link và Tải về phải khoá.
+        //
+        // Nhưng XEM LẠI thì không cần bản đã đóng dấu. Máy này vẫn đang giữ
+        // nguyên những byte vừa quay, nên nếu còn bản tạm thì mở nút Phát
+        // ngay — người bán không phải đợi một giây nào cho việc họ thật sự
+        // muốn làm. Không còn bản tạm mới rơi về dòng giải thích.
+        _EcActionStack(
           children: [
-            // Đang niêm phong thì API cố tình không trả link, vì bản đang nằm ở
-            // kho là bản THÔ — chưa có dấu giờ, chưa có mã vận đơn trên hình.
-            // Cầm về đúng cái file đó rồi gửi cho sàn là hỏng, nên Sao chép
-            // link và Tải về phải khoá.
-            //
-            // Nhưng XEM LẠI thì không cần bản đã đóng dấu. Máy này vẫn đang giữ
-            // nguyên những byte vừa quay, nên nếu còn bản tạm thì mở nút Phát
-            // ngay — người bán không phải đợi một giây nào cho việc họ thật sự
-            // muốn làm. Không còn bản tạm mới rơi về dòng giải thích.
-            if (video.seal?.inProgress ?? false) ...[
+            if (sealing) ...[
               if (video.localPath != null)
                 _EcDetailActionRow(
                   icon: LucideIcons.play,
@@ -718,16 +834,13 @@ class EcVideoDetailScreen extends StatelessWidget {
                 title: l10n.detailPlayVideo,
                 onTap: onPlay,
               ),
-              if (video.mediaUrl != null) ...[
-                const _EcDetailDivider(),
+              if (video.mediaUrl != null)
                 _EcDetailActionRow(
                   icon: LucideIcons.copy,
                   title: l10n.detailCopyAssetLink,
                   onTap: onCopyLink,
                 ),
-              ],
-              if (video.mediaUrl != null && onTrim != null) ...[
-                const _EcDetailDivider(),
+              if (video.mediaUrl != null && onTrim != null)
                 // Cắt chỉ mở khi máy chủ đã có bản phát được: thứ được cắt là
                 // bản ĐÃ NUNG, nên đoạn gửi đi vẫn mang dấu giờ và mã vận đơn
                 // trên hình. Cắt bản thô thì gửi cho sàn một đoạn không có gì
@@ -738,8 +851,6 @@ class EcVideoDetailScreen extends StatelessWidget {
                   subtitle: l10n.detailTrimNote,
                   onTap: onTrim,
                 ),
-              ],
-              const _EcDetailDivider(),
               _EcDetailActionRow(
                 icon: LucideIcons.download,
                 title: l10n.detailDownloadVideo,
@@ -752,16 +863,23 @@ class EcVideoDetailScreen extends StatelessWidget {
             // chính, không phải một mục cài đặt. Chỉ hiện khi clip thật sự có
             // hồ sơ — mở trang cho clip cũ chỉ ra 404.
             if (video.seal?.canVerify ?? false) ...[
-              const _EcDetailDivider(),
               _EcDetailActionRow(
                 icon: LucideIcons.shieldCheck,
                 title: l10n.sealVerifyOpen,
                 subtitle: l10n.sealVerifyHint,
                 onTap: onVerify,
               ),
+              // Chép link đứng NGAY DƯỚI nút mở trang: hai việc của cùng một
+              // link, và chép mới là việc người bán làm nhiều hơn — họ gửi
+              // link cho sàn, không phải tự ngồi đọc trang kiểm chứng.
+              if (onCopyVerifyLink != null)
+                _EcDetailActionRow(
+                  icon: LucideIcons.copy,
+                  title: l10n.sealCopyVerifyLink,
+                  onTap: onCopyVerifyLink,
+                ),
             ],
-            if (canDelete) ...[
-              const _EcDetailDivider(),
+            if (canDelete)
               _EcDetailActionRow(
                 icon: LucideIcons.trash2,
                 title: l10n.deleteVideoAction,
@@ -769,7 +887,6 @@ class EcVideoDetailScreen extends StatelessWidget {
                 danger: true,
                 onTap: onDelete,
               ),
-            ],
           ],
         ),
       ],
@@ -777,12 +894,36 @@ class EcVideoDetailScreen extends StatelessWidget {
   }
 }
 
+/// Các hành động nằm trong MỘT thẻ, ngăn nhau bằng vạch (18/09) — cách mọi app
+/// thật xếp một nhóm hành động; mỗi hành động một thẻ rời là dáng của mock.
+class _EcActionStack extends StatelessWidget {
+  const _EcActionStack({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => PenCard(
+    axis: PenAxis.column,
+    stroke: PenColors.line,
+    radius: 12,
+    lifted: false,
+    clip: true,
+    padding: const EdgeInsets.symmetric(horizontal: 14),
+    children: [
+      for (var i = 0; i < children.length; i++) ...[
+        if (i > 0) const _EcDetailDivider(),
+        children[i],
+      ],
+    ],
+  );
+}
+
 /// The hairline the design puts between rows inside a sheet or card.
 class _EcDetailDivider extends StatelessWidget {
   const _EcDetailDivider();
 
   @override
-  Widget build(BuildContext context) => const PenBox(
+  Widget build(BuildContext context) => PenBox(
     width: double.infinity,
     height: 1,
     fill: PenColors.line,
@@ -905,7 +1046,7 @@ class EcPhotoDetailScreen extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: photo.mediaUrl == null
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: double.infinity,
                                 height: 160,
                                 child: ColoredBox(
@@ -939,7 +1080,7 @@ class EcPhotoDetailScreen extends StatelessWidget {
                                     );
                                   },
                                   errorBuilder: (context, error, stackTrace) =>
-                                      const SizedBox(
+                                      SizedBox(
                                         width: double.infinity,
                                         height: 160,
                                         child: ColoredBox(
@@ -1001,38 +1142,57 @@ class EcPhotoDetailScreen extends StatelessWidget {
 class _EcOrderTimelineHeader extends StatelessWidget {
   const _EcOrderTimelineHeader({
     required this.orderCode,
+    this.subtitle,
     this.onBack,
     this.onCopyCode,
   });
 
   final String orderCode;
+  final String? subtitle;
   final VoidCallback? onBack;
   final VoidCallback? onCopyCode;
 
   @override
   Widget build(BuildContext context) {
+    // Header nằm trên dải cam nên chữ, mũi tên và nút chép đều trắng.
     return Row(
       children: [
-        PenBackButton(onTap: onBack),
+        PenBackButton(onTap: onBack, color: PenColors.card),
         const SizedBox(width: 12),
         // Tiêu đề cũng quay lại: mũi tên 42pt là đích bấm nhỏ khi người dùng
         // đang cầm máy một tay, còn dải tiêu đề thì rộng gần hết bề ngang.
         Expanded(
           child: EcTap(
             onTap: onBack,
-            child: PenText(
-              orderCode,
-              size: 24,
-              color: PenColors.ink,
-              weight: FontWeight.w800,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PenText(
+                  orderCode,
+                  size: 24,
+                  color: PenColors.card,
+                  weight: FontWeight.w800,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (subtitle != null)
+                  PenText(
+                    subtitle!,
+                    size: 13,
+                    color: PenColors.card.withValues(alpha: 0.82),
+                    weight: FontWeight.w500,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
             ),
           ),
         ),
         const SizedBox(width: 12),
         EcTap(
           onTap: onCopyCode,
-          child: const Icon(LucideIcons.copy, size: 24, color: PenColors.ink),
+          child: Icon(LucideIcons.copy, size: 24, color: PenColors.card),
         ),
       ],
     );
@@ -1057,7 +1217,7 @@ class _EcUploadWarnBanner extends StatelessWidget {
       cross: CrossAxisAlignment.center,
       padding: const EdgeInsets.all(16),
       children: [
-        const Icon(LucideIcons.cloud, size: 22, color: PenColors.ink),
+        Icon(LucideIcons.cloud, size: 22, color: PenColors.ink),
         Expanded(
           child: PenText(
             l10n.ordersPendingEvidenceWarning(pendingCount),
@@ -1087,6 +1247,7 @@ class _EcTimelineVideoRow extends StatelessWidget {
     this.onMenu,
     this.selecting = false,
     this.picked = false,
+    this.last = false,
   });
 
   final EcTimelineVideo video;
@@ -1098,77 +1259,105 @@ class _EcTimelineVideoRow extends StatelessWidget {
   final bool selecting;
   final bool picked;
 
+  /// Mục cuối của ngày: vạch dọc dưới chấm không kéo tiếp xuống.
+  final bool last;
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 46,
-          child: PenText(video.time, size: 14, color: PenColors.mut),
-        ),
-        const SizedBox(
-          width: 22,
-          height: 58,
-          child: Center(
-            child: PenEllipse(width: 11, height: 11, color: PenColors.ink),
-          ),
-        ),
-        Expanded(
-          // The whole card opens the evidence detail — the design's play
-          // triangle was a second, smaller target for the same destination.
-          child: PenCard(
-            lifted: false,
-            gap: 12,
-            padding: const EdgeInsets.symmetric(
-              vertical: 10,
-              horizontal: 11,
-            ),
-            onTap: onPlay,
-            children: [
-              _EcTimelineThumb(video: video),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    PenText(
-                      video.label,
-                      size: 14,
-                      color: PenColors.ink,
-                      weight: FontWeight.w600,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (video.statusText != null) ...[
-                      const SizedBox(height: 4),
-                      _EcStatusBadge(
-                        text: video.statusText!,
-                        tone: video.statusTone,
-                        icon: video.statusIcon,
-                      ),
-                    ],
-                  ],
-                ),
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 48,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 22),
+              child: PenText(
+                video.time,
+                size: 15,
+                color: PenColors.ink,
+                weight: FontWeight.w600,
               ),
-              if (selecting)
-                Icon(
-                  picked ? LucideIcons.squareCheckBig : LucideIcons.square,
-                  size: 20,
-                  color: picked ? PenColors.primary : PenColors.mut,
-                )
-              else
-                EcTap(
-                  onTap: onMenu,
-                  child: const Icon(
-                    LucideIcons.ellipsisVertical,
-                    size: 16,
-                    color: PenColors.ink,
+            ),
+          ),
+          // Chấm cam trên một vạch dọc nhạt — trục thời gian của ngày.
+          SizedBox(
+            width: 24,
+            child: Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                if (!last)
+                  Positioned(
+                    top: 30,
+                    bottom: -10,
+                    child: PenBox(width: 2, fill: PenColors.line),
+                  ),
+                Positioned(
+                  top: 22,
+                  child: PenEllipse(
+                    width: 14,
+                    height: 14,
+                    color: PenColors.primary,
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+          Expanded(
+            // The whole card opens the evidence detail — the design's play
+            // triangle was a second, smaller target for the same destination.
+            child: PenCard(
+              stroke: PenColors.line,
+              radius: 12,
+              lifted: false,
+              gap: 12,
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+              onTap: onPlay,
+              children: [
+                _EcTimelineThumb(video: video),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      PenText(
+                        video.label,
+                        size: 16,
+                        color: PenColors.ink,
+                        weight: FontWeight.w700,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (video.statusText != null) ...[
+                        const SizedBox(height: 6),
+                        _EcStatusBadge(
+                          text: video.statusText!,
+                          tone: video.statusTone,
+                          icon: video.statusIcon,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (selecting)
+                  Icon(
+                    picked ? LucideIcons.squareCheckBig : LucideIcons.square,
+                    size: 20,
+                    color: picked ? PenColors.primary : PenColors.mut,
+                  )
+                else
+                  EcTap(
+                    onTap: onMenu,
+                    child: Icon(
+                      LucideIcons.ellipsisVertical,
+                      size: 18,
+                      color: PenColors.ink,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1181,7 +1370,7 @@ class _EcTimelineVideoRow extends StatelessWidget {
 class _EcTimelineThumb extends StatelessWidget {
   const _EcTimelineThumb({required this.video});
 
-  static const _size = 42.0;
+  static const _size = 64.0;
   static const _radius = 10.0;
 
   final EcTimelineVideo video;
@@ -1189,35 +1378,85 @@ class _EcTimelineThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = video.thumbUrl;
-    if (url == null) return _icon();
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(_radius),
-      child: Image.network(
-        url,
-        width: _size,
-        height: _size,
-        // A poster is 16:9 and the slot is square — crop rather than letterbox,
-        // so the row keeps its rhythm down the list.
-        fit: BoxFit.cover,
-        // Bounded so a large source decodes small: the whole point of the
-        // poster is that a timeline costs almost no memory or bandwidth.
-        cacheWidth: (_size * MediaQuery.devicePixelRatioOf(context)).round(),
-        errorBuilder: (context, error, stackTrace) => _icon(),
-        loadingBuilder: (context, child, progress) =>
-            progress == null ? child : _icon(),
+    final picture = url == null
+        ? _icon()
+        : ClipRRect(
+            borderRadius: BorderRadius.circular(_radius),
+            child: Image.network(
+              url,
+              width: _size,
+              height: _size,
+              // A poster is 16:9 and the slot is square — crop rather than
+              // letterbox, so the row keeps its rhythm down the list.
+              fit: BoxFit.cover,
+              // Bounded so a large source decodes small: the whole point of
+              // the poster is that a timeline costs almost no memory or
+              // bandwidth.
+              cacheWidth: (_size * MediaQuery.devicePixelRatioOf(context))
+                  .round(),
+              errorBuilder: (context, error, stackTrace) => _icon(),
+              loadingBuilder: (context, child, progress) =>
+                  progress == null ? child : _icon(),
+            ),
+          );
+    final seconds = video.durationSeconds;
+    if (seconds == null) return picture;
+    // Thời lượng đóng ở góc dưới ảnh, như trên mọi trình phát video: người
+    // bán quét danh sách là biết clip nào 6 giây, clip nào 3 phút.
+    return SizedBox(
+      width: _size,
+      height: _size,
+      child: Stack(
+        children: [
+          picture,
+          Positioned(
+            left: 4,
+            bottom: 4,
+            child: PenBox(
+              fill: const Color(0xCC1B1412),
+              radius: 6,
+              axis: PenAxis.row,
+              gap: 3,
+              hugMain: true,
+              cross: CrossAxisAlignment.center,
+              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 5),
+              children: [
+                const Icon(
+                  LucideIcons.video,
+                  size: 10,
+                  color: Color(0xFFFFFFFF),
+                ),
+                PenText(
+                  _clock(seconds),
+                  size: 10,
+                  color: const Color(0xFFFFFFFF),
+                  weight: FontWeight.w600,
+                  softWrap: false,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  /// `mm:ss` — clip không quá vài phút nên không cần giờ.
+  static String _clock(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
   Widget _icon() => PenBox(
     width: _size,
     height: _size,
-    fill: PenColors.bg,
+    fill: PenColors.soft,
     radius: _radius,
     axis: PenAxis.row,
     main: MainAxisAlignment.center,
     cross: CrossAxisAlignment.center,
-    children: [Icon(video.type.icon, size: 21, color: PenColors.ink)],
+    children: [Icon(video.type.icon, size: 26, color: PenColors.mut)],
   );
 }
 
@@ -1258,91 +1497,81 @@ class _EcStatusBadge extends StatelessWidget {
     );
   }
 
-  /// Đúng 5 viên khung F2-02 vẽ.
-  (Color, Color) get _palette => switch (tone) {
-    EcStatusTone.done => (PenColors.soft, PenColors.success),
-    EcStatusTone.uploading => (PenColors.line, PenColors.link),
-    EcStatusTone.waiting => (PenColors.line, PenColors.mut),
-    EcStatusTone.quota => (PenColors.line, const Color(0xFFB6770B)),
-    EcStatusTone.error => (const Color(0xFFF8E7E7), PenColors.danger),
-  };
-}
-
-class _EcAttachPhotoRow extends StatelessWidget {
-  const _EcAttachPhotoRow({this.onTap});
-
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return EcTap(
-      onTap: onTap,
-      child: PenBox(
-        width: double.infinity,
-        height: 54,
-        fill: PenColors.card,
-        stroke: PenColors.line,
-        radius: 14,
-        axis: PenAxis.row,
-        gap: 12,
-        main: MainAxisAlignment.center,
-        cross: CrossAxisAlignment.center,
-        children: [
-          const Icon(LucideIcons.plus, size: 21, color: PenColors.ink),
-          Flexible(
-            child: PenText(
-              context.l10n.attachPhotoToOrder,
-              size: 16,
-              color: PenColors.link,
-              weight: FontWeight.w600,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
+  /// Đúng 5 tông khung F2-02 vẽ; nền là chính màu chữ pha 12% (bộ mock
+  /// 18/09) thay cho xám — viên xanh đứng trên nền xanh nhạt, viên đỏ trên nền
+  /// đỏ nhạt, nhìn màu là đọc được trạng thái trước cả khi đọc chữ.
+  (Color, Color) get _palette {
+    final ink = switch (tone) {
+      EcStatusTone.done => PenColors.success,
+      EcStatusTone.uploading => PenColors.progress,
+      EcStatusTone.waiting => PenColors.mut,
+      EcStatusTone.quota => PenColors.warning,
+      EcStatusTone.error => PenColors.danger,
+    };
+    return (ink.withValues(alpha: 0.12), ink);
   }
 }
 
-/// Hàng "quét thêm mã vào đơn này".
-///
-/// Dựng theo đúng khuôn `_EcAttachPhotoRow` ngay trên nó: hai hành động cùng
-/// nằm cuối màn, cùng là "thêm gì đó vào đơn", nên trông khác nhau là bắt người
-/// dùng học hai lần cùng một thứ.
-class _EcAttachCodeRow extends StatelessWidget {
-  const _EcAttachCodeRow({this.onTap});
+/// Một hàng "thêm gì đó vào đơn" ghim đáy màn: ô biểu tượng, tiêu đề cam,
+/// dòng giải thích, mũi tên. Hai hành động (quét thêm mã, đính kèm ảnh) cùng
+/// một khuôn, nên trông khác nhau là bắt người dùng học hai lần cùng một thứ.
+class _EcAttachRow extends StatelessWidget {
+  const _EcAttachRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+  });
 
+  final IconData icon;
+  final String title;
+  final String subtitle;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return EcTap(
+    return PenCard(
+      stroke: PenColors.line,
+      radius: 12,
+      lifted: false,
+      gap: 14,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       onTap: onTap,
-      child: PenBox(
-        width: double.infinity,
-        height: 54,
-        fill: PenColors.card,
-        stroke: PenColors.line,
-        radius: 14,
-        axis: PenAxis.row,
-        gap: 12,
-        main: MainAxisAlignment.center,
-        cross: CrossAxisAlignment.center,
-        children: [
-          const Icon(LucideIcons.scanLine, size: 21, color: PenColors.ink),
-          Flexible(
-            child: PenText(
-              context.l10n.attachCodeToOrder,
-              size: 16,
-              color: PenColors.link,
-              weight: FontWeight.w600,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-            ),
+      children: [
+        PenIconTile(
+          icon,
+          size: 40,
+          iconSize: 21,
+          radius: 10,
+          fill: PenColors.selected,
+          color: PenColors.primary,
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PenText(
+                title,
+                size: 16,
+                color: PenColors.ink,
+                weight: FontWeight.w600,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              PenText(
+                subtitle,
+                size: 13,
+                color: PenColors.mut,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Icon(LucideIcons.chevronRight, size: 20, color: PenColors.mut),
+      ],
     );
   }
 }
@@ -1377,6 +1606,40 @@ class _EcExtraCodes extends StatelessWidget {
   }
 }
 
+/// Viên "Không có thêm hoạt động" giữa hai vạch mờ — dấu chấm hết của dòng
+/// thời gian.
+class _EcTimelineEnd extends StatelessWidget {
+  const _EcTimelineEnd({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: PenBox(height: 1, fill: PenColors.line)),
+        const SizedBox(width: 10),
+        // Viên co được: màn hẹp hay câu dịch dài thì viên nhường chỗ, hai
+        // vạch bên chỉ còn là gợi ý.
+        Flexible(
+          flex: 6,
+          child: PenPill(
+            label: text,
+            ink: PenColors.mut,
+            fill: PenColors.soft,
+            icon: LucideIcons.clock,
+            size: 13,
+            weight: FontWeight.w500,
+            padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 14),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: PenBox(height: 1, fill: PenColors.line)),
+      ],
+    );
+  }
+}
+
 /// Shown in place of the timeline when a shipment has no evidence yet.
 class _EcTimelineEmpty extends StatelessWidget {
   const _EcTimelineEmpty({required this.text});
@@ -1389,7 +1652,7 @@ class _EcTimelineEmpty extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 40),
       child: Column(
         children: [
-          const Icon(
+          Icon(
             Icons.videocam_off_outlined,
             size: 36,
             color: BrandColors.mut,
@@ -1411,6 +1674,8 @@ class _EcDetailInfoRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.trailing,
+    this.pill = false,
+    this.pillIcon,
   });
 
   final String label;
@@ -1419,31 +1684,54 @@ class _EcDetailInfoRow extends StatelessWidget {
   /// Optional glyph after the value, e.g. the upload-complete tick.
   final IconData? trailing;
 
+  /// Giá trị vẽ thành viên xám (niêm phong) thay vì chữ trần.
+  final bool pill;
+  final IconData? pillIcon;
+
   @override
   Widget build(BuildContext context) {
     return PenBox(
       width: double.infinity,
       axis: PenAxis.row,
-      gap: 10,
+      gap: 12,
       cross: CrossAxisAlignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: 13),
       children: [
-        PenText(label, size: 14, color: PenColors.mut, softWrap: false),
+        // Nhãn trái, giá trị phải, không icon — hàng thông tin kiểu "Payment
+        // Info" của Shopee trên Mobbin (18/09).
+        PenText(label, size: 14.5, color: PenColors.mut, softWrap: false),
         // The design's spacer is the flexible one and the value hugs its text,
         // so the value gets all the leftover room and only ellipsises when it
         // genuinely cannot fit.
         Expanded(
-          child: PenText(
-            value,
-            size: 14,
-            color: PenColors.ink,
-            weight: FontWeight.w500,
-            align: TextAlign.right,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: pill
+                ? PenPill(
+                    label: value,
+                    ink: PenColors.ink,
+                    fill: PenColors.soft,
+                    icon: pillIcon,
+                    size: 13,
+                    weight: FontWeight.w500,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 11,
+                    ),
+                  )
+                : PenText(
+                    value,
+                    size: 15,
+                    color: PenColors.ink,
+                    weight: FontWeight.w600,
+                    align: TextAlign.right,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
           ),
         ),
-        if (trailing != null) Icon(trailing, size: 19, color: PenColors.ink),
+        if (trailing != null)
+          Icon(trailing, size: 19, color: PenColors.success),
       ],
     );
   }
@@ -1469,6 +1757,8 @@ class _EcDetailActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ink = danger ? PenColors.danger : PenColors.ink;
+    // Hàng trong thẻ chung: icon mực trần, tiêu đề đậm, dòng phụ nhạt, mũi
+    // tên — hàng xoá chỉ đổi màu chữ và icon sang đỏ (18/09).
     return EcTap(
       onTap: onTap,
       child: PenBox(
@@ -1478,15 +1768,15 @@ class _EcDetailActionRow extends StatelessWidget {
         cross: CrossAxisAlignment.center,
         padding: const EdgeInsets.symmetric(vertical: 13),
         children: [
-          PenBox(
-            width: 44,
-            height: 44,
-            fill: danger ? const Color(0xFFFDECEC) : PenColors.bg,
-            radius: 10,
-            axis: PenAxis.row,
-            main: MainAxisAlignment.center,
-            cross: CrossAxisAlignment.center,
-            children: [Icon(icon, size: 22, color: ink)],
+          PenIconTile(
+            icon,
+            size: 36,
+            iconSize: 20,
+            radius: 9,
+            fill: danger
+                ? PenColors.danger.withValues(alpha: 0.1)
+                : PenColors.soft,
+            color: ink,
           ),
           Expanded(
             child: Column(
@@ -1504,7 +1794,7 @@ class _EcDetailActionRow extends StatelessWidget {
                   const SizedBox(height: 3),
                   PenText(
                     subtitle!,
-                    size: 12,
+                    size: 12.5,
                     color: PenColors.mut,
                     lineHeight: 1.4,
                   ),

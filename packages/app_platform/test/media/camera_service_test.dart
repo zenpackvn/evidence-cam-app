@@ -34,6 +34,7 @@ void main() {
           required resolutionPreset,
           enableAudio = true,
           imageFormatGroup,
+          fps,
         }) => mockController,
       );
 
@@ -49,6 +50,7 @@ void main() {
           required resolutionPreset,
           enableAudio = true,
           imageFormatGroup,
+          fps,
         }) {
           return mockController;
         },
@@ -96,6 +98,7 @@ void main() {
           required resolutionPreset,
           enableAudio = true,
           imageFormatGroup,
+          fps,
         }) => mockController,
       );
 
@@ -139,6 +142,7 @@ void main() {
             required resolutionPreset,
             enableAudio = true,
             imageFormatGroup,
+            fps,
           }) => mockController,
         );
 
@@ -207,6 +211,7 @@ void main() {
           required resolutionPreset,
           enableAudio = true,
           imageFormatGroup,
+          fps,
         }) => mockController,
       );
 

@@ -2046,6 +2046,18 @@ abstract class AppLocalizations {
   /// **'Enter tracking code'**
   String get tooltipEnterTracking;
 
+  /// No description provided for @scanPickImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a photo'**
+  String get scanPickImage;
+
+  /// No description provided for @scanNoCodeInImage.
+  ///
+  /// In en, this message translates to:
+  /// **'No tracking code in this photo'**
+  String get scanNoCodeInImage;
+
   /// No description provided for @tooltipZoomIn.
   ///
   /// In en, this message translates to:
@@ -3566,24 +3578,6 @@ abstract class AppLocalizations {
   /// **'Support ZenPack development'**
   String get accountRateAppNote;
 
-  /// No description provided for @supportFacebook.
-  ///
-  /// In en, this message translates to:
-  /// **'Message on Facebook'**
-  String get supportFacebook;
-
-  /// No description provided for @supportZalo.
-  ///
-  /// In en, this message translates to:
-  /// **'Message on Zalo'**
-  String get supportZalo;
-
-  /// No description provided for @supportCall.
-  ///
-  /// In en, this message translates to:
-  /// **'Call support'**
-  String get supportCall;
-
   /// No description provided for @sheetCustomMin.
   ///
   /// In en, this message translates to:
@@ -4405,6 +4399,1320 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Google refused the grant. Try again; if it keeps failing, tell your admin.'**
   String get storageDriveRejected;
+
+  /// No description provided for @authSignInPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with phone number'**
+  String get authSignInPhone;
+
+  /// No description provided for @phoneLoginTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with phone number'**
+  String get phoneLoginTitle;
+
+  /// No description provided for @phoneLoginSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your phone number and we will send a 6-digit code.'**
+  String get phoneLoginSubtitle;
+
+  /// No description provided for @phoneLoginNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get phoneLoginNumberLabel;
+
+  /// No description provided for @phoneLoginNumberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'09xx xxx xxx'**
+  String get phoneLoginNumberHint;
+
+  /// No description provided for @phoneLoginInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid phone number'**
+  String get phoneLoginInvalid;
+
+  /// No description provided for @phoneLoginViaZalo.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code via Zalo'**
+  String get phoneLoginViaZalo;
+
+  /// No description provided for @phoneLoginViaSms.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code via SMS'**
+  String get phoneLoginViaSms;
+
+  /// No description provided for @otpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code'**
+  String get otpTitle;
+
+  /// No description provided for @otpSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit code to {phone}.'**
+  String otpSentTo(String phone);
+
+  /// No description provided for @otpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get otpLabel;
+
+  /// No description provided for @otpConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get otpConfirm;
+
+  /// No description provided for @otpResend.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code'**
+  String get otpResend;
+
+  /// No description provided for @otpResendIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend in {seconds}s'**
+  String otpResendIn(int seconds);
+
+  /// No description provided for @otpChangePhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Use another number'**
+  String get otpChangePhone;
+
+  /// No description provided for @otpWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong code. Check the message again.'**
+  String get otpWrong;
+
+  /// No description provided for @otpExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'The code expired. Request a new one.'**
+  String get otpExpired;
+
+  /// No description provided for @otpUsedUp.
+  ///
+  /// In en, this message translates to:
+  /// **'That code can no longer be used. Request a new one.'**
+  String get otpUsedUp;
+
+  /// No description provided for @otpTooSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Just sent. Wait a moment before trying again.'**
+  String get otpTooSoon;
+
+  /// No description provided for @otpRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests. Try again in a few minutes.'**
+  String get otpRateLimited;
+
+  /// No description provided for @otpSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the code. Try the other channel.'**
+  String get otpSendFailed;
+
+  /// No description provided for @otpNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Code delivery is not available right now. Please use another method.'**
+  String get otpNotConfigured;
+
+  /// No description provided for @otpFromOa.
+  ///
+  /// In en, this message translates to:
+  /// **'The message comes from the Zalo Official Account {oa} — look for that name.'**
+  String otpFromOa(String oa);
+
+  /// No description provided for @hdDaHieu.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get hdDaHieu;
+
+  /// No description provided for @hdDong.
+  ///
+  /// In en, this message translates to:
+  /// **'Close tips'**
+  String get hdDong;
+
+  /// No description provided for @hdXemLai.
+  ///
+  /// In en, this message translates to:
+  /// **'Show tips again'**
+  String get hdXemLai;
+
+  /// No description provided for @hdDaMoLai.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips will show again as you visit each screen.'**
+  String get hdDaMoLai;
+
+  /// No description provided for @hdHomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview screen'**
+  String get hdHomeTitle;
+
+  /// No description provided for @hdHome1.
+  ///
+  /// In en, this message translates to:
+  /// **'A quick read on orders, storage used and what needs attention today.'**
+  String get hdHome1;
+
+  /// No description provided for @hdHome2.
+  ///
+  /// In en, this message translates to:
+  /// **'Each status card jumps straight to the orders in that state.'**
+  String get hdHome2;
+
+  /// No description provided for @hdHome3.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen these tips any time from the support button.'**
+  String get hdHome3;
+
+  /// No description provided for @hdRecordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording screen'**
+  String get hdRecordTitle;
+
+  /// No description provided for @hdRecord1.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the goods camera and the receipt camera in Settings before recording.'**
+  String get hdRecord1;
+
+  /// No description provided for @hdRecord2.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the tracking code, then record — the video attaches to that order.'**
+  String get hdRecord2;
+
+  /// No description provided for @hdRecord3.
+  ///
+  /// In en, this message translates to:
+  /// **'IP cameras are for filming goods only, never for the receipt camera.'**
+  String get hdRecord3;
+
+  /// No description provided for @hdOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order detail'**
+  String get hdOrderTitle;
+
+  /// No description provided for @hdOrder1.
+  ///
+  /// In en, this message translates to:
+  /// **'Every clip and photo for one tracking code, newest first.'**
+  String get hdOrder1;
+
+  /// No description provided for @hdOrder2.
+  ///
+  /// In en, this message translates to:
+  /// **'A sealed clip is the final version — usable in a marketplace claim.'**
+  String get hdOrder2;
+
+  /// No description provided for @hdOrder3.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting here only hides it from your list; the original is kept.'**
+  String get hdOrder3;
+
+  /// No description provided for @hdClaimsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim dossiers'**
+  String get hdClaimsTitle;
+
+  /// No description provided for @hdClaims1.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundle evidence from several orders into one dossier for the marketplace.'**
+  String get hdClaims1;
+
+  /// No description provided for @hdClaims2.
+  ///
+  /// In en, this message translates to:
+  /// **'Each dossier gets its own link; the recipient needs no account.'**
+  String get hdClaims2;
+
+  /// No description provided for @hdClaims3.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos in a dossier are kept 15 extra days after it closes.'**
+  String get hdClaims3;
+
+  /// No description provided for @hdClaimDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dossier detail'**
+  String get hdClaimDetailTitle;
+
+  /// No description provided for @hdClaimDetail1.
+  ///
+  /// In en, this message translates to:
+  /// **'Add or remove orders before you send the dossier.'**
+  String get hdClaimDetail1;
+
+  /// No description provided for @hdClaimDetail2.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the dossier link to paste into the marketplace claim.'**
+  String get hdClaimDetail2;
+
+  /// No description provided for @hdClaimDetail3.
+  ///
+  /// In en, this message translates to:
+  /// **'Close it when done — the videos still last another 15 days.'**
+  String get hdClaimDetail3;
+
+  /// No description provided for @hdShopsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shops'**
+  String get hdShopsTitle;
+
+  /// No description provided for @hdShops1.
+  ///
+  /// In en, this message translates to:
+  /// **'Each shop has its own storage, plan and staff.'**
+  String get hdShops1;
+
+  /// No description provided for @hdShops2.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite staff into a shop and set what each person may do.'**
+  String get hdShops2;
+
+  /// No description provided for @hdShops3.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch the shop you are working in at the top of the page.'**
+  String get hdShops3;
+
+  /// No description provided for @hdQuotaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get hdQuotaTitle;
+
+  /// No description provided for @hdQuota1.
+  ///
+  /// In en, this message translates to:
+  /// **'The plan sets your storage size and how long videos are kept.'**
+  String get hdQuota1;
+
+  /// No description provided for @hdQuota2.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage is counted per shop, not per user.'**
+  String get hdQuota2;
+
+  /// No description provided for @hdQuota3.
+  ///
+  /// In en, this message translates to:
+  /// **'You are warned before storage fills up — nothing is deleted silently.'**
+  String get hdQuota3;
+
+  /// No description provided for @hdQueueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload queue'**
+  String get hdQueueTitle;
+
+  /// No description provided for @hdQueue1.
+  ///
+  /// In en, this message translates to:
+  /// **'Clips already recorded but not yet in storage wait here.'**
+  String get hdQueue1;
+
+  /// No description provided for @hdQueue2.
+  ///
+  /// In en, this message translates to:
+  /// **'On a weak connection just leave them — the app retries when signal returns.'**
+  String get hdQueue2;
+
+  /// No description provided for @hdQueue3.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not uninstall while clips are waiting; they exist only on this phone.'**
+  String get hdQueue3;
+
+  /// No description provided for @gtBoQua.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get gtBoQua;
+
+  /// No description provided for @gtTiep.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get gtTiep;
+
+  /// No description provided for @gtBatDau.
+  ///
+  /// In en, this message translates to:
+  /// **'Start now'**
+  String get gtBatDau;
+
+  /// No description provided for @gt1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Film while you pack'**
+  String get gt1Title;
+
+  /// No description provided for @gt1Body.
+  ///
+  /// In en, this message translates to:
+  /// **'One video per order: what went in, how it was packed, which label went on. Record and you are done.'**
+  String get gt1Body;
+
+  /// No description provided for @gt2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Tied to the tracking code'**
+  String get gt2Title;
+
+  /// No description provided for @gt2Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the label and the video attaches itself to that order. Later, one code brings up every clip for it.'**
+  String get gt2Body;
+
+  /// No description provided for @gt3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof when a claim arrives'**
+  String get gt3Title;
+
+  /// No description provided for @gt3Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundle clips from several orders into one dossier and send the link to the marketplace. No account needed to view it.'**
+  String get gt3Body;
+
+  /// No description provided for @deletePwTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get deletePwTitle;
+
+  /// No description provided for @deletePwBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone, so please re-enter your password before the account is deleted.'**
+  String get deletePwBody;
+
+  /// No description provided for @deletePwOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get deletePwOk;
+
+  /// No description provided for @hdNoShopTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with a shop'**
+  String get hdNoShopTitle;
+
+  /// No description provided for @hdNoShop1.
+  ///
+  /// In en, this message translates to:
+  /// **'Every video and piece of evidence belongs to a shop, so create one first.'**
+  String get hdNoShop1;
+
+  /// No description provided for @hdNoShop2.
+  ///
+  /// In en, this message translates to:
+  /// **'Then pick the marketplaces you sell on and invite your staff.'**
+  String get hdNoShop2;
+
+  /// No description provided for @hdNoShop3.
+  ///
+  /// In en, this message translates to:
+  /// **'If someone invited you, use “Join with an invite” instead of creating one.'**
+  String get hdNoShop3;
+
+  /// No description provided for @cdNoShopTaoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a shop first'**
+  String get cdNoShopTaoTitle;
+
+  /// No description provided for @cdNoShopTaoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every video and piece of evidence belongs to a shop. Tap here to create one and pick your marketplaces.'**
+  String get cdNoShopTaoBody;
+
+  /// No description provided for @cdNoShopMoiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invited? Start here'**
+  String get cdNoShopMoiTitle;
+
+  /// No description provided for @cdNoShopMoiBody.
+  ///
+  /// In en, this message translates to:
+  /// **'If an owner invited you, tap here and enter the invite code — no need to create a shop.'**
+  String get cdNoShopMoiBody;
+
+  /// No description provided for @cdNoShopTkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile'**
+  String get cdNoShopTkTitle;
+
+  /// No description provided for @cdNoShopTkBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Name, language, sign-in methods and account deletion all live here.'**
+  String get cdNoShopTkBody;
+
+  /// No description provided for @cdTaoShopTenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Name your shop'**
+  String get cdTaoShopTenTitle;
+
+  /// No description provided for @cdTaoShopTenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Only you and your staff see this name; it tells shops apart when you have several. You can change it later.'**
+  String get cdTaoShopTenBody;
+
+  /// No description provided for @cdTaoShopNutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a marketplace, then create'**
+  String get cdTaoShopNutTitle;
+
+  /// No description provided for @cdTaoShopNutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where you sell above, then tap here. Once the shop exists you can start recording.'**
+  String get cdTaoShopNutBody;
+
+  /// No description provided for @cdHome1T.
+  ///
+  /// In en, this message translates to:
+  /// **'Find one order fast'**
+  String get cdHome1T;
+
+  /// No description provided for @cdHome1B.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a tracking code here to jump straight to its evidence.'**
+  String get cdHome1B;
+
+  /// No description provided for @cdHome2T.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by state'**
+  String get cdHome2T;
+
+  /// No description provided for @cdHome2B.
+  ///
+  /// In en, this message translates to:
+  /// **'See only orders still uploading, already done, or failed.'**
+  String get cdHome2B;
+
+  /// No description provided for @cdQueue1T.
+  ///
+  /// In en, this message translates to:
+  /// **'Clips waiting to upload'**
+  String get cdQueue1T;
+
+  /// No description provided for @cdQueue1B.
+  ///
+  /// In en, this message translates to:
+  /// **'Weak signal? Clips wait here and retry when the connection returns.'**
+  String get cdQueue1B;
+
+  /// No description provided for @cdQueue2T.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the queue'**
+  String get cdQueue2T;
+
+  /// No description provided for @cdQueue2B.
+  ///
+  /// In en, this message translates to:
+  /// **'Only removes clips not yet uploaded. They are gone for good — the server has no copy.'**
+  String get cdQueue2B;
+
+  /// No description provided for @cdClaims1T.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundle evidence for the marketplace'**
+  String get cdClaims1T;
+
+  /// No description provided for @cdClaims1B.
+  ///
+  /// In en, this message translates to:
+  /// **'Several orders become one dossier you send as a single link.'**
+  String get cdClaims1B;
+
+  /// No description provided for @cdRec1T.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the tracking code'**
+  String get cdRec1T;
+
+  /// No description provided for @cdRec1B.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold the label in the frame. The app reads it and attaches the video to that order.'**
+  String get cdRec1B;
+
+  /// No description provided for @cdOrder1T.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence for this order'**
+  String get cdOrder1T;
+
+  /// No description provided for @cdOrder1B.
+  ///
+  /// In en, this message translates to:
+  /// **'Every clip and photo for this tracking code, newest on top.'**
+  String get cdOrder1B;
+
+  /// No description provided for @cdClaimD1T.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to send the marketplace'**
+  String get cdClaimD1T;
+
+  /// No description provided for @cdClaimD1B.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy this link into your claim. The recipient needs no account to view it.'**
+  String get cdClaimD1B;
+
+  /// No description provided for @cdShops1T.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch shop'**
+  String get cdShops1T;
+
+  /// No description provided for @cdShops1B.
+  ///
+  /// In en, this message translates to:
+  /// **'Each shop has its own storage, plan and staff. Tap to change.'**
+  String get cdShops1B;
+
+  /// No description provided for @cdQuota1T.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage used'**
+  String get cdQuota1T;
+
+  /// No description provided for @cdQuota1B.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan sets video count and retention. You are warned before it fills — nothing is deleted silently.'**
+  String get cdQuota1B;
+
+  /// No description provided for @cdAcc1T.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan'**
+  String get cdAcc1T;
+
+  /// No description provided for @cdAcc1B.
+  ///
+  /// In en, this message translates to:
+  /// **'See videos left, how long they are kept, and upgrade here.'**
+  String get cdAcc1B;
+
+  /// No description provided for @cdAcc2T.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in methods'**
+  String get cdAcc2T;
+
+  /// No description provided for @cdAcc2B.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Google or Apple for faster sign-in — no password to remember.'**
+  String get cdAcc2B;
+
+  /// No description provided for @cdShopD1T.
+  ///
+  /// In en, this message translates to:
+  /// **'Video types'**
+  String get cdShopD1T;
+
+  /// No description provided for @cdShopD1B.
+  ///
+  /// In en, this message translates to:
+  /// **'Name the kinds of video you record — packing, returns — so they are easy to find later.'**
+  String get cdShopD1B;
+
+  /// No description provided for @cdShopD2T.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite staff'**
+  String get cdShopD2T;
+
+  /// No description provided for @cdShopD2B.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite people to work with you and set what each may do.'**
+  String get cdShopD2B;
+
+  /// No description provided for @cdRec2T.
+  ///
+  /// In en, this message translates to:
+  /// **'Blurred label? Type it'**
+  String get cdRec2T;
+
+  /// No description provided for @cdRec2B.
+  ///
+  /// In en, this message translates to:
+  /// **'If the label is smudged or torn, tap here to enter the code by hand.'**
+  String get cdRec2B;
+
+  /// No description provided for @notifRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifRow;
+
+  /// No description provided for @notifOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get notifOn;
+
+  /// No description provided for @notifOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get notifOff;
+
+  /// No description provided for @notifAskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on notifications?'**
+  String get notifAskTitle;
+
+  /// No description provided for @notifAskBody.
+  ///
+  /// In en, this message translates to:
+  /// **'ZenPack will tell you when your plan is about to expire, when videos are about to be deleted, when someone joins your shop — and remind you to record while packing.'**
+  String get notifAskBody;
+
+  /// No description provided for @notifAskYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get notifAskYes;
+
+  /// No description provided for @notifAskNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notifAskNo;
+
+  /// No description provided for @notifDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'You declined earlier. Open your device Settings to turn it back on.'**
+  String get notifDenied;
+
+  /// No description provided for @themeRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get themeRow;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @tzRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Time zone'**
+  String get tzRow;
+
+  /// No description provided for @tzAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get tzAuto;
+
+  /// No description provided for @tzNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Only changes the times shown on screen.'**
+  String get tzNote;
+
+  /// No description provided for @capTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording settings'**
+  String get capTitle;
+
+  /// No description provided for @capHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to EVERY device recording for this shop, not just yours.'**
+  String get capHint;
+
+  /// No description provided for @capFps.
+  ///
+  /// In en, this message translates to:
+  /// **'Frame rate'**
+  String get capFps;
+
+  /// No description provided for @capFpsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices that cannot hit this fall back to the nearest supported rate.'**
+  String get capFpsHint;
+
+  /// No description provided for @capAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get capAuto;
+
+  /// No description provided for @capScanKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Code types'**
+  String get capScanKind;
+
+  /// No description provided for @capScanHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Which codes the scanner accepts.'**
+  String get capScanHint;
+
+  /// No description provided for @capScanQr.
+  ///
+  /// In en, this message translates to:
+  /// **'QR only'**
+  String get capScanQr;
+
+  /// No description provided for @capScanBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Barcodes only'**
+  String get capScanBar;
+
+  /// No description provided for @capScanBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get capScanBoth;
+
+  /// No description provided for @capEndDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait before a code can end the clip'**
+  String get capEndDelay;
+
+  /// No description provided for @capEndDelayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'After a clip opens, wait this long before a code may end it.'**
+  String get capEndDelayHint;
+
+  /// No description provided for @capRearm.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait before scanning a new code'**
+  String get capRearm;
+
+  /// No description provided for @capRearmHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops the bill still lying in frame from reopening a clip for the same order.'**
+  String get capRearmHint;
+
+  /// No description provided for @capTail.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep recording after the end code'**
+  String get capTail;
+
+  /// No description provided for @capTailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'After the end code is scanned, record this many more seconds.'**
+  String get capTailHint;
+
+  /// No description provided for @capAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Record audio'**
+  String get capAudio;
+
+  /// No description provided for @capAudioHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Packing tables have people talking — turning this on records that too.'**
+  String get capAudioHint;
+
+  /// No description provided for @capStatusSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Status sounds'**
+  String get capStatusSound;
+
+  /// No description provided for @capStatusSoundHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Spoken and beeped status, so the operator need not watch the screen.'**
+  String get capStatusSoundHint;
+
+  /// No description provided for @capAutoConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto video config'**
+  String get capAutoConfig;
+
+  /// No description provided for @capAutoConfigHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drops one resolution step when the device is low on space.'**
+  String get capAutoConfigHint;
+
+  /// No description provided for @capBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery saver'**
+  String get capBattery;
+
+  /// No description provided for @capBatteryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Slows scanning. Trade-off: bills take longer to be picked up.'**
+  String get capBatteryHint;
+
+  /// No description provided for @capWifi.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload on Wi-Fi only'**
+  String get capWifi;
+
+  /// No description provided for @capWifiHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices on mobile data STOP uploading; clips pile up until Wi-Fi is back.'**
+  String get capWifiHint;
+
+  /// No description provided for @capEndOther.
+  ///
+  /// In en, this message translates to:
+  /// **'End the clip with another QR'**
+  String get capEndOther;
+
+  /// No description provided for @capEndOtherHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Seeing another order\'s bill closes this clip and opens a new one.'**
+  String get capEndOtherHint;
+
+  /// No description provided for @capManualStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Never stop automatically'**
+  String get capManualStop;
+
+  /// No description provided for @capManualStopHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No code can stop a clip; only the button does. This overrides the row above.'**
+  String get capManualStopHint;
+
+  /// No description provided for @capSecond.
+  ///
+  /// In en, this message translates to:
+  /// **'seconds'**
+  String get capSecond;
+
+  /// No description provided for @capMs.
+  ///
+  /// In en, this message translates to:
+  /// **'ms'**
+  String get capMs;
+
+  /// No description provided for @capOwnerOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the shop owner can change these.'**
+  String get capOwnerOnly;
+
+  /// No description provided for @capCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Other number…'**
+  String get capCustom;
+
+  /// No description provided for @capCustomTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a value'**
+  String get capCustomTitle;
+
+  /// No description provided for @capOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get capOff;
+
+  /// No description provided for @capDefaultSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'(default)'**
+  String get capDefaultSuffix;
+
+  /// No description provided for @invTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice details'**
+  String get invTitle;
+
+  /// No description provided for @invHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill this in once; the ZenPack team uses it when issuing invoices for your payments.'**
+  String get invHint;
+
+  /// No description provided for @invKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer type'**
+  String get invKind;
+
+  /// No description provided for @invKindCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Company / Household business'**
+  String get invKindCompany;
+
+  /// No description provided for @invKindPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Individual'**
+  String get invKindPerson;
+
+  /// No description provided for @invName.
+  ///
+  /// In en, this message translates to:
+  /// **'Company name'**
+  String get invName;
+
+  /// No description provided for @invNamePerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get invNamePerson;
+
+  /// No description provided for @invNamePh.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. ABC Co., Ltd'**
+  String get invNamePh;
+
+  /// No description provided for @invNamePersonPh.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Nguyen Van A'**
+  String get invNamePersonPh;
+
+  /// No description provided for @invTax.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax code'**
+  String get invTax;
+
+  /// No description provided for @invTaxPh.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 0312345678'**
+  String get invTaxPh;
+
+  /// No description provided for @invTaxOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax code (if any)'**
+  String get invTaxOptional;
+
+  /// No description provided for @invAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get invAddress;
+
+  /// No description provided for @invAddressPh.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 123 Le Loi, D.1, HCMC'**
+  String get invAddressPh;
+
+  /// No description provided for @invEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email for invoices'**
+  String get invEmail;
+
+  /// No description provided for @invEmailPh.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. billing@company.com'**
+  String get invEmailPh;
+
+  /// No description provided for @invNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get invNote;
+
+  /// No description provided for @invNotePh.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything else (optional)'**
+  String get invNotePh;
+
+  /// No description provided for @invSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save details'**
+  String get invSave;
+
+  /// No description provided for @invNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a name.'**
+  String get invNameRequired;
+
+  /// No description provided for @invTaxRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A company or household business needs a tax code.'**
+  String get invTaxRequired;
+
+  /// No description provided for @invTaxInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'A tax code is 10 digits, optionally with a 3-digit branch suffix.'**
+  String get invTaxInvalid;
+
+  /// No description provided for @invEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That email is not valid.'**
+  String get invEmailInvalid;
+
+  /// No description provided for @invNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get invNotSet;
+
+  /// No description provided for @detailSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Digital signature'**
+  String get detailSignature;
+
+  /// Danh tính chữ ký, hiện ở Chi tiết video. Chỉ mã khoá — không tên thuật toán (thuật ngữ chỉ ở trang Kiểm chứng).
+  ///
+  /// In en, this message translates to:
+  /// **'ZenPack signature · key {key}'**
+  String sealSignature(String key);
+
+  /// No description provided for @sealCopyVerifyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy verification link'**
+  String get sealCopyVerifyLink;
+
+  /// No description provided for @sealVerifyLinkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification link'**
+  String get sealVerifyLinkTitle;
+
+  /// No description provided for @claimSignedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed'**
+  String get claimSignedLabel;
+
+  /// No description provided for @claimSignedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{sealed}/{videos} videos · {anchored} with independent proof'**
+  String claimSignedCount(int sealed, int videos, int anchored);
+
+  /// No description provided for @claimUnsignedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} videos have no stamp — the marketplace may reject them. The dossier can still be sent; stamped videos still prove themselves.'**
+  String claimUnsignedHint(int n);
+
+  /// No description provided for @claimsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track and handle order dispute dossiers'**
+  String get claimsSubtitle;
+
+  /// No description provided for @claimsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No dossiers yet'**
+  String get claimsEmptyTitle;
+
+  /// No description provided for @claimsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the plus in the corner and pick the evidence of the order in dispute to create a dossier.'**
+  String get claimsEmptyBody;
+
+  /// No description provided for @claimsEmptyTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: clear photos and videos help the marketplace decide faster.'**
+  String get claimsEmptyTip;
+
+  /// No description provided for @timelineEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'No more activity'**
+  String get timelineEnd;
+
+  /// Order timeline: how many evidence entries the day header counts.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 entry} other{{n} entries}}'**
+  String timelineEntryCount(int n);
+
+  /// No description provided for @attachCodeToOrderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a return code or a second tracking code to this order'**
+  String get attachCodeToOrderHint;
+
+  /// No description provided for @attachPhotoToOrderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a photo from this device to keep with this order'**
+  String get attachPhotoToOrderHint;
+
+  /// No description provided for @shopDetailClipLengthHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum recording time per video'**
+  String get shopDetailClipLengthHint;
+
+  /// No description provided for @shopDetailImageSizeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum size per photo'**
+  String get shopDetailImageSizeHint;
+
+  /// No description provided for @storageRowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Where videos and photos are kept'**
+  String get storageRowHint;
+
+  /// No description provided for @capRowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera and display options'**
+  String get capRowHint;
+
+  /// No description provided for @inviteQrLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite code'**
+  String get inviteQrLabel;
+
+  /// No description provided for @orderStatusRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded'**
+  String get orderStatusRecorded;
+
+  /// No description provided for @orderStatusNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Not recorded'**
+  String get orderStatusNone;
+
+  /// No description provided for @accountTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage with ease, sell with confidence — ZenPack'**
+  String get accountTagline;
+
+  /// No description provided for @videoTypeHintPacking.
+  ///
+  /// In en, this message translates to:
+  /// **'Film the packing process'**
+  String get videoTypeHintPacking;
+
+  /// No description provided for @videoTypeHintCarrier.
+  ///
+  /// In en, this message translates to:
+  /// **'Film the hand-over to the carrier'**
+  String get videoTypeHintCarrier;
+
+  /// No description provided for @videoTypeHintReturn.
+  ///
+  /// In en, this message translates to:
+  /// **'Film the return as it arrives'**
+  String get videoTypeHintReturn;
+
+  /// No description provided for @statPendingSub.
+  ///
+  /// In en, this message translates to:
+  /// **'In the queue'**
+  String get statPendingSub;
+
+  /// Shop picker: today's activity line under a shop's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Today · {orders, plural, =1{1 order} other{{orders} orders}} · {videos, plural, =1{1 video} other{{videos} videos}}'**
+  String shopPulseToday(int orders, int videos);
 }
 
 class _AppLocalizationsDelegate

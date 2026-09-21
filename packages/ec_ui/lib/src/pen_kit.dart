@@ -17,91 +17,186 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'core.dart';
 import 'pen.dart';
+import 'pen_deco.dart';
 
 /// The design file's palette, by the role each colour plays in it.
 abstract final class PenColors {
+  /// Đang ở bảng màu TỐI hay không — bản của `ec_ui`.
+  ///
+  /// Hai cờ chứ không một, và không tránh được: `PenColors` ở `ec_ui` còn
+  /// `BrandColors` ở `app_ui`, hai gói không phụ thuộc nhau. Bên nào cũng phải
+  /// tự biết. `_EcAppState` gọi CẢ HAI khi giao diện đổi — quên một bên là
+  /// một nửa app sáng, một nửa tối, và nửa nào thì tuỳ màn.
+  ///
+  /// Giá trị tối lấy từ cùng bảng tối của console như `BrandColors`, nên hai
+  /// bảng luôn cùng một dải màu.
+  ///
+  /// 18/09: đổi sang bộ CAM-TRẮNG của console (`web/src/styles/theme.css`,
+  /// `--primary oklch(0.585 0.19 40)`), quy OKLCH → sRGB. Xanh rừng cũ
+  /// (`#16522C`) hết vai trò thương hiệu; xanh lá chỉ còn là TRẠNG THÁI
+  /// "xong" (`--state-done`). Trung tính mang một chút ấm (hue 45–50), không
+  /// còn xám 0 tuyệt đối.
+  static bool _toi = false;
+
+  static bool get dangToi => _toi;
+
+  /// Trả `true` nếu có đổi thật (bên gọi dựng lại cây widget).
+  static bool datBanToi({required bool toi}) {
+    if (_toi == toi) return false;
+    _toi = toi;
+    return true;
+  }
+
   /// `--background` — every screen's fill.
-  static const bg = Color(0xFFFCFCFC);
+  static Color get bg =>
+      // Sáng: xám ấm rất nhạt (hue ~45) thay cho kem gần trắng — nền của các
+      // app thật (Shopee, Grab, Shopify trên Mobbin) là một tấm xám phẳng để
+      // thẻ trắng nổi bằng mép, không cần bóng. 18/09.
+      _toi ? const Color(0xFF130E0C) : const Color(0xFFF5F3F1);
 
   /// `--card` / `--popover` — cards, fields, sheets.
-  static const card = Color(0xFFFFFFFF);
+  static Color get card =>
+      _toi ? const Color(0xFF1D1714) : const Color(0xFFFFFFFF);
 
   /// `--foreground` — primary text and icons.
-  static const ink = Color(0xFF161616);
+  static Color get ink =>
+      _toi ? const Color(0xFFF5F1EF) : const Color(0xFF1B1412);
 
   /// `--muted-foreground` — labels, placeholders, captions.
-  static const mut = Color(0xFF636363);
+  static Color get mut =>
+      _toi ? const Color(0xFFA49D99) : const Color(0xFF69615E);
 
   /// `--border` — every 1px hairline.
-  static const line = Color(0xFFE4E4E4);
+  static Color get line =>
+      _toi ? const Color(0xFF302B29) : const Color(0xFFE9E2DF);
 
   /// `--secondary` / `--muted` — soft grey fills and decorative shapes.
-  static const soft = Color(0xFFF3F3F3);
+  static Color get soft =>
+      _toi ? const Color(0xFF2C2521) : const Color(0xFFF7F2F0);
 
-  /// `--sidebar-accent` — the selected chip / nav item.
-  static const selected = Color(0xFFEDEDED);
+  /// `--sidebar-accent` — the selected chip / nav item. Cam rất nhạt (console
+  /// 09/2026), không còn xám: mục đang chọn mang màu thương hiệu, chữ dùng
+  /// [selectedInk].
+  static Color get selected =>
+      _toi ? const Color(0xFF3F271D) : const Color(0xFFFFF3EA);
 
-  /// `--primary` — the only green that fills: primary buttons.
-  static const primary = Color(0xFF16522C);
+  /// `--sidebar-accent-foreground` — chữ/biểu tượng trên [selected].
+  static Color get selectedInk =>
+      _toi ? const Color(0xFFFFB48B) : const Color(0xFFC33400);
 
-  /// `--chart-2` — the lighter green, used for success text only.
-  static const success = Color(0xFF1F9047);
+  /// `--primary` — the only brand fill: primary buttons. CAM.
+  static Color get primary =>
+      _toi ? const Color(0xFFFF814C) : const Color(0xFFD34500);
+
+  /// `--state-done` — xanh "xong": đã ký, đã tải lên, hoàn tất. Là TRẠNG THÁI,
+  /// không phải thương hiệu — cam không bao giờ dùng cho trạng thái.
+  static Color get success =>
+      _toi ? const Color(0xFF6EBF8C) : const Color(0xFF2A7449);
 
   /// Links and link-like labels. `--primary`, same green as the primary
   /// button: design-dna law 2 puts links in `--primary`, and `--chart-5` blue
   /// is chart-only — the design file no longer uses `#2266A4` anywhere.
-  static const link = Color(0xFF16522C);
+  static Color get link =>
+      _toi ? const Color(0xFFFF814C) : const Color(0xFFD34500);
 
   /// `--destructive` — REC, delete, errors.
-  static const danger = Color(0xFFD02D27);
+  static Color get danger =>
+      _toi ? const Color(0xFFF3606D) : const Color(0xFFCC2443);
 
-  /// `--warning` / `--chart-4` — the amber of "chờ tải" counts.
-  static const warning = Color(0xFFB6770B);
+  /// `--state-attention` — vàng "chú ý" của số đang đòi việc, chờ tải.
+  static Color get warning =>
+      _toi ? const Color(0xFFEBB353) : const Color(0xFF9F6200);
+
+  /// `--state-progress` — xanh dương "đang": đang ký, đang tải, chờ sổ công khai.
+  static Color get progress =>
+      _toi ? const Color(0xFF79B0E8) : const Color(0xFF316CA5);
 }
 
 /// Drop shadow the design file puts on raised cards.
 const penCardShadow = BoxShadow(
-  color: Color(0x12161616),
-  offset: Offset(0, 2),
-  blurRadius: 12,
+  // Gần phẳng (18/09): bóng mềm rộng là dấu hiệu "mock AI"; app thật tách thẻ
+  // bằng viền mảnh và nền xám, bóng chỉ còn là một vệt 1pt dưới mép.
+  color: Color(0x0D1B1412),
+  offset: Offset(0, 1),
+  blurRadius: 3,
 );
 
 /// Shadow of a card that overlaps [PenBrandBanner] — tinted with the banner's
-/// own dark green instead of ink so the card reads as lifted off the green.
+/// own deep orange instead of ink so the card reads as lifted off the banner.
 const penBrandCardShadow = BoxShadow(
-  color: Color(0x290F3D20),
-  offset: Offset(0, 4),
-  blurRadius: 14,
+  color: Color(0x1AA33600),
+  offset: Offset(0, 2),
+  blurRadius: 8,
 );
 
 /// The brand banner the two root tabs (Vận đơn, Tài khoản) open with: a dark
-/// green gradient bleeding to the screen edges, rounded off at the bottom, with
+/// orange gradient (brand ramp `--primary` → `--ring`) bleeding to the screen edges, rounded off at the bottom, with
 /// the header and the first card sitting on top of it.
 ///
 /// [height] is measured from the top of the *content* area; the banner itself
 /// also fills the status bar behind it, so pass the design's height and let the
 /// widget add the inset.
 class PenBrandBanner extends StatelessWidget {
-  const PenBrandBanner({required this.height, super.key});
+  const PenBrandBanner({
+    required this.height,
+    this.watermark = false,
+    super.key,
+  });
 
   final double height;
+
+  /// Khối kiện hàng trắng mờ ở góc phải trên (bộ mock 18/09). Tắt ở màn có
+  /// thứ gì đó chiếm góc ấy.
+  final bool watermark;
 
   /// ponytail: `pen2dart.py` drops the gradient's angle, so this is Flutter's
   /// default left→right ramp. Two stops this close in hue barely read as a
   /// direction; set `begin`/`end` here if the design file says otherwise.
   static const gradient = LinearGradient(
-    colors: [Color(0xFF0F3D20), Color(0xFF1F6B39)],
+    // Chéo từ góc trái trên sáng xuống góc phải dưới sẫm (bộ mock 18/09 và
+    // kiểu dải màu của Yazio/Shopee Seller): ngang trái→phải thì hai điểm
+    // dừng gần màu nhau quá, đọc như một mảng cam phẳng.
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFEE5D2B), Color(0xFFB53A00)],
   );
 
   @override
   Widget build(BuildContext context) {
-    return PenBox(
+    final top = MediaQuery.paddingOf(context).top;
+    final box = PenBox(
       width: double.infinity,
-      height: MediaQuery.paddingOf(context).top + height,
+      height: top + height,
       gradient: gradient,
       // The design rounds all four corners (its artboard is a device frame);
       // full-bleed on a real screen only the bottom two are visible.
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(26)),
+    );
+    if (!watermark) return box;
+    // Khối kiện hàng CHỈ NÉT, lấn ra ngoài mép phải một chút — khối tô đặc dù
+    // mờ vẫn đọc như một mảng sáng dán lên dải; nét mảnh mới là hoa văn. Thêm
+    // vài đốm sáng nhỏ như bộ mock.
+    return SizedBox(
+      height: top + height,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(26)),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            box,
+            const Positioned.fill(child: PenSparkles()),
+            Positioned(
+              right: -30,
+              top: top - 4,
+              child: PenCubeMark(
+                size: height + 20,
+                alpha: 0.28,
+                outline: true,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -111,8 +206,9 @@ class PenBrandBanner extends StatelessWidget {
 class PenScreen extends StatelessWidget {
   const PenScreen({
     required this.child,
-    this.background = PenColors.bg,
+    this.background,
     this.decorations = const <Widget>[],
+    this.overlays = const <Widget>[],
     this.bottomBar,
     this.scrollable = true,
     this.resizeToAvoidBottomInset = true,
@@ -120,10 +216,27 @@ class PenScreen extends StatelessWidget {
   });
 
   final Widget child;
-  final Color background;
+
+  /// `null` = dùng token mặc định. Không đặt thẳng
+  /// `PenColors.bg` làm giá trị mặc định của tham số được nữa:
+  /// token nay là getter đổi theo chế độ sáng/tối, mà giá trị mặc
+  /// định của tham số bắt buộc phải là hằng biên dịch.
+  final Color? background;
 
   /// Absolutely-placed artwork drawn behind [child].
   final List<Widget> decorations;
+
+  /// Widget đặt ĐÈ LÊN [child] — vẽ sau, nên cũng NHẬN ĐƯỢC CHẠM.
+  ///
+  /// Khác [decorations] ở đúng chỗ quan trọng nhất: thân màn thường là một
+  /// vùng cuộn phủ kín, mà vùng cuộn nuốt mọi cú chạm trong phạm vi nó. Nên
+  /// một nút đặt trong `decorations` vẫn HIỆN RA nhưng bấm không ăn — người
+  /// dùng thấy nút, bấm, và không có gì xảy ra.
+  ///
+  /// Đã xảy ra thật: nút Tài khoản ở màn "chưa có cửa hàng" nằm trong
+  /// `decorations`, nên người vừa lập tài khoản không vào được hồ sơ của chính
+  /// mình, không đổi được ngôn ngữ, không xoá được tài khoản.
+  final List<Widget> overlays;
   final Widget? bottomBar;
   final bool scrollable;
 
@@ -168,6 +281,7 @@ class PenScreen extends StatelessWidget {
                     ],
                   ),
           ),
+          ...overlays,
         ],
       ),
     );
@@ -179,15 +293,21 @@ class PenPrimaryButton extends StatelessWidget {
   const PenPrimaryButton({
     required this.label,
     this.icon,
+    this.iconCuoi,
     this.onPressed,
     this.height = 62,
-    this.color = PenColors.primary,
+    this.color,
     this.labelSize = 18,
     super.key,
   });
 
   final String label;
   final IconData? icon;
+
+  /// Biểu tượng đặt SAU chữ. [icon] vẽ trước chữ, hợp với dấu hiệu nhận dạng
+  /// (logo Google, máy ảnh); ô này hợp với mũi tên "đi tiếp", thứ phải nằm ở
+  /// phía nó chỉ tới. Cả hai đều tuỳ chọn và độc lập nhau.
+  final IconData? iconCuoi;
   final VoidCallback? onPressed;
   final double height;
 
@@ -196,17 +316,22 @@ class PenPrimaryButton extends StatelessWidget {
 
   /// Fill color — defaults to the brand green; pass [PenColors.danger] for a
   /// destructive primary action (e.g. "Xóa vĩnh viễn").
-  final Color color;
+  /// `null` = dùng token mặc định. Không đặt thẳng
+  /// `PenColors.primary` làm giá trị mặc định của tham số được nữa:
+  /// token nay là getter đổi theo chế độ sáng/tối, mà giá trị mặc
+  /// định của tham số bắt buộc phải là hằng biên dịch.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
+    final mau = color ?? PenColors.primary;
     return EcTap(
       onTap: onPressed,
       child: PenBox(
         width: double.infinity,
         height: height,
-        fill: enabled ? color : color.withValues(alpha: 0.4),
+        fill: enabled ? mau : mau.withValues(alpha: 0.4),
         radius: 14,
         axis: PenAxis.row,
         gap: 12,
@@ -224,6 +349,7 @@ class PenPrimaryButton extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          if (iconCuoi != null) Icon(iconCuoi, size: 21, color: PenColors.card),
         ],
       ),
     );
@@ -377,8 +503,8 @@ class _PenFieldState extends State<PenField> {
                 padding: EdgeInsets.zero,
                 decoration: const BoxDecoration(),
                 placeholder: widget.hint,
-                style: const TextStyle(fontSize: 14, color: PenColors.ink),
-                placeholderStyle: const TextStyle(
+                style: TextStyle(fontSize: 14, color: PenColors.ink),
+                placeholderStyle: TextStyle(
                   fontSize: 14,
                   color: PenColors.mut,
                 ),
@@ -505,11 +631,11 @@ class _PenStackedFieldState extends State<PenStackedField> {
                     padding: EdgeInsets.zero,
                     decoration: const BoxDecoration(),
                     placeholder: widget.label,
-                    placeholderStyle: const TextStyle(
+                    placeholderStyle: TextStyle(
                       fontSize: 14,
                       color: PenColors.mut,
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: PenColors.ink,
@@ -559,8 +685,7 @@ class PenCheckbox extends StatelessWidget {
         main: MainAxisAlignment.center,
         cross: CrossAxisAlignment.center,
         children: [
-          if (checked)
-            const Icon(LucideIcons.check, size: 15, color: PenColors.card),
+          if (checked) Icon(LucideIcons.check, size: 15, color: PenColors.card),
         ],
       ),
     );
@@ -588,7 +713,7 @@ class PenLangPill extends StatelessWidget {
         hugMain: true,
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         children: [
-          const Icon(LucideIcons.globe, size: 16, color: PenColors.ink),
+          Icon(LucideIcons.globe, size: 16, color: PenColors.ink),
           PenText(
             label,
             size: 14,
@@ -596,7 +721,7 @@ class PenLangPill extends StatelessWidget {
             weight: FontWeight.w700,
             softWrap: false,
           ),
-          const Icon(LucideIcons.chevronDown, size: 14, color: PenColors.mut),
+          Icon(LucideIcons.chevronDown, size: 14, color: PenColors.mut),
         ],
       ),
     );
@@ -632,7 +757,7 @@ class PenBrandHeader extends StatelessWidget {
           fit: BoxFit.contain,
         ),
         const SizedBox(height: 3),
-        const PenText(
+        PenText(
           'ZenPack',
           size: 18,
           color: PenColors.primary,
@@ -726,9 +851,9 @@ class PenLabelledRule extends StatelessWidget {
       cross: CrossAxisAlignment.center,
       padding: const EdgeInsets.symmetric(vertical: 4),
       children: [
-        const Expanded(child: PenBox(height: 1, fill: PenColors.line)),
+        Expanded(child: PenBox(height: 1, fill: PenColors.line)),
         PenText(label, size: 14, color: PenColors.mut, softWrap: false),
-        const Expanded(child: PenBox(height: 1, fill: PenColors.line)),
+        Expanded(child: PenBox(height: 1, fill: PenColors.line)),
       ],
     );
   }
@@ -804,7 +929,7 @@ class PenBackButton extends StatelessWidget {
   const PenBackButton({
     this.onTap,
     this.size = 26,
-    this.color = PenColors.ink,
+    this.color,
     super.key,
   });
 
@@ -812,7 +937,11 @@ class PenBackButton extends StatelessWidget {
   final double size;
 
   /// White on the screens whose header sits on [PenBrandBanner].
-  final Color color;
+  /// `null` = dùng token mặc định. Không đặt thẳng
+  /// `PenColors.ink` làm giá trị mặc định của tham số được nữa:
+  /// token nay là getter đổi theo chế độ sáng/tối, mà giá trị mặc
+  /// định của tham số bắt buộc phải là hằng biên dịch.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -832,6 +961,7 @@ class PenOrderThumb extends StatelessWidget {
     this.imageUrl,
     this.platform,
     this.size = 56,
+    this.radius = 12,
     super.key,
   });
 
@@ -841,6 +971,7 @@ class PenOrderThumb extends StatelessWidget {
   /// Marketplace id (`shopee`, `tiktok`, …); omit to drop the badge.
   final String? platform;
   final double size;
+  final double radius;
 
   static const _badge = 23.0;
 
@@ -857,7 +988,7 @@ class PenOrderThumb extends StatelessWidget {
             height: size,
             fill: PenColors.bg,
             stroke: const Color(0x14000000),
-            radius: 12,
+            radius: radius,
             clip: true,
             axis: PenAxis.row,
             main: MainAxisAlignment.center,
@@ -930,6 +1061,8 @@ class PenParcelGlyph extends StatelessWidget {
                 color: PenColors.soft,
               ),
             ),
+          // Hai mặt bên nhạt (mực 45%) chứ không xám đặc: ô ảnh trống đứng
+          // cạnh ảnh sản phẩm thật thì phải lùi về sau, không tranh mắt.
           Positioned(
             left: 2 * k,
             top: 11.5 * k,
@@ -938,7 +1071,7 @@ class PenParcelGlyph extends StatelessWidget {
               viewBox: const [0, 0, 15, 22],
               width: 15 * k,
               height: 22 * k,
-              color: PenColors.mut,
+              color: PenColors.mut.withValues(alpha: 0.5),
             ),
           ),
           Positioned(
@@ -949,7 +1082,7 @@ class PenParcelGlyph extends StatelessWidget {
               viewBox: const [0, 0, 15, 22],
               width: 15 * k,
               height: 22 * k,
-              color: PenColors.mut,
+              color: PenColors.mut.withValues(alpha: 0.38),
             ),
           ),
         ],
@@ -988,24 +1121,31 @@ class PenTabBar extends StatelessWidget {
     // home của iPhone đè lên nhãn tab, chữ bị cắt và khoảng trắng trên/dưới
     // lệch hẳn nhau.
     final safeBottom = MediaQuery.paddingOf(context).bottom;
-    return PenBox(
-      width: double.infinity,
-      height: contentHeight + safeBottom,
-      fill: PenColors.card,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-      axis: PenAxis.row,
-      padding: EdgeInsets.fromLTRB(10, 6, 10, safeBottom),
-      children: [
-        for (var i = 0; i < tabs.length; i++)
-          Expanded(
-            child: _Tab(
-              icon: tabs[i].$1,
-              label: tabs[i].$2,
-              active: i == activeIndex,
-              onTap: tabs[i].$3,
+    // Thanh tab kiểu iOS thật (18/09): phẳng, nền trắng, một vạch mảnh ở mép
+    // trên, KHÔNG bo góc, KHÔNG viên nền dưới tab đang chọn — Shopee, Grab,
+    // Shopify đều thế. Bo góc và viên tô là hai thứ đọc ra "mock".
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: PenColors.card,
+        border: Border(top: BorderSide(color: PenColors.line, width: 0.5)),
+      ),
+      child: PenBox(
+        width: double.infinity,
+        height: contentHeight + safeBottom,
+        axis: PenAxis.row,
+        padding: EdgeInsets.fromLTRB(8, 6, 8, safeBottom),
+        children: [
+          for (var i = 0; i < tabs.length; i++)
+            Expanded(
+              child: _Tab(
+                icon: tabs[i].$1,
+                label: tabs[i].$2,
+                active: i == activeIndex,
+                onTap: tabs[i].$3,
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1030,18 +1170,21 @@ class _Tab extends StatelessWidget {
     // vẽ tô đen). Gạch chân 34×3 và chữ w700 làm cột active cao và rộng hơn
     // hàng xóm, kéo icon nhích lên ~5px so với các tab còn lại nên không dùng.
     final color = active ? PenColors.primary : PenColors.mut;
+    // Tab đang chọn chỉ khác ở MÀU (cam) và nhãn đậm hơn một bậc — đúng
+    // thanh tab iOS thật. Viên nền cam nhạt thử 18/09 đã bỏ: nó là dấu hiệu
+    // mock, và Shopee/Grab/Shopify không có.
     return EcTap(
       onTap: onTap,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 25, color: color),
-          const SizedBox(height: 7),
+          Icon(icon, size: 24, color: color),
+          const SizedBox(height: 3),
           PenText(
             label,
-            size: 14,
+            size: 11.5,
             color: color,
-            weight: FontWeight.w500,
+            weight: active ? FontWeight.w600 : FontWeight.w500,
             softWrap: false,
           ),
         ],
@@ -1058,6 +1201,7 @@ class PenChip extends StatelessWidget {
     required this.label,
     required this.selected,
     this.trailing,
+    this.badge,
     this.onTap,
     super.key,
   });
@@ -1065,33 +1209,57 @@ class PenChip extends StatelessWidget {
   final String label;
   final bool selected;
   final IconData? trailing;
+
+  /// Con số đứng sau nhãn trong một viên tròn nhỏ ("Tất cả ⓬"). `null` = không
+  /// vẽ.
+  final String? badge;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final ink = selected ? PenColors.card : PenColors.ink;
+    // Viên đang chọn: nền cam rất nhạt, viền cam, chữ cam đậm — cùng bộ với
+    // mục đang chọn ở mọi nơi khác ([PenColors.selected]/[selectedInk]) từ
+    // 18/09. Trước nó tô mực đen đặc, thứ duy nhất trên màn còn màu đó.
+    final ink = selected ? PenColors.selectedInk : PenColors.ink;
     return EcTap(
       onTap: onTap,
       child: PenBox(
-        fill: selected ? PenColors.ink : PenColors.bg,
-        stroke: selected ? null : PenColors.line,
+        fill: selected ? PenColors.selected : PenColors.card,
+        stroke: selected ? PenColors.primary : PenColors.line,
         radius: 999,
         axis: PenAxis.row,
         gap: 7,
         cross: CrossAxisAlignment.center,
         hugMain: true,
-        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 18),
+        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
         children: [
           Flexible(
             child: PenText(
               label,
-              size: 14,
+              size: 13,
               color: ink,
-              weight: selected ? FontWeight.w600 : FontWeight.w500,
+              weight: selected ? FontWeight.w700 : FontWeight.w500,
               softWrap: false,
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          if (badge != null)
+            PenBox(
+              fill: selected ? PenColors.primary : PenColors.soft,
+              radius: 999,
+              axis: PenAxis.row,
+              hugMain: true,
+              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+              children: [
+                PenText(
+                  badge!,
+                  size: 12,
+                  color: selected ? PenColors.card : PenColors.ink,
+                  weight: FontWeight.w700,
+                  softWrap: false,
+                ),
+              ],
+            ),
           if (trailing != null)
             Icon(trailing, size: 16, color: selected ? ink : PenColors.mut),
         ],
@@ -1252,7 +1420,7 @@ class _PenSheetState extends State<PenSheet> {
                   padding: widget.padding,
                   children: [
                     if (widget.showGrabber)
-                      const Center(
+                      Center(
                         child: PenBox(
                           width: 46,
                           height: 5,
@@ -1459,39 +1627,74 @@ class PenPlatformHero extends StatelessWidget {
     return IgnorePointer(
       child: Padding(
         padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
-        child: const SizedBox(
+        child: SizedBox(
           width: 292,
           height: 138,
           child: Stack(
             children: [
+              // Quầng sau cụm icon pha cam rất nhạt thay cho xám: nó là một
+              // vệt sáng, không phải một cái đĩa.
               Positioned(
                 left: 61,
                 top: 0,
                 child: PenEllipse(
                   width: 170,
                   height: 118,
-                  color: PenColors.soft,
+                  color: PenColors.selected,
                 ),
               ),
-              Positioned(left: 20, top: 34, child: _HeroTile('shopee', 62, 34)),
-              Positioned(left: 82, top: 6, child: _HeroTile('tiktok', 64, 36)),
-              Positioned(
+              const Positioned(
+                left: 20,
+                top: 34,
+                child: _HeroTile('shopee', 62, 34),
+              ),
+              const Positioned(
+                left: 82,
+                top: 6,
+                child: _HeroTile('tiktok', 64, 36),
+              ),
+              const Positioned(
                 left: 146,
                 top: 34,
                 child: _HeroTile('lazada', 72, 44),
               ),
-              Positioned(left: 218, top: 58, child: _HeroTile('tiki', 62, 44)),
+              const Positioned(
+                left: 218,
+                top: 58,
+                child: _HeroTile('tiki', 62, 44),
+              ),
+              // Đường nối màu cam, hai đầu có chấm tròn — đường "luồng" giữa
+              // các sàn là hình ảnh thương hiệu, không phải trạng thái xong,
+              // nên không còn xanh lá.
               Positioned(
                 left: 58,
                 top: 91,
                 child: PenPath(
                   _flowLine,
-                  viewBox: [0, 0, 172, 34],
+                  viewBox: const [0, 0, 172, 34],
                   width: 172,
                   height: 34,
-                  color: PenColors.success,
+                  color: PenColors.primary,
                   strokeWidth: 3,
                   roundCap: true,
+                ),
+              ),
+              Positioned(
+                left: 52,
+                top: 85,
+                child: PenEllipse(
+                  width: 12,
+                  height: 12,
+                  color: PenColors.primary,
+                ),
+              ),
+              Positioned(
+                left: 224,
+                top: 87,
+                child: PenEllipse(
+                  width: 12,
+                  height: 12,
+                  color: PenColors.primary,
                 ),
               ),
             ],
@@ -1534,8 +1737,8 @@ class PenCard extends StatelessWidget {
     this.axis = PenAxis.row,
     this.gap = 0,
     this.padding = EdgeInsets.zero,
-    this.fill = PenColors.card,
-    this.stroke = PenColors.line,
+    this.fill,
+    this.stroke,
     this.strokeWidth = 1,
     this.radius = 14,
     this.lifted = true,
@@ -1550,7 +1753,12 @@ class PenCard extends StatelessWidget {
   final PenAxis axis;
   final double gap;
   final EdgeInsets padding;
-  final Color fill;
+
+  /// `null` = dùng token mặc định. Không đặt thẳng
+  /// `PenColors.card` làm giá trị mặc định của tham số được nữa:
+  /// token nay là getter đổi theo chế độ sáng/tối, mà giá trị mặc
+  /// định của tham số bắt buộc phải là hằng biên dịch.
+  final Color? fill;
   final Color? stroke;
   final double strokeWidth;
   final double radius;
@@ -1562,9 +1770,14 @@ class PenCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // `fill ?? PenColors.card` — đúng như dòng doc ở trên hứa. Bản đổi sang
+    // getter (tối/sáng) đã bỏ mặc định `PenColors.card` mà quên thay bằng
+    // `??`, nên mọi thẻ trong app trong suốt: nền bóng đổ xuyên qua thẻ, thẻ
+    // nào cũng xám (ảnh chụp iPhone 18/09). [stroke] thì để `null` = không
+    // viền, vì hầu hết chỗ gọi đã truyền `stroke: null` với đúng nghĩa đó.
     final card = PenBox(
       width: double.infinity,
-      fill: fill,
+      fill: fill ?? PenColors.card,
       stroke: stroke,
       strokeWidth: strokeWidth,
       radius: radius,
@@ -1670,7 +1883,7 @@ class PenGlobeIllustration extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const IgnorePointer(
+    return IgnorePointer(
       child: SizedBox(
         width: 300,
         height: 260,
@@ -1731,20 +1944,20 @@ class PenGlobeIllustration extends StatelessWidget {
               top: 12,
               child: PenPath(
                 _cloud,
-                viewBox: [0, 0, 70, 40],
+                viewBox: const [0, 0, 70, 40],
                 width: 70,
                 height: 40,
                 color: PenColors.soft,
               ),
             ),
-            Positioned(
+            const Positioned(
               left: 51,
               top: 8,
               child: _LangChipDeco(label: 'VI', selected: true),
             ),
             // Right/bottom anchored like the design file: the chip hugs its
             // label, so pinning its far edges is what keeps it in place.
-            Positioned(
+            const Positioned(
               right: 97,
               bottom: 154,
               child: _LangChipDeco(label: 'EN', selected: false),
@@ -1791,7 +2004,7 @@ class PenLeafSprig extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const IgnorePointer(
+    return IgnorePointer(
       child: SizedBox(
         width: 66,
         height: 76,
@@ -1861,7 +2074,7 @@ class PenParcelSprite extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const IgnorePointer(
+    return IgnorePointer(
       child: SizedBox(
         width: 102,
         height: 132,
@@ -1872,7 +2085,7 @@ class PenParcelSprite extends StatelessWidget {
               top: 0,
               child: PenPath(
                 _top0,
-                viewBox: [0, 0, 65.1, 31.5],
+                viewBox: const [0, 0, 65.1, 31.5],
                 width: 65.1,
                 height: 31.5,
                 color: PenColors.soft,
@@ -1883,7 +2096,7 @@ class PenParcelSprite extends StatelessWidget {
               top: 15.75,
               child: PenPath(
                 _left0,
-                viewBox: [0, 0, 32.55, 49.35],
+                viewBox: const [0, 0, 32.55, 49.35],
                 width: 32.55,
                 height: 49.35,
                 color: PenColors.mut,
@@ -1894,7 +2107,7 @@ class PenParcelSprite extends StatelessWidget {
               top: 15.75,
               child: PenPath(
                 _right0,
-                viewBox: [0, 0, 32.55, 49.35],
+                viewBox: const [0, 0, 32.55, 49.35],
                 width: 32.55,
                 height: 49.35,
                 color: PenColors.mut,
@@ -1905,7 +2118,7 @@ class PenParcelSprite extends StatelessWidget {
               top: 35.7,
               child: PenPath(
                 _top1,
-                viewBox: [0, 0, 75.6, 35.7],
+                viewBox: const [0, 0, 75.6, 35.7],
                 width: 75.6,
                 height: 35.7,
                 color: PenColors.soft,
@@ -1916,7 +2129,7 @@ class PenParcelSprite extends StatelessWidget {
               top: 53.55,
               child: PenPath(
                 _left1,
-                viewBox: [0, 0, 37.8, 55.65],
+                viewBox: const [0, 0, 37.8, 55.65],
                 width: 37.8,
                 height: 55.65,
                 color: PenColors.mut,
@@ -1927,7 +2140,7 @@ class PenParcelSprite extends StatelessWidget {
               top: 53.55,
               child: PenPath(
                 _right1,
-                viewBox: [0, 0, 37.8, 55.65],
+                viewBox: const [0, 0, 37.8, 55.65],
                 width: 37.8,
                 height: 55.65,
                 color: PenColors.mut,
@@ -1938,7 +2151,7 @@ class PenParcelSprite extends StatelessWidget {
               top: 60.9,
               child: PenPath(
                 _shield,
-                viewBox: [0, 0, 42, 48],
+                viewBox: const [0, 0, 42, 48],
                 width: 44.1,
                 height: 50.4,
                 color: PenColors.primary,

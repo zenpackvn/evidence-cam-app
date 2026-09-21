@@ -6,6 +6,7 @@ import 'package:ec_ui/ec_ui.dart'
 import 'package:evidence_cam/app/di/injection.dart';
 import 'package:evidence_cam/ec_app.dart';
 import 'package:feature_capture/feature_capture.dart' show debugPreviewDir;
+import 'package:feature_shift/feature_shift.dart';
 import 'package:flutter/cupertino.dart' show CupertinoAlertDialog;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -70,6 +71,99 @@ void main() {
       expect(ecInviteTokenOf('https://zenpack.vn/shops'), isNull);
       expect(ecInviteTokenOf('xin chào'), isNull);
       expect(ecInviteTokenOf('abc'), isNull);
+    });
+  });
+
+  /// Cầu `EcSave`: trang web sai khiến app tải tệp.
+  ///
+  /// Đây là ranh giới tin cậy, không phải một lời gọi hàm. Bản trước chỉ kiểm
+  /// hình dạng JSON rồi đưa chuỗi thẳng cho Dio — không scheme, không host —
+  /// nên mọi đoạn JS chạy được trong khung đó đều tải được URL bất kỳ về máy
+  /// người dùng.
+  group('ecUrlTaiDuoc', () {
+    const goc = 'https://api.zenpack.vn';
+
+    test('nhận đúng ba dạng đường phát mà máy chủ dựng ra', () {
+      for (final u in [
+        'https://api.zenpack.vn/d/tok123/v/ev1',
+        'https://api.zenpack.vn/d/tok123/p/ev1',
+        'https://api.zenpack.vn/c/tok123/cat/ev1',
+      ]) {
+        expect(ecUrlTaiDuoc(u, gocApi: goc), u, reason: u);
+      }
+    });
+
+    test('từ chối host khác — kể cả host trông giống', () {
+      for (final u in [
+        'https://evil.com/d/tok/v/ev1',
+        'https://api.zenpack.vn.evil.com/d/tok/v/ev1',
+        'https://api-zenpack.vn/d/tok/v/ev1',
+        // Tiền tố khớp mà vẫn là tên miền khác.
+        'https://api.zenpack.vnevil.com/d/tok/v/ev1',
+      ]) {
+        expect(ecUrlTaiDuoc(u, gocApi: goc), isNull, reason: u);
+      }
+    });
+
+    test('từ chối mọi scheme không phải https', () {
+      for (final u in [
+        'http://api.zenpack.vn/d/tok/v/ev1',
+        // Ca này CHỈ chốt scheme bắt được: đúng host, cổng 443 khai tường
+        // minh nên khớp luôn, đường dẫn hợp lệ. Thiếu nó thì chốt scheme là
+        // đồ trang trí — host và cổng đã chặn hết mấy ca kia rồi.
+        'ftp://api.zenpack.vn:443/d/tok/v/ev1',
+        'file:///etc/passwd',
+        'data:text/html,<script>alert(1)</script>',
+        'content://com.android.providers/x',
+        'javascript:alert(1)',
+      ]) {
+        expect(ecUrlTaiDuoc(u, gocApi: goc), isNull, reason: u);
+      }
+    });
+
+    /// Đúng host mà sai đường vẫn phải chặn: `/api/**` là mặt có xác thực, và
+    /// một lượt tải do trang web sai khiến thì đi kèm phiên của người dùng.
+    test('từ chối đường dẫn ngoài /d/ và /c/', () {
+      for (final u in [
+        'https://api.zenpack.vn/api/me',
+        'https://api.zenpack.vn/seal/manifest/ev1',
+        'https://api.zenpack.vn/',
+        'https://api.zenpack.vn/dossier/tok',
+      ]) {
+        expect(ecUrlTaiDuoc(u, gocApi: goc), isNull, reason: u);
+      }
+    });
+
+    test('rỗng, null và rác thì im lặng bỏ qua', () {
+      expect(ecUrlTaiDuoc(null, gocApi: goc), isNull);
+      expect(ecUrlTaiDuoc('', gocApi: goc), isNull);
+      expect(ecUrlTaiDuoc('không phải url', gocApi: goc), isNull);
+    });
+  });
+
+  /// Lớp thứ hai: khung mang cầu `EcSave` không được rời hai origin đã biết.
+  group('ecDieuHuongDuoc', () {
+    const trang = 'https://zenpack.vn/c/tok123';
+    const goc = 'https://api.zenpack.vn';
+    bool duoc(String u) => ecDieuHuongDuoc(u, trang: trang, gocApi: goc);
+
+    test('cho đi trong trang hồ sơ và sang host API', () {
+      expect(duoc('https://zenpack.vn/c/tok123'), isTrue);
+      expect(duoc('https://zenpack.vn/seal/verify/ev1'), isTrue);
+      expect(duoc('https://api.zenpack.vn/d/tok/v/ev1'), isTrue);
+    });
+
+    test('chặn mọi nơi khác', () {
+      for (final u in [
+        'https://evil.com/',
+        'https://zenpack.vn.evil.com/c/tok',
+        'http://zenpack.vn/c/tok123',
+        'javascript:alert(1)',
+        'about:blank',
+        'rác',
+      ]) {
+        expect(duoc(u), isFalse, reason: u);
+      }
     });
   });
   // Những thứ SỐNG BẰNG VÒNG ĐỜI ỨNG DỤNG, không phải của một màn: kho ảnh dùng
@@ -182,6 +276,221 @@ void main() {
     await tester.tap(find.text(shop).first);
     await tester.pumpAndSettle();
   }
+
+  /// Hỏi CHÍNH widget tour xem nhãn nó neo có thật trên màn không.
+  ///
+  /// Tour dò đích theo NHÃN CHỮ. Nhãn sai — gõ nhầm, đổi chữ, hoặc trỏ vào thứ
+  /// chỉ hiện sau một thao tác — thì tour im lặng bỏ qua: "không tìm thấy đích"
+  /// vốn cũng là một đường hợp lệ (nút ẩn theo quyền), nên không có gì báo.
+  /// Đó là cách màn ghi hình mất hướng dẫn mà không ai hay, cho tới khi người
+  /// dùng báo. Bài này biến sự im lặng đó thành đỏ.
+  final daRa = <EcMan>{};
+
+  void kiemNeo(WidgetTester tester, EcMan man) {
+    daRa.add(man);
+    // Đòi ĐÚNG tour của màn này, không phải "có tour nào đó trong cây": màn
+    // đẩy chồng lên vẫn giữ nguyên tour của màn dưới trong cây widget, nên
+    // hỏi chung chung thì một màn quên nối tour vẫn xanh.
+    final tours = tester
+        .widgetList<EcChiDan>(find.byType(EcChiDan))
+        .where((t) => t.man == man)
+        .toList();
+    expect(
+      tours,
+      isNotEmpty,
+      reason: 'màn "${man.name}" chưa nối tour hướng dẫn',
+    );
+    for (final tour in tours) {
+      for (final buoc in tour.buoc()) {
+        final chu = buoc.chu;
+        if (chu != null) {
+          expect(
+            find.text(chu),
+            findsWidgets,
+            reason:
+                'màn "${man.name}": tour neo vào nhãn "$chu" nhưng nhãn đó KHÔNG '
+                'trên màn lúc vừa vào — tour sẽ im lặng không chạy',
+          );
+          continue;
+        }
+        // Neo bằng khoá: khoá chưa gắn vào widget nào đang dựng thì tour cũng
+        // hụt y như nhãn sai, chỉ khác là không có chữ nào để mà tìm.
+        expect(
+          buoc.neo?.currentContext,
+          isNotNull,
+          reason:
+              'màn "${man.name}": chặng "${buoc.tieuDe}" neo bằng khoá nhưng khoá '
+              'chưa gắn vào widget nào trên màn — tour sẽ im lặng không chạy',
+        );
+      }
+    }
+  }
+
+  group('mọi tour hướng dẫn neo vào nhãn có thật trên màn', () {
+    testWidgets(
+      'Chọn cửa hàng → Vận đơn → Chi tiết shop → Khiếu nại → Tài khoản',
+      experimentalLeakTesting: LeakTesting.settings.withIgnoredAll(),
+      (tester) async {
+        await pumpPhoneSizedApp(
+          tester,
+          EcApp(auth: FakeEcAuth(), repo: const _DemoRepository()),
+        );
+
+        await signInWithGoogle(tester, shop: null);
+        kiemNeo(tester, EcMan.shops);
+
+        await tester.tap(find.text('Shop ABC').first);
+        await tester.pumpAndSettle();
+        kiemNeo(tester, EcMan.home);
+
+        await openShopDetail(tester);
+        kiemNeo(tester, EcMan.shopDetail);
+
+        await tester.tap(find.byType(PenBackButton).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Khiếu nại').last);
+        await tester.pumpAndSettle();
+        kiemNeo(tester, EcMan.claims);
+
+        // `openAccount` đi ra bằng nút lùi trên header, mà tab Khiếu nại
+        // không có nút đó — về tab Vận đơn trước.
+        await tester.tap(find.text('Vận đơn').last);
+        await tester.pumpAndSettle();
+        await openAccount(tester);
+        kiemNeo(tester, EcMan.account);
+
+        await tester.tap(find.text('Gói cước & dung lượng'));
+        await tester.pumpAndSettle();
+        kiemNeo(tester, EcMan.quota);
+      },
+    );
+
+    // Người vừa lập tài khoản chưa có shop nào: đây là màn ĐẦU TIÊN họ thấy,
+    // và là màn cần hướng dẫn nhất.
+    testWidgets(
+      'Chưa có cửa hàng → Tạo cửa hàng',
+      experimentalLeakTesting: LeakTesting.settings.withIgnoredAll(),
+      (tester) async {
+        await pumpPhoneSizedApp(
+          tester,
+          EcApp(auth: FakeEcAuth(), repo: const _EmptyRepository()),
+        );
+
+        await signInWithGoogle(tester, shop: null);
+        kiemNeo(tester, EcMan.noShop);
+
+        await tester.tap(find.text('Tạo shop mới (tên + sàn)'));
+        await tester.pumpAndSettle();
+        kiemNeo(tester, EcMan.createShop);
+      },
+    );
+
+    testWidgets(
+      'Chi tiết đơn, Chi tiết khiếu nại, Hàng đợi upload',
+      experimentalLeakTesting: LeakTesting.settings.withIgnoredAll(),
+      (tester) async {
+        await pumpPhoneSizedApp(
+          tester,
+          EcApp(auth: FakeEcAuth(), repo: const _DemoRepository()),
+        );
+
+        await signInWithGoogle(tester);
+
+        await tester.tap(find.text('SPXVN024567890').first);
+        await tester.pumpAndSettle();
+        kiemNeo(tester, EcMan.order);
+
+        await tester.tap(find.byType(PenBackButton).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(LucideIcons.cloudUpload).first);
+        await tester.pumpAndSettle();
+        kiemNeo(tester, EcMan.queue);
+      },
+    );
+
+    testWidgets(
+      'Chi tiết hồ sơ khiếu nại',
+      experimentalLeakTesting: LeakTesting.settings.withIgnoredAll(),
+      (tester) async {
+        await pumpPhoneSizedApp(
+          tester,
+          EcApp(auth: FakeEcAuth(), repo: _ServerClaimsRepository()),
+        );
+
+        await signInWithGoogle(tester);
+        await tester.tap(find.text('Khiếu nại').last);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Hồ sơ tạo ở web').first);
+        await tester.pumpAndSettle();
+        kiemNeo(tester, EcMan.claimDetail);
+      },
+    );
+
+    testWidgets(
+      'Ghi hình',
+      experimentalLeakTesting: LeakTesting.settings.withIgnoredAll(),
+      (tester) async {
+        await pumpPhoneSizedApp(
+          tester,
+          EcApp(auth: FakeEcAuth(), repo: const _DemoRepository()),
+        );
+
+        await signInWithGoogle(tester);
+        await tester.tap(find.text('Ghi hình').last);
+        await tester.pump(const Duration(milliseconds: 600));
+        // Bấm tab Ghi hình mở popup chọn loại TRƯỚC; chọn xong mới vào màn
+        // quay, nên tour của màn quay chỉ tồn tại sau bước này.
+        await tester.tap(find.text('Đóng hàng').last);
+        // Khung quét chạy hiệu ứng liên tục nên `pumpAndSettle` không dừng.
+        await tester.pump(const Duration(milliseconds: 600));
+        kiemNeo(tester, EcMan.record);
+      },
+    );
+
+    // Chốt cuối: bài rà tự nó cũng có thể bỏ sót màn. Thêm một màn vào
+    // `EcMan` mà quên rà thì bài này đỏ, thay vì lặng lẽ không ai kiểm.
+    test('rà đủ mọi màn trong EcMan', () {
+      expect(
+        EcMan.values.toSet().difference(daRa),
+        isEmpty,
+        reason: 'còn màn chưa được bài nào rà nhãn neo',
+      );
+    });
+
+    // Nhãn neo phải là CHUỖI DỊCH, không phải chữ Việt gõ cứng: gõ cứng thì
+    // máy đặt tiếng Anh dò hụt và tour im lặng không chạy — đúng cái đã xảy ra
+    // với màn ghi hình, nhưng lần này với toàn bộ người dùng ngoài Việt Nam.
+    testWidgets(
+      'nhãn neo theo đúng thứ tiếng đang chọn (tiếng Anh)',
+      experimentalLeakTesting: LeakTesting.settings.withIgnoredAll(),
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        tester.platformDispatcher.localeTestValue = const Locale('en');
+        addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          EcApp(auth: FakeEcAuth(), repo: const _DemoRepository()),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Get started'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Sign in with Google'));
+        await tester.pumpAndSettle();
+        kiemNeo(tester, EcMan.shops);
+
+        await tester.tap(find.text('Shop ABC').first);
+        await tester.pumpAndSettle();
+        kiemNeo(tester, EcMan.home);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      },
+    );
+  });
 
   testWidgets(
     'navigates Splash → Login → Shops → Home tab',
@@ -967,6 +1276,162 @@ void main() {
   );
 
   testWidgets(
+    'tài khoản MỚI chưa có shop được tour chỉ vào từng nút',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': 1,
+        'ValueNotifier<EcUser?>': 1,
+      },
+    ),
+    (tester) async {
+      // Màn ĐẦU TIÊN của người vừa lập tài khoản là "Chưa có shop nào", không
+      // phải màn chọn shop. Gắn hướng dẫn vào màn chọn shop mà bỏ màn này là
+      // bỏ đúng người cần chỉ dẫn nhất — họ chưa từng thấy app bao giờ.
+      final kho = EcHuongDanKhoTam();
+      await kho.danhDauGioiThieu();
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(
+          auth: FakeEcAuth(),
+          repo: const _EmptyRepository(),
+          huongDan: kho,
+        ),
+      );
+      // `shop: null`: kho rỗng nên không có shop nào để bấm vào.
+      await signInWithGoogle(tester, shop: null);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Chưa có shop nào'), findsWidgets);
+      // Tour CHỈ VÀO TỪNG NÚT: chặng đầu nói về nút tạo cửa hàng, kèm số chặng.
+      expect(find.text('Tạo cửa hàng trước'), findsOneWidget);
+      expect(find.text('1/2'), findsOneWidget);
+
+      // Bấm Tiếp thì sang chặng hai — nút Tài khoản.
+      await tester.tap(find.text('Tiếp'));
+      await tester.pumpAndSettle();
+      expect(find.text('Hồ sơ của bạn'), findsOneWidget);
+      expect(find.text('2/2'), findsOneWidget);
+
+      // Chặng cuối bấm "Đã hiểu" thì tour đóng, màn dùng được bình thường.
+      await tester.tap(find.text('Đã hiểu'));
+      await tester.pumpAndSettle();
+      expect(find.text('Hồ sơ của bạn'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'vào màn chính lần đầu thì tour chỉ vào ô tìm mã',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': 1,
+        'ValueNotifier<EcUser?>': 1,
+      },
+    ),
+    (tester) async {
+      // Bài này đi qua TUYẾN thật, không dựng màn tay. Test dựng màn tay chỉ
+      // chứng minh ô chèn vẽ được — nó không biết tuyến có truyền thẻ vào hay
+      // không, mà quên truyền thì người dùng chẳng thấy gì và test vẫn xanh.
+      // Đã xem giới thiệu: bài này soi hướng dẫn TỪNG MÀN, không phải ba màn
+      // giới thiệu. Để nguyên thì app dừng ở giới thiệu và không tới được màn
+      // đăng nhập.
+      final kho = EcHuongDanKhoTam();
+      await kho.danhDauGioiThieu();
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: const _DemoRepository(), huongDan: kho),
+      );
+      // `shop: null`: màn chọn cửa hàng có tour của RIÊNG nó, và lớp phủ của
+      // tour chắn cú chạm vào thẻ shop. Phải đóng tour đó trước — đúng thứ
+      // người dùng thật cũng phải làm.
+      await signInWithGoogle(tester, shop: null);
+      await tester.pumpAndSettle();
+      expect(find.text('Đổi cửa hàng'), findsOneWidget);
+      await tester.tap(find.text('Đã hiểu'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Shop ABC').first);
+      await tester.pumpAndSettle();
+
+      // Màn Tổng quan: tour chỉ vào ô tìm mã vận đơn, hai chặng.
+      expect(find.text('Tìm nhanh một đơn'), findsOneWidget);
+      expect(find.text('1/2'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'xác thực lại hỏng thì KHÔNG xoá dữ liệu ở máy chủ',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': 1,
+        'ValueNotifier<EcUser?>': 1,
+      },
+    ),
+    (tester) async {
+      // Đây là kết cục tệ nhất của lỗi cũ: dữ liệu xoá sạch rồi Firebase mới
+      // từ chối, nên người dùng đăng nhập lại được vào một tài khoản rỗng.
+      final repo = _DeleteRecordingRepository();
+      final auth = FakeEcAuth()
+        ..loiXacThucLai = const EcAuthException('phiên đã cũ');
+      await pumpPhoneSizedApp(tester, EcApp(auth: auth, repo: repo));
+
+      await signInWithGoogle(tester);
+      await openAccount(tester);
+      // Hàng xoá nằm dưới nếp gấp của màn Tài khoản (dải cam cao hơn, hàng
+      // cài đặt có ô biểu tượng — 18/09), phải cuộn tới trước khi bấm.
+      await tester.ensureVisible(find.text('Xóa tài khoản'));
+      await tester.tap(find.text('Xóa tài khoản'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xóa vĩnh viễn'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xóa vĩnh viễn'));
+      await tester.pumpAndSettle();
+
+      // Chỉ có lượt dò thử, KHÔNG có lượt xoá thật.
+      expect(repo.calls, [(force: false, dryRun: true)]);
+      // Và tài khoản Firebase vẫn còn: chỉ chạy tới bước xác thực rồi dừng.
+      expect(auth.buocXoa, ['xac-thuc-lai']);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'xác thực lại chạy TRƯỚC khi xoá bất cứ thứ gì',
+    experimentalLeakTesting: LeakTesting.settings.withIgnored(
+      notDisposed: {
+        'ImageStreamCompleterHandle': 1,
+        'ValueNotifier<EcUser?>': 1,
+      },
+    ),
+    (tester) async {
+      final repo = _DeleteRecordingRepository();
+      final auth = FakeEcAuth();
+      await pumpPhoneSizedApp(tester, EcApp(auth: auth, repo: repo));
+
+      await signInWithGoogle(tester);
+      await openAccount(tester);
+      // Hàng xoá nằm dưới nếp gấp của màn Tài khoản (dải cam cao hơn, hàng
+      // cài đặt có ô biểu tượng — 18/09), phải cuộn tới trước khi bấm.
+      await tester.ensureVisible(find.text('Xóa tài khoản'));
+      await tester.tap(find.text('Xóa tài khoản'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xóa vĩnh viễn'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xóa vĩnh viễn'));
+      await tester.pumpAndSettle();
+
+      expect(repo.calls, [
+        (force: false, dryRun: true),
+        (force: true, dryRun: false),
+      ]);
+      // Thứ tự là bằng chứng: xác thực xong mới tới xoá Firebase.
+      expect(auth.buocXoa, ['xac-thuc-lai', 'xoa-firebase']);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
     'delete account retries with force only after sent-dossier warning',
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
       notDisposed: {
@@ -980,6 +1445,9 @@ void main() {
 
       await signInWithGoogle(tester);
       await openAccount(tester);
+      // Hàng xoá nằm dưới nếp gấp của màn Tài khoản (dải cam cao hơn, hàng
+      // cài đặt có ô biểu tượng — 18/09), phải cuộn tới trước khi bấm.
+      await tester.ensureVisible(find.text('Xóa tài khoản'));
       await tester.tap(find.text('Xóa tài khoản'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Xóa vĩnh viễn'));
@@ -1022,6 +1490,9 @@ void main() {
 
       await signInWithGoogle(tester);
       await openAccount(tester);
+      // Hàng xoá nằm dưới nếp gấp của màn Tài khoản (dải cam cao hơn, hàng
+      // cài đặt có ô biểu tượng — 18/09), phải cuộn tới trước khi bấm.
+      await tester.ensureVisible(find.text('Xóa tài khoản'));
       await tester.tap(find.text('Xóa tài khoản'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Xóa vĩnh viễn'));
@@ -1166,7 +1637,7 @@ void main() {
   );
 
   testWidgets(
-    'record type sheet can select a type and open shop detail management',
+    'bấm Ghi hình hỏi loại TRƯỚC khi vào màn quay, và vẫn đổi được ở trong',
     // Reaching Shop Detail keeps app-lifetime singletons and the pushed
     // route's own notifiers alive past the check.
     experimentalLeakTesting: LeakTesting.settings.withIgnored(
@@ -1188,12 +1659,31 @@ void main() {
       await tester.tap(find.text('Ghi hình').last);
       await tester.pump(const Duration(seconds: 1));
 
-      await tester.tap(find.byIcon(LucideIcons.settings));
-      await tester.pump(const Duration(seconds: 1));
+      // Bấm tab Ghi hình là hỏi loại NGAY, chưa vào màn quay: khung ngắm
+      // hiện ra rồi mới bị hộp thoại phủ lên là thứ người dùng đọc thành "vào
+      // nhầm chỗ".
+      expect(find.text('Chọn loại video'), findsOneWidget);
+      expect(find.text('Quét mã vận đơn'), findsNothing);
+
       await tester.tap(find.text('Trả hàng'));
       await tester.pump(const Duration(seconds: 1));
+
+      // Bơm thêm vài nhịp TRƯỚC khi khẳng định "không hỏi lại": một
+      // `pump` đơn chỉ dựng đúng một khung, mà sheet tự động của màn quay đi
+      // qua một quãng chờ 200ms rồi mới đẩy route. Thiếu mấy nhịp này thì bài
+      // xanh vì sheet chưa kịp hiện chứ không phải vì nó không hiện — đo bằng
+      // đột biến: bỏ hẳn chốt "đã chọn rồi" mà bài vẫn xanh.
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+
+      // Chọn xong mới vào màn quay, và mang theo đúng loại vừa chọn — không
+      // hỏi lại lần nữa.
+      expect(find.text('Quét mã vận đơn'), findsOneWidget);
+      expect(find.text('Chọn loại video'), findsNothing);
       expect(find.text('Trả hàng'), findsOneWidget);
 
+      // Vẫn đổi được loại từ trong màn quay: ô loại ở thanh dưới.
       await tester.tap(find.text('Trả hàng'));
       await tester.pump(const Duration(seconds: 1));
       await tester.tap(find.text('Quản lý loại video — mở Chi tiết shop'));
@@ -1204,6 +1694,32 @@ void main() {
 
       expect(find.text('CÀI ĐẶT SHOP'), findsOneWidget);
       expect(find.text('LOẠI VIDEO'), findsOneWidget);
+    },
+  );
+
+  // Không chọn loại thì không quay: đứng nguyên màn đang đứng, chứ không đẩy
+  // vào màn quay rồi bỏ đó — màn quay không có loại là không dựng camera, nên
+  // người dùng nhìn thấy một khung ngắm trống không hiểu vì sao.
+  testWidgets(
+    'bấm back trong popup chọn loại thì ở nguyên tab Vận đơn',
+    experimentalLeakTesting: LeakTesting.settings.withIgnoredAll(),
+    (tester) async {
+      await pumpPhoneSizedApp(
+        tester,
+        EcApp(auth: FakeEcAuth(), repo: const _DemoRepository()),
+      );
+
+      await signInWithGoogle(tester);
+      await tester.tap(find.text('Ghi hình').last);
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('Chọn loại video'), findsOneWidget);
+
+      await tester.tap(find.byIcon(LucideIcons.chevronLeft).last);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Chọn loại video'), findsNothing);
+      expect(find.text('Quét mã vận đơn'), findsNothing);
+      expect(find.text('SPXVN024567890'), findsWidgets);
     },
   );
 
@@ -1506,6 +2022,9 @@ class _ProfileRepository extends _DemoRepository {
     String? name,
     String? phone,
     String? avatarUrl,
+    String? theme,
+    String? timezone,
+    Map<String, Object?>? hoaDon,
   }) async {
     updatedName = name;
     updatedPhone = phone;
@@ -1555,6 +2074,16 @@ class _UpgradingQuotaRepository extends _DemoRepository {
       remainingVideos: 120,
       retentionDays: 25,
     );
+  }
+}
+
+/// Ghi lại MỌI lượt gọi xoá tài khoản, kèm tham số — để soi cái gì đã chạy.
+class _DeleteRecordingRepository extends _DemoRepository {
+  final calls = <({bool force, bool dryRun})>[];
+
+  @override
+  Future<void> deleteAccount({bool force = false, bool dryRun = false}) async {
+    calls.add((force: force, dryRun: dryRun));
   }
 }
 
@@ -1630,6 +2159,10 @@ class _ManageableShopRepository extends _DemoRepository {
     VideoTypeDto(id: 'default-pack', name: 'Đóng hàng', isDefault: true),
   ];
 
+  /// Cụm cài đặt quay của lượt ghi gần nhất — bài test đọc để chắc màn hình
+  /// gửi đúng thứ người dùng vừa gạt.
+  Map<String, Object?>? updatedCaiDatQuay;
+
   @override
   Future<ShopDto> updateShop(
     String shopId, {
@@ -1637,7 +2170,9 @@ class _ManageableShopRepository extends _DemoRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    Map<String, Object?>? caiDatQuay,
   }) async {
+    updatedCaiDatQuay = caiDatQuay;
     updatedResolution = resolution;
     updatedClipSeconds = maxClipSeconds;
     return ShopDto(

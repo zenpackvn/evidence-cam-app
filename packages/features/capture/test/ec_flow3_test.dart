@@ -79,6 +79,156 @@ void main() {
     vi = await AppLocalizations.delegate.load(const Locale('vi'));
   });
 
+  /// Nút "chọn ảnh" cạnh nút nhập tay trên màn chờ bill.
+  ///
+  /// Đường thứ ba vào cùng một việc. Người đóng gói thường đã có ảnh tem trong
+  /// máy — giơ camera vào một tấm ảnh đang hiện trên màn hình máy khác thì lóa
+  /// và vân sọc, gần như không ra mã.
+  group('chọn ảnh trên màn chờ bill', () {
+    testWidgets('có nối thì hiện nút, bấm được', (tester) async {
+      var daBam = 0;
+      await _pump(
+        tester,
+        EcWaitBill2Screen(
+          onResolution: () {},
+          onManualEntry: () {},
+          onChonAnh: () => daBam++,
+        ),
+      );
+
+      final nut = find.byIcon(LucideIcons.image);
+      expect(nut, findsOneWidget);
+      await tester.tap(nut);
+      await tester.pump();
+      expect(daBam, 1);
+    });
+
+    // Chỗ gọi chưa nối thì KHÔNG bày nút: một nút bấm vào không có gì xảy ra
+    // tệ hơn hẳn việc không có nút nào.
+    testWidgets('chưa nối thì KHÔNG hiện nút', (tester) async {
+      await _pump(
+        tester,
+        EcWaitBill2Screen(
+          onResolution: () {},
+          onManualEntry: () {},
+        ),
+      );
+
+      expect(find.byIcon(LucideIcons.image), findsNothing);
+      // Nút nhập tay vẫn còn nguyên — thêm đường mới không được cắt đường cũ.
+      expect(find.byIcon(LucideIcons.keyboard), findsOneWidget);
+    });
+
+    testWidgets('hai nút đứng cạnh nhau, không đè nhau', (tester) async {
+      await _pump(
+        tester,
+        EcWaitBill2Screen(
+          onResolution: () {},
+          onManualEntry: () {},
+          onChonAnh: () {},
+        ),
+      );
+
+      final banPhim = tester.getRect(find.byIcon(LucideIcons.keyboard));
+      final anh = tester.getRect(find.byIcon(LucideIcons.image));
+      // Chồng lên nhau thì một trong hai không bấm được, mà cả hai đều trông
+      // như bấm được — kiểu hỏng chỉ lộ ra khi người dùng thử.
+      expect(anh.left, greaterThan(banPhim.right));
+    });
+  });
+
+  /// Cột zoom trên khung ngắm.
+  ///
+  /// Zoom vốn đã chạy bằng cử chỉ CHỤM, nhưng cử chỉ thì vô hình: không có gì
+  /// trên màn nói rằng zoom được, nên phần lớn người dùng không biết. Cột nút
+  /// là để nói ra điều đó.
+  group('cột zoom', () {
+    testWidgets('máy zoom được thì hiện cả hai nút và mức hiện tại', (
+      tester,
+    ) async {
+      var vao = 0;
+      var ra = 0;
+      await _pump(
+        tester,
+        EcWaitBill2Screen(
+          onResolution: () {},
+          onManualEntry: () {},
+          onZoomIn: () => vao++,
+          onZoomOut: () => ra++,
+          zoomLabel: '1.8x',
+        ),
+      );
+
+      expect(find.text('1.8x'), findsOneWidget);
+      await tester.tap(find.byIcon(LucideIcons.plus));
+      await tester.tap(find.byIcon(LucideIcons.minus));
+      await tester.pump();
+      expect(vao, 1);
+      expect(ra, 1);
+    });
+
+    // Nhiều webcam và camera trước chỉ có một mức. Bày một cặp nút xám vĩnh
+    // viễn trên khung ngắm là chiếm chỗ để nói một câu vô ích.
+    testWidgets('máy KHÔNG zoom được thì cột không hiện', (tester) async {
+      await _pump(
+        tester,
+        EcWaitBill2Screen(
+          onResolution: () {},
+          onManualEntry: () {},
+        ),
+      );
+
+      expect(find.byIcon(LucideIcons.plus), findsNothing);
+      expect(find.byIcon(LucideIcons.minus), findsNothing);
+    });
+
+    /// Hướng đã cạn thì nút XÁM, không phải mất.
+    ///
+    /// Nút xám nói được "hết đường này". Một nút bấm được mà không đổi gì thì
+    /// người dùng bấm thêm năm lần rồi kết luận màn hình treo; còn nút biến mất
+    /// thì bố cục nhảy dưới ngón tay.
+    testWidgets('đã zoom hết thì nút phóng to xám, nút thu nhỏ vẫn bấm được', (
+      tester,
+    ) async {
+      var ra = 0;
+      await _pump(
+        tester,
+        EcWaitBill2Screen(
+          onResolution: () {},
+          onManualEntry: () {},
+          onZoomOut: () => ra++,
+          zoomLabel: '10x',
+        ),
+      );
+
+      expect(find.byIcon(LucideIcons.plus), findsOneWidget);
+      await tester.tap(find.byIcon(LucideIcons.plus));
+      await tester.tap(find.byIcon(LucideIcons.minus));
+      await tester.pump();
+      expect(ra, 1, reason: 'nút thu nhỏ phải còn bấm được');
+    });
+
+    // Đang QUAY là lúc zoom cần nhất: khung đã chốt, nhưng người soi hàng vẫn
+    // phải đưa mắt lại gần nhãn hoặc vết móp.
+    testWidgets('màn đang quay cũng có cột zoom', (tester) async {
+      var vao = 0;
+      await _pump(
+        tester,
+        EcRecording2Screen(
+          code: 'SPXVN1',
+          elapsed: '00:12',
+          onZoomIn: () => vao++,
+          zoomLabel: '2x',
+        ),
+      );
+
+      expect(find.text('2x'), findsOneWidget);
+      await tester.tap(find.byIcon(LucideIcons.plus));
+      await tester.pump();
+      expect(vao, 1);
+    });
+  });
+
   group('EcWaitBill2Screen', () {
     testWidgets('shows idle hint, upload chip and camera rail', (
       tester,

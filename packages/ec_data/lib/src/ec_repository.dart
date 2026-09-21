@@ -42,7 +42,18 @@ abstract interface class EcRepository {
     String? name,
     String? phone,
     String? avatarUrl,
+    String? theme,
+    String? timezone,
+
+    /// Cả cụm thông tin xuất hoá đơn, khoá đúng như máy chủ đặt tên.
+    Map<String, Object?>? hoaDon,
   });
+
+  /// Khai máy này nhận thông báo đẩy. Gọi lại mỗi lần token đổi.
+  Future<void> dangKyMayNhanThongBao(String token, String platform);
+
+  /// Thôi nhận trên máy này. Gọi lúc đăng xuất.
+  Future<void> goMayNhanThongBao(String token);
   Future<ShopDto> createShop({
     required String name,
     required String platform,
@@ -54,6 +65,9 @@ abstract interface class EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+
+    /// Cả cụm cài đặt quay của shop — xem `EcCaiDatQuay.toJson`.
+    Map<String, Object?>? caiDatQuay,
   });
 
   Future<List<MemberDto>> members(String shopId);
@@ -165,6 +179,12 @@ abstract interface class EcRepository {
   /// [EcApi.googleLoginSession]).
   Future<String> googleLoginSession(String ticket);
 
+  /// Xin mã OTP về số điện thoại (xem [EcApi.phoneOtpStart]).
+  Future<void> phoneOtpStart(String phone, String channel);
+
+  /// Mã OTP đúng → custom token Firebase (xem [EcApi.phoneOtpVerify]).
+  Future<String> phoneOtpVerify(String phone, String code);
+
   /// Khai số clip chưa upload được đang nằm trên máy này (xem
   /// [EcApi.reportQueueDepth]). Nuốt lỗi ở tầng hiện thực: đây là báo cáo phụ
   /// trợ, hỏng thì không được làm gì khác hỏng theo.
@@ -239,7 +259,24 @@ class RemoteEcRepository implements EcRepository {
     String? name,
     String? phone,
     String? avatarUrl,
-  }) => _api.updateProfile(name: name, phone: phone, avatarUrl: avatarUrl);
+    String? theme,
+    String? timezone,
+    Map<String, Object?>? hoaDon,
+  }) => _api.updateProfile(
+    name: name,
+    phone: phone,
+    avatarUrl: avatarUrl,
+    theme: theme,
+    timezone: timezone,
+    hoaDon: hoaDon,
+  );
+
+  @override
+  Future<void> dangKyMayNhanThongBao(String token, String platform) =>
+      _api.dangKyMayNhanThongBao(token, platform);
+
+  @override
+  Future<void> goMayNhanThongBao(String token) => _api.goMayNhanThongBao(token);
 
   @override
   Future<String> uploadAvatar(String filePath) async {
@@ -276,12 +313,14 @@ class RemoteEcRepository implements EcRepository {
     String? platform,
     String? resolution,
     int? maxClipSeconds,
+    Map<String, Object?>? caiDatQuay,
   }) => _api.updateShop(
     shopId,
     name: name,
     platform: platform,
     resolution: resolution,
     maxClipSeconds: maxClipSeconds,
+    caiDatQuay: caiDatQuay,
   );
 
   @override
@@ -432,6 +471,14 @@ class RemoteEcRepository implements EcRepository {
   @override
   Future<String> googleLoginSession(String ticket) =>
       _api.googleLoginSession(ticket);
+
+  @override
+  Future<void> phoneOtpStart(String phone, String channel) =>
+      _api.phoneOtpStart(phone, channel);
+
+  @override
+  Future<String> phoneOtpVerify(String phone, String code) =>
+      _api.phoneOtpVerify(phone, code);
 
   @override
   Future<void> setStorageActive(

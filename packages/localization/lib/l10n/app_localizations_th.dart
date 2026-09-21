@@ -1085,6 +1085,12 @@ class AppLocalizationsTh extends AppLocalizations {
   String get tooltipEnterTracking => 'กรอกเลขพัสดุ';
 
   @override
+  String get scanPickImage => 'เลือกรูปภาพ';
+
+  @override
+  String get scanNoCodeInImage => 'ไม่พบเลขพัสดุในรูปนี้';
+
+  @override
   String get tooltipZoomIn => 'ซูมเข้า';
 
   @override
@@ -1941,15 +1947,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get accountRateAppNote => 'สนับสนุนการพัฒนา ZenPack';
 
   @override
-  String get supportFacebook => 'ทักทางเฟซบุ๊ก';
-
-  @override
-  String get supportZalo => 'ทักทาง Zalo';
-
-  @override
-  String get supportCall => 'โทรหาฝ่ายช่วยเหลือ';
-
-  @override
   String sheetCustomMin(String min, String unit) {
     return 'กรอก $min $unit ขึ้นไป';
   }
@@ -2428,4 +2425,725 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get storageDriveRejected =>
       'Google refused the grant. Try again; if it keeps failing, tell your admin.';
+
+  @override
+  String get authSignInPhone => 'เข้าสู่ระบบด้วยเบอร์โทรศัพท์';
+
+  @override
+  String get phoneLoginTitle => 'เข้าสู่ระบบด้วยเบอร์โทรศัพท์';
+
+  @override
+  String get phoneLoginSubtitle => 'กรอกเบอร์โทรศัพท์ เราจะส่งรหัส 6 หลักให้';
+
+  @override
+  String get phoneLoginNumberLabel => 'เบอร์โทรศัพท์';
+
+  @override
+  String get phoneLoginNumberHint => '08x xxx xxxx';
+
+  @override
+  String get phoneLoginInvalid => 'เบอร์โทรศัพท์ไม่ถูกต้อง';
+
+  @override
+  String get phoneLoginViaZalo => 'ส่งรหัสทาง Zalo';
+
+  @override
+  String get phoneLoginViaSms => 'ส่งรหัสทาง SMS';
+
+  @override
+  String get otpTitle => 'กรอกรหัสยืนยัน';
+
+  @override
+  String otpSentTo(String phone) {
+    return 'ส่งรหัส 6 หลักไปที่ $phone แล้ว';
+  }
+
+  @override
+  String get otpLabel => 'รหัสยืนยัน';
+
+  @override
+  String get otpConfirm => 'ยืนยัน';
+
+  @override
+  String get otpResend => 'ส่งรหัสอีกครั้ง';
+
+  @override
+  String otpResendIn(int seconds) {
+    return 'ส่งอีกครั้งใน $seconds วินาที';
+  }
+
+  @override
+  String get otpChangePhone => 'ใช้เบอร์อื่น';
+
+  @override
+  String get otpWrong => 'รหัสไม่ถูกต้อง ตรวจสอบข้อความอีกครั้ง';
+
+  @override
+  String get otpExpired => 'รหัสหมดอายุแล้ว ขอรหัสใหม่';
+
+  @override
+  String get otpUsedUp => 'รหัสนี้ใช้ไม่ได้แล้ว ขอรหัสใหม่';
+
+  @override
+  String get otpTooSoon => 'เพิ่งส่งไป รอสักครู่แล้วลองใหม่';
+
+  @override
+  String get otpRateLimited => 'ขอรหัสบ่อยเกินไป ลองใหม่ในอีกไม่กี่นาที';
+
+  @override
+  String get otpSendFailed => 'ส่งรหัสไม่สำเร็จ ลองอีกช่องทางหนึ่ง';
+
+  @override
+  String get otpNotConfigured => 'ยังส่งรหัสไม่ได้ในตอนนี้ กรุณาใช้วิธีอื่น';
+
+  @override
+  String otpFromOa(String oa) {
+    return 'ข้อความส่งจาก Zalo Official Account $oa — มองหาชื่อนี้';
+  }
+
+  @override
+  String get hdDaHieu => 'เข้าใจแล้ว';
+
+  @override
+  String get hdDong => 'ปิดคำแนะนำ';
+
+  @override
+  String get hdXemLai => 'ดูคำแนะนำอีกครั้ง';
+
+  @override
+  String get hdDaMoLai => 'คำแนะนำจะแสดงอีกครั้งเมื่อคุณเข้าแต่ละหน้าจอ';
+
+  @override
+  String get hdHomeTitle => 'หน้าภาพรวม';
+
+  @override
+  String get hdHome1 =>
+      'ดูจำนวนออเดอร์ พื้นที่ที่ใช้ และสิ่งที่ต้องจัดการวันนี้อย่างรวดเร็ว';
+
+  @override
+  String get hdHome2 => 'การ์ดสถานะแต่ละใบพาไปยังออเดอร์ในสถานะนั้นทันที';
+
+  @override
+  String get hdHome3 => 'เปิดคำแนะนำนี้ได้ทุกเมื่อจากปุ่มช่วยเหลือ';
+
+  @override
+  String get hdRecordTitle => 'หน้าบันทึกวิดีโอ';
+
+  @override
+  String get hdRecord1 =>
+      'เลือกกล้องถ่ายสินค้าและกล้องถ่ายใบเสร็จในตั้งค่าก่อนบันทึก';
+
+  @override
+  String get hdRecord2 =>
+      'สแกนเลขพัสดุแล้วกดบันทึก วิดีโอจะผูกกับออเดอร์นั้นเอง';
+
+  @override
+  String get hdRecord3 =>
+      'กล้อง IP ใช้ถ่ายสินค้าเท่านั้น ไม่ใช้เป็นกล้องถ่ายใบเสร็จ';
+
+  @override
+  String get hdOrderTitle => 'รายละเอียดออเดอร์';
+
+  @override
+  String get hdOrder1 =>
+      'คลิปและรูปทั้งหมดของเลขพัสดุหนึ่งรายการ ใหม่สุดอยู่บน';
+
+  @override
+  String get hdOrder2 => 'คลิปที่ผนึกแล้วคือฉบับสมบูรณ์ ใช้เคลมกับแพลตฟอร์มได้';
+
+  @override
+  String get hdOrder3 =>
+      'การลบที่นี่แค่ซ่อนจากรายการของคุณ ต้นฉบับยังถูกเก็บไว้';
+
+  @override
+  String get hdClaimsTitle => 'แฟ้มเคลม';
+
+  @override
+  String get hdClaims1 =>
+      'รวมหลักฐานจากหลายออเดอร์เป็นแฟ้มเดียวเพื่อส่งให้แพลตฟอร์ม';
+
+  @override
+  String get hdClaims2 => 'แต่ละแฟ้มมีลิงก์ของตัวเอง ผู้รับไม่ต้องมีบัญชี';
+
+  @override
+  String get hdClaims3 => 'วิดีโอในแฟ้มถูกเก็บต่ออีก 15 วันหลังปิดแฟ้ม';
+
+  @override
+  String get hdClaimDetailTitle => 'รายละเอียดแฟ้ม';
+
+  @override
+  String get hdClaimDetail1 => 'เพิ่มหรือลบออเดอร์ก่อนส่งแฟ้ม';
+
+  @override
+  String get hdClaimDetail2 => 'คัดลอกลิงก์แฟ้มไปวางในเคลมบนแพลตฟอร์ม';
+
+  @override
+  String get hdClaimDetail3 => 'ปิดเมื่อเสร็จ วิดีโอยังอยู่อีก 15 วัน';
+
+  @override
+  String get hdShopsTitle => 'ร้านค้า';
+
+  @override
+  String get hdShops1 => 'แต่ละร้านมีพื้นที่เก็บ แพ็กเกจ และพนักงานของตัวเอง';
+
+  @override
+  String get hdShops2 => 'เชิญพนักงานเข้าร้านและกำหนดสิทธิ์ของแต่ละคน';
+
+  @override
+  String get hdShops3 => 'สลับร้านที่กำลังทำงานอยู่ได้ที่ด้านบนของหน้า';
+
+  @override
+  String get hdQuotaTitle => 'แพ็กเกจ';
+
+  @override
+  String get hdQuota1 => 'แพ็กเกจกำหนดขนาดพื้นที่เก็บและจำนวนวันที่เก็บวิดีโอ';
+
+  @override
+  String get hdQuota2 => 'พื้นที่เก็บนับตามร้าน ไม่ใช่ตามผู้ใช้';
+
+  @override
+  String get hdQuota3 => 'ระบบเตือนก่อนพื้นที่เต็ม ไม่มีอะไรถูกลบเงียบ ๆ';
+
+  @override
+  String get hdQueueTitle => 'คิวอัปโหลด';
+
+  @override
+  String get hdQueue1 => 'คลิปที่บันทึกแล้วแต่ยังไม่ขึ้นคลังรออยู่ที่นี่';
+
+  @override
+  String get hdQueue2 => 'สัญญาณอ่อนก็ปล่อยไว้ แอปจะลองใหม่เมื่อสัญญาณกลับมา';
+
+  @override
+  String get hdQueue3 => 'อย่าถอนแอปขณะยังมีคลิปรออยู่ คลิปอยู่แค่ในเครื่องนี้';
+
+  @override
+  String get gtBoQua => 'ข้าม';
+
+  @override
+  String get gtTiep => 'ถัดไป';
+
+  @override
+  String get gtBatDau => 'เริ่มเลย';
+
+  @override
+  String get gt1Title => 'ถ่ายตอนแพ็กของ';
+
+  @override
+  String get gt1Body =>
+      'หนึ่งออเดอร์หนึ่งคลิป ของอะไร แพ็กยังไง ติดป้ายไหน ถ่ายเสร็จก็จบ ไม่ต้องทำอะไรเพิ่ม';
+
+  @override
+  String get gt2Title => 'ผูกกับเลขพัสดุ';
+
+  @override
+  String get gt2Body =>
+      'สแกนป้ายแล้ววิดีโอจะผูกกับออเดอร์นั้นเอง ภายหลังค้นเลขเดียวก็เห็นคลิปทั้งหมด';
+
+  @override
+  String get gt3Title => 'มีหลักฐานเมื่อถูกเคลม';
+
+  @override
+  String get gt3Body =>
+      'รวมคลิปหลายออเดอร์เป็นแฟ้มเดียวแล้วส่งลิงก์ให้แพลตฟอร์ม ผู้รับเปิดดูได้โดยไม่ต้องมีบัญชี';
+
+  @override
+  String get deletePwTitle => 'กรอกรหัสผ่านเพื่อยืนยัน';
+
+  @override
+  String get deletePwBody =>
+      'การลบบัญชีย้อนกลับไม่ได้ กรุณากรอกรหัสผ่านอีกครั้งก่อนลบ';
+
+  @override
+  String get deletePwOk => 'ยืนยัน';
+
+  @override
+  String get hdNoShopTitle => 'เริ่มจากร้านค้า';
+
+  @override
+  String get hdNoShop1 =>
+      'วิดีโอและหลักฐานทั้งหมดผูกกับร้าน จึงต้องสร้างร้านก่อน';
+
+  @override
+  String get hdNoShop2 => 'จากนั้นเลือกแพลตฟอร์มที่ขายและเชิญพนักงานเข้าร่วม';
+
+  @override
+  String get hdNoShop3 =>
+      'ถ้ามีคนเชิญคุณ ให้กด “เข้าร่วมด้วยคำเชิญ” ไม่ต้องสร้างใหม่';
+
+  @override
+  String get cdNoShopTaoTitle => 'สร้างร้านก่อน';
+
+  @override
+  String get cdNoShopTaoBody =>
+      'วิดีโอและหลักฐานทั้งหมดผูกกับร้าน แตะที่นี่เพื่อสร้างและเลือกแพลตฟอร์มที่ขาย';
+
+  @override
+  String get cdNoShopMoiTitle => 'ถูกเชิญใช่ไหม เริ่มที่นี่';
+
+  @override
+  String get cdNoShopMoiBody =>
+      'ถ้าเจ้าของร้านเชิญคุณ แตะที่นี่แล้วกรอกรหัสคำเชิญ';
+
+  @override
+  String get cdNoShopTkTitle => 'โปรไฟล์ของคุณ';
+
+  @override
+  String get cdNoShopTkBody =>
+      'ชื่อ ภาษา วิธีเข้าสู่ระบบ และการลบบัญชี อยู่ที่นี่ทั้งหมด';
+
+  @override
+  String get cdTaoShopTenTitle => 'ตั้งชื่อร้าน';
+
+  @override
+  String get cdTaoShopTenBody =>
+      'ชื่อนี้เห็นเฉพาะคุณและพนักงาน ใช้แยกร้านเมื่อมีหลายร้าน เปลี่ยนภายหลังได้';
+
+  @override
+  String get cdTaoShopNutTitle => 'เลือกแพลตฟอร์มแล้วสร้าง';
+
+  @override
+  String get cdTaoShopNutBody =>
+      'เลือกที่ที่คุณขายด้านบน แล้วแตะที่นี่ มีร้านแล้วก็บันทึกวิดีโอได้เลย';
+
+  @override
+  String get cdHome1T => 'ค้นหาออเดอร์เร็ว';
+
+  @override
+  String get cdHome1B =>
+      'พิมพ์เลขพัสดุที่นี่เพื่อเปิดหลักฐานของออเดอร์นั้นทันที';
+
+  @override
+  String get cdHome2T => 'กรองตามสถานะ';
+
+  @override
+  String get cdHome2B =>
+      'ดูเฉพาะออเดอร์ที่ยังอัปโหลด เสร็จแล้ว หรือมีข้อผิดพลาด';
+
+  @override
+  String get cdQueue1T => 'คลิปรออัปโหลด';
+
+  @override
+  String get cdQueue1B =>
+      'สัญญาณอ่อนคลิปจะรอที่นี่ และลองใหม่เมื่อสัญญาณกลับมา';
+
+  @override
+  String get cdQueue2T => 'ล้างคิว';
+
+  @override
+  String get cdQueue2B =>
+      'ลบเฉพาะคลิปที่ยังไม่อัปโหลด หายถาวร เซิร์ฟเวอร์ยังไม่มีสำเนา';
+
+  @override
+  String get cdClaims1T => 'รวมหลักฐานส่งแพลตฟอร์ม';
+
+  @override
+  String get cdClaims1B => 'หลายออเดอร์รวมเป็นแฟ้มเดียว ส่งเป็นลิงก์เดียว';
+
+  @override
+  String get cdRec1T => 'สแกนเลขพัสดุ';
+
+  @override
+  String get cdRec1B =>
+      'วางป้ายให้อยู่ในกรอบ แอปจะอ่านและผูกวิดีโอเข้ากับออเดอร์นั้น';
+
+  @override
+  String get cdOrder1T => 'หลักฐานของออเดอร์นี้';
+
+  @override
+  String get cdOrder1B => 'คลิปและรูปทั้งหมดของเลขพัสดุนี้ ใหม่สุดอยู่บน';
+
+  @override
+  String get cdClaimD1T => 'ลิงก์ส่งให้แพลตฟอร์ม';
+
+  @override
+  String get cdClaimD1B =>
+      'คัดลอกลิงก์นี้ไปวางในเคลม ผู้รับเปิดดูได้โดยไม่ต้องมีบัญชี';
+
+  @override
+  String get cdShops1T => 'สลับร้าน';
+
+  @override
+  String get cdShops1B =>
+      'แต่ละร้านมีพื้นที่เก็บ แพ็กเกจ และพนักงานของตัวเอง แตะเพื่อเปลี่ยน';
+
+  @override
+  String get cdQuota1T => 'พื้นที่ที่ใช้';
+
+  @override
+  String get cdQuota1B => 'แพ็กเกจกำหนดจำนวนวิดีโอและวันเก็บ ระบบเตือนก่อนเต็ม';
+
+  @override
+  String get cdAcc1T => 'แพ็กเกจของคุณ';
+
+  @override
+  String get cdAcc1B => 'ดูวิดีโอที่เหลือ ระยะเวลาเก็บ และอัปเกรดได้ที่นี่';
+
+  @override
+  String get cdAcc2T => 'วิธีเข้าสู่ระบบ';
+
+  @override
+  String get cdAcc2B =>
+      'เพิ่ม Google หรือ Apple เพื่อเข้าเร็วขึ้น ไม่ต้องจำรหัสผ่าน';
+
+  @override
+  String get cdShopD1T => 'ประเภทวิดีโอ';
+
+  @override
+  String get cdShopD1B =>
+      'ตั้งชื่อประเภทวิดีโอที่ถ่ายบ่อย เพื่อค้นหาภายหลังได้ง่าย';
+
+  @override
+  String get cdShopD2T => 'เชิญพนักงาน';
+
+  @override
+  String get cdShopD2B => 'เชิญคนมาทำงานร่วมกันและกำหนดสิทธิ์แต่ละคน';
+
+  @override
+  String get cdRec2T => 'ป้ายเบลอ ให้พิมพ์เอง';
+
+  @override
+  String get cdRec2B => 'ถ้าป้ายเลอะหรือฉีกจนสแกนไม่ได้ แตะที่นี่เพื่อพิมพ์เลข';
+
+  @override
+  String get notifRow => 'การแจ้งเตือน';
+
+  @override
+  String get notifOn => 'เปิด';
+
+  @override
+  String get notifOff => 'ปิด';
+
+  @override
+  String get notifAskTitle => 'เปิดการแจ้งเตือนไหม';
+
+  @override
+  String get notifAskBody =>
+      'ZenPack จะแจ้งเมื่อแพ็กเกจใกล้หมดอายุ วิดีโอใกล้ถูกลบ มีคนเข้าร้าน และเตือนให้ถ่ายวิดีโอตอนแพ็กของ';
+
+  @override
+  String get notifAskYes => 'เปิด';
+
+  @override
+  String get notifAskNo => 'ไว้ก่อน';
+
+  @override
+  String get notifDenied =>
+      'คุณเคยปฏิเสธไว้ เปิดการตั้งค่าเครื่องเพื่อเปิดใหม่';
+
+  @override
+  String get themeRow => 'ธีม';
+
+  @override
+  String get themeSystem => 'ตามเครื่อง';
+
+  @override
+  String get themeLight => 'สว่าง';
+
+  @override
+  String get themeDark => 'มืด';
+
+  @override
+  String get tzRow => 'เขตเวลา';
+
+  @override
+  String get tzAuto => 'ตามเครื่อง';
+
+  @override
+  String get tzNote => 'เปลี่ยนเฉพาะเวลาที่แสดงบนหน้าจอ';
+
+  @override
+  String get capTitle => 'Recording settings';
+
+  @override
+  String get capHint =>
+      'Applies to EVERY device recording for this shop, not just yours.';
+
+  @override
+  String get capFps => 'Frame rate';
+
+  @override
+  String get capFpsHint =>
+      'Devices that cannot hit this fall back to the nearest supported rate.';
+
+  @override
+  String get capAuto => 'Automatic';
+
+  @override
+  String get capScanKind => 'Code types';
+
+  @override
+  String get capScanHint => 'Which codes the scanner accepts.';
+
+  @override
+  String get capScanQr => 'QR only';
+
+  @override
+  String get capScanBar => 'Barcodes only';
+
+  @override
+  String get capScanBoth => 'Both';
+
+  @override
+  String get capEndDelay => 'Wait before a code can end the clip';
+
+  @override
+  String get capEndDelayHint =>
+      'After a clip opens, wait this long before a code may end it.';
+
+  @override
+  String get capRearm => 'Wait before scanning a new code';
+
+  @override
+  String get capRearmHint =>
+      'Stops the bill still lying in frame from reopening a clip for the same order.';
+
+  @override
+  String get capTail => 'Keep recording after the end code';
+
+  @override
+  String get capTailHint =>
+      'After the end code is scanned, record this many more seconds.';
+
+  @override
+  String get capAudio => 'Record audio';
+
+  @override
+  String get capAudioHint =>
+      'Packing tables have people talking — turning this on records that too.';
+
+  @override
+  String get capStatusSound => 'Status sounds';
+
+  @override
+  String get capStatusSoundHint =>
+      'Spoken and beeped status, so the operator need not watch the screen.';
+
+  @override
+  String get capAutoConfig => 'Auto video config';
+
+  @override
+  String get capAutoConfigHint =>
+      'Drops one resolution step when the device is low on space.';
+
+  @override
+  String get capBattery => 'Battery saver';
+
+  @override
+  String get capBatteryHint =>
+      'Slows scanning. Trade-off: bills take longer to be picked up.';
+
+  @override
+  String get capWifi => 'Upload on Wi-Fi only';
+
+  @override
+  String get capWifiHint =>
+      'Devices on mobile data STOP uploading; clips pile up until Wi-Fi is back.';
+
+  @override
+  String get capEndOther => 'End the clip with another QR';
+
+  @override
+  String get capEndOtherHint =>
+      'Seeing another order\'s bill closes this clip and opens a new one.';
+
+  @override
+  String get capManualStop => 'Never stop automatically';
+
+  @override
+  String get capManualStopHint =>
+      'No code can stop a clip; only the button does. This overrides the row above.';
+
+  @override
+  String get capSecond => 'seconds';
+
+  @override
+  String get capMs => 'ms';
+
+  @override
+  String get capOwnerOnly => 'Only the shop owner can change these.';
+
+  @override
+  String get capCustom => 'Other number…';
+
+  @override
+  String get capCustomTitle => 'Enter a value';
+
+  @override
+  String get capOff => 'Off';
+
+  @override
+  String get capDefaultSuffix => '(default)';
+
+  @override
+  String get invTitle => 'Invoice details';
+
+  @override
+  String get invHint =>
+      'Fill this in once; the ZenPack team uses it when issuing invoices for your payments.';
+
+  @override
+  String get invKind => 'Buyer type';
+
+  @override
+  String get invKindCompany => 'Company / Household business';
+
+  @override
+  String get invKindPerson => 'Individual';
+
+  @override
+  String get invName => 'Company name';
+
+  @override
+  String get invNamePerson => 'Full name';
+
+  @override
+  String get invNamePh => 'e.g. ABC Co., Ltd';
+
+  @override
+  String get invNamePersonPh => 'e.g. Nguyen Van A';
+
+  @override
+  String get invTax => 'Tax code';
+
+  @override
+  String get invTaxPh => 'e.g. 0312345678';
+
+  @override
+  String get invTaxOptional => 'Tax code (if any)';
+
+  @override
+  String get invAddress => 'Address';
+
+  @override
+  String get invAddressPh => 'e.g. 123 Le Loi, D.1, HCMC';
+
+  @override
+  String get invEmail => 'Email for invoices';
+
+  @override
+  String get invEmailPh => 'e.g. billing@company.com';
+
+  @override
+  String get invNote => 'Note';
+
+  @override
+  String get invNotePh => 'Anything else (optional)';
+
+  @override
+  String get invSave => 'Save details';
+
+  @override
+  String get invNameRequired => 'Please enter a name.';
+
+  @override
+  String get invTaxRequired =>
+      'A company or household business needs a tax code.';
+
+  @override
+  String get invTaxInvalid =>
+      'A tax code is 10 digits, optionally with a 3-digit branch suffix.';
+
+  @override
+  String get invEmailInvalid => 'That email is not valid.';
+
+  @override
+  String get invNotSet => 'Not set';
+
+  @override
+  String get detailSignature => 'ลายเซ็นดิจิทัล';
+
+  @override
+  String sealSignature(String key) {
+    return 'ลายเซ็น ZenPack · กุญแจ $key';
+  }
+
+  @override
+  String get sealCopyVerifyLink => 'คัดลอกลิงก์ตรวจสอบ';
+
+  @override
+  String get sealVerifyLinkTitle => 'ลิงก์ตรวจสอบ';
+
+  @override
+  String get claimSignedLabel => 'ลงนามแล้ว';
+
+  @override
+  String claimSignedCount(int sealed, int videos, int anchored) {
+    return '$sealed/$videos วิดีโอ · $anchored มีหลักฐานอิสระ';
+  }
+
+  @override
+  String claimUnsignedHint(int n) {
+    return '$n วิดีโอไม่มีตรา — แพลตฟอร์มอาจไม่รับ ยังส่งชุดหลักฐานได้ วิดีโอที่มีตรายังพิสูจน์ตัวเองได้';
+  }
+
+  @override
+  String get claimsSubtitle => 'ติดตามและจัดการแฟ้มร้องเรียนคำสั่งซื้อ';
+
+  @override
+  String get claimsEmptyTitle => 'ยังไม่มีแฟ้ม';
+
+  @override
+  String get claimsEmptyBody =>
+      'แตะเครื่องหมายบวกที่มุมบน แล้วเลือกหลักฐานของคำสั่งซื้อที่ต้องการร้องเรียนเพื่อสร้างแฟ้ม';
+
+  @override
+  String get claimsEmptyTip =>
+      'เคล็ดลับ: ภาพและวิดีโอที่ชัดเจนช่วยให้แพลตฟอร์มตัดสินได้เร็วขึ้น';
+
+  @override
+  String get timelineEnd => 'ไม่มีกิจกรรมเพิ่มเติม';
+
+  @override
+  String timelineEntryCount(int n) {
+    return '$n รายการ';
+  }
+
+  @override
+  String get attachCodeToOrderHint =>
+      'แนบรหัสคืนสินค้าหรือเลขพัสดุที่สองเข้ากับคำสั่งซื้อนี้';
+
+  @override
+  String get attachPhotoToOrderHint =>
+      'เลือกภาพจากเครื่องเพื่อเก็บไว้กับคำสั่งซื้อนี้';
+
+  @override
+  String get shopDetailClipLengthHint => 'เวลาบันทึกสูงสุดต่อวิดีโอ';
+
+  @override
+  String get shopDetailImageSizeHint => 'ขนาดสูงสุดต่อภาพ';
+
+  @override
+  String get storageRowHint => 'ที่เก็บวิดีโอและภาพ';
+
+  @override
+  String get capRowHint => 'ตัวเลือกกล้องและการแสดงผล';
+
+  @override
+  String get inviteQrLabel => 'รหัสเชิญ';
+
+  @override
+  String get orderStatusRecorded => 'บันทึกแล้ว';
+
+  @override
+  String get orderStatusNone => 'ยังไม่บันทึก';
+
+  @override
+  String get accountTagline => 'จัดการง่าย ขายมั่นใจ กับ ZenPack';
+
+  @override
+  String get videoTypeHintPacking => 'บันทึกขั้นตอนการแพ็กสินค้า';
+
+  @override
+  String get videoTypeHintCarrier => 'บันทึกตอนส่งมอบให้ขนส่ง';
+
+  @override
+  String get videoTypeHintReturn => 'บันทึกตอนรับสินค้าคืน';
+
+  @override
+  String get statPendingSub => 'อยู่ในคิว';
+
+  @override
+  String shopPulseToday(int orders, int videos) {
+    return 'วันนี้ · $orders คำสั่งซื้อ · $videos วิดีโอ';
+  }
 }

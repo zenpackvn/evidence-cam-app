@@ -19,6 +19,14 @@ class AccountDto {
     this.name,
     this.phone,
     this.avatarUrl,
+    this.theme = 'system',
+    this.timezone,
+    this.invoiceKind = 'company',
+    this.invoiceName,
+    this.invoiceTaxCode,
+    this.invoiceAddress,
+    this.invoiceEmail,
+    this.invoiceNote,
     this.entitlement,
   });
 
@@ -28,6 +36,14 @@ class AccountDto {
     name: j['name'] as String?,
     phone: j['phone'] as String?,
     avatarUrl: j['avatar_url'] as String?,
+    theme: (j['theme'] as String?) ?? 'system',
+    timezone: j['timezone'] as String?,
+    invoiceKind: (j['invoice_kind'] as String?) ?? 'company',
+    invoiceName: j['invoice_name'] as String?,
+    invoiceTaxCode: j['invoice_tax_code'] as String?,
+    invoiceAddress: j['invoice_address'] as String?,
+    invoiceEmail: j['invoice_email'] as String?,
+    invoiceNote: j['invoice_note'] as String?,
     entitlement: j['entitlement'] is Map<String, dynamic>
         ? EntitlementDto.fromJson(j['entitlement'] as Map<String, dynamic>)
         : null,
@@ -38,6 +54,29 @@ class AccountDto {
   final String? name;
   final String? phone;
   final String? avatarUrl;
+
+  /// Giao diện sáng/tối: `'system'` | `'light'` | `'dark'`.
+  ///
+  /// Ở MÁY CHỦ chứ không ở máy: đổi trên điện thoại thì mở web cũng thấy giao
+  /// diện đó. Bản cũ của web nhớ trong cookie nên mỗi máy một kiểu.
+  final String theme;
+
+  /// Tên vùng IANA để ĐỌC giờ trên màn hình. `null` = theo máy.
+  ///
+  /// Chỉ đổi giờ hiển thị. Mốc cắt ngày của báo cáo và giờ ghi trong thư vẫn
+  /// theo giờ Việt Nam.
+  final String? timezone;
+
+  /// Thông tin xuất hoá đơn, ở TÀI KHOẢN chứ không ở cửa hàng: hoá đơn xuất
+  /// cho người TRẢ TIỀN, mà gói cước tính theo tài khoản.
+  ///
+  /// 'company' = Công ty / Hộ kinh doanh, 'individual' = Cá nhân.
+  final String invoiceKind;
+  final String? invoiceName;
+  final String? invoiceTaxCode;
+  final String? invoiceAddress;
+  final String? invoiceEmail;
+  final String? invoiceNote;
 
   /// Quyền dùng đang có hiệu lực, do backend tổng hợp từ mọi đường thanh toán.
   /// `null` khi backend chưa trả trường này.
@@ -94,6 +133,7 @@ class ShopDto {
     this.ownerEmail,
     this.clipSeconds = _kFixedClipSeconds,
     this.planMaxClipSeconds = _kFixedClipSeconds,
+    this.caiDatQuayJson = const {},
   });
 
   factory ShopDto.fromJson(Map<String, dynamic> j) => ShopDto(
@@ -106,12 +146,21 @@ class ShopDto {
     ownerEmail: j['owner_email'] as String?,
     clipSeconds: _int(j['effective_clip_seconds'], _kFixedClipSeconds),
     planMaxClipSeconds: _int(j['plan_max_clip_seconds'], _kFixedClipSeconds),
+    caiDatQuayJson: j,
   );
 
   final String id;
   final String name;
   final String platform;
   final String resolution;
+
+  /// Cài đặt quay của CỬA HÀNG này, ở dạng THÔ như máy chủ trả về.
+  ///
+  /// Không dựng thành `EcCaiDatQuay` ngay ở đây: kiểu đó nằm ở
+  /// `shared_contracts`, mà `ec_data` cố ý không phụ thuộc gói ấy — cùng lý do
+  /// đã khiến `_kFixedClipSeconds` phải chép lại ở trên. Tầng app dựng kiểu từ
+  /// map này (xem `EcCaiDatQuay.fromJson`).
+  final Map<String, dynamic> caiDatQuayJson;
 
   /// owner | manager | staff
   final String role;
@@ -462,6 +511,7 @@ class EvidenceDto {
     this.timeCheck,
     this.otsStatus,
     this.otsBlockHeight,
+    this.keyId,
   });
 
   factory EvidenceDto.fromJson(Map<String, dynamic> j) => EvidenceDto(
@@ -489,6 +539,7 @@ class EvidenceDto {
     timeCheck: j['time_check'] as String?,
     otsStatus: j['ots_status'] as String?,
     otsBlockHeight: _intN(j['ots_block_height']),
+    keyId: j['key_id'] as String?,
   );
 
   final String id;
@@ -587,6 +638,10 @@ class EvidenceDto {
   /// third-party verification page reports the same three states, and claiming
   /// more than it does is the one way this feature loses in front of a reviewer.
   final String? otsStatus;
+
+  /// Khoá đã ký hồ sơ niêm phong (`k1`, `k2`…). `null` = chưa có hồ sơ ký.
+  /// Chỉ mã khoá — chữ ký và vân tay ở trang Kiểm chứng, không ở app.
+  final String? keyId;
 
   /// Block number the proof landed in. Only set once [otsStatus] is
   /// `confirmed` — it is the number a seller can read back to a marketplace.
@@ -1248,6 +1303,8 @@ class ClaimDetailDto {
     required this.orders,
     required this.videos,
     required this.photos,
+    this.sealed,
+    this.anchored,
   });
 
   factory ClaimDetailDto.fromJson(Map<String, dynamic> j) {
@@ -1266,6 +1323,8 @@ class ClaimDetailDto {
       ],
       videos: _int(evidence['videos']),
       photos: _int(evidence['photos']),
+      sealed: _intN(evidence['sealed']),
+      anchored: _intN(evidence['anchored']),
     );
   }
 
@@ -1278,6 +1337,11 @@ class ClaimDetailDto {
   final List<ClaimOrderRefDto> orders;
   final int videos;
   final int photos;
+
+  /// Trong số [videos]: đã ký, và đã có chứng thực độc lập. `null` = máy chủ
+  /// cũ chưa trả — màn im lặng, không hiện "0/7" sai.
+  final int? sealed;
+  final int? anchored;
 }
 
 class ClaimDto {

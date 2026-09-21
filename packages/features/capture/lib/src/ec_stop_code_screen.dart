@@ -36,8 +36,8 @@ class EcStopCodeScreen extends StatelessWidget {
                 children: [
                   EcTap(
                     onTap: onBack,
-                    child: const Padding(
-                      padding: EdgeInsets.all(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
                       child: Icon(
                         Icons.arrow_back_ios_new,
                         size: 18,

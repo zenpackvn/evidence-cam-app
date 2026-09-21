@@ -22,29 +22,29 @@ class SemanticColors extends ThemeExtension<SemanticColors> {
   ///
   /// These map onto the closed palette rather than introducing hues of their
   /// own (design-dna-app.md §1):
-  ///  - **success** is `--primary`. There is deliberately no second green —
-  ///    a success state is the primary fill plus a check icon; adding another
-  ///    green next to the brand green only muddies both.
+  ///  - **success** is `--state-done` (green). Since the 09/2026 orange palette
+  ///    the brand no longer owns green, so success gets its own status hue —
+  ///    the same green the console uses for "đã ký / đã tải lên".
   ///  - **warning** is `--warning`, which itself reuses `--chart-4`. It is the
   ///    single sanctioned extension to the shadcn token set.
   ///  - **info** is `--secondary` (grey). `--chart-5` blue is for charts only.
   static const light = SemanticColors(
-    success: Color(0xFF16522C),
+    success: Color(0xFF2A7449),
     onSuccess: Color(0xFFFCFCFC),
-    warning: Color(0xFFB6770B),
+    warning: Color(0xFF9F6200),
     onWarning: Color(0xFFFFFFFF),
-    info: Color(0xFFF3F3F3),
-    onInfo: Color(0xFF222222),
+    info: Color(0xFFF7F2F0),
+    onInfo: Color(0xFF27201D),
   );
 
   /// Tokens tuned for dark themes (design-dna-app.md §1, dark column).
   static const dark = SemanticColors(
-    success: Color(0xFF53BE70),
-    onSuccess: Color(0xFF0F0F0F),
-    warning: Color(0xFFD99A1F),
-    onWarning: Color(0xFF0F0F0F),
-    info: Color(0xFF262626),
-    onInfo: Color(0xFFF2F2F2),
+    success: Color(0xFF6EBF8C),
+    onSuccess: Color(0xFF130E0C),
+    warning: Color(0xFFEBB353),
+    onWarning: Color(0xFF130E0C),
+    info: Color(0xFF2C2521),
+    onInfo: Color(0xFFF5F1EF),
   );
 
   /// Indicates a successful or positive state.

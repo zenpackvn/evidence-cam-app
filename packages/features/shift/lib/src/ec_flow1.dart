@@ -103,7 +103,7 @@ class _EcOutlineButton extends StatelessWidget {
         decoration: ecSquircleDecoration(
           radius: 12,
           color: BrandColors.bg,
-          side: const BorderSide(color: BrandColors.line),
+          side: BorderSide(color: BrandColors.line),
         ),
         child: Text(label, style: _t(16, FontWeight.w500, BrandColors.ink)),
       ),
@@ -195,12 +195,16 @@ class _FieldState extends State<_Field> {
 class _ShopHeader extends StatelessWidget {
   const _ShopHeader({
     required this.shopName,
+    this.subtitle,
     this.onBack,
     this.onShopTap,
     this.onSettings,
   });
 
   final String shopName;
+
+  /// Dòng nhỏ dưới tên shop — "Shopee · Chủ shop". `null` = chỉ có tên.
+  final String? subtitle;
   final VoidCallback? onBack;
 
   /// Chạm vào tên shop mở Chi tiết cửa hàng (F1-09).
@@ -227,7 +231,7 @@ class _ShopHeader extends StatelessWidget {
     // đúng bằng chừng ấy — banner neo vào tai thỏ chứ không trôi theo nội dung,
     // nên lệch nhau là ô nhập mã vận đơn thụt vào vùng xanh.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: Row(
         children: [
           PenBackButton(onTap: onBack, color: PenColors.card),
@@ -235,13 +239,28 @@ class _ShopHeader extends StatelessWidget {
           Expanded(
             child: EcTap(
               onTap: onShopTap,
-              child: PenText(
-                shopName,
-                size: 24,
-                color: PenColors.card,
-                weight: FontWeight.w800,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PenText(
+                    shopName,
+                    size: 24,
+                    color: PenColors.card,
+                    weight: FontWeight.w800,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (subtitle != null)
+                    PenText(
+                      subtitle!,
+                      size: 13,
+                      color: PenColors.card.withValues(alpha: 0.82),
+                      weight: FontWeight.w500,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
               ),
             ),
           ),
@@ -250,10 +269,10 @@ class _ShopHeader extends StatelessWidget {
           if (onSettings != null)
             EcTap(
               onTap: onSettings,
-              child: const Padding(
+              child: Padding(
                 // Lề phải 0 để bánh răng thẳng hàng với mép phải của ba thẻ số
                 // bên dưới; đệm quanh chỉ để nới vùng chạm.
-                padding: EdgeInsets.fromLTRB(10, 6, 0, 6),
+                padding: const EdgeInsets.fromLTRB(10, 6, 0, 6),
                 child: Icon(
                   LucideIcons.settings,
                   size: 24,
@@ -777,6 +796,24 @@ class EcForgotPasswordScreen extends StatelessWidget {
 // ============================================================================
 
 /// A shop summary as listed on the ChooseShop screen.
+/// Nhịp hoạt động hôm nay của một cửa hàng, hiện trên thẻ ở màn Chọn cửa
+/// hàng: số đơn, số video quay hôm nay và ảnh bằng chứng mới nhất.
+///
+/// Đây là "điểm nhìn" của màn chọn — bằng dữ liệu thật thay cho trang trí
+/// (18/09). Mọi trường có thể vắng: đọc hỏng thì thẻ chỉ thiếu dòng này,
+/// không thiếu cửa hàng.
+class EcShopPulse {
+  const EcShopPulse({this.ordersToday, this.videosToday, this.thumbUrl});
+
+  final int? ordersToday;
+  final int? videosToday;
+
+  /// Poster của clip mới nhất trong shop — thay logo sàn ở ô ảnh của thẻ.
+  final String? thumbUrl;
+
+  bool get hasCounts => ordersToday != null && videosToday != null;
+}
+
 class EcShopSummary {
   const EcShopSummary({
     required this.name,
@@ -786,7 +823,33 @@ class EcShopSummary {
     this.role = 'owner',
     this.resolution = '720p',
     this.clipBudget = ClipBudget.fallback,
+    this.caiDatQuay = const EcCaiDatQuay(),
+    this.pulse,
   });
+
+  /// Hoạt động hôm nay, nạp SAU danh sách (xem [EcShopPulse]). `null` = chưa
+  /// có hoặc không đọc được.
+  final EcShopPulse? pulse;
+
+  /// Cài đặt quay của cửa hàng này. Đi cùng cửa hàng chứ không đi cùng máy —
+  /// xem [EcCaiDatQuay].
+  final EcCaiDatQuay caiDatQuay;
+
+  /// Bản sao đổi đúng một trường. Dùng khi cài đặt quay vừa được sửa: màn quay
+  /// đọc từ chính đối tượng này, nên phải thay nó ngay chứ không đợi lượt tải
+  /// lại từ máy chủ.
+  EcShopSummary copyWith({EcCaiDatQuay? caiDatQuay, EcShopPulse? pulse}) =>
+      EcShopSummary(
+        id: id,
+        name: name,
+        platform: platform,
+        meta: meta,
+        role: role,
+        resolution: resolution,
+        clipBudget: clipBudget,
+        caiDatQuay: caiDatQuay ?? this.caiDatQuay,
+        pulse: pulse ?? this.pulse,
+      );
 
   /// Backend shop id (used to fetch that shop's orders). Empty for design mocks.
   final String id;
@@ -819,6 +882,7 @@ class EcShopSummary {
 /// rồi hai hàng ghim đáy: thêm cửa hàng và đăng xuất.
 class EcChooseShopScreen extends StatelessWidget {
   const EcChooseShopScreen({
+    this.huongDan,
     required this.shops,
     this.onSelect,
     this.onAccountTap,
@@ -827,6 +891,10 @@ class EcChooseShopScreen extends StatelessWidget {
     this.onLogout,
     super.key,
   });
+
+  /// Thẻ hướng dẫn của màn này, đặt ngay dưới phần đầu màn.
+  /// `null` = không hiện (đã xem, hoặc bên gọi không muốn).
+  final Widget? huongDan;
 
   final List<EcShopSummary> shops;
 
@@ -857,14 +925,23 @@ class EcChooseShopScreen extends StatelessWidget {
     final l10n = context.l10n;
     return PenScreen(
       scrollable: false,
+      // Nền TRẮNG riêng cho màn chào này (các màn làm việc dùng xám phẳng):
+      // cảnh trang trí bên dưới là những mảng cam rất nhạt, trên trắng mới
+      // đọc ra là "ấm", trên xám thì thành vết bẩn.
+      background: PenColors.card,
       decorations: const [
-        // Cụm icon sàn kéo lên sát mép trên: nút Tài khoản nay chiếm góc phải
-        // nên khoảng trống phía trên không còn chỗ dùng.
+        // KHÔNG cảnh nền (18/09, lượt ba): sóng, nhành lá, tia sáng, vòng —
+        // thử rồi, đúng là những thứ làm màn đọc ra "mock AI". App thật (Shopee,
+        // Grab, Momo) không trang trí màn chọn: một vệt ấm ở đầu, cụm logo
+        // sàn thật, và chữ. Cụm icon sàn kéo lên sát mép trên: nút Tài khoản
+        // nay chiếm góc phải nên khoảng trống phía trên không còn chỗ dùng.
+        PenWarmTop(height: 300),
         Positioned(left: 49, top: 4, child: PenPlatformHero()),
       ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          ?huongDan,
           // Nút Tài khoản: viên xanh góc phải TRÊN CÙNG, chỉ một chữ.
           //
           // Trước nó là một thẻ to bằng thẻ shop, đứng lẫn trong danh sách —
@@ -899,11 +976,11 @@ class EcChooseShopScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (onAddShop != null) const SizedBox(width: 46),
+                    if (onAddShop != null) const SizedBox(width: 54),
                     Flexible(
                       child: PenText(
                         l10n.shopChooseTitle,
-                        size: 30,
+                        size: 34,
                         color: PenColors.ink,
                         weight: FontWeight.w800,
                         align: TextAlign.center,
@@ -920,12 +997,16 @@ class EcChooseShopScreen extends StatelessWidget {
                     ],
                   ],
                 ),
-                const SizedBox(height: 6),
-                PenText(
-                  l10n.shopChooseSubtitle,
-                  size: 14,
-                  color: PenColors.mut,
-                  align: TextAlign.center,
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: PenText(
+                    l10n.shopChooseSubtitle,
+                    size: 15,
+                    color: PenColors.mut,
+                    align: TextAlign.center,
+                    lineHeight: 1.4,
+                  ),
                 ),
               ],
             ),
@@ -999,7 +1080,7 @@ class _AccountPill extends StatelessWidget {
       cross: CrossAxisAlignment.center,
       padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 15),
       children: [
-        const Icon(LucideIcons.user, size: 17, color: PenColors.card),
+        Icon(LucideIcons.user, size: 17, color: PenColors.card),
         PenText(
           context.l10n.navAccount,
           size: 14,
@@ -1023,22 +1104,40 @@ class _ShopRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Thẻ shop nền cam rất nhạt, viền cam mờ (ảnh mock 18/09 bản hai): trên
+    // nền trắng của màn chào, thẻ trắng viền xám sẽ chìm; một chút ấm là đủ
+    // để nó là thứ đầu tiên mắt dừng lại. Vai trò nằm trong dòng meta
+    // ("Shopee · Chủ shop"), không lặp thành viên riêng.
     return PenCard(
-      gap: 16,
+      gap: 14,
+      radius: 16,
+      fill: PenColors.selected.withValues(alpha: 0.55),
+      stroke: PenColors.primary.withValues(alpha: 0.18),
+      lifted: false,
       padding: const EdgeInsets.all(14),
       onTap: onTap,
       children: [
-        PenBox(
-          width: 52,
-          height: 52,
-          fill: PenColors.card,
-          stroke: PenColors.line,
-          radius: 14,
-          axis: PenAxis.row,
-          main: MainAxisAlignment.center,
-          cross: CrossAxisAlignment.center,
-          children: [PenPlatforms.logo(shop.platform)],
-        ),
+        // Có ảnh bằng chứng mới nhất thì ô ảnh là ảnh ấy (kèm huy hiệu sàn
+        // ở góc); chưa có thì logo sàn — cùng khuôn với dòng đơn ở tab Vận đơn.
+        if (shop.pulse?.thumbUrl != null)
+          PenOrderThumb(
+            imageUrl: shop.pulse!.thumbUrl,
+            platform: shop.platform,
+            size: 60,
+            radius: 12,
+          )
+        else
+          PenBox(
+            width: 60,
+            height: 60,
+            fill: PenColors.card,
+            stroke: PenColors.line,
+            radius: 12,
+            axis: PenAxis.row,
+            main: MainAxisAlignment.center,
+            cross: CrossAxisAlignment.center,
+            children: [PenPlatforms.logo(shop.platform, size: 40)],
+          ),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1046,30 +1145,53 @@ class _ShopRow extends StatelessWidget {
             children: [
               PenText(
                 shop.name,
-                size: 18,
+                size: 20,
                 color: PenColors.ink,
-                weight: FontWeight.w700,
+                weight: FontWeight.w800,
                 softWrap: false,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 3),
               PenText(
                 shop.meta ?? shop.platform,
-                size: 14,
+                size: 15,
                 color: PenColors.mut,
                 softWrap: false,
                 overflow: TextOverflow.ellipsis,
               ),
+              // Dòng hoạt động hôm nay — chỉ khi đã đọc được cả hai con số.
+              if (shop.pulse?.hasCounts ?? false) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(
+                      LucideIcons.activity,
+                      size: 13,
+                      color: PenColors.selectedInk,
+                    ),
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: PenText(
+                        context.l10n.shopPulseToday(
+                          shop.pulse!.ordersToday!,
+                          shop.pulse!.videosToday!,
+                        ),
+                        size: 12.5,
+                        color: PenColors.selectedInk,
+                        weight: FontWeight.w600,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
         // Tapping a row goes straight into the shop, so the design ends it
         // with a chevron — there is no confirm step a radio would feed.
-        const Icon(
-          LucideIcons.chevronRight,
-          size: 22,
-          color: PenColors.ink,
-        ),
+        Icon(LucideIcons.chevronRight, size: 22, color: PenColors.ink),
       ],
     );
   }
@@ -1091,16 +1213,17 @@ class _AddShopButton extends StatelessWidget {
     label: context.l10n.shopAddNew,
     child: EcTap(
       onTap: onTap,
-      child: const PenBox(
-        width: 36,
-        height: 36,
+      child: PenBox(
+        width: 44,
+        height: 44,
         fill: PenColors.primary,
         radius: 999,
+        shadows: const [penBrandCardShadow],
         axis: PenAxis.row,
         main: MainAxisAlignment.center,
         cross: CrossAxisAlignment.center,
         children: [
-          Icon(LucideIcons.plus, size: 21, color: PenColors.card),
+          Icon(LucideIcons.plus, size: 26, color: PenColors.card),
         ],
       ),
     ),
@@ -1121,25 +1244,29 @@ class _JoinByInviteRow extends StatelessWidget {
     onTap: onTap,
     child: PenBox(
       width: double.infinity,
-      stroke: PenColors.soft,
-      radius: 14,
+      fill: PenColors.card,
+      // Viền cam nhạt thay viền xám: đây là lối vào thứ hai của màn (sau
+      // chạm một shop), không phải một dòng phụ.
+      stroke: PenColors.primary.withValues(alpha: 0.45),
+      strokeWidth: 1.5,
+      radius: 999,
       axis: PenAxis.row,
-      gap: 10,
-      main: MainAxisAlignment.center,
+      gap: 12,
       cross: CrossAxisAlignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 15),
+      padding: const EdgeInsets.fromLTRB(22, 15, 18, 15),
       children: [
-        const Icon(LucideIcons.qrCode, size: 20, color: PenColors.ink),
-        Flexible(
+        Icon(LucideIcons.qrCode, size: 24, color: PenColors.primary),
+        Expanded(
           child: PenText(
             context.l10n.inviteJoinRow,
-            size: 16,
-            color: PenColors.link,
+            size: 18,
+            color: PenColors.primary,
             weight: FontWeight.w700,
             softWrap: false,
             overflow: TextOverflow.ellipsis,
           ),
         ),
+        Icon(LucideIcons.chevronRight, size: 22, color: PenColors.primary),
       ],
     ),
   );
@@ -1163,7 +1290,7 @@ class _LogoutRow extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(LucideIcons.logOut, size: 18, color: PenColors.ink),
+            Icon(LucideIcons.logOut, size: 18, color: PenColors.ink),
             const SizedBox(width: 8),
             PenText(
               context.l10n.accountSignOut,
@@ -1183,12 +1310,25 @@ class _LogoutRow extends StatelessWidget {
 /// new shop, or wait for an invite.
 class EcNoShopScreen extends StatelessWidget {
   const EcNoShopScreen({
+    this.neoTao,
+    this.neoMoi,
+    this.neoTaiKhoan,
+    this.huongDan,
     this.onCreate,
     this.onAccountTap,
     this.onJoinByInvite,
     this.onLogout,
     super.key,
   });
+
+  /// Khoá neo cho tour chỉ-vào-từng-nút. `null` = không chạy tour.
+  final GlobalKey? neoTao;
+  final GlobalKey? neoMoi;
+  final GlobalKey? neoTaiKhoan;
+
+  /// Thẻ hướng dẫn. Đây là màn ĐẦU TIÊN người vừa lập tài khoản thấy —
+  /// chỗ cần chỉ dẫn nhất trong cả app.
+  final Widget? huongDan;
   final VoidCallback? onCreate;
 
   /// Nút Tài khoản, cùng viên xanh góc phải như màn chọn shop.
@@ -1208,17 +1348,27 @@ class EcNoShopScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return PenScreen(
-      decorations: [
-        const Positioned(left: 49, top: 118, child: PenPlatformHero()),
-        // Cùng vị trí, cùng hình dáng với màn chọn shop: hai màn này là hai
-        // mặt của một chỗ đứng, nên nút Tài khoản phải ở đúng một nơi.
+      decorations: const [
+        Positioned(left: 49, top: 118, child: PenPlatformHero()),
+      ],
+      // Nút Tài khoản phải ở `overlays`, KHÔNG phải `decorations`.
+      //
+      // Cùng vị trí, cùng hình dáng với màn chọn shop: hai màn này là hai mặt
+      // của một chỗ đứng, nên nút Tài khoản phải ở đúng một nơi. Nhưng
+      // `decorations` vẽ TRƯỚC thân màn, mà thân là vùng cuộn phủ kín — nó
+      // nuốt cú chạm, nên nút hiện ra mà bấm không ăn. Người vừa lập tài khoản
+      // chưa có shop thì đây là màn duy nhất họ thấy, và họ kẹt hoàn toàn.
+      overlays: [
         if (onAccountTap != null)
           Positioned(
             right: 22,
             top: 8,
             child: SafeArea(
               bottom: false,
-              child: _AccountPill(onTap: onAccountTap!),
+              child: KeyedSubtree(
+                key: neoTaiKhoan,
+                child: _AccountPill(onTap: onAccountTap!),
+              ),
             ),
           ),
       ],
@@ -1227,6 +1377,7 @@ class EcNoShopScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            ?huongDan,
             PenText(
               l10n.noShopTitle,
               size: 30,
@@ -1250,6 +1401,7 @@ class EcNoShopScreen extends StatelessWidget {
             ],
             const SizedBox(height: 24),
             EcTap(
+              key: neoTao,
               onTap: onCreate,
               child: PenBox(
                 width: double.infinity,
@@ -1271,7 +1423,7 @@ class EcNoShopScreen extends StatelessWidget {
                       align: TextAlign.center,
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     LucideIcons.chevronRight,
                     size: 20,
                     color: PenColors.card,
@@ -1301,6 +1453,9 @@ class EcNoShopScreen extends StatelessWidget {
 /// note, primary "Tạo shop" button.
 class EcCreateShopScreen extends StatelessWidget {
   const EcCreateShopScreen({
+    this.neoTen,
+    this.neoSan,
+    this.neoTao,
     this.nameController,
     this.selectedPlatform = 'shopee',
     this.onPlatformSelected,
@@ -1308,6 +1463,11 @@ class EcCreateShopScreen extends StatelessWidget {
     this.onCreate,
     super.key,
   });
+
+  /// Khoá neo cho tour chỉ-vào-từng-nút.
+  final GlobalKey? neoTen;
+  final GlobalKey? neoSan;
+  final GlobalKey? neoTao;
 
   final TextEditingController? nameController;
   final String? selectedPlatform;
@@ -1371,21 +1531,24 @@ class EcCreateShopScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 children: [
                   Expanded(
-                    child: CupertinoTextField(
-                      controller: nameController,
-                      maxLength: kShopNameMaxLength,
-                      maxLengthEnforcement: MaxLengthEnforcement.enforced,
-                      textCapitalization: TextCapitalization.words,
-                      padding: EdgeInsets.zero,
-                      decoration: const BoxDecoration(),
-                      placeholder: l10n.createShopNameHint,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: PenColors.ink,
-                      ),
-                      placeholderStyle: const TextStyle(
-                        fontSize: 16,
-                        color: PenColors.mut,
+                    child: KeyedSubtree(
+                      key: neoTen,
+                      child: CupertinoTextField(
+                        controller: nameController,
+                        maxLength: kShopNameMaxLength,
+                        maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                        textCapitalization: TextCapitalization.words,
+                        padding: EdgeInsets.zero,
+                        decoration: const BoxDecoration(),
+                        placeholder: l10n.createShopNameHint,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: PenColors.ink,
+                        ),
+                        placeholderStyle: TextStyle(
+                          fontSize: 16,
+                          color: PenColors.mut,
+                        ),
                       ),
                     ),
                   ),
@@ -1424,7 +1587,7 @@ class EcCreateShopScreen extends StatelessWidget {
                 gap: 14,
                 padding: const EdgeInsets.all(16),
                 children: [
-                  const Icon(LucideIcons.info, size: 24, color: PenColors.ink),
+                  Icon(LucideIcons.info, size: 24, color: PenColors.ink),
                   Expanded(
                     child: PenText(
                       l10n.createShopOwnerNote,
@@ -1436,9 +1599,12 @@ class EcCreateShopScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 18),
-              _ValidatedPrimaryButton(
-                label: l10n.createShopSubmit,
-                onValid: onCreate,
+              KeyedSubtree(
+                key: neoTao,
+                child: _ValidatedPrimaryButton(
+                  label: l10n.createShopSubmit,
+                  onValid: onCreate,
+                ),
               ),
             ],
           ),
@@ -1566,7 +1732,7 @@ class EcShopMgmtScreen extends StatelessWidget {
               children: [
                 for (var i = 0; i < shops.length; i++) ...[
                   if (i > 0)
-                    const PenBox(
+                    PenBox(
                       width: double.infinity,
                       height: 1,
                       fill: PenColors.line,
@@ -1594,7 +1760,7 @@ class EcShopMgmtScreen extends StatelessWidget {
                 main: MainAxisAlignment.center,
                 cross: CrossAxisAlignment.center,
                 children: [
-                  const Icon(LucideIcons.plus, size: 24, color: PenColors.ink),
+                  Icon(LucideIcons.plus, size: 24, color: PenColors.ink),
                   Flexible(
                     child: PenText(
                       l10n.shopManageAddCta,
@@ -1613,7 +1779,7 @@ class EcShopMgmtScreen extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(LucideIcons.info, size: 20, color: PenColors.ink),
+                  Icon(LucideIcons.info, size: 20, color: PenColors.ink),
                   const SizedBox(width: 12),
                   Expanded(
                     child: PenText(
@@ -1687,7 +1853,7 @@ class _ShopMgmtRow extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(
+          Icon(
             LucideIcons.chevronRight,
             size: 22,
             color: PenColors.ink,
@@ -1739,12 +1905,17 @@ class EcVideoType {
     this.icon = LucideIcons.video,
     this.iconKey,
     this.colorHex,
+    this.hint,
   });
 
   final String name;
   final String? id;
   final bool locked;
   final IconData icon;
+
+  /// Dòng phụ dưới tên — "Quay quá trình đóng hàng". Chỉ ba loại mặc định có
+  /// (bên gọi dịch); loại tự đặt thì `null` và hàng giữ một dòng.
+  final String? hint;
 
   /// Khóa icon người tạo đã chọn (một trong [EcCreateTypeScreen.iconKeys]).
   /// `null` với 3 loại mặc định và loại tạo trước khi có tính năng này.
@@ -1762,20 +1933,12 @@ class EcVideoType {
   }
 }
 
+/// Khe giữa hai nhóm trên Chi tiết cửa hàng (tiêu đề nhóm nằm ngoài thẻ, nên
+/// khe này là khoảng thở giữa đáy thẻ trước và tiêu đề nhóm sau).
+const _sectionCardGap = 22.0;
+
 /// ShopDetail — member list + invite row, then shop settings: recording
 /// resolution and the video type list (locked defaults + custom types).
-/// Khe giữa hai thẻ nhóm trên Chi tiết cửa hàng. Lớn hơn [_sectionRowGap] để
-/// ranh giới giữa hai nhóm luôn rõ hơn ranh giới giữa hai mục cùng nhóm.
-const _sectionCardGap = 12.0;
-
-/// Khe giữa các mục *trong* một thẻ nhóm. `PenBox` nhân số này với
-/// `penDensityScale` nên ~10pt thật.
-const _sectionRowGap = 12.0;
-
-/// Khe giữa một hàng cài đặt và dòng chú thích "Đề xuất …" của chính nó. Phải
-/// nhỏ hơn [_sectionRowGap] sau khi nhân tỉ lệ, nếu không chú thích nằm lửng
-/// giữa hai hàng và không biết thuộc hàng nào.
-
 class EcShopDetailScreen extends StatelessWidget {
   const EcShopDetailScreen({
     required this.shopName,
@@ -1792,6 +1955,7 @@ class EcShopDetailScreen extends StatelessWidget {
     this.onDeleteType,
     this.onAddType,
     this.onTapStorage,
+    this.onTapCaiDatQuay,
     this.storageLabel = '',
     this.storageAccount,
     this.onDeleteShop,
@@ -1800,8 +1964,13 @@ class EcShopDetailScreen extends StatelessWidget {
     this.membersUnavailable = false,
     this.onRetryMembers,
     this.readOnly = false,
+    this.roleLabel,
     super.key,
   });
+
+  /// Vai trò của người đang xem trong shop này ("Chủ shop"), in thành viên
+  /// cạnh tên shop. `null` = không in.
+  final String? roleLabel;
 
   /// Chế độ chỉ xem, dành cho nhân viên.
   ///
@@ -1856,6 +2025,9 @@ class EcShopDetailScreen extends StatelessWidget {
   /// của chủ shop, chỉ ĐỔI kho mới là.
   final VoidCallback? onTapStorage;
 
+  /// Mở màn Cài đặt quay của cửa hàng. `null` = không hiện hàng đó.
+  final VoidCallback? onTapCaiDatQuay;
+
   /// Dòng tóm tắt kho đang dùng ("Cloud Zenpack", "Kho riêng của bạn"…).
   final String storageLabel;
 
@@ -1874,34 +2046,54 @@ class EcShopDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return PenScreen(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+    // Dải cam ngắn với tiêu đề trắng, thẻ cửa hàng đè lên mép dưới dải (bộ
+    // mock 18/09) — cùng khuôn với Chi tiết vận đơn.
+    return PenBannerPage(
+      bannerHeight: 104,
+      overlap: 40,
+      header: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+        child: Row(
+          children: [
+            PenBackButton(onTap: onBack, color: PenColors.card),
+            const SizedBox(width: 14),
+            Expanded(
+              child: PenText(
+                l10n.shopDetailTitle,
+                size: 24,
+                color: PenColors.card,
+                weight: FontWeight.w800,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            PenHeader(
-              title: l10n.shopDetailTitle,
-              onBack: onBack,
-              gap: 14,
-            ),
-            const SizedBox(height: _sectionCardGap),
             PenCard(
-              stroke: null,
-              gap: 16,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+              stroke: PenColors.line,
+              radius: 12,
+              lifted: false,
+              gap: 14,
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
               children: [
                 PenBox(
-                  width: 54,
-                  height: 54,
-                  fill: PenColors.card,
-                  stroke: PenColors.line,
-                  radius: 16,
+                  width: 64,
+                  height: 64,
+                  fill:
+                      (PenPlatforms.brand[platformLabel.toLowerCase()] ??
+                              PenColors.mut)
+                          .withValues(alpha: 0.08),
+                  radius: 12,
                   axis: PenAxis.row,
                   main: MainAxisAlignment.center,
                   cross: CrossAxisAlignment.center,
                   children: [
-                    PenPlatforms.logo(platformLabel.toLowerCase(), size: 40),
+                    PenPlatforms.logo(platformLabel.toLowerCase(), size: 46),
                   ],
                 ),
                 Expanded(
@@ -1909,11 +2101,33 @@ class EcShopDetailScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: PenText(
+                              shopName,
+                              size: 24,
+                              color: PenColors.ink,
+                              weight: FontWeight.w800,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (roleLabel != null) ...[
+                            const SizedBox(width: 8),
+                            PenPill(
+                              label: roleLabel!,
+                              ink: PenColors.selectedInk,
+                              fill: PenColors.selected,
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 3),
                       PenText(
-                        shopName,
-                        size: 24,
-                        color: PenColors.ink,
-                        weight: FontWeight.w800,
+                        platformLabel,
+                        size: 14,
+                        color: PenColors.mut,
                         softWrap: false,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1926,13 +2140,22 @@ class EcShopDetailScreen extends StatelessWidget {
                 if (!readOnly && onRenameShop != null)
                   EcTap(
                     onTap: onRenameShop,
-                    child: const Padding(
-                      padding: EdgeInsets.all(6),
-                      child: Icon(
-                        LucideIcons.pencil,
-                        size: 20,
-                        color: PenColors.mut,
-                      ),
+                    child: PenBox(
+                      width: 46,
+                      height: 46,
+                      fill: PenColors.card,
+                      stroke: PenColors.line,
+                      radius: 999,
+                      axis: PenAxis.row,
+                      main: MainAxisAlignment.center,
+                      cross: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.pencil,
+                          size: 20,
+                          color: PenColors.ink,
+                        ),
+                      ],
                     ),
                   ),
               ],
@@ -1941,6 +2164,14 @@ class EcShopDetailScreen extends StatelessWidget {
             _PenSectionCard(
               icon: LucideIcons.users,
               label: l10n.sectionMembers,
+              // Mời thành viên đứng NGOÀI thẻ danh sách, viền đứt: nó là một
+              // lời mời, không phải một người đã ở trong shop.
+              footer: readOnly
+                  ? null
+                  : _InviteMemberRow(
+                      onTap: onInviteMember,
+                      onShopQr: onShopQr,
+                    ),
               children: [
                 if (membersUnavailable)
                   _MembersNoticeRow(
@@ -1954,102 +2185,13 @@ class EcShopDetailScreen extends StatelessWidget {
                     onRetry: onRetryMembers,
                   )
                 else
-                  for (var i = 0; i < members.length; i++) ...[
-                    if (i > 0)
-                      const PenBox(
-                        width: double.infinity,
-                        height: 1,
-                        fill: PenColors.line,
-                      ),
+                  for (final member in members)
                     _MemberRow(
-                      member: members[i],
+                      member: member,
                       onTap: onMemberMore == null
                           ? null
-                          : () => onMemberMore!(members[i]),
+                          : () => onMemberMore!(member),
                     ),
-                  ],
-                if (!readOnly)
-                  EcTap(
-                    onTap: onInviteMember,
-                    // Cùng bộ khung với ba hàng cài đặt bên dưới (thời lượng,
-                    // dung lượng, kho lưu trữ): cùng nền, cùng viền, cùng bo
-                    // góc, cùng đệm, cùng ô biểu tượng 38pt. Trước đây hàng này
-                    // trong suốt và viền nhạt hơn, nên bốn hàng nằm cạnh nhau
-                    // trên một màn mà trông như hai loại thành phần khác nhau.
-                    child: PenBox(
-                      width: double.infinity,
-                      fill: PenColors.card,
-                      stroke: PenColors.line,
-                      radius: 10,
-                      axis: PenAxis.row,
-                      gap: 14,
-                      cross: CrossAxisAlignment.center,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 8,
-                        horizontal: 12,
-                      ),
-                      children: [
-                        const PenBox(
-                          width: 38,
-                          height: 38,
-                          fill: PenColors.bg,
-                          radius: 10,
-                          axis: PenAxis.row,
-                          main: MainAxisAlignment.center,
-                          cross: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              LucideIcons.plus,
-                              size: 22,
-                              color: PenColors.ink,
-                            ),
-                          ],
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              PenText(
-                                l10n.inviteMemberTitle,
-                                size: 16,
-                                color: PenColors.link,
-                                weight: FontWeight.w600,
-                                softWrap: false,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              PenText(
-                                l10n.inviteMemberHint,
-                                size: 13,
-                                color: PenColors.mut,
-                                softWrap: false,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Mã QR là ĐƯỜNG MỜI THỨ HAI, không phải cách trình
-                        // bày khác của đường thứ nhất: mời qua email dành cho
-                        // người chưa có tài khoản, còn quét mã dành cho người
-                        // đã có — họ chỉ cần vào shop, không cần ai gõ đúng
-                        // địa chỉ hộp thư của họ. Nên nó đứng cùng hàng, ở
-                        // rìa phải, chứ không nằm sau bước nhập email.
-                        if (onShopQr != null)
-                          EcTap(
-                            onTap: onShopQr,
-                            child: const Padding(
-                              padding: EdgeInsets.only(left: 4),
-                              child: Icon(
-                                LucideIcons.qrCode,
-                                size: 24,
-                                color: PenColors.ink,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
               ],
             ),
             const SizedBox(height: _sectionCardGap),
@@ -2070,11 +2212,13 @@ class EcShopDetailScreen extends StatelessWidget {
                 _FixedSettingRow(
                   icon: LucideIcons.timer,
                   label: l10n.shopDetailClipLength,
+                  hint: l10n.shopDetailClipLengthHint,
                   value: l10n.clipDurationValue('${kFixedClipSeconds ~/ 60}'),
                 ),
                 _FixedSettingRow(
                   icon: LucideIcons.fileUp,
                   label: l10n.shopDetailImageSize,
+                  hint: l10n.shopDetailImageSizeHint,
                   value: l10n.uploadSizeValue('${kFixedImageBytes ~/ 1000000}'),
                 ),
                 // Kho lưu trữ mở cho MỌI vai trò, khác các hàng trên. Kho hỏng
@@ -2084,16 +2228,29 @@ class EcShopDetailScreen extends StatelessWidget {
                 _FixedSettingRow(
                   icon: LucideIcons.hardDrive,
                   label: l10n.storageTitle,
+                  hint: l10n.storageRowHint,
                   value: storageLabel,
                   account: storageAccount,
-                  // Tên kho xuống dòng dưới nhãn: nó là thứ dài nhất trong ba
-                  // hàng ("Kho đám mây riêng (chuẩn S3)"), và nhét chung một
-                  // dòng thì hoặc nhãn hoặc giá trị phải cắt ba chấm.
+                  // Tên kho có thể dài ("Kho đám mây riêng (chuẩn S3)"): cho
+                  // giá trị xuống hai dòng thay vì cắt ba chấm.
                   stacked: true,
                   // Nhân viên chỉ ĐỌC dòng này, không mở được màn Kho lưu trữ.
                   // Bỏ luôn mũi tên chứ không để nó bấm không ăn.
                   onTap: readOnly ? null : onTapStorage,
                 ),
+                // Cài đặt quay mở cho MỌI vai trò, cùng lý do với Kho lưu trữ:
+                // máy của nhân viên chạy theo các cài đặt này, nên giấu hẳn đi
+                // là họ không có cách nào biết vì sao máy mình quay khác máy
+                // người bên cạnh. Màn đó tự khoá các ô lại cho vai trò không
+                // sửa được.
+                if (onTapCaiDatQuay != null)
+                  _FixedSettingRow(
+                    icon: LucideIcons.sliders,
+                    label: l10n.capTitle,
+                    hint: l10n.capRowHint,
+                    value: '',
+                    onTap: onTapCaiDatQuay,
+                  ),
               ],
             ),
             const SizedBox(height: _sectionCardGap),
@@ -2158,7 +2315,7 @@ class _DeleteShopRow extends StatelessWidget {
       cross: CrossAxisAlignment.center,
       padding: const EdgeInsets.symmetric(vertical: 13),
       children: [
-        const Icon(LucideIcons.trash2, size: 20, color: PenColors.danger),
+        Icon(LucideIcons.trash2, size: 20, color: PenColors.danger),
         PenText(
           context.l10n.shopDeleteTitle,
           size: 16,
@@ -2185,26 +2342,26 @@ class _FixedSettingRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.hint,
     this.account,
     this.onTap,
     this.stacked = false,
   });
 
+  /// Dòng phụ dưới nhãn — "Thời gian quay tối đa mỗi video".
+  final String? hint;
+
   /// Dòng phụ dưới [value] — hiện chỉ có email của tài khoản Drive.
-  ///
-  /// Dòng RIÊNG chứ không nối vào [value] bằng dấu chấm giữa: địa chỉ email dài
-  /// hơn bề ngang hàng nên chỗ nối luôn rơi đúng cuối dòng, để lại một dấu chấm
-  /// lơ lửng không dính vào đâu. Hai dòng thì mỗi dòng là một thứ trọn vẹn.
   ///
   /// Mọi vai trò đều đọc được: nhân viên không mở được màn Kho lưu trữ, nên đây
   /// là chỗ duy nhất họ biết clip mình vừa quay bay vào Drive nào.
   final String? account;
 
-  /// Giá trị nằm ở DÒNG DƯỚI nhãn thay vì cùng dòng, dồn phải.
+  /// Giá trị được phép XUỐNG HAI DÒNG thay vì cắt ba chấm.
   ///
-  /// Dành cho hàng có giá trị dài. Ở chế độ này không bao giờ hiện chữ "mặc
-  /// định": hàng xếp chồng là hàng có nội dung thật để đọc, không phải hàng nói
-  /// "đây là mức cố định".
+  /// Dành cho hàng có giá trị dài ("Kho đám mây riêng (chuẩn S3)"). Ở chế độ
+  /// này không bao giờ hiện chữ "mặc định": hàng xếp chồng là hàng có nội dung
+  /// thật để đọc, không phải hàng nói "đây là mức cố định".
   final bool stacked;
 
   final IconData icon;
@@ -2224,133 +2381,113 @@ class _FixedSettingRow extends StatelessWidget {
     child: _row(context),
   );
 
+  // Hàng nằm TRONG thẻ nhóm, ngăn nhau bằng vạch — không còn mỗi hàng một
+  // viền riêng. Ô biểu tượng tô cam nhạt, nhãn đậm với dòng phụ, giá trị dồn
+  // phải, đậm, kèm chữ "mặc định" nhỏ hoặc mũi tên.
   Widget _row(BuildContext context) => PenBox(
     width: double.infinity,
-    fill: PenColors.card,
-    stroke: PenColors.line,
-    radius: 10,
     axis: PenAxis.row,
     gap: 14,
     cross: CrossAxisAlignment.center,
-    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+    padding: const EdgeInsets.symmetric(vertical: 12),
     children: [
-      PenBox(
-        width: 38,
-        height: 38,
-        fill: PenColors.bg,
-        radius: 10,
-        axis: PenAxis.row,
-        main: MainAxisAlignment.center,
-        cross: CrossAxisAlignment.center,
-        children: [Icon(icon, size: 22, color: PenColors.ink)],
+      // Icon đen/trắng (mực) trên ô xám nhạt — vẫn không màu, nhưng có nhịp.
+      PenIconTile(
+        icon,
+        size: 36,
+        iconSize: 20,
+        radius: 9,
+        fill: PenColors.soft,
+        color: PenColors.ink,
       ),
-      // Nhãn co lại trước, giá trị giữ chỗ theo nội dung nhưng CÓ TRẦN.
-      //
-      // Trước đây giá trị là một `PenText` trần với `softWrap: false`: gặp một
-      // giá trị dài — "Kho đám mây riêng (chuẩn S3)" chẳng hạn — là hàng tràn
-      // ra ngoài khung thẻ, và phần tràn nằm ngoài vùng chạm nên hàng trông
-      // như bấm không ăn.
-      // Cả hai cột đều `Expanded` chứ không `Flexible`, và giá trị thì bọc
-      // `Align`. Cùng một bài học với nhãn vai trò ở `_MemberRow`: `Flexible`
-      // chỉ CHO PHÉP con nhỏ hơn phần được chia chứ không trả lại chỗ thừa —
-      // chỗ thừa đó rơi xuống cuối hàng, nên thứ đứng cuối không bao giờ chạm
-      // được mép phải, và mỗi hàng lại hụt một kiểu tuỳ độ dài chữ.
-      if (stacked)
+      // Nhãn ăn phần còn lại; giá trị lấy chỗ nó cần nhưng có trần (~45% hàng)
+      // để một giá trị dài không đẩy nhãn về 0.
+      Expanded(
+        flex: 11,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PenText(
+              label,
+              size: 16,
+              color: PenColors.ink,
+              weight: FontWeight.w600,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (hint != null) ...[
+              const SizedBox(height: 2),
+              // Dòng phụ được xuống hai dòng: nó là câu giải thích, cắt ba
+              // chấm giữa câu thì còn tệ hơn không có.
+              PenText(
+                hint!,
+                size: 12.5,
+                color: PenColors.mut,
+                lineHeight: 1.3,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ),
+      ),
+      if (value.isNotEmpty)
         Expanded(
+          flex: 9,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
               PenText(
-                label,
+                value,
                 size: 16,
                 color: PenColors.ink,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              PenText(
-                value,
-                size: 14,
-                color: PenColors.mut,
-                weight: FontWeight.w600,
-                softWrap: false,
+                weight: FontWeight.w700,
+                align: TextAlign.right,
+                maxLines: stacked ? 2 : 1,
                 overflow: TextOverflow.ellipsis,
               ),
               if (_hasAccount)
                 PenText(
                   account!,
-                  size: 13,
+                  size: 12,
                   color: PenColors.mut,
+                  align: TextAlign.right,
                   softWrap: false,
                   overflow: TextOverflow.ellipsis,
+                )
+              else if (onTap == null && !stacked)
+                // Chữ "mặc định" dưới giá trị: bỏ trống thì hàng trông y như
+                // một hàng bấm được vừa hỏng; nói thẳng đây là mức mặc định
+                // thì người dùng thôi tìm chỗ bấm.
+                PenText(
+                  context.l10n.settingDefaultSuffix,
+                  size: 12,
+                  color: PenColors.mut,
+                  softWrap: false,
                 ),
             ],
           ),
-        )
-      else ...[
-        // MỘT dòng cho nhãn, một dòng cho giá trị: ở bề ngang thật của hàng
-        // này cả hai đều vừa, nên xuống dòng chỉ làm hàng cao lên vô cớ. Dấu
-        // ba chấm giữ lại làm lưới đỡ cho cỡ chữ hệ thống phóng to.
-        // Giá trị lấy ĐÚNG bề ngang nó cần; nhãn ăn phần còn lại.
-        //
-        // Trước đây cả hai đều `Expanded`, tức chia cứng đôi hàng — nên "5 phút
-        // mỗi clip" bị bó vào nửa bên phải và mất đuôi, dù nhãn bên trái chỉ
-        // dùng hết một phần ba chỗ của nó. Đảo lại: giá trị là thứ không được
-        // phép cắt (mất đơn vị là mất nghĩa), còn nhãn thì cố định và ngắn.
-        Expanded(
-          child: PenText(
-            label,
-            size: 16,
-            color: PenColors.ink,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-          ),
         ),
-        PenText(
-          value,
-          size: 16,
-          color: PenColors.ink,
-          weight: FontWeight.w600,
-          softWrap: false,
-        ),
-      ],
-      // Chữ "mặc định" thay chỗ mũi tên cũ. Bỏ trống chỗ đó thì hàng trông y
-      // như một hàng bấm được vừa hỏng; nói thẳng đây là mức mặc định thì
-      // người dùng thôi tìm chỗ bấm.
-      //
-      // Cả hai đều dồn sát mép phải và kết thúc ở cùng một đường: hàng bấm
-      // được và hàng không bấm được nằm cạnh nhau trong một thẻ, lệch nhau vài
-      // pixel là nhìn ra ngay.
-      if (stacked)
-        // Chỗ của mũi tên luôn được giữ, kể cả khi hàng không bấm được: bỏ hẳn
-        // thì hàng của nhân viên rộng thêm đúng bằng mũi tên cộng khoảng cách,
-        // và tên kho của họ thò ra phải hơn hàng của chủ shop.
-        SizedBox(
-          width: 18,
-          child: onTap == null
-              ? null
-              : const Icon(
-                  LucideIcons.chevronRight,
-                  size: 18,
-                  color: PenColors.mut,
-                ),
-        )
-      else if (onTap == null)
-        PenText(
-          context.l10n.settingDefaultSuffix,
-          size: 13,
-          color: PenColors.mut,
-          softWrap: false,
-        )
-      else
-        const Icon(LucideIcons.chevronRight, size: 18, color: PenColors.mut),
+      // Chỗ của mũi tên luôn được giữ, kể cả khi hàng không bấm được: bỏ hẳn
+      // thì giá trị của hàng ấy thò ra phải hơn các hàng khác trong cùng thẻ.
+      SizedBox(
+        width: 18,
+        child: onTap == null
+            ? null
+            : Icon(LucideIcons.chevronRight, size: 18, color: PenColors.mut),
+      ),
     ],
   );
 }
 
-/// A white card that opens with an icon + all-caps section label, then its
-/// rows — the shape every panel on the shop-detail screen uses.
+/// Một nhóm trên Chi tiết cửa hàng: tiêu đề nhóm (biểu tượng cam + nhãn in
+/// hoa, tuỳ chọn nút thêm ở mép phải) NGOÀI thẻ, rồi một thẻ trắng chứa các
+/// hàng ngăn nhau bằng vạch, và tuỳ chọn một [footer] đứng dưới thẻ.
+///
+/// Trước đây nhãn nằm trong thẻ và mỗi hàng tự mang viền riêng — bốn hàng cạnh
+/// nhau đọc như bốn thẻ nhỏ. Nay thẻ là một khối, hàng là dòng trong khối.
 class _PenSectionCard extends StatelessWidget {
   const _PenSectionCard({
     required this.icon,
@@ -2358,82 +2495,207 @@ class _PenSectionCard extends StatelessWidget {
     required this.children,
     this.onAdd,
     this.addLabel,
+    this.footer,
   });
 
   final IconData icon;
   final String label;
   final List<Widget> children;
 
-  /// Nút cộng ở góc phải tiêu đề nhóm. `null` = nhóm không thêm được gì.
-  ///
-  /// Thay cho hàng "Thêm loại" chạy hết bề ngang dưới đáy danh sách: hàng đó
-  /// trông y như một mục trong danh sách, nên đọc lướt qua thì loại video cuối
-  /// cùng của cửa hàng là "Thêm loại video".
+  /// Nút "+ Thêm" ở mép phải tiêu đề nhóm. `null` = nhóm không thêm được gì.
   final VoidCallback? onAdd;
 
-  /// Nhãn trợ năng cho [onAdd]. Bắt buộc khi có [onAdd].
+  /// Nhãn của [onAdd] — hiện ra chữ chứ không chỉ là dấu cộng, và cũng là nhãn
+  /// trợ năng. Bắt buộc khi có [onAdd].
   final String? addLabel;
+
+  /// Thứ đứng DƯỚI thẻ, cùng nhóm nhưng không phải một hàng trong thẻ.
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
-    return PenCard(
-      axis: PenAxis.column,
-      stroke: null,
-      // Không có gap thì nhãn nhóm, các hàng và nút ở cuối thẻ xếp sát 0pt và
-      // đọc thành một khối liền — mỗi con là một mục riêng nên phải có khe.
-      gap: _sectionRowGap,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 13),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Icon(icon, size: 22, color: PenColors.ink),
-            const SizedBox(width: 12),
-            Expanded(
-              child: PenText(
-                label.toUpperCase(),
-                size: 14,
-                color: PenColors.mut,
-                weight: FontWeight.w700,
-                letterSpacing: 0.6,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (onAdd != null)
-              // Nhãn trợ năng bắt buộc: một nút chỉ có biểu tượng là ngõ cụt
-              // với trình đọc màn hình — nó đọc được "nút" mà không biết nút
-              // làm gì.
-              Semantics(
-                label: addLabel,
-                button: true,
-                child: EcTap(
-                  onTap: onAdd,
-                  child: const Padding(
-                    padding: EdgeInsets.only(left: 8),
+        PenSectionTitle(
+          label,
+          icon: icon,
+          trailing: onAdd == null
+              ? null
+              : Semantics(
+                  label: addLabel,
+                  button: true,
+                  // Chữ trong nút cũng là nhãn, nên bỏ semantics của con —
+                  // không thì trình đọc màn hình đọc "Thêm loại video" hai lần.
+                  excludeSemantics: true,
+                  child: EcTap(
+                    onTap: onAdd,
                     child: PenBox(
-                      width: 30,
-                      height: 30,
-                      fill: PenColors.bg,
-                      stroke: PenColors.line,
+                      fill: PenColors.card,
+                      stroke: PenColors.primary.withValues(alpha: 0.5),
                       radius: 999,
                       axis: PenAxis.row,
-                      main: MainAxisAlignment.center,
+                      gap: 5,
+                      hugMain: true,
                       cross: CrossAxisAlignment.center,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 7,
+                        horizontal: 12,
+                      ),
                       children: [
                         Icon(
                           LucideIcons.plus,
-                          size: 18,
-                          color: PenColors.ink,
+                          size: 16,
+                          color: PenColors.primary,
+                        ),
+                        PenText(
+                          addLabel ?? '',
+                          size: 13,
+                          color: PenColors.primary,
+                          weight: FontWeight.w700,
+                          softWrap: false,
                         ),
                       ],
                     ),
                   ),
                 ),
+        ),
+        if (children.isNotEmpty)
+          PenCard(
+            axis: PenAxis.column,
+            stroke: PenColors.line,
+            radius: 12,
+            lifted: false,
+            clip: true,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0)
+                  PenBox(
+                    width: double.infinity,
+                    height: 1,
+                    fill: PenColors.line,
+                  ),
+                children[i],
+              ],
+            ],
+          ),
+        if (footer != null) ...[
+          if (children.isNotEmpty) const SizedBox(height: 10),
+          footer!,
+        ],
+      ],
+    );
+  }
+}
+
+/// Hàng "Mời thành viên": viền đứt cam, nền cam rất nhạt, ô dấu cộng, tiêu đề
+/// cam; bên phải — sau một vạch dọc — là mã QR "Tạo mã mời".
+///
+/// Mã QR là ĐƯỜNG MỜI THỨ HAI, không phải cách trình bày khác của đường thứ
+/// nhất: mời qua email dành cho người chưa có tài khoản, còn quét mã dành cho
+/// người đã có — họ chỉ cần vào shop, không cần ai gõ đúng địa chỉ hộp thư của
+/// họ. Nên nó đứng cùng hàng, ở rìa phải, chứ không nằm sau bước nhập email.
+class _InviteMemberRow extends StatelessWidget {
+  const _InviteMemberRow({this.onTap, this.onShopQr});
+
+  final VoidCallback? onTap;
+  final VoidCallback? onShopQr;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return PenDashedBox(
+      color: PenColors.primary.withValues(alpha: 0.55),
+      fill: PenColors.selected.withValues(alpha: 0.55),
+      radius: 12,
+      // `IntrinsicHeight` để vạch dọc và ô QR cao bằng phần chữ bên trái —
+      // hàng nằm trong vùng cuộn nên không có trần chiều cao để `stretch` tới.
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: EcTap(
+                onTap: onTap,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                  child: Row(
+                    children: [
+                      PenIconTile(
+                        LucideIcons.plus,
+                        size: 48,
+                        iconSize: 26,
+                        radius: 14,
+                        fill: PenColors.card,
+                        color: PenColors.ink,
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PenText(
+                              l10n.inviteMemberTitle,
+                              size: 18,
+                              color: PenColors.primary,
+                              weight: FontWeight.w700,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            PenText(
+                              l10n.inviteMemberHint,
+                              size: 13,
+                              color: PenColors.mut,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
+            ),
+            if (onShopQr != null) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: PenBox(
+                  width: 1,
+                  fill: PenColors.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              EcTap(
+                onTap: onShopQr,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 14, 10),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        LucideIcons.qrCode,
+                        size: 26,
+                        color: PenColors.ink,
+                      ),
+                      const SizedBox(height: 4),
+                      PenText(
+                        l10n.inviteQrLabel,
+                        size: 12,
+                        color: PenColors.primary,
+                        weight: FontWeight.w600,
+                        softWrap: false,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
-        ...children,
-      ],
+      ),
     );
   }
 }
@@ -2519,19 +2781,15 @@ class _MemberRow extends StatelessWidget {
         axis: PenAxis.row,
         gap: 14,
         cross: CrossAxisAlignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         children: [
-          const PenBox(
-            width: 38,
-            height: 38,
-            fill: PenColors.soft,
+          PenIconTile(
+            LucideIcons.user,
+            size: 44,
+            iconSize: 22,
             radius: 999,
-            axis: PenAxis.row,
-            main: MainAxisAlignment.center,
-            cross: CrossAxisAlignment.center,
-            children: [
-              Icon(LucideIcons.user, size: 20, color: PenColors.ink),
-            ],
+            fill: PenColors.soft,
+            color: PenColors.ink,
           ),
           // Nhãn vai trò lấy ĐÚNG bề ngang nó cần; tên và email ăn phần còn
           // lại.
@@ -2551,6 +2809,7 @@ class _MemberRow extends StatelessWidget {
                   member.name,
                   size: 16,
                   color: PenColors.ink,
+                  weight: FontWeight.w600,
                   softWrap: false,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -2576,23 +2835,11 @@ class _MemberRow extends StatelessWidget {
           // gì; nó chỉ tồn tại để chặn trường hợp cùng cực.
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: _memberRoleMaxWidth),
-            child: PenBox(
-              fill: PenColors.bg,
-              radius: 999,
-              axis: PenAxis.row,
-              hugMain: true,
+            child: PenPill(
+              label: member.role,
+              ink: PenColors.selectedInk,
+              fill: PenColors.selected,
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 11),
-              children: [
-                Flexible(
-                  child: PenText(
-                    member.role,
-                    size: 12,
-                    color: PenColors.ink,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
             ),
           ),
           // Chỗ của mũi tên luôn được giữ, kể cả hàng không bấm được (chủ shop,
@@ -2602,7 +2849,7 @@ class _MemberRow extends StatelessWidget {
           SizedBox(
             width: 18,
             child: tappable
-                ? const Icon(
+                ? Icon(
                     LucideIcons.chevronRight,
                     size: 18,
                     color: PenColors.mut,
@@ -2641,28 +2888,43 @@ class _VideoTypeRow extends StatelessWidget {
       axis: PenAxis.row,
       gap: 14,
       cross: CrossAxisAlignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       children: [
-        PenBox(
-          width: 36,
-          height: 36,
-          fill: PenColors.bg,
-          radius: 10,
-          axis: PenAxis.row,
-          main: MainAxisAlignment.center,
-          cross: CrossAxisAlignment.center,
-          // Màu người tạo chọn hiện ở đây — nếu không thì hai hàng chọn
-          // icon/màu ở màn tạo loại chẳng dẫn tới đâu cả.
-          children: [
-            Icon(type.icon, size: 21, color: type.color ?? PenColors.ink),
-          ],
+        // Màu người tạo chọn hiện ở đây — nếu không thì hai hàng chọn
+        // icon/màu ở màn tạo loại chẳng dẫn tới đâu cả. Không chọn thì mực,
+        // không ô tô màu (yêu cầu 18/09).
+        PenIconTile(
+          type.icon,
+          size: 36,
+          iconSize: 20,
+          radius: 9,
+          fill: (type.color ?? PenColors.ink).withValues(alpha: 0.08),
+          color: type.color ?? PenColors.ink,
         ),
         Expanded(
-          child: PenText(
-            type.name,
-            size: 14,
-            color: PenColors.ink,
-            overflow: TextOverflow.ellipsis,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PenText(
+                type.name,
+                size: 16,
+                color: PenColors.ink,
+                weight: FontWeight.w600,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (type.hint != null) ...[
+                const SizedBox(height: 2),
+                PenText(
+                  type.hint!,
+                  size: 12.5,
+                  color: PenColors.mut,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
           ),
         ),
         // Built-in types can't be renamed or removed; the design marks that
@@ -2670,11 +2932,11 @@ class _VideoTypeRow extends StatelessWidget {
         if (readOnly)
           const SizedBox.shrink()
         else if (type.locked)
-          const Icon(LucideIcons.lock, size: 19, color: PenColors.mut)
+          Icon(LucideIcons.lock, size: 19, color: PenColors.mut)
         else ...[
           EcTap(
             onTap: onEdit,
-            child: const Icon(
+            child: Icon(
               LucideIcons.pencil,
               size: 19,
               color: PenColors.ink,
@@ -2682,7 +2944,7 @@ class _VideoTypeRow extends StatelessWidget {
           ),
           EcTap(
             onTap: onDelete,
-            child: const Icon(
+            child: Icon(
               LucideIcons.trash2,
               size: 19,
               color: PenColors.danger,
@@ -2762,8 +3024,8 @@ class EcCreateTypeScreen extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 decoration: const BoxDecoration(),
                 placeholder: l10n.videoTypeNameHint,
-                style: const TextStyle(fontSize: 16, color: PenColors.ink),
-                placeholderStyle: const TextStyle(
+                style: TextStyle(fontSize: 16, color: PenColors.ink),
+                placeholderStyle: TextStyle(
                   fontSize: 16,
                   color: PenColors.mut,
                 ),
@@ -2924,11 +3186,13 @@ class EcCreateTypeScreen extends StatelessWidget {
 
   /// The six swatches: ink, the two greens, `--warning` amber, destructive
   /// red and muted grey — in the design file's own order.
-  static const List<Color> _colorChoices = [
+  // Getter chứ không `const`: các token nay đổi theo chế độ sáng/tối, nên một
+  // danh sách hằng sẽ đóng băng bảng màu sáng vào bảng chọn màu.
+  static List<Color> get _colorChoices => [
     PenColors.ink,
     PenColors.primary,
     PenColors.success,
-    Color(0xFFB6770B),
+    PenColors.warning,
     PenColors.danger,
     PenColors.mut,
   ];
@@ -2981,7 +3245,7 @@ class EcConfirmDeleteScreen extends StatelessWidget {
     final l10n = context.l10n;
     return PenDialog(
       children: [
-        const SizedBox(
+        SizedBox(
           width: 62,
           height: 62,
           child: Stack(
@@ -3059,7 +3323,7 @@ class EcConfirmDeleteScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               LucideIcons.shieldCheck,
               size: 16,
               color: PenColors.mut,
@@ -3474,7 +3738,7 @@ class _EcSheetCustomInputState extends State<_EcSheetCustomInput> {
                           if (_error != null) setState(() => _error = null);
                         },
                         onSubmitted: (_) => _submit(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           color: PenColors.ink,
                         ),
@@ -3578,7 +3842,7 @@ class _EcSheetActionRow extends StatelessWidget {
     return EcTap(
       onTap: onTap,
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: BrandColors.line)),
         ),
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
@@ -3589,8 +3853,7 @@ class _EcSheetActionRow extends StatelessWidget {
             Expanded(
               child: Text(label, style: _t(16, FontWeight.w500, color)),
             ),
-            if (selected)
-              const Icon(Icons.check, size: 20, color: BrandColors.dark),
+            if (selected) Icon(Icons.check, size: 20, color: BrandColors.dark),
           ],
         ),
       ),
@@ -3608,12 +3871,23 @@ class EcHomeStat {
     required this.value,
     required this.label,
     this.icon = LucideIcons.package,
-    this.accent = PenColors.primary,
+    this.accent,
     this.tintValue = false,
+    this.sublabel,
+    this.followsTimeFilter = true,
     this.onTap,
   });
   final String value;
   final String label;
+
+  /// Dòng nhỏ dưới nhãn ("Trong hàng đợi"). `null` và [followsTimeFilter]
+  /// thì màn tự điền nhãn của bộ lọc thời gian đang áp ("Mọi lúc", "Hôm
+  /// nay"…) — con số này đếm trên đúng khoảng đó, nên nói ra là đúng.
+  final String? sublabel;
+
+  /// Con số này đổi theo viên "Thời gian"? Hai thẻ đầu (đơn, video) thì có;
+  /// "Chờ tải" đếm hàng đợi trên máy, không liên quan bộ lọc.
+  final bool followsTimeFilter;
 
   /// Makes the card tappable — "Chờ tải" uses it to open the upload queue.
   final VoidCallback? onTap;
@@ -3623,7 +3897,8 @@ class EcHomeStat {
 
   /// Colour of the glyph and its tile wash. One hue per stat in the design:
   /// green for orders, light green for clips, amber for the upload backlog.
-  final Color accent;
+  /// `null` = `PenColors.ink` lúc vẽ — token nay là getter đổi theo chế độ.
+  final Color? accent;
 
   /// Paints the number in [accent] too. The design only does this for "Chờ
   /// tải", where a non-zero count is something to act on.
@@ -3758,24 +4033,11 @@ class EcOrderPage {
 /// bottom tab bar (Vận đơn active).
 class EcHomeOrdersScreen extends StatefulWidget {
   const EcHomeOrdersScreen({
+    this.huongDan,
     required this.shopName,
+    this.shopSubtitle,
     required this.orders,
-    this.stats = const [
-      EcHomeStat(value: '0', label: 'Vận đơn'),
-      EcHomeStat(
-        value: '0',
-        label: 'Video đã quay',
-        icon: LucideIcons.video,
-        accent: PenColors.success,
-      ),
-      EcHomeStat(
-        value: '0',
-        label: 'Chờ tải',
-        icon: LucideIcons.cloudUpload,
-        accent: PenColors.warning,
-        tintValue: true,
-      ),
-    ],
+    this.stats,
     this.platform,
     this.videoTypes = const [],
     this.searchHint = 'Nhập mã vận đơn',
@@ -3798,9 +4060,40 @@ class EcHomeOrdersScreen extends StatefulWidget {
     super.key,
   });
 
+  /// Thẻ hướng dẫn của màn này, đặt ngay trên danh sách vận đơn.
+  /// `null` = không hiện (đã xem, hoặc bên gọi không muốn).
+  final Widget? huongDan;
+
   final String shopName;
+
+  /// Dòng dưới tên shop trên header: sàn và vai trò ("Shopee · Chủ shop").
+  final String? shopSubtitle;
   final List<EcOrderRow> orders;
-  final List<EcHomeStat> stats;
+
+  /// `null` = ba ô đếm rỗng dựng sẵn (xem [_statsMacDinh]).
+  ///
+  /// Không đặt thẳng danh sách làm giá trị mặc định của tham số được nữa: các
+  /// token màu trong đó nay là getter đổi theo chế độ sáng/tối, mà mặc định của
+  /// tham số bắt buộc phải là hằng biên dịch.
+  final List<EcHomeStat>? stats;
+
+  /// Ba ô đếm rỗng, dựng lại mỗi lần đọc nên màu luôn đúng chế độ đang bật.
+  static List<EcHomeStat> get _statsMacDinh => [
+    const EcHomeStat(value: '0', label: 'Vận đơn'),
+    EcHomeStat(
+      value: '0',
+      label: 'Video đã quay',
+      icon: LucideIcons.video,
+      accent: PenColors.success,
+    ),
+    EcHomeStat(
+      value: '0',
+      label: 'Chờ tải',
+      icon: LucideIcons.cloudUpload,
+      accent: PenColors.warning,
+      tintValue: true,
+    ),
+  ];
 
   /// Marketplace của shop (`shopee`, `tiktok`, …) — badge góc ảnh mỗi dòng.
   /// Mọi đơn trên màn này đều thuộc một shop nên badge dùng chung.
@@ -3990,6 +4283,17 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
     _applyFilters();
   }
 
+  /// Về "Tất cả": tắt cả ba bộ lọc trong một lần báo.
+  void _clearFilters() {
+    setState(() {
+      _uploadState = null;
+      _timeWindow = null;
+      _videoTypeId = null;
+      _pickedDate = null;
+    });
+    _applyFilters();
+  }
+
   /// Báo bộ lọc mới, rồi CHẠY LẠI tìm kiếm nếu ô tìm còn mã.
   ///
   /// Đổi bộ lọc làm phía app nạp lại trang đầu mà không kèm từ khoá, trong khi
@@ -4043,21 +4347,37 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
         widget.onPageChanged != null &&
         widget.pageInfo.hasPages &&
         _query.trim().isEmpty;
+    // Nhãn của khoảng thời gian đang lọc, điền vào dòng phụ của hai thẻ đếm
+    // theo bộ lọc.
+    final timeLabel = _timeOptions(l10n)
+        .firstWhere(
+          (o) => o.value == _timeWindow,
+          orElse: () => _timeOptions(l10n).first,
+        )
+        .label;
     return CupertinoPageScaffold(
       backgroundColor: PenColors.bg,
       child: Stack(
         children: [
-          // Dải xanh chạy hết bề ngang, luồn cả sau thanh trạng thái; header
-          // và ba thẻ số nằm đè lên nó.
-          // Dải xanh phải lùi ĐÚNG BẰNG lượng nội dung lùi lên (28 -> 12), nếu
-          // không thì mọi thứ trượt lên mà nền xanh đứng yên: nhìn ra là "không
-          // đổi gì", và ô nhập mã vận đơn thụt vào trong vùng xanh.
+          // Vệt ấm dưới dải cam (18/09) — hơi ấm, không hoa văn.
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 180,
+            left: 0,
+            right: 0,
+            height: 160,
+            child: const Stack(children: [PenWarmTop(height: 160)]),
+          ),
+          // Dải cam chạy hết bề ngang, luồn cả sau thanh trạng thái; header
+          // và ba thẻ số nằm đè lên nó, và nó còn thò xuống dưới ba thẻ ~26pt
+          // (bộ mock 18/09) chứ không kết thúc ngay dưới mép thẻ.
           //
           // `PenBrandBanner` cao `safeArea.top + height`, nên con số này là
-          // phần NẰM DƯỚI tai thỏ chứ không phải tổng chiều cao.
+          // phần NẰM DƯỚI tai thỏ chứ không phải tổng chiều cao. Sửa số này
+          // thì sửa cả khoảng trống dưới ba thẻ (SizedBox 34 → phải đủ để ô
+          // tìm không thụt vào vùng cam).
           const Align(
             alignment: Alignment.topCenter,
-            child: PenBrandBanner(height: 150),
+            child: PenBrandBanner(height: 180, watermark: true),
           ),
           SafeArea(
             bottom: false,
@@ -4065,6 +4385,7 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
               children: [
                 _ShopHeader(
                   shopName: widget.shopName,
+                  subtitle: widget.shopSubtitle,
                   onBack: widget.onBack,
                   onShopTap: widget.onShopTap,
                   onSettings: widget.onSettings,
@@ -4074,41 +4395,56 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                 // muốn đổi trạng thái phải cuộn ngược lên đầu — với đơn dài
                 // vài chục dòng đó là thao tác thừa mỗi lần lọc.
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // The three stat cards are equal height in the
-                      // design even when one label wraps, which inside a
-                      // scroll view needs an intrinsic pass.
+                      // Ba thẻ rời như bản thiết kế (bộ mock 18/09), dựng
+                      // theo mẫu "Word stats" của Vocabulary trên Mobbin:
+                      // số đứng đầu góc trái, nhãn dưới số, icon tròn tô
+                      // nhạt ở góc phải — thẻ thở hơn kiểu icon+số chen một
+                      // hàng. Cột cao bằng nhau kể cả khi một nhãn xuống
+                      // dòng — trong vùng cuộn cần lượt đo intrinsic.
                       IntrinsicHeight(
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            for (var i = 0; i < widget.stats.length; i++) ...[
+                            for (
+                              var i = 0;
+                              i <
+                                  (widget.stats ??
+                                          EcHomeOrdersScreen._statsMacDinh)
+                                      .length;
+                              i++
+                            ) ...[
                               if (i > 0) const SizedBox(width: 10),
                               Expanded(
-                                child: _StatBox(stat: widget.stats[i]),
+                                child: _StatBox(
+                                  stat:
+                                      (widget.stats ??
+                                      EcHomeOrdersScreen._statsMacDinh)[i],
+                                  timeLabel: timeLabel,
+                                ),
                               ),
                             ],
                           ],
                         ),
                       ),
-                      const SizedBox(height: 38),
+                      const SizedBox(height: 36),
                       // Khung F2-01 vẽ một ô duy nhất: icon kính lúp, ô nhập,
                       // vạch ngăn 1pt rồi nút quét 40x40 *bên trong* ô — không
                       // phải ô nhập cộng một nút vuông rời bên cạnh.
                       PenBox(
-                        height: 56,
+                        height: 52,
                         fill: PenColors.card,
                         stroke: PenColors.line,
-                        radius: 14,
+                        radius: 12,
                         axis: PenAxis.row,
                         gap: 10,
                         cross: CrossAxisAlignment.center,
                         padding: const EdgeInsets.only(left: 16, right: 8),
                         children: [
-                          const Icon(
+                          Icon(
                             LucideIcons.search,
                             size: 22,
                             color: PenColors.mut,
@@ -4127,28 +4463,28 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                               padding: EdgeInsets.zero,
                               decoration: const BoxDecoration(),
                               placeholder: widget.searchHint,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 color: PenColors.ink,
                               ),
-                              placeholderStyle: const TextStyle(
+                              placeholderStyle: TextStyle(
                                 fontSize: 16,
                                 color: PenColors.mut,
                               ),
                             ),
                           ),
-                          const PenBox(
+                          PenBox(
                             width: 1,
                             height: 26,
                             fill: PenColors.line,
                           ),
                           EcTap(
                             onTap: widget.onScan == null ? null : _onScan,
-                            child: const PenBox(
-                              width: 40,
-                              height: 40,
-                              fill: PenColors.bg,
-                              radius: 12,
+                            child: PenBox(
+                              width: 38,
+                              height: 38,
+                              fill: PenColors.soft,
+                              radius: 11,
                               axis: PenAxis.row,
                               main: MainAxisAlignment.center,
                               cross: CrossAxisAlignment.center,
@@ -4163,11 +4499,25 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children: [
+                            // Viên "Tất cả" đứng đầu hàng (bộ mock 18/09):
+                            // sáng khi không lọc gì, mang tổng số đơn của
+                            // shop, và bấm vào là xoá cả ba bộ lọc một lần —
+                            // trước đây muốn về "tất cả" phải mở từng viên
+                            // ra chọn lại.
+                            PenChip(
+                              label: l10n.filterStatusAll,
+                              selected: _filters.isEmpty,
+                              badge: widget.pageInfo.total > 0
+                                  ? '${widget.pageInfo.total}'
+                                  : null,
+                              onTap: _filters.isEmpty ? null : _clearFilters,
+                            ),
+                            const SizedBox(width: 10),
                             _FilterChip(
                               name: l10n.filterStatusLabel,
                               options: _statusOptions(l10n),
@@ -4201,10 +4551,11 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                     onRefresh: widget.onRefresh ?? () async {},
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          ?widget.huongDan,
                           const SizedBox(height: 16),
                           // With the filters applied server-side, an empty list
                           // no longer means "this shop has no orders" — say
@@ -4216,50 +4567,46 @@ class _EcHomeOrdersScreenState extends State<EcHomeOrdersScreen> {
                                   : l10n.ordersNotFound,
                               hint: unfiltered ? null : l10n.ordersNotFoundHint,
                             )
-                          else
-                            PenCard(
-                              axis: PenAxis.column,
-                              clip: true,
-                              // Design: padding [6,12]. PenBox vẽ viền đè lên mép
-                              // nên padding đo từ mép ngoài, không cộng thêm 1pt.
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 6,
-                                horizontal: 12,
+                          else ...[
+                            // Mỗi đơn một thẻ rời (bộ mock 18/09), không còn
+                            // một thẻ dài kẻ vạch: thẻ rời cho mỗi đơn một
+                            // đường viền riêng, nên ảnh, mã và viên trạng thái
+                            // của đơn nào thuộc về đơn đó — nhìn là biết, không
+                            // phải dò vạch.
+                            for (var i = 0; i < visible.length; i++) ...[
+                              if (i > 0) const SizedBox(height: 10),
+                              _OrderTile(
+                                order: visible[i],
+                                platform: widget.platform,
+                                onTap: widget.onOrderTap == null
+                                    ? null
+                                    : () => widget.onOrderTap!(visible[i]),
                               ),
-                              children: [
-                                for (var i = 0; i < visible.length; i++) ...[
-                                  if (i > 0)
-                                    const PenBox(
-                                      width: double.infinity,
-                                      height: 1,
-                                      fill: PenColors.line,
-                                    ),
-                                  _OrderTile(
-                                    order: visible[i],
-                                    platform: widget.platform,
-                                    onTap: widget.onOrderTap == null
-                                        ? null
-                                        : () => widget.onOrderTap!(visible[i]),
-                                  ),
-                                ],
-                                // Phân trang nằm trong thẻ, dưới một đường kẻ —
-                                // nó thuộc về danh sách chứ không trôi tự do
-                                // dưới đáy màn hình. Tìm kiếm trả về mọi kết quả
-                                // trong một lần nên không có trang để chuyển.
-                                if (showPager) ...[
-                                  const PenBox(
-                                    width: double.infinity,
-                                    height: 1,
-                                    fill: PenColors.line,
-                                  ),
+                            ],
+                            // Phân trang là thẻ cuối cùng của danh sách — nó
+                            // thuộc về danh sách chứ không trôi tự do dưới đáy
+                            // màn hình. Tìm kiếm trả về mọi kết quả trong một
+                            // lần nên không có trang để chuyển.
+                            if (showPager) ...[
+                              const SizedBox(height: 10),
+                              PenCard(
+                                axis: PenAxis.column,
+                                stroke: PenColors.line,
+                                radius: 12,
+                                lifted: false,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                children: [
                                   _OrdersPager(
                                     info: widget.pageInfo,
                                     busy: widget.isPageLoading,
                                     onPageChanged: widget.onPageChanged!,
                                   ),
                                 ],
-                              ],
-                            ),
+                              ),
+                            ],
+                          ],
                         ],
                       ),
                     ),
@@ -4514,7 +4861,7 @@ class _OrdersEmpty extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 40),
       child: Column(
         children: [
-          const Icon(
+          Icon(
             Icons.inbox_outlined,
             size: 36,
             color: BrandColors.mut,
@@ -4540,69 +4887,79 @@ class _OrdersEmpty extends StatelessWidget {
 }
 
 class _StatBox extends StatelessWidget {
-  const _StatBox({required this.stat});
+  const _StatBox({required this.stat, required this.timeLabel});
   final EcHomeStat stat;
+
+  /// Nhãn của bộ lọc thời gian đang áp — dòng phụ mặc định của thẻ.
+  final String timeLabel;
 
   @override
   Widget build(BuildContext context) {
-    // The design stacks the tile+number row over the label; it used to be a
-    // single row with the label beside the number.
+    // Ô đếm không có sắc riêng thì lấy CAM (bộ mock 18/09): thẻ "Vận đơn" là
+    // thẻ đầu, đặt cùng màu thương hiệu; hai thẻ sau mang màu trạng thái của
+    // chính chúng (xanh xong, vàng chờ).
+    final accent = stat.accent ?? PenColors.primary;
+    final sublabel =
+        stat.sublabel ?? (stat.followsTimeFilter ? timeLabel : null);
+    // Số ở góc trái trên với icon tròn tô nhạt ở góc phải cùng hàng, nhãn
+    // và dòng phụ chạy trọn bề ngang thẻ bên dưới (mẫu "Word stats" của
+    // Vocabulary trên Mobbin). Nhãn KHÔNG co giãn theo bề ngang: ba thẻ ba
+    // cỡ chữ nhãn là thứ nhìn ra ngay; dài quá thì cắt ba chấm.
     final card = PenBox(
       fill: PenColors.card,
-      stroke: PenColors.line,
-      radius: 16,
-      // Thẻ đè lên dải xanh nên đổ bóng ám xanh, không phải bóng mực.
+      radius: 12,
+      // Thẻ đè lên dải cam: một vệt bóng ám cam rất nhẹ là đủ tách khỏi dải.
       shadows: const [penBrandCardShadow],
       axis: PenAxis.column,
-      gap: 8,
-      // Khung F2-01 canh giữa cả hàng icon+số lẫn nhãn trong thẻ.
-      cross: CrossAxisAlignment.center,
-      hugMain: true,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+      cross: CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(12, 10, 10, 12),
       children: [
-        // Ba thẻ chia đều bề ngang, nên ô hẹp lại theo máy và theo độ dài nhãn
-        // (bản tiếng Anh dài hơn tiếng Việt). Số và nhãn co lại vừa ô thay vì
-        // tràn/cắt cụt như trước.
         Row(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            PenBox(
-              width: 36,
-              height: 36,
-              // Wash of the stat's own hue at 10% — the design's `1A` alpha.
-              fill: stat.accent.withValues(alpha: 0.1),
-              radius: 11,
-              axis: PenAxis.row,
-              main: MainAxisAlignment.center,
-              cross: CrossAxisAlignment.center,
-              children: [Icon(stat.icon, size: 19, color: stat.accent)],
-            ),
-            const SizedBox(width: 10),
-            Flexible(
+            Expanded(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: PenText(
                   stat.value,
-                  size: 24,
-                  color: stat.tintValue ? stat.accent : PenColors.ink,
-                  weight: FontWeight.w800,
+                  size: 26,
+                  color: stat.tintValue ? accent : PenColors.ink,
+                  weight: FontWeight.w700,
+                  letterSpacing: -0.5,
                   softWrap: false,
                 ),
               ),
             ),
+            const SizedBox(width: 4),
+            PenIconTile(
+              stat.icon,
+              size: 30,
+              iconSize: 16,
+              radius: 999,
+              color: accent,
+            ),
           ],
         ),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: PenText(
-            stat.label,
-            size: 12,
+        const SizedBox(height: 6),
+        PenText(
+          stat.label,
+          size: 12.5,
+          color: PenColors.ink,
+          weight: FontWeight.w600,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (sublabel != null) ...[
+          const SizedBox(height: 1),
+          PenText(
+            sublabel,
+            size: 10.5,
             color: PenColors.mut,
             softWrap: false,
+            overflow: TextOverflow.ellipsis,
           ),
-        ),
+        ],
       ],
     );
     return stat.onTap == null ? card : EcTap(onTap: stat.onTap, child: card);
@@ -4628,9 +4985,9 @@ Future<DateTime?> _pickDay(BuildContext context, DateTime initial) {
       alignment: Alignment.bottomCenter,
       child: DecoratedBox(
         // Bo hai góc trên như mọi sheet khác; đáy chừa chỗ cho home indicator.
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: PenColors.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
         ),
         child: SafeArea(
           top: false,
@@ -4777,114 +5134,141 @@ class _OrderTile extends StatelessWidget {
   final String? platform;
   final VoidCallback? onTap;
 
+  /// Viên trạng thái của đơn, suy từ ba con số có sẵn — không cần thêm gì từ
+  /// máy chủ. Thứ tự là thứ tự người bán cần biết trước: hỏng → đang chờ →
+  /// đã có clip → chưa có gì.
+  (String, Color, IconData) _status(AppLocalizations l10n) {
+    if (order.errorCount > 0) {
+      return (
+        l10n.orderErrorCount(order.errorCount),
+        PenColors.danger,
+        LucideIcons.circleAlert,
+      );
+    }
+    if (order.pendingCount > 0) {
+      return (
+        l10n.statPendingUpload,
+        PenColors.progress,
+        LucideIcons.cloudUpload,
+      );
+    }
+    if (order.videoCount > 0) {
+      return (
+        l10n.orderStatusRecorded,
+        PenColors.success,
+        LucideIcons.circleCheck,
+      );
+    }
+    return (l10n.orderStatusNone, PenColors.mut, LucideIcons.circle);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final failed = order.errorCount > 0;
-    return EcTap(
+    final (statusLabel, statusInk, statusIcon) = _status(l10n);
+    // Đơn hỏng giữ biểu tượng cảnh báo trong viên; các trạng thái khác chỉ
+    // một chấm màu (bộ mock 18/09).
+    return PenCard(
+      stroke: PenColors.line,
+      radius: 12,
+      lifted: false,
+      gap: 12,
+      padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
       onTap: onTap,
-      child: PenBox(
-        width: double.infinity,
-        axis: PenAxis.row,
-        gap: 12,
-        cross: CrossAxisAlignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 13),
-        children: [
-          PenOrderThumb(imageUrl: order.thumbUrl, platform: platform),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
+      children: [
+        PenOrderThumb(
+          imageUrl: order.thumbUrl,
+          platform: platform,
+          size: 64,
+          radius: 10,
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PenText(
+                order.code,
+                size: 16,
+                color: PenColors.ink,
+                weight: FontWeight.w700,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              // Ngày · giờ một dòng, loại video dòng dưới: danh sách trải dài
+              // nhiều ngày, mà chỉ có `10:23` thì không biết của hôm nào —
+              // người tra đơn khiếu nại cần ngày hơn cần phút; loại video
+              // đứng riêng để không phải cắt ba chấm khi tên loại dài.
+              PenText(
+                [?_dayLabel(order.capturedAtMs), order.time].join(' · '),
+                size: 12.5,
+                color: PenColors.mut,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (order.type.isNotEmpty) ...[
+                const SizedBox(height: 1),
                 PenText(
-                  order.code,
-                  size: 16,
-                  color: PenColors.ink,
-                  weight: FontWeight.w700,
-                  softWrap: false,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                PenText(
-                  // Ngày đứng TRƯỚC giờ và loại: danh sách trải dài nhiều
-                  // ngày, mà chỉ có `10:23` thì không biết của hôm nào —
-                  // người tra đơn khiếu nại cần ngày hơn cần phút.
-                  [
-                    ?_dayLabel(order.capturedAtMs),
-                    order.time,
-                    order.type,
-                  ].join(' · '),
-                  size: 12,
+                  order.type,
+                  size: 12.5,
                   color: PenColors.mut,
+                  softWrap: false,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-            ),
+              const SizedBox(height: 6),
+              PenPill(
+                label: statusLabel,
+                ink: statusInk,
+                icon: failed ? statusIcon : null,
+                dot: !failed,
+                size: 11.5,
+                iconSize: 11,
+                padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 9),
+              ),
+            ],
           ),
-          // A failed upload replaces the clip count with a red error badge —
-          // the count is meaningless while evidence is missing.
-          if (failed)
-            PenBox(
-              axis: PenAxis.row,
-              gap: 6,
-              cross: CrossAxisAlignment.center,
-              hugMain: true,
-              children: [
-                const Icon(
-                  LucideIcons.circleAlert,
-                  size: 19,
-                  color: PenColors.danger,
-                ),
+        ),
+        // Số clip (và ảnh) trong một viên cam nhạt. Đơn hỏng thì viên trạng
+        // thái bên trái đã đỏ và mang số lỗi — không lặp lại ở đây.
+        if (!failed)
+          PenBox(
+            fill: PenColors.selected,
+            radius: 999,
+            axis: PenAxis.row,
+            gap: 5,
+            cross: CrossAxisAlignment.center,
+            hugMain: true,
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+            children: [
+              Icon(LucideIcons.video, size: 16, color: PenColors.primary),
+              PenText(
+                '${order.videoCount}',
+                size: 14,
+                color: PenColors.primary,
+                weight: FontWeight.w700,
+                softWrap: false,
+              ),
+              if (order.photoCount > 0) ...[
+                Icon(LucideIcons.image, size: 16, color: PenColors.primary),
                 PenText(
-                  context.l10n.orderErrorCount(order.errorCount),
+                  '${order.photoCount}',
                   size: 14,
-                  color: PenColors.danger,
-                  weight: FontWeight.w600,
-                  softWrap: false,
-                ),
-              ],
-            )
-          else
-            PenBox(
-              axis: PenAxis.row,
-              gap: 6,
-              cross: CrossAxisAlignment.center,
-              hugMain: true,
-              children: [
-                const Icon(
-                  LucideIcons.video,
-                  size: 19,
-                  color: PenColors.primary,
-                ),
-                PenText(
-                  '${order.videoCount}',
-                  size: 16,
                   color: PenColors.primary,
                   weight: FontWeight.w700,
                   softWrap: false,
                 ),
-                if (order.photoCount > 0) ...[
-                  const Icon(
-                    LucideIcons.image,
-                    size: 19,
-                    color: PenColors.primary,
-                  ),
-                  PenText(
-                    '${order.photoCount}',
-                    size: 16,
-                    color: PenColors.primary,
-                    weight: FontWeight.w700,
-                    softWrap: false,
-                  ),
-                ],
               ],
-            ),
-          const Icon(
-            LucideIcons.chevronRight,
-            size: 19,
-            color: PenColors.mut,
+            ],
           ),
-        ],
-      ),
+        Icon(
+          LucideIcons.chevronRight,
+          size: 20,
+          color: PenColors.mut,
+        ),
+      ],
     );
   }
 }
